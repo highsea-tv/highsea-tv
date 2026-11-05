@@ -54,3 +54,9 @@ The client API's items carry `watched` beside `progress`.
 - `last_played_at` is when a viewing ended, not when one started. A rule "played in the last 30 days" means finished in them.
 - A device class's default version (answer 9 in Phase 4, a preference in layers per ADR 0027) is left for the clients that offer the setting; a pick on the title wins over it when it comes.
 - History beyond the last play (each viewing with its device) is 4.3's session history, not this table's.
+
+## 2026-11-01: Remove from Continue watching (apps-catch-up.md › A.2)
+
+Continue watching's menu (prototype-gaps.md › 2.4) has Remove from Continue watching, which forgets the place without marking the title watched. `POST /api/v1/items/{type}/{id}/dismiss` does it: the person's `watch_positions` row goes, and `watch_history` stays, so the plays counted and Watched are kept, as Plex's and Netflix's removal keeps what was watched. `watch.updated` reaches the person's devices, as for `played`.
+
+Continue watching is the position rows, so there's nothing more to clear: the next progress report from playing it again writes a row, and the title is back. The plan called for a dismissed flag in a migration, which the mock keeps for a show (its episodes would otherwise bring it back through Next up); for films it adds nothing the deleted row doesn't say, so it waits for shows, where it's needed.

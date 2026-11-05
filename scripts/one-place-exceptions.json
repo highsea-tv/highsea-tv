@@ -1,0 +1,406 @@
+{
+  "moved": [
+    {
+      "destination": "Choose a server and sign in",
+      "part": "A",
+      "copies": [
+        {
+          "path": "design/prototypes/src/client/connect-flow.tsx"
+        },
+        {
+          "path": "design/prototypes/src/client/connect.ts"
+        },
+        {
+          "path": "design/prototypes/src/tv/connect.tsx"
+        }
+      ]
+    },
+    {
+      "destination": "Settings",
+      "part": "A",
+      "copies": [
+        {
+          "path": "design/prototypes/src/web/settings.tsx",
+          "names": ["WebSettings"]
+        },
+        {
+          "path": "design/prototypes/src/tv/settings.tsx"
+        },
+        {
+          "path": "design/prototypes/src/client/settings-sections.tsx",
+          "names": ["SettingsSectionBody"]
+        },
+        {
+          "path": "design/prototypes/src/client/settings.ts",
+          "names": ["settingsSections", "useThemeChoices", "useHomeLayout", "useMyDevices"]
+        }
+      ]
+    }
+  ],
+  "exceptions": [
+    {
+      "rule": "screens",
+      "path": "apps/web/src/**",
+      "count": 17,
+      "until": "C",
+      "reason": "The web client's screens and their parts, drawn with the web renderer. Part C serves apps/client's web export at /web in the server and the desktop app, and removes apps/web (one-client-platform-b.md's answer 2)."
+    },
+    {
+      "rule": "screens",
+      "path": "apps/server/app/**",
+      "count": 58,
+      "until": "D",
+      "reason": "The admin's Next.js pages and layouts, outside this rule until part D, which draws everything the admin shows with the library and leaves Next.js as its host."
+    },
+    {
+      "rule": "screens",
+      "path": "apps/server/src/admin/**",
+      "count": 61,
+      "until": "D",
+      "reason": "The admin's screens, outside this rule until part D draws them with the library."
+    },
+    {
+      "rule": "screens",
+      "path": "design/prototypes/src/admin/**",
+      "count": 48,
+      "until": "D",
+      "reason": "The admin's prototype, outside this rule until part D draws it with the library, as the admin. Get the apps (system/get-the-apps.tsx) moved in from the clients' shared folder in B3, for System › Status and the command palette."
+    },
+    {
+      "rule": "values",
+      "path": "packages/ui/src/native/badge.tsx",
+      "count": 20,
+      "until": "E",
+      "reason": "Badge's and QualityTag's measures from the prototype, written before this check; part A moved the spaces and the pill onto their tokens. The status dot's 6, the tag's 20 height, the 3 and 5 corners, the 11 type and 12 icon, the TV's 0.44 letter spacing, and a 1 border have no token; the glass over posters is glass.ts's. The Home and title-page review added Badge's and QualityTag's TV forms in screen units (the pill's 0.6 and 0.1, the 0.4 gap and dot, the 0.95 icon; the tag's 1.04 height, 0.31 padding, 0.26 corner and 0.03 tracking, the prototype's 20, 6, 5 and 0.6 at 1080p) and Certification's 1 border and the TV's 0.4 padding. A new token value needs the owner's approval; part E removes this entry once they have tokens."
+    },
+    {
+      "rule": "values",
+      "path": "packages/ui/src/native/glass.ts",
+      "count": 1,
+      "until": "E",
+      "reason": "The dark glass over artwork (rgba(11,11,12,0.62)), Badge's overlay pill's and StillFrame's note's, from the prototype's glass-badge, moved out of badge.tsx (where it was excused) on 2026-11-03 so the two share it. It has no token. A new token value needs the owner's approval; part E removes this entry once it has one."
+    },
+    {
+      "rule": "values",
+      "path": "apps/client/src/desktop/window.tsx",
+      "count": 14,
+      "until": "E",
+      "reason": "The desktop app's window chrome stands in for the operating systems' own, as the prototype's web/window.tsx does: Windows' 46-wide caption buttons and its Close red (#c42b1c with a white glyph), macOS's three button colours, the caption glyphs' 10 box, 5 middle, 14 stroke and -2 overhang, and the title bar's 14 mark. They are the systems' measures, not highsea's, so they have no token; part E gives them tokens if the owner wants them in the design language."
+    },
+    {
+      "rule": "values",
+      "path": "apps/client/src/player/parts.tsx",
+      "count": 57,
+      "until": "E",
+      "reason": "The player's own measures from the prototype's players (web/player.tsx, mobile/player.tsx and tv/player.tsx), moved in B2 with its spaces and icon sizes on the scales: the round controls' 44 and 22 icon and the flipped replay, the scrubber's 4 track, 14 and 20 thumbs and the trickplay preview's 160, the scrims over the film (0.72 and 0.6 black, the glass's 0.62), Next up's and the message's widths and their 1 borders, and the TV's forms of the same in screen units. They have no token (controls.md lets the media players' own controls keep their own shape). A new token value needs the owner's approval; part E removes this entry once they have tokens."
+    },
+    {
+      "rule": "values",
+      "path": "apps/client/src/player/pointer.tsx",
+      "count": 24,
+      "until": "E",
+      "reason": "The player's own measures from the prototype's players (web/player.tsx, mobile/player.tsx and tv/player.tsx), moved in B2 with its spaces and icon sizes on the scales: the volume's 80 by 6 track, the big Play's 80 circle and 34 icon, the 0.7 and 0.75 black gradients, the panel's 352 width and 1 border, and the black behind the film. They have no token (controls.md lets the media players' own controls keep their own shape). A new token value needs the owner's approval; part E removes this entry once they have tokens."
+    },
+    {
+      "rule": "values",
+      "path": "apps/client/src/player/touch.tsx",
+      "count": 21,
+      "until": "E",
+      "reason": "The player's own measures from the prototype's players (web/player.tsx, mobile/player.tsx and tv/player.tsx), moved in B2 with its spaces and icon sizes on the scales: the 56 and 72 transport circles with their 28 and 36 icons, the 0.45 scrim, the times' 12 type in the 0.8 white, the title's 17, the cue's 84 and 24 lift, the safe area's 12 and 16 floors, and the black behind the film. They have no token (controls.md lets the media players' own controls keep their own shape). A new token value needs the owner's approval; part E removes this entry once they have tokens."
+    },
+    {
+      "rule": "values",
+      "path": "apps/client/src/player/tv.tsx",
+      "count": 55,
+      "until": "E",
+      "reason": "The player's own measures from the prototype's players (web/player.tsx, mobile/player.tsx and tv/player.tsx), moved in B2 with its spaces and icon sizes on the scales: the TV player's measures in screen units: the scrubber's 0.8 to 1.6 track, 1.4 thumb and the trickplay's 14 preview, the legend's and the pills' gaps, the 0.7 and 0.8 black scrims, the timing row's 46 and 30 widths, and the black behind the film. They have no token (controls.md lets the media players' own controls keep their own shape). A new token value needs the owner's approval; part E removes this entry once they have tokens."
+    },
+    {
+      "rule": "values",
+      "path": "apps/client/src/music-player/bar.tsx",
+      "count": 9,
+      "until": "E",
+      "reason": "The music bar's own measures from the prototype's web/music-bar.tsx, moved in B3: the queue panel's 384 (the web renderer's side sheet), the times' 12 type, the transport's 17 and 18 icons, and the scrim's 0.5 black. They have no token (controls.md lets the media players' own controls keep their own shape). A new token value needs the owner's approval; part E removes this entry once they have tokens."
+    },
+    {
+      "rule": "values",
+      "path": "apps/client/src/music-player/mini.tsx",
+      "count": 4,
+      "until": "E",
+      "reason": "The mini player's measures from the prototype's mobile/now-playing.tsx, moved in B3: its song's 15 and artist's 13 type, and its transport's 22 icons. They have no token (controls.md lets the media players' own controls keep their own shape). A new token value needs the owner's approval; part E removes this entry once they have tokens."
+    },
+    {
+      "rule": "values",
+      "path": "apps/client/src/music-player/now-playing.tsx",
+      "count": 15,
+      "until": "E",
+      "reason": "Now playing's measures by touch from the prototype's mobile/now-playing.tsx, moved in B3: the blurred cover's 1.5 scale, the 11 mono label and 13 type of where it plays from, the song's 22 and artist's 18, the times' 12, the transport's 22 and 34 icons, the volume's 16 icons, and the cover's 0.45 black shadow. They have no token (controls.md lets the media players' own controls keep their own shape). A new token value needs the owner's approval; part E removes this entry once they have tokens."
+    },
+    {
+      "rule": "values",
+      "path": "apps/client/src/music-player/now-playing-tv.tsx",
+      "count": 42,
+      "until": "E",
+      "reason": "Now playing's measures on the TV from the prototype's tv/now-playing.tsx, moved in B3, in screen units: the head's stop (2.6 high, a 2 cover, 0.7 gap, 0.3 and 1 padding, 1.2 bars), the 24 cover and its 4 gap, the 3 title, the 3.6 and 5 round controls with their 1.6 and 2 icons and 0.3 dot, the scrubber's 5 waveform, 0.6 padding and 0.2 playhead, Up next's 9 covers, the gaps between them, the cover's 0.9 paused scale and 0.5 black shadow, and the backdrop's 1.1 scale. They have no token (controls.md lets the media players' own controls keep their own shape). A new token value needs the owner's approval; part E removes this entry once they have tokens."
+    },
+    {
+      "rule": "values",
+      "path": "apps/client/src/music-player/parts.tsx",
+      "count": 1,
+      "until": "E",
+      "reason": "The queue's song times' 12 type, from the prototype's client/music-queue.tsx, moved in B3. They have no token (controls.md lets the media players' own controls keep their own shape). A new token value needs the owner's approval; part E removes this entry once they have tokens."
+    },
+    {
+      "rule": "values",
+      "path": "apps/client/src/music/sizes.ts",
+      "count": 1,
+      "until": "E",
+      "reason": "The black under music's scrims over art and the playlist mosaic's shadow, from the prototypes' bg-black/50, bg-black/60 and rgba(0,0,0,0.35), moved in B3 and written once as BLACK with alpha(). No theme has a black, since these darken art whatever the theme. A new token value needs the owner's approval; part E removes this entry once it has one."
+    },
+    {
+      "rule": "values",
+      "path": "packages/ui/src/native/waveform.tsx",
+      "count": 3,
+      "until": "E",
+      "reason": "The waveform's own measures from the prototype's client/waveform.tsx, moved in B3: the time tooltip's 11 type, the playing mark's 14 default size, and its bars' 2 width. They have no token (controls.md lets the media players' own controls keep their own shape). A new token value needs the owner's approval; part E removes this entry once they have tokens."
+    },
+    {
+      "rule": "values",
+      "path": "apps/client/src/player/picture.tsx",
+      "count": 4,
+      "until": "E",
+      "reason": "The player's own measures from the prototype's players (web/player.tsx, mobile/player.tsx and tv/player.tsx), moved in B2 with its spaces and icon sizes on the scales: the AirPlay picker's 44 box and 28 button, iOS's own. They have no token (controls.md lets the media players' own controls keep their own shape). A new token value needs the owner's approval; part E removes this entry once they have tokens."
+    },
+    {
+      "rule": "values",
+      "path": "apps/client/src/player/picture.web.tsx",
+      "count": 2,
+      "until": "E",
+      "reason": "The player's own measures from the prototype's players (web/player.tsx, mobile/player.tsx and tv/player.tsx), moved in B2 with its spaces and icon sizes on the scales: the browser's subtitle colours (the text's #ededee on 0.6 black), set in ::cue. They have no token (controls.md lets the media players' own controls keep their own shape). A new token value needs the owner's approval; part E removes this entry once they have tokens."
+    },
+    {
+      "rule": "values",
+      "path": "packages/ui/src/native/banner.tsx",
+      "count": 4,
+      "until": "E",
+      "reason": "Banner's measures from the prototype, written before this check; part A moved its spaces, the 16 icon and the circle's corner (the pill) onto their tokens. The 32 icon circle, the close button's -6 nudge and a 1 border have no token. A new token value needs the owner's approval; part E removes this entry once they have tokens."
+    },
+    {
+      "rule": "values",
+      "path": "packages/ui/src/native/brand.tsx",
+      "count": 2,
+      "until": "E",
+      "reason": "The default sizes of Lockup (17) and Avatar (36), written before this check; part A moved Mark's 24 onto the icon scale's lg. The brand gives the lockup's proportions (the mark in a 1.15em box, 0.42em before the name) but no sizes. A new token value needs the owner's approval; part E removes this entry once they have tokens."
+    },
+    {
+      "rule": "values",
+      "path": "packages/ui/src/native/button.tsx",
+      "count": 1,
+      "until": "E",
+      "reason": "The outline button's 1 border. The tokens have the line colours for borders (color.md) but no border width, which needs the owner's approval; part A (the library on the web) has no token to move it onto, so part E removes this entry once there is one."
+    },
+    {
+      "rule": "values",
+      "path": "packages/ui/src/native/chip.tsx",
+      "count": 1,
+      "until": "E",
+      "reason": "The chip's 1 border. The tokens have the line colours for borders (color.md) but no border width, which needs the owner's approval; part A (the library on the web) has no token to move it onto, so part E removes this entry once there is one."
+    },
+    {
+      "rule": "values",
+      "path": "packages/ui/src/native/empty-state.tsx",
+      "count": 4,
+      "until": "E",
+      "reason": "EmptyState's measures from the prototype, written before this check; part A moved its spaces and the circle's corner (the pill) onto their tokens. The 56 icon circle, the 26 icon and the 320 text width have no token. A new token value needs the owner's approval; part E removes this entry once they have tokens."
+    },
+    {
+      "rule": "values",
+      "path": "packages/ui/src/native/field.tsx",
+      "count": 1,
+      "until": "E",
+      "reason": "The field's 1 border. The tokens have the line colours for borders (color.md) but no border width, which needs the owner's approval; part A (the library on the web) has no token to move it onto, so part E removes this entry once there is one."
+    },
+    {
+      "rule": "values",
+      "path": "packages/ui/src/native/letter-index.tsx",
+      "count": 4,
+      "until": "E",
+      "reason": "LetterIndex's measures: by touch as iOS's section index, written before this check, part A moving each letter's 16 and the column's 20 onto the space scale; with a pointer the prototype's 1.5rem letters (space 6) and the small corner; on the TV the rail's 2 column in screen units, moved from tv/rail.tsx when B1 made it one part. The touch form's 4 corner and 11 type on a 12 line, and the rail's column, have no token. A new token value needs the owner's approval; part E removes this entry once they have tokens."
+    },
+    {
+      "rule": "values",
+      "path": "packages/ui/src/native/poster.tsx",
+      "count": 5,
+      "until": "E",
+      "reason": "Poster's measures from the prototype, written before this check; part A moved its spaces onto the space scale. The 10 space under the art, the 1 border and its rgba(255,255,255,0.04) edge, lighter than the line colour, have no token. The Home review added the mosaic's 1 point between its posters (the prototype's gap-px). A new token value needs the owner's approval; part E removes this entry once they have tokens."
+    },
+    {
+      "rule": "values",
+      "path": "packages/ui/src/native/progress.tsx",
+      "count": 1,
+      "until": "E",
+      "reason": "ProgressBar's 4 height, written before this check; part A moved its corners onto the pill. The height has no token. A new token value needs the owner's approval; part E removes this entry once they have tokens."
+    },
+    {
+      "rule": "values",
+      "path": "packages/ui/src/native/rating.tsx",
+      "count": 3,
+      "until": "E",
+      "reason": "The 6 space between Rating's stars, written before this check; part A moved the 16 star onto the icon scale's sm. The space has no token. The title page's review set the TV's star at 1.04 units and its gap at 0.31 (the prototype's 20 and 6 at 1080p). A new token value needs the owner's approval; part E removes this entry once they have tokens."
+    },
+    {
+      "rule": "values",
+      "path": "packages/ui/src/native/row.tsx",
+      "count": 3,
+      "until": "E",
+      "reason": "Row's measures from the prototypes: touch's 10 space under its heading, written before this check, and the TV's 0.8 gap and 1 padding in screen units, moved from tv/tiles.tsx's TvRow when B1 made it one part. None is a token value yet, and a new one needs the owner's approval; part E removes this entry once they have tokens."
+    },
+    {
+      "rule": "values",
+      "path": "packages/ui/src/native/section-heading.tsx",
+      "count": 2,
+      "until": "E",
+      "reason": "A section's heading keeps the 28 height Row's heading had beside its action (See all), moved here when Search's sections came to share it, and draws the phone's title at the prototypes' 17 (PHONE_SECTION_TITLE: mobile/home.tsx's text-[17px]), which mobileText has no step for. A new token value needs the owner's approval; part E removes this entry once both have tokens."
+    },
+    {
+      "rule": "values",
+      "path": "packages/ui/src/native/hidden-heading.tsx",
+      "count": 3,
+      "until": "E",
+      "reason": "The visually hidden pattern's 1 by 1 box and its -1 margin (the web's sr-only), which are the technique's, not a measure of the design: a box with no size is dropped by some screen readers. Part E moves them onto a named constant in the tokens if the owner wants one."
+    },
+    {
+      "rule": "values",
+      "path": "packages/ui/src/native/segmented.tsx",
+      "count": 3,
+      "until": "E",
+      "reason": "The underlined tabs' 1 rule and 2 underline, with the -1 that lays one over the other, written before this check. The tokens have no border width, which needs the owner's approval, so part A (the library on the web) has none to move; part E removes this entry once there is one."
+    },
+    {
+      "rule": "values",
+      "path": "packages/ui/src/native/sheet.tsx",
+      "count": 3,
+      "until": "E",
+      "reason": "Sheet's and Dialog's measures from the prototype, written before this check; part A moved their spaces onto the space scale. The 56 header height, the dialog's 1 border and its scrim, black at 0.6, have no token. A new token value needs the owner's approval; part E removes this entry once they have tokens."
+    },
+    {
+      "rule": "values",
+      "path": "packages/ui/src/native/sortable-list.tsx",
+      "count": 7,
+      "until": "E",
+      "reason": "SortableList's measures from the prototype, written before this check; part A moved the 16 icon, the rows' 8 gap and two spaces onto their tokens. The 28 handle with its 6 corner and 8 hit slop, the 56 row, the 10 space and a 1 border have no token. A new token value needs the owner's approval; part E removes this entry once they have tokens."
+    },
+    {
+      "rule": "values",
+      "path": "packages/ui/src/native/toggle.tsx",
+      "count": 4,
+      "until": "E",
+      "reason": "Switch's phone measures from the web's switch: its 40 track, the 18 thumb 3 in and its 1 border, written before this check (the TV's come from the control spec). part A moved the thumb's shadow onto elevation 2 (elevation.md: toggles), whose blur is 2 where the hand-written one was 3. The track, thumb, inset and border have no token. A new token value needs the owner's approval; part E removes this entry once they have tokens."
+    },
+    {
+      "rule": "values",
+      "path": "packages/ui/src/native/page-parts.tsx",
+      "count": 16,
+      "until": "E",
+      "reason": "A title page's parts (NamedAction, PersonTile, FactsCard) at the prototypes' measures, moved from the phone's touch.tsx and the TV's tv/detail.tsx when B1 made each one part at every form factor; their spaces, the 20 icon, the 44 round icon (the touch target) and the tooltip's corner and shadow are on their tokens. The phone's 80 action and 96 label widths and FactsCard's title at section-heading.tsx's PHONE_SECTION_TITLE (its label column is as wide as its widest label, measured, so it has no width of its own), and on the TV the 9 label column, the 20 name width, the 8 portrait and the cards' spaces in screen units have no token. The film and person pages' review added PersonPortrait's two shadows (black at 0.35, the prototypes' 24 and 32 blurs, which elevation's tokens don't have) and its TV size of 13 units, and FactsCard's TV links (TV_LINK: 0.6 by 0.2, a 0.4 corner). A new token value needs the owner's approval; part E removes this entry once they have tokens."
+    },
+    {
+      "rule": "values",
+      "path": "packages/ui/src/native/tv/cards.tsx",
+      "count": 19,
+      "until": "E",
+      "reason": "TvFeaturedCard (its 40.5 height and 1.4 corner), TvMenu (its 30 columns and 0.6 gap), TvConfirm and TvNoticeCard in screen units, written before this check; part A moved the pill and the 1.6 icon (icon.sizeTv.max) onto their tokens. The tokens have the TV's layout (tv.safe, tv.rows, tv.poster, tv.radius) but no spacing or size scale in units, so 23 of these need values; the other 3 are fades and a scrim, black at an opacity, which have no colour token. The Home review moved TvFeaturedCard and TvNoticeCard to featured-card.tsx and notice-card.tsx, and added TvAcknowledge and TvRadioGroup on the same units. A new token value needs the owner's approval; part E removes this entry once they have tokens."
+    },
+    {
+      "rule": "values",
+      "path": "packages/ui/src/native/tv/controls.tsx",
+      "count": 7,
+      "until": "E",
+      "reason": "TvMessage's spaces, its 46 width and its title at 2.4 in screen units, written before this check. The tokens have no TV spacing or size scale in units, and the hero title's type is 5.2 (tvText), so these need values the owner approves; part A (the library on the web) has none to move, and part E removes this entry once they have tokens. B3 added the 0.5 dot and its 0.6 gap on a key that toggles (TvKey's `pressed`, the TV prototype's Shift)."
+    },
+    {
+      "rule": "values",
+      "path": "packages/ui/src/native/tv/detail.tsx",
+      "count": 8,
+      "until": "E",
+      "reason": "The TV title page's own parts (TvBackdrop, TvProgressLine and TvSideDialog) and the art's 56.25 height, one 16:9 screen, in screen units, written before this check; part A moved the two pills onto their token, and B1 moved the parts every form factor draws to page-parts.tsx. The tokens have no TV spacing or size scale in units. The title page's review moved TvBackdrop and its 56.25 height to title-backdrop.tsx. A new token value needs the owner's approval; part E removes this entry once they have tokens."
+    },
+    {
+      "rule": "values",
+      "path": "packages/ui/src/native/film-row.tsx",
+      "count": 25,
+      "until": "E",
+      "reason": "FilmRow's measures from the prototypes, moved from tv/film-row.tsx when B1 drew it at every form factor: on the TV its spaces and its 1.6 type on a 1.7 line in screen units; with a pointer the mask's black stops (the posters' 6.5rem to 12rem clamp is row.tsx's POINTER_ITEM now); at both the fade behind the card's words (black at 0.65). The tokens have no TV spacing scale in units, no 1.6 type (tvText), and no colour for fades or masks, so these need values the owner approves; FilmRowSkeleton adds the TV prototype's lines in units (the title's 1.2 by 12, the description's 1.05 and 1 lines, 0.7 apart under 0.6 and over 1.4) and the strip's spaces; two of the count are `place(v, 0, 1)`'s direction, which the check reads as a translateX. Part E removes this entry once they have tokens."
+    },
+    {
+      "rule": "values",
+      "path": "packages/ui/src/native/tv/focusable.tsx",
+      "count": 1,
+      "until": "E",
+      "reason": "The TV focus ring's drop shadow is black at the token's opacity (focus.tv.shadow), as the tokens' shadowCss writes the web's shadows; written out here because shadowCss writes pixels, not screen units. part A (the library on the web) leaves it, as no token writes it in units; part E removes this entry once one does."
+    },
+    {
+      "rule": "values",
+      "path": "packages/ui/src/native/tv/head.tsx",
+      "count": 11,
+      "until": "E",
+      "reason": "TvHead's spaces, its tab and account stops (2.6 and 3) with the 2.2 avatar, its alert dot and its focus guide's height in screen units, written before this check; part A moved the 1.4 icon (icon.sizeTv.min) and the dot's corner (tv.radius.pill) onto their tokens. The tokens have no TV spacing or size scale in units. A new token value needs the owner's approval; part E removes this entry once they have tokens."
+    },
+    {
+      "rule": "values",
+      "path": "packages/ui/src/native/tv/page.tsx",
+      "count": 5,
+      "until": "E",
+      "reason": "TvGrid's and TvWords' spaces in screen units, TvAmbient's scrim over the blurred art (black at 0.55) and its art drawn at 1.1 so the blur's soft edges fall outside the screen, written before this check. The tokens have no TV spacing scale in units, no colour for scrims and no scale for art, so these need values the owner approves; part E removes this entry once they have tokens."
+    },
+    {
+      "rule": "values",
+      "path": "packages/ui/src/native/tv/tiles.tsx",
+      "count": 5,
+      "until": "E",
+      "reason": "TvTile's spaces, the wide tile's 17 width and the tiles' 0.25 progress lines in screen units, written before this check; B1 moved TvRow's to row.tsx. The tokens have no TV spacing or size scale in units, so these need values the owner approves; part A (the library on the web) has none to move, and part E removes this entry once they have tokens."
+    },
+    {
+      "rule": "values",
+      "path": "packages/ui/src/native/featured-card.tsx",
+      "count": 20,
+      "until": "E",
+      "reason": "FeaturedCard at the prototypes' measures (the Home review): the phone's 0.78 share of the screen; with a pointer the banner's 288 to 704 height and its words' 608 width, and the fades, black at 0.7 and 0.6, which have no colour token; on the TV its 40.5 height, 1.4 corner, 2.8 inset, 34 words and 0.8 gap in screen units, moved from tv/cards.tsx. FeaturedCardSkeleton adds the prototypes' lines: with a pointer the title's clamp(3rem, 6vw, 5.5rem) by min(22rem, 70%) and the tagline's 30rem measure, and on the TV the title's 6 by 22 units with its 0.6 corner, the details' 1.05 by 16 and their 0.15 and 0.2 spaces. A new token value needs the owner's approval; part E removes this entry once they have tokens."
+    },
+    {
+      "rule": "values",
+      "path": "packages/ui/src/native/menu.tsx",
+      "count": 3,
+      "until": "E",
+      "reason": "Menu's and Popover's pointer panels at the web renderer's Radix measures (overlay.ts): the menu's 224 minimum width (min-w-56), the popover's 288 width (w-72) and the surface's 1 border. A new token value needs the owner's approval; part E removes this entry once they have tokens."
+    },
+    {
+      "rule": "values",
+      "path": "packages/ui/src/native/notice-card.tsx",
+      "count": 5,
+      "until": "E",
+      "reason": "NoticeCard's TV form in screen units (the Home review), moved from tv/cards.tsx: its 1.2 gap, 1.6 padding, the icon's 0.2 drop and the 0.6 and 0.8 gaps. The tokens have no TV spacing scale in units. A new token value needs the owner's approval; part E removes this entry once they have tokens."
+    },
+    {
+      "rule": "values",
+      "path": "packages/ui/src/native/title-backdrop.tsx",
+      "count": 1,
+      "until": "E",
+      "reason": "The TV title page's art at 56.25 units, one 16:9 screen, moved from tv/detail.tsx. A new token value needs the owner's approval; part E removes this entry once it has a token."
+    },
+    {
+      "rule": "values",
+      "path": "packages/ui/src/native/toast.tsx",
+      "count": 3,
+      "until": "E",
+      "reason": "Toast's TV surface in screen units (TV_NOTE: 1.2 by 0.8, a 0.2 gap), from the TV prototype's note. The tokens have no TV spacing scale in units. A new token value needs the owner's approval; part E removes this entry once they have tokens."
+    },
+    {
+      "rule": "values",
+      "path": "packages/ui/src/native/alpha.ts",
+      "count": 2,
+      "until": "E",
+      "reason": "alpha() reads and writes the hsl() form the art's colours come in (Bloom's), which the check reads as literal colours: the pattern it matches and the hsla() it returns. They name no colour of their own, so they stay."
+    }
+  ]
+}

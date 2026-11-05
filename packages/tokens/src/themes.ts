@@ -9,6 +9,10 @@ export type ContrastCheckId =
   | 'button-primary'
   | 'button-danger'
   | 'badge'
+  | 'control-edge'
+  | 'control-selected'
+  | 'control-label'
+  | 'focus-ring'
 
 /** A theme as authored: base role values plus the few non-color values a theme may change. */
 export type ThemeSpec = {

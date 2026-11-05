@@ -26,7 +26,7 @@ import {
   TabsContent,
   TabsList,
   TabsTrigger,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import { useDeferredValue, useState } from 'react'
 import { AddMovieDialog, isNoMetadataKey, METADATA_SETTINGS } from './add-dialog.tsx'
 import { useAddressParam } from './address.ts'

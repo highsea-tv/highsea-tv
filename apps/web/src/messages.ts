@@ -330,6 +330,9 @@ export const connect = defineMessages({
   invalid: 'That isn’t an address. Try harbor.example.net or 192.168.1.20:3000.',
   failed: 'Couldn’t connect. {message}',
   starting: 'Connecting to {name}…',
+  cloud: 'Find my servers with a highsea account',
+  cloudDetail:
+    'Optional. If your server’s owner turned on highsea cloud, signing in with your highsea account lists every server shared with you, and connects through the relay when there’s no other way in. Your media never passes through it unless that’s the only route.',
 })
 
 export const desktop = defineMessages({
@@ -354,6 +357,11 @@ export const desktop = defineMessages({
   'oidc.keychain': 'highsea couldn’t keep your sign-in in this computer’s keychain. Try again.',
   'oidc.other': 'Signing in with {provider} didn’t work. Try again.',
   openSetup: 'Set it up in your browser',
+  forgetThis: 'Forget this server',
+  forget: 'Forget {name}',
+  forgetConfirm: 'Forget {name}?',
+  forgetDetail: 'This computer signs out of it and stops listing it. You can add it again later.',
+  forgetCancel: 'Cancel',
 })
 
 export const updates = defineMessages({

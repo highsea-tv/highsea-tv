@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url'
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import { defineConfig, type Plugin } from 'vite'
+import { clientExport } from './client-export.ts'
 
 /**
  * The static build opens from disk (file://), where browsers refuse module scripts and
@@ -26,7 +27,8 @@ export default defineConfig({
   base: './',
   // the brand's web icons (favicon, touch icon) are served and copied as they are
   publicDir: fileURLToPath(new URL('../../packages/brand/assets/icons/web', import.meta.url)),
-  plugins: [react(), tailwindcss(), openFromDisk()],
+  // apps/client's mock web export at /web, which the chrome's client frames hold
+  plugins: [react(), tailwindcss(), openFromDisk(), clientExport()],
   build: {
     outDir: 'dist',
     // the Geist woff2 files (about 70 kB each) become data URIs, so fonts load from disk too

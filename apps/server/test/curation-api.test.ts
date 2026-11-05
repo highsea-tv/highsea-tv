@@ -6,7 +6,11 @@
 import { afterEach, describe, expect, test } from 'bun:test'
 import { mkdirSync } from 'node:fs'
 import { join } from 'node:path'
-import type { AnnouncementInput, FeaturedSectionInput } from '@highsea-tv/api-contract'
+import {
+  type AnnouncementInput,
+  type FeaturedSectionInput,
+  isFilmRow,
+} from '@highsea-tv/api-contract'
 import type { Fetch } from '@highsea-tv/core'
 import { createReplayFetch } from '@highsea-tv/metadata/replay'
 import { createApi } from '../src/api/app.ts'
@@ -181,7 +185,7 @@ describe('featured sections and the home screen', () => {
         source: { kind: 'rule', rule: 'genre', value: 'Western' },
       }),
     })
-    const home = await memberApi.home.sections({ query: { client: 'web' } })
+    const home = (await memberApi.home.sections({ query: { client: 'web' } })).filter(isFilmRow)
     const featured = home.find((s) => s.id === picks.id)
     expect(featured?.items.map((m) => m.id)).toEqual([SINTEL])
     expect(home.some((s) => s.id === empty.id)).toBe(false)

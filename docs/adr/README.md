@@ -6,13 +6,13 @@ Short records of decisions that shape the system. Each one is immutable once acc
 | --- | --- | --- |
 | [0001](0001-design-first-sequencing.md) | Design-first sequencing | Accepted |
 | [0002](0002-bun-monorepo-multiple-apps.md) | Bun monorepo with multiple apps | Accepted |
-| [0003](0003-server-runtime-custom-entry.md) | Server runtime: custom Node entry hosting Next.js + Hono | Accepted; amended 2026-10-27 and 2026-10-28 |
+| [0003](0003-server-runtime-custom-entry.md) | Server runtime: custom Node entry hosting Next.js + Hono | Accepted; amended 2026-10-27, 2026-10-28, 2026-11-03 and 2026-11-04 |
 | [0004](0004-sqlite-drizzle.md) | SQLite + Drizzle for server data | Accepted |
 | [0005](0005-in-process-torrent-engine.md) | In-process TypeScript torrent engine | Accepted; amended by 0037 |
 | [0006](0006-public-api-openapi-sdk.md) | Public API: Hono + OpenAPI, typed SDK | Accepted |
 | [0007](0007-signed-independent-catalogs.md) | Signed catalogs released independently of apps | Accepted |
-| [0008](0008-clients-react-everywhere.md) | Clients: React everywhere | Accepted |
-| [0009](0009-license-agpl.md) | License: AGPL-3.0-only | Accepted; amended 2026-10-29 |
+| [0008](0008-clients-react-everywhere.md) | Clients: React everywhere | Accepted; amended 2026-11-01 and 2026-11-03, and by 0061 |
+| [0009](0009-license-agpl.md) | License: AGPL-3.0-only | Accepted; amended 2026-10-29 (twice) |
 | [0010](0010-optional-highsea-cloud.md) | Optional highsea cloud | Accepted |
 | [0011](0011-no-compatibility-apis.md) | No compatibility APIs | Accepted |
 | [0012](0012-unified-media-item-model.md) | Unified media item model | Accepted |
@@ -23,14 +23,14 @@ Short records of decisions that shape the system. Each one is immutable once acc
 | [0017](0017-web-home-full-bleed-hero.md) | The web home uses a full-bleed hero | Accepted |
 | [0018](0018-admin-data-through-the-api.md) | The admin UI reads and writes through the public API | Accepted |
 | [0019](0019-database-driver-seam.md) | One schema, two SQLite drivers | Accepted |
-| [0020](0020-discovery-port.md) | LAN discovery on UDP 7368, plus mDNS | Accepted; amended 2026-10-28 and 2026-10-29 |
+| [0020](0020-discovery-port.md) | LAN discovery on UDP 7368, plus mDNS | Accepted; amended 2026-10-28 and 2026-10-29 (three times) |
 | [0021](0021-i18n-message-catalogs.md) | Strings live in typed message catalogs | Accepted |
 | [0022](0022-job-queue.md) | A SQLite job queue, at least once | Accepted |
 | [0023](0023-accounts-sessions-devices.md) | Every sign-in is a device | Accepted; amended 2026-10-20 |
-| [0024](0024-two-step-passkeys-and-tvs.md) | Two-step verification and passkeys never reach the TV | Accepted; amended 2026-10-20 and 2026-10-29 |
+| [0024](0024-two-step-passkeys-and-tvs.md) | Two-step verification and passkeys never reach the TV | Accepted; amended 2026-10-20 and 2026-10-29 (three times) |
 | [0025](0025-single-sign-on-and-proxy-auth.md) | Single sign-on by OIDC, and forward-auth proxy headers | Accepted |
 | [0026](0026-network-tls.md) | Plain HTTP always, built-in TLS beside it | Accepted |
-| [0027](0027-preferences-in-layers.md) | Preferences in layers, on the server | Accepted |
+| [0027](0027-preferences-in-layers.md) | Preferences in layers, on the server | Accepted; amended 2026-11-01 |
 | [0028](0028-files-the-owner-uploads.md) | Files the owner uploads: in the database, checked by their bytes | Accepted |
 | [0029](0029-external-services.md) | External services: one injected fetch, recorded responses | Accepted |
 | [0030](0030-metadata-cache.md) | The metadata cache: TMDB’s responses beside the library, under six months | Accepted |
@@ -53,14 +53,17 @@ Short records of decisions that shape the system. Each one is immutable once acc
 | [0047](0047-operations.md) | The owner's tools: backups and restore, the log, crash reports, updates and /metrics | Accepted |
 | [0048](0048-curation.md) | Curation: announcements and featured sections, resolved per person and app | Accepted |
 | [0049](0049-smart-collections.md) | Smart collections: rules compiled to SQL, evaluated when read | Accepted; amended 2026-10-27 |
-| [0050](0050-release-and-versioning.md) | Release and versioning: one SemVer version, two channels, a prepared commit and a gated workflow | Accepted; amended 2026-10-23, 2026-10-28 and 2026-10-29 (twice) |
+| [0050](0050-release-and-versioning.md) | Release and versioning: one SemVer version, two channels, a prepared commit and a gated workflow | Accepted; amended 2026-10-23, 2026-10-28, 2026-10-29 (four times) and 2026-11-04 |
 | [0051](0051-playback-engine.md) | The playback engine: direct play, then direct stream, then HLS transcodes made on demand | Accepted; amended 2026-10-27 and 2026-10-28 (twice) |
-| [0052](0052-device-profiles.md) | Device profiles: what each client plays, built in and reported, in one shape | Accepted; amended 2026-10-27, 2026-10-28 (twice) and 2026-10-29 |
-| [0053](0053-clients-build-and-distribution.md) | The clients' build and distribution: Vite at /web, Tauri for desktop, Expo for mobile and TV | Proposed; the web part Accepted 2026-10-28, desktop 2026-10-29; amended 2026-10-29 |
-| [0054](0054-watch-state.md) | Watch state: positions, watched and the player's picks, per person and title | Accepted |
-| [0055](0055-clients-shared-logic.md) | The clients' shared logic: `@highsea-tv/client`, everything but the drawing | Accepted |
+| [0052](0052-device-profiles.md) | Device profiles: what each client plays, built in and reported, in one shape | Accepted; amended 2026-10-27, 2026-10-28 (twice) and 2026-10-29 (three times) |
+| [0053](0053-clients-build-and-distribution.md) | The clients' build and distribution: Vite at /web, Tauri for desktop, Expo for mobile and TV | Proposed; the web part Accepted 2026-10-28, desktop 2026-10-29; amended 2026-10-29 (three times), 2026-11-03 and 2026-11-04, and by 0061 |
+| [0054](0054-watch-state.md) | Watch state: positions, watched and the player's picks, per person and title | Accepted; amended 2026-11-01 |
+| [0055](0055-clients-shared-logic.md) | The clients' shared logic: `@highsea-tv/client`, everything but the drawing | Accepted; amended 2026-10-29, 2026-11-01, 2026-11-02 (twice), 2026-11-03 (twice) and 2026-11-04 (twice), and by 0061 |
 | [0056](0056-hardware-acceleration.md) | Hardware acceleration: four paths, each used only once a check on this host passes | Accepted; amended 2026-10-28 |
 | [0057](0057-installing-without-configuration.md) | Installing without configuration: graphics handed over by default, the user, time zone, folders and address detected, and highsea's own TMDB key | Accepted; amended 2026-10-29 |
-| [0058](0058-desktop-app.md) | The desktop app: Tauri around the web build, with the server reached through Rust | Accepted; amended 2026-10-29 |
+| [0058](0058-desktop-app.md) | The desktop app: Tauri around the web build, with the server reached through Rust | Accepted; amended 2026-10-29 and 2026-11-03, and by 0061 |
+| [0059](0059-native-apps.md) | The native apps: Expo on React Native, two apps sharing ui-native and the client | Proposed; amended 2026-10-29, 2026-11-01, 2026-11-02, 2026-11-03 and 2026-11-04, and by 0061 |
+| [0060](0060-one-design-system-one-library.md) | One design system and one component library, adaptive to the app it's in | Proposed; amended 2026-11-02 (twice), 2026-11-03 (twice) and 2026-11-04 (twice), and by 0061 |
+| [0061](0061-one-client-platform.md) | One client platform: every client and its prototype in one Expo project, drawn once in React Native | Proposed; amended 2026-11-03 and 2026-11-04 (four times) |
 
 Template: copy [`template.md`](template.md).

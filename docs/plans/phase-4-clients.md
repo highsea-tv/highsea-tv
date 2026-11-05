@@ -311,6 +311,14 @@ Big checkpoints can split into gated parts (a and b), as checkpoints 6 to 9 did.
     - **Recommended:** publish 0.1.0 at the Phase 3 sign-off, as decided, so owners can run the server while the apps are built. Releases 0.2, 0.3 and so on carry the server's Phase 4 work as it's signed off.
     - Or: hold the first public release until 1.0.0.
 
+## The owner's changes
+
+On 2026-10-29, after 0.3.0's release, the owner made 3 changes to the [order of work](#order-of-work-and-checkpoints):
+
+1. **4.4b is held for later.** The desktop app's downloads (and the server's copies for a device) wait; where they go is [phase-4-checkpoint-5.md](phase-4-checkpoint-5.md)'s question 11.
+2. **4.5 and 4.6 are one checkpoint:** the mobile and TV apps together in [phase-4-checkpoint-5.md](phase-4-checkpoint-5.md), sharing `ui-native`, with the phone first. This changes answer 5's order (TV before mobile).
+3. **Apple's platforms first, Android after** from the same code, as the checkpoint's last part.
+
 ## The owner's answers
 
 On 2026-10-23 the owner answered every question, taking each recommendation except where marked:

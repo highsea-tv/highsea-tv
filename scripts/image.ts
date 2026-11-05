@@ -55,6 +55,7 @@ import {
   mkdirSync,
   readdirSync,
   readFileSync,
+  realpathSync,
   rmSync,
 } from 'node:fs'
 import { basename, join, relative } from 'node:path'
@@ -65,7 +66,9 @@ type Manifest = {
   dependencies?: Record<string, string>
   optionalDependencies?: Record<string, string>
   peerDependencies?: Record<string, string>
+  peerDependenciesMeta?: Record<string, { optional?: boolean }>
   libc?: string[]
+  patchedDependencies?: Record<string, string>
 }
 
 const SERVER = '@highsea-tv/server'
@@ -181,6 +184,63 @@ export function pruneOtherLibc(root: string, libc = LIBC): string[] {
   return removed.sort()
 }
 
+/**
+ * Removes the optional peers no production workspace depends on, and every store entry nothing
+ * left links to. Bun's isolated install links a workspace's optional peer whenever the lockfile has
+ * it resolved somewhere in the repository, as pnpm does (https://bun.sh/docs/install/isolated), so
+ * `--filter` alone brings @highsea-tv/ui's React Native peers, resolved for apps/client, into the
+ * server's tree; `--omit peer` would drop required peers too (https://bun.sh/docs/cli/install).
+ * Returns the removed packages' names.
+ */
+export function pruneOptionalPeers(root: string, needed: string[]): string[] {
+  const store = join(root, 'node_modules', '.bun')
+  const depended = new Set(
+    needed.flatMap((d) => Object.keys(read(join(root, d, 'package.json')).dependencies ?? {})),
+  )
+  for (const dir of needed) {
+    const m = read(join(root, dir, 'package.json'))
+    for (const [name, meta] of Object.entries(m.peerDependenciesMeta ?? {})) {
+      const link = join(root, dir, 'node_modules', name)
+      if (
+        meta.optional &&
+        !depended.has(name) &&
+        existsSync(link) &&
+        lstatSync(link).isSymbolicLink()
+      )
+        rmSync(link)
+    }
+  }
+  // what's still reachable: the store entries the workspaces link to, and theirs in turn
+  const links = (modules: string): string[] => {
+    if (!existsSync(modules)) return []
+    return readdirSync(modules).flatMap((name) => {
+      const path = join(modules, name)
+      if (name.startsWith('@') && !lstatSync(path).isSymbolicLink()) return links(path)
+      return lstatSync(path).isSymbolicLink() && existsSync(path) ? [realpathSync(path)] : []
+    })
+  }
+  const storeReal = realpathSync(store)
+  const entryOf = (path: string) =>
+    path.startsWith(storeReal) ? relative(storeReal, path).split('/')[0] : null
+  const reached = new Set<string>()
+  const queue = [root, ...needed.map((d) => join(root, d))].flatMap((d) =>
+    links(join(d, 'node_modules')),
+  )
+  while (queue.length) {
+    const entry = entryOf(queue.pop() as string)
+    if (!entry || reached.has(entry)) continue
+    reached.add(entry)
+    queue.push(...links(join(store, entry, 'node_modules')))
+  }
+  const removed: string[] = []
+  for (const entry of readdirSync(store)) {
+    if (reached.has(entry) || !existsSync(join(store, entry, 'node_modules'))) continue
+    removed.push(entry)
+    rmSync(join(store, entry), { recursive: true })
+  }
+  return removed.sort()
+}
+
 const SKIP_IN_PACKAGES = new Set(['node_modules', 'test', 'scripts', 'drizzle.config.ts'])
 const skipped = (name: string) =>
   SKIP_IN_PACKAGES.has(name) ||
@@ -201,6 +261,11 @@ function production(from: string, to: string) {
   for (const file of ['package.json', 'bun.lock']) cpSync(join(from, file), join(to, file))
   for (const dir of all.values())
     cpSync(join(from, dir, 'package.json'), join(to, dir, 'package.json'), { recursive: true })
+  // Bun reads every patch package.json's `patchedDependencies` names, even for packages production
+  // leaves out, and fails without them (https://bun.sh/docs/install/patch)
+  const patches = read(join(from, 'package.json')).patchedDependencies ?? {}
+  for (const file of Object.values(patches))
+    cpSync(join(from, file), join(to, file), { recursive: true })
 
   const install = spawnSync(
     'bun',
@@ -210,6 +275,9 @@ function production(from: string, to: string) {
   if (install.status !== 0) throw new Error('The production install failed.')
 
   const needed = closure(from, SERVER, all)
+  const peers = pruneOptionalPeers(to, needed)
+  if (peers.length)
+    console.log(`Optional peers production doesn't use, left out: ${peers.length} store entries`)
   const problems: string[] = []
   for (const name of unrequested(to, needed))
     problems.push(`${name} is installed, but nothing in production asks for it`)
@@ -246,12 +314,12 @@ function production(from: string, to: string) {
       )
     },
   })
-  // the web app's static files (`/web`, ADR 0003's 4.2a section): served, never run, so none of
-  // its sources or dependencies come too; server.ts finds them at ../web/dist
-  const web = join(from, 'apps', 'web', 'dist')
+  // the client's web export (`/web`, ADR 0003's 4.2a section, ADR 0061): served, never run, so
+  // none of its sources or dependencies come too; server.ts finds it at ../client/dist
+  const web = join(from, 'apps', 'client', 'dist')
   if (!existsSync(join(web, 'index.html')))
-    throw new Error('The web app isn’t built: run `bun run build` in apps/web first.')
-  cpSync(web, join(to, 'apps', 'web', 'dist'), { recursive: true })
+    throw new Error('The web app isn’t exported: run `bun run export:web` in apps/client first.')
+  cpSync(web, join(to, 'apps', 'client', 'dist'), { recursive: true })
   console.log(`The production tree: ${needed.length} workspaces and the web app, in ${to}`)
 }
 

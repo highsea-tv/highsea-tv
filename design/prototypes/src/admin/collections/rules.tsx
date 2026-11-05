@@ -2,16 +2,7 @@
 // The rule builder (docs/product/collections.md#rules): Match all or any of a list of conditions,
 // each a field, a comparison and a value, and groups one level deep. Fields come from the server
 // with their comparisons and choices; watch state shows, disabled, until playback brings it.
-import {
-  Button,
-  Input,
-  Menu,
-  MenuCheckboxItem,
-  MenuContent,
-  MenuTrigger,
-  Select,
-} from '@highsea-tv/ui-web'
-import { useState } from 'react'
+
 import type {
   RuleCondition,
   RuleField,
@@ -19,7 +10,18 @@ import type {
   RuleGroup,
   RuleOp,
   RuleValue,
-} from '../../mock/types.ts'
+} from '@highsea-tv/mock/types'
+import {
+  Button,
+  Chip,
+  Input,
+  Menu,
+  MenuCheckboxItem,
+  MenuContent,
+  MenuTrigger,
+  Select,
+} from '@highsea-tv/ui'
+import { useState } from 'react'
 
 const opLabels: Record<RuleOp, string> = {
   contains: 'contains',
@@ -148,7 +150,6 @@ export function RuleBuilder({
                     aria={`Group ${at + 1}: match all or any`}
                   />
                   <Button
-                    size="sm"
                     variant="ghost"
                     iconOnly
                     icon="delete"
@@ -324,7 +325,6 @@ function ConditionRow({
           <span />
         )}
         <Button
-          size="sm"
           variant="ghost"
           iconOnly
           icon="close"
@@ -524,20 +524,14 @@ function PersonSearch({
       {value.length > 0 && (
         <ul aria-label={`${label}: chosen`} className="flex flex-wrap gap-1.5">
           {value.map((id) => (
-            <li
-              key={id}
-              className="flex items-center gap-1 rounded-full border border-line bg-s2 ps-3 text-text text-ui"
-            >
-              {nameOf(id)}
-              <Button
-                size="sm"
-                variant="ghost"
-                iconOnly
-                icon="close"
+            <li key={id}>
+              <Chip
+                removable
                 aria-label={`Remove ${nameOf(id)}`}
                 onClick={() => onChange(value.filter((x) => x !== id))}
-                className="rounded-full"
-              />
+              >
+                {nameOf(id)}
+              </Chip>
             </li>
           ))}
         </ul>

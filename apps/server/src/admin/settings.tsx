@@ -3,7 +3,7 @@
 // Settings (A12; docs/product/settings.md), ported from the prototype: an index of every area in
 // five groups, and each area's page with the areas beside it from expanded widths.
 import { useT } from '@highsea-tv/i18n/react'
-import { Button, cn, Icon } from '@highsea-tv/ui-web'
+import { Button, cn, Icon } from '@highsea-tv/ui'
 import type { ReactNode } from 'react'
 import { type Area, type AreaId, areaGroupsFor } from './settings-areas.ts'
 import { settings as messages } from './settings-messages.ts'

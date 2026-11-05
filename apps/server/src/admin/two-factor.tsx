@@ -3,7 +3,7 @@
 // Pieces of two-step verification that sign-in and "Your account" share: the code field, the
 // authenticator's QR code with its key, and the recovery codes shown once.
 import { useT } from '@highsea-tv/i18n/react'
-import { Button, Field, Input, QrCode, toast } from '@highsea-tv/ui-web'
+import { Button, Field, Input, QrCode, toast } from '@highsea-tv/ui'
 import type { Ref } from 'react'
 import { account } from './account-messages.ts'
 

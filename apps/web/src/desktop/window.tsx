@@ -6,7 +6,7 @@
 // bar with the platform's minimise, maximise and close, through Tauri's window API
 // (https://v2.tauri.app/reference/javascript/api/namespacewindow/). In a browser there's none of it.
 import { useT } from '@highsea-tv/i18n/react'
-import { cn, Mark } from '@highsea-tv/ui-web'
+import { cn, Mark } from '@highsea-tv/ui'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import { inApp } from '../host.ts'
 import { desktopWindow as messages } from '../messages.ts'

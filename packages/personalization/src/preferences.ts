@@ -11,15 +11,20 @@ import { and, eq } from 'drizzle-orm'
 import type { AppearanceService } from './appearance.ts'
 import type { Ctx } from './context.ts'
 import {
-  appKind,
+  type EditableLayer,
   type Layer,
-  PREFERENCE_KEYS,
   type PreferenceKey,
   type PreferenceLayer,
   type PreferencePatch,
   type Preferences,
+  patchLayer,
   preferenceLayer,
+  resolveLayers,
+  scopeFor,
+  serverPreferences,
 } from './keys.ts'
+
+export type { EditableLayer }
 
 export type PreferencesView = {
   /** What this device uses. */
@@ -32,13 +37,8 @@ export type PreferencesView = {
   deviceId: string | null
 }
 
-export type EditableLayer = 'user' | 'client' | 'device'
-
 export function createPreferences(ctx: Ctx, appearance: AppearanceService) {
   const { db, clock, events } = ctx
-
-  const scopeFor = (layer: EditableLayer, target?: string) =>
-    layer === 'user' ? 'user' : `${layer}:${target}`
 
   const read = (userId: string, scope: string): PreferenceLayer => {
     const row = db
@@ -69,27 +69,11 @@ export function createPreferences(ctx: Ctx, appearance: AppearanceService) {
       client: client ? read(userId, scopeFor('client', client)) : {},
       user: read(userId, 'user'),
     }
-    const s = appearance.settings()
-    const server: Preferences = {
-      theme: s.defaultTheme,
-      sound: s.sound[appKind(client)],
-      volume: s.sound.volume,
-      'admin.addMovie.defaults': null,
-    }
-    const values = { ...server }
-    const from = Object.fromEntries(PREFERENCE_KEYS.map((k) => [k, 'server'])) as Record<
-      PreferenceKey,
-      Layer
-    >
-    for (const key of PREFERENCE_KEYS)
-      for (const layer of ['device', 'client', 'user'] as const) {
-        const value = layers[layer][key]
-        if (value !== undefined && usable(key, value)) {
-          ;(values as Record<string, unknown>)[key] = value
-          from[key] = layer
-          break
-        }
-      }
+    const { values, from } = resolveLayers(
+      serverPreferences(appearance.settings(), client),
+      layers,
+      usable,
+    )
     return { values, from, layers, client, deviceId: d?.id ?? null }
   }
 
@@ -116,12 +100,7 @@ export function createPreferences(ctx: Ctx, appearance: AppearanceService) {
         throw new AppError('invalid', 'There’s no theme with that id.', { reason: 'theme' })
       const target = layer === 'device' ? d?.id : client
       const scope = scopeFor(layer, target)
-      const next: Record<string, unknown> = { ...read(userId, scope) }
-      for (const [k, v] of Object.entries(patch)) {
-        if (v === undefined) continue
-        if (v === null) delete next[k]
-        else next[k] = v
-      }
+      const next = patchLayer(read(userId, scope), patch)
       const where = and(eq(schema.preferences.userId, userId), eq(schema.preferences.scope, scope))
       if (Object.keys(next).length === 0) db.delete(schema.preferences).where(where).run()
       else {

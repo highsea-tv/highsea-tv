@@ -9,7 +9,7 @@ import { COLLECTION_TOPICS, type CollectionSummary } from '@highsea-tv/api-contr
 import { useT } from '@highsea-tv/i18n/react'
 import { ApiError } from '@highsea-tv/sdk'
 import { useAction, useQuery } from '@highsea-tv/sdk/react'
-import { Badge, Button, ConfirmDialog, EmptyState, toast } from '@highsea-tv/ui-web'
+import { Badge, Button, ConfirmDialog, EmptyState, toast } from '@highsea-tv/ui'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { CollectionArt } from './collection-art.tsx'
@@ -85,7 +85,7 @@ function CollectionRow({ c }: { c: CollectionSummary }) {
   return (
     <li className="grid grid-cols-[3.5rem_minmax(0,1fr)] gap-x-4 gap-y-3 rounded-lg border border-line bg-s1 p-4 medium:grid-cols-[3.5rem_minmax(0,1fr)_auto] medium:items-center">
       <CollectionArt poster={c.artwork} mosaic={c.mosaic} className="w-14 rounded-[6px]" />
-      <div className="grid min-w-0 gap-1">
+      <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-1 [overflow-wrap:anywhere]">
         <p className="flex flex-wrap items-center gap-2">
           <a
             href={collectionPath(c.id)}

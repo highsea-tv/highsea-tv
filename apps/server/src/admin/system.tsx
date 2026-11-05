@@ -50,14 +50,14 @@ import {
   TabsList,
   TabsTrigger,
   toast,
-} from '@highsea-tv/ui-web'
-import { useRouter } from 'next/navigation'
+} from '@highsea-tv/ui'
 import { useEffect, useState } from 'react'
 import { TmdbNotice } from './attribution.tsx'
 import { Loadable } from './loadable.tsx'
 import { Group } from './settings.tsx'
 import { AdminPage, useShell } from './shell.tsx'
 import { system as messages } from './system-messages.ts'
+import { useTabAddress } from './tabs.ts'
 import { useNow, useRelative } from './time.ts'
 
 type T = ReturnType<typeof useT<typeof messages>>
@@ -72,14 +72,13 @@ export const SYSTEM_TABS = [
   'updates',
 ] as const
 export type SystemTab = (typeof SYSTEM_TABS)[number]
-const tabPath = (tab: SystemTab) => (tab === 'status' ? '/system' : `/system/${tab}`)
 
 /** Dates in the admin's language; English reads day-month, as the prototype does. */
 const dateLocale = (locale: string) => (locale === 'en' ? 'en-GB' : locale)
 
 export function System({ tab: asked = 'status' }: { tab?: SystemTab }) {
   const t = useT(messages)
-  const router = useRouter()
+  const setTab = useTabAddress<SystemTab>('/system', 'status')
   const owner = useShell().role === 'owner'
   const shown = SYSTEM_TABS.filter((id) => owner || id !== 'backups')
   const tab = shown.includes(asked) ? asked : 'status'
@@ -87,7 +86,7 @@ export function System({ tab: asked = 'status' }: { tab?: SystemTab }) {
   const problems = (health.data ?? []).filter((h) => h.level === 'warning' || h.level === 'error')
   return (
     <AdminPage title={t('title')} description={t('description')}>
-      <Tabs value={tab} onValueChange={(v) => router.push(tabPath(v as SystemTab))} variant="line">
+      <Tabs value={tab} onValueChange={(v) => setTab(v as SystemTab)} variant="line">
         <TabsList aria-label={t('sections')}>
           {shown.map((id) => (
             <TabsTrigger

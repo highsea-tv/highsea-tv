@@ -6,7 +6,7 @@ import {
   WIDGET_KINDS as CONTRACT_KINDS,
   WIDGET_SOURCES as CONTRACT_SOURCES,
 } from '@highsea-tv/api-contract'
-import { WIDGET_KINDS, WIDGET_SOURCES } from '@highsea-tv/personalization'
+import { PLAYBACK_DEFAULTS, WIDGET_KINDS, WIDGET_SOURCES } from '@highsea-tv/personalization'
 import { defaultSoundPack } from '@highsea-tv/tokens'
 import { createApi } from '../src/api/app.ts'
 import {
@@ -18,6 +18,11 @@ import {
   ORIGIN,
   withOwner,
 } from './helpers.ts'
+
+/** The playback keys, each from the server's defaults. */
+const playbackFromServer = Object.fromEntries(
+  Object.keys(PLAYBACK_DEFAULTS).map((k) => [k, 'server']),
+) as Record<keyof typeof PLAYBACK_DEFAULTS, 'server'>
 
 afterEach(cleanup)
 
@@ -127,12 +132,14 @@ describe('preferences', () => {
       sound: false,
       volume: 0.8,
       'admin.addMovie.defaults': null,
+      ...PLAYBACK_DEFAULTS,
     })
     expect(after.from).toEqual({
       theme: 'user',
       sound: 'device',
       volume: 'server',
       'admin.addMovie.defaults': 'server',
+      ...playbackFromServer,
     })
 
     expect(

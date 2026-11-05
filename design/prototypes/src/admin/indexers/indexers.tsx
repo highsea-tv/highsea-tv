@@ -5,6 +5,7 @@
 // tested before they're saved. The catalog's version and changelog sit in the page header.
 
 import { percent, relative } from '@highsea-tv/core/format'
+import type { CatalogDefinition, Indexer, IndexerPrivacy } from '@highsea-tv/mock/types'
 import {
   Badge,
   Button,
@@ -33,13 +34,13 @@ import {
   TabsTrigger,
   TitleCell,
   toast,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import { useState } from 'react'
 import { useAction, useNow, useQuery } from '../../mock/hooks.tsx'
-import type { CatalogDefinition, Indexer, IndexerPrivacy } from '../../mock/types.ts'
 import { Loadable } from '../loadable.tsx'
 import { AdminPage } from '../shell.tsx'
 import { indexerStatus } from '../status.ts'
+import { useTabAddress } from '../tabs.ts'
 
 const privacyLabel: Record<IndexerPrivacy, string> = {
   public: 'Public',
@@ -62,10 +63,13 @@ const changelog = [
   { version: '2026.09.20', notes: ['Keel: follows its new domain.'] },
 ]
 
-type Tab = 'installed' | 'catalog'
+/** The tabs, each at its own address (/indexers/{tab}, the first at /indexers), so Back and links work. */
+export const indexerTabs = ['installed', 'catalog'] as const
+export type IndexersTab = (typeof indexerTabs)[number]
+type Tab = IndexersTab
 
-export function Indexers() {
-  const [tab, setTab] = useState<Tab>('installed')
+export function Indexers({ tab = 'installed' }: { tab?: Tab }) {
+  const setTab = useTabAddress<Tab>('/indexers', 'installed')
   const installed = useQuery('indexers', (c) => c.indexers.list(), ['indexers.updated'])
   const server = useQuery('server', (c) => c.system.server(), ['server.updated'])
   const [notes, setNotes] = useState(false)
@@ -305,7 +309,7 @@ function Catalog({ installed }: { installed: Indexer[] }) {
             (!q || d.name.toLowerCase().includes(q) || d.description.toLowerCase().includes(q)),
         )
         return (
-          <div className="grid gap-4">
+          <div className="grid grid-cols-[minmax(0,1fr)] gap-4">
             <div className="flex flex-wrap items-center gap-2">
               <Input
                 type="search"
@@ -314,11 +318,10 @@ function Catalog({ installed }: { installed: Indexer[] }) {
                 onChange={(e) => setText(e.target.value)}
                 placeholder="Search the catalog"
                 aria-label="Search the catalog"
-                className="w-64"
+                className="w-full medium:w-64"
               />
               <SegmentedControl
                 aria-label="Privacy"
-                size="sm"
                 value={privacy}
                 onValueChange={(v) => setPrivacy(v as typeof privacy)}
                 options={[

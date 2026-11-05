@@ -4,11 +4,6 @@ import { join } from 'node:path'
 import type { Page } from 'playwright-core'
 import type { Area } from '../shot.ts'
 
-// a tab chosen, without the focus ring the click leaves on it
-const tab = (name: string | RegExp) => async (p: Page) => {
-  await p.getByRole('tab', { name }).click()
-  await p.evaluate(() => (document.activeElement as HTMLElement | null)?.blur())
-}
 const main = (p: Page) => p.locator('main')
 
 export default {
@@ -25,8 +20,8 @@ export default {
           .first()
           .click(),
     },
-    { name: 'history', path: '/activity', act: tab('History'), crop: main },
-    { name: 'blocklist', path: '/activity', act: tab(/Blocklist/), crop: main },
+    { name: 'history', path: '/activity/history', crop: main },
+    { name: 'blocklist', path: '/activity/blocklist', crop: main },
     {
       // the seed's Nosferatu release, already imported, so the row is matched and named
       name: 'manual-import',

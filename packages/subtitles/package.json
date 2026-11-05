@@ -8,6 +8,7 @@
     "./fake": "./test/fake/index.ts",
     "./movies": "./src/movies/index.ts",
     "./providers": "./src/providers/index.ts",
+    "./providers/info": "./src/providers/info.ts",
     "./shared": "./src/shared/index.ts",
     "./sync": "./src/sync/index.ts",
     "./testing": "./test/testing/index.ts"

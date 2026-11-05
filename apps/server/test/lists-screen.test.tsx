@@ -26,7 +26,7 @@ const { act, cleanup, render, within } = await import('@testing-library/react')
 const { default: userEvent } = await import('@testing-library/user-event')
 const { createClient } = await import('@highsea-tv/sdk')
 const { ClientProvider } = await import('@highsea-tv/sdk/react')
-const { TooltipProvider } = await import('@highsea-tv/ui-web')
+const { TooltipProvider } = await import('@highsea-tv/ui')
 const { ImportLists } = await import('../src/admin/lists.tsx')
 
 const json = (body: unknown, status = 200) =>
@@ -183,7 +183,7 @@ describe('Settings › Import lists', () => {
     await user.type(dialog.getByLabelText('Address'), 'https://lists.example/blender.json')
     await user.click(dialog.getByRole('button', { name: 'Test' }))
     await settle()
-    expect(dialog.getByText('The list answered (3 titles)')).toBeTruthy()
+    expect(dialog.getByText('The list answered')).toBeTruthy()
     // a name is needed first
     await user.click(dialog.getByRole('button', { name: 'Save' }))
     expect(requested('POST', '/api/v1/import-lists')).toHaveLength(0)

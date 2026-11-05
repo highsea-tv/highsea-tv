@@ -8,14 +8,17 @@
 // (`next build` and the web app's `vite build` first); SWEEP_DEV=1 runs Next's dev server instead,
 // without Next's build.
 // Usage: bun scripts/sweeps/server.ts [pages|keyboard]
+
 import { execFileSync } from 'node:child_process'
 import { join } from 'node:path'
+import { SETTINGS_SECTIONS } from '@highsea-tv/client/prefs'
 import type { BrowserContext, BrowserContextOptions, Page } from 'playwright-core'
 import {
   axe,
   escapes,
   heightFor,
   launch,
+  mixedRows,
   overflow,
   pool,
   ROOT,
@@ -43,8 +46,12 @@ const SHOTS = process.env.SWEEP_SHOTS
 const production = process.env.SWEEP_DEV !== '1'
 if (production)
   execFileSync('bun', ['run', 'build'], { cwd: join(ROOT, 'apps/server'), stdio: 'inherit' })
-// the server serves the web app from its build in either mode
-execFileSync('bun', ['run', 'build'], { cwd: join(ROOT, 'apps/web'), stdio: 'inherit' })
+// the server serves the client's web export in either mode (one-client-platform-c.md › C1)
+execFileSync('bun', ['run', 'export:web'], {
+  cwd: join(ROOT, 'apps/client'),
+  stdio: 'inherit',
+  env: { ...process.env, EXPO_NO_TELEMETRY: '1', EXPO_PUBLIC_HIGHSEA_MOCK: '' },
+})
 const server = await boot(PORT, { production })
 const { base: BASE, dataDir, stop } = server
 const path = (link: string) => new URL(link).pathname
@@ -133,6 +140,9 @@ async function sweep(visits: Visit[], context: () => Promise<BrowserContext>) {
             })
           const o = await overflow(page)
           const found = await axe(page)
+          // controls in one row share one size (controls.md); the default theme is enough to measure
+          if (q === VARIANTS[0])
+            for (const row of await mixedRows(page)) found.push(`mixed row: ${row}`)
           if (o > 0 || found.length || errors.length)
             problems.push(
               `${v.name} ${w} ${q}: ${o > 0 ? `overflow=${o} ${(await escapes(page)).join(' | ')} ` : ''}${[...found, ...errors].join(' ; ')}`,
@@ -431,8 +441,8 @@ try {
       },
       // A7, A17 and A8 (checkpoint 6a)
       { name: 'activity', path: '/activity' },
-      { name: 'activity:history', path: '/activity', act: tab('History') },
-      { name: 'activity:blocklist', path: '/activity', act: tab(/Blocklist/) },
+      { name: 'activity:history', path: '/activity/history' },
+      { name: 'activity:blocklist', path: '/activity/blocklist' },
       // Now playing (4.3a): nobody, then a stream and its Stop dialog, then the last 30 days
       { name: 'now-playing:empty', path: '/now-playing' },
       { name: 'now-playing', path: '/now-playing', act: playing },
@@ -444,7 +454,7 @@ try {
           await p.getByRole('button', { name: 'Stop', exact: true }).first().click()
         },
       },
-      { name: 'now-playing:history', path: '/now-playing', act: tab('Last 30 days') },
+      { name: 'now-playing:history', path: '/now-playing/history' },
       { name: 'import', path: '/activity/import' },
       { name: 'downloads', path: '/downloads' },
       {
@@ -488,33 +498,34 @@ try {
         },
       },
       { name: 'system:updates', path: '/system/updates' },
+      { name: 'wanted:nowhere', path: '/wanted/nowhere' },
+      { name: 'subtitles:nowhere', path: '/subtitles/nowhere' },
+      { name: 'settings:subtitles', path: '/settings/subtitles' },
       // A10, with OpenSubtitles.com and Subdl signed in against their fakes
       { name: 'subtitles', path: '/subtitles' },
-      { name: 'subtitles:providers', path: '/subtitles', act: tab('Providers') },
+      { name: 'subtitles:providers', path: '/subtitles/providers' },
       {
         name: 'subtitles:provider-edit',
-        path: '/subtitles',
+        path: '/subtitles/providers',
         act: async (p) => {
-          await tab('Providers')(p)
           await p.getByRole('button', { name: 'Edit Subdl' }).click()
         },
       },
-      { name: 'subtitles:languages', path: '/subtitles', act: tab('Languages') },
+      { name: 'subtitles:languages', path: '/subtitles/languages' },
       {
         name: 'subtitles:profile',
-        path: '/subtitles',
+        path: '/subtitles/languages',
         act: async (p) => {
-          await tab('Languages')(p)
           await p
             .getByRole('button', { name: /^Edit / })
             .first()
             .click()
         },
       },
-      { name: 'subtitles:scoring', path: '/subtitles', act: tab('Scoring and sync') },
+      { name: 'subtitles:scoring', path: '/subtitles/scoring' },
       // A9, with a Local public indexer and a private one against the fake indexer
       { name: 'indexers', path: '/indexers' },
-      { name: 'indexers:catalog', path: '/indexers', act: tab('Catalog') },
+      { name: 'indexers:catalog', path: '/indexers/catalog' },
       {
         name: 'indexers:changes',
         path: '/indexers',
@@ -522,11 +533,8 @@ try {
       },
       {
         name: 'indexers:setup',
-        path: '/indexers',
-        act: async (p) => {
-          await tab('Catalog')(p)
-          await p.getByRole('button', { name: 'Set up Torrent feed' }).click()
-        },
+        path: '/indexers/catalog',
+        act: (p) => p.getByRole('button', { name: 'Set up Torrent feed' }).click(),
       },
       {
         name: 'indexers:edit',
@@ -587,18 +595,17 @@ try {
       },
       // A6 in the library (two versions, then one not released yet), people and collections
       { name: 'movie:library', path: '/movies/45745' },
-      { name: 'movie:files', path: '/movies/45745', act: tab('Files') },
-      { name: 'movie:search', path: '/movies/45745', act: tab('Search') },
-      { name: 'movie:history', path: '/movies/45745', act: tab('History') },
+      { name: 'movie:files', path: '/movies/45745/files' },
+      { name: 'movie:search', path: '/movies/45745/search' },
+      { name: 'movie:history', path: '/movies/45745/history' },
       // Synced, with the release's track and the clip's forced stream
-      { name: 'movie:subtitles', path: '/movies/45745', act: tab('Subtitles') },
+      { name: 'movie:subtitles', path: '/movies/45745/subtitles' },
       // a downloaded track under the minimum confidence: Not synced, with its confidence
-      { name: 'movie:subtitles:unsynced', path: '/movies/653', act: tab('Subtitles') },
+      { name: 'movie:subtitles:unsynced', path: '/movies/653/subtitles' },
       {
         name: 'movie:subtitles:results',
-        path: '/movies/45745',
+        path: '/movies/45745/subtitles',
         act: async (p) => {
-          await tab('Subtitles')(p)
           await p.getByRole('button', { name: 'Search providers' }).click()
           // Use's accessible name says what it downloads
           await p
@@ -610,7 +617,7 @@ try {
       { name: 'movie:upcoming', path: '/movies/1117898' },
       // and from the recorded TMDB fixtures, not in the library
       { name: 'movie:not-added', path: '/movies/19' },
-      { name: 'movie:cast', path: '/movies/19', act: tab('Cast and crew') },
+      { name: 'movie:cast', path: '/movies/19/cast' },
       { name: 'movie:collection', path: '/movies/969681' },
       { name: 'movie:unknown', path: '/movies/999999999' },
       { name: 'person', path: '/people/68' },
@@ -678,7 +685,7 @@ try {
     theo,
   )
 
-  // the web app (4.2a), signed out: its sign-in, and its routes, which all ask to sign in first
+  // the web app (the client's export since part C), signed out: its sign-in, and its routes, which all ask to sign in first
   await sweep(
     [
       { name: 'web:sign-in', path: '/web/' },
@@ -709,7 +716,7 @@ try {
       // no menus left open: an open Radix menu hides the page behind it with aria-hidden, which axe
       // reads as hidden focusable content (as settings:profiles:edit:grouped says)
       { name: 'web:library', path: '/web/library' },
-      { name: 'web:collections', path: '/web/library/collections' },
+      { name: 'web:collections', path: '/web/collections' },
       { name: 'web:collection', path: `/web/collections/${handPicked.id}` },
       { name: 'web:collection:smart', path: `/web/collections/${decade.id}` },
       { name: 'web:collection:missing', path: '/web/collections/nothing-here' },
@@ -719,10 +726,12 @@ try {
       { name: 'web:search', path: '/web/search' },
       { name: 'web:search:results', path: '/web/search', act: search('sintel') },
       { name: 'web:search:nothing', path: '/web/search', act: search('zzzz') },
-      ...['appearance', 'sounds', 'home', 'servers', 'devices', 'about'].map((s) => ({
+      ...SETTINGS_SECTIONS.map((s) => ({
         name: `web:settings:${s}`,
-        path: `/web/settings/${s}`,
+        path: `/web/settings?section=${s}`,
       })),
+      // an address apps/web had, which the client doesn't: its not-found page (answer 3)
+      { name: 'web:moved', path: '/web/library/collections' },
       { name: 'web:profile', path: '/web/profile' },
       { name: 'web:downloads', path: '/web/downloads' },
       { name: 'web:play', path: '/web/play/45745' },

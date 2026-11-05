@@ -2,9 +2,10 @@
 // The live client preview (A11): the clients' real home screens (C2) in a frame, fed the draft over
 // postMessage. The frame runs its own copy of the server, so nothing reaches the real one until the
 // owner saves. It's inert: a picture of the client, not a second app to tab into.
-import { Icon, SegmentedControl, Select, useWidth } from '@highsea-tv/ui-web'
+
+import type { Audience, ClientType, CurationPreview, User } from '@highsea-tv/mock/types'
+import { Icon, SegmentedControl, Select, useWidth } from '@highsea-tv/ui'
 import { useEffect, useRef, useState } from 'react'
-import type { Audience, ClientType, CurationPreview, User } from '../../mock/types.ts'
 import { isMessage, post } from '../../proto/bridge.ts'
 import { useProto } from '../../screen/screen.tsx'
 import { reaches, useUsers } from './shared.tsx'
@@ -117,7 +118,6 @@ export function ClientPreview({
         <h2 className="me-auto font-medium text-text text-ui">Preview</h2>
         <SegmentedControl
           aria-label="Preview on"
-          size="sm"
           value={platform}
           onValueChange={(v) => setPlatform(v as PreviewPlatform)}
           options={(Object.keys(screens) as PreviewPlatform[]).map((p) => ({

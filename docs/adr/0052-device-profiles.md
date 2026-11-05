@@ -65,3 +65,20 @@ The desktop app names its built-in profile itself, since a webview's user agent 
 - **`desktop-linux`** is narrower: WebKitGTK plays what the machine's GStreamer plugins decode, which it doesn't document. The packages depend on the good, bad and libav sets, so it's H.264, VP8 and VP9 profile 0 at 8 bits, AAC, MP3, FLAC, Opus and Vorbis, in MP4 and WebM, through hls.js. The device's report widens it where the machine plays more.
 
 The report (ADR 0053's 4.2b section) is made the same way in the app as in a browser.
+
+## 2026-10-29: the iPhone's and Apple TV's built-in profiles (checkpoint 4.5a)
+
+`@highsea-tv/stream/profiles` gains `ios` ("highsea for iPhone") and `tvos` ("highsea for Apple TV"). Both are AVPlayer, from Apple's HLS authoring specification ([Apple › HLS authoring specification](https://developer.apple.com/documentation/http-live-streaming/hls-authoring-specification-for-apple-devices)):
+
+- containers: MP4 and MOV;
+- video: H.264, and HEVC with the `hvc1` tag;
+- audio: AAC, MP3, FLAC, ALAC, AC-3 and E-AC-3;
+- HLS played natively, with its audio renditions;
+- subtitles as WebVTT drawn by the app;
+- no HDR until a report says the screen shows it.
+
+AVPlayer has no way to ask, as `MediaSource.isTypeSupported()` does, so the phone doesn't report and the server decides from the built-in profile. For each of the test library's files the decision is the same as Safari's, which a test checks ([ADR 0059](0059-native-apps.md)).
+
+## 2026-10-29: the Apple TV app uses `tvos` (checkpoint 4.5b)
+
+The TV app asks for sessions with the `tvos` built-in profile, as the phone does with `ios`. It doesn't report either, for the same reason. Audio is chosen by a new session, so the server's decision picks the track on both, and nothing depends on expo-video's `audioTrack`, which its docs don't list for tvOS ([ADR 0059](0059-native-apps.md)).

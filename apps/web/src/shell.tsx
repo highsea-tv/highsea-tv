@@ -30,7 +30,7 @@ import {
   MenuTrigger,
   PageScrollbar,
   toast,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import {
   createContext,
   type ReactNode,
@@ -127,10 +127,7 @@ function ServerSwitcher() {
   return (
     <Menu>
       <MenuTrigger asChild>
-        <button
-          type="button"
-          className="flex min-w-0 items-center gap-2 rounded-sm px-1.5 py-1 font-semibold text-ui outline-none hover:bg-text/8 focus-visible:ring-focus"
-        >
+        <Button variant="ghost" className="min-w-0 shrink">
           <Mark size={22} />
           <span className="truncate">{name}</span>
           {away && (
@@ -139,7 +136,7 @@ function ServerSwitcher() {
             </span>
           )}
           <Icon name="chevron-down" size={14} className="text-text-3" />
-        </button>
+        </Button>
       </MenuTrigger>
       <MenuContent align="start" className="w-72">
         <MenuLabel>{t('servers')}</MenuLabel>
@@ -217,8 +214,9 @@ function Profile() {
       <MenuTrigger asChild>
         <button
           type="button"
+          data-control="avatar"
           aria-label={update.ready ? u('profileUpdate', { name }) : t('profile', { name })}
-          className="relative grid size-8 place-items-center rounded-full bg-accent-soft font-semibold text-accent-text text-ui outline-none focus-visible:ring-focus"
+          className="relative grid size-(--control-h) place-items-center rounded-full bg-accent-soft font-semibold text-accent-text text-ui outline-none focus-visible:ring-focus"
         >
           {name.charAt(0).toUpperCase()}
           {/* the desktop app's update, waiting quietly for a restart */}
@@ -288,7 +286,12 @@ export function TopBar({ overHero }: { overHero: boolean }) {
     >
       <div
         data-tauri-drag-region={drag}
-        className={cn('mx-auto w-full flex h-16 max-w-[1680px] items-center gap-3', gutter)}
+        // the bar wraps its end onto a second line when a narrow window can't hold it (200% text,
+        // WCAG 1.4.10), so nothing runs past the edge
+        className={cn(
+          'mx-auto flex min-h-16 w-full max-w-[1680px] flex-wrap items-center gap-x-3 gap-y-2 py-2',
+          gutter,
+        )}
       >
         {chrome === 'mac' && (
           <span aria-hidden data-tauri-drag-region className={trafficLightRoom} />
@@ -315,14 +318,12 @@ export function TopBar({ overHero }: { overHero: boolean }) {
             )
           })}
         </nav>
-        <div className="ms-auto flex items-center gap-1 medium:ms-0">
-          <a
-            href={href('/search')}
-            aria-label={t('search')}
-            className="grid size-9 place-items-center rounded-full text-text-2 outline-none hover:text-text focus-visible:ring-focus medium:hidden"
-          >
-            <Icon name="search" size={18} />
-          </a>
+        <div className="ms-auto flex items-center gap-2 medium:ms-0">
+          <Button variant="ghost" iconOnly icon="search" asChild className="medium:hidden">
+            <a href={href('/search')}>
+              <span className="sr-only">{t('search')}</span>
+            </a>
+          </Button>
           <Profile />
         </div>
       </div>
@@ -353,7 +354,7 @@ export function Banners() {
   return (
     <section
       aria-label={t('announcements')}
-      className={cn('mx-auto w-full grid max-w-[1680px] gap-2', gutter)}
+      className={cn('mx-auto grid w-full max-w-[1680px] grid-cols-[minmax(0,1fr)] gap-2', gutter)}
     >
       {a.banners.map((b) => (
         <Banner

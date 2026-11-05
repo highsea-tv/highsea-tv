@@ -36,7 +36,7 @@ const { act, cleanup, render, within } = await import('@testing-library/react')
 const { default: userEvent } = await import('@testing-library/user-event')
 const { createClient } = await import('@highsea-tv/sdk')
 const { ClientProvider } = await import('@highsea-tv/sdk/react')
-const { TooltipProvider } = await import('@highsea-tv/ui-web')
+const { TooltipProvider } = await import('@highsea-tv/ui')
 const { Downloads } = await import('../src/admin/downloads.tsx')
 
 // ---------------------------------------------------------------- the fake API
@@ -302,10 +302,10 @@ describe('A8 Downloads', () => {
     const dialog = within(page.getByRole('dialog'))
     await user.click(dialog.getByRole('combobox', { name: 'Category' }))
     expect((await page.findAllByRole('option')).map((o) => o.textContent)).toEqual([
-      'manual',
-      'books',
+      'Manual',
+      'Books',
     ])
-    await user.click(page.getByRole('option', { name: 'books' }))
+    await user.click(page.getByRole('option', { name: 'Books' }))
     const magnet = `magnet:?xt=urn:btih:${'cd'.repeat(20)}&dn=Something`
     await user.click(dialog.getByLabelText('Magnet link or .torrent URL'))
     await user.paste(magnet)
@@ -321,7 +321,7 @@ describe('A8 Downloads', () => {
   test('the category filter shows one category’s torrents', async () => {
     const { user, page } = await open()
     await user.click(page.getByRole('combobox', { name: 'Category' }))
-    await user.click(await page.findByRole('option', { name: 'manual' }))
+    await user.click(await page.findByRole('option', { name: 'Manual' }))
     await settle()
     expect(page.queryByRole('row', { name: /Sintel\.2010/ })).toBeNull()
     expect(page.getByRole('row', { name: /Something\.Else/ })).toBeTruthy()

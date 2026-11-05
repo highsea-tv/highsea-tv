@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-@import "@highsea-tv/ui-web/styles.css";
+@import "@highsea-tv/ui/styles.css";
 
 @source "./";
 
@@ -19,6 +19,14 @@
 :root[data-reduced-motion] [data-platform="tv"] {
   --scale-poster: 1;
   --scale-button: 1;
+}
+
+/* Home's bloom (client/bloom.tsx's BloomGlow): a registered colour, so it can be
+   transitioned from one card's colour to the next on one element. */
+@property --bloom {
+  syntax: "<color>";
+  inherits: false;
+  initial-value: transparent;
 }
 
 /* Text 200%: rem-based type doubles; layouts must reflow (accessibility.md#perceivable). */
@@ -51,4 +59,31 @@ html[data-chrome] #root {
 }
 html[data-chrome] body {
   margin: 0;
+}
+
+/* The music player's playing mark (client/waveform.tsx's PlayingBars): three bars rising and
+   falling at odd speeds, held still while paused and with reduced motion. */
+@keyframes playing-bar {
+  0%,
+  100% {
+    scale: 1 0.3;
+  }
+  50% {
+    scale: 1 1;
+  }
+}
+@utility playing-bar {
+  transform-origin: bottom;
+  animation: playing-bar 900ms ease-in-out infinite;
+  &[data-paused] {
+    animation-play-state: paused;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+    scale: 1 0.6;
+  }
+  :root[data-reduced-motion] & {
+    animation: none;
+    scale: 1 0.6;
+  }
 }

@@ -2,7 +2,7 @@
 // A collection's poster: the one uploaded, or a mosaic of its first four posters, as Plex draws a
 // smart collection's (docs/product/collections.md#artwork). The tile around it is the apps' Library ›
 // Collections grid, built like Poster's (the same lift and ring on focus), with the smart mark.
-import { Badge, cn, Icon } from '@highsea-tv/ui-web'
+import { Badge, cn, Icon } from '@highsea-tv/ui'
 
 export function CollectionArt({
   poster,
@@ -50,6 +50,7 @@ export function CollectionTile({
   mosaic,
   smart,
   tv = false,
+  titleSize = 'ui',
 }: {
   href: string
   name: string
@@ -58,6 +59,8 @@ export function CollectionTile({
   mosaic?: string[]
   smart: boolean
   tv?: boolean
+  /** The name's size, as Poster's title: `body` where the films' titles are (web), else `ui`. */
+  titleSize?: 'ui' | 'body'
 }) {
   return (
     <a
@@ -91,7 +94,14 @@ export function CollectionTile({
         </>
       ) : (
         <span className="mt-2 grid gap-0.5">
-          <span className="line-clamp-2 text-text text-ui">{name}</span>
+          <span
+            className={cn(
+              'line-clamp-2 font-semibold text-text',
+              titleSize === 'body' ? 'text-body' : 'text-ui',
+            )}
+          >
+            {name}
+          </span>
           <span className="text-caption text-text-3">{caption}</span>
         </span>
       )}

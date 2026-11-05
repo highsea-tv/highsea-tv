@@ -5,11 +5,6 @@
 import type { Page } from 'playwright-core'
 import type { Area } from '../shot.ts'
 
-// the tab, then its focus ring off, as a mouse click would leave it
-const tab = (name: string) => async (p: Page) => {
-  await p.getByRole('tab', { name }).click()
-  await p.evaluate(() => (document.activeElement as HTMLElement | null)?.blur())
-}
 const panel = (p: Page) => p.getByRole('tabpanel')
 
 export default {
@@ -47,22 +42,18 @@ export default {
         await p.getByText('Nosferatu').first().waitFor({ timeout: 5000 })
       },
     },
-    { name: 'providers', path: '/subtitles', act: tab('Providers') },
+    { name: 'providers', path: '/subtitles/providers' },
     {
       name: 'provider-edit',
-      path: '/subtitles',
-      act: async (p) => {
-        await tab('Providers')(p)
-        await p.getByRole('button', { name: 'Edit Subdl' }).click()
-      },
+      path: '/subtitles/providers',
+      act: (p) => p.getByRole('button', { name: 'Edit Subdl' }).click(),
       crop: (p) => p.getByRole('dialog'),
     },
-    { name: 'languages', path: '/subtitles', act: tab('Languages') },
+    { name: 'languages', path: '/subtitles/languages' },
     {
       name: 'profile-edit',
-      path: '/subtitles',
+      path: '/subtitles/languages',
       act: async (p) => {
-        await tab('Languages')(p)
         await p
           .getByRole('button', { name: /^Edit / })
           .first()
@@ -73,27 +64,23 @@ export default {
     },
     {
       name: 'scoring',
-      path: '/subtitles',
-      act: tab('Scoring and sync'),
+      path: '/subtitles/scoring',
       crop: panel,
     },
     {
       name: 'film-synced',
-      path: '/movies/45745',
-      act: tab('Subtitles'),
+      path: '/movies/45745/subtitles',
       crop: panel,
     },
     {
       name: 'film-not-synced',
-      path: '/movies/653',
-      act: tab('Subtitles'),
+      path: '/movies/653/subtitles',
       crop: panel,
     },
     {
       name: 'film-search',
-      path: '/movies/45745',
+      path: '/movies/45745/subtitles',
       act: async (p) => {
-        await tab('Subtitles')(p)
         await p.getByRole('button', { name: 'Search providers' }).click()
         await p
           .getByRole('button', { name: /^Download .+ from / })

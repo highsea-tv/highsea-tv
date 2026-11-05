@@ -5,10 +5,10 @@
 // step that changes the screen is checked with axe, and its classes join the stylesheet check.
 import './dom.ts'
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
+import { createClient, createMock, type Mock } from '@highsea-tv/mock/client'
 import { act, cleanup, render, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { memoryLocation } from 'wouter/memory-location'
-import { createClient, createMock, type Mock } from '../src/mock/client.ts'
 import { defaultState, type Role } from '../src/proto/state.ts'
 import { ScreenApp } from '../src/screen/screen.tsx'
 import { classes, collect, unknownClasses, violations } from './check.ts'
@@ -126,8 +126,8 @@ describe('A6 media pages', () => {
     await user.click(within(dialog).getByRole('button', { name: 'Add and search' }))
     await settle()
     expect(mock.servers.populated.state.items.some((m) => m.id === '107')).toBe(true)
-    // same page, same address: only its library layer is new
-    expect(location.history).toEqual(['/admin/movies/107'])
+    // same page, same address: only its library layer is new (the tab is a step of its own)
+    expect(location.history).toEqual(['/admin/movies/107', '/admin/movies/107/cast'])
     await settle()
     expect(page().getByRole('tab', { name: 'Files' })).toBeTruthy()
     expect(page().queryByText('Not in the library')).toBeNull()
@@ -378,7 +378,8 @@ describe('A10 subtitles', () => {
     await user.click(page().getByRole('button', { name: 'Search all' }))
     await settle()
     expect(await client(mock).subtitles.wanted()).toEqual([])
-    expect(page().getByText('Every movie has its subtitles')).toBeTruthy()
+    expect(await client(mock).subtitles.wantedEpisodes()).toEqual([])
+    expect(page().getByText('Every movie and episode has its subtitles')).toBeTruthy()
 
     await user.click(page().getByRole('tab', { name: 'Languages' }))
     await user.click(page().getByRole('button', { name: 'Edit English and Spanish' }))

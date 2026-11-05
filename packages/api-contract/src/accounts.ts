@@ -764,3 +764,4 @@ export type Passkey = z.infer<typeof Passkey>
 export type Pairing = z.infer<typeof Pairing>
 export type AuditEntry = z.infer<typeof AuditEntry>
 export type ClientType = z.infer<typeof ClientType>
+export type DeviceInput = z.infer<typeof DeviceInput>

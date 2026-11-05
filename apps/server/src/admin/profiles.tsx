@@ -23,7 +23,7 @@ import {
   TableHeader,
   TableRow,
   Tooltip,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import { filmBytes } from './library-figures.ts'
 import { Loadable } from './loadable.tsx'
 import { profiles as messages, sizes as sizeMessages } from './profiles-messages.ts'

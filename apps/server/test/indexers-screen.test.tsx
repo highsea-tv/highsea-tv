@@ -6,12 +6,10 @@
 import './dom.ts'
 import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test'
 import type { ReactNode } from 'react'
+import type { IndexersTab } from '../src/admin/indexers.tsx'
+import { navigation, Routed } from './router.tsx'
 
-mock.module('next/navigation', () => ({
-  useRouter: () => ({ push: () => {} }),
-  usePathname: () => '/indexers',
-  useSearchParams: () => new URLSearchParams(),
-}))
+mock.module('next/navigation', () => navigation)
 mock.module('../src/admin/shell.tsx', () => ({
   useShell: () => ({ role: 'owner' }),
   AdminPage: ({
@@ -38,7 +36,7 @@ const { act, cleanup, render, within } = await import('@testing-library/react')
 const { default: userEvent } = await import('@testing-library/user-event')
 const { createClient } = await import('@highsea-tv/sdk')
 const { ClientProvider } = await import('@highsea-tv/sdk/react')
-const { TooltipProvider } = await import('@highsea-tv/ui-web')
+const { TooltipProvider } = await import('@highsea-tv/ui')
 const { Indexers, isOneClick } = await import('../src/admin/indexers.tsx')
 
 // ---------------------------------------------------------------- the fake API
@@ -185,7 +183,7 @@ async function open() {
     render(
       <ClientProvider client={client}>
         <TooltipProvider>
-          <Indexers />
+          <Routed<IndexersTab> base="/indexers">{(tab) => <Indexers tab={tab} />}</Routed>
         </TooltipProvider>
       </ClientProvider>,
     )

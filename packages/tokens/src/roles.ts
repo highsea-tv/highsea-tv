@@ -33,6 +33,12 @@ export type Status = (typeof STATUSES)[number]
 /** Roles computed from the base roles, so every platform gets identical values. */
 export const DERIVED_ROLES = [
   'accent-soft',
+  // controls (controls.md): a field's edge and a chosen segment reach 3:1 on every surface
+  // (WCAG 2.2 1.4.11); the overlay is `text` at a low alpha, for controls over artwork
+  'control-edge',
+  'control-selected',
+  'control-overlay',
+  'control-overlay-hover',
   ...STATUSES.flatMap((s) => [`badge-${s}`, `badge-${s}-bg`] as const),
 ] as const
 export type DerivedRole = (typeof DERIVED_ROLES)[number]

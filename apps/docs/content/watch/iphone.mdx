@@ -1,0 +1,69 @@
+---
+title: The highsea app for iPhone
+description: Connecting the iPhone app to your server, watching on it, picture in picture and AirPlay, and signing in a TV from it.
+---
+
+{/* SPDX-License-Identifier: AGPL-3.0-only */}
+{/*
+  Sources:
+  - The app: apps/client built for the iPhone, its screens in src/app/, with their words in
+    src/messages.ts and each screen folder's messages.ts (connect, signIn, you, pair, player).
+  - Finding servers: packages/native/ios/HighseaDiscoveryModule.swift and packages/native/src/nearby.ts.
+  - The player: apps/client/src/player/touch.tsx and packages/native/src/playback.ts.
+  - Local network privacy: https://support.apple.com/en-us/102229
+*/}
+
+Written for highsea 0.4.0.
+
+The highsea app for iPhone has the web app's Home, library, search and player, drawn for the phone. It finds the highsea servers on your network by itself, keeps your sign-in for each in the iPhone's keychain, and plays films in Apple's own player, with picture in picture, AirPlay and the lock screen's controls. It can also sign in a TV, so nobody types a password with a remote.
+
+## Getting the app
+
+The app isn't on the App Store or TestFlight yet. Until it is, you can [watch in Safari](/watch/) on your iPhone at your server's address followed by `/web`. Everything on this page applies once the app is available.
+
+## Connecting to your server
+
+The app opens on **Choose a server**. Servers on the same network are listed under **On this network** as they answer.
+
+The first time it looks, your iPhone asks whether highsea may find devices on your local network. Choose **Allow**. If you chose **Don't Allow**, the app says so: turn highsea on in the iPhone's **Settings › Privacy & Security › Local Network**, or add your server by address.
+
+If your server isn't listed, it may be on another network, or its discovery may be off. Use **Add a server by address** with its name or IP, and the port if it isn't 443: `harbor.example.net`, or `192.168.1.20:3000` at home.
+
+Then sign in with your highsea username and password. If your account has two-step verification, the app asks for the 6-digit code from your authenticator app, or a recovery code. When the server has single sign-on, **Sign in with** opens its sign-in page, and highsea opens again when you're done. Passkeys, and setting up two-step verification, happen on the server's sign-in page in Safari.
+
+highsea keeps your sign-in in the iPhone's keychain, so it doesn't ask again. At home it uses the server's address on your network, and away from home its remote address, the one set in [Settings › Network](/settings/network/).
+
+### More than one server
+
+Open **You › Settings › Servers** to see the servers this iPhone knows. **Add a server** goes back to **Choose a server**, and choosing another server there switches to it. Each server keeps its own sign-in, and signing out of one leaves the others alone. **Forget** signs this iPhone out of a server and stops listing it. On **Choose a server**, swipe a server left or press it long to forget it, or use **Forget this server** at the foot of its sign-in, also when highsea can't reach it.
+
+## Watching
+
+Home, the library, search and each film's page work as in [the web app](/watch/). On a film's page, **Watch with** sets its version, audio and subtitles. highsea remembers them for that film on all your devices.
+
+**Play** or **Resume** opens the player, which turns with your phone. Tap the picture to show or hide the controls:
+
+- **Back 10 seconds**, **Play** or **Pause**, and **Forward 10 seconds** sit in the middle.
+- Drag along the bar at the bottom to move through the film. The frame at that point shows above your finger once highsea has made the film's previews.
+- **Audio and subtitles** chooses the version, the sound and the subtitles. With a subtitle on, **Earlier** and **Later** move it by 50 ms when it doesn't match the voices, and **Reset** puts it back. The timing is saved for that film.
+- In a film's last seconds, **Next up** offers the next film in its collection, and starts it when the count reaches zero. **Cancel** lets the film end.
+
+The film keeps playing when you lock the phone or switch apps. Its title and artwork show on the lock screen and in Control Center, with their play and pause buttons.
+
+### Picture in picture
+
+The **Picture in picture** button, or going to the Home Screen while a film plays, moves the film to a small window that stays over your other apps. Tap it to bring it back.
+
+### AirPlay
+
+The **AirPlay** button lists the TVs and speakers your iPhone can send to. Choose a TV, and the film plays there while your phone shows **Playing on another screen**. The controls on the phone keep working, and the TV shows the subtitles you chose.
+
+## Signing in a TV
+
+A highsea app on a TV shows a code and a QR code instead of asking for a password. On your iPhone, already signed in to the same server:
+
+1. Open **You › Settings › Servers**, and choose **Sign in a TV**.
+2. Point the camera at the TV's QR code, or choose **Enter the code instead** and type it. The first time, your iPhone asks to use the camera.
+3. The app shows which app is asking, and when the code expires. Choose **Sign it in**.
+
+The TV opens Home, signed in as you. It stays signed in until you sign it out from **You › Settings › Your devices**.

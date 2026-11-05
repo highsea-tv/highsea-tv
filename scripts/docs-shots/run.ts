@@ -59,8 +59,12 @@ process.on('exit', () => {
 const production = process.env.DOCS_SHOTS_PRODUCTION === '1'
 if (production)
   execFileSync('bun', ['run', 'build'], { cwd: join(ROOT, 'apps/server'), stdio: 'inherit' })
-// the server serves the web app's build at /web in either mode
-execFileSync('bun', ['run', 'build'], { cwd: join(ROOT, 'apps/web'), stdio: 'inherit' })
+// the server serves the client's web export at /web in either mode (apps/client's dist/)
+execFileSync('bun', ['run', 'export:web'], {
+  cwd: join(ROOT, 'apps/client'),
+  stdio: 'inherit',
+  env: { ...process.env, EXPO_NO_TELEMETRY: '1', EXPO_PUBLIC_HIGHSEA_MOCK: '' },
+})
 const server = await boot(PORT, { production })
 const problems: string[] = []
 const browser = await launch()

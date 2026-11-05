@@ -4,11 +4,11 @@
 // changes the screen is checked with axe, and its classes join the stylesheet check.
 import './dom.ts'
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
+import { createClient, createMock, type Mock } from '@highsea-tv/mock/client'
+import { applyPreview } from '@highsea-tv/mock/server'
 import { act, cleanup, render, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { memoryLocation } from 'wouter/memory-location'
-import { createClient, createMock, type Mock } from '../src/mock/client.ts'
-import { applyPreview } from '../src/mock/server.ts'
 import { defaultState, type Role } from '../src/proto/state.ts'
 import { ScreenApp } from '../src/screen/screen.tsx'
 import { classes, collect, unknownClasses, violations } from './check.ts'
@@ -115,26 +115,30 @@ describe('A11 curation', () => {
       'Featured on Harbor',
       'Staff picks',
       'The silent era',
-      'Recently added',
+      'New this month',
     ])
     await clean()
     // the drag handle's keyboard model: Space picks it up, Up moves it, Space drops it
-    act(() => page().getByRole('button', { name: 'Move Recently added' }).focus())
+    act(() => page().getByRole('button', { name: 'Move New this month' }).focus())
     await user.keyboard(' {ArrowUp} ')
     await settle()
     expect(sections()).toEqual([
       'Featured on Harbor',
       'Staff picks',
-      'Recently added',
+      'New this month',
       'The silent era',
     ])
     const home = await client(mock).home.sections('web')
     expect(home.map((s) => s.title)).toEqual([
       'Featured on Harbor',
       'Continue watching',
+      'Next up',
       'Staff picks',
-      'Recently added',
+      'New this month',
       'The silent era',
+      'New episodes',
+      'Recently added shows',
+      'Recently played',
     ])
 
     // a collection rule picks only that collection's parts
@@ -333,13 +337,19 @@ describe('A14, A16, A17 reference pages', () => {
   test('wanted: the missing list searches, and the calendar moves by month', async () => {
     const { mock, user } = await open('/admin/wanted')
     const rows = () => page().getAllByRole('button', { name: /^Search for / })
-    expect(rows().length).toBe(2)
+    // two movies and two episodes (stage 6), in one table with a filter for the kind
+    expect(rows().length).toBe(4)
+    expect(page().getByRole('button', { name: 'Search for Ghost Signal S02E01' })).toBeTruthy()
     await clean()
-    await user.click(page().getByRole('button', { name: 'Search all 2' }))
+    await user.click(page().getByRole('radio', { name: /^Episodes/ }))
+    expect(rows().length).toBe(2)
+    await user.click(page().getByRole('radio', { name: 'All' }))
+    await user.click(page().getByRole('button', { name: 'Search all 4' }))
     await settle()
     expect(
       mock.servers.populated.state.items.find((m) => m.title === 'Royal Wedding')?.status,
     ).toBe('downloading')
+    expect(page().getByText('Nothing missing')).toBeTruthy()
     await user.click(page().getByRole('tab', { name: 'Calendar' }))
     await settle()
     const month = page().getByRole('heading', { level: 2 }).textContent
@@ -365,13 +375,15 @@ describe('A14, A16, A17 reference pages', () => {
     await clean(confirm)
   })
 
-  test('manual import: matched files import; the unmatched one waits for a movie', async () => {
+  test('manual import: matched files import; the unmatched one waits for a match', async () => {
     const { mock, user } = await open('/admin/activity/import')
     await settle()
-    expect(page().getByRole('button', { name: 'Import 2 files' })).toBeTruthy()
-    expect(page().getByText('Didn’t match a movie. Choose one.')).toBeTruthy()
+    // two films, an episode and a double episode match; the last file matches nothing
+    expect(page().getByRole('button', { name: 'Import 4 files' })).toBeTruthy()
+    expect(page().getByText('Saltmarsh · S01E01–E02')).toBeTruthy()
+    expect(page().getByText('Didn’t match a movie or an episode. Choose one.')).toBeTruthy()
     await clean()
-    await user.click(page().getByRole('button', { name: 'Import 2 files' }))
+    await user.click(page().getByRole('button', { name: 'Import 4 files' }))
     await settle()
     const status = (t: string) =>
       mock.servers.populated.state.items.find((m) => m.title === t)?.status
@@ -392,98 +404,12 @@ describe('C6–C8 clients', () => {
     expect(people?.items.some((p) => 'name' in p && p.name === 'Fritz Lang')).toBe(true)
     const movies = lang.sections.find((s) => s.kind === 'movies')
     expect(movies?.items.some((m) => 'title' in m && m.title === 'Metropolis')).toBe(true)
-    expect(await kinds('caminandes')).toEqual(['movies', 'collections'])
+    // the films' scores are albums here, so their album matches too
+    expect(await kinds('caminandes')).toEqual(['movies', 'collections', 'albums'])
     expect(await kinds('zzzz')).toEqual([])
     const { collection, items } = await client(mock).library.collection('caminandes')
     expect(collection.count).toBe(items.length)
     expect(items.map((m) => m.year)).toEqual([...items.map((m) => m.year)].sort())
-  })
-
-  test('web search: a collection opens, and Search keeps the query', async () => {
-    const { user, location } = await open('/web/search')
-    await user.click(page().getByRole('button', { name: 'Got it' }))
-    await settle()
-    await user.type(page().getByRole('searchbox'), 'caminandes')
-    await act(() => new Promise((r) => setTimeout(r, 200)))
-    await settle()
-    const collections = within(page().getByRole('region', { name: 'Collections' }))
-    expect(collections.getByRole('link', { name: /Caminandes Collection/ })).toBeTruthy()
-    await clean()
-    act(() => location.navigate('/web/collections/caminandes'))
-    await settle()
-    expect(page().getByRole('heading', { level: 1, name: 'Caminandes Collection' })).toBeTruthy()
-    await clean()
-    // Back to Search: the same history entry, so the query and its results are still there
-    act(() => location.navigate('/web/search'))
-    await settle()
-    expect((page().getByRole('searchbox') as HTMLInputElement).value).toBe('caminandes')
-    expect(page().getByRole('region', { name: 'Collections' })).toBeTruthy()
-  })
-
-  test('TV search: typing never takes focus off the keys', async () => {
-    const { user } = await open('/tv/search')
-    // a suggestion's button goes away with its results, so focus goes into them once
-    await user.click(page().getByRole('button', { name: 'Animation' }))
-    await act(() => new Promise((r) => setTimeout(r, 250)))
-    await settle()
-    const key = page().getByRole('button', { name: 's' })
-    act(() => key.focus())
-    await user.keyboard('{Enter}')
-    await act(() => new Promise((r) => setTimeout(r, 250)))
-    await settle()
-    expect(document.activeElement).toBe(key)
-    await clean()
-  })
-
-  test('TV collection: its titles as a row', async () => {
-    await open('/tv/collections/caminandes')
-    expect(page().getByRole('heading', { level: 1, name: 'Caminandes Collection' })).toBeTruthy()
-    expect(within(page().getByRole('region', { name: 'Movies' })).getAllByRole('link').length).toBe(
-      3,
-    )
-  })
-
-  test('web search: suggestions, then results', async () => {
-    const { user } = await open('/web/search')
-    await user.click(page().getByRole('button', { name: 'Got it' }))
-    await settle()
-    await user.click(page().getByRole('button', { name: 'Horror' }))
-    await act(() => new Promise((r) => setTimeout(r, 200)))
-    await settle()
-    expect(
-      within(page().getByRole('region', { name: 'Movies' })).getAllByRole('link').length,
-    ).toBeGreaterThan(0)
-    await clean()
-  })
-
-  test('home layout: hiding a row on one device hides it on every device', async () => {
-    const { mock, user } = await open('/mobile/you/home')
-    await user.click(page().getByRole('button', { name: 'Got it' }))
-    await settle()
-    await user.click(page().getByRole('switch', { name: 'Show Recently added' }))
-    await settle()
-    const sections = await client(mock).home.sections('tvos')
-    expect(sections.some((s) => s.title === 'Recently added')).toBe(false)
-    expect(sections[0]?.layout).toBe('hero')
-    // the drag handle's keyboard model: Space picks it up, Up moves it, Space drops it
-    act(() => page().getByRole('button', { name: 'Move The silent era' }).focus())
-    await user.keyboard(' {ArrowUp} ')
-    await settle()
-    const titles = (await client(mock).home.sections('web')).map((s) => s.title)
-    expect(titles.indexOf('The silent era')).toBeLessThan(titles.indexOf('Staff picks'))
-    await clean()
-  })
-
-  test('a device theme applies to that device only', async () => {
-    const { user } = await open('/web/settings/appearance')
-    await user.click(page().getByRole('button', { name: 'Got it' }))
-    await settle()
-    await user.click(page().getByRole('radio', { name: /OLED black/ }))
-    await settle()
-    expect(document.documentElement.dataset.theme).toBe('oled')
-    expect(JSON.parse(localStorage.getItem('highsea-proto:prefs:web') ?? '{}').theme).toBe('oled')
-    expect(localStorage.getItem('highsea-proto:prefs:tv')).toBeNull()
-    await clean()
   })
 })
 

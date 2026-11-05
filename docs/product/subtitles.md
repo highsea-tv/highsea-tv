@@ -18,7 +18,7 @@ Subtitles are first class: highsea finds them for every movie it imports, scores
 
 - `PageHeader`: "Subtitles", one line of description.
 - **Stats** card: synced today, waiting to sync, average correction (ms), average confidence. Four across from medium, two on compact.
-- Tabs (line): **Wanted** (count), **Providers**, **Languages**, **Scoring and sync**.
+- Tabs (line): **Wanted** (count), **Providers**, **Languages**, **Scoring and sync**, at `/subtitles`, `/subtitles/providers`, `/subtitles/languages` and `/subtitles/scoring`. Settings' Subtitles card and `/settings/subtitles` open Providers.
 - **Wanted:** a `TableFrame`. Toolbar: "12 movies missing a language" and **Search all**. Columns: movie (path under it), the missing languages as badges, **Search**. Pages of 50, by title, with **Show more** (checkpoint 7a).
 - **Providers:** OpenSubtitles.com, Subdl and SubSource (checkpoint 7a). Columns: provider, account (the username or a masked key, "Needs an account", or "Not needed"), requests left today (a bar and "184/200"; warning tone under 10%; a dash when the provider doesn't say), an Enabled switch, and **Edit** for the owner. Under the table: "Subtitles provided by OpenSubtitles.com", as its terms ask of free keys.
 - **Edit dialog** (owner only, checkpoint 7a, built like A9's): the provider's fields (OpenSubtitles.com: username and password; Subdl and SubSource: an API key). A saved secret shows as set and stays blank to keep it. **Test** signs in without saving and says what happened; **Save** keeps the account.
@@ -105,6 +105,14 @@ As built in checkpoints 7a and 7b; the OpenAPI document at `/api/docs` has every
 - **Scores are Bazarr's movie weights scaled to 100** ([ADR 0043](../adr/0043-subtitles.md)): a hash match is 99.
 - **The rules mean what the selects say:** Regular and forced wants two tracks; Without SDH takes an SDH track only when nothing else exists, and removes its SDH text; With or without SDH takes either.
 - **The cutoff** stops the search for the profile's other languages once the cutoff language is present, as Bazarr documents it.
+
+## Episodes (prototype-gaps stage 6, 2026-11-01)
+
+- **Wanted holds episodes beside films,** in one table with the kind filter Wanted uses (All, Movies · n, Episodes · n), above it "{n movies and m episodes} missing a language". The tab's count is both.
+- **An episode's row:** the show (to its page), then " · S04E01 · title", the file's path below, the missing languages, and **Search**, which looks for that episode's languages now.
+- **Search all missing** includes the episodes.
+- **Empty:** "Every movie and episode has its subtitles" · They show here when a language their profile asks for is missing.
+- **Data:** `subtitles.wantedEpisodes()` and `subtitles.searchEpisode(id)`.
 
 ## Answered questions
 

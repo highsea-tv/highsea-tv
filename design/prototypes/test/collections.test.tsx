@@ -3,18 +3,18 @@
 // the admin's list and editor and the apps' Library › Collections and collection pages.
 import './dom.ts'
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
-import { act, cleanup, render, waitFor, within } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
-import { memoryLocation } from 'wouter/memory-location'
-import { createClient, createMock, type Mock } from '../src/mock/client.ts'
-import { evaluate } from '../src/mock/collections.ts'
+import { createClient, createMock, type Mock } from '@highsea-tv/mock/client'
+import { evaluate } from '@highsea-tv/mock/collections'
 import type {
   RuleCondition,
   RuleField,
   RuleOp,
   RuleValue,
   SmartCollection,
-} from '../src/mock/types.ts'
+} from '@highsea-tv/mock/types'
+import { act, cleanup, render, waitFor, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { memoryLocation } from 'wouter/memory-location'
 import { defaultState, type Role } from '../src/proto/state.ts'
 import { ScreenApp } from '../src/screen/screen.tsx'
 import { collect, violations } from './check.ts'
@@ -47,7 +47,7 @@ async function open(path: string, role: Role = 'owner') {
 }
 
 /** The seed's must-acknowledge announcement covers the apps until it's acknowledged. */
-async function acknowledge(user: ReturnType<typeof userEvent.setup>) {
+async function _acknowledge(user: ReturnType<typeof userEvent.setup>) {
   const got = page().queryByRole('button', { name: 'Got it' })
   if (got) await user.click(got)
   await settle()
@@ -75,6 +75,7 @@ const draft = (rules: RuleCondition[], patch: Partial<SmartCollection> = {}): Sm
   rules: { kind: 'group', id: 'g', match: 'all', rules },
   include: [],
   exclude: [],
+  shows: [],
   sort: 'title',
   descending: false,
   limit: null,
@@ -253,7 +254,7 @@ describe('A19 collections', () => {
     expect(list.getAllByRole('listitem')).toHaveLength(6)
     expect(list.getByRole('link', { name: '2010s, 4.5 stars and up, in English' })).toBeTruthy()
     expect(list.getByText('Released 2010–2020, rated 4.5 or more, in English')).toBeTruthy()
-    expect(list.getByText(/4 films, 3 in the apps/)).toBeTruthy()
+    expect(list.getByText(/4 movies, 3 in the apps/)).toBeTruthy()
     expect(list.getByText('Picked')).toBeTruthy()
     expect(list.getByText(/Nothing matches yet/)).toBeTruthy()
     await clean()
@@ -312,57 +313,74 @@ describe('A19 collections', () => {
   })
 })
 
-describe('C9 collections in the apps', () => {
-  test('web: Library › Collections, then a smart one’s page', async () => {
-    const { location, user } = await open('/web/library/collections')
-    await acknowledge(user)
-    expect(page().getByRole('link', { name: 'Collections', current: 'page' })).toBeTruthy()
-    const grid = within(page().getByRole('list', { name: 'Collections' }))
-    expect(
-      grid.getByRole('link', {
-        name: /2010s, 4.5 stars and up, in English, smart collection, 3 movies/,
-      }),
-    ).toBeTruthy()
-    expect(grid.queryByRole('link', { name: /In Dolby Vision/ })).toBeNull()
-    expect(grid.getByRole('link', { name: /Caminandes Collection/ })).toBeTruthy()
-    await clean()
+describe('shows in collections and featured sections (prototype-gaps.md › stage 6)', () => {
+  test('a collection’s shows are picked by hand, counted as the apps count them', async () => {
+    const mock = createMock()
+    const api = client(mock)
+    const staff = await saved(mock, 'sc-staff')
+    expect(staff.shows).toEqual(['saltmarsh'])
+    expect(staff.showsHere).toBe(1)
+    expect(staff.showsPlayable).toBe(1)
+    // rules match films only: the composer's show comes in as a pick beside them
+    const jan = await api.collections.preview(await saved(mock, 'sc-morgenstern'))
+    expect(jan.shows.map((x) => x.title)).toEqual(['The Lantern Keepers'])
+    expect(jan.items.some((m) => m.title === 'The Lantern Keepers')).toBe(false)
 
-    act(() => location.navigate('/web/collections/sc-2010s'))
-    await settle()
-    expect(page().getByText('Smart collection')).toBeTruthy()
-    expect(page().getByText('Released 2010–2020, rated 4.5 or more, in English')).toBeTruthy()
-    const movies = within(page().getByRole('list', { name: 'Movies' }))
-    expect(movies.getAllByRole('listitem')).toHaveLength(3)
-    await clean()
+    // shows alone are enough for a picked collection, and the apps list them
+    await api.collections.save({
+      ...draft([], { id: 'sc-shows', name: 'Shows only', rules: null, sort: 'manual' }),
+      shows: ['orbital', 'saltmarsh'],
+    })
+    const { collection, items, shows } = await api.library.collection('sc-shows', 'web')
+    expect(items).toEqual([])
+    expect(shows.map((x) => x.title)).toEqual(['Orbital', 'Saltmarsh'])
+    expect(collection.shows).toBe(2)
+    await expect(
+      api.collections.save(draft([], { id: 'sc-none', name: 'None', rules: null })),
+    ).rejects.toThrow(/film or show/)
   })
 
-  test('mobile: the library switches between Movies and Collections', async () => {
-    const { location, user } = await open('/mobile/library')
-    await acknowledge(user)
-    const library = within(page().getByRole('navigation', { name: 'Library' }))
-    expect(library.getByRole('link', { name: 'Movies' }).getAttribute('aria-current')).toBe('page')
-    expect(library.getByRole('link', { name: 'Collections' }).getAttribute('href')).toBe(
-      '#/mobile/library/collections',
+  test('the admin’s list and editor show the shows', async () => {
+    const { mock, user } = await open('/admin/collections/sc-staff')
+    const result = () => within(page().getByRole('region', { name: 'What it holds now' }))
+    await waitFor(() =>
+      expect(result().getByRole('list', { name: 'Shows in it' }).children).toHaveLength(1),
     )
-    act(() => location.navigate('/mobile/library/collections'))
+    await user.type(page().getByRole('textbox', { name: 'Picked shows' }), 'orbit')
     await settle()
-    expect(page().getByRole('link', { name: /2010s.*, smart collection/ })).toBeTruthy()
-    // Picked by hand, so it isn't marked smart
-    expect(page().getByRole('link', { name: /^Staff picks, 6 movies/ })).toBeTruthy()
+    const matches = within(page().getByRole('list', { name: 'Picked shows: matches' }))
+    await user.click(matches.getByRole('button', { name: /Orbital/ }))
+    expect(
+      within(page().getByRole('list', { name: 'Picked shows' })).getAllByRole('listitem'),
+    ).toHaveLength(2)
+    await waitFor(
+      () => expect(result().getByRole('list', { name: 'Shows in it' }).children).toHaveLength(2),
+      { timeout: 3000 },
+    )
     await clean()
+    await user.click(page().getByRole('button', { name: 'Save changes' }))
+    await settle()
+    expect((await saved(mock, 'sc-staff')).shows).toEqual(['saltmarsh', 'orbital'])
+    expect(page().getByText(/6 movies and 2 shows, all in the apps/)).toBeTruthy()
   })
 
-  test('TV: the collections are tiles the D-pad reaches', async () => {
-    const { user } = await open('/tv/library/collections')
-    await acknowledge(user)
-    const grid = page().getByRole('list', { name: 'Collections' })
-    expect(grid.getAttribute('data-group')).toBe('grid')
-    expect(grid.getAttribute('data-go-up')).toBe('kind')
-    const tiles = grid.querySelectorAll('[data-focusable]')
-    expect(tiles.length).toBeGreaterThan(4)
-    const kind = page().getByRole('navigation', { name: 'Library' })
-    expect(kind.getAttribute('data-go-down')).toBe('grid')
-    expect(kind.querySelectorAll('[data-focusable]')).toHaveLength(2)
-    await clean()
+  test('a hand-picked featured section holds shows beside films, with their taglines', async () => {
+    const mock = createMock()
+    const c = client(mock)
+    const sintel = (await c.movies.list()).find((m) => m.title === 'Sintel')?.id ?? ''
+    const section = {
+      ...(await c.curation.section('fs-recent')),
+      title: 'Films and shows',
+      source: { kind: 'manual' as const, itemIds: ['saltmarsh', sintel] },
+      overrides: [{ itemId: 'saltmarsh', artwork: null, tagline: 'Salt, wind and secrets.' }],
+    }
+    const picked = await c.curation.resolve(section)
+    expect(picked.map((m) => m.title)).toEqual(['Saltmarsh', 'Sintel'])
+    const show = picked[0]
+    expect(show?.series?.play).toMatch(/^saltmarsh-s\d+e\d+$/)
+    expect(show?.tagline).toBe('Salt, wind and secrets.')
+    expect(picked[1]?.series).toBeUndefined()
+
+    // the show's card on the apps' Home is apps/client's (one-client-platform-b.md › B1)
   })
 })

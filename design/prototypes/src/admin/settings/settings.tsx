@@ -2,11 +2,12 @@
 // Settings (A12, A13 core; A15 reference: docs/product/settings.md). An index of every area in four
 // groups; each area is its own page, `/settings/{area}`, with the areas beside it from expanded
 // widths. Forms keep a draft and a save bar, so nothing changes until Save.
-import { Button, cn, EmptyState, Icon, type IconName } from '@highsea-tv/ui-web'
+
+import type { Settings as AllSettings, SettingsSection } from '@highsea-tv/mock/settings'
+import { Button, cn, EmptyState, Icon, type IconName } from '@highsea-tv/ui'
 import { type ReactNode, useEffect, useState } from 'react'
 import { useLocation, useParams } from 'wouter'
 import { useAction, useQuery } from '../../mock/hooks.tsx'
-import type { Settings as AllSettings, SettingsSection } from '../../mock/settings.ts'
 import { AdminPage, adminHref, useShell } from '../shell.tsx'
 
 export type Area = {
@@ -125,19 +126,35 @@ export const areaGroups: { title: string; areas: Area[] }[] = [
         label: 'Download client',
         icon: 'downloads',
         description: 'The built-in torrent client: port, encryption and connections.',
+        ownerOnly: true,
       },
       {
         id: 'subtitles',
         label: 'Subtitles',
         icon: 'subtitles',
         description: 'Providers, languages and sync, on the Subtitles page.',
-        href: '/subtitles',
+        // its settings, not the Wanted list the page opens on
+        href: '/subtitles/providers',
       },
       {
         id: 'connections',
         label: 'Connections',
         icon: 'notification',
         description: 'Notifications to Discord, ntfy, email and more.',
+      },
+    ],
+  },
+  {
+    title: 'System',
+    // the one-time importers take another program's credentials: the owner's (ADR 0041)
+    areas: [
+      {
+        id: 'migration',
+        label: 'Migration',
+        icon: 'import',
+        description:
+          'Bring your library across from Radarr and your torrents from qBittorrent, once.',
+        ownerOnly: true,
       },
     ],
   },

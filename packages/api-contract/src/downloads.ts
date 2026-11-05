@@ -2,7 +2,7 @@
 // Downloading and importing (checkpoint 6a; phase-3-checkpoint-6.md › API): Activity's queue,
 // history and blocklist (A7), Downloads (A8), manual import (A17), a movie's files and history,
 // Settings › Media management and › Download client, and System's rates. The shapes are the
-// prototype's draft types (design/prototypes/src/mock/types.ts) with what real data forces: a
+// prototype's draft types (packages/mock/src/types.ts) with what real data forces: a
 // movie is addressed by its TMDB id, as every other route does (ADR 0014, amended).
 import { createRoute, z } from '@hono/zod-openapi'
 import {

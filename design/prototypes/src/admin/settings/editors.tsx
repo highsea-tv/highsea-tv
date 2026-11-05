@@ -14,6 +14,7 @@
 // Each is a draft with the save bar, like every settings page (settings.md › Decisions).
 
 import { bytes } from '@highsea-tv/core/format'
+import { defaultEpisodeSizes } from '@highsea-tv/mock/settings'
 import { parse } from '@highsea-tv/parser'
 import {
   CONDITION_KINDS,
@@ -56,6 +57,7 @@ import {
   MenuContent,
   MenuItem,
   MenuTrigger,
+  SegmentedControl,
   Select,
   SortableList,
   Switch,
@@ -67,7 +69,7 @@ import {
   TableHeader,
   TableRow,
   toast,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import { type ReactNode, useEffect, useMemo, useState } from 'react'
 import { useLocation } from 'wouter'
 import { useAction, useQuery } from '../../mock/hooks.tsx'
@@ -781,13 +783,13 @@ function FormatForm({ loaded, isNew }: { loaded: CustomFormat; isNew: boolean })
             {general}
           </p>
         )}
-        <ol aria-label="Conditions" className="grid gap-2">
+        <ol aria-label="Conditions" className="grid grid-cols-[minmax(0,1fr)] gap-2">
           {f.conditions.map((c, at) => (
             <li
               // conditions have no ids; the list only grows at the end or loses one row
               // biome-ignore lint/suspicious/noArrayIndexKey: see above
               key={at}
-              className="grid gap-3 rounded-md border border-line bg-s2 p-3"
+              className="grid grid-cols-[minmax(0,1fr)] gap-3 rounded-md border border-line bg-s2 p-3"
             >
               <ConditionRow
                 condition={c}
@@ -838,7 +840,7 @@ function ConditionRow({
   const n = index + 1
   return (
     <>
-      <div className="grid gap-3 medium:grid-cols-[12rem_minmax(0,1fr)_auto] medium:items-end">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-3 medium:grid-cols-[12rem_minmax(0,1fr)_auto] medium:items-end">
         <Field label={`Condition ${n}`}>
           <Select
             value={c.kind}
@@ -848,7 +850,6 @@ function ConditionRow({
         </Field>
         <ConditionValue condition={c} index={n} error={error} onChange={onChange} />
         <Button
-          size="sm"
           variant="ghost"
           iconOnly
           icon="delete"
@@ -869,7 +870,7 @@ function ConditionRow({
             onCheckedChange={(v) => onChange({ ...c, required: v === true })}
           />
         </Field>
-        <span className="ms-auto font-mono text-figure text-text-3">
+        <span className="ms-auto min-w-0 font-mono text-figure text-text-3 [overflow-wrap:anywhere]">
           {error ? '' : describeCondition(c)}
         </span>
       </div>
@@ -1071,21 +1072,31 @@ function FormatTest({ format }: { format: CustomFormat }) {
 const filmSize = (perMinute: number, minutes: number) => bytes(perMinute * MIB * minutes)
 
 /** `/settings/quality/sizes`: the size table, with each row checked and a film's size beside it. */
+/**
+ * Sizes per kind (stage 6): movies' per minute of the film, episodes' per minute of the episode,
+ * as Radarr and Sonarr keep them. Both drafts are kept while switching, and Save saves both.
+ */
 export function SizeEditor() {
-  const s = useSettingsDraft('qualitySizes')
-  const [minutes, setMinutes] = useState(120)
+  const [kind, setKind] = useState<'movies' | 'shows'>('movies')
+  const movies = useSettingsDraft('qualitySizes')
+  const episodes = useSettingsDraft('episodeSizes')
+  const s = kind === 'shows' ? episodes : movies
+  const [minutes, setMinutes] = useState({ movies: 120, shows: 45 })
   return (
     <AdminPage
       title="Edit sizes"
-      description="How large a release may be for its quality, per minute of the movie’s runtime."
+      description="How large a release may be for its quality, per minute of the movie’s or the episode’s runtime."
       actions={
         <Button
           variant="secondary"
           icon="replay"
           disabled={!s.draft}
           onClick={() => {
-            s.replace(defaultQualitySizes())
-            toast({ title: 'Reset to TRaSH’s sizes', description: 'Save to keep them.' })
+            s.replace(kind === 'shows' ? defaultEpisodeSizes() : defaultQualitySizes())
+            toast({
+              title: `Reset ${kind === 'shows' ? 'episodes' : 'movies'} to TRaSH’s sizes`,
+              description: 'Save to keep them.',
+            })
           }}
         >
           Reset to TRaSH’s sizes
@@ -1094,6 +1105,17 @@ export function SizeEditor() {
     >
       <div className="grid min-w-0 max-w-240 content-start gap-6">
         <Back to="/settings/quality">Quality</Back>
+        <SegmentedControl
+          aria-label="Sizes for"
+          size="sm"
+          value={kind}
+          onValueChange={(k) => setKind(k as 'movies' | 'shows')}
+          options={[
+            { value: 'movies', label: 'Movies' },
+            { value: 'shows', label: 'Shows' },
+          ]}
+          className="justify-self-start"
+        />
         {s.query.status === 'error' ? (
           <p className="text-badge-danger text-ui">
             Couldn’t load the sizes. {s.query.error.message}
@@ -1104,14 +1126,21 @@ export function SizeEditor() {
           </p>
         ) : (
           <SizeTable
+            key={kind}
+            kind={kind}
             rows={s.draft}
-            minutes={minutes}
-            setMinutes={setMinutes}
+            minutes={minutes[kind]}
+            setMinutes={(m) => setMinutes((all) => ({ ...all, [kind]: m }))}
             replace={s.replace}
-            save={() => s.save()}
-            saving={s.saving}
-            dirty={s.dirty}
-            discard={s.discard}
+            save={() =>
+              Promise.all([movies.dirty && movies.save(), episodes.dirty && episodes.save()])
+            }
+            saving={movies.saving || episodes.saving}
+            dirty={movies.dirty || episodes.dirty}
+            discard={() => {
+              movies.discard()
+              episodes.discard()
+            }}
           />
         )}
       </div>
@@ -1122,6 +1151,7 @@ export function SizeEditor() {
 type SizeRow = ReturnType<typeof defaultQualitySizes>[number]
 
 function SizeTable({
+  kind,
   rows,
   minutes,
   setMinutes,
@@ -1131,6 +1161,7 @@ function SizeTable({
   dirty,
   discard,
 }: {
+  kind: 'movies' | 'shows'
   rows: SizeRow[]
   minutes: number
   setMinutes: (m: number) => void
@@ -1158,12 +1189,16 @@ function SizeTable({
   return (
     <>
       <Group
-        title="Sizes per minute of runtime"
-        description="In MB per minute. A release outside the range is rejected; nearer the preferred size wins a tie. Leave the preferred size or the maximum empty for no limit."
+        title={kind === 'shows' ? 'Sizes per minute of an episode' : 'Sizes per minute of runtime'}
+        description={`In MB per minute. A release outside the range is rejected; nearer the preferred size wins a tie. Leave the preferred size or the maximum empty for no limit.${kind === 'shows' ? ' A season pack is checked episode by episode.' : ''}`}
       >
         <Field
-          label="Show sizes for a film of"
-          hint="Minutes. A movie whose runtime isn’t known is taken as 110."
+          label={kind === 'shows' ? 'Show sizes for an episode of' : 'Show sizes for a film of'}
+          hint={
+            kind === 'shows'
+              ? 'Minutes. An episode whose runtime isn’t known is taken as the show’s usual length.'
+              : 'Minutes. A movie whose runtime isn’t known is taken as 110.'
+          }
           className="max-w-60"
         >
           <Input
@@ -1176,14 +1211,20 @@ function SizeTable({
           />
         </Field>
         <TableFrame>
-          <Table aria-label="Sizes per minute of runtime">
+          <Table
+            aria-label={
+              kind === 'shows' ? 'Sizes per minute of an episode' : 'Sizes per minute of runtime'
+            }
+          >
             <TableHeader>
               <TableRow>
                 <TableHead>Quality</TableHead>
                 <TableHead numeric>Min</TableHead>
                 <TableHead numeric>Preferred</TableHead>
                 <TableHead numeric>Max</TableHead>
-                <TableHead numeric>{`A ${minutes}-minute film`}</TableHead>
+                <TableHead
+                  numeric
+                >{`A ${minutes}-minute ${kind === 'shows' ? 'episode' : 'film'}`}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

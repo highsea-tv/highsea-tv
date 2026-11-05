@@ -5,6 +5,7 @@
 ## Perceivable
 
 - **Contrast:** every text and fill pairing meets the contrast policy, measured over the backdrop it actually sits on. Gradients are checked at each stop.
+- **Non-text contrast** (WCAG 1.4.11): a field's edge, a chosen segment, tab or chip, and the focus ring reach 3:1 against every surface they sit on, in every theme ([controls](controls.md#contrast)).
 - **Not color alone:**
   - status badges pair a dot with a label;
   - progress bars show a percentage;
@@ -54,5 +55,5 @@ Sound never carries meaning on its own (see [sound](sound.md#accessibility)). It
 ## Verification
 
 - **Tokens:** every built-in theme passes the contrast policy in CI.
-- **Storybook:** the a11y addon (axe) is clean for every component story. Keyboard-only and D-pad walkthroughs are part of component review.
+- **Components:** axe is clean, in the three themes, for every screen of the client's web build (apps/client's `export:web`), which draws each component through the same React Native renderer as the phone and the TV. The sweeps (scripts/sweeps) take the build on in one-client-platform.md's part E; until then the prototypes' sweeps stand in. Keyboard-only and D-pad walkthroughs are part of component review.
 - **Phase 2 prototypes:** each flow is tested keyboard-only, with reduced motion, and at 200% text.

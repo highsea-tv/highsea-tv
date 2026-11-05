@@ -7,13 +7,11 @@
 import './dom.ts'
 import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test'
 import type { ReactNode } from 'react'
+import type { SubtitlesTab } from '../src/admin/subtitles.tsx'
+import { navigation, Routed } from './router.tsx'
 
 let role = 'owner'
-mock.module('next/navigation', () => ({
-  useRouter: () => ({ push: () => {} }),
-  usePathname: () => '/subtitles',
-  useSearchParams: () => new URLSearchParams(),
-}))
+mock.module('next/navigation', () => navigation)
 mock.module('../src/admin/shell.tsx', () => ({
   useShell: () => ({ role }),
   AdminPage: ({ title, children }: { title: ReactNode; children?: ReactNode }) => (
@@ -28,7 +26,7 @@ const { act, cleanup, render, within } = await import('@testing-library/react')
 const { default: userEvent } = await import('@testing-library/user-event')
 const { createClient } = await import('@highsea-tv/sdk')
 const { ClientProvider } = await import('@highsea-tv/sdk/react')
-const { TooltipProvider } = await import('@highsea-tv/ui-web')
+const { TooltipProvider } = await import('@highsea-tv/ui')
 const { Subtitles } = await import('../src/admin/subtitles.tsx')
 
 // ---------------------------------------------------------------- the fake API
@@ -189,7 +187,7 @@ async function open() {
     render(
       <ClientProvider client={client}>
         <TooltipProvider>
-          <Subtitles />
+          <Routed<SubtitlesTab> base="/subtitles">{(tab) => <Subtitles tab={tab} />}</Routed>
         </TooltipProvider>
       </ClientProvider>,
     )

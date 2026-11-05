@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Playback in browsers (phase-4-checkpoint-2.md › Tests, 4.2b): the seeded server from the
-// production build, with ADR 0040's generated clips, and the web player in Chromium and Firefox.
+// production build, with ADR 0040's generated clips, and the client's web player (apps/client's
+// export, one-client-platform-c.md › C1) in Chromium and Firefox.
 // In each, signed in on /web, Big Buck Bunny's MP4 plays directly and Sintel's MKV as HLS (a direct
 // stream); Sintel's English subtitle is turned on and a cue is drawn, the film seeks far ahead and
 // plays on, and leaving keeps the place and ends the session. Since 4.3a (phase-4-checkpoint-3.md ›
@@ -31,7 +32,11 @@ const only = process.argv[2]
 if (only && !browsers[only]) throw new Error(`No browser called ${only}: chromium or firefox`)
 
 execFileSync('bun', ['run', 'build'], { cwd: join(ROOT, 'apps/server'), stdio: 'inherit' })
-execFileSync('bun', ['run', 'build'], { cwd: join(ROOT, 'apps/web'), stdio: 'inherit' })
+execFileSync('bun', ['run', 'export:web'], {
+  cwd: join(ROOT, 'apps/client'),
+  stdio: 'inherit',
+  env: { ...process.env, EXPO_NO_TELEMETRY: '1', EXPO_PUBLIC_HIGHSEA_MOCK: '' },
+})
 const server = await boot(PORT, { production: true })
 const problems: string[] = []
 
@@ -184,8 +189,7 @@ async function inBrowser(name: string, page: Page, token: string) {
   const sidecar = tracks.findIndex((t) => !t.forced && t.language === 'en')
   if (sidecar < 0) throw new Error(`Sintel has no English sidecar: ${JSON.stringify(tracks)}`)
   // after Off
-  await page
-    .locator('[role=radiogroup][aria-labelledby=p-subs] label')
+  await subtitles(page)
     .nth(sidecar + 1)
     .click()
   await page.keyboard.press('Escape')
@@ -193,9 +197,23 @@ async function inBrowser(name: string, page: Page, token: string) {
   await until(
     page,
     'a subtitle cue',
+    // the client hands the chosen subtitle to the browser as a <track> it draws by `::cue`
+    // (apps/client/src/player/picture.web.tsx), so its lines are the showing track's active
+    // cues, not the page's text (https://html.spec.whatwg.org/multipage/media.html#dom-texttrack-activecues)
     (texts) => {
-      const shown = document.body.innerText.replace(/\s+/g, ' ')
-      return texts.some((t) => shown.includes(t))
+      const v = document.querySelector('video')
+      if (!v) return false
+      return Array.from(v.textTracks).some(
+        (t) =>
+          t.mode === 'showing' &&
+          Array.from(t.activeCues ?? []).some((c) => {
+            const line = ((c as VTTCue).text ?? '')
+              .replace(/<[^>]+>/g, '')
+              .replace(/\s+/g, ' ')
+              .trim()
+            return texts.some((x) => x.includes(line) || line.includes(x))
+          }),
+      )
     },
     lines,
   )
@@ -227,7 +245,7 @@ async function inBrowser(name: string, page: Page, token: string) {
   const first = await play(page, ELEPHANTS, null)
   await page.getByRole('button', { name: 'Audio and subtitles' }).click()
   // after Off, the one subtitle
-  const pgs = page.locator('[role=radiogroup][aria-labelledby=p-subs] label').nth(1)
+  const pgs = subtitles(page).nth(1)
   if (first !== 'transcode') {
     const restarted = page.waitForResponse(
       (r) => r.request().method() === 'POST' && r.url().endsWith(`/items/movie/${ELEPHANTS}/play`),
@@ -237,7 +255,7 @@ async function inBrowser(name: string, page: Page, token: string) {
     if (burned.decision.method !== 'transcode') {
       throw new Error(`the PGS subtitle was decided ${burned.decision.method}, not transcode`)
     }
-  } else if (!(await pgs.locator('input').isChecked())) {
+  } else if (!(await pgs.isChecked())) {
     throw new Error('Elephants Dream was transcoded without its PGS subtitle chosen')
   }
   await page
@@ -262,11 +280,19 @@ async function inBrowser(name: string, page: Page, token: string) {
   const stream = live.sessions.find((s) => s.item.tmdbId === SINTEL)
   if (!stream) throw new Error(`Now playing doesn't list Sintel: ${JSON.stringify(live)}`)
   await server.api('POST', `/sessions/${stream.id}/stop`, { message: STOP_MESSAGE }, token)
-  const notice = page.getByRole('alertdialog', { name: `${OWNER.displayName} stopped this stream` })
+  // the client's StreamMessage is an alert over the player (apps/client/src/player/parts.tsx)
+  const notice = page
+    .getByRole('alert')
+    .filter({ hasText: `${OWNER.displayName} stopped this stream` })
   await notice.waitFor()
   if (!(await notice.getByText(STOP_MESSAGE).isVisible())) {
     problems.push(`${name}: the stop's message wasn't shown`)
   }
+}
+
+/** The Subtitles list's choices in Audio and subtitles, Off first. */
+function subtitles(page: Page) {
+  return page.getByRole('radiogroup', { name: 'Subtitles' }).getByRole('radio')
 }
 
 /** Waits for `check` in the page; on a timeout, says what it waited for and the video's state. */
@@ -279,7 +305,11 @@ async function until<A>(page: Page, what: string, check: (arg: A) => boolean, ar
     const video = await page.evaluate(() => {
       const v = document.querySelector('video')
       return v
-        ? `at ${v.currentTime.toFixed(1)} s, ${v.paused ? 'paused' : 'playing'}, ready ${v.readyState}, error ${v.error?.code ?? 'none'} ${v.error?.message ?? ''}`
+        ? `at ${v.currentTime.toFixed(1)} s, ${v.paused ? 'paused' : 'playing'}, ready ${v.readyState}, error ${v.error?.code ?? 'none'} ${v.error?.message ?? ''}, tracks [${Array.from(
+            v.textTracks,
+          )
+            .map((t) => `${t.label || t.language}:${t.mode}:${t.cues?.length ?? '-'}`)
+            .join(', ')}]`
         : 'no video'
     })
     const shown = await page.evaluate(() =>

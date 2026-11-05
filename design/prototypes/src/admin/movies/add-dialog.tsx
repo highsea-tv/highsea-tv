@@ -3,6 +3,8 @@
 // pages and collections: the folder, both profiles, monitoring, minimum availability and "Search
 // now", which hands the movie to the pipeline. Given several movies, it adds each with the same
 // options.
+
+import type { DiscoverMovie, MediaItem, MinimumAvailability } from '@highsea-tv/mock/types'
 import {
   Button,
   Checkbox,
@@ -12,11 +14,10 @@ import {
   Select,
   Switch,
   toast,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import { useState } from 'react'
 import { useLocation } from 'wouter'
 import { useAction, useQuery } from '../../mock/hooks.tsx'
-import type { DiscoverMovie, MediaItem, MinimumAvailability } from '../../mock/types.ts'
 import { Loadable } from '../loadable.tsx'
 
 const availability: { value: MinimumAvailability; label: string }[] = [
@@ -47,7 +48,8 @@ export function AddMovieDialog({
     return { folders, quality, language }
   })
   const [form, setForm] = useState({
-    rootFolder: '/data/media/movies',
+    // empty: the first Movies folder, once they've loaded (stage 6: no path is assumed)
+    rootFolder: '',
     qualityProfileId: 'qp-hd',
     languageProfileId: 'lp-en',
     monitored: true,
@@ -57,7 +59,15 @@ export function AddMovieDialog({
   const add = useAction(async (c, ms: DiscoverMovie[]) => {
     const items: MediaItem[] = []
     for (const m of ms)
-      items.push(await c.movies.add({ tmdbId: m.tmdbId, title: m.title, year: m.year, ...form }))
+      items.push(
+        await c.movies.add({
+          tmdbId: m.tmdbId,
+          title: m.title,
+          year: m.year,
+          ...form,
+          rootFolder: form.rootFolder || (options.data?.folders[0] ?? ''),
+        }),
+      )
     return items
   })
 
@@ -135,7 +145,7 @@ export function AddMovieDialog({
                 <div className="grid gap-4 medium:grid-cols-2">
                   <Field label="Folder" className="medium:col-span-2">
                     <Select
-                      value={form.rootFolder}
+                      value={form.rootFolder || o.folders[0]}
                       onValueChange={(rootFolder) => setForm({ ...form, rootFolder })}
                       options={o.folders.map((f) => ({ value: f, label: f }))}
                       className="font-mono"

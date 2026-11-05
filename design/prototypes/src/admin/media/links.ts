@@ -8,4 +8,9 @@ export const moviePath = (t: { id: string }) => `/movies/${t.id}`
 
 export const movieHref = (t: { id: string }) => adminHref(moviePath(t))
 
+/** A show's page in the admin (stage 6): `/shows/{id}`, the show's media id. */
+export const showPath = (t: { id: string }) => `/shows/${t.id}`
+
+export const showHref = (t: { id: string }) => adminHref(showPath(t))
+
 export const personHref = (id: string) => adminHref(`/people/${id}`)

@@ -98,4 +98,114 @@ describe('useQuery', () => {
     await Bun.sleep(50)
     expect(calls).toBe(after)
   })
+
+  test('refresh fetches again keeping what is shown; refetch starts over from loading', async () => {
+    let calls = 0
+    const client = createClient({
+      fetch: async () => {
+        calls++
+        return new Response(
+          JSON.stringify({
+            id: 'srv_1',
+            name: `n${calls}`,
+            version: '0',
+            localAddresses: [],
+            publicUrl: null,
+          }),
+        )
+      },
+    })
+    let query: ReturnType<typeof useQuery> | null = null
+    function Name() {
+      const q = useQuery('info', (c) => c.system.publicInfo())
+      query = q
+      return <p>{q.status === 'success' ? q.data.name : '…'}</p>
+    }
+    const view = render(
+      <ClientProvider client={client}>
+        <Name />
+      </ClientProvider>,
+    )
+    await act(() => Bun.sleep(10))
+    act(() => {
+      query?.refresh()
+    })
+    expect(view.container.textContent).toBe('n1')
+    await act(() => Bun.sleep(10))
+    expect(view.container.textContent).toBe('n2')
+    act(() => query?.refetch())
+    expect(view.container.textContent).toBe('…')
+    await act(() => Bun.sleep(10))
+    expect(view.container.textContent).toBe('n3')
+    view.unmount()
+  })
+
+  test('refresh returns its fetch: it resolves with the answer, and a failure keeps the data', async () => {
+    let calls = 0
+    let fail = false
+    const client = createClient({
+      fetch: async () => {
+        calls++
+        if (fail)
+          return new Response(JSON.stringify({ code: 'unavailable', message: 'Down.' }), {
+            status: 503,
+          })
+        return new Response(
+          JSON.stringify({
+            id: 'srv_1',
+            name: `n${calls}`,
+            version: '0',
+            localAddresses: [],
+            publicUrl: null,
+          }),
+        )
+      },
+    })
+    const held: { query?: ReturnType<typeof useQuery<{ name: string }>> } = {}
+    function Name() {
+      const q = useQuery('info', (c) => c.system.publicInfo())
+      held.query = q
+      return <p>{q.status === 'success' ? q.data.name : q.status}</p>
+    }
+    const view = render(
+      <ClientProvider client={client}>
+        <Name />
+      </ClientProvider>,
+    )
+    await act(() => Bun.sleep(10))
+    expect(view.container.textContent).toBe('n1')
+
+    // a pull to refresh waits for it, and the new answer is on screen when it ends
+    let answer: { name: string } | undefined
+    await act(async () => {
+      answer = await held.query?.refresh()
+    })
+    expect(answer?.name).toBe('n2')
+    expect(view.container.textContent).toBe('n2')
+
+    // it rejects when the fetch fails, and what was shown stays
+    fail = true
+    let error: unknown
+    await act(async () => {
+      await held.query?.refresh().catch((e: unknown) => {
+        error = e
+      })
+    })
+    expect(error).toBeInstanceOf(Error)
+    expect(view.container.textContent).toBe('n2')
+    expect(held.query?.status).toBe('success')
+
+    // one nobody waits for leaves no unhandled rejection
+    const unhandled: unknown[] = []
+    const onUnhandled = (e: unknown) => unhandled.push(e)
+    process.on('unhandledRejection', onUnhandled)
+    await act(async () => {
+      held.query?.refresh()
+      await Bun.sleep(20)
+    })
+    process.off('unhandledRejection', onUnhandled)
+    expect(unhandled).toEqual([])
+    expect(view.container.textContent).toBe('n2')
+    view.unmount()
+  })
 })

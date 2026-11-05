@@ -21,6 +21,7 @@ import { useT } from '@highsea-tv/i18n/react'
 import { useQuery } from '@highsea-tv/sdk/react'
 import {
   Button,
+  Chip,
   Input,
   Menu,
   MenuCheckboxItem,
@@ -29,7 +30,7 @@ import {
   Select,
   SelectGroup,
   SelectItem,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import { useState } from 'react'
 import { collections as messages } from './collections-messages.ts'
 import { useSettled } from './curation-shared.tsx'
@@ -207,7 +208,6 @@ export function RuleBuilder({
                     aria={t('group.matchAria', { n: at + 1 })}
                   />
                   <Button
-                    size="sm"
                     variant="ghost"
                     iconOnly
                     icon="delete"
@@ -410,7 +410,6 @@ function ConditionRow({
           <span />
         )}
         <Button
-          size="sm"
           variant="ghost"
           iconOnly
           icon="close"
@@ -609,17 +608,10 @@ function PersonChip({
   )
   const name = known ?? person.data?.name ?? id
   return (
-    <li className="flex items-center gap-1 rounded-full border border-line bg-s2 ps-3 text-text text-ui">
-      {name}
-      <Button
-        size="sm"
-        variant="ghost"
-        iconOnly
-        icon="close"
-        aria-label={t('removePerson', { name })}
-        onClick={onRemove}
-        className="rounded-full"
-      />
+    <li>
+      <Chip removable aria-label={t('removePerson', { name })} onClick={onRemove}>
+        {name}
+      </Chip>
     </li>
   )
 }

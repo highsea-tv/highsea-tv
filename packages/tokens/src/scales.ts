@@ -46,11 +46,11 @@ export const blur = {
   fallbackOpacity: 0.96,
 } as const
 
-/** Admin density (docs/design-language/platforms/admin.md#density), px. */
+/**
+ * Admin density (docs/design-language/platforms/admin.md#density), px. Controls' sizes are the
+ * control spec's (`controls.ts`, `--control-*`), not density's.
+ */
 export const density = {
-  control: 36,
-  controlSm: 30,
-  input: 38,
   badge: 22,
   row: 60,
   rowSingle: 40,
@@ -95,7 +95,9 @@ export const focus = {
 
 /** TV layout in screen units (docs/design-language/platforms/tv.md#layout). */
 export const tv = {
-  safe: { x: 4.5, y: 3.2, overscan: 5 },
+  // one inset on every side, tightened inside tvOS's 60 and 80 points (HIG, Layout: tvOS) to 46
+  // at 1080p (the owner, 2026-10-30); `overscan` still covers a TV that crops the picture
+  safe: { x: 2.4, y: 2.4, overscan: 5 },
   hero: { height: 62, copyTop: 7.5, copyWidth: 38 },
   rows: { height: 47, inset: 4.5 },
   poster: { width: 10.5, gap: 1.2 },

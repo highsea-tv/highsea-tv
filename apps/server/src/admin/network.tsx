@@ -12,7 +12,7 @@
 import type { NetworkSettings, NetworkStatus } from '@highsea-tv/api-contract'
 import { useT } from '@highsea-tv/i18n/react'
 import { useAction, useQuery } from '@highsea-tv/sdk/react'
-import { Field, Input, SegmentedControl, Switch, toast } from '@highsea-tv/ui-web'
+import { Field, Input, SegmentedControl, Switch, toast } from '@highsea-tv/ui'
 import { useState } from 'react'
 import { Loadable } from './loadable.tsx'
 import { network as messages } from './network-messages.ts'

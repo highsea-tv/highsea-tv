@@ -7,6 +7,17 @@
 // confidence and offset; manual search and pick; re-sync).
 
 import { bytes, duration, percent, rate, relative } from '@highsea-tv/core/format'
+import type {
+  DiscoverMovie,
+  HistoryEventType,
+  MediaFile,
+  MediaItem,
+  Release,
+  Stream,
+  SubtitleSearchResult,
+  SubtitleTrack,
+  SyncStatus,
+} from '@highsea-tv/mock/types'
 import {
   Badge,
   Button,
@@ -39,21 +50,10 @@ import {
   TitleCell,
   Tooltip,
   toast,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import { Fragment, useState } from 'react'
 import { useLocation, useParams } from 'wouter'
 import { useAction, useNow, useQuery } from '../../mock/hooks.tsx'
-import type {
-  DiscoverMovie,
-  HistoryEventType,
-  MediaFile,
-  MediaItem,
-  Release,
-  Stream,
-  SubtitleSearchResult,
-  SubtitleTrack,
-  SyncStatus,
-} from '../../mock/types.ts'
 import { Loadable } from '../loadable.tsx'
 import {
   CastAndCrew,
@@ -66,10 +66,21 @@ import {
 } from '../media/sections.tsx'
 import { AdminPage } from '../shell.tsx'
 import { torrentStatus } from '../status.ts'
+import { useTabAddress } from '../tabs.ts'
 import { AddMovieDialog } from './add-dialog.tsx'
 import { movieStatus } from './library.tsx'
 
-type Tab = 'overview' | 'cast' | 'files' | 'history' | 'search' | 'subtitles'
+/** The tabs, each at its own address (`/movies/{id}/{tab}`, Overview at `/movies/{id}`). */
+export const movieTabs = ['overview', 'cast', 'files', 'history', 'search', 'subtitles'] as const
+type Tab = (typeof movieTabs)[number]
+
+/** The tab in the address, and moving to another as a step Back returns from. */
+function useTab(id: string, has: readonly Tab[] = movieTabs) {
+  const { tab } = useParams<{ tab?: string }>()
+  const shown = has.find((t) => t === tab) ?? 'overview'
+  const go = useTabAddress<Tab>(`/movies/${id}`, 'overview')
+  return [shown, go] as const
+}
 
 type Metadata = ReturnType<typeof useMovieMetadata>
 
@@ -101,13 +112,18 @@ export function MovieDetail() {
         <SummarySkeleton />
       </AdminPage>
     )
-  return meta.data.inLibrary ? <LibraryMovie id={id} meta={meta} /> : <MetadataMovie meta={meta} />
+  return meta.data.inLibrary ? (
+    <LibraryMovie id={id} meta={meta} />
+  ) : (
+    <MetadataMovie id={id} meta={meta} />
+  )
 }
 
 // ---------------------------------------------------------------- not in the library
 
-function MetadataMovie({ meta }: { meta: Metadata }) {
-  const [tab, setTab] = useState<Tab>('overview')
+function MetadataMovie({ id, meta }: { id: string; meta: Metadata }) {
+  // only the metadata's tabs; the library's own fall back to Overview until it's added
+  const [tab, setTab] = useTab(id, ['overview', 'cast'])
   const [adding, setAdding] = useState<DiscoverMovie[]>([])
   const m = meta.data
 
@@ -156,7 +172,7 @@ function MetadataMovie({ meta }: { meta: Metadata }) {
 function LibraryMovie({ id, meta }: { id: string; meta: Metadata }) {
   const [, navigate] = useLocation()
   const movie = useQuery(`movie:${id}`, (c) => c.movies.get(id), ['item.updated', 'movies.updated'])
-  const [tab, setTab] = useState<Tab>('overview')
+  const [tab, setTab] = useTab(id)
   const [removing, setRemoving] = useState(false)
   const [deleteFiles, setDeleteFiles] = useState(false)
   const [adding, setAdding] = useState<DiscoverMovie[]>([])
@@ -469,16 +485,18 @@ function FileStreams({ file: f }: { file: MediaFile }) {
       <p className="truncate font-mono text-release text-text-3" title={f.path}>
         {f.path}
       </p>
-      <ul className="grid gap-1 text-ui">
+      <ul className="grid grid-cols-[minmax(0,1fr)] gap-1 text-ui">
         {f.streams.map((s) => (
           <li key={s.index} className="flex gap-3">
             <span className="w-16 shrink-0 text-text-3 capitalize">{s.type}</span>
-            <span className="min-w-0 font-mono text-figure text-text-2">{streamLine(s)}</span>
+            <span className="min-w-0 font-mono text-figure text-text-2 [overflow-wrap:anywhere]">
+              {streamLine(s)}
+            </span>
           </li>
         ))}
       </ul>
       <p className="text-caption text-text-3">
-        Release <span className="font-mono">{f.sceneName}</span>
+        Release <span className="font-mono [overflow-wrap:anywhere]">{f.sceneName}</span>
       </p>
     </>
   )
@@ -504,6 +522,7 @@ export function HistoryTable({
   events,
   showTitle,
   titles,
+  hrefs,
 }: {
   events: {
     id: string
@@ -516,6 +535,8 @@ export function HistoryTable({
   }[]
   showTitle?: boolean
   titles?: Record<string, string>
+  /** Where a title links when it isn't a movie's page: an episode's show (stage 6). */
+  hrefs?: Record<string, string>
 }) {
   const now = useNow()
   return (
@@ -523,7 +544,7 @@ export function HistoryTable({
       <TableHeader>
         <TableRow>
           <TableHead>Event</TableHead>
-          {showTitle && <TableHead>Movie</TableHead>}
+          {showTitle && <TableHead>Title</TableHead>}
           <TableHead>Release</TableHead>
           <TableHead>Source</TableHead>
           <TableHead numeric>When</TableHead>
@@ -540,7 +561,10 @@ export function HistoryTable({
             </TableCell>
             {showTitle && (
               <TableCell>
-                <a href={`#/admin/movies/${e.itemId}`} className="text-text hover:underline">
+                <a
+                  href={hrefs?.[e.itemId] ?? `#/admin/movies/${e.itemId}`}
+                  className="text-text hover:underline"
+                >
                   {titles?.[e.itemId] ?? e.itemId}
                 </a>
               </TableCell>

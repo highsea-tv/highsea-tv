@@ -5,6 +5,17 @@
 // their own API keys (ADR 0032).
 
 import { relative } from '@highsea-tv/core/format'
+import type {
+  ApiKey,
+  ClientType,
+  CreatedApiKey,
+  Device,
+  Invite,
+  InviteInput,
+  Permission,
+  User,
+  UserRole,
+} from '@highsea-tv/mock/types'
 import {
   Badge,
   type BadgeTone,
@@ -38,20 +49,9 @@ import {
   TabsList,
   TabsTrigger,
   toast,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import { useState } from 'react'
 import { useAction, useNow, useQuery } from '../../mock/hooks.tsx'
-import type {
-  ApiKey,
-  ClientType,
-  CreatedApiKey,
-  Device,
-  Invite,
-  InviteInput,
-  Permission,
-  User,
-  UserRole,
-} from '../../mock/types.ts'
 import { Loadable } from '../loadable.tsx'
 import { useShell } from '../shell.tsx'
 import { AreaPage } from './settings.tsx'
@@ -169,7 +169,22 @@ function Avatar({ user }: { user: Pick<User, 'displayName'> }) {
   )
 }
 
-const libraryLabel = (u: User) => (u.libraries === 'all' ? 'All libraries' : 'Movies')
+/** Movies, Shows and Music: each its own choice (stage 6). */
+const LIBRARIES: [string, string][] = [
+  ['movies', 'Movies'],
+  ['shows', 'Shows'],
+  ['music', 'Music'],
+]
+
+/** "All libraries", "Movies and Shows", "Music". */
+function libraryLabel(u: User) {
+  if (u.libraries === 'all') return 'All libraries'
+  const names = LIBRARIES.filter(([id]) => u.libraries.includes(id)).map(([, name]) => name)
+  if (names.length === 0) return 'None'
+  return names.length === 1
+    ? (names[0] as string)
+    : `${names.slice(0, -1).join(', ')} and ${names.at(-1)}`
+}
 
 function People() {
   const owner = useShell().role === 'owner'
@@ -371,7 +386,7 @@ function LibrariesField({
         aria-label="Libraries"
         size="sm"
         value={value === 'all' ? 'all' : 'some'}
-        onValueChange={(v) => onChange(v === 'all' ? 'all' : ['movies'])}
+        onValueChange={(v) => onChange(v === 'all' ? 'all' : LIBRARIES.map(([id]) => id))}
         options={[
           { value: 'all', label: 'All, now and later' },
           { value: 'some', label: 'Choose' },
@@ -380,16 +395,24 @@ function LibrariesField({
       />
       {value !== 'all' && (
         <div className="grid gap-2 rounded-md border border-line bg-s2 p-3">
-          <Field inline label="Movies">
-            <Checkbox
-              checked={value.includes('movies')}
-              onCheckedChange={(c) =>
-                onChange(c === true ? [...value, 'movies'] : value.filter((x) => x !== 'movies'))
-              }
-            />
-          </Field>
+          {LIBRARIES.map(([id, name]) => (
+            <Field key={id} inline label={name}>
+              <Checkbox
+                checked={value.includes(id)}
+                onCheckedChange={(c) =>
+                  onChange(
+                    c === true
+                      ? LIBRARIES.map(([x]) => x).filter((x) => x === id || value.includes(x))
+                      : value.filter((x) => x !== id),
+                  )
+                }
+              />
+            </Field>
+          ))}
           <p className="text-caption text-text-3">
-            TV shows, music and books join this list when the server has them.
+            {value.length === 0
+              ? 'Choose at least one, or they’ll have nothing to watch or play.'
+              : 'Books join this list when the server has them.'}
           </p>
         </div>
       )}
@@ -522,6 +545,7 @@ function InviteDialog({
               <Button
                 variant="primary"
                 loading={invite.pending}
+                disabled={Array.isArray(draft.libraries) && !draft.libraries.length}
                 onClick={() => {
                   setTried(true)
                   if (!draft.displayName.trim()) return

@@ -192,7 +192,37 @@ const desktop: DeviceProfile[] = [
   },
 ]
 
-export const BUILT_IN: readonly DeviceProfile[] = [...BUILT_IN_WEB, ...desktop]
+// The native apps on Apple's platforms (4.5a; ADR 0052's dated section) play through AVPlayer,
+// whose formats Apple's HLS authoring specification lists
+// (https://developer.apple.com/documentation/http-live-streaming/hls-authoring-specification-for-apple-devices):
+// MP4 and QuickTime files, H.264 and HEVC tagged `hvc1`, AAC, MP3, ALAC, FLAC, AC-3 and E-AC-3,
+// and HLS natively with its alternate audio, so sound tracks change without a new session. It
+// plays neither WebM nor VP8 and VP9 in files, which Safari plays through Media Source
+// Extensions. Subtitles come as the session's WebVTT, drawn by the app. HDR, AV1 and Dolby
+// Vision vary by model and screen, so they come only from a report.
+const apple: DeviceProfile = {
+  id: 'ios',
+  name: 'highsea for iPhone',
+  containers: ['mp4', 'mov'],
+  video: [h264, { ...hevc, tag: 'hvc1' }],
+  hdr: noHdr,
+  audio: [
+    { codec: 'aac', maxChannels: 8 },
+    { codec: 'mp3', maxChannels: 2 },
+    { codec: 'flac', maxChannels: 8 },
+    { codec: 'alac', maxChannels: 8 },
+    { codec: 'ac3', maxChannels: 6 },
+    { codec: 'eac3', maxChannels: 8 },
+  ],
+  passthrough: [],
+  subtitles: ['webvtt'],
+  audioTracks: true,
+  hls: { native: true, supported: true },
+  maxBitrate: null,
+}
+const native: DeviceProfile[] = [apple, { ...apple, id: 'tvos', name: 'highsea for Apple TV' }]
+
+export const BUILT_IN: readonly DeviceProfile[] = [...BUILT_IN_WEB, ...desktop, ...native]
 
 export const builtIn = (id: string): DeviceProfile | null =>
   BUILT_IN.find((p) => p.id === id) ?? null

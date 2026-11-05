@@ -1,36 +1,48 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Collections (docs/product/collections.md#the-list): every collection the owner and admins made,
-// smart or picked by hand, with its mosaic, what it holds now and who sees it. Each opens the
-// editor, where rules, exceptions and the live result sit side by side.
-import { Badge, Button, ConfirmDialog, EmptyState, toast } from '@highsea-tv/ui-web'
+// smart or picked by hand, with its mosaic, what it holds now (films and shows, counted as the apps
+// count them) and who sees it. Each opens the editor, where rules, exceptions and the live result
+// sit side by side.
+
+import { createFormat } from '@highsea-tv/client/format'
+import type { CollectionSummary } from '@highsea-tv/mock/types'
+import { Badge, Button, ConfirmDialog, EmptyState, toast } from '@highsea-tv/ui'
 import { useState } from 'react'
 import { useLocation } from 'wouter'
 import { CollectionArt } from '../../kit/collection-art.tsx'
 import { useAction, useQuery } from '../../mock/hooks.tsx'
-import type { CollectionSummary } from '../../mock/types.ts'
 import { audienceSummary, useUsers } from '../curation/shared.tsx'
 import { Loadable } from '../loadable.tsx'
 import { AdminPage, adminHref } from '../shell.tsx'
 
-/** "4 match · 3 in the apps", or how many are picked. */
-export function holds(c: Pick<CollectionSummary, 'matched' | 'playable'>): string {
-  if (c.matched === 0) return 'Nothing matches yet'
-  const films = `${c.matched} ${c.matched === 1 ? 'film' : 'films'}`
-  return c.playable === c.matched
-    ? `${films}, all in the apps`
-    : `${films}, ${c.playable} in the apps`
+const format = createFormat('en')
+
+/** "6 movies and 1 show, all in the apps", or how many of them the apps show. */
+export function holds(
+  c: Pick<CollectionSummary, 'matched' | 'playable' | 'showsHere' | 'showsPlayable'>,
+): string {
+  const all = c.matched + c.showsHere
+  if (all === 0) return 'Nothing matches yet'
+  const what = format.titlesHere(c.matched, c.showsHere)
+  const shown = c.playable + c.showsPlayable
+  return shown === all ? `${what}, all in the apps` : `${what}, ${shown} in the apps`
 }
+
+/** Something in it, and none of it in the apps yet. */
+const hidden = (c: CollectionSummary) =>
+  c.matched + c.showsHere > 0 && c.playable + c.showsPlayable === 0
 
 export function Collections() {
   const [, navigate] = useLocation()
   const list = useQuery('collections', (c) => c.collections.list(), [
     'collections.updated',
     'movies.updated',
+    'shows.updated',
   ])
   return (
     <AdminPage
       title="Collections"
-      description="Films grouped by rules that keep themselves up to date, or picked by hand. They show in every app’s library."
+      description="Films grouped by rules that keep themselves up to date, or films and shows picked by hand. They show in every app’s library."
       actions={
         <Button variant="primary" icon="add" onClick={() => navigate('/collections/new')}>
           New collection
@@ -50,7 +62,7 @@ export function Collections() {
               }
             >
               Describe the films you want, say from the 2010s, rated 4.5 or more, in English, and
-              the collection keeps up as the library changes. Or pick films by hand.
+              the collection keeps up as the library changes. Or pick films and shows by hand.
             </EmptyState>
           ) : (
             <ul aria-label="Collections" className="grid gap-3">
@@ -72,7 +84,7 @@ function CollectionRow({ c }: { c: CollectionSummary }) {
   return (
     <li className="grid grid-cols-[3.5rem_minmax(0,1fr)] gap-x-4 gap-y-3 rounded-lg border border-line bg-s1 p-4 medium:grid-cols-[3.5rem_minmax(0,1fr)_auto] medium:items-center">
       <CollectionArt poster={c.artwork} mosaic={c.mosaic} className="w-14 rounded-[6px]" />
-      <div className="grid min-w-0 gap-1">
+      <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-1 [overflow-wrap:anywhere]">
         <p className="flex flex-wrap items-center gap-2">
           <a
             href={adminHref(`/collections/${c.id}`)}
@@ -81,7 +93,7 @@ function CollectionRow({ c }: { c: CollectionSummary }) {
             {c.name}
           </a>
           {c.rules ? <Badge tone="accent">Smart</Badge> : <Badge>Picked</Badge>}
-          {c.matched > 0 && c.playable === 0 && <Badge tone="warning">Hidden in the apps</Badge>}
+          {hidden(c) && <Badge tone="warning">Hidden in the apps</Badge>}
         </p>
         {c.words && <p className="truncate text-caption text-text-2">{c.words}</p>}
         <p className="text-caption text-text-3">
@@ -107,7 +119,7 @@ function CollectionRow({ c }: { c: CollectionSummary }) {
         open={confirm}
         onOpenChange={setConfirm}
         title={`Delete “${c.name}”?`}
-        description="It leaves every app’s library. The films in it stay in the library."
+        description="It leaves every app’s library. What’s in it stays in the library."
         confirmLabel="Delete"
         destructive
         onConfirm={() =>

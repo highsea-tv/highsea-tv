@@ -24,7 +24,7 @@ import {
   Skeleton,
   SkeletonText,
   toast,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import { useParams } from 'wouter'
 import { PosterRow } from './home.tsx'
 import { media } from './host.ts'
@@ -44,7 +44,7 @@ export function WatchWith({ detail }: { detail: ClientDetail }) {
   const run = (patch: Parameters<typeof save.run>[0]) =>
     save
       .run(patch)
-      .then(() => picks.refetch())
+      .then(() => picks.refresh())
       .catch((e: Error) =>
         toast({ title: t('saveFailed', { message: e.message }), tone: 'danger' }),
       )
@@ -65,7 +65,7 @@ export function WatchWith({ detail }: { detail: ClientDetail }) {
             }))}
           />
         ) : (
-          <p className="flex h-(--size-control) items-center text-text-2 text-ui">
+          <p className="flex h-(--control-h) items-center text-text-2 text-ui">
             {version.detail ?? version.label}
           </p>
         )}

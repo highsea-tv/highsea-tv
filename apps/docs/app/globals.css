@@ -14,7 +14,7 @@
 @import "@highsea-tv/brand/fonts.css";
 
 /* the lockup comes from ui-web, outside this app, so Tailwind is told to read it */
-@source "../../../packages/ui-web/src/components/brand.tsx";
+@source "../../../packages/ui/src/web/components/brand.tsx";
 
 /* design system v1.0 has dark themes only, so the site is always in highsea's default theme */
 :root,
@@ -77,4 +77,45 @@ body {
 
 .text-text-3 {
   color: var(--color-text-3);
+}
+
+/*
+ * Fumadocs' controls on the control spec (design system 1.1, docs/design-language/controls.md):
+ * every control takes its height, corner and text from the `--control-*` tokens, as the apps'
+ * do, in place of Fumadocs' `rounded-lg` and `rounded-md`. Unlayered, so it wins over Tailwind's
+ * utilities (https://tailwindcss.com/docs/adding-custom-styles#using-css-and-layer).
+ */
+[role="dialog"] button,
+[role="dialog"] input {
+  border-radius: var(--control-radius);
+}
+
+#nd-docs-layout button,
+#nd-sidebar a[data-active],
+#nd-sidebar button[data-active],
+#nd-page button {
+  border-radius: var(--control-radius);
+}
+
+/* the search field in the sidebar, which is a button that opens the search */
+button[data-search-full] {
+  height: var(--control-h);
+  padding-inline: var(--control-field-pad);
+  gap: var(--control-gap);
+  border-color: var(--color-control-edge);
+  font-size: var(--control-text);
+}
+
+/* icon buttons: the sidebar's collapse, the top bar's search and a code block's copy */
+#nd-docs-layout button[aria-label]:not([data-search-full]),
+#nd-page figure button {
+  width: var(--control-h-sm);
+  height: var(--control-h-sm);
+}
+
+/* the sidebar's items, one control's height and text each (Fumadocs indents nested ones inline) */
+#nd-sidebar a[data-active],
+#nd-sidebar button[data-active] {
+  min-height: var(--control-h);
+  font-size: var(--control-text);
 }

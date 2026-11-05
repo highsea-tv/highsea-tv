@@ -18,7 +18,14 @@ import { and, eq, inArray, isNotNull, sql } from 'drizzle-orm'
 import { probeOf } from '../shared/file-facts.ts'
 import { type ItemRow, toApiCredit, toApiVideo } from '../shared/map.ts'
 import type { Dir, Sort } from '../shared/paging.ts'
-import { matchScore } from '../shared/search.ts'
+import {
+  matchScore,
+  rankByMatch,
+  rankSections,
+  SEARCH_LIMIT,
+  SEARCH_MOVIE_POOL,
+  SEARCH_PEOPLE_POOL,
+} from '../shared/search.ts'
 import { chunks, escapeLike } from '../shared/sql.ts'
 import { audioTracks, versionDetail } from '../shared/tracks.ts'
 import { playedOf, watchOf } from '../shared/watch.ts'
@@ -29,8 +36,6 @@ import { toApiDiscoverMovie, toClientItem } from './map.ts'
 const { mediaItems, movieMetadata, collections, versions: versionsTable, mediaFiles } = schema
 
 /** Results per section. */
-const SECTION_LIMIT = 20
-
 export type ClientListQuery = {
   type?: 'movie'
   genre?: string
@@ -147,6 +152,9 @@ export function createClient(ctx: Ctx, { library }: { library: Library }) {
       directors: crew.flatMap((c, i) =>
         c.job === 'Director' ? [toApiCredit(c, tmdbId, 'crew', i)] : [],
       ),
+      crew: crew.flatMap((c, i) =>
+        c.job === 'Director' || c.job === 'Producer' ? [] : [toApiCredit(c, tmdbId, 'crew', i)],
+      ),
       videos: (meta?.videos ?? []).map(toApiVideo),
       collection: meta?.collection ?? null,
       versions: versions.map((v) => {
@@ -191,14 +199,12 @@ export function createClient(ctx: Ctx, { library }: { library: Library }) {
         ),
       )
       .orderBy(mediaItems.sortTitle, mediaItems.id)
-      .limit(SECTION_LIMIT * 5)
+      .limit(SEARCH_MOVIE_POOL)
       .all()
-    const ranked = rows
-      .map((r, i) => ({ r, i, score: matchScore(r.title, query) }))
-      .sort((a, b) => b.score - a.score || a.i - b.i)
-      .slice(0, SECTION_LIMIT)
-      .map((x) => x.r)
-    return items(ranked, userId)
+    return items(
+      rankByMatch(rows, (r) => matchScore(r.title, query)),
+      userId,
+    )
   }
 
   /** Collections with a part here, by name or a part's title. Only the parts here count. */
@@ -242,37 +248,32 @@ export function createClient(ctx: Ctx, { library }: { library: Library }) {
     const overview = new Map(
       cachedRows.map((c) => [c.tmdbId, (c.data as { overview?: string | null }).overview ?? '']),
     )
-    return [...byId.entries()]
-      .map(([id, ps]) => {
-        const first = ps[0] as (typeof ps)[number]
-        const years = ps.map((p) => p.year).filter((y): y is number => y !== null)
-        const min = Math.min(...years)
-        const max = Math.max(...years)
-        return {
-          id,
-          name: first.name,
-          overview: overview.get(id) ?? '',
-          art: {
-            poster: imageUrl('collection', id, 'poster', DEFAULT_SIZES.poster, first.poster),
-            backdrop: imageUrl(
-              'collection',
-              id,
-              'backdrop',
-              DEFAULT_SIZES.backdrop,
-              first.backdrop,
-            ),
-          },
-          count: ps.length,
-          years: years.length === 0 ? '' : min === max ? String(min) : `${min}–${max}`,
-          score: Math.max(
-            matchScore(first.name, query),
-            ...ps.map((p) => matchScore(p.title, query)),
-          ),
-        }
-      })
-      .sort((a, b) => b.score - a.score || a.name.localeCompare(b.name))
-      .slice(0, SECTION_LIMIT)
-      .map(({ score: _score, ...c }) => c)
+    const found = [...byId.entries()].map(([id, ps]) => {
+      const first = ps[0] as (typeof ps)[number]
+      const years = ps.map((p) => p.year).filter((y): y is number => y !== null)
+      const min = Math.min(...years)
+      const max = Math.max(...years)
+      return {
+        id,
+        name: first.name,
+        overview: overview.get(id) ?? '',
+        art: {
+          poster: imageUrl('collection', id, 'poster', DEFAULT_SIZES.poster, first.poster),
+          backdrop: imageUrl('collection', id, 'backdrop', DEFAULT_SIZES.backdrop, first.backdrop),
+        },
+        count: ps.length,
+        years: years.length === 0 ? '' : min === max ? String(min) : `${min}–${max}`,
+        score: Math.max(
+          matchScore(first.name, query),
+          ...ps.map((p) => matchScore(p.title, query)),
+        ),
+      }
+    })
+    return rankByMatch(
+      found,
+      (c) => c.score,
+      (a, b) => a.name.localeCompare(b.name),
+    ).map(({ score: _score, ...c }) => c)
   }
 
   /** People in the library's titles, cast or crew, by name, with how many titles here they're in. */
@@ -291,17 +292,13 @@ export function createClient(ctx: Ctx, { library }: { library: Library }) {
         FROM media_items i JOIN movie_metadata m ON m.tmdb_id = i.tmdb_id,
           json_each(m.data, '$.credits.crew') c
         WHERE i.type = 'movie' AND json_extract(c.value, '$.name') LIKE ${like} ESCAPE '\\'
-      ) GROUP BY id ORDER BY titles DESC, name LIMIT ${SECTION_LIMIT * 3}`)
-    return rows
-      .map((r, i) => ({ r, i, score: matchScore(r.name, query) }))
-      .sort((a, b) => b.score - a.score || a.i - b.i)
-      .slice(0, SECTION_LIMIT)
-      .map(({ r }) => ({
-        id: Number(r.id),
-        name: r.name,
-        photo: imageUrl('person', Number(r.id), 'profile', DEFAULT_SIZES.profile, r.photo),
-        titles: Number(r.titles),
-      }))
+      ) GROUP BY id ORDER BY titles DESC, name LIMIT ${SEARCH_PEOPLE_POOL}`)
+    return rankByMatch(rows, (r) => matchScore(r.name, query)).map((r) => ({
+      id: Number(r.id),
+      name: r.name,
+      photo: imageUrl('person', Number(r.id), 'profile', DEFAULT_SIZES.profile, r.photo),
+      titles: Number(r.titles),
+    }))
   }
 
   /**
@@ -315,36 +312,18 @@ export function createClient(ctx: Ctx, { library }: { library: Library }) {
   ): Promise<SearchResults> {
     const q = query.trim()
     if (!q) return { sections: [] }
-    const best = (names: string[]) => Math.max(0, ...names.map((n) => matchScore(n, q)))
-    const movies = searchMovies(q, userId)
-    const cols = searchCollections(q)
-    const people = searchPeople(q)
-    const ranked: { section: SearchSection; score: number }[] = [
-      {
-        section: { kind: 'movies' as const, items: movies },
-        score: best(movies.map((m) => m.title)),
-      },
-      {
-        section: { kind: 'collections' as const, items: cols },
-        score: best(cols.map((c) => c.name)),
-      },
-      {
-        section: { kind: 'people' as const, items: people },
-        score: best(people.map((p) => p.name)),
-      },
-    ]
-    const sections = ranked
-      .filter((s) => s.section.items.length > 0)
-      .map((s, i) => ({ ...s, i }))
-      .sort((a, b) => b.score - a.score || a.i - b.i)
-      .map((s) => s.section)
+    const sections: SearchSection[] = rankSections(q, {
+      movies: searchMovies(q, userId),
+      collections: searchCollections(q),
+      people: searchPeople(q),
+    })
     if (mayRequest) {
       try {
         const page = await metadata.discover.search(q)
         const here = library.inLibrary(page.results.map((m) => m.id))
         const found = page.results
           .filter((m) => !here.has(m.id))
-          .slice(0, SECTION_LIMIT)
+          .slice(0, SEARCH_LIMIT)
           .map((m) => toApiDiscoverMovie(m, false))
         if (found.length) sections.push({ kind: 'discover', items: found })
       } catch (e) {

@@ -34,7 +34,8 @@ Tailwind's palette, shadows, radii, breakpoints and animations are cleared. Only
 | Text styles | `--text-display` … `--text-widget-title` | `text-title`, `text-figure font-mono` |
 | `spring.base`, `spring.quick` | `--ease-spring`, `--ease-spring-quick` with `--duration-spring`, `--duration-spring-quick` | `ease-spring duration-(--duration-spring)` |
 | Durations, stagger | `--duration-color`, `-fade-out`, `-dwell`, `-pulse`, `--stagger` | |
-| Admin density | `--size-control`, `--size-input`, `--size-row`, `--size-sidebar`… | `h-(--size-control)` |
+| Controls ([controls.md](../../docs/design-language/controls.md)) | `--control-h`, `--control-pad`, `--control-radius`, `--control-hit`… | `h-(--control-h)` |
+| Admin density | `--size-row`, `--size-sidebar`… | `h-(--size-row)` |
 | Focus | `--focus-ring-width`, `--focus-ring-offset`, `--tv-focus-shadow` | |
 | TV screen units | `--tv-*` in `cqw` (`1u` = `1cqw`) | `text-(length:--tv-text-hero-title)` |
 

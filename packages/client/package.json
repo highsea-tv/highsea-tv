@@ -6,15 +6,25 @@
   "type": "module",
   "exports": {
     "./data": "./src/data/index.ts",
+    "./downloads": "./src/downloads/index.ts",
+    "./films": "./src/films/index.ts",
     "./format": "./src/format/index.ts",
+    "./gate": "./src/gate/index.ts",
+    "./library": "./src/library/index.ts",
+    "./music": "./src/music/index.ts",
+    "./music-player": "./src/music-player/index.ts",
     "./player": "./src/player/index.ts",
-    "./prefs": "./src/prefs/index.ts"
+    "./prefs": "./src/prefs/index.ts",
+    "./profiles": "./src/profiles/index.ts",
+    "./servers": "./src/servers/index.ts",
+    "./shows": "./src/shows/index.ts"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
     "@highsea-tv/api-contract": "workspace:*",
+    "@highsea-tv/core": "workspace:*",
     "@highsea-tv/i18n": "workspace:*",
     "@highsea-tv/sdk": "workspace:*"
   },

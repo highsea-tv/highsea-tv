@@ -60,7 +60,6 @@ highsea.tv/
 │  ├─ assets/                source SVGs, sound source files, icon sources
 │  └─ prototypes/            clickable prototypes app (Vite + React) using real tokens + ui-web, mock data
 ├─ apps/
-│  ├─ storybook/             living style guide / component workbench
 │  ├─ server/                Next.js 16 admin UI + /api/v1 + background runtime
 │  └─ web/ desktop/ mobile/ tv/                                       [later]
 ├─ packages/
@@ -124,13 +123,13 @@ Everything later depends on this, so it comes first and is finalized before any 
    - **default sound pack**: short UI sounds, procedurally synthesized or CC0, with sources in `design/assets/sounds`.
 
    **✅ Done (2026-10-16).** See [`packages/brand`](../packages/brand/README.md) and [logo and app icons](brand/logo.md). The custom icon glyphs moved to `ui-web` (step 6).
-6. **`@highsea-tv/ui-web` core** on Radix + Tailwind v4 + `motion/react`:
+6. **`@highsea-tv/ui` core** on Radix + Tailwind v4 + `motion/react`:
    - primitives: Button, Input, Select, Dialog, Sheet, Popover, Tabs, Table, Badge, Toast, Tooltip, Skeleton, Progress;
    - media components: Poster, Backdrop hero, Carousel row, Rating;
    - shell components: Sidebar, CommandPalette, WidgetFrame, Banner;
    - focus-complete, with reduced-motion support.
 
-   **✅ Done (2026-10-16).** See [`packages/ui-web`](../packages/ui-web/README.md). It also has Menu, Switch, Checkbox, SegmentedControl, the `Icon` set with the custom glyphs, browser UI sound, and the TV spatial navigator. Behavior, axe and stylesheet tests run with `bun test`.
+   **✅ Done (2026-10-16).** See [`packages/ui`](../packages/ui/README.md). It also has Menu, Switch, Checkbox, SegmentedControl, the `Icon` set with the custom glyphs, browser UI sound, and the TV spatial navigator. Behavior, axe and stylesheet tests run with `bun test`.
 7. **`apps/storybook`**: the living style guide for tokens, themes, components, motion and a sound board, with a theme switcher and a11y addon.
 
    **✅ Done (2026-10-16).** See [`apps/storybook`](../apps/storybook/README.md) (`bun run storybook`). Foundations pages for brand, color with the contrast audit, icons, layout, motion, the sound board, a theme editor and typography; every component; the media and admin shell compositions; and a TV home with D-pad focus. Every story renders and passes axe under `bun test`.
@@ -385,6 +384,9 @@ The owner asked on 2026-10-28 for installing and setting up highsea, the server 
 Approved with the owner's answers of 2026-10-28: A to C are checkpoint 4.3c, after 4.3b and before the desktop app; highsea ships its own TMDB key.
 
 Checkpoint 4.3c (A to C) was signed off by the owner on 2026-10-28.
+
+## Follow-up: one client platform (Phase 4)
+The owner asked on 2026-11-02 for every client and its prototype to share one design system, one set of tokens, one component library and one copy of each screen, on React Native, so nothing is defined in two places. The admin is the only exception, and it shares all it can. The scope is [plans/one-client-platform.md](plans/one-client-platform.md): one Expo project for the phone, the TV and the web (and so the desktop app), react-native-web on the web, the prototypes as the client itself on the mock server, and checks that fail on drift.
 
 ## Phase 4 (later): clients
 `ui-native`, then `apps/web` → `apps/desktop` (Tauri) → `apps/mobile` + `apps/tv` (Expo / react-native-tvos), built from the Phase 2 prototypes. Alongside them: `stream` (playback/transcode, WebSockets), TV/music/books domains, Usenet, requests, and the optional Connect relay.

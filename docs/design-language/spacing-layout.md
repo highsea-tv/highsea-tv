@@ -26,12 +26,12 @@ These values are locked in [direction.md](../brand/direction.md#shape).
 
 | Token | px | Use |
 | --- | --- | --- |
-| `radius-sm` | 8 | Buttons, inputs, nav items, small controls |
+| `radius-sm` | 8 | Every control on every platform: buttons, icon buttons, inputs, selects, segmented controls, tabs, nav items ([controls](controls.md)) |
 | `radius-md` | 12 | Widgets, popovers, menus |
 | `radius-lg` | 16 | Cards, panels, the admin frame |
 | `radius-xl` | 28 | Sheets, large modals |
 | `radius-poster` | 10 | Posters and stills (scaled on TV, see platform guide) |
-| *(pill)* | 999 | Badges, chips, segmented controls, announcement pills |
+| *(pill)* | 999 | Badges, chips (at the control's height), announcement pills, and the media players' own controls |
 
 **Nesting rule:** an inner radius equals the outer radius minus the padding between them, and is never less than 4px.
 
@@ -45,6 +45,8 @@ These values are locked in [direction.md](../brand/direction.md#shape).
 | wide | ≥ 1440 | Desktops. Content max width applies |
 
 TV doesn't use breakpoints. It is always laid out at 16:9 in screen units.
+
+The clients (web, desktop, phone and TV) don't use these breakpoints. They lay out by the form-factor rule (`form-factor.ts` in the tokens, read through `useFormFactor`): a window is **compact** below 768 and **regular** from 768, and the TV is its own class (the owner, 2026-11-03). These breakpoints stay the admin's until part D of the one client platform moves it onto the rule.
 
 ## Grids per platform
 

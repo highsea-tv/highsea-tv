@@ -1,0 +1,72 @@
+{
+  "name": "@highsea-tv/native",
+  "version": "0.0.0",
+  "private": true,
+  "license": "AGPL-3.0-only",
+  "type": "module",
+  "exports": {
+    "./device": "./src/device.ts",
+    "./discovery": {
+      "react-native": "./src/discovery-entry.ts",
+      "default": "./src/discovery.web.ts"
+    },
+    "./format": "./src/format.ts",
+    "./intl": "./src/intl.ts",
+    "./media": "./src/media.ts",
+    "./nearby": "./src/nearby.ts",
+    "./playback": {
+      "react-native": "./src/playback-entry.ts",
+      "default": "./src/playback.web.ts"
+    },
+    "./servers": "./src/servers.tsx",
+    "./session": "./src/session.tsx",
+    "./sound": "./src/sound.ts",
+    "./theme": "./src/theme.ts",
+    "./web-host": "./src/web-host.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@highsea-tv/api-contract": "workspace:*",
+    "@highsea-tv/client": "workspace:*",
+    "@highsea-tv/i18n": "workspace:*",
+    "@highsea-tv/sdk": "workspace:*",
+    "@highsea-tv/tokens": "workspace:*",
+    "hls.js": "1.7.3"
+  },
+  "peerDependencies": {
+    "@formatjs/intl-locale": "*",
+    "@formatjs/intl-numberformat": "*",
+    "@formatjs/intl-pluralrules": "*",
+    "expo": "*",
+    "expo-audio": "*",
+    "expo-constants": "*",
+    "expo-crypto": "*",
+    "expo-device": "*",
+    "expo-file-system": "*",
+    "expo-modules-core": "*",
+    "expo-secure-store": "*",
+    "expo-video": "*",
+    "react": "^19.3.0",
+    "react-native": "*"
+  },
+  "devDependencies": {
+    "@formatjs/intl-locale": "5.3.12",
+    "@formatjs/intl-numberformat": "9.4.3",
+    "@formatjs/intl-pluralrules": "6.3.15",
+    "@highsea-tv/config": "workspace:*",
+    "@types/react": "19.3.0",
+    "expo": "58.0.11",
+    "expo-audio": "58.0.9",
+    "expo-constants": "58.0.12",
+    "expo-crypto": "58.0.6",
+    "expo-device": "58.0.5",
+    "expo-file-system": "58.0.9",
+    "expo-modules-core": "58.0.19",
+    "expo-secure-store": "58.0.2",
+    "expo-video": "58.0.11",
+    "react": "19.3.1",
+    "react-native": "npm:react-native-tvos@0.88.0-0"
+  }
+}

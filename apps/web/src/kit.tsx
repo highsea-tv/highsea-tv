@@ -2,7 +2,7 @@
 // Small pieces the prototype keeps in its kit (design/prototypes/src/kit), as the admin ports them
 // (apps/server/src/admin/inline.tsx, collection-art.tsx): announcement bodies' inline markdown and
 // their call to action, and a collection's poster or mosaic with its tile.
-import { Badge, Button, cn, Icon } from '@highsea-tv/ui-web'
+import { Badge, Button, cn, Icon } from '@highsea-tv/ui'
 import type { ReactNode } from 'react'
 import { media } from './host.ts'
 

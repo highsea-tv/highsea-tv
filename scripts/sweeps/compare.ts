@@ -11,6 +11,7 @@ import { type ChildProcess, execFileSync, spawn } from 'node:child_process'
 import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { SETTINGS_SECTIONS } from '@highsea-tv/client/prefs'
 import type { BrowserContext, Page } from 'playwright-core'
 import {
   acknowledge,
@@ -440,14 +441,16 @@ function pairs(ids: Awaited<ReturnType<typeof seed>>): {
       },
       { screen: 'A1 Shell', name: 'not found', ...both('/admin/nowhere', '/no/such/page') },
     ],
-    // the web client (4.2a), as Theo, a user; the prototype's ids are its mock's
+    // the one client's web export (one-client-platform-c.md, C1), as Theo, a user: the prototype's
+    // frames hold the same client on its mock, so both sides take the client's routes; the
+    // prototype's ids are its mock's
     web: [
       { screen: 'C2 Home', name: 'web home', ...both('/web', '/web/') },
       { screen: 'C3 Library', name: 'web library', ...both('/web/library', '/web/library') },
       {
         screen: 'C3 Library',
         name: 'web collections',
-        ...both('/web/library/collections', '/web/library/collections'),
+        ...both('/web/collections', '/web/collections'),
       },
       {
         screen: 'C3 Library',
@@ -466,17 +469,17 @@ function pairs(ids: Awaited<ReturnType<typeof seed>>): {
         ...both('/web/movies/nothing-here', '/web/movies/19'),
       },
       { screen: 'C6 Search', name: 'web search', ...both('/web/search', '/web/search') },
-      ...['appearance', 'sounds', 'home', 'servers', 'devices', 'about'].map((section) => ({
+      ...SETTINGS_SECTIONS.map((section) => ({
         screen: 'C7 Settings',
         name: `web ${section}`,
-        ...both(`/web/settings/${section}`, `/web/settings/${section}`),
+        ...both(`/web/settings?section=${section}`, `/web/settings?section=${section}`),
       })),
       { screen: 'C7 Settings', name: 'web profile', ...both('/web/profile', '/web/profile') },
       {
         screen: 'C7 Settings',
         name: 'web downloads',
         ...both('/web/downloads', '/web/downloads'),
-        note: 'Downloads live in the desktop app (4.4): the web says so.',
+        note: 'Downloads live in the apps (4.6): the web says so.',
       },
     ],
   }
@@ -619,7 +622,12 @@ if (!(await up())) {
 const production = process.env.COMPARE_DEV !== '1'
 if (production)
   execFileSync('bun', ['run', 'build'], { cwd: join(ROOT, 'apps/server'), stdio: 'inherit' })
-execFileSync('bun', ['run', 'build'], { cwd: join(ROOT, 'apps/web'), stdio: 'inherit' })
+// the client's web export for /web (dist/), which the server serves (apps/server/src/web/)
+execFileSync('bun', ['run', 'export:web'], {
+  cwd: join(ROOT, 'apps/client'),
+  stdio: 'inherit',
+  env: { ...process.env, EXPO_NO_TELEMETRY: '1', EXPO_PUBLIC_HIGHSEA_MOCK: '' },
+})
 const server = await boot(PORT, { production })
 try {
   await capture(setupPairs, () => browser.newContext(), server.base)

@@ -8,9 +8,9 @@ import type { ReactNode } from 'react'
 const { act, cleanup, renderHook } = await import('@testing-library/react')
 const { createClient } = await import('@highsea-tv/sdk')
 const { ClientProvider } = await import('@highsea-tv/sdk/react')
-const { readLibrary, useHomeLayout, useSearch, SEARCH_SETTLE_MS } = await import(
-  '../src/data/index.ts'
-)
+const { CLIENT_SOURCES, WIDGET_SOURCES } = await import('@highsea-tv/api-contract')
+const { readLibrary, useHome, useHomeRows, useHomeLayout, useServes, useSearch, SEARCH_SETTLE_MS } =
+  await import('../src/data/index.ts')
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } })
@@ -108,5 +108,58 @@ describe('useHomeLayout', () => {
     await act(() => result.current.toggle('recent', false) as Promise<unknown>)
     await settle()
     expect(saved).toEqual({ order: ['picks', 'continue', 'recent'], hidden: ['recent'] })
+  })
+})
+
+describe('useServes', () => {
+  const info = (sources: readonly string[]) =>
+    json({
+      id: 'srv',
+      name: 'Home',
+      version: '0.3.0',
+      setupComplete: true,
+      auth: { local: true, oidc: null },
+      sources,
+    })
+
+  test('a real server lists none of the drafted sources, so shows, music and profiles hide', async () => {
+    const { wrapper } = fake(({ path }) =>
+      path === '/api/v1/system/info/public' ? info(WIDGET_SOURCES) : undefined,
+    )
+    const { result } = renderHook(() => CLIENT_SOURCES.map((s) => useServes(s)), { wrapper })
+    expect(result.current).toEqual([false, false, false])
+    await settle()
+    expect(result.current).toEqual([false, false, false])
+  })
+
+  test('a server that lists them shows them', async () => {
+    const { wrapper } = fake(({ path }) =>
+      path === '/api/v1/system/info/public'
+        ? info([...WIDGET_SOURCES, ...CLIENT_SOURCES])
+        : undefined,
+    )
+    const { result } = renderHook(() => CLIENT_SOURCES.map((s) => useServes(s)), { wrapper })
+    await settle()
+    expect(result.current).toEqual([true, true, true])
+  })
+})
+
+describe('useHome', () => {
+  test('keeps the films apps’ rows as B2 drew them; useHomeRows has every kind', async () => {
+    const film = { id: 1, type: 'movie', title: 'Sintel' }
+    const episode = { id: 2, type: 'episode', title: 'Pilot' }
+    const rows = [
+      { id: 'continue', title: null, suffix: null, layout: 'continue', items: [episode, film] },
+      { id: 'next-up', title: 'Next up', suffix: null, layout: 'episodes', items: [episode] },
+      { id: 'recent-shows', title: 'Shows', suffix: null, layout: 'shows', items: [{ id: 3 }] },
+      { id: 'recent-music', title: 'Music', suffix: null, layout: 'music', items: [] },
+    ]
+    const { wrapper } = fake(({ path }) => (path === '/api/v1/home' ? json(rows) : undefined))
+    const { result } = renderHook(() => ({ films: useHome('web'), all: useHomeRows('web') }), {
+      wrapper,
+    })
+    await settle()
+    expect(result.current.films.data).toEqual([{ ...rows[0], items: [film] }] as never)
+    expect(result.current.all.data?.map((r) => r.id)).toEqual(rows.map((r) => r.id))
   })
 })

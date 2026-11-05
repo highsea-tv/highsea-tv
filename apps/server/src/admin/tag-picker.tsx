@@ -19,7 +19,7 @@ import {
   MenuSeparator,
   MenuTrigger,
   useFieldControl,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import { useRouter } from 'next/navigation'
 import { tagsMessages as messages } from './tags-messages.ts'
 

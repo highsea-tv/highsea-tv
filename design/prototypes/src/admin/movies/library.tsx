@@ -4,6 +4,7 @@
 // remove. An item with two versions (1080p beside 4K HDR) is one row with both.
 
 import { shortDate } from '@highsea-tv/core/format'
+import type { MediaItem, MediaStatus, RuleCondition } from '@highsea-tv/mock/types'
 import {
   Badge,
   type BadgeTone,
@@ -36,11 +37,10 @@ import {
   TabsTrigger,
   TitleCell,
   toast,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import { useMemo, useState } from 'react'
 import { useLocation } from 'wouter'
 import { useAction, useQuery } from '../../mock/hooks.tsx'
-import type { MediaItem, MediaStatus, RuleCondition } from '../../mock/types.ts'
 import { handoff } from '../collections/editor.tsx'
 import { ruleId } from '../collections/rules.tsx'
 import { Loadable, PosterSkeletons } from '../loadable.tsx'
@@ -84,7 +84,7 @@ const sorts = {
 } satisfies Record<string, { label: string; compare: (a: MediaItem, b: MediaItem) => number }>
 type Sort = keyof typeof sorts
 
-function useStored<T extends string>(key: string, initial: T): [T, (v: T) => void] {
+export function useStored<T extends string>(key: string, initial: T): [T, (v: T) => void] {
   const [value, setValue] = useState<T>(() => {
     try {
       return (localStorage.getItem(`highsea-proto:${key}`) as T | null) ?? initial
@@ -187,7 +187,6 @@ export function MoviesLibrary() {
     <>
       <SegmentedControl
         aria-label="View"
-        size="sm"
         value={view}
         onValueChange={(v) => setView(v as typeof view)}
         options={[
@@ -252,7 +251,7 @@ export function MoviesLibrary() {
                       }))}
                       className="w-36"
                     />
-                    <Button size="sm" icon="library" onClick={saveAsCollection}>
+                    <Button icon="library" onClick={saveAsCollection}>
                       Save as smart collection
                     </Button>
                   </div>

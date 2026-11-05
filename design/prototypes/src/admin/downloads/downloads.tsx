@@ -5,6 +5,7 @@
 // VPN binding, always visible, because a leak is the one failure that matters most here.
 
 import { bytes, duration, percent, rate, relative } from '@highsea-tv/core/format'
+import type { Torrent, TorrentFile, TorrentLimits } from '@highsea-tv/mock/types'
 import {
   Badge,
   Button,
@@ -35,11 +36,10 @@ import {
   TabsTrigger,
   TitleCell,
   toast,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import { type ReactNode, useState } from 'react'
 import { useLocation } from 'wouter'
 import { useAction, useNow, useQuery } from '../../mock/hooks.tsx'
-import type { Torrent, TorrentFile, TorrentLimits } from '../../mock/types.ts'
 import { Loadable } from '../loadable.tsx'
 import { AdminPage, adminHref } from '../shell.tsx'
 import { torrentStatus } from '../status.ts'
@@ -142,7 +142,7 @@ export function Downloads() {
                     aria-label="Category"
                     options={[
                       { value: 'all', label: 'Every category' },
-                      ...categories.map((c) => ({ value: c, label: c })),
+                      ...categories.map((c) => ({ value: c, label: sentence(c) })),
                     ]}
                     className="w-44"
                   />
@@ -363,7 +363,8 @@ function AddTorrentDialog({
   onOpenChange: (o: boolean) => void
 }) {
   const [link, setLink] = useState('')
-  const [category, setCategory] = useState('movies')
+  // manual, not movies: the dialog says these aren't imported, and movies is the library's grabs
+  const [category, setCategory] = useState('manual')
   const [start, setStart] = useState(true)
   const [touched, setTouched] = useState(false)
   const add = useAction((c) =>
@@ -417,13 +418,16 @@ function AddTorrentDialog({
               className="font-mono"
             />
           </Field>
-          <Field label="Category" hint="Sets the folder it saves to.">
+          <Field
+            label="Category"
+            hint="Sets the folder it saves to. Add categories in Settings › Download client."
+          >
             <Select
               value={category}
               onValueChange={setCategory}
               options={[
-                { value: 'movies', label: 'movies' },
-                { value: 'manual', label: 'manual' },
+                { value: 'manual', label: 'Manual' },
+                { value: 'books', label: 'Books' },
               ]}
             />
           </Field>
@@ -435,6 +439,9 @@ function AddTorrentDialog({
     </Dialog>
   )
 }
+
+/** A category's name as a label: its own name, in sentence case. */
+const sentence = (name: string) => name.charAt(0).toUpperCase() + name.slice(1)
 
 // ---------------------------------------------------------------- detail
 
@@ -481,11 +488,21 @@ function TorrentSheet({
                   Pause
                 </Button>
               )}
-              {t.itemId && (
-                <Button size="sm" icon="movie" onClick={() => navigate(`/movies/${t.itemId}`)}>
-                  Open the movie
-                </Button>
-              )}
+              {t.itemId &&
+                (/-s\d+e\d+$/.test(t.itemId) ? (
+                  // an episode's download opens its show (stage 6)
+                  <Button
+                    size="sm"
+                    icon="tv"
+                    onClick={() => navigate(`/shows/${t.itemId?.replace(/-s\d+e\d+$/, '')}`)}
+                  >
+                    Open the show
+                  </Button>
+                ) : (
+                  <Button size="sm" icon="movie" onClick={() => navigate(`/movies/${t.itemId}`)}>
+                    Open the movie
+                  </Button>
+                ))}
               <Button size="sm" variant="danger" icon="delete" onClick={() => setRemoving(true)}>
                 Remove
               </Button>

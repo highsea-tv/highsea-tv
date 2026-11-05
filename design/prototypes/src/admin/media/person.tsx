@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // A person's page (docs/product/media-pages.md#person-page): portrait, biography, their best-known
-// titles, then the filmography marked by library state, with Add for what isn't here yet.
+// titles, then the filmography marked by library state, with Add for what isn't here yet. Since
+// stage 6 their shows follow the films (shows.md#person-page), with Add a show.
+
+import type { DiscoverMovie, DiscoverShow, Person, PersonShowCredit } from '@highsea-tv/mock/types'
 import {
   Badge,
   Button,
@@ -20,14 +23,14 @@ import {
   TabsList,
   TabsTrigger,
   TitleCell,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import { useState } from 'react'
 import { useLocation, useParams } from 'wouter'
 import { useQuery } from '../../mock/hooks.tsx'
-import type { DiscoverMovie, Person, PersonCredit } from '../../mock/types.ts'
 import { AddMovieDialog } from '../movies/add-dialog.tsx'
 import { AdminPage } from '../shell.tsx'
-import { movieHref } from './links.ts'
+import { AddShowDialog } from '../shows/add-dialog.tsx'
+import { movieHref, showHref } from './links.ts'
 import { longDate, SummarySkeleton, titleItem } from './sections.tsx'
 
 const departmentLabel = {
@@ -43,8 +46,12 @@ const departmentLabel = {
 export function PersonPage() {
   const { id } = useParams<{ id: string }>()
   const [, navigate] = useLocation()
-  const person = useQuery(`person:${id}`, (c) => c.metadata.person(id), ['movies.updated'])
+  const person = useQuery(`person:${id}`, (c) => c.metadata.person(id), [
+    'movies.updated',
+    'shows.updated',
+  ])
   const [adding, setAdding] = useState<DiscoverMovie[]>([])
+  const [addingShow, setAddingShow] = useState<DiscoverShow | null>(null)
   const p = person.data
 
   return (
@@ -63,16 +70,21 @@ export function PersonPage() {
       ) : (
         <>
           <Summary person={p} />
-          <KnownFor credits={p.credits} />
-          <Filmography person={p} onAdd={(m) => setAdding([m])} />
+          <KnownFor person={p} />
+          {(p.credits.length > 0 || !p.shows?.length) && (
+            <Filmography person={p} onAdd={(m) => setAdding([m])} />
+          )}
+          {p.shows && p.shows.length > 0 && <Shows shows={p.shows} onAdd={setAddingShow} />}
         </>
       )}
       <AddMovieDialog movies={adding} onOpenChange={(o) => !o && setAdding([])} />
+      <AddShowDialog show={addingShow} onOpenChange={(o) => !o && setAddingShow(null)} />
     </AdminPage>
   )
 }
 
 function Summary({ person: p }: { person: Person }) {
+  const titles = p.credits.length + (p.shows?.length ?? 0)
   return (
     <section
       aria-label="Summary"
@@ -85,7 +97,7 @@ function Summary({ person: p }: { person: Person }) {
             {departmentLabel[p.knownFor]}
           </Badge>
           <span className="text-caption text-text-3">
-            {p.credits.length} {p.credits.length === 1 ? 'title' : 'titles'}
+            {titles} {titles === 1 ? 'title' : 'titles'}
           </span>
         </div>
         {(p.born || p.died) && (
@@ -116,10 +128,17 @@ function Summary({ person: p }: { person: Person }) {
   )
 }
 
-/** Their most-rated titles. Left out when the filmography is short enough to read at a glance. */
-function KnownFor({ credits }: { credits: PersonCredit[] }) {
-  if (credits.length < 3) return null
-  const best = [...credits].sort((a, b) => b.rating - a.rating).slice(0, 8)
+/**
+ * Their most-rated titles, films and shows together. Left out when there are few enough to read
+ * at a glance. A show not in the library has no admin page yet, so its poster doesn't link.
+ */
+function KnownFor({ person: p }: { person: Person }) {
+  const titles = [
+    ...p.credits.map((t) => ({ ...t, href: movieHref(t) as string | undefined })),
+    ...(p.shows ?? []).map((t) => ({ ...t, href: t.inLibrary ? showHref(t) : undefined })),
+  ]
+  if (titles.length < 3) return null
+  const best = titles.sort((a, b) => b.rating - a.rating).slice(0, 8)
   return (
     <CarouselRow flush title="Known for" itemClassName={titleItem}>
       {best.map((t) => (
@@ -127,7 +146,7 @@ function KnownFor({ credits }: { credits: PersonCredit[] }) {
           key={t.id}
           title={t.title}
           src={t.art.poster}
-          href={movieHref(t)}
+          href={t.href}
           showTitle
           caption={t.year}
           status={
@@ -229,6 +248,70 @@ function Filmography({
             )}
           </TabsContent>
         </Tabs>
+      </TableFrame>
+    </section>
+  )
+}
+
+/** Their shows, newest first, marked by library state, with Add a show for the rest. */
+function Shows({
+  shows,
+  onAdd,
+}: {
+  shows: PersonShowCredit[]
+  onAdd: (show: DiscoverShow) => void
+}) {
+  return (
+    <section aria-labelledby="shows" className="grid gap-3">
+      <h2 id="shows" className="text-title text-text">
+        Shows
+      </h2>
+      <TableFrame>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Title</TableHead>
+              <TableHead>Role</TableHead>
+              <TableHead className="w-40">Library</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {shows.map((c) => (
+              <TableRow key={c.id}>
+                <TitleCell
+                  art={c.art.poster}
+                  title={
+                    c.inLibrary ? (
+                      <a href={showHref(c)} className="hover:underline">
+                        {c.title}
+                      </a>
+                    ) : (
+                      c.title
+                    )
+                  }
+                  detail={c.endYear ? `${c.year}–${c.endYear}` : `${c.year}–`}
+                />
+                <TableCell className="text-text-2">{c.role}</TableCell>
+                <TableCell>
+                  {c.inLibrary ? (
+                    <a href={showHref(c)} aria-label={`In library: ${c.title}`}>
+                      <Badge tone="success">In library</Badge>
+                    </a>
+                  ) : (
+                    <Button
+                      size="sm"
+                      icon="add"
+                      onClick={() => onAdd(c)}
+                      aria-label={`Add ${c.title}`}
+                    >
+                      Add
+                    </Button>
+                  )}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       </TableFrame>
     </section>
   )

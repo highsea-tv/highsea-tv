@@ -20,7 +20,7 @@ export const PLAYBACK_TOPICS = { watch: 'watch.updated' } as const
  */
 export const DeviceReport = z
   .object({
-    /** The built-in profile it starts from: `web-chromium`, `web-chromium-macos`, `web-firefox`, `web-safari`, or the desktop app's `desktop-macos`, `desktop-windows`, `desktop-linux`. */
+    /** The built-in profile it starts from: `web-chromium`, `web-chromium-macos`, `web-firefox`, `web-safari`, the desktop app's `desktop-macos`, `desktop-windows`, `desktop-linux`, or the native apps' `ios` and `tvos`. */
     base: z.string().max(64).openapi({ example: 'web-chromium' }),
     containers: z.array(z.string().max(16)).max(16).optional(),
     video: z
@@ -333,6 +333,17 @@ export const playback = {
     tags: ['Playback'],
     summary: 'Mark a title unwatched',
     description: 'As if never started: the viewings and where you stopped are cleared.',
+    ...access('user'),
+    request: { params: ItemParams },
+    responses: { ...noContent, ...errors('unauthorized', 'not-found') },
+  }),
+  dismiss: createRoute({
+    method: 'post',
+    path: `${ITEMS}/{type}/{id}/dismiss`,
+    tags: ['Playback'],
+    summary: 'Remove a title from Continue watching',
+    description:
+      'Forgets where you stopped without marking it watched; its viewings are kept. Playing it again brings it back.',
     ...access('user'),
     request: { params: ItemParams },
     responses: { ...noContent, ...errors('unauthorized', 'not-found') },

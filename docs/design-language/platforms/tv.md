@@ -20,21 +20,31 @@ The home screen uses the **Hero + rows** layout, locked in [direction.md](../../
 
 | Region | Position / size |
 | --- | --- |
-| Server identity (mark + server name) | Top 3.2u, left 4.5u |
-| Announcement pill | Top 3.2u, right 4.5u |
+| Server identity (mark + server name) | Top 2.4u, left 2.4u |
+| Announcement pill | Top 2.4u, right 2.4u |
 | Hero artwork | Full width, top 62% of the screen; two layers that cross-fade |
-| Hero copy (eyebrow, title, meta, synopsis, actions) | Left 4.5u, top 7.5u, max width 38u |
-| Rows | Bottom 47% of the screen, left inset 4.5u, bleeding off the right edge; below the featured row they continue down the page |
+| Hero copy (eyebrow, title, meta, synopsis, actions) | Left 2.4u, top 7.5u, max width 38u |
+| Rows | Bottom 47% of the screen, left inset 2.4u, bleeding off the right edge; below the featured row they continue down the page |
 | Poster | 10.5u wide (2:3), with a 1.2u gap; the title (1.05u, 600) and the year (0.95u, `text-3`) under the art |
 | Wide tile (continue watching) | 16:9 with a progress bar 7% in from the edges |
-| Radii | Posters and buttons 0.5u (≈ 10px at 1080p); quality pills 0.3u |
+| Continue watching | Cards 22u wide, larger than a poster row's (the owner, 2026-10-30) |
+| Featured card | 1u above and below it, under the global navigation |
+| Alerts | A list up to 60u wide, 1.2u between announcements; with none, 1.4u between the words and the button back to Home |
+| A person | The portrait 13u round, beside the name and words, the biography cut at four lines; then a film row per department |
+| A show's episodes | Stills 24u wide in a season's row; Cast and crew tiles 8u, as a film's page has them |
+| An album or a playlist | A left column 24u wide with an 18u cover and a 2.4u title, 4u from the songs |
+| Who's watching | Circles 9.5u, 2.8u apart, under a 3.2u title; at the opening, 11u circles 3u apart under a 3.6u title |
+| A PIN | A pad 17u wide with 0.8u between keys, under a 5.6u circle and a 2.4u title |
+| Radii | Posters 0.5u (≈ 10px at 1080p); controls by the TV rule, `radius-sm` at 1.75 times (≈ 0.73u, [controls](../controls.md)); quality pills 0.3u |
+
+The rows from Continue watching to A PIN are the prototypes' values, kept when B1 and B3 moved the screens to apps/client (`apps/client/src/home/sizes.ts`, `src/alerts/sizes.ts`, `src/shows/sizes.ts`, `src/music/sizes.ts`, `src/profiles/sizes.ts` and `@highsea-tv/ui`'s `PersonPortrait`). None is a token yet; part E gives them tokens once the owner approves the values.
 
 **Safe area.**
-- Text and focusable items stay at least 4.5u (≈ 86px) from the left and right edges, and 3.2u (≈ 61px) from the top and bottom. This meets the tvOS guideline of 80 × 60px.
+- Text and focusable items stay at least 2.4u (≈ 46px at 1080p) from every edge (`tv.safe` in the tokens). The owner tightened it from 4.5u and 3.2u on 2026-10-30, inside tvOS's guideline of 80 × 60 points, and confirmed it on 2026-11-03.
 - Artwork and rows may bleed past the safe area to the screen edge.
 - On platforms with overscan, the safe area grows to 5% on every side.
 
-**Global navigation (designed in Phase 2).** Top-level navigation (Home, Search, Library, Settings) is a top tab row that appears when focus moves Up from the hero actions, as on tvOS. It is a focus guide target, and hidden otherwise.
+**Global navigation (designed in Phase 2).** Top-level navigation (Home, Search, Library, Settings) is a top tab row, reached when focus moves Up from the hero actions or a screen's top row, as on tvOS. It is a focus guide target. It was hidden otherwise; since the owner's change of 2026-10-30 it shows on every screen but the player, always.
 
 ## Type
 
@@ -56,13 +66,13 @@ The home screen uses the **Hero + rows** layout, locked in [direction.md](../../
 
 - **Ring:** 0.2u (≈ 4px at 1080p) in `text` (`#ededee`), with a soft dark drop shadow. There is no colored halo.
 - **Scale:** focused posters scale to 1.05 and buttons to 1.07, both with `spring.base`. The focused item rises above its neighbors.
-- **Hero buttons:** the primary action (Play) is a solid `text` fill with a `bg` label. Secondary actions (Details) are a translucent `text` fill at 12% with a `text` label. Focus adds the ring and scale; it doesn't change the fill.
+- **Hero buttons:** the primary action (Play) is the primary look. Secondary actions (Details) take the overlay look, `control-overlay` (`text` at 12%) with a `text` label. Every button in the row is the same size ([controls](../controls.md)). Focus adds the ring and scale; it doesn't change the fill.
 - **Select feedback:** a brightness pulse (1 → 1.35 → 1, 280ms) plus the `select` sound.
 - **Focus leaving the app:** the visible focus state is removed when the app loses focus, and restored to the same item when it returns.
 
 ## Spatial focus model
 
-The reference implementation is the focus engine in `design/explorations/shared/board.js`. `@highsea-tv/ui-web` (TV web builds) and `ui-native` must behave identically.
+The reference implementation is the focus engine in `design/explorations/shared/board.js`. `@highsea-tv/ui` (TV web builds) and `ui-native` must behave identically.
 
 ### Picking the next item
 

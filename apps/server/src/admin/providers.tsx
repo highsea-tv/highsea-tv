@@ -4,7 +4,7 @@
 // every call; ADR 0018) and the design system's provider, with its toasts.
 import { createClient } from '@highsea-tv/sdk'
 import { ClientProvider } from '@highsea-tv/sdk/react'
-import { UIProvider } from '@highsea-tv/ui-web'
+import { UIProvider } from '@highsea-tv/ui'
 import { type ReactNode, useMemo } from 'react'
 
 export function Providers({ children }: { children: ReactNode }) {

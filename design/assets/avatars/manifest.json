@@ -1,0 +1,180 @@
+{
+  "styles": ".claude/skills/avatars/styles.md",
+  "flowProject": "https://flow.google.com/project/40b0eb7a-6871-430c-8566-7734bf2959ae",
+  "collections": [
+    {
+      "id": "sea",
+      "name": "Sea creatures",
+      "style": "sticker",
+      "theme": "Sea creatures"
+    },
+    {
+      "id": "crew",
+      "name": "The crew",
+      "style": "illustrated",
+      "theme": "A pirate ship's crew"
+    },
+    {
+      "id": "harbour",
+      "name": "Harbour",
+      "style": "clay",
+      "theme": "Harbour animals"
+    },
+    {
+      "id": "ocean",
+      "name": "Ocean",
+      "style": "wildlife",
+      "theme": "Ocean wildlife"
+    },
+    {
+      "id": "disguises",
+      "name": "Disguises",
+      "style": "icon",
+      "theme": "Masks and headgear"
+    },
+    {
+      "id": "space",
+      "name": "Space",
+      "style": "pixel",
+      "theme": "A space crew"
+    }
+  ],
+  "avatars": [
+    {
+      "collection": "sea",
+      "slug": "octopus",
+      "file": "sea/octopus.jpg",
+      "name": "Octopus",
+      "background": "teal",
+      "prompt": "Chunky 2D sticker-style cartoon avatar of a friendly octopus, centered square portrait. Extremely simple shapes, heavy black contour lines, and bright pop-art flat coloring. Features big round cartoon eyes, a wide happy smile, and a tiny red-and-white striped sailor cap tilted on its head, with two curled tentacles waving at the bottom. Zero fine detail, flat vector graphics, clean minimalist silhouette, solid teal background.",
+      "flowMedia": "56582089-442f-4a5f-8aa6-0c341965f805",
+      "model": "Nano Banana 2.1",
+      "made": "2026-10-30"
+    },
+    {
+      "collection": "sea",
+      "slug": "crab",
+      "file": "sea/crab.jpg",
+      "name": "Crab",
+      "background": "sky-blue",
+      "prompt": "Chunky 2D sticker-style cartoon avatar of a cheerful red crab, centered square portrait. Extremely simple shapes, heavy black contour lines, and bright pop-art flat coloring. Features big googly eyes on short stalks, a wide toothy grin, and two oversized claws raised up in a friendly wave. Zero fine detail, flat vector graphics, clean minimalist silhouette, solid sky-blue background.",
+      "flowMedia": "39f85c27-220d-441b-acca-81bffdab7d11",
+      "model": "Nano Banana 2.1",
+      "made": "2026-10-30"
+    },
+    {
+      "collection": "sea",
+      "slug": "whale",
+      "file": "sea/whale.jpg",
+      "name": "Whale",
+      "background": "warm-yellow",
+      "prompt": "Chunky 2D sticker-style cartoon avatar of a smiling blue whale, centered square portrait. Extremely simple shapes, heavy black contour lines, and bright pop-art flat coloring. Features a big round friendly face with rosy cheeks, a small water spout fountain on top of its head, and a light belly with simple stripes. Zero fine detail, flat vector graphics, clean minimalist silhouette, solid warm-yellow background.",
+      "flowMedia": "a44a9db3-32ef-41ea-b873-b56e92df35e4",
+      "model": "Nano Banana 2.1",
+      "made": "2026-10-30"
+    },
+    {
+      "collection": "sea",
+      "slug": "pufferfish",
+      "file": "sea/pufferfish.jpg",
+      "name": "Pufferfish",
+      "background": "lavender",
+      "prompt": "Chunky 2D sticker-style cartoon avatar of a puffed-up yellow pufferfish, centered square portrait. Extremely simple shapes, heavy black contour lines, and bright pop-art flat coloring. Features a perfectly round body with a few short rounded spikes, big surprised eyes, and a tiny pursed mouth with small side fins. Zero fine detail, flat vector graphics, clean minimalist silhouette, solid lavender background.",
+      "flowMedia": "2a26074a-af72-45a5-aa77-e384aaecc3b9",
+      "model": "Nano Banana 2.1",
+      "made": "2026-10-30"
+    },
+    {
+      "collection": "sea",
+      "slug": "seagull",
+      "file": "sea/seagull.jpg",
+      "name": "Seagull",
+      "background": "coral",
+      "prompt": "Chunky 2D sticker-style cartoon avatar of a cheeky seagull, centered square portrait. The whole bird is small enough to sit fully inside the frame, with wide empty margins on every side and nothing touching the edges. Extremely simple shapes, heavy black contour lines, and bright pop-art flat coloring. Features a round white head and body with grey wings folded at its sides, a big bright orange beak, and a mischievous half-lidded grin. Zero fine detail, flat vector graphics, clean minimalist silhouette, solid coral background.",
+      "edits": [
+        "Change only the face: give the seagull big, round, wide-open friendly eyes with no eyelids, and a cheerful open smile. Keep everything else exactly the same: pose, size, framing, colours, outline and background."
+      ],
+      "flowMedia": "b93319d9-70a9-4ede-a9eb-a18f6be539c8",
+      "model": "Nano Banana 2.1",
+      "made": "2026-10-30"
+    },
+    {
+      "collection": "crew",
+      "slug": "captain",
+      "file": "crew/captain.jpg",
+      "name": "Captain",
+      "background": "cobalt",
+      "prompt": "Stylized 2D animated-series character portrait of a cheerful middle-aged sea captain with dark brown skin, head and shoulders facing the viewer, square composition with the face centred and the shoulders running off the bottom edge. Clean confident line work, flat cel shading with a single soft shadow tone, bold simplified shapes, an expressive friendly face. A weathered navy tricorn hat with gold trim, a neat short grey beard, and a warm crinkly-eyed smile. Solid cobalt background, no gradient, no scenery.",
+      "flowMedia": "e4d3cb6f-98db-4c46-9751-4c8b776d1e90",
+      "model": "Nano Banana 2.1",
+      "made": "2026-10-30"
+    },
+    {
+      "collection": "crew",
+      "slug": "navigator",
+      "file": "crew/navigator.jpg",
+      "name": "Navigator",
+      "background": "teal",
+      "prompt": "Stylized 2D animated-series character portrait of a bright-eyed young ship's navigator with light brown skin and a short black bob, head and shoulders facing the viewer, square composition with the face centred and the shoulders running off the bottom edge. Clean confident line work, flat cel shading with a single soft shadow tone, bold simplified shapes, an expressive friendly face. A red headscarf tied over her hair, round brass spectacles, and a small gold compass pendant on a cord around her neck. Solid teal background, no gradient, no scenery.",
+      "flowMedia": "a14bae5b-8df3-4ebc-9d26-f2244120d4cc",
+      "model": "Nano Banana 2.1",
+      "made": "2026-10-30"
+    },
+    {
+      "collection": "crew",
+      "slug": "cook",
+      "file": "crew/cook.jpg",
+      "name": "Cook",
+      "background": "emerald",
+      "prompt": "Stylized 2D animated-series character portrait of a jolly stout ship's cook with pale freckled skin and a bushy ginger beard, head and shoulders facing the viewer, square composition with the face centred and the shoulders running off the bottom edge. Clean confident line work, flat cel shading with a single soft shadow tone, bold simplified shapes, an expressive friendly face. A white kerchief knotted over his head, rosy round cheeks, and a striped apron over a rolled-sleeve shirt. Solid emerald background, no gradient, no scenery. Match the drawing style of the attached image, not its character.",
+      "references": ["navigator"],
+      "flowMedia": "3d9a4fdb-7d4e-4cb7-862a-4a8e8e0c74fa",
+      "model": "Nano Banana 2.1",
+      "made": "2026-10-30"
+    },
+    {
+      "collection": "harbour",
+      "slug": "puffin",
+      "file": "harbour/puffin.jpg",
+      "name": "Puffin",
+      "background": "sky-blue",
+      "prompt": "Handmade stop-motion clay character of a round little puffin, sculpted from plasticine with visible thumbprints and soft rounded shapes, photographed from the chest up as a centred square portrait. Big simple glossy eyes, a chunky friendly face, gentle studio lighting. A big bright orange-and-red striped beak, a soft white chest, and a tiny knitted blue scarf. Plain solid sky-blue paper backdrop, shallow depth of field.",
+      "flowMedia": "eb96b6cd-429e-4216-a8cf-25a9468eafa3",
+      "model": "Nano Banana 2.1",
+      "made": "2026-10-30"
+    },
+    {
+      "collection": "ocean",
+      "slug": "sea-otter",
+      "file": "ocean/sea-otter.jpg",
+      "name": "Sea otter",
+      "background": "teal",
+      "prompt": "Photorealistic wildlife portrait of a sea otter, head and shoulders filling a square frame, looking straight at the camera with a calm expression, sharp focus on the eyes, soft studio lighting. Wet glossy brown fur, long white whiskers, and its small paws held together at its chest. The animal is cleanly cut out against a solid flat teal background, no scenery, no shadow on the background.",
+      "flowMedia": "4d24eab6-9e57-484c-a7b9-8748bb650d67",
+      "model": "Nano Banana 2.1",
+      "made": "2026-10-30"
+    },
+    {
+      "collection": "disguises",
+      "slug": "diving-helmet",
+      "file": "disguises/diving-helmet.jpg",
+      "name": "Diving helmet",
+      "background": "crimson",
+      "prompt": "Bold flat graphic icon of a deep-sea diver, a minimal face that fills a square frame, built from only three or four flat colours and thick solid black shapes, no outlines, no shading, no texture. A round brass diving helmet with a big round front window, a friendly face with simple dot eyes and a smile seen through the glass, and a ring of bolts around the collar. Solid crimson background.",
+      "flowMedia": "e952b912-a6b3-4b05-9913-f9ecefc7dc7d",
+      "model": "Nano Banana 2.1",
+      "made": "2026-10-30"
+    },
+    {
+      "collection": "space",
+      "slug": "astronaut",
+      "file": "space/astronaut.jpg",
+      "name": "Astronaut",
+      "background": "violet",
+      "prompt": "16-bit pixel art portrait of a cheerful young astronaut, head and shoulders centred in a square frame, chunky visible square pixels, a limited palette of about twelve colours, a crisp one-pixel dark outline, a friendly face. A white space helmet with its visor flipped up, a round face with freckles and a big smile, and a small round mission patch on the suit. Solid violet background, no dithering on the background.",
+      "flowMedia": "cad70f44-917a-4463-a7f5-03f9beac2c01",
+      "model": "Nano Banana 2.1",
+      "made": "2026-10-30"
+    }
+  ]
+}

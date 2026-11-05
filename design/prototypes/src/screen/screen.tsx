@@ -2,7 +2,10 @@
 // The screen inside the frame: the toolbar's state applied (theme, motion, text size, sound),
 // the mock client for the chosen data state and role, and the routes. Tests render `ScreenApp`
 // directly with a memory location; the app renders `FramedScreen`, which talks to the chrome.
-import { UIProvider } from '@highsea-tv/ui-web'
+
+import { createClient, type Mock } from '@highsea-tv/mock/client'
+import { applyPreview } from '@highsea-tv/mock/server'
+import { UIProvider } from '@highsea-tv/ui'
 import { MotionConfig } from 'motion/react'
 import {
   createContext,
@@ -16,9 +19,7 @@ import {
 } from 'react'
 import { type BaseLocationHook, Router, useLocation } from 'wouter'
 import { navigate, useHashLocation } from 'wouter/use-hash-location'
-import { createClient, type Mock } from '../mock/client.ts'
 import { ClientProvider } from '../mock/hooks.tsx'
-import { applyPreview } from '../mock/server.ts'
 import { inFrame, isMessage, post } from '../proto/bridge.ts'
 import {
   loadState,

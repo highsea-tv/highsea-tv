@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The announcement composer (A11, docs/product/curation.md#announcement-composer): the message,
 // how loud it is, where it shows, who sees it and when, beside a live preview on each client.
+
+import type { Announcement, CurationPreview, Placement } from '@highsea-tv/mock/types'
 import {
   Button,
   Checkbox,
@@ -11,11 +13,10 @@ import {
   Switch,
   Textarea,
   toast,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import { useEffect, useMemo, useState } from 'react'
 import { useLocation, useParams } from 'wouter'
 import { useAction, useNow, useQuery } from '../../mock/hooks.tsx'
-import type { Announcement, CurationPreview, Placement } from '../../mock/types.ts'
 import { Loadable } from '../loadable.tsx'
 import { AdminPage, adminHref } from '../shell.tsx'
 import { placementLabels } from './curation.tsx'
@@ -151,7 +152,7 @@ function Composer({ initial }: { initial: Announcement | null }) {
   }))
 
   return (
-    <div className="grid gap-6 expanded:grid-cols-[minmax(22rem,28rem)_minmax(0,1fr)] expanded:items-start">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-6 expanded:grid-cols-[minmax(min(22rem,50%),min(28rem,50%))_minmax(0,1fr)] expanded:items-start">
       <form
         aria-label="Announcement"
         className="grid gap-6"

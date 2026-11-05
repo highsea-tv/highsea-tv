@@ -307,6 +307,8 @@ describe('signing in', () => {
     state.signedIn = false
     const { page, user } = await open('/')
     expect(page.getByRole('heading', { name: 'Sign in to Harbor' })).toBeTruthy()
+    // the page is its server's: there's no other to choose, so nothing to forget
+    expect(page.queryByRole('button', { name: 'Forget this server' })).toBeNull()
     await user.type(page.getByLabelText('Username'), 'theo')
     await user.type(page.getByLabelText('Password'), 'not theo')
     await user.click(page.getByRole('button', { name: 'Sign in' }))
@@ -482,6 +484,22 @@ describe('the player', () => {
       paused: true,
     })
     expect(window.location.pathname).toBe('/web/movies/45745')
+  })
+
+  test('opened from a title’s page, leaving goes back to it rather than opening it again', async () => {
+    const { page, user } = await open('/movies/45745')
+    const before = window.history.length
+    await user.click(page.getByRole('link', { name: /Resume/ }))
+    await settle()
+    expect(window.location.pathname).toBe('/web/play/45745')
+    await user.click(page.getByRole('button', { name: 'Back to details' }))
+    await settle()
+    await new Promise((r) => setTimeout(r, 50))
+    await settle()
+    expect(window.location.pathname).toBe('/web/movies/45745')
+    // the page it was opened from, not a new entry for it, so Back there doesn't reach the player
+    expect(window.history.state?.inApp).toBeUndefined()
+    expect(window.history.length).toBe(before + 1)
   })
 
   test('one that isn’t here says so, with Go home', async () => {

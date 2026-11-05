@@ -17,6 +17,7 @@
 - **Hover** previews what TV focus does: the poster scales to 1.02 with `spring.base` and shows a quick-actions overlay (Play, Add to list, More). Hover never triggers sound.
 - **Hero binding:** hovering a poster for 220ms or more doesn't change the hero. On desktop the hero changes only on selection. Pointer users move fast, and an unexpectedly changing hero is distracting.
 - **Rows:** scroll by trackpad and wheel, and paging arrow buttons appear at the row edges on hover.
+- **Controls:** 36px, and 30px only in dense places, with 14px text and the `radius-sm` corner. On a coarse pointer (a phone's browser) they keep that size, take 16px text and reach 44 with an invisible hit area ([controls](../controls.md)).
 
 ## Keyboard
 

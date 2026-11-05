@@ -32,7 +32,7 @@ import {
   TableRow,
   TableToolbar,
   toast,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import { useEffect, useRef, useState } from 'react'
 import { libraryImport as messages } from './library-import-messages.ts'
 import { errorReason } from './metadata-locale.ts'
@@ -159,10 +159,10 @@ export function LibraryImport({ root: initialRoot = '' }: { root?: string }) {
             error={error ?? undefined}
             hint={roots.data && rootOptions.length === 0 ? t('noRoots') : t('rootHint', TAGS)}
           >
-            <div className="flex min-w-0 gap-2">
+            <div className="flex min-w-0 flex-wrap gap-2">
               <Select
                 aria-label={t('root')}
-                className="min-w-0 flex-1 font-mono"
+                className="min-w-0 flex-1 basis-48 font-mono"
                 value={root}
                 placeholder={t('chooseRoot')}
                 onValueChange={setRoot}

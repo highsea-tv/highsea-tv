@@ -2,14 +2,18 @@
 // A2 Setup wizard (docs/product/setup.md), as install-simplicity B shrinks it: highsea fills in
 // what it can find (the server's name, the folders under /data, the browser's languages and time
 // zone, the address apps use) and asks only for the owner; movie details come with highsea's own
-// TMDB key. Folders become a step only when highsea found none. Review lists what highsea decided, and each line
-// opens its own editor in place. Progress is kept in the browser, so a reload picks up where you
-// left off.
+// TMDB key. Folders become a step only when highsea found none. Review lists what highsea decided,
+// and each line opens its own editor in place. Since stage 6 the folders are one for each kind
+// (movies, shows and music, any of them left out) and the downloads. Progress is kept in the
+// browser, so a reload picks up where you left off.
+
+import type { Language, RemoteAccess, SetupDetected, SetupInput } from '@highsea-tv/mock/types'
 import {
   Badge,
   Banner,
   Button,
   Checkbox,
+  Chip,
   cn,
   Dialog,
   DialogContent,
@@ -18,15 +22,16 @@ import {
   Icon,
   Input,
   Lockup,
+  Radio,
+  RadioGroup,
   Select,
   Skeleton,
   Stepper,
   toast,
-} from '@highsea-tv/ui-web'
-import { type FormEvent, type ReactNode, useEffect, useRef, useState } from 'react'
+} from '@highsea-tv/ui'
+import { type FormEvent, Fragment, type ReactNode, useEffect, useRef, useState } from 'react'
 import { useLocation } from 'wouter'
 import { useAction, useClient, useQuery } from '../../mock/hooks.tsx'
-import type { Language, RemoteAccess, SetupDetected, SetupInput } from '../../mock/types.ts'
 
 type StepId = 'owner' | 'folders' | 'review'
 
@@ -72,7 +77,7 @@ type Saved = {
 const blank: Draft = {
   serverName: '',
   owner: { displayName: '', username: '', password: '', confirm: '' },
-  folders: { movies: '', downloads: '' },
+  folders: { movies: '', shows: '', music: '', downloads: '' },
   metadataKey: '',
   indexers: [],
   subtitleLanguages: [],
@@ -91,7 +96,11 @@ const storageKey = (server: string) => `highsea-proto:setup:${server}`
 function load(key: string): Saved | null {
   try {
     const raw = localStorage.getItem(key)
-    return raw ? (JSON.parse(raw) as Saved) : null
+    if (!raw) return null
+    const saved = JSON.parse(raw) as Saved
+    // progress kept before stage 6 has no shows or music folder
+    saved.draft.folders = { ...blank.folders, ...saved.draft.folders }
+    return saved
   } catch {
     return null
   }
@@ -149,12 +158,27 @@ const ownerErrors = (d: Draft): Errors => {
   return e
 }
 
+const MEDIA = ['movies', 'shows', 'music'] as const
+type FolderKey = (typeof MEDIA)[number] | 'downloads'
+const FOLDER: Record<FolderKey, string> = {
+  movies: 'Movies',
+  shows: 'Shows',
+  music: 'Music',
+  downloads: 'Downloads',
+}
+
+/** The first media folder chosen: the one the hardlink check compares with downloads. */
+const mediaOf = (f: Draft['folders']) => f.movies || f.shows || f.music
+
 const folderErrors = (d: Draft): Errors => {
   const e: Errors = {}
-  if (!d.folders.movies) e.movies = 'Pick a folder for movies.'
+  if (!mediaOf(d.folders)) e.movies = 'Pick a folder for movies, shows or music.'
   if (!d.folders.downloads) e.downloads = 'Pick a folder for downloads.'
-  if (d.folders.movies && d.folders.movies === d.folders.downloads)
-    e.downloads = 'Use a different folder from the movies folder.'
+  const same = MEDIA.find((k) => d.folders[k] && d.folders[k] === d.folders.downloads)
+  if (same) e.downloads = `Use a different folder from the ${same} folder.`
+  for (const k of MEDIA.slice(1))
+    if (d.folders[k] && MEDIA.some((o) => o !== k && d.folders[o] === d.folders[k]))
+      e[k] = 'Each kind needs a folder of its own.'
   return e
 }
 
@@ -233,7 +257,14 @@ export function Setup() {
       draft: {
         ...s.draft,
         serverName: s.draft.serverName || (found.serverName ?? ''),
-        folders: found.folders ?? s.draft.folders,
+        folders: found.folders
+          ? {
+              movies: found.folders.movies ?? '',
+              shows: found.folders.shows ?? '',
+              music: found.folders.music ?? '',
+              downloads: found.folders.downloads,
+            }
+          : s.draft.folders,
         indexers:
           pack.status === 'success'
             ? pack.data.filter((d) => d.privacy === 'public').map((d) => d.id)
@@ -373,7 +404,7 @@ export function Setup() {
     folders: {
       title: 'Choose your folders',
       detail:
-        'highsea didn’t find a movies folder and a downloads folder under /data. Pick the folders you mounted for it.',
+        'highsea didn’t find your media folders and a downloads folder under /data. Pick the folders you mounted for it.',
       content: <Folders draft={draft} errors={errors} update={(p) => update(p, 'folders')} />,
     },
     review: {
@@ -509,9 +540,10 @@ function Review({
   const { draft, changed } = saved
   const pack = useQuery('starter-pack', (c) => c.catalog.starterPack())
   const languages = useQuery('languages', (c) => c.subtitles.languages())
-  const { movies, downloads } = draft.folders
-  const links = useQuery(`hardlinks:${movies}:${downloads}`, (c) =>
-    c.fs.checkHardlinks(movies, downloads),
+  const { downloads } = draft.folders
+  const media = mediaOf(draft.folders)
+  const links = useQuery(`hardlinks:${media}:${downloads}`, (c) =>
+    c.fs.checkHardlinks(media, downloads),
   )
 
   const indexerNames = draft.indexers.map((i) => pack.data?.find((d) => d.id === i)?.name ?? i)
@@ -549,10 +581,20 @@ function Review({
       id: 'folders',
       label: 'Folders',
       value: (
-        <span className="grid font-mono text-mono">
-          <span>{movies}</span>
-          <span>{downloads}</span>
-        </span>
+        <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3">
+          {(['movies', 'shows', 'music', 'downloads'] as const).map((k) => (
+            <Fragment key={k}>
+              <dt className="text-text-3">{FOLDER[k]}</dt>
+              <dd
+                className={
+                  draft.folders[k] ? 'font-mono text-mono [overflow-wrap:anywhere]' : 'text-text-3'
+                }
+              >
+                {draft.folders[k] || 'None. Add one later in Media management.'}
+              </dd>
+            </Fragment>
+          ))}
+        </dl>
       ),
       note:
         links.status === 'success' && links.data.ok
@@ -763,21 +805,21 @@ function Folders({
   errors: Errors
   update: (patch: Partial<Draft>) => void
 }) {
-  const [picking, setPicking] = useState<'movies' | 'downloads' | null>(null)
-  const { movies, downloads } = draft.folders
-  const check = useQuery(`hardlinks:${movies}:${downloads}`, (c) =>
-    c.fs.checkHardlinks(movies, downloads),
+  const [picking, setPicking] = useState<FolderKey | null>(null)
+  const { downloads } = draft.folders
+  const media = mediaOf(draft.folders)
+  const check = useQuery(`hardlinks:${media}:${downloads}`, (c) =>
+    c.fs.checkHardlinks(media, downloads),
   )
-  const set = (key: 'movies' | 'downloads', path: string) =>
+  const set = (key: FolderKey, path: string) =>
     update({ folders: { ...draft.folders, [key]: path } })
   return (
     <>
-      {(['movies', 'downloads'] as const).map((key) => (
-        <Field
-          key={key}
-          label={key === 'movies' ? 'Movies folder' : 'Downloads folder'}
-          error={errors[key]}
-        >
+      <p className="text-caption text-text-3">
+        A folder for each kind you keep, at least one. Leave the others empty.
+      </p>
+      {(['movies', 'shows', 'music', 'downloads'] as const).map((key) => (
+        <Field key={key} label={`${FOLDER[key]} folder`} error={errors[key]}>
           <div className="flex gap-2">
             <Input
               value={draft.folders[key]}
@@ -790,19 +832,19 @@ function Folders({
           </div>
         </Field>
       ))}
-      {movies && downloads && check.status === 'success' && check.data.ok && (
+      {media && downloads && check.status === 'success' && check.data.ok && (
         <Banner
           tone={check.data.sameDevice ? 'success' : 'warning'}
           title={check.data.sameDevice ? 'Hardlinks will work' : 'Imports will be copied'}
         >
           {check.data.message}
           {!check.data.sameDevice &&
-            ' To avoid it, pick a downloads folder on the same disk as your movies.'}
+            ' To avoid it, pick a downloads folder on the same disk as your media.'}
         </Banner>
       )}
       <PathPicker
         open={picking !== null}
-        title={picking === 'downloads' ? 'Choose the downloads folder' : 'Choose the movies folder'}
+        title={`Choose the ${(picking ? FOLDER[picking] : 'Movies').toLowerCase()} folder`}
         start={(picking && draft.folders[picking]) || '/data'}
         onOpenChange={(open) => !open && setPicking(null)}
         onPick={(path) => {
@@ -1036,23 +1078,16 @@ function Languages({
           {languages.data.map((l) => {
             const on = selected.includes(l.code)
             return (
-              <button
+              <Chip
                 key={l.code}
-                type="button"
-                aria-pressed={on}
+                selected={on}
+                icon={on ? 'check' : undefined}
                 onClick={() =>
                   onChange(on ? selected.filter((c) => c !== l.code) : [...selected, l.code])
                 }
-                className={cn(
-                  'flex h-8 items-center gap-1.5 rounded-full border px-3 text-ui transition-tint',
-                  on
-                    ? 'border-accent bg-accent-soft text-accent-text'
-                    : 'border-line-strong text-text-2 hover:bg-s2 hover:text-text',
-                )}
               >
-                {on && <Icon name="check" size={14} />}
                 {l.name}
-              </button>
+              </Chip>
             )
           })}
         </div>
@@ -1104,8 +1139,11 @@ function Remote({
   update: (patch: Partial<Draft>) => void
 }) {
   return (
-    <fieldset className="grid gap-2">
-      <legend className="sr-only">Away from home</legend>
+    <RadioGroup
+      aria-label="Away from home"
+      value={draft.remote}
+      onValueChange={(v) => update({ remote: v as Draft['remote'] })}
+    >
       {remoteOptions.map((o) => {
         const on = draft.remote === o.kind
         return (
@@ -1116,14 +1154,9 @@ function Remote({
               on ? 'border-accent bg-s2' : 'border-line bg-s1',
             )}
           >
+            {/* biome-ignore lint/a11y/noLabelWithoutControl: the control is its child, the library’s Radio, a button with the radio role and so a labelable element */}
             <label className="grid cursor-pointer grid-cols-[auto_1fr] gap-x-3 gap-y-0.5">
-              <input
-                type="radio"
-                name="remote"
-                checked={on}
-                onChange={() => update({ remote: o.kind })}
-                className="mt-0.5 size-4 accent-(--color-accent-fill)"
-              />
+              <Radio value={o.kind} className="mt-0.5" />
               <span className="font-semibold text-text text-ui">{o.title}</span>
               <span className="col-start-2 text-caption text-text-2">{o.detail}</span>
             </label>
@@ -1157,6 +1190,6 @@ function Remote({
           </div>
         )
       })}
-    </fieldset>
+    </RadioGroup>
   )
 }

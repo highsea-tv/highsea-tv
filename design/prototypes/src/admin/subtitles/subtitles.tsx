@@ -1,9 +1,15 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// A10 Subtitles (docs/product/subtitles.md). The wanted list (movies missing a language their
-// profile asks for) with search for one or all; then the settings: providers with their rate
+// A10 Subtitles (docs/product/subtitles.md). The wanted list (movies and, since stage 6 of the
+// prototypes' gaps, episodes missing a language their profile asks for) with search for one or all; then the settings: providers with their rate
 // limits, language profiles (ordered, forced and SDH, cutoff), scoring and the automatic sync.
 
 import { percent } from '@highsea-tv/core/format'
+import type {
+  Language,
+  LanguageProfile,
+  LanguageRule,
+  SubtitleSettings,
+} from '@highsea-tv/mock/types'
 import {
   Badge,
   Button,
@@ -11,6 +17,7 @@ import {
   Field,
   Input,
   Progress,
+  SegmentedControl,
   Select,
   SortableList,
   Stat,
@@ -29,18 +36,32 @@ import {
   TabsTrigger,
   TitleCell,
   toast,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import { useEffect, useState } from 'react'
 import { useAction, useQuery } from '../../mock/hooks.tsx'
-import type { Language, LanguageProfile, LanguageRule, SubtitleSettings } from '../../mock/types.ts'
+import { episodeCode, episodeName, showHref } from '../episodes.ts'
 import { Loadable } from '../loadable.tsx'
 import { AdminPage, adminHref } from '../shell.tsx'
+import { useTabAddress } from '../tabs.ts'
 
-type Tab = 'wanted' | 'providers' | 'languages' | 'scoring'
+/** The tabs, each at its own address (/subtitles/{tab}, the first at /subtitles), so Back and links work. */
+export const subtitleTabs = ['wanted', 'providers', 'languages', 'scoring'] as const
+export type SubtitlesTab = (typeof subtitleTabs)[number]
+type Tab = SubtitlesTab
 
-export function Subtitles() {
-  const [tab, setTab] = useState<Tab>('wanted')
-  const wanted = useQuery('subtitles-wanted', (c) => c.subtitles.wanted(), ['subtitles.updated'])
+export function Subtitles({ tab = 'wanted' }: { tab?: Tab }) {
+  const setTab = useTabAddress<Tab>('/subtitles', 'wanted')
+  const wanted = useQuery(
+    'subtitles-wanted',
+    async (c) => {
+      const [movies, episodes] = await Promise.all([
+        c.subtitles.wanted(),
+        c.subtitles.wantedEpisodes(),
+      ])
+      return movies.length + episodes.length
+    },
+    ['subtitles.updated'],
+  )
   return (
     <AdminPage
       title="Subtitles"
@@ -49,7 +70,7 @@ export function Subtitles() {
       <Stats />
       <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)} variant="line">
         <TabsList aria-label="Subtitle sections" className="max-w-full overflow-x-auto">
-          <TabsTrigger value="wanted" count={wanted.data?.length || undefined}>
+          <TabsTrigger value="wanted" count={wanted.data || undefined}>
             Wanted
           </TabsTrigger>
           <TabsTrigger value="providers">Providers</TabsTrigger>
@@ -89,37 +110,73 @@ function Stats() {
 
 // ---------------------------------------------------------------- wanted
 
+type Kind = 'all' | 'movies' | 'episodes'
+
 function Wanted() {
   const data = useQuery(
     'subtitles-wanted-page',
     async (c) => {
-      const [wanted, languages] = await Promise.all([c.subtitles.wanted(), c.subtitles.languages()])
-      return { wanted, languages }
+      const [wanted, episodes, languages] = await Promise.all([
+        c.subtitles.wanted(),
+        c.subtitles.wantedEpisodes(),
+        c.subtitles.languages(),
+      ])
+      return { wanted, episodes, languages }
     },
     ['subtitles.updated'],
   )
+  const [kind, setKind] = useState<Kind>('all')
   const searchAll = useAction((c) => c.subtitles.searchAllMissing())
   const searchOne = useAction(async (c, id: string, language: string) => {
     const [best] = await c.subtitles.search(id, language)
     if (!best) throw new Error('No provider has subtitles in that language yet.')
     return c.subtitles.download(id, best)
   })
+  const searchEpisode = useAction((c, id: string) => c.subtitles.searchEpisode(id))
   return (
     <Loadable query={data} what="the wanted list">
-      {({ wanted, languages }) => {
+      {({ wanted, episodes, languages }) => {
         const name = (code: string) => languages.find((l) => l.code === code)?.name ?? code
-        if (wanted.length === 0)
+        const missing = (codes: string[]) => (
+          <span className="flex flex-wrap gap-1">
+            {codes.map((l) => (
+              <Badge key={l} tone="warning">
+                {name(l)}
+              </Badge>
+            ))}
+          </span>
+        )
+        if (wanted.length + episodes.length === 0)
           return (
-            <EmptyState icon="subtitles" title="Every movie has its subtitles">
-              Movies show here when a language their profile asks for is missing.
+            <EmptyState icon="subtitles" title="Every movie and episode has its subtitles">
+              They show here when a language their profile asks for is missing.
             </EmptyState>
           )
+        const films = kind === 'episodes' ? [] : wanted
+        const eps = kind === 'movies' ? [] : episodes
+        const count = [
+          wanted.length ? `${wanted.length} ${wanted.length === 1 ? 'movie' : 'movies'}` : '',
+          episodes.length
+            ? `${episodes.length} ${episodes.length === 1 ? 'episode' : 'episodes'}`
+            : '',
+        ]
+          .filter(Boolean)
+          .join(' and ')
         return (
           <TableFrame>
             <TableToolbar>
-              <span className="text-text">
-                {wanted.length} {wanted.length === 1 ? 'movie' : 'movies'} missing a language
-              </span>
+              <SegmentedControl
+                aria-label="Show"
+                size="sm"
+                value={kind}
+                onValueChange={(v) => setKind(v as Kind)}
+                options={[
+                  { value: 'all', label: 'All' },
+                  { value: 'movies', label: `Movies · ${wanted.length}` },
+                  { value: 'episodes', label: `Episodes · ${episodes.length}` },
+                ]}
+              />
+              <span className="text-text">{count} missing a language</span>
               <Button
                 size="sm"
                 icon="search"
@@ -136,59 +193,96 @@ function Wanted() {
                 Search all
               </Button>
             </TableToolbar>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Movie</TableHead>
-                  <TableHead>Missing</TableHead>
-                  <TableHead>
-                    <span className="sr-only">Actions</span>
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {wanted.map(({ movie: m, missingLanguages }) => (
-                  <TableRow key={m.id}>
-                    <TitleCell
-                      title={
-                        <a href={adminHref(`/movies/${m.id}`)} className="hover:underline">
-                          {m.title} ({m.year})
-                        </a>
-                      }
-                      detail={m.path}
-                    />
-                    <TableCell>
-                      <span className="flex flex-wrap gap-1">
-                        {missingLanguages.map((l) => (
-                          <Badge key={l} tone="warning">
-                            {name(l)}
-                          </Badge>
-                        ))}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-end">
-                      <Button
-                        size="sm"
-                        icon="search"
-                        disabled={searchOne.pending}
-                        aria-label={`Search subtitles for ${m.title}`}
-                        onClick={() =>
-                          Promise.all(missingLanguages.map((l) => searchOne.run(m.id, l))).then(
-                            () => toast.success(`Subtitles found for ${m.title}`),
-                            (e: Error) =>
-                              toast.error(`Nothing found for ${m.title}`, {
-                                description: e.message,
-                              }),
-                          )
-                        }
-                      >
-                        Search
-                      </Button>
-                    </TableCell>
+            {films.length + eps.length === 0 ? (
+              <p className="px-3.5 py-8 text-center text-caption text-text-3">
+                {kind === 'movies'
+                  ? 'Every movie has its subtitles.'
+                  : 'Every episode has its subtitles.'}
+              </p>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Title</TableHead>
+                    <TableHead>Missing</TableHead>
+                    <TableHead>
+                      <span className="sr-only">Actions</span>
+                    </TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {films.map(({ movie: m, missingLanguages }) => (
+                    <TableRow key={m.id}>
+                      <TitleCell
+                        title={
+                          <a href={adminHref(`/movies/${m.id}`)} className="hover:underline">
+                            {m.title} ({m.year})
+                          </a>
+                        }
+                        detail={m.path}
+                      />
+                      <TableCell>{missing(missingLanguages)}</TableCell>
+                      <TableCell className="text-end">
+                        <Button
+                          size="sm"
+                          icon="search"
+                          disabled={searchOne.pending}
+                          aria-label={`Search subtitles for ${m.title}`}
+                          onClick={() =>
+                            Promise.all(missingLanguages.map((l) => searchOne.run(m.id, l))).then(
+                              () => toast.success(`Subtitles found for ${m.title}`),
+                              (e: Error) =>
+                                toast.error(`Nothing found for ${m.title}`, {
+                                  description: e.message,
+                                }),
+                            )
+                          }
+                        >
+                          Search
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {eps.map(({ show, episode: e, missingLanguages }) => {
+                    const label = episodeName(show, e)
+                    return (
+                      <TableRow key={e.id}>
+                        <TitleCell
+                          title={
+                            <>
+                              <a href={showHref(show.id)} className="hover:underline">
+                                {show.title}
+                              </a>
+                              <span className="text-text-2">
+                                {' '}
+                                · {episodeCode(e.season, e.number)} · {e.title}
+                              </span>
+                            </>
+                          }
+                          detail={e.file?.path}
+                        />
+                        <TableCell>{missing(missingLanguages)}</TableCell>
+                        <TableCell className="text-end">
+                          <Button
+                            size="sm"
+                            icon="search"
+                            disabled={searchEpisode.pending}
+                            aria-label={`Search subtitles for ${label}`}
+                            onClick={() =>
+                              searchEpisode
+                                .run(e.id)
+                                .then(() => toast.success(`Subtitles found for ${label}`))
+                            }
+                          >
+                            Search
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })}
+                </TableBody>
+              </Table>
+            )}
           </TableFrame>
         )
       }}
@@ -444,7 +538,6 @@ function ProfileEditor({
                   className="col-span-3 medium:col-span-1"
                 />
                 <Button
-                  size="sm"
                   variant="ghost"
                   iconOnly
                   icon="close"

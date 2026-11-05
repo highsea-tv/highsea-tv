@@ -42,12 +42,12 @@ import {
   TabsTrigger,
   TitleCell,
   toast,
-} from '@highsea-tv/ui-web'
-import { useRouter } from 'next/navigation'
+} from '@highsea-tv/ui'
 import { useState } from 'react'
 import { Loadable } from './loadable.tsx'
 import { moviePath } from './media-links.ts'
 import { AdminPage } from './shell.tsx'
+import { useTabAddress } from './tabs.ts'
 import { useNow } from './time.ts'
 import { wanted as messages } from './wanted-messages.ts'
 
@@ -86,16 +86,12 @@ const intlLocale = (locale: string) => (locale === 'en' ? 'en-GB' : locale)
 
 export function Wanted({ tab = 'missing' }: { tab?: WantedTab }) {
   const t = useT(messages)
-  const router = useRouter()
+  const setTab = useTabAddress<WantedTab>('/wanted', 'missing')
   const missing = useQuery('wanted:total:missing', (c) => loadTotal(c, 'missing'), LIVE)
   const cutoff = useQuery('wanted:total:cutoff', (c) => loadTotal(c, 'cutoff'), LIVE)
   return (
     <AdminPage title={t('title')} description={t('description')}>
-      <Tabs
-        value={tab}
-        onValueChange={(v) => router.push(v === 'missing' ? '/wanted' : `/wanted/${v}`)}
-        variant="line"
-      >
+      <Tabs value={tab} onValueChange={(v) => setTab(v as WantedTab)} variant="line">
         <TabsList aria-label={t('sections')}>
           <TabsTrigger value="missing" count={missing.data || undefined}>
             {t('tab.missing')}
@@ -269,7 +265,7 @@ function Calendar() {
   )
   const kind = (e: CalendarEntry) => t(`kind.${e.kind}`)
   return (
-    <div className="grid gap-4">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-4">
       <div className="flex flex-wrap items-center gap-2">
         <Button
           size="sm"
@@ -279,7 +275,10 @@ function Calendar() {
           aria-label={t('calendar.previous')}
           onClick={() => setOffset(offset - 1)}
         />
-        <h2 className="min-w-40 text-center font-semibold text-text text-title" aria-live="polite">
+        <h2
+          className="min-w-[min(10rem,100%)] text-center font-semibold text-text text-title"
+          aria-live="polite"
+        >
           {monthName}
         </h2>
         <Button

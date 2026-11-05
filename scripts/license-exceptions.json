@@ -14,5 +14,17 @@
   {
     "package": "webpki-root-certs",
     "reason": "Through reqwest's rustls, the desktop app's HTTPS to servers (4.4a). Mozilla's root certificates as data, under CDLA-Permissive-2.0, which lets the data be used and shared with its notice and puts no condition on the program that uses it (cdla.dev/permissive-2-0, section 3), so it's compatible with AGPL-3.0."
+  },
+  {
+    "package": "libavif",
+    "reason": "Through expo-image's AVIF coder in the TV app's pods (4.5b). Its podspec says \"BSD\" without a variant; the LICENSE it ships is the two-clause BSD licence (no endorsement clause), BSD-2-Clause, compatible with AGPL-3.0."
+  },
+  {
+    "package": "libdav1d",
+    "reason": "Through expo-image's AVIF coder in the TV app's pods (4.5b). Its podspec says \"BSD 2-clause\", not the SPDX id; dav1d's COPYING is BSD-2-Clause (code.videolan.org/videolan/dav1d), compatible with AGPL-3.0."
+  },
+  {
+    "package": "libwebp",
+    "reason": "Through expo-image's WebP coder in the TV app's pods (4.5b). Its podspec says \"BSD\" without a variant; the COPYING it ships is the three-clause BSD licence (with the endorsement clause), BSD-3-Clause, compatible with AGPL-3.0."
   }
 ]

@@ -7,15 +7,7 @@
 import type { Tag } from '@highsea-tv/api-contract'
 import { useT } from '@highsea-tv/i18n/react'
 import { useAction } from '@highsea-tv/sdk/react'
-import {
-  Button,
-  ConfirmDialog,
-  Dialog,
-  DialogContent,
-  Field,
-  Input,
-  toast,
-} from '@highsea-tv/ui-web'
+import { Button, ConfirmDialog, Dialog, DialogContent, Field, Input, toast } from '@highsea-tv/ui'
 import { type FormEvent, useState } from 'react'
 import { Loadable } from './loadable.tsx'
 import { Group } from './settings.tsx'
@@ -129,13 +121,13 @@ function AddTag({ onAdded }: { onAdded: () => void }) {
   return (
     <form onSubmit={submit} noValidate className="grid gap-2">
       <Field label={t('add.label')} error={error ?? undefined}>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Input
             value={label}
             maxLength={40}
             placeholder={t('add.placeholder')}
             autoCapitalize="none"
-            className="flex-1"
+            className="min-w-0 flex-1 basis-48"
             onChange={(e) => {
               setError(null)
               setLabel(e.target.value)

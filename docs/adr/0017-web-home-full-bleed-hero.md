@@ -17,3 +17,7 @@ The owner chose **A, the full-bleed hero**, when signing off Phase 2.
 - Option B, its switch and its routes (`#/web/home/a`, `#/web/home/b`) are gone from the prototype; `#/web` is the home. [client-home.md](../product/client-home.md) describes only A.
 - Announcement banners on the web sit under the hero.
 - Still open, as before: whether the web hero ever rotates on its own while the window is idle (it doesn't now).
+
+## 2026-11-01: the featured card, with Play and paging
+
+On 2026-10-30 the owner brought the TV's featured card to the web in place of the full-bleed hero: one large card inside the page's gutters, with a bloom in its colour behind the top bar. The audit of the prototypes on 2026-11-01 found it had lost Play and the pager this ADR describes. At prototype-gaps stage 4 (the owner's answer 9) the card stays, with **Play** or **Resume** and **More info** on it and the featured section's other titles paged with arrows and dots at its bottom right, never moving by itself. [client-home.md](../product/client-home.md) describes the card. The full-bleed hero above is kept as the history of the choice.

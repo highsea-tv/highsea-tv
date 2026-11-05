@@ -10,7 +10,8 @@ Decide to watch, and how: Play or Resume, with the version, audio and subtitles 
 
 ## Entry points
 
-- Posters on Home, Library and More like this; **Details** on the hero.
+- Posters on Home and Library, stills in More like this; **More info** on the web's featured card and **Details** on the TV's hero.
+- **An episode** (prototype-gaps stage 2, 2026-11-01) opens its show's page at it, `/shows/{id}/episodes/{episode}`: the episode's season chosen and its row scrolled into view (on the TV, focused). Search's episodes and Continue watching's **Go to the show** use it.
 
 ## Layout
 
@@ -18,7 +19,7 @@ Decide to watch, and how: Play or Resume, with the version, audio and subtitles 
   - a backdrop header (68% of the viewport from medium) behind the translucent top bar: the title, meta (year, runtime, genres, rating, quality tags), the synopsis, "Directed by", then **Play** or **Resume**, **Play from the start** and "8 min left" when started, and the progress bar;
   - **Watch with:** Version (a select when there are several, otherwise the version's description), Audio, Subtitles (Off first), in three columns from medium, and "Remembered for this movie, on all your devices.";
   - **Cast:** portraits with the name and character, up to twelve, in a wrapping grid;
-  - **More like this:** a poster row.
+  - **More like this:** 16:9 stills, as Continue watching's, on a film's page and a show's alike (the owner's answer 10, prototype-gaps stage 4).
 - **Mobile:** the backdrop across the top with **Back** over it (glass); the title (28pt), meta, **Resume · 8 min left** across the width (48pt), **Play from the start**, the synopsis, "Directed by"; Watch with as stacked fields; Cast and More like this as rows.
 - **TV:** the ambient backdrop (the artwork blurred 2.6u and dimmed); the poster (13u) beside the title (3.6u), meta, synopsis and "Directed by"; actions **Resume · 8 min left**, **From the start**, **Audio and subtitles**; the current picks in one line ("4K · English · 5.1 · Subtitles off"); Cast (the name and character under each portrait) and More like this (title and year under each poster) as rows below, scrolled into view by focus; the server identity scrolls away with the page.
 - **TV Audio and subtitles:** a panel from the right (32u): Version (when several), Audio, Subtitles, "Back closes. Saved for this movie." It's an isolated focus region; picking subtitles closes it.
@@ -31,7 +32,7 @@ Checkpoint 4.0b, on mobile and in the desktop app (not in a browser, which can't
 - **Waiting to download** (another is downloading) or **Waiting for Wi-Fi**, with **Cancel**;
 - the bar with its percentage, "Downloading · {speed}/s · {left} to go" and **Pause**; paused, "Paused · {done} of {size}" and **Resume**;
 - **The download stopped** with **Try again**;
-- "Downloaded · plays offline for {n} more days" with **Remove**; expired, "Downloaded · connect to Harbor to keep watching it".
+- "Downloaded · plays offline for {n} more days" with **Remove**; expired, "Downloaded · connect to {server} to keep watching it".
 
 The list of every download is [client-settings.md › Offline](client-settings.md#offline).
 
@@ -42,9 +43,27 @@ Phase 4's answer 9. On web and mobile, **More** (an icon button after the play a
 - Watched means played to the end, for this person only. Marking it watched removes it from Continue watching; marking it unwatched starts it from the beginning next time ("It plays from the start next time.").
 - The toast says "{title} marked as watched" or "marked as unwatched".
 
+### Trailer
+
+On the web, in the desktop app and on the phone, not on the TV until the server keeps trailer files (the owner's answers 2, 9 and 10 at [B1's review](../plans/one-client-platform-b.md#the-owners-answers-at-b1s-review)). When the film has a trailer on YouTube (its first trailer, or a teaser before release), **Trailer** is a round action after From the start. It opens a large dialog titled with the video's name: the player in a 16:9 frame, YouTube's privacy-enhanced embed from `www.youtube-nocookie.com`, loaded only once the dialog opens and playing at once, and the video's kind under it (the prototype's "kind · length": the API has no length, as TMDB gives none). On the phone the embed is in a WebView. The prototype, which loads nothing from YouTube, draws the still with a note instead.
+
+### Shows, people and soundtracks (prototype-gaps stage 3, 2026-11-01)
+
+- **A show's page has the film page's round buttons** beside Play: From the start (of the episode Play plays), **Trailer** when the show has one, **Audio and subtitles** (the show's languages, picked once and applied to every episode; the TV's panel says "Back closes. Saved for every episode."), **Mark show as watched**, drawn on its own so it stays when no episode is left, and in the desktop app and on the phone, **Download** for that episode.
+- **Download for episodes, seasons and albums** (the screens 4.6 builds): an episode's row has a download icon with the progress ring, each season **Download season** beside Mark season as watched, and an album Download beside Play and Shuffle. The phone's stays in the prototype as 4.6's design; `apps/mobile` hides it until 4.6.
+- **Soundtrack:** a film whose score is an album here has a **Soundtrack** line in Information, the album's title as a link to it. On the TV it's a stop of its own inside the card.
+- **Their music:** a person who is also an artist here has **Their music** on their page, opening the artist page, as the artist page has **Their films and shows**. It sits under the facts on the web, under the biography on the phone, and as a button under the facts on the TV, between the head and the first row.
+
+### Stage 4 of the prototypes' gaps (2026-11-01)
+
+- **The phone's tab bar** keeps the tab a page was opened from: a film opened from Search keeps Search marked, and from Home, Home. A page opened before any tab, from a link, marks Library for a film, show or album and Home otherwise.
+- **The TV's episodes:** holding OK on an episode opens a menu with **Mark as watched** (or **Mark as unwatched**) and **From the start**; a short press plays. Each episode's label ends "Hold OK for more."
+- **The TV's errors** name the way out: the player's error has **Home**, a film's page **Movies** and a collection's **Collections**.
+- **The web's error** for a film that's gone: "It may have been removed. Search finds everything you can watch."
+
 ## States
 
-- **Loading:** web and mobile: skeletons for the title, buttons and text; TV: a spinner.
+- **Loading:** skeletons for the title, buttons and text on every form factor, the TV's at its sizes (B1 of the one client platform converged the TV onto the skeletons, for the owner's approval; it was a spinner).
 - **Not on this server** (removed, or never playable): "That title isn't on this server." with **Go home**.
 - **Not started / started:** Play, or Resume with what's left and Play from the start.
 - **One version:** no version choice; its description shows instead.
@@ -89,5 +108,5 @@ Through `@highsea-tv/sdk` (the contract is `@highsea-tv/api-contract`'s `library
 ## Open questions
 
 - **Version per device:** should the version pick be per device class (TV prefers 4K, phone prefers 1080p) rather than per title?
-- **Trailers on the clients:** the admin embeds them on click; should clients too?
+- ~~**Trailers on the clients:** the admin embeds them on click; should clients too?~~ Yes on the web, the desktop app and the phone, through YouTube's privacy-enhanced embed (a WebView on the phone); the TV waits for trailer files ([the owner's answers at B1's review](../plans/one-client-platform-b.md#the-owners-answers-at-b1s-review)).
 - ~~**Mark as watched / unwatched:** in a More menu (web, mobile) and a long-press of OK (TV)?~~ Yes ([Phase 4's answer 9](../plans/phase-4-clients.md#the-owners-answers)); prototyped at 4.0b, [above](#mark-as-watched).

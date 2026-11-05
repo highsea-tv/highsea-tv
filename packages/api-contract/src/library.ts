@@ -5,18 +5,33 @@
 // it (checkpoint 4.1, ADR 0054).
 import { createRoute, z } from '@hono/zod-openapi'
 import { API_PREFIX, access, errors, IsoDate, IsoDay, json } from './common.ts'
+import {
+  ClientAlbum,
+  ClientArtist,
+  ClientShow,
+  EpisodePlace,
+  SearchEpisode,
+  SearchSong,
+} from './kinds.ts'
 import { Art, CollectionRef, Credit, DiscoverMovie, Video } from './metadata.ts'
 import { MOVIE_SORTS, MovieStatus } from './movies.ts'
 
 /** The media types the library has so far. Shows, music and books join later. */
 export const ITEM_TYPES = ['movie'] as const
 
+/**
+ * What a title's address can name: a movie, or an episode (drafted with B3: the mock plays one, and
+ * the real server answers an episode's address 501 until it has shows). The library's list stays
+ * `ITEM_TYPES`.
+ */
+export const TITLE_TYPES = ['movie', 'episode'] as const
+
 /** A title as the clients see it: the library item plus this person's watch state. */
 export const ClientItem = z
   .object({
     /** TMDB's id; with `type`, the title's address. */
     id: z.number().int().openapi({ example: 603 }),
-    type: z.enum(ITEM_TYPES),
+    type: z.enum(TITLE_TYPES),
     title: z.string(),
     year: z.number().int().nullable(),
     runtimeMinutes: z.number().int().nullable(),
@@ -41,6 +56,25 @@ export const ClientItem = z
     position: z.number().min(0),
     /** Watched to the end (past 90%) or marked watched, and not marked unwatched since. */
     watched: z.boolean(),
+    /**
+     * Drafted (B3): an episode on Home's cards and Continue watching, with its show, its place and
+     * its own title; its card is the show's name over "S2, E6". Absent for a film.
+     */
+    show: z
+      .object({ id: z.number().int(), title: z.string(), code: z.string(), episode: z.string() })
+      .optional(),
+    /**
+     * Drafted (B3): a show on a featured section's card, beside its films: the card opens the
+     * show, Play starts `play` (the episode it's on, or its first), and the meta line is its
+     * seasons and years. Absent for films and episodes.
+     */
+    series: z
+      .object({
+        seasons: z.number().int(),
+        endYear: z.number().int().nullable(),
+        play: z.number().int(),
+      })
+      .optional(),
   })
   .openapi('ClientItem')
 
@@ -102,11 +136,15 @@ export const ClientDetail = z
     studios: z.array(z.string()),
     cast: z.array(Credit),
     directors: z.array(Credit),
+    /** The rest of the crew TMDB lists, without the directors and producers (client-detail.md). */
+    crew: z.array(Credit),
     videos: z.array(Video),
     collection: CollectionRef.nullable(),
     versions: z.array(ClientVersion),
     /** TMDB's recommendations that are in the library here. */
     related: z.array(ClientItem),
+    /** Drafted (B3): an episode's show and place, for the player; absent for a film. */
+    episode: EpisodePlace.optional(),
   })
   .openapi('ClientDetail')
 
@@ -153,6 +191,12 @@ export const SearchSection = z
     z.object({ kind: z.literal('collections'), items: z.array(ClientCollection) }),
     z.object({ kind: z.literal('people'), items: z.array(SearchPerson) }),
     z.object({ kind: z.literal('discover'), items: z.array(DiscoverMovie) }),
+    // drafted with B3: only a server that serves shows or music sends these
+    z.object({ kind: z.literal('shows'), items: z.array(ClientShow) }),
+    z.object({ kind: z.literal('episodes'), items: z.array(SearchEpisode) }),
+    z.object({ kind: z.literal('artists'), items: z.array(ClientArtist) }),
+    z.object({ kind: z.literal('albums'), items: z.array(ClientAlbum) }),
+    z.object({ kind: z.literal('songs'), items: z.array(SearchSong) }),
   ])
   .openapi('SearchSection')
 
@@ -160,7 +204,7 @@ export const SearchSection = z
 export const SearchResults = z.object({ sections: z.array(SearchSection) }).openapi('SearchResults')
 
 export const ItemParams = z.object({
-  type: z.enum(ITEM_TYPES).openapi({ param: { name: 'type', in: 'path' } }),
+  type: z.enum(TITLE_TYPES).openapi({ param: { name: 'type', in: 'path' } }),
   id: z.coerce
     .number<number>()
     .int()

@@ -34,7 +34,7 @@ import {
   TableHeader,
   TableRow,
   toast,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import { type ReactNode, useState } from 'react'
 import { migration as messages } from './migration-messages.ts'
 import { AreaPage, Group } from './settings.tsx'

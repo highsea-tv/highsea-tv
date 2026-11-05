@@ -1,0 +1,1614 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "https://api.themoviedb.org/3/movie/3085?append_to_response=credits%2Cvideos%2Crelease_dates%2Cexternal_ids%2Crecommendations%2Ckeywords&language=en-US",
+    "credential": "valid"
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json;charset=utf-8"
+    },
+    "body": {
+      "adult": false,
+      "backdrop_path": "/ihoQaiMFAz4YCTAaSIsQjRknsNH.jpg",
+      "belongs_to_collection": null,
+      "budget": 0,
+      "genres": [
+        {
+          "id": 35,
+          "name": "Comedy"
+        },
+        {
+          "id": 10749,
+          "name": "Romance"
+        },
+        {
+          "id": 80,
+          "name": "Crime"
+        }
+      ],
+      "homepage": "",
+      "id": 3085,
+      "imdb_id": "tt0032599",
+      "origin_country": ["US"],
+      "original_language": "en",
+      "original_title": "His Girl Friday",
+      "overview": "Walter Burns is an irresistibly conniving newspaper publisher desperate to woo back his paper’s star reporter, who also happens to be his estranged wife. She’s threatening to quit and settle down with a new beau, but, as Walter knows, she has a weakness: she can’t resist a juicy scoop.",
+      "popularity": 4.699,
+      "poster_path": "/lu86Y9zTPH3neCiUzLzHCEFHf7f.jpg",
+      "production_companies": [
+        {
+          "id": 5,
+          "logo_path": "/71BqEFAF4V3qjjMPCpLuyJFB9A.png",
+          "name": "Columbia Pictures",
+          "origin_country": "US"
+        }
+      ],
+      "production_countries": [
+        {
+          "iso_3166_1": "US",
+          "name": "United States of America"
+        }
+      ],
+      "release_date": "1940-01-18",
+      "revenue": 0,
+      "runtime": 92,
+      "softcore": false,
+      "spoken_languages": [
+        {
+          "english_name": "English",
+          "iso_639_1": "en",
+          "name": "English"
+        }
+      ],
+      "status": "Released",
+      "tagline": "They're at each other's throats when they're not in each other's arms!",
+      "title": "His Girl Friday",
+      "video": false,
+      "vote_average": 7.39,
+      "vote_count": 991,
+      "credits": {
+        "cast": [
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 2638,
+            "known_for_department": "Acting",
+            "name": "Cary Grant",
+            "original_name": "Cary Grant",
+            "popularity": 1.6473,
+            "profile_path": "/lcNAirMFcyM7WIiCmaabjbNZVOJ.jpg",
+            "cast_id": 10,
+            "character": "Walter Burns",
+            "credit_id": "52fe4384c3a36847f805a16d",
+            "order": 0
+          },
+          {
+            "adult": false,
+            "gender": 1,
+            "id": 30233,
+            "known_for_department": "Acting",
+            "name": "Rosalind Russell",
+            "original_name": "Rosalind Russell",
+            "popularity": 0.7734,
+            "profile_path": "/rM7cjXZv9ikJ3QOOqK2muzMhHsE.jpg",
+            "cast_id": 11,
+            "character": "Hildy Johnson",
+            "credit_id": "52fe4384c3a36847f805a171",
+            "order": 1
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 1208,
+            "known_for_department": "Acting",
+            "name": "Ralph Bellamy",
+            "original_name": "Ralph Bellamy",
+            "popularity": 1.9638,
+            "profile_path": "/vC6cdrUUewgurTlVXt36eRAtQKb.jpg",
+            "cast_id": 12,
+            "character": "Bruce Baldwin",
+            "credit_id": "52fe4384c3a36847f805a175",
+            "order": 2
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 30234,
+            "known_for_department": "Acting",
+            "name": "Gene Lockhart",
+            "original_name": "Gene Lockhart",
+            "popularity": 0.8991,
+            "profile_path": "/8lSQRefIA5kNylZOF7anexkDxqQ.jpg",
+            "cast_id": 13,
+            "character": "Sheriff Hartwell",
+            "credit_id": "52fe4384c3a36847f805a179",
+            "order": 3
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 14975,
+            "known_for_department": "Acting",
+            "name": "Porter Hall",
+            "original_name": "Porter Hall",
+            "popularity": 1.0794,
+            "profile_path": "/249Hlfx23i69MsA3rLnC185kbwT.jpg",
+            "cast_id": 14,
+            "character": "Murphy",
+            "credit_id": "52fe4384c3a36847f805a17d",
+            "order": 4
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 34419,
+            "known_for_department": "Acting",
+            "name": "Ernest Truex",
+            "original_name": "Ernest Truex",
+            "popularity": 0.6132,
+            "profile_path": "/zR2nCojIK4WzCHFEaX1P3X4K6fo.jpg",
+            "cast_id": 29,
+            "character": "Bensinger",
+            "credit_id": "52fe4384c3a36847f805a1b5",
+            "order": 5
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 30236,
+            "known_for_department": "Acting",
+            "name": "Cliff Edwards",
+            "original_name": "Cliff Edwards",
+            "popularity": 0.7589,
+            "profile_path": "/cplAl2NjSDuoHvSJ87kf8Yh2cdK.jpg",
+            "cast_id": 16,
+            "character": "Endicott",
+            "credit_id": "52fe4384c3a36847f805a181",
+            "order": 6
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 30237,
+            "known_for_department": "Acting",
+            "name": "Clarence Kolb",
+            "original_name": "Clarence Kolb",
+            "popularity": 1.0559,
+            "profile_path": "/yXKI1161lk7bi5OPma3MkJhSAm3.jpg",
+            "cast_id": 17,
+            "character": "Mayor",
+            "credit_id": "52fe4384c3a36847f805a185",
+            "order": 7
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 30157,
+            "known_for_department": "Acting",
+            "name": "Roscoe Karns",
+            "original_name": "Roscoe Karns",
+            "popularity": 1.5869,
+            "profile_path": "/eDXhkieC1icm4lGnuDziIIl5nO8.jpg",
+            "cast_id": 18,
+            "character": "McCue",
+            "credit_id": "52fe4384c3a36847f805a189",
+            "order": 8
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 30238,
+            "known_for_department": "Acting",
+            "name": "Frank Jenks",
+            "original_name": "Frank Jenks",
+            "popularity": 0.7267,
+            "profile_path": "/8ieh8cQUfXmK6W7vhn84wOPC5AC.jpg",
+            "cast_id": 19,
+            "character": "Wilson",
+            "credit_id": "52fe4384c3a36847f805a18d",
+            "order": 9
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 22093,
+            "known_for_department": "Acting",
+            "name": "Regis Toomey",
+            "original_name": "Regis Toomey",
+            "popularity": 1.0689,
+            "profile_path": "/fBaA8glCL6YOMX8O58a3s3yJy4P.jpg",
+            "cast_id": 20,
+            "character": "Sanders",
+            "credit_id": "52fe4384c3a36847f805a191",
+            "order": 10
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 30239,
+            "known_for_department": "Acting",
+            "name": "Abner Biberman",
+            "original_name": "Abner Biberman",
+            "popularity": 0.7111,
+            "profile_path": "/9i1mL1OmN7l5k8IRYUy6Go61S4m.jpg",
+            "cast_id": 21,
+            "character": "Louie",
+            "credit_id": "52fe4384c3a36847f805a195",
+            "order": 11
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 30240,
+            "known_for_department": "Acting",
+            "name": "Frank Orth",
+            "original_name": "Frank Orth",
+            "popularity": 0.5882,
+            "profile_path": "/s8yUbtAu6wueQjDRncuSX6x6ZUt.jpg",
+            "cast_id": 22,
+            "character": "Duffy",
+            "credit_id": "52fe4384c3a36847f805a199",
+            "order": 12
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 4119,
+            "known_for_department": "Acting",
+            "name": "John Qualen",
+            "original_name": "John Qualen",
+            "popularity": 1.2197,
+            "profile_path": "/aMuzXYaBmblQm95JxHZrmseeIYh.jpg",
+            "cast_id": 24,
+            "character": "Earl Williams",
+            "credit_id": "52fe4384c3a36847f805a1a1",
+            "order": 13
+          },
+          {
+            "adult": false,
+            "gender": 1,
+            "id": 30241,
+            "known_for_department": "Acting",
+            "name": "Helen Mack",
+            "original_name": "Helen Mack",
+            "popularity": 0.7575,
+            "profile_path": "/zHefRbs0wALGyzCoIhjf6WKfy8S.jpg",
+            "cast_id": 23,
+            "character": "Mollie Malloy",
+            "credit_id": "52fe4384c3a36847f805a19d",
+            "order": 14
+          },
+          {
+            "adult": false,
+            "gender": 1,
+            "id": 30242,
+            "known_for_department": "Acting",
+            "name": "Alma Kruger",
+            "original_name": "Alma Kruger",
+            "popularity": 0.5571,
+            "profile_path": "/vaFAhU7IigdzfcFPBaqbNi0xQEr.jpg",
+            "cast_id": 25,
+            "character": "Mrs. Baldwin",
+            "credit_id": "52fe4384c3a36847f805a1a5",
+            "order": 15
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 5464,
+            "known_for_department": "Acting",
+            "name": "Billy Gilbert",
+            "original_name": "Billy Gilbert",
+            "popularity": 0.6891,
+            "profile_path": "/xEqQLDrbtY2TlANNbXwXPG3ZDyK.jpg",
+            "cast_id": 26,
+            "character": "Joe Pettibone",
+            "credit_id": "52fe4384c3a36847f805a1a9",
+            "order": 16
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 30243,
+            "known_for_department": "Acting",
+            "name": "Pat West",
+            "original_name": "Pat West",
+            "popularity": 0.6588,
+            "profile_path": "/eKBxHl2m07XxwXafiiERWm2ypGY.jpg",
+            "cast_id": 27,
+            "character": "Warden Cooley",
+            "credit_id": "52fe4384c3a36847f805a1ad",
+            "order": 17
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 13361,
+            "known_for_department": "Acting",
+            "name": "Edwin Maxwell",
+            "original_name": "Edwin Maxwell",
+            "popularity": 0.6466,
+            "profile_path": "/k31nSbkIkSqWelDQyWvn5zF1g9q.jpg",
+            "cast_id": 28,
+            "character": "Dr. Egelhoffer",
+            "credit_id": "52fe4384c3a36847f805a1b1",
+            "order": 18
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 30530,
+            "known_for_department": "Acting",
+            "name": "Irving Bacon",
+            "original_name": "Irving Bacon",
+            "popularity": 0.9443,
+            "profile_path": "/oFczw1DlGJ2p1wr4osdC2flX9qN.jpg",
+            "cast_id": 30,
+            "character": "Gus (uncredited)",
+            "credit_id": "566c5b3d9251417383008364",
+            "order": 19
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 120818,
+            "known_for_department": "Acting",
+            "name": "Wade Boteler",
+            "original_name": "Wade Boteler",
+            "popularity": 0.9446,
+            "profile_path": "/mPvA7aaDLlMl1qksm1z8KRsDZyV.jpg",
+            "cast_id": 31,
+            "character": "Mike (uncredited)",
+            "credit_id": "566c5b6e9251415ec5008e06",
+            "order": 20
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 948509,
+            "known_for_department": "Acting",
+            "name": "Harry C. Bradley",
+            "original_name": "Harry C. Bradley",
+            "popularity": 0.8271,
+            "profile_path": "/e7VlRKhzo0eawOCIgecwFWt4Jtt.jpg",
+            "cast_id": 32,
+            "character": "Insurance Doctor (uncredited)",
+            "credit_id": "566c5b94c3a3682e98008476",
+            "order": 21
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 32221,
+            "known_for_department": "Acting",
+            "name": "Wheaton Chambers",
+            "original_name": "Wheaton Chambers",
+            "popularity": 0.5471,
+            "profile_path": "/uZ1NYL6DacyPH1yn2jqXYMb4l0Z.jpg",
+            "cast_id": 33,
+            "character": "Elevator Passenger (uncredited)",
+            "credit_id": "566c5bb39251412dbc003a46",
+            "order": 22
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 43836,
+            "known_for_department": "Acting",
+            "name": "Edmund Cobb",
+            "original_name": "Edmund Cobb",
+            "popularity": 1.1939,
+            "profile_path": "/icnYHc5GwjZzl9wF2nLP8rPvL8a.jpg",
+            "cast_id": 35,
+            "character": "Cop (uncredited)",
+            "credit_id": "566c5c2d92514169e2008d2c",
+            "order": 23
+          },
+          {
+            "adult": false,
+            "gender": 1,
+            "id": 2772,
+            "known_for_department": "Acting",
+            "name": "Ann Doran",
+            "original_name": "Ann Doran",
+            "popularity": 0.8653,
+            "profile_path": "/t6q0svIGjotyJQgxr74pKz6462g.jpg",
+            "cast_id": 36,
+            "character": "Newspaper Office Worker (uncredited)",
+            "credit_id": "566c5c9cc3a36834c1008c73",
+            "order": 24
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 124882,
+            "known_for_department": "Acting",
+            "name": "Ralph Dunn",
+            "original_name": "Ralph Dunn",
+            "popularity": 0.6429,
+            "profile_path": "/xbTC3C9E793jgUde7vqDe8xrg55.jpg",
+            "cast_id": 37,
+            "character": "Plainclothesman (uncredited)",
+            "credit_id": "566c5cc1c3a3680e730044f8",
+            "order": 25
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 88652,
+            "known_for_department": "Acting",
+            "name": "Earl Dwire",
+            "original_name": "Earl Dwire",
+            "popularity": 0.6521,
+            "profile_path": "/1DZox89bVEBbTC2yu5UBLNCvO6I.jpg",
+            "cast_id": 38,
+            "character": "Pete Davis (uncredited)",
+            "credit_id": "566c5cecc3a36834c1008c79",
+            "order": 26
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 125842,
+            "known_for_department": "Acting",
+            "name": "Pat Flaherty",
+            "original_name": "Pat Flaherty",
+            "popularity": 0.6753,
+            "profile_path": null,
+            "cast_id": 39,
+            "character": "Frank the Policeman (uncredited)",
+            "credit_id": "566c5d1fc3a3683f56008375",
+            "order": 27
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 121098,
+            "known_for_department": "Acting",
+            "name": "Jack Gardner",
+            "original_name": "Jack Gardner",
+            "popularity": 0.5822,
+            "profile_path": null,
+            "cast_id": 34,
+            "character": "Elevator Passenger (uncredited)",
+            "credit_id": "566c5bf092514125d3003bab",
+            "order": 28
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 1097503,
+            "known_for_department": "Acting",
+            "name": "Eddie Hart",
+            "original_name": "Eddie Hart",
+            "popularity": 0.365,
+            "profile_path": null,
+            "cast_id": 40,
+            "character": "Carl the Plainclothesman (uncredited)",
+            "credit_id": "566c5d4692514173ff00ce63",
+            "order": 29
+          },
+          {
+            "adult": false,
+            "gender": 1,
+            "id": 85900,
+            "known_for_department": "Acting",
+            "name": "Marion Martin",
+            "original_name": "Marion Martin",
+            "popularity": 0.7302,
+            "profile_path": "/3WTkubutgHhO3lJXlW5rqYZGr01.jpg",
+            "cast_id": 41,
+            "character": "Evangeline (uncredited)",
+            "credit_id": "566c5d77c3a3682e980084b1",
+            "order": 30
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 569144,
+            "known_for_department": "Acting",
+            "name": "Frank McLure",
+            "original_name": "Frank McLure",
+            "popularity": 0.5881,
+            "profile_path": "/cdPFQjqIGBUHg5k2Ud39sB4B8jq.jpg",
+            "cast_id": 42,
+            "character": "Newsman (uncredited)",
+            "credit_id": "566c5db7c3a3680e7300450d",
+            "order": 31
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 100945,
+            "known_for_department": "Acting",
+            "name": "James Millican",
+            "original_name": "James Millican",
+            "popularity": 0.8427,
+            "profile_path": "/1UPyrUmCftIOyKAI4uUOwiELrES.jpg",
+            "cast_id": 43,
+            "character": "Tim (uncredited)",
+            "credit_id": "566c5e5792514125d3003be9",
+            "order": 32
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 145828,
+            "known_for_department": "Acting",
+            "name": "Gene Morgan",
+            "original_name": "Gene Morgan",
+            "popularity": 0.5986,
+            "profile_path": "/wtrHqTGeno7LczG8UWOUit0Egoc.jpg",
+            "cast_id": 44,
+            "character": "Gene (uncredited)",
+            "credit_id": "566c5e8592514169e2008d62",
+            "order": 33
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 30219,
+            "known_for_department": "Acting",
+            "name": "Delmar Watson",
+            "original_name": "Delmar Watson",
+            "popularity": 0.5214,
+            "profile_path": "/zvQfnB9FepYMBbryCZX1T5FRLNb.jpg",
+            "cast_id": 45,
+            "character": "Skinny (uncredited)",
+            "credit_id": "566c5eabc3a36826470087c4",
+            "order": 34
+          },
+          {
+            "adult": false,
+            "gender": 1,
+            "id": 2551706,
+            "known_for_department": "Acting",
+            "name": "Katherine Yorke",
+            "original_name": "Katherine Yorke",
+            "popularity": 0.4176,
+            "profile_path": null,
+            "cast_id": 62,
+            "character": "Newspaper Office Worker (uncredited)",
+            "credit_id": "697cf4150a9ea4dc4c0d1a65",
+            "order": 35
+          }
+        ],
+        "crew": [
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 11435,
+            "known_for_department": "Directing",
+            "name": "Howard Hawks",
+            "original_name": "Howard Hawks",
+            "popularity": 1.5583,
+            "profile_path": "/hG2oF9wZlqwGqP6EhG0qaN9Afg7.jpg",
+            "credit_id": "52fe4384c3a36847f805a139",
+            "department": "Directing",
+            "job": "Director"
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 4341,
+            "known_for_department": "Writing",
+            "name": "Ben Hecht",
+            "original_name": "Ben Hecht",
+            "popularity": 1.006,
+            "profile_path": "/uYYvAfPiSx5BoWA0CrUS32p3qI5.jpg",
+            "credit_id": "52fe4384c3a36847f805a13f",
+            "department": "Writing",
+            "job": "Theatre Play"
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 14824,
+            "known_for_department": "Writing",
+            "name": "Charles MacArthur",
+            "original_name": "Charles MacArthur",
+            "popularity": 1.0692,
+            "profile_path": null,
+            "credit_id": "52fe4384c3a36847f805a145",
+            "department": "Writing",
+            "job": "Theatre Play"
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 4358,
+            "known_for_department": "Writing",
+            "name": "Charles Lederer",
+            "original_name": "Charles Lederer",
+            "popularity": 1.1093,
+            "profile_path": "/h8OpLegI7NkkfpbF7WFsQ3uYaW3.jpg",
+            "credit_id": "52fe4384c3a36847f805a14b",
+            "department": "Writing",
+            "job": "Screenplay"
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 11435,
+            "known_for_department": "Directing",
+            "name": "Howard Hawks",
+            "original_name": "Howard Hawks",
+            "popularity": 1.5583,
+            "profile_path": "/hG2oF9wZlqwGqP6EhG0qaN9Afg7.jpg",
+            "credit_id": "52fe4384c3a36847f805a151",
+            "department": "Production",
+            "job": "Producer"
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 17761,
+            "known_for_department": "Camera",
+            "name": "Joseph Walker",
+            "original_name": "Joseph Walker",
+            "popularity": 0.4173,
+            "profile_path": null,
+            "credit_id": "52fe4384c3a36847f805a163",
+            "department": "Camera",
+            "job": "Director of Photography"
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 30154,
+            "known_for_department": "Editing",
+            "name": "Gene Havlick",
+            "original_name": "Gene Havlick",
+            "popularity": 0.4523,
+            "profile_path": null,
+            "credit_id": "52fe4384c3a36847f805a169",
+            "department": "Editing",
+            "job": "Editor"
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 4341,
+            "known_for_department": "Writing",
+            "name": "Ben Hecht",
+            "original_name": "Ben Hecht",
+            "popularity": 1.006,
+            "profile_path": "/uYYvAfPiSx5BoWA0CrUS32p3qI5.jpg",
+            "credit_id": "566c5ef5c3a3680e7300452a",
+            "department": "Writing",
+            "job": "Screenplay"
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 10792,
+            "known_for_department": "Writing",
+            "name": "Morrie Ryskind",
+            "original_name": "Morrie Ryskind",
+            "popularity": 0.8504,
+            "profile_path": null,
+            "credit_id": "566c5f2b92514169e2008d70",
+            "department": "Crew",
+            "job": "Additional Dialogue"
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 31969,
+            "known_for_department": "Art",
+            "name": "Lionel Banks",
+            "original_name": "Lionel Banks",
+            "popularity": 0.3383,
+            "profile_path": null,
+            "credit_id": "566c5f7f92514169e2008d7b",
+            "department": "Art",
+            "job": "Art Direction"
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 34225,
+            "known_for_department": "Costume & Make-Up",
+            "name": "Robert Kalloch",
+            "original_name": "Robert Kalloch",
+            "popularity": 0.4887,
+            "profile_path": null,
+            "credit_id": "566c5fa5c3a36833b6008a09",
+            "department": "Costume & Make-Up",
+            "job": "Costume Design"
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 1312730,
+            "known_for_department": "Production",
+            "name": "Cliff P. Broughton",
+            "original_name": "Cliff P. Broughton",
+            "popularity": 0.36,
+            "profile_path": null,
+            "credit_id": "566c5fdb92514173ff00ceab",
+            "department": "Directing",
+            "job": "Assistant Director"
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 1099274,
+            "known_for_department": "Sound",
+            "name": "Lodge Cunningham",
+            "original_name": "Lodge Cunningham",
+            "popularity": 0.4421,
+            "profile_path": null,
+            "credit_id": "566c6008c3a368535a0090f7",
+            "department": "Sound",
+            "job": "Sound"
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 34227,
+            "known_for_department": "Sound",
+            "name": "Morris Stoloff",
+            "original_name": "Morris Stoloff",
+            "popularity": 0.4175,
+            "profile_path": "/o7QbLtxklWPt5njH2cDeIUPGgAw.jpg",
+            "credit_id": "566c6125c3a36833b6008a3a",
+            "department": "Sound",
+            "job": "Music Director"
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 95744,
+            "known_for_department": "Directing",
+            "name": "Paul Helmick",
+            "original_name": "Paul Helmick",
+            "popularity": 0.4392,
+            "profile_path": null,
+            "credit_id": "6486824799259c00e2f5b93e",
+            "department": "Directing",
+            "job": "Assistant Director"
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 29275,
+            "known_for_department": "Sound",
+            "name": "Sidney Cutner",
+            "original_name": "Sidney Cutner",
+            "popularity": 0.6433,
+            "profile_path": "/7ioBnHzGoEa76lvH6HMBZDTb4zH.jpg",
+            "credit_id": "697cf34d3207311f480d1a58",
+            "department": "Sound",
+            "job": "Original Music Composer"
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 30232,
+            "known_for_department": "Sound",
+            "name": "Felix Mills",
+            "original_name": "Felix Mills",
+            "popularity": 0.4055,
+            "profile_path": null,
+            "credit_id": "697cf3576015f96a16663786",
+            "department": "Sound",
+            "job": "Original Music Composer"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 545526,
+            "known_for_department": "Camera",
+            "name": "Cliff Shirpser",
+            "original_name": "Cliff Shirpser",
+            "popularity": 0.3692,
+            "profile_path": null,
+            "credit_id": "697cf37e3207311f480d1a5c",
+            "department": "Camera",
+            "job": "Assistant Camera"
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 4541263,
+            "known_for_department": "Costume & Make-Up",
+            "name": "Eugene Joseff",
+            "original_name": "Eugene Joseff",
+            "popularity": 0.4836,
+            "profile_path": "/s4fwifIhBkeO6mjwo5JxtLPjFTG.jpg",
+            "credit_id": "697cf3890fe082047d0d1a75",
+            "department": "Costume & Make-Up",
+            "job": "Other"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 34173,
+            "known_for_department": "Sound",
+            "name": "Ben Oakland",
+            "original_name": "Ben Oakland",
+            "popularity": 0.3376,
+            "profile_path": null,
+            "credit_id": "697cf39aec00c5c1d391c482",
+            "department": "Crew",
+            "job": "Additional Music"
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 11435,
+            "known_for_department": "Directing",
+            "name": "Howard Hawks",
+            "original_name": "Howard Hawks",
+            "popularity": 1.5583,
+            "profile_path": "/hG2oF9wZlqwGqP6EhG0qaN9Afg7.jpg",
+            "credit_id": "6ac1dbc578d6aa700d2e6b13",
+            "department": "Writing",
+            "job": "Screenplay"
+          }
+        ]
+      },
+      "videos": {
+        "results": [
+          {
+            "iso_639_1": "en",
+            "iso_3166_1": "US",
+            "name": "His Girl Friday (1940) Original Trailer [HD]",
+            "key": "FKghQCbQOwY",
+            "site": "YouTube",
+            "size": 2160,
+            "type": "Trailer",
+            "official": false,
+            "id": "68e06d121ffc144a3d25a78b",
+            "published_at": "2024-02-18T14:45:51.000Z"
+          },
+          {
+            "iso_639_1": "en",
+            "iso_3166_1": "US",
+            "name": "His Girl Friday | Original Trailer [HD] | Coolidge Corner Theatre",
+            "key": "0GYX46Bs1_8",
+            "site": "YouTube",
+            "size": 1080,
+            "type": "Teaser",
+            "official": true,
+            "id": "67f581e46c3583c975998ff1",
+            "published_at": "2019-01-07T16:12:51.000Z"
+          },
+          {
+            "iso_639_1": "en",
+            "iso_3166_1": "US",
+            "name": "His Girl Friday (1940) - What's the Story? Scene (7/12) | Movieclips",
+            "key": "9tHwS5Ymvag",
+            "site": "YouTube",
+            "size": 1080,
+            "type": "Clip",
+            "official": false,
+            "id": "65edd82391f0ea01868c2bce",
+            "published_at": "2017-02-01T23:17:28.000Z"
+          },
+          {
+            "iso_639_1": "en",
+            "iso_3166_1": "US",
+            "name": "His Girl Friday (1940) - Hildy's Farewell Scene (6/12) | Movieclips",
+            "key": "WsaXEsBV6b4",
+            "site": "YouTube",
+            "size": 1080,
+            "type": "Clip",
+            "official": false,
+            "id": "65edd83291f0ea01868c2bdc",
+            "published_at": "2017-02-01T23:17:28.000Z"
+          },
+          {
+            "iso_639_1": "en",
+            "iso_3166_1": "US",
+            "name": "His Girl Friday (1940) - A Better Offer Scene (1/12) | Movieclips",
+            "key": "m8lzyaMZ-mA",
+            "site": "YouTube",
+            "size": 1080,
+            "type": "Clip",
+            "official": false,
+            "id": "65edd80478570e0187fcfc1a",
+            "published_at": "2017-02-01T23:17:27.000Z"
+          },
+          {
+            "iso_639_1": "en",
+            "iso_3166_1": "US",
+            "name": "Howard Hawks on the Dialogue in HIS GIRL FRIDAY",
+            "key": "UN9M6jkgOsM",
+            "site": "YouTube",
+            "size": 1080,
+            "type": "Featurette",
+            "official": true,
+            "id": "5877e96fc3a36850f200b6e9",
+            "published_at": "2017-01-12T19:33:40.000Z"
+          },
+          {
+            "iso_639_1": "en",
+            "iso_3166_1": "US",
+            "name": "Allan Arkush on HIS GIRL FRIDAY",
+            "key": "sDL3AyLFd70",
+            "site": "YouTube",
+            "size": 1080,
+            "type": "Featurette",
+            "official": false,
+            "id": "533ec65dc3a3685448000d48",
+            "published_at": "2013-07-01T07:00:19.000Z"
+          },
+          {
+            "iso_639_1": "en",
+            "iso_3166_1": "US",
+            "name": "His Girl Friday - Get Out",
+            "key": "OgahqQVh40o",
+            "site": "YouTube",
+            "size": 480,
+            "type": "Clip",
+            "official": false,
+            "id": "65edd80de93e950184e217ae",
+            "published_at": "2010-04-14T05:12:28.000Z"
+          },
+          {
+            "iso_639_1": "en",
+            "iso_3166_1": "US",
+            "name": "'His Girl Friday' | Critics' Picks | The New York Times",
+            "key": "cEnZ-zu1YXA",
+            "site": "YouTube",
+            "size": 360,
+            "type": "Featurette",
+            "official": false,
+            "id": "533ec65dc3a3685448000d49",
+            "published_at": "2008-09-10T12:37:48.000Z"
+          }
+        ]
+      },
+      "release_dates": {
+        "results": [
+          {
+            "iso_3166_1": "AR",
+            "release_dates": [
+              {
+                "certification": "",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "1940-04-29T00:00:00.000Z",
+                "type": 3
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "BR",
+            "release_dates": [
+              {
+                "certification": "L",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "1940-03-04T00:00:00.000Z",
+                "type": 3
+              },
+              {
+                "certification": "L",
+                "descriptors": [],
+                "iso_639_1": "pt",
+                "note": "DVD/VHS Sony",
+                "release_date": "2005-12-22T00:00:00.000Z",
+                "type": 5
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "CA",
+            "release_dates": [
+              {
+                "certification": "PG",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "1940-01-18T00:00:00.000Z",
+                "type": 3
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "DE",
+            "release_dates": [
+              {
+                "certification": "12",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "1972-09-12T00:00:00.000Z",
+                "type": 6
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "FR",
+            "release_dates": [
+              {
+                "certification": "U",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "1945-01-12T00:00:00.000Z",
+                "type": 3
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "GR",
+            "release_dates": [
+              {
+                "certification": "",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "Re-issue",
+                "release_date": "2023-07-20T00:00:00.000Z",
+                "type": 2
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "IT",
+            "release_dates": [
+              {
+                "certification": "",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "1946-08-23T00:00:00.000Z",
+                "type": 3
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "JP",
+            "release_dates": [
+              {
+                "certification": "R18+",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "1986-09-19T00:00:00.000Z",
+                "type": 3
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "MX",
+            "release_dates": [
+              {
+                "certification": "C",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "1940-06-12T00:00:00.000Z",
+                "type": 3
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "NL",
+            "release_dates": [
+              {
+                "certification": "6",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "DVD",
+                "release_date": "2012-07-10T00:00:00.000Z",
+                "type": 5
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "SE",
+            "release_dates": [
+              {
+                "certification": "15",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "1940-02-17T00:00:00.000Z",
+                "type": 3
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "US",
+            "release_dates": [
+              {
+                "certification": "NR",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "New York City, New York",
+                "release_date": "1940-01-11T00:00:00.000Z",
+                "type": 1
+              },
+              {
+                "certification": "",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "1940-01-18T00:00:00.000Z",
+                "type": 3
+              }
+            ]
+          }
+        ]
+      },
+      "external_ids": {
+        "imdb_id": "tt0032599",
+        "wikidata_id": "Q1066714",
+        "facebook_id": null,
+        "instagram_id": null,
+        "twitter_id": null
+      },
+      "recommendations": {
+        "page": 1,
+        "results": [
+          {
+            "adult": false,
+            "backdrop_path": "/wHSZJ8s0JfWIjoHkRknq6ZtGlZr.jpg",
+            "id": 12626,
+            "title": "Broadcast News",
+            "original_title": "Broadcast News",
+            "overview": "A high-strung news producer finds herself in a love triangle between a talented but self-doubting reporter and a charming news anchor who embodies the growing trivialization of news that she is determined to fight against.",
+            "poster_path": "/kQNR1Lc0qAF5xuBySpDn481KVjb.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [35, 10749],
+            "popularity": 3.4946,
+            "release_date": "1987-12-16",
+            "softcore": false,
+            "video": false,
+            "vote_average": 6.8,
+            "vote_count": 489
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/zP5kUq7z2f9OLki1z1wwGLngtKu.jpg",
+            "id": 681434,
+            "title": "Psycho Therapy: The Shallow Tale of a Writer Who Decided to Write About a Serial Killer",
+            "original_title": "Psycho Therapy: The Shallow Tale of a Writer Who Decided to Write About a Serial Killer",
+            "overview": "A struggling writer in the midst of a divorce befriends a retired serial killer who incidentally becomes his marriage counselor by day, and killing counselor for his next book by night.",
+            "poster_path": "/uOMEIAisb6Az54UOhybwycuHOEU.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [80, 35],
+            "popularity": 5.7072,
+            "release_date": "2025-04-04",
+            "softcore": false,
+            "video": false,
+            "vote_average": 6.823,
+            "vote_count": 82
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/b1bMEMtuiHBX23tfQU5ybNpakVf.jpg",
+            "id": 3529,
+            "title": "The Thin Man",
+            "original_title": "The Thin Man",
+            "overview": "Former detective Nick Charles has retired from police work, preferring a life of cocktails, parties, and relaxation with his wealthy wife, Nora. Their holiday is interrupted when the daughter of Nick’s former client asks for help finding her missing father, eccentric inventor Clyde Wynant. When Wynant’s body is discovered, Nick is drawn back into the investigation, with Nora eagerly joining him. As the couple questions Wynant’s family, friends, and business associates, a tangled web of greed, deception, and murder begins to unravel.",
+            "poster_path": "/6cL89ok9t8xEKboOjOVga2W66jj.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [35, 9648, 80],
+            "popularity": 3.3987,
+            "release_date": "1934-05-25",
+            "softcore": false,
+            "video": false,
+            "vote_average": 7.516,
+            "vote_count": 566
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/lmglBJjuzAqdvmvVomX69AXHYNk.jpg",
+            "id": 50204,
+            "title": "Burke & Hare",
+            "original_title": "Burke & Hare",
+            "overview": "Two 19th-century opportunists become serial killers so that they can maintain their profitable business supplying cadavers to an anatomist.",
+            "poster_path": "/3VY3gKHPc9dRq8FshSXWbXtgD9B.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [35, 80, 10749],
+            "popularity": 3.09,
+            "release_date": "2010-10-29",
+            "softcore": false,
+            "video": false,
+            "vote_average": 6.092,
+            "vote_count": 535
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/6xwE9IF4z0GAzAKYafaEyHIL0lJ.jpg",
+            "id": 24197,
+            "title": "Mr. & Mrs. Smith",
+            "original_title": "Mr. & Mrs. Smith",
+            "overview": "Happily married for three years, Ann and David Smith live in New York. One morning Ann asks David if he had to do it over again, would he marry her? To her shock, he answers, \"No\". Later that day, they separately discover that, due to a legal complication, they are not legally married.",
+            "poster_path": "/lIFBvhh9EbQpwkYa135dQvMHXSj.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [35, 10749],
+            "popularity": 2.9389,
+            "release_date": "1941-01-31",
+            "softcore": false,
+            "video": false,
+            "vote_average": 5.9,
+            "vote_count": 264
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/4XgQ3Uxu2XbZbs2dZ2TQu6Uju3s.jpg",
+            "id": 843617,
+            "title": "Players",
+            "original_title": "Players",
+            "overview": "New York sportswriter Mack has spent years devising successful hook-up \"plays\" with her friends, but when she unexpectedly falls for one of her targets, she must learn what it takes to go from simply scoring to playing for keeps.",
+            "poster_path": "/eA94hAGntLm7Lfol5FQJNxd53Hw.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [10749, 35],
+            "popularity": 4.8047,
+            "release_date": "2024-02-13",
+            "softcore": false,
+            "video": false,
+            "vote_average": 6.055,
+            "vote_count": 339
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/4RbxxPAUushqUYNO8EW09GSluBt.jpg",
+            "id": 13994,
+            "title": "Romance & Cigarettes",
+            "original_title": "Romance & Cigarettes",
+            "overview": "Ironworker Nick lives with his wife, Kitty, and three daughters. When he meets a significantly younger woman, Tula, he starts an affair with her, much to the chagrin of his wife, and his life is thrown into upheaval. Kitty kicks Nick out of the house, and he is forced to make some difficult decisions.",
+            "poster_path": "/phSntD46jD5IfYAa2lSoU6xJDJ6.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [35, 10402, 10749],
+            "popularity": 5.98,
+            "release_date": "2006-03-24",
+            "softcore": false,
+            "video": false,
+            "vote_average": 6.1,
+            "vote_count": 173
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/ugnGe88pG04SViHpbXbqenzKkOt.jpg",
+            "id": 333385,
+            "title": "Mr. Right",
+            "original_title": "Mr. Right",
+            "overview": "A girl falls for the \"perfect\" guy, who happens to have a very fatal flaw: he's a hitman on the run from the crime cartels who employ him.",
+            "poster_path": "/aSx5YUCLcSUAR4nt93aeIpZYHF6.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [35, 10749, 80],
+            "popularity": 4.649,
+            "release_date": "2016-02-29",
+            "softcore": false,
+            "video": false,
+            "vote_average": 6.4,
+            "vote_count": 1512
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/6Pu1FOyMA3cdGXEjmOrO9J7O4eA.jpg",
+            "id": 18649,
+            "title": "My Favorite Brunette",
+            "original_title": "My Favorite Brunette",
+            "overview": "Ronnie Jackson is a lowly baby photographer who secretly fantasizes about being a private detective. When a lovely baroness actually mistakes him for one and asks him to help locate her missing husband, Baron Montay, Ronnie finds himself agreeing. Several days later he is on death row whiling away the hours until his execution by recounting to a group of reporters the bizarre tale of how he ended up there.",
+            "poster_path": "/tTI4QFLQirmIw6YLR5kRAKyDKvv.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [35, 9648, 10749],
+            "popularity": 2.6843,
+            "release_date": "1947-03-19",
+            "softcore": false,
+            "video": false,
+            "vote_average": 6.6,
+            "vote_count": 65
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/xyWKrni8WrYzqn7ztvI5nIY0h62.jpg",
+            "id": 1181678,
+            "title": "¿Quieres ser mi hijo?",
+            "original_title": "¿Quieres ser mi hijo?",
+            "overview": "Lu, a conformist woman in her forties, learns that her 15-year partner has been having extramarital affairs. Starting from scratch, she gets involved in an unexpected relationship with a young womanizer.",
+            "poster_path": "/6PQJsmuvSMZQMmlJfTpjIkrizUh.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [35, 10749],
+            "popularity": 8.1325,
+            "release_date": "2023-09-21",
+            "softcore": false,
+            "video": false,
+            "vote_average": 8.4,
+            "vote_count": 378
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/6kRTT7tsgLU6mzd3KSAR4dKJa93.jpg",
+            "id": 10029,
+            "title": "Very Bad Things",
+            "original_title": "Very Bad Things",
+            "overview": "Kyle Fisher has one last night to celebrate life as a single man before marrying Laura, so he sets out to Vegas with four of his best buddies. But a drug and alcohol filled night on the town with a stripper who goes all the way, turns into a cold night in the desert with shovels when the stripper goes all the way into a body bag after dying in their bathroom. And that's just the first of the bodies to pile up before Kyle can walk down the aisle...",
+            "poster_path": "/rYmyRxF5e9fBdgcQScKu0CUtMy5.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [35, 80, 53],
+            "popularity": 3.5527,
+            "release_date": "1998-09-11",
+            "softcore": false,
+            "video": false,
+            "vote_average": 6.3,
+            "vote_count": 722
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/qfKVvAjIKCocpjTAjxT6WkAA3MG.jpg",
+            "id": 680860,
+            "title": "I Want You Back",
+            "original_title": "I Want You Back",
+            "overview": "Peter and Emma thought they were on the precipice of life’s biggest moments – marriage, kids, and houses in the suburbs – until their respective partners dumped them. Horrified to learn that the loves of their lives have already moved on, Peter and Emma hatch a hilarious plan to win back their exes with unexpected results.",
+            "poster_path": "/an4HVcLT4Ce2aXgxuSEnJ1UDdfp.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [35, 10749],
+            "popularity": 4.8419,
+            "release_date": "2022-02-10",
+            "softcore": false,
+            "video": false,
+            "vote_average": 6.31,
+            "vote_count": 394
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/eXCKkX8LVo1vRK4GhVoo0bA8jHM.jpg",
+            "id": 1847,
+            "title": "The Long Goodbye",
+            "original_title": "The Long Goodbye",
+            "overview": "In 1970s Hollywood, Detective Philip Marlowe tries to help a friend who is accused of murdering his wife.",
+            "poster_path": "/16Gu0Vg7tBdoRxg1NJDwlTKx1hG.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [9648, 80, 35],
+            "popularity": 4.8703,
+            "release_date": "1973-03-08",
+            "softcore": false,
+            "video": false,
+            "vote_average": 7.433,
+            "vote_count": 836
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/jbGbFD9DgGgrfDVyV8RVuKZjTcW.jpg",
+            "id": 9548,
+            "title": "The Adventures of Ford Fairlane",
+            "original_title": "The Adventures of Ford Fairlane",
+            "overview": "To the Los Angeles elite, Ford Fairlane is known as \"Mr. Rock 'n' Roll Detective.\" This loudmouthed ladies' man serves an exclusive rock star clientele, who depend on his keen eye and smug discretion. So when a heavy-metal musician dies mid-concert, Fairlane is on the case before the lights come up. But things turn shocking when radio personality Johnny Crunch hires Fairlane to find a missing groupie mere hours before he is electrocuted live on air.",
+            "poster_path": "/u6accimG7LmroR8WgNklEJS7oFq.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [35, 80, 9648, 28],
+            "popularity": 4.148,
+            "release_date": "1990-07-11",
+            "softcore": false,
+            "video": false,
+            "vote_average": 6.1,
+            "vote_count": 244
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/1N5yz1IDw6Ci8le1YgeM6xtBijA.jpg",
+            "id": 1358005,
+            "title": "Office Romance",
+            "original_title": "Office Romance",
+            "overview": "Jackie, President and CEO of Air Cruz, runs a tight ship in her business, including a rigid anti-fraternization policy for all her employees. When a new sexy lawyer begins working for her, that policy becomes very tested.",
+            "poster_path": "/1HRUTqEVDmJC4L6tp6zd85MI6uH.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [10749, 35],
+            "popularity": 10.4417,
+            "release_date": "2026-06-04",
+            "softcore": false,
+            "video": false,
+            "vote_average": 6.414,
+            "vote_count": 405
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/lW4nIRGJAglS6Pt7gTgRIrmSHA2.jpg",
+            "id": 2075,
+            "title": "Prizzi's Honor",
+            "original_title": "Prizzi's Honor",
+            "overview": "Charley Partanna is a hitman who works for the Prizzis, one of the richest crime families in the US. When he sees Irene Walker, it's love at first sight. But he soon finds that she, too, is a killer for hire. Charley can overlook his suspicions, but he can't turn off his heart. And the couple must remember that even if they love each other, the Prizzis love only money.",
+            "poster_path": "/5azGfZXuUFYjYfz6etYOdlyLXwL.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [10749, 35, 80],
+            "popularity": 4.197,
+            "release_date": "1985-06-14",
+            "softcore": false,
+            "video": false,
+            "vote_average": 6.4,
+            "vote_count": 449
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/xw4ffBqSFPIolJx286psPVvr55P.jpg",
+            "id": 14550,
+            "title": "The Dream Team",
+            "original_title": "The Dream Team",
+            "overview": "Four mental patients on a field trip in New York City must save their caring chaperone, who ends up being taken to a hospital in a coma after accidentally witnessing a murder, before the killers can find him and finish the job.",
+            "poster_path": "/lBVjTP8Cb66GBabUBQaBUtV6OqD.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [35, 80, 53],
+            "popularity": 3.149,
+            "release_date": "1989-04-07",
+            "softcore": false,
+            "video": false,
+            "vote_average": 6.1,
+            "vote_count": 264
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/wLNMNO87pYqUAgbJE5xZGNUK46S.jpg",
+            "id": 2144,
+            "title": "One Night at McCool's",
+            "original_title": "One Night at McCool's",
+            "overview": "On an ordinary night, in an ordinary part of town, a beautiful young woman walks into a bar. Her name is Jewel, and before long she is chatting to bartender Randy. The pair leave together, but he ends up getting into a tussle with her criminal boyfriend, who she then shoots dead, later persuading Randy to take the rap for her. But this isn't the end of it, as both Randy's cousin Carl and the detective assigned to the murder case also fall for Jewel's charms and find themselves caught up in the ensuing events. It seems that any man who meets Jewel falls instantly in love with her, and she's going to use this fully to her own advantage, leaving a trail of havoc in her wake. It also seems that she is going to get away with it - that is, until Randy decides to hire a hitman...",
+            "poster_path": "/aIJAjhdMqraB1tkSii9BWuUXd8q.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [35, 80],
+            "popularity": 3.8239,
+            "release_date": "2001-04-19",
+            "softcore": false,
+            "video": false,
+            "vote_average": 5.9,
+            "vote_count": 396
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/rq8908sDqtyEGiRagGtPYuWSwFb.jpg",
+            "id": 3681,
+            "title": "What's New Pussycat?",
+            "original_title": "What's New Pussycat?",
+            "overview": "A playboy who refuses to give up his hedonistic lifestyle to settle down and marry his true love seeks help from a demented psychoanalyst who is having romantic problems of his own.",
+            "poster_path": "/seKbiGx8mjF04Bx4LVBQk741Eqv.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [35, 10749],
+            "popularity": 2.6461,
+            "release_date": "1965-06-22",
+            "softcore": false,
+            "video": false,
+            "vote_average": 5.9,
+            "vote_count": 185
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/xiv9qW6hv5VMhxkPOEGnXKuowTo.jpg",
+            "id": 277547,
+            "title": "Playing It Cool",
+            "original_title": "Playing It Cool",
+            "overview": "A young man meets and instantly falls in love with an engaged woman.",
+            "poster_path": "/96htqghZlKctNJqDLo2DuC9PEap.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [35, 10749],
+            "popularity": 7.8628,
+            "release_date": "2014-09-26",
+            "softcore": false,
+            "video": false,
+            "vote_average": 5.857,
+            "vote_count": 827
+          }
+        ],
+        "total_pages": 21,
+        "total_results": 406
+      },
+      "keywords": {
+        "keywords": [
+          {
+            "id": 378,
+            "name": "prison"
+          },
+          {
+            "id": 736,
+            "name": "journalist"
+          },
+          {
+            "id": 236,
+            "name": "suicide"
+          },
+          {
+            "id": 917,
+            "name": "journalism"
+          },
+          {
+            "id": 10181,
+            "name": "based on play or musical"
+          },
+          {
+            "id": 11411,
+            "name": "wager"
+          },
+          {
+            "id": 10718,
+            "name": "fugitive"
+          },
+          {
+            "id": 12999,
+            "name": "black and white"
+          },
+          {
+            "id": 155457,
+            "name": "screwball comedy"
+          },
+          {
+            "id": 156024,
+            "name": "corrupt politician"
+          },
+          {
+            "id": 156080,
+            "name": "newspaper editor"
+          },
+          {
+            "id": 159531,
+            "name": "insurance agent"
+          },
+          {
+            "id": 165547,
+            "name": "fiancé fiancée relationship"
+          },
+          {
+            "id": 180093,
+            "name": "press room"
+          },
+          {
+            "id": 181659,
+            "name": "political corruption"
+          },
+          {
+            "id": 184534,
+            "name": "rolltop desk"
+          },
+          {
+            "id": 184541,
+            "name": "reprieve"
+          },
+          {
+            "id": 209563,
+            "name": "bride-to-be"
+          },
+          {
+            "id": 236252,
+            "name": "ex spouses"
+          },
+          {
+            "id": 237418,
+            "name": "imminent execution"
+          },
+          {
+            "id": 237425,
+            "name": "convicted murderer"
+          },
+          {
+            "id": 324123,
+            "name": "comedy of remarriage"
+          },
+          {
+            "id": 325764,
+            "name": "ambivalent"
+          }
+        ]
+      }
+    }
+  }
+}

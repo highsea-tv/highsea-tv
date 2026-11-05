@@ -1,0 +1,1843 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "https://api.themoviedb.org/3/movie/10331?append_to_response=credits%2Cvideos%2Crelease_dates%2Cexternal_ids%2Crecommendations%2Ckeywords&language=en-US",
+    "credential": "valid"
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json;charset=utf-8"
+    },
+    "body": {
+      "adult": false,
+      "backdrop_path": "/5KtmBSqFtHY3I9t8lgH27Mc0bqY.jpg",
+      "belongs_to_collection": {
+        "id": 261590,
+        "name": "Living Dead Collection",
+        "poster_path": "/5tzYvD8a7M6YdGy37V5goRJXsMk.jpg",
+        "backdrop_path": "/xacnP6WJBhs5vptIcYE8RCDVKIo.jpg"
+      },
+      "budget": 114000,
+      "genres": [
+        {
+          "id": 27,
+          "name": "Horror"
+        },
+        {
+          "id": 878,
+          "name": "Science Fiction"
+        }
+      ],
+      "homepage": "",
+      "id": 10331,
+      "imdb_id": "tt0063350",
+      "origin_country": ["US"],
+      "original_language": "en",
+      "original_title": "Night of the Living Dead",
+      "overview": "A ragtag group barricade themselves in an old Pennsylvania farmhouse to remain safe from a horde of flesh-eating ghouls ravaging the Northeast.",
+      "popularity": 12.2806,
+      "poster_path": "/rb2NWyb008u1EcKCOyXs2Nmj0ra.jpg",
+      "production_companies": [
+        {
+          "id": 14121,
+          "logo_path": null,
+          "name": "Image Ten",
+          "origin_country": ""
+        }
+      ],
+      "production_countries": [
+        {
+          "iso_3166_1": "US",
+          "name": "United States of America"
+        }
+      ],
+      "release_date": "1968-10-04",
+      "revenue": 30236452,
+      "runtime": 96,
+      "softcore": false,
+      "spoken_languages": [
+        {
+          "english_name": "English",
+          "iso_639_1": "en",
+          "name": "English"
+        }
+      ],
+      "status": "Released",
+      "tagline": "If it doesn't scare you, you're already dead!",
+      "title": "Night of the Living Dead",
+      "video": false,
+      "vote_average": 7.601,
+      "vote_count": 2875,
+      "credits": {
+        "cast": [
+          {
+            "adult": false,
+            "gender": 1,
+            "id": 97913,
+            "known_for_department": "Acting",
+            "name": "Judith O'Dea",
+            "original_name": "Judith O'Dea",
+            "popularity": 1.6273,
+            "profile_path": "/cCZfWRio05U5qVbQBfUgncdAMHJ.jpg",
+            "cast_id": 11,
+            "character": "Barbra",
+            "credit_id": "52fe435b9251416c7500d355",
+            "order": 0
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 97912,
+            "known_for_department": "Acting",
+            "name": "Duane Jones",
+            "original_name": "Duane Jones",
+            "popularity": 0.9282,
+            "profile_path": "/6IKcAo7UwByTM3U8awBBuJlHAQs.jpg",
+            "cast_id": 10,
+            "character": "Ben",
+            "credit_id": "52fe435b9251416c7500d351",
+            "order": 1
+          },
+          {
+            "adult": false,
+            "gender": 1,
+            "id": 97915,
+            "known_for_department": "Acting",
+            "name": "Marilyn Eastman",
+            "original_name": "Marilyn Eastman",
+            "popularity": 1.5219,
+            "profile_path": "/qQqJ6tUNHHJWTrUJNR3D5xYFf28.jpg",
+            "cast_id": 13,
+            "character": "Helen Cooper",
+            "credit_id": "52fe435b9251416c7500d35d",
+            "order": 2
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 97914,
+            "known_for_department": "Acting",
+            "name": "Karl Hardman",
+            "original_name": "Karl Hardman",
+            "popularity": 1.1993,
+            "profile_path": "/vs5xLO71stUS3Cn1UD1EWeGAa7b.jpg",
+            "cast_id": 12,
+            "character": "Harry Cooper",
+            "credit_id": "52fe435b9251416c7500d359",
+            "order": 3
+          },
+          {
+            "adult": false,
+            "gender": 1,
+            "id": 97917,
+            "known_for_department": "Acting",
+            "name": "Judith Ridley",
+            "original_name": "Judith Ridley",
+            "popularity": 0.6997,
+            "profile_path": "/3l9OqHlyJd0xV1FQiYhPiD6ahTb.jpg",
+            "cast_id": 15,
+            "character": "Judy",
+            "credit_id": "52fe435b9251416c7500d365",
+            "order": 4
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 97916,
+            "known_for_department": "Acting",
+            "name": "Keith Wayne",
+            "original_name": "Keith Wayne",
+            "popularity": 1.1664,
+            "profile_path": "/5nyL4dSFZMcpvJS0inrJS41vWhQ.jpg",
+            "cast_id": 14,
+            "character": "Tom",
+            "credit_id": "52fe435b9251416c7500d361",
+            "order": 5
+          },
+          {
+            "adult": false,
+            "gender": 1,
+            "id": 97918,
+            "known_for_department": "Acting",
+            "name": "Kyra Schon",
+            "original_name": "Kyra Schon",
+            "popularity": 1.0557,
+            "profile_path": "/k0mRAFI9Ptzp40N9xh5pD2oaJPT.jpg",
+            "cast_id": 16,
+            "character": "Karen Cooper / Corpse in House",
+            "credit_id": "52fe435b9251416c7500d369",
+            "order": 6
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 97919,
+            "known_for_department": "Acting",
+            "name": "Charles Craig",
+            "original_name": "Charles Craig",
+            "popularity": 0.5557,
+            "profile_path": null,
+            "cast_id": 17,
+            "character": "TV Newscaster / Zombie",
+            "credit_id": "52fe435b9251416c7500d36d",
+            "order": 7
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 97920,
+            "known_for_department": "Acting",
+            "name": "S. William Hinzman",
+            "original_name": "S. William Hinzman",
+            "popularity": 0.9649,
+            "profile_path": "/jD1fEONB10zMGHbqamOSCt32AYK.jpg",
+            "cast_id": 18,
+            "character": "Zombie",
+            "credit_id": "52fe435b9251416c7500d371",
+            "order": 8
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 97921,
+            "known_for_department": "Acting",
+            "name": "Bill Cardille",
+            "original_name": "Bill Cardille",
+            "popularity": 0.3905,
+            "profile_path": null,
+            "cast_id": 19,
+            "character": "Field Reporter",
+            "credit_id": "52fe435b9251416c7500d375",
+            "order": 9
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 1288949,
+            "known_for_department": "Acting",
+            "name": "John Simpson",
+            "original_name": "John Simpson",
+            "popularity": 0.4069,
+            "profile_path": null,
+            "cast_id": 26,
+            "character": "Zombie",
+            "credit_id": "5bb11c770e0a2633b4004367",
+            "order": 10
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 1772607,
+            "known_for_department": "Acting",
+            "name": "George Kosana",
+            "original_name": "George Kosana",
+            "popularity": 0.349,
+            "profile_path": null,
+            "cast_id": 39,
+            "character": "Sheriff McClelland",
+            "credit_id": "5faf6865498ef900417fdce7",
+            "order": 11
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 2855710,
+            "known_for_department": "Acting",
+            "name": "Frank Doak",
+            "original_name": "Frank Doak",
+            "popularity": 0.319,
+            "profile_path": null,
+            "cast_id": 40,
+            "character": "Scientist",
+            "credit_id": "5faf68805ed962003e0f8100",
+            "order": 12
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 1207021,
+            "known_for_department": "Acting",
+            "name": "A.C. McDonald",
+            "original_name": "A.C. McDonald",
+            "popularity": 0.2999,
+            "profile_path": null,
+            "cast_id": 41,
+            "character": "Zombie / Posse Member",
+            "credit_id": "5faf69346dc6c0003f291068",
+            "order": 13
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 2855712,
+            "known_for_department": "Acting",
+            "name": "Samuel R. Solito",
+            "original_name": "Samuel R. Solito",
+            "popularity": 0.2608,
+            "profile_path": null,
+            "cast_id": 42,
+            "character": "Zombie / Posse Member",
+            "credit_id": "5faf694cd0b434003f9d7d63",
+            "order": 14
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 2855713,
+            "known_for_department": "Acting",
+            "name": "Mark Ricci",
+            "original_name": "Mark Ricci",
+            "popularity": 0.3016,
+            "profile_path": null,
+            "cast_id": 43,
+            "character": "Washington Scientist",
+            "credit_id": "5faf69745ed962003f0f96ef",
+            "order": 15
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 1205925,
+            "known_for_department": "Acting",
+            "name": "Lee Hartman",
+            "original_name": "Lee Hartman",
+            "popularity": 0.5416,
+            "profile_path": null,
+            "cast_id": 44,
+            "character": "Zombie / News Reporter",
+            "credit_id": "5faf69a9626208003db27a21",
+            "order": 16
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 1081603,
+            "known_for_department": "Acting",
+            "name": "Ross Harris",
+            "original_name": "Ross Harris",
+            "popularity": 0.5173,
+            "profile_path": null,
+            "cast_id": 45,
+            "character": "Newscaster/Zombie",
+            "credit_id": "605abf7ba294f000283caab0",
+            "order": 17
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 3022607,
+            "known_for_department": "Acting",
+            "name": "Steve Hutsko",
+            "original_name": "Steve Hutsko",
+            "popularity": 0.312,
+            "profile_path": null,
+            "cast_id": 46,
+            "character": "Cardille's Cameraman",
+            "credit_id": "605abf9ffd4f800054292d44",
+            "order": 18
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 2350145,
+            "known_for_department": "Acting",
+            "name": "Phillip Smith",
+            "original_name": "Phillip Smith",
+            "popularity": 0.2438,
+            "profile_path": null,
+            "cast_id": 47,
+            "character": "Zombie / Posse Member",
+            "credit_id": "605ac04b01e4d1003df0ee4e",
+            "order": 19
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 3022609,
+            "known_for_department": "Acting",
+            "name": "Randy Burr",
+            "original_name": "Randy Burr",
+            "popularity": 0.2479,
+            "profile_path": null,
+            "cast_id": 48,
+            "character": "Zombie / Posse Member",
+            "credit_id": "605ac065d37197004060cb86",
+            "order": 20
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 3022610,
+            "known_for_department": "Acting",
+            "name": "Jack Givens",
+            "original_name": "Jack Givens",
+            "popularity": 0.2479,
+            "profile_path": null,
+            "cast_id": 49,
+            "character": "Zombie",
+            "credit_id": "605ac09047c9fb003e7859a0",
+            "order": 21
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 98792,
+            "known_for_department": "Acting",
+            "name": "Richard Ricci",
+            "original_name": "Richard Ricci",
+            "popularity": 0.4027,
+            "profile_path": null,
+            "cast_id": 51,
+            "character": "Zombie",
+            "credit_id": "605ac0b601e4d1006a28a6fa",
+            "order": 22
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 1205932,
+            "known_for_department": "Writing",
+            "name": "Rudy Ricci",
+            "original_name": "Rudy Ricci",
+            "popularity": 0.7809,
+            "profile_path": null,
+            "cast_id": 50,
+            "character": "Zombie",
+            "credit_id": "605ac09dd37197004060cbae",
+            "order": 23
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 3022613,
+            "known_for_department": "Acting",
+            "name": "Paula Richards",
+            "original_name": "Paula Richards",
+            "popularity": 0.2635,
+            "profile_path": null,
+            "cast_id": 52,
+            "character": "Zombie",
+            "credit_id": "605ac0cf4557a0003dd9bc63",
+            "order": 24
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 3022614,
+            "known_for_department": "Acting",
+            "name": "Herbert Summer",
+            "original_name": "Herbert Summer",
+            "popularity": 0.2725,
+            "profile_path": null,
+            "cast_id": 53,
+            "character": "Zombie",
+            "credit_id": "605ac0ee22df2e00289c93c7",
+            "order": 25
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 3022616,
+            "known_for_department": "Acting",
+            "name": "William Burchinal",
+            "original_name": "William Burchinal",
+            "popularity": 0.8142,
+            "profile_path": null,
+            "cast_id": 54,
+            "character": "Zombie",
+            "credit_id": "605ac10122931a0054ef24dd",
+            "order": 26
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 3022619,
+            "known_for_department": "Production",
+            "name": "Al Croft",
+            "original_name": "Al Croft",
+            "popularity": 0.37,
+            "profile_path": null,
+            "cast_id": 55,
+            "character": "Zombie",
+            "credit_id": "605ac1254557a0003dd9bcea",
+            "order": 27
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 3022621,
+            "known_for_department": "Acting",
+            "name": "Jason Richards",
+            "original_name": "Jason Richards",
+            "popularity": 0.5037,
+            "profile_path": null,
+            "cast_id": 56,
+            "character": "Zombie",
+            "credit_id": "605ac13301e4d1005367b0ad",
+            "order": 28
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 3022623,
+            "known_for_department": "Acting",
+            "name": "Dave James",
+            "original_name": "Dave James",
+            "popularity": 0.2497,
+            "profile_path": null,
+            "cast_id": 57,
+            "character": "Zombie",
+            "credit_id": "605ac15053866e00207d8221",
+            "order": 29
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 3022625,
+            "known_for_department": "Acting",
+            "name": "Sharon Carroll",
+            "original_name": "Sharon Carroll",
+            "popularity": 0.276,
+            "profile_path": null,
+            "cast_id": 58,
+            "character": "Zombie",
+            "credit_id": "605ac15753866e00207d822d",
+            "order": 30
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 3022626,
+            "known_for_department": "Acting",
+            "name": "William Mogush",
+            "original_name": "William Mogush",
+            "popularity": 0.2501,
+            "profile_path": null,
+            "cast_id": 59,
+            "character": "Zombie",
+            "credit_id": "605ac15e7dfda6003ddf71ba",
+            "order": 31
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 3022627,
+            "known_for_department": "Acting",
+            "name": "Joann Michaels",
+            "original_name": "Joann Michaels",
+            "popularity": 0.2416,
+            "profile_path": null,
+            "cast_id": 60,
+            "character": "Zombie",
+            "credit_id": "605ac167a3491100544487b6",
+            "order": 32
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 3022628,
+            "known_for_department": "Acting",
+            "name": "Ella Mae Smith",
+            "original_name": "Ella Mae Smith",
+            "popularity": 0.2438,
+            "profile_path": null,
+            "cast_id": 61,
+            "character": "Zombie",
+            "credit_id": "605ac17547c9fb003e785b00",
+            "order": 33
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 14999,
+            "known_for_department": "Directing",
+            "name": "George A. Romero",
+            "original_name": "George A. Romero",
+            "popularity": 2.3967,
+            "profile_path": "/w2zVF92x149qK79ZxwUowcSp2c6.jpg",
+            "cast_id": 20,
+            "character": "Washington Reporter",
+            "credit_id": "52fe435b9251416c7500d379",
+            "order": 34
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 64831,
+            "known_for_department": "Writing",
+            "name": "John A. Russo",
+            "original_name": "John A. Russo",
+            "popularity": 0.8955,
+            "profile_path": null,
+            "cast_id": 22,
+            "character": "Washington Military Reporter",
+            "credit_id": "52fe435b9251416c7500d381",
+            "order": 35
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 64833,
+            "known_for_department": "Acting",
+            "name": "Russell Streiner",
+            "original_name": "Russell Streiner",
+            "popularity": 0.4803,
+            "profile_path": null,
+            "cast_id": 21,
+            "character": "Johnny",
+            "credit_id": "52fe435b9251416c7500d37d",
+            "order": 36
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 15075,
+            "known_for_department": "Acting",
+            "name": "Richard France",
+            "original_name": "Richard France",
+            "popularity": 0.9058,
+            "profile_path": "/jhlVqjHdfCC4i8i27Ezs9ImQhON.jpg",
+            "cast_id": 65,
+            "character": "Zombie",
+            "credit_id": "64d02671549dda01393326b3",
+            "order": 37
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 1205919,
+            "known_for_department": "Acting",
+            "name": "Roger McGovern",
+            "original_name": "Roger McGovern",
+            "popularity": 0.8659,
+            "profile_path": null,
+            "cast_id": 67,
+            "character": "Hospital Gown Ghoul (uncredited)",
+            "credit_id": "682b2d4a9d0789dfb08c06d3",
+            "order": 38
+          }
+        ],
+        "crew": [
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 14999,
+            "known_for_department": "Directing",
+            "name": "George A. Romero",
+            "original_name": "George A. Romero",
+            "popularity": 2.3967,
+            "profile_path": "/w2zVF92x149qK79ZxwUowcSp2c6.jpg",
+            "credit_id": "52fe435b9251416c7500d341",
+            "department": "Editing",
+            "job": "Editor"
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 64831,
+            "known_for_department": "Writing",
+            "name": "John A. Russo",
+            "original_name": "John A. Russo",
+            "popularity": 0.8955,
+            "profile_path": null,
+            "credit_id": "52fe435b9251416c7500d329",
+            "department": "Writing",
+            "job": "Screenplay"
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 14999,
+            "known_for_department": "Directing",
+            "name": "George A. Romero",
+            "original_name": "George A. Romero",
+            "popularity": 2.3967,
+            "profile_path": "/w2zVF92x149qK79ZxwUowcSp2c6.jpg",
+            "credit_id": "52fe435b9251416c7500d34d",
+            "department": "Directing",
+            "job": "Director"
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 64833,
+            "known_for_department": "Acting",
+            "name": "Russell Streiner",
+            "original_name": "Russell Streiner",
+            "popularity": 0.4803,
+            "profile_path": null,
+            "credit_id": "52fe435b9251416c7500d32f",
+            "department": "Production",
+            "job": "Producer"
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 97914,
+            "known_for_department": "Acting",
+            "name": "Karl Hardman",
+            "original_name": "Karl Hardman",
+            "popularity": 1.1993,
+            "profile_path": "/vs5xLO71stUS3Cn1UD1EWeGAa7b.jpg",
+            "credit_id": "52fe435b9251416c7500d387",
+            "department": "Production",
+            "job": "Producer"
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 14999,
+            "known_for_department": "Directing",
+            "name": "George A. Romero",
+            "original_name": "George A. Romero",
+            "popularity": 2.3967,
+            "profile_path": "/w2zVF92x149qK79ZxwUowcSp2c6.jpg",
+            "credit_id": "52fe435b9251416c7500d323",
+            "department": "Writing",
+            "job": "Screenplay"
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 14999,
+            "known_for_department": "Directing",
+            "name": "George A. Romero",
+            "original_name": "George A. Romero",
+            "popularity": 2.3967,
+            "profile_path": "/w2zVF92x149qK79ZxwUowcSp2c6.jpg",
+            "credit_id": "52fe435b9251416c7500d33b",
+            "department": "Camera",
+            "job": "Director of Photography"
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 97914,
+            "known_for_department": "Acting",
+            "name": "Karl Hardman",
+            "original_name": "Karl Hardman",
+            "popularity": 1.1993,
+            "profile_path": "/vs5xLO71stUS3Cn1UD1EWeGAa7b.jpg",
+            "credit_id": "633f95d6c39266007b242530",
+            "department": "Costume & Make-Up",
+            "job": "Makeup Artist"
+          },
+          {
+            "adult": false,
+            "gender": 1,
+            "id": 97915,
+            "known_for_department": "Acting",
+            "name": "Marilyn Eastman",
+            "original_name": "Marilyn Eastman",
+            "popularity": 1.5219,
+            "profile_path": "/qQqJ6tUNHHJWTrUJNR3D5xYFf28.jpg",
+            "credit_id": "633f959a35a61e007c46ce07",
+            "department": "Costume & Make-Up",
+            "job": "Makeup Artist"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 2381814,
+            "known_for_department": "Editing",
+            "name": "Hugh C. Daly",
+            "original_name": "Hugh C. Daly",
+            "popularity": 0.4308,
+            "profile_path": null,
+            "credit_id": "633f958035a61e00792b5731",
+            "department": "Editing",
+            "job": "Editor"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 2026805,
+            "known_for_department": "Sound",
+            "name": "Marshall Booth",
+            "original_name": "Marshall Booth",
+            "popularity": 0.2868,
+            "profile_path": null,
+            "credit_id": "5ada5d030e0a262d3c001ad2",
+            "department": "Sound",
+            "job": "Sound Designer"
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 1477209,
+            "known_for_department": "Production",
+            "name": "Gary Streiner",
+            "original_name": "Gary Streiner",
+            "popularity": 0.3385,
+            "profile_path": null,
+            "credit_id": "668b1993e32ae24da2ba344b",
+            "department": "Sound",
+            "job": "Sound Designer"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 2855455,
+            "known_for_department": "Lighting",
+            "name": "Joseph Unitas",
+            "original_name": "Joseph Unitas",
+            "popularity": 0.2375,
+            "profile_path": null,
+            "credit_id": "5faf16a8498ef9003f7f5146",
+            "department": "Lighting",
+            "job": "Lighting Supervisor"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 2855459,
+            "known_for_department": "Directing",
+            "name": "Betty Ellen Haughey",
+            "original_name": "Betty Ellen Haughey",
+            "popularity": 0.2375,
+            "profile_path": null,
+            "credit_id": "5faf1717b54002003e575f43",
+            "department": "Directing",
+            "job": "Continuity"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 1205927,
+            "known_for_department": "Production",
+            "name": "Vincent D. Survinski",
+            "original_name": "Vincent D. Survinski",
+            "popularity": 0.4433,
+            "profile_path": null,
+            "credit_id": "5faf15b49b6e47003fa31627",
+            "department": "Production",
+            "job": "Production Director"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 2855452,
+            "known_for_department": "Crew",
+            "name": "Tony Pantanella",
+            "original_name": "Tony Pantanella",
+            "popularity": 0.2982,
+            "profile_path": null,
+            "credit_id": "5faf163cc15f89003f81ca36",
+            "department": "Crew",
+            "job": "Special Effects"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 2855454,
+            "known_for_department": "Crew",
+            "name": "Jacqueline Streiner",
+            "original_name": "Jacqueline Streiner",
+            "popularity": 0.2438,
+            "profile_path": null,
+            "credit_id": "5faf169ab540020041576d41",
+            "department": "Crew",
+            "job": "Stunt Coordinator"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 1772607,
+            "known_for_department": "Acting",
+            "name": "George Kosana",
+            "original_name": "George Kosana",
+            "popularity": 0.349,
+            "profile_path": null,
+            "credit_id": "5faf158f626208003db19cd2",
+            "department": "Production",
+            "job": "Production Manager"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 958965,
+            "known_for_department": "Crew",
+            "name": "Regis Survinski",
+            "original_name": "Regis Survinski",
+            "popularity": 0.2698,
+            "profile_path": null,
+            "credit_id": "5faf164cd0b434003d9ce656",
+            "department": "Crew",
+            "job": "Special Effects"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 1501509,
+            "known_for_department": "Visual Effects",
+            "name": "Rick Catizone",
+            "original_name": "Rick Catizone",
+            "popularity": 0.3173,
+            "profile_path": null,
+            "credit_id": "5faf16d7d55e4d003fce07c9",
+            "department": "Visual Effects",
+            "job": "Animation"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 2855451,
+            "known_for_department": "Art",
+            "name": "Charles O'Dato",
+            "original_name": "Charles O'Dato",
+            "popularity": 0.3546,
+            "profile_path": null,
+            "credit_id": "5faf1621d0b434003d9ce648",
+            "department": "Art",
+            "job": "Props"
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 97920,
+            "known_for_department": "Acting",
+            "name": "S. William Hinzman",
+            "original_name": "S. William Hinzman",
+            "popularity": 0.9649,
+            "profile_path": "/jD1fEONB10zMGHbqamOSCt32AYK.jpg",
+            "credit_id": "5faf16bca22d3e003e01ddd1",
+            "department": "Camera",
+            "job": "Assistant Camera"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 2855454,
+            "known_for_department": "Crew",
+            "name": "Jacqueline Streiner",
+            "original_name": "Jacqueline Streiner",
+            "popularity": 0.2438,
+            "profile_path": null,
+            "credit_id": "5faf1729d55e4d003dce175a",
+            "department": "Directing",
+            "job": "Script Coordinator"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 2855450,
+            "known_for_department": "Costume & Make-Up",
+            "name": "Bruce Capristo",
+            "original_name": "Bruce Capristo",
+            "popularity": 0.2375,
+            "profile_path": null,
+            "credit_id": "5faf157d3a48c5003c7bb972",
+            "department": "Costume & Make-Up",
+            "job": "Hairstylist"
+          }
+        ]
+      },
+      "videos": {
+        "results": [
+          {
+            "iso_639_1": "en",
+            "iso_3166_1": "US",
+            "name": "NIGHT OF THE LIVING DEAD: Limitations into Virtues",
+            "key": "iZ9n9SGGp48",
+            "site": "YouTube",
+            "size": 1080,
+            "type": "Featurette",
+            "official": true,
+            "id": "69977870a8f80d036730236e",
+            "published_at": "2026-02-19T20:19:29.000Z"
+          },
+          {
+            "iso_639_1": "en",
+            "iso_3166_1": "US",
+            "name": "We ❤️ NIGHT OF THE LIVING DEAD | Closet Picks Edition",
+            "key": "LG3qEVw3bfA",
+            "site": "YouTube",
+            "size": 1080,
+            "type": "Featurette",
+            "official": true,
+            "id": "694694c5c4780926b2072cbe",
+            "published_at": "2025-10-31T21:21:56.000Z"
+          },
+          {
+            "iso_639_1": "en",
+            "iso_3166_1": "US",
+            "name": "George A. Romero, John Carpenter and Steven Spielberg on NIGHT OF THE LIVING DEAD",
+            "key": "PpnGC6dbwfA",
+            "site": "YouTube",
+            "size": 1080,
+            "type": "Featurette",
+            "official": true,
+            "id": "694695802cd08a2539072a41",
+            "published_at": "2022-05-24T16:16:58.000Z"
+          },
+          {
+            "iso_639_1": "en",
+            "iso_3166_1": "US",
+            "name": "NIGHT OF THE LIVING DEAD Original Theatrical Trailer [1968]",
+            "key": "DIuI6T48Sj0",
+            "site": "YouTube",
+            "size": 2160,
+            "type": "Trailer",
+            "official": false,
+            "id": "6701d90cfa3e69e0ef7d187a",
+            "published_at": "2022-05-10T19:46:20.000Z"
+          },
+          {
+            "iso_639_1": "en",
+            "iso_3166_1": "US",
+            "name": "George A. Romero on the making of NIGHT OF THE LIVING DEAD",
+            "key": "lTcscmND46o",
+            "site": "YouTube",
+            "size": 1080,
+            "type": "Featurette",
+            "official": true,
+            "id": "6946950e739bae2a6d154b78",
+            "published_at": "2020-10-29T16:34:55.000Z"
+          },
+          {
+            "iso_639_1": "en",
+            "iso_3166_1": "US",
+            "name": "NIGHT OF THE LIVING DEAD's Duane Jones Is Horror's Rare Black Lead | On Film",
+            "key": "FbaKJs_NaT4",
+            "site": "YouTube",
+            "size": 1080,
+            "type": "Featurette",
+            "official": true,
+            "id": "69469685f948d17d1f811c6f",
+            "published_at": "2019-02-26T15:00:01.000Z"
+          },
+          {
+            "iso_639_1": "en",
+            "iso_3166_1": "US",
+            "name": "A Scene from NIGHT OF THE LIVING DEAD",
+            "key": "veEQD1Nn_7Y",
+            "site": "YouTube",
+            "size": 1080,
+            "type": "Clip",
+            "official": true,
+            "id": "5c0ed09292514147950c1b40",
+            "published_at": "2018-12-10T16:11:59.000Z"
+          },
+          {
+            "iso_639_1": "en",
+            "iso_3166_1": "US",
+            "name": "Trailer",
+            "key": "V5XwrRFP7Zw",
+            "site": "YouTube",
+            "size": 1080,
+            "type": "Trailer",
+            "official": true,
+            "id": "61056b56ee43e80027c2bebb",
+            "published_at": "2018-11-08T19:55:27.000Z"
+          },
+          {
+            "iso_639_1": "en",
+            "iso_3166_1": "US",
+            "name": "GEORGE A. ROMERO | Night of the Living Dead | Higher Learning",
+            "key": "uCpJKakWVRc",
+            "site": "YouTube",
+            "size": 1080,
+            "type": "Featurette",
+            "official": true,
+            "id": "69469645b84c14de6e2fb8e9",
+            "published_at": "2013-01-24T15:04:24.000Z"
+          }
+        ]
+      },
+      "release_dates": {
+        "results": [
+          {
+            "iso_3166_1": "AU",
+            "release_dates": [
+              {
+                "certification": "M",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "DVD",
+                "release_date": "2006-02-22T00:00:00.000Z",
+                "type": 5
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "BR",
+            "release_dates": [
+              {
+                "certification": "16",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "1968-10-31T00:00:00.000Z",
+                "type": 3
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "CZ",
+            "release_dates": [
+              {
+                "certification": "18+",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "2008-02-19T00:00:00.000Z",
+                "type": 4
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "DE",
+            "release_dates": [
+              {
+                "certification": "16",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "1971-03-18T00:00:00.000Z",
+                "type": 3
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "ES",
+            "release_dates": [
+              {
+                "certification": "",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "Curtas Festival do Imaxinario",
+                "release_date": "2025-11-02T00:00:00.000Z",
+                "type": 1
+              },
+              {
+                "certification": "18",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "Madrid",
+                "release_date": "1970-12-07T00:00:00.000Z",
+                "type": 3
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "FI",
+            "release_dates": [
+              {
+                "certification": "K-16",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "1992-01-24T00:00:00.000Z",
+                "type": 3
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "FR",
+            "release_dates": [
+              {
+                "certification": "16",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "1970-01-21T00:00:00.000Z",
+                "type": 3
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "GB",
+            "release_dates": [
+              {
+                "certification": "15",
+                "descriptors": [],
+                "iso_639_1": "en",
+                "note": "",
+                "release_date": "1969-06-20T00:00:00.000Z",
+                "type": 3
+              },
+              {
+                "certification": "",
+                "descriptors": [],
+                "iso_639_1": "en",
+                "note": "Rated X, re-release",
+                "release_date": "1980-11-18T00:00:00.000Z",
+                "type": 3
+              },
+              {
+                "certification": "15",
+                "descriptors": [],
+                "iso_639_1": "en",
+                "note": "Extended Cut (Re-Release)",
+                "release_date": "2018-10-11T00:00:00.000Z",
+                "type": 3
+              },
+              {
+                "certification": "15",
+                "descriptors": [],
+                "iso_639_1": "en",
+                "note": "",
+                "release_date": "2018-04-05T00:00:00.000Z",
+                "type": 4
+              },
+              {
+                "certification": "18",
+                "descriptors": [],
+                "iso_639_1": "en",
+                "note": "VHS",
+                "release_date": "1987-08-09T00:00:00.000Z",
+                "type": 5
+              },
+              {
+                "certification": "18",
+                "descriptors": [],
+                "iso_639_1": "en",
+                "note": "DVD",
+                "release_date": "1998-11-26T00:00:00.000Z",
+                "type": 5
+              },
+              {
+                "certification": "15",
+                "descriptors": [],
+                "iso_639_1": "en",
+                "note": "DVD",
+                "release_date": "2007-05-01T00:00:00.000Z",
+                "type": 5
+              },
+              {
+                "certification": "15",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "The Criterion Collection Blu-ray ",
+                "release_date": "2018-02-13T00:00:00.000Z",
+                "type": 5
+              },
+              {
+                "certification": "15",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "The Criterion Collection 4k Ultra HD Blu-ray",
+                "release_date": "2024-10-07T00:00:00.000Z",
+                "type": 5
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "HU",
+            "release_dates": [
+              {
+                "certification": "18",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "2016-05-12T00:00:00.000Z",
+                "type": 4
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "ID",
+            "release_dates": [
+              {
+                "certification": "17+",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "2026-04-19T00:00:00.000Z",
+                "type": 2
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "IE",
+            "release_dates": [
+              {
+                "certification": "18",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "1970-11-13T00:00:00.000Z",
+                "type": 3
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "IT",
+            "release_dates": [
+              {
+                "certification": "VM18",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "1970-08-01T00:00:00.000Z",
+                "type": 3
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "JP",
+            "release_dates": [
+              {
+                "certification": "G",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "4K Restoration",
+                "release_date": "2022-06-17T00:00:00.000Z",
+                "type": 3
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "NL",
+            "release_dates": [
+              {
+                "certification": "16",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "Blu-ray",
+                "release_date": "2012-10-27T00:00:00.000Z",
+                "type": 5
+              },
+              {
+                "certification": "16",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "DVD",
+                "release_date": "2003-09-09T00:00:00.000Z",
+                "type": 5
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "NO",
+            "release_dates": [
+              {
+                "certification": "18",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "1968-10-04T00:00:00.000Z",
+                "type": 2
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "PL",
+            "release_dates": [
+              {
+                "certification": "18",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "2011-07-24T00:00:00.000Z",
+                "type": 4
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "SE",
+            "release_dates": [
+              {
+                "certification": "15",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "1968-10-04T00:00:00.000Z",
+                "type": 3
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "US",
+            "release_dates": [
+              {
+                "certification": "NR",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "Pittsburgh, Pennsylvania",
+                "release_date": "1968-10-01T00:00:00.000Z",
+                "type": 1
+              },
+              {
+                "certification": "NR",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "1968-10-04T00:00:00.000Z",
+                "type": 3
+              },
+              {
+                "certification": "NR",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "VHS",
+                "release_date": "1978-10-24T00:00:00.000Z",
+                "type": 5
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "XC",
+            "release_dates": [
+              {
+                "certification": "",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "1992-02-01T00:00:00.000Z",
+                "type": 5
+              }
+            ]
+          }
+        ]
+      },
+      "external_ids": {
+        "imdb_id": "tt0063350",
+        "wikidata_id": "Q623051",
+        "facebook_id": null,
+        "instagram_id": null,
+        "twitter_id": null
+      },
+      "recommendations": {
+        "page": 1,
+        "results": [
+          {
+            "adult": false,
+            "backdrop_path": "/dmXsktpfHgTNeLFeo5nVItiXuBr.jpg",
+            "id": 517116,
+            "title": "Haunt",
+            "original_title": "Haunt",
+            "overview": "On Halloween, a group of friends encounter an extreme haunted house that promises to feed on their darkest fears. The night turns deadly as they come to the horrifying realisation that some nightmares are real.",
+            "poster_path": "/haQSrjFlq30I60UVN1VsB6uRwKM.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [27, 53],
+            "popularity": 8.7005,
+            "release_date": "2019-09-13",
+            "softcore": false,
+            "video": false,
+            "vote_average": 6.661,
+            "vote_count": 1448
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/2IIKts2A9vnUdM9tTC76B8tDmuZ.jpg",
+            "id": 1151031,
+            "title": "Bring Her Back",
+            "original_title": "Bring Her Back",
+            "overview": "Following the death of their father, a brother and sister are sent to live with a foster mother, only to learn that she is hiding a terrifying secret.",
+            "poster_path": "/1Q3GlCXGYWELifxANYZ5OVMRVZl.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [27],
+            "popularity": 15.3609,
+            "release_date": "2025-05-19",
+            "softcore": false,
+            "video": false,
+            "vote_average": 7.314,
+            "vote_count": 2041
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/iZBUOcku0xv9MMfiEMXiDqErPXl.jpg",
+            "id": 1992,
+            "title": "Planet Terror",
+            "original_title": "Planet Terror",
+            "overview": "Two doctors find their graveyard shift inundated with townspeople ravaged by sores. Among the wounded is Cherry Darling, a dancer whose leg was ripped from her body. As the invalids quickly become enraged aggressors, Cherry and her ex-boyfriend El Wray lead a team of accidental warriors into the night.",
+            "poster_path": "/30ANoUgvqQZ9tgCnM6OyJZUveaf.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [27, 28, 53],
+            "popularity": 9.0504,
+            "release_date": "2007-04-06",
+            "softcore": false,
+            "video": false,
+            "vote_average": 6.695,
+            "vote_count": 4019
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/9OKzKuCfcMwpHVp56pjNI7J4xXR.jpg",
+            "id": 923,
+            "title": "Dawn of the Dead",
+            "original_title": "Dawn of the Dead",
+            "overview": "During an ever-growing epidemic of zombies that have risen from the dead, two Philadelphia SWAT team members, a traffic reporter, and his television-executive girlfriend seek refuge in a secluded shopping mall.",
+            "poster_path": "/70MY8H0bLMvXf8ED2SgVMPhDVVM.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [27, 878],
+            "popularity": 8.4212,
+            "release_date": "1978-09-02",
+            "softcore": false,
+            "video": false,
+            "vote_average": 7.479,
+            "vote_count": 2414
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/onq6lsJLX8ay5iwxEbKX3qJKeO9.jpg",
+            "id": 764,
+            "title": "The Evil Dead",
+            "original_title": "The Evil Dead",
+            "overview": "In 1979, a group of college students find a Sumerian Book of the Dead in an old wilderness cabin they've rented for a weekend getaway.",
+            "poster_path": "/54C1qdaiSijIU5NeNb4WsPJdNkG.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [27],
+            "popularity": 17.5184,
+            "release_date": "1983-01-16",
+            "softcore": false,
+            "video": false,
+            "vote_average": 7.266,
+            "vote_count": 4801
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/m1GLbZXi5pmLE3nvKbnB7GGl5jo.jpg",
+            "id": 1089123,
+            "title": "Daddy's Head",
+            "original_title": "Daddy's Head",
+            "overview": "A boy and his stepmother fear for their safety after an eerie creature resembling the boy's recently deceased father visits them.",
+            "poster_path": "/nEWbEBs8BalwasA4Un8rll3kauT.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [27],
+            "popularity": 3.1563,
+            "release_date": "2024-09-22",
+            "softcore": false,
+            "video": false,
+            "vote_average": 5.9,
+            "vote_count": 181
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/7GAgYVK29A4NADWhPbqC9c44X7P.jpg",
+            "id": 9871,
+            "title": "Ginger Snaps",
+            "original_title": "Ginger Snaps",
+            "overview": "The story of two outcast sisters, Ginger and Brigitte, in the mindless suburban town of Bailey Downs. On the night of Ginger's first period, she is savagely attacked by a wild creature. Ginger's wounds miraculously heal but something is not quite right. Now Brigitte must save her sister and save herself.",
+            "poster_path": "/ozohDiJd7Oi65NEf8B0ya7lR9Fr.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [27, 14],
+            "popularity": 6.0229,
+            "release_date": "2000-12-11",
+            "softcore": false,
+            "video": false,
+            "vote_average": 6.943,
+            "vote_count": 1057
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/phiRQhfwZZeMMn3osvQUmGYmJbp.jpg",
+            "id": 755,
+            "title": "From Dusk Till Dawn",
+            "original_title": "From Dusk Till Dawn",
+            "overview": "After kidnapping a father and his two kids, the Gecko brothers head south to a seedy Mexican bar to hide out in safety, unaware of its notorious clientele.",
+            "poster_path": "/sV3kIAmvJ9tPz4Lq5fuf9LLMxte.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [28, 27, 80],
+            "popularity": 17.3031,
+            "release_date": "1996-01-19",
+            "softcore": false,
+            "video": false,
+            "vote_average": 7.1,
+            "vote_count": 6786
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/oLA6GlYvfUAAzITiXo56NEKjVQE.jpg",
+            "id": 715123,
+            "title": "Books of Blood",
+            "original_title": "Books of Blood",
+            "overview": "A journey into uncharted and forbidden territory through three tales tangled in space and time.",
+            "poster_path": "/bXLVZGgLgd7OwbfP6fC5GCfrxuD.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [27, 878],
+            "popularity": 4.3228,
+            "release_date": "2020-10-07",
+            "softcore": false,
+            "video": false,
+            "vote_average": 6.2,
+            "vote_count": 554
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/7jj05YOKmFP7WUwxX3j56cl4I79.jpg",
+            "id": 29425,
+            "title": "The Crazies",
+            "original_title": "The Crazies",
+            "overview": "The military attempts to contain a manmade virus causing death and permanent insanity in those infected, as it overtakes a small Pennsylvania town.",
+            "poster_path": "/xSNgBJL9WKMHwl42gZXeRsQXFa1.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [878, 27, 28],
+            "popularity": 7.1466,
+            "release_date": "1973-03-16",
+            "softcore": false,
+            "video": false,
+            "vote_average": 6.1,
+            "vote_count": 432
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/wvBx1Q1FcQE1BPLfBbgA3y9aaS1.jpg",
+            "id": 30497,
+            "title": "The Texas Chain Saw Massacre",
+            "original_title": "The Texas Chain Saw Massacre",
+            "overview": "Five friends head out to rural Texas to visit the grave of a grandfather. On the way, they stumble across what appears to be a deserted house, only to discover something sinister within. Something armed with a chainsaw.",
+            "poster_path": "/mpgkRPH1GNkMCgdPk2OMyHzAks7.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [27],
+            "popularity": 18.7369,
+            "release_date": "1974-10-11",
+            "softcore": false,
+            "video": false,
+            "vote_average": 7.291,
+            "vote_count": 4046
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/o2SeAw8ARPB1D8oudCRJcxW3w60.jpg",
+            "id": 13186,
+            "title": "Wrong Turn 2: Dead End",
+            "original_title": "Wrong Turn 2: Dead End",
+            "overview": "Retired military commander Colonel Dale Murphy hosts the simulated post-apocalyptic reality show where participants are challenged to survive a remote West Virginia wasteland. But the show turns into a nightmarish showdown when each realizes they are being hunted by an inbred family of cannibals determined to make them all dinner!",
+            "poster_path": "/iQ37ygxcpJNZp1XdHMantumylmw.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [27, 53],
+            "popularity": 11.9026,
+            "release_date": "2007-08-25",
+            "softcore": false,
+            "video": false,
+            "vote_average": 6.179,
+            "vote_count": 1643
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/Aiwk4Ywd296AkKeVtC2auwFKhyy.jpg",
+            "id": 399894,
+            "title": "Daylight's End",
+            "original_title": "Daylight's End",
+            "overview": "Years after a mysterious plague has devastated the planet and turned most of humanity into blood-hungry creatures, a rogue drifter on a vengeful hunt stumbles across a band of survivors in an abandoned police station and reluctantly agrees to try to help them defend themselves and escape to the sanctuary they so desperately need.",
+            "poster_path": "/sNDodM6si97uhiPhf5dTM6n6aDj.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [28, 27, 878],
+            "popularity": 3.3962,
+            "release_date": "2016-04-16",
+            "softcore": false,
+            "video": false,
+            "vote_average": 5.9,
+            "vote_count": 221
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/rC2HpslTzrhzJ605DHBPkeITpt2.jpg",
+            "id": 15158,
+            "title": "Phantasm II",
+            "original_title": "Phantasm II",
+            "overview": "Mike, after his release from a psychiatric hospital, teams up with his old pal Reggie to hunt down the Tall Man, who is at it again. A mysterious, beautiful girl has also become part of Mike's dreams, and they must find her before the Tall Man does.",
+            "poster_path": "/cZ5mPtOXcvmg224oBM2k1db5Fnn.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [28, 27, 878, 53],
+            "popularity": 2.8733,
+            "release_date": "1988-07-08",
+            "softcore": false,
+            "video": false,
+            "vote_average": 6.2,
+            "vote_count": 416
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/sFtBsQVPZdR13MQh36Npfx9m9Lw.jpg",
+            "id": 38541,
+            "title": "The Divide",
+            "original_title": "The Divide",
+            "overview": "Survivors of a nuclear attack are grouped together for days in the basement of their apartment building, where fear and dwindling supplies wear away at their dynamic.",
+            "poster_path": "/hnwX5cUuzBDM0OWJB2UtnjkrHDm.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [27, 878, 53],
+            "popularity": 3.4102,
+            "release_date": "2012-01-13",
+            "softcore": false,
+            "video": false,
+            "vote_average": 5.9,
+            "vote_count": 789
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/rwr038BaQBqRQbnP8yps4hXp5Dp.jpg",
+            "id": 426814,
+            "title": "The Domestics",
+            "original_title": "The Domestics",
+            "overview": "A young husband and wife must fight to return home in a post-apocalyptic mid-western landscape ravaged by gangs.",
+            "poster_path": "/j64I3u1wwgPct3stvvKU2ikl14w.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [27, 53],
+            "popularity": 3.7575,
+            "release_date": "2018-06-28",
+            "softcore": false,
+            "video": false,
+            "vote_average": 6.2,
+            "vote_count": 545
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/vrFI0I3M8ROZduj9XbFDoQKZyao.jpg",
+            "id": 9792,
+            "title": "The Hills Have Eyes",
+            "original_title": "The Hills Have Eyes",
+            "overview": "Based on Wes Craven's 1977 suspenseful cult classic, The Hills Have Eyes is the story of a family road trip that goes terrifyingly awry when the travelers become stranded in a government atomic zone. Miles from nowhere, the Carter family soon realizes the seemingly uninhabited wasteland is actually the breeding ground of a blood-thirsty mutant family...and they are the prey.",
+            "poster_path": "/2eJL1Ccr1FN3dm9OSDwyd8uaX1b.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [27, 53],
+            "popularity": 12.03,
+            "release_date": "2006-03-10",
+            "softcore": false,
+            "video": false,
+            "vote_average": 6.489,
+            "vote_count": 3531
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/456tLLmzg7OeNyijCvCfL6X55VV.jpg",
+            "id": 1142414,
+            "title": "Cheat",
+            "original_title": "Cheat",
+            "overview": "On the surface it's believed to be another urban legend - a supernatural being from the afterlife is violently killing anyone who cheats on their significant other in the small college town of Silvercreek, Pennsylvania. But the town's unusually high suicide rate is finally convincing both locals and college students that everything is not as it seems. When Maeve - a female college student - sleeps with Charlie, the married man of the host family she is staying with, both sense the deadly curse is closing in on them. Unable to get anyone to believe them, Maeve and Charlie seek out a local history student to help find answers and figure out a way to defend themselves. It all comes undone, however, as several people are horrifically killed by the savage being - one-by-one at a rapid pace. Eventually, Maeve, Charlie and the few survivors band together in an attempt to defeat the monster once and for all.",
+            "poster_path": "/46Um9OTHNA390mMxwpSSc2m35Zp.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [53, 27],
+            "popularity": 2.7278,
+            "release_date": "2023-08-24",
+            "softcore": false,
+            "video": false,
+            "vote_average": 7.1,
+            "vote_count": 82
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/jweRMLxgXqzfh12ILnTcmVz3Iix.jpg",
+            "id": 2662,
+            "title": "House of 1000 Corpses",
+            "original_title": "House of 1000 Corpses",
+            "overview": "Two teenage couples traveling across the backwoods of Texas searching for urban legends of serial killers end up as prisoners of a bizarre and sadistic backwater family of serial killers.",
+            "poster_path": "/29c2qgXmSREosLBevOILEuMWzQC.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [27],
+            "popularity": 7.5109,
+            "release_date": "2003-04-11",
+            "softcore": false,
+            "video": false,
+            "vote_average": 6.2,
+            "vote_count": 1861
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/bZVVaZK4ig2CMwbMcBfkqwK5mQU.jpg",
+            "id": 11880,
+            "title": "Dog Soldiers",
+            "original_title": "Dog Soldiers",
+            "overview": "A band of soldiers is dispatched to war games deep in the woods. When they stumble across a rival team slaughtered in camp, they realize they're not alone.",
+            "poster_path": "/fYHUYWglzq8Ax0EaDWqg9emjL7T.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [27, 28, 53],
+            "popularity": 5.44,
+            "release_date": "2002-05-10",
+            "softcore": false,
+            "video": false,
+            "vote_average": 6.723,
+            "vote_count": 1067
+          }
+        ],
+        "total_pages": 12,
+        "total_results": 235
+      },
+      "keywords": {
+        "keywords": [
+          {
+            "id": 380,
+            "name": "sibling relationship"
+          },
+          {
+            "id": 904,
+            "name": "pennsylvania, usa"
+          },
+          {
+            "id": 697,
+            "name": "loss of loved one"
+          },
+          {
+            "id": 1419,
+            "name": "gun"
+          },
+          {
+            "id": 1420,
+            "name": "gas station"
+          },
+          {
+            "id": 1227,
+            "name": "cemetery"
+          },
+          {
+            "id": 2602,
+            "name": "cellar"
+          },
+          {
+            "id": 3335,
+            "name": "halloween"
+          },
+          {
+            "id": 6095,
+            "name": "house"
+          },
+          {
+            "id": 7246,
+            "name": "barricade"
+          },
+          {
+            "id": 12377,
+            "name": "zombie"
+          },
+          {
+            "id": 12999,
+            "name": "black and white"
+          },
+          {
+            "id": 18029,
+            "name": "trapped"
+          },
+          {
+            "id": 155561,
+            "name": "bitten"
+          },
+          {
+            "id": 161196,
+            "name": "farm house"
+          },
+          {
+            "id": 314730,
+            "name": "suspenseful"
+          },
+          {
+            "id": 321464,
+            "name": "intense"
+          }
+        ]
+      }
+    }
+  }
+}

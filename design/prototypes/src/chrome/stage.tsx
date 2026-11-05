@@ -2,10 +2,21 @@
 // The stage: the screen in an iframe, framed per platform. Admin and Web render at the chosen
 // width (scaled down if the window is narrower); Mobile in a 390 × 844 device; TV on the largest
 // 16:9 that fits. The iframe gives each one a real viewport, so breakpoints and `h-screen` hold.
+// On a route apps/client holds (./client.ts), the frame holds the client's mock web export
+// instead, at the frame's input: the web's pointer at its width, the phone's touch at 390 × 844,
+// and the TV at a 1920 × 1080 screen scaled to fit, so its units are a 1080p TV's.
 import { type Ref, useEffect, useRef, useState } from 'react'
 import type { Platform, Width } from '../proto/state.ts'
+import {
+  type ClientPlatform,
+  clientSrc,
+  FRAME_INPUTS,
+  PHONE_SCREEN,
+  TV_SCREEN,
+  tClient,
+} from './client.ts'
 
-const PHONE = { w: 390, h: 844, bezel: 12 }
+const PHONE = { ...PHONE_SCREEN, bezel: 12 }
 const MARGIN = 24
 
 function useSize() {
@@ -29,31 +40,63 @@ type StageProps = {
   width: Width
   /** The route the frame opens at. Later changes travel over postMessage, not `src`. */
   path: string
+  /** The client's route to open apps/client at, when the client holds this route. */
+  client?: string | null
 }
 
-export function Stage({ ref, platform, width, path }: StageProps) {
+const fromDisk = () => typeof window !== 'undefined' && window.location.protocol === 'file:'
+
+export function Stage({ ref, platform, width, path, client = null }: StageProps) {
   const [stage, size] = useSize()
-  // a platform switch reloads the frame at the new platform's home; nothing else does
-  const [src, setSrc] = useState(path)
-  const [shown, setShown] = useState(platform)
-  if (shown !== platform) {
-    setShown(platform)
-    setSrc(path)
-  }
-  const frame = (
-    <iframe
-      key={platform}
-      ref={ref}
-      title={`${platform === 'tv' ? 'TV' : platform[0]?.toUpperCase() + platform.slice(1)} screen`}
-      src={`./index.html?screen#${src}`}
-      className="block size-full border-0 bg-bg"
-    />
+  const holds = client !== null && platform !== 'admin'
+  // a platform switch, or a switch between the client and the prototype's screen, reloads the
+  // frame where it's going; nothing else does
+  const kind = `${platform}:${holds ? 'client' : 'screen'}`
+  const [src, setSrc] = useState(
+    holds ? clientSrc(platform as ClientPlatform, client) : `./index.html?screen#${path}`,
   )
+  const [shown, setShown] = useState(kind)
+  if (shown !== kind) {
+    setShown(kind)
+    setSrc(holds ? clientSrc(platform as ClientPlatform, client) : `./index.html?screen#${path}`)
+  }
+  const name = platform === 'tv' ? 'TV' : `${platform[0]?.toUpperCase()}${platform.slice(1)}`
+  const frame =
+    holds && fromDisk() ? (
+      <p className="grid size-full place-items-center bg-bg p-6 text-center text-body text-text-2">
+        {tClient('client.fromDisk')}
+      </p>
+    ) : (
+      <iframe
+        key={kind}
+        ref={ref}
+        title={holds ? tClient('client.title', { platform: name }) : `${name} screen`}
+        src={src}
+        className="block size-full border-0 bg-bg"
+      />
+    )
 
   let body = null
   let caption = ''
   if (size.w > 0) {
-    if (platform === 'tv') {
+    if (platform === 'tv' && holds) {
+      const w = Math.min(size.w - MARGIN * 2, ((size.h - MARGIN * 2) * 16) / 9)
+      const scale = w / TV_SCREEN.w
+      body = (
+        <div
+          style={{ width: w, height: TV_SCREEN.h * scale }}
+          className="overflow-hidden rounded-sm shadow-4 ring-1 ring-line"
+        >
+          <div
+            style={{ width: TV_SCREEN.w, height: TV_SCREEN.h, transform: `scale(${scale})` }}
+            className="origin-top-left"
+          >
+            {frame}
+          </div>
+        </div>
+      )
+      caption = `${TV_SCREEN.w} × ${TV_SCREEN.h} · ${Math.round(scale * 100)}%`
+    } else if (platform === 'tv') {
       const w = Math.min(size.w - MARGIN * 2, ((size.h - MARGIN * 2) * 16) / 9)
       body = (
         <div
@@ -78,7 +121,7 @@ export function Stage({ ref, platform, width, path }: StageProps) {
           </div>
         </div>
       )
-      caption = `390 × 844 pt · ${Math.round(scale * 100)}%`
+      caption = `${PHONE.w} × ${PHONE.h} pt · ${Math.round(scale * 100)}%`
     } else if (width === 'fluid') {
       body = <div className="size-full">{frame}</div>
       caption = `fluid · ${Math.round(size.w)} px`
@@ -107,7 +150,9 @@ export function Stage({ ref, platform, width, path }: StageProps) {
       {body}
       {caption && (
         <p className="pointer-events-none absolute end-3 bottom-2 font-mono text-[10px] text-text-3">
-          {caption}
+          {holds
+            ? `${tClient('client.caption', { input: FRAME_INPUTS[platform as ClientPlatform] })} · ${caption}`
+            : caption}
         </p>
       )}
     </main>

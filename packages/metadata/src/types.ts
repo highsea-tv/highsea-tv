@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The metadata's domain types: the prototype's (design/prototypes/src/mock/types.ts) with the
+// The metadata's domain types: the prototype's (packages/mock/src/types.ts) with the
 // changes real data forces (docs/plans/phase-3-checkpoint-4.md, Fields and how they map):
 // - ids are TMDB's numbers, `id` alone (Addresses are TMDB ids);
 // - `rating` is TMDB's `vote_average`, 0 to 10, with `voteCount`; the API converts to stars;

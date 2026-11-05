@@ -4,6 +4,8 @@
 // resize, add and remove widgets, then Done saves it. The owner can also make the draft the
 // default for admins.
 
+import type { StaffRole, WidgetKind, WidgetPlacement } from '@highsea-tv/mock/types'
+import { allowed, roleDefault, widgetDefinition, widgetDefinitions } from '@highsea-tv/mock/widgets'
 import {
   Button,
   EmptyState,
@@ -18,11 +20,9 @@ import {
   SheetContent,
   toast,
   WidgetEditor,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import { useEffect, useState } from 'react'
 import { useAction, useQuery } from '../../mock/hooks.tsx'
-import type { StaffRole, WidgetKind, WidgetPlacement } from '../../mock/types.ts'
-import { allowed, roleDefault, widgetDefinition, widgetDefinitions } from '../../mock/widgets.ts'
 import { AdminPage, useShell } from '../shell.tsx'
 import { widgetRenderers } from './widgets.tsx'
 

@@ -16,7 +16,7 @@ import {
   Switch,
   Textarea,
   toast,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
 import { ClientPreview } from './curation-preview.tsx'
@@ -133,7 +133,7 @@ function Composer({ initial }: { initial: Announcement | null }) {
   }
 
   return (
-    <div className="grid gap-6 expanded:grid-cols-[minmax(22rem,28rem)_minmax(0,1fr)] expanded:items-start">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-6 expanded:grid-cols-[minmax(min(22rem,50%),min(28rem,50%))_minmax(0,1fr)] expanded:items-start">
       <form
         aria-label={t('announcement.form')}
         className="grid gap-6"

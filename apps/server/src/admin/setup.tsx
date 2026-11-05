@@ -20,6 +20,7 @@ import {
   Banner,
   Button,
   Checkbox,
+  Chip,
   cn,
   Dialog,
   DialogContent,
@@ -28,11 +29,13 @@ import {
   Icon,
   Input,
   Lockup,
+  Radio,
+  RadioGroup,
   Select,
   Skeleton,
   Stepper,
   toast,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import { type FormEvent, type ReactNode, useEffect, useRef, useState } from 'react'
 import { errorReason, keyRejected, metadataLocale, tmdbBusy } from './metadata-locale.ts'
 import { setup as messages } from './setup-messages.ts'
@@ -1112,23 +1115,16 @@ function Languages({
           {chips.map((code) => {
             const on = selected.includes(code)
             return (
-              <button
+              <Chip
                 key={code}
-                type="button"
-                aria-pressed={on}
+                selected={on}
+                icon={on ? 'check' : undefined}
                 onClick={() =>
                   onChange(on ? selected.filter((c) => c !== code) : [...selected, code])
                 }
-                className={cn(
-                  'flex h-8 items-center gap-1.5 rounded-full border px-3 text-ui transition-tint',
-                  on
-                    ? 'border-accent bg-accent-soft text-accent-text'
-                    : 'border-line-strong text-text-2 hover:bg-s2 hover:text-text',
-                )}
               >
-                {on && <Icon name="check" size={14} />}
                 {name(code)}
-              </button>
+              </Chip>
             )
           })}
         </div>
@@ -1177,8 +1173,11 @@ function RemoteAccess({
 }) {
   const t = useT(messages)
   return (
-    <fieldset className="grid gap-2">
-      <legend className="sr-only">{t('remote.legend')}</legend>
+    <RadioGroup
+      aria-label={t('remote.legend')}
+      value={draft.remote}
+      onValueChange={(v) => update({ remote: v as Draft['remote'] })}
+    >
       {remoteOptions.map((o) => {
         const on = draft.remote === o.kind
         return (
@@ -1189,14 +1188,9 @@ function RemoteAccess({
               on ? 'border-accent bg-s2' : 'border-line bg-s1',
             )}
           >
+            {/* biome-ignore lint/a11y/noLabelWithoutControl: the control is its child, the library’s Radio, a button with the radio role and so a labelable element */}
             <label className="grid cursor-pointer grid-cols-[auto_1fr] gap-x-3 gap-y-0.5">
-              <input
-                type="radio"
-                name="remote"
-                checked={on}
-                onChange={() => update({ remote: o.kind })}
-                className="mt-0.5 size-4 accent-(--color-accent-fill)"
-              />
+              <Radio value={o.kind} className="mt-0.5" />
               <span className="font-semibold text-text text-ui">{t(o.title)}</span>
               <span className="col-start-2 text-caption text-text-2">{t(o.detail)}</span>
             </label>
@@ -1230,6 +1224,6 @@ function RemoteAccess({
           </div>
         )
       })}
-    </fieldset>
+    </RadioGroup>
   )
 }

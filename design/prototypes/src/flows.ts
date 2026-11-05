@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Every flow in the Phase 2 plan (docs/plans/phase-2-prototypes.md › flows): where it lives, which
 // platforms it covers and which checkpoint builds it. The launcher and the toolbar read this.
+import { SEED } from '@highsea-tv/mock/films'
 import type { Platform } from './proto/state.ts'
 
 export type Flow = {
@@ -366,6 +367,8 @@ export const flows: Flow[] = [
         'Servers answer discovery over two seconds; type harbor.example.net to connect remotely.',
         'Sign in as ines with any password for the two-step code (any six digits but 000000).',
         'TV: wait eight seconds and the phone “approves” the code; or press OK on Use a password.',
+        'Mobile: You › Servers › Sign in a TV scans the TV’s code (three seconds), then asks once.',
+        'Mobile: Toolbar › Local network shows iOS asking, or refused.',
         'Toolbar › Connection: Remote shows the failover; Unreachable shows what to do.',
       ],
     },
@@ -403,7 +406,7 @@ export const flows: Flow[] = [
   client(
     'C4',
     'Item detail',
-    '/movies/4',
+    `/movies/${SEED.film.id}`,
     ['web', 'mobile', 'tv'],
     3,
     'Hero, play or resume, versions, cast, related, subtitle and audio defaults.',
@@ -418,7 +421,7 @@ export const flows: Flow[] = [
   client(
     'C5',
     'Player chrome',
-    '/play/4',
+    `/play/${SEED.film.id}`,
     ['web', 'mobile', 'tv'],
     3,
     'Scrubber, track and subtitle pickers, the subtitle offset nudge, the remote mapping.',
@@ -428,6 +431,7 @@ export const flows: Flow[] = [
       hints: [
         'Turn English subtitles on, then nudge the timing in 50 ms steps and watch the preview.',
         'Web: Space, ← →, M and F. TV: OK, ← → on the scrubber, ↓ for tracks, Back.',
+        'Mobile: AirPlay in the top bar lists the screens; Toolbar › AirPlay starts on the TV.',
       ],
     },
   ),
@@ -453,7 +457,7 @@ export const flows: Flow[] = [
     4,
     'Themes, sounds, home layout, servers, devices, about.',
     {
-      routes: { web: '/web/settings', mobile: '/mobile/you/appearance', tv: '/tv/settings' },
+      routes: { web: '/web/settings', mobile: '/mobile/settings', tv: '/tv/settings' },
       ready: true,
       spec: 'docs/product/client-settings.md',
       hints: [
@@ -515,5 +519,6 @@ export const platformHome: Record<Platform, string> = {
   admin: '/admin',
   web: '/web',
   mobile: '/mobile',
-  tv: '/tv',
+  // the TV opens on who's watching (the owner, 2026-10-30)
+  tv: '/tv/start',
 }

@@ -6,27 +6,27 @@ description: The web app's player - audio and subtitles, subtitle timing, the ke
 {/* SPDX-License-Identifier: AGPL-3.0-only */}
 {/*
   Sources:
-  - The player: apps/web/src/player.tsx and playback.ts, its words in apps/web/src/messages.ts
-    (player).
+  - The player: apps/client/src/player/ (pointer.tsx, parts.tsx and picture.web.tsx) and
+    packages/native/src/playback.web.ts, its words in apps/client/src/player/messages.ts.
   - Its timings (10 s seeks and reports, 3 s before the controls hide, Next up's 10 s, 50 ms
     nudges): packages/client/src/player/index.ts.
   - Where the place is kept: packages/runtime/src/playback.ts and packages/stream/src/sessions.
 */}
 
-Written for highsea 0.2.0-beta.1.
+Written for highsea 0.4.0.
 
 **Play** or **Resume** on a film's page opens the player. It fills the window; the controls hide after 3 seconds of playing and come back when you move the pointer, touch the screen or press a key.
 
 - At the top: **Back to details**, the title and the version being played.
-- At the bottom: the position bar, which shows a preview of the frame under the pointer once the server has made them (it does so in the background after a film arrives), then play and pause, back and forward 10 seconds, mute, **Audio and subtitles**, **Picture in picture** where the browser has it, and **Full screen**.
+- At the bottom: the position bar, which shows a preview of the frame under the pointer once the server has made them (it does so in the background after a film arrives), then play and pause, back and forward 10 seconds, mute and the volume, **Audio and subtitles**, **Picture in picture** where the browser has it, and **Full screen**.
 
 ## Audio and subtitles
 
-![The Audio and subtitles panel: Audio with English ticked; Subtitles with Off, English (forced) and English, English ticked; and Subtitle timing at On time, with minus and plus buttons, Reset, and a preview of speech against the subtitle](/images/admin/watch/tracks.png)
+![The Audio and subtitles panel: Audio with English ticked; Subtitles with Off, English (forced) and English, English ticked; Speed from 0.5× to 2×, Normal ticked; and Subtitle timing at On time, with minus and plus buttons, Reset, and a preview of speech against the subtitle](/images/admin/watch/tracks.png)
 
-**Audio and subtitles** opens a panel at the right. When a film has more than one version, **Version** is listed first. Changing the version or the sound track starts again at the same point; changing subtitles doesn't interrupt the film. Your picks are saved for this movie, as on the film's page.
+**Audio and subtitles** opens a panel at the right. When a film has more than one version, **Version** is listed first. Changing the version or the sound track starts again at the same point; changing subtitles doesn't interrupt the film. Your picks are saved for this movie, as on the film's page. **Speed** plays the film from half speed to twice as fast.
 
-A subtitle that's a picture rather than text (PGS or VobSub, from Blu-ray and DVD) can't be shown in a browser yet. The panel says so when you pick one.
+A browser can't draw a subtitle that's a picture rather than text (PGS or VobSub, from Blu-ray and DVD), or a styled ASS subtitle, so the server draws it into the picture. Picking one starts the film again at the same point, and its timing can't be changed, as the panel says.
 
 ## Subtitle timing
 

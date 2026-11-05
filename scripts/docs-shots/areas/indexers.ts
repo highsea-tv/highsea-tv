@@ -6,22 +6,19 @@ import type { Page } from 'playwright-core'
 import type { Area } from '../shot.ts'
 
 const dialog = (p: Page) => p.getByRole('dialog')
-const tab = (name: string | RegExp) => (p: Page) => p.getByRole('tab', { name }).click()
 
 export default {
   shots: [
     {
       name: 'search-results',
-      path: '/movies/45745',
-      act: tab('Search'),
+      path: '/movies/45745/search',
       crop: (p) => p.getByRole('tabpanel'),
       height: 1000,
     },
     {
       name: 'search-reasons',
-      path: '/movies/45745',
+      path: '/movies/45745/search',
       act: async (p) => {
-        await tab('Search')(p)
         await p
           .getByRole('button', { name: /^Rejected \(2\)/ })
           .first()
@@ -37,7 +34,7 @@ export default {
       act: (p) => p.getByRole('button', { name: 'More for Torznab' }).click(),
       height: 480,
     },
-    { name: 'catalog', path: '/indexers', act: tab('Catalog') },
+    { name: 'catalog', path: '/indexers/catalog' },
     {
       name: 'what-changed',
       path: '/indexers',
@@ -46,11 +43,8 @@ export default {
     },
     {
       name: 'set-up-feed',
-      path: '/indexers',
-      act: async (p) => {
-        await tab('Catalog')(p)
-        await p.getByRole('button', { name: 'Set up Torrent feed' }).click()
-      },
+      path: '/indexers/catalog',
+      act: (p) => p.getByRole('button', { name: 'Set up Torrent feed' }).click(),
       crop: dialog,
     },
     {

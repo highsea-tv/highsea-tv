@@ -5,10 +5,6 @@ import type { Area } from '../shot.ts'
 
 // a clicked tab, or a dialog's first field, keeps its focus ring in the shot, so focus moves off it
 const blur = (p: Page) => p.evaluate(() => (document.activeElement as HTMLElement | null)?.blur())
-const tab = (name: string) => async (p: Page) => {
-  await p.getByRole('tab', { name }).click()
-  await blur(p)
-}
 // a dialog focuses its first control once it has opened
 const blurDialog = async (p: Page) => {
   await p.getByRole('dialog').waitFor()
@@ -50,10 +46,10 @@ export default {
       path: '/movies/45745',
       crop: (p) => p.locator('section[aria-labelledby="in-the-library"]'),
     },
-    { name: 'film-search', path: '/movies/45745', act: tab('Search'), crop: panel },
-    { name: 'film-files', path: '/movies/45745', act: tab('Files'), crop: panel },
-    { name: 'film-history', path: '/movies/45745', act: tab('History'), crop: panel },
-    { name: 'film-subtitles', path: '/movies/45745', act: tab('Subtitles'), crop: panel },
+    { name: 'film-search', path: '/movies/45745/search', crop: panel },
+    { name: 'film-files', path: '/movies/45745/files', crop: panel },
+    { name: 'film-history', path: '/movies/45745/history', crop: panel },
+    { name: 'film-subtitles', path: '/movies/45745/subtitles', crop: panel },
     { name: 'film-more', path: '/movies/45745', act: more },
     {
       name: 'film-edit',

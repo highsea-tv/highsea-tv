@@ -1,0 +1,96 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "https://api.themoviedb.org/3/collection/261590?language=en-US",
+    "credential": "valid"
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json;charset=utf-8"
+    },
+    "body": {
+      "id": 261590,
+      "name": "Living Dead Collection",
+      "original_language": "en",
+      "original_name": "Living Dead Collection",
+      "overview": "Night of the Living Dead is a series of zombie horror films written and directed by George A. Romero beginning with the 1968 film Night of the Living Dead written by Romero and John A. Russo. The loosely connected franchise predominantly centers on different groups of people attempting to survive during the outbreak and evolution of a zombie apocalypse.",
+      "poster_path": "/5tzYvD8a7M6YdGy37V5goRJXsMk.jpg",
+      "backdrop_path": "/xacnP6WJBhs5vptIcYE8RCDVKIo.jpg",
+      "parts": [
+        {
+          "adult": false,
+          "backdrop_path": "/5KtmBSqFtHY3I9t8lgH27Mc0bqY.jpg",
+          "id": 10331,
+          "title": "Night of the Living Dead",
+          "original_title": "Night of the Living Dead",
+          "overview": "A ragtag group barricade themselves in an old Pennsylvania farmhouse to remain safe from a horde of flesh-eating ghouls ravaging the Northeast.",
+          "poster_path": "/rb2NWyb008u1EcKCOyXs2Nmj0ra.jpg",
+          "media_type": "movie",
+          "original_language": "en",
+          "genre_ids": [27, 878],
+          "popularity": 12.2806,
+          "release_date": "1968-10-04",
+          "softcore": false,
+          "video": false,
+          "vote_average": 7.601,
+          "vote_count": 2875
+        },
+        {
+          "adult": false,
+          "backdrop_path": "/bTvc9hzculIuScIZwWz4faa4dOu.jpg",
+          "id": 8408,
+          "title": "Day of the Dead",
+          "original_title": "Day of the Dead",
+          "overview": "As the world is overrun by zombies, scientists and military personnel in an underground Florida bunker must decide on how they should deal with the undead.",
+          "poster_path": "/bi7SO5F4VyyGQTlxQirbH1dwKzW.jpg",
+          "media_type": "movie",
+          "original_language": "en",
+          "genre_ids": [27, 18, 9648],
+          "popularity": 8.3262,
+          "release_date": "1985-07-03",
+          "softcore": false,
+          "video": false,
+          "vote_average": 7,
+          "vote_count": 1474
+        },
+        {
+          "adult": false,
+          "backdrop_path": "/9OKzKuCfcMwpHVp56pjNI7J4xXR.jpg",
+          "id": 923,
+          "title": "Dawn of the Dead",
+          "original_title": "Dawn of the Dead",
+          "overview": "During an ever-growing epidemic of zombies that have risen from the dead, two Philadelphia SWAT team members, a traffic reporter, and his television-executive girlfriend seek refuge in a secluded shopping mall.",
+          "poster_path": "/70MY8H0bLMvXf8ED2SgVMPhDVVM.jpg",
+          "media_type": "movie",
+          "original_language": "en",
+          "genre_ids": [27, 878],
+          "popularity": 8.4212,
+          "release_date": "1978-09-02",
+          "softcore": false,
+          "video": false,
+          "vote_average": 7.479,
+          "vote_count": 2414
+        },
+        {
+          "adult": false,
+          "backdrop_path": "/oOZtWMhJft0QvPcnJXFgGlt0Jn7.jpg",
+          "id": 11683,
+          "title": "Land of the Dead",
+          "original_title": "Land of the Dead",
+          "overview": "The living dead have taken over the world, and the remaining humans live in a walled city to protect themselves as they cope with the situation.",
+          "poster_path": "/xxp0qcZ3n2YA53SIzWilDSfIaA4.jpg",
+          "media_type": "movie",
+          "original_language": "en",
+          "genre_ids": [27, 878, 53],
+          "popularity": 7.6516,
+          "release_date": "2005-06-18",
+          "softcore": false,
+          "video": false,
+          "vote_average": 6.27,
+          "vote_count": 1917
+        }
+      ]
+    }
+  }
+}

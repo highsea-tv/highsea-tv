@@ -114,6 +114,14 @@ export function createPlayback(
     announce(userId, tmdbId)
   }
 
+  /** Off the person's Continue watching; what they've watched stays (ADR 0054's 2026-11-01 section). */
+  function dismiss(userId: string, tmdbId: number) {
+    watch.dismiss(userId, rowOf(tmdbId).id)
+    announce(userId, tmdbId)
+  }
+
+  const hasPrefs = (userId: string, tmdbId: number) => watch.hasPrefs(userId, rowOf(tmdbId).id)
+
   const prefs = (userId: string, tmdbId: number): PlaybackPrefs =>
     watch.prefs(userId, rowOf(tmdbId).id)
 
@@ -156,7 +164,7 @@ export function createPlayback(
     return row ? (client.items([row], userId)[0] ?? null) : null
   }
 
-  return { source, position, played, unplayed, prefs, setPrefs, next }
+  return { source, position, played, unplayed, dismiss, prefs, hasPrefs, setPrefs, next }
 }
 
 export type Playback = ReturnType<typeof createPlayback>

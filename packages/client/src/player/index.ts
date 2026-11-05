@@ -16,12 +16,16 @@ export const NUDGE_MS = 50
 export const NUDGE_LIMIT_MS = 60_000
 /** ← and → seek this far. */
 export const SEEK_S = 10
+/** Without a pointer, the scrubber's preview shows while scrubbing by key and this long after. */
+export const SCRUB_MS = 1000
 /** The chrome hides after this long without input while playing. */
 export const HIDE_MS = 3000
 /** Next up shows for a film's last this-many seconds, counting down to the next. */
 export const NEXT_UP_S = 10
 /** The position goes to the session this often while playing (and on pause, seek and leaving). */
 export const REPORT_MS = 10_000
+/** The speeds the web and desktop player offer, as YouTube's and Netflix's do (player.md). */
+export const SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 2] as const
 /** A stall shows Buffering only after this long, so a short one never flashes a spinner. */
 export const BUFFERING_DELAY_MS = 1000
 
@@ -204,6 +208,109 @@ export function reportDue(s: PlayerState, now: number) {
   return s.reportedAt === null || now - s.reportedAt >= REPORT_MS
 }
 
+// ---------------------------------------------------------------------------------------------
+// Leaving the player and what plays next (prototype-gaps.md › 1.1, 1.2, 1.4 and 2.5), the same on
+// every app. Each app hands in its own history: the web's `history` with wouter, the native apps'
+// Expo Router.
+
+/** What the player needs of an app's history to leave it. */
+export type PlayerHistory = {
+  /** Whether the player was opened from a page of this app, so Back returns there. */
+  canGoBack(): boolean
+  back(): void
+  /** Puts another page in the player's place in the history. */
+  replace(to: string): void
+}
+
+/**
+ * Leaves the player for the page it was opened from, so Back there doesn't return to the player.
+ * Opened directly, `to` (the title's page) takes the player's place.
+ */
+export const leavePlayer = (h: PlayerHistory, to: string) =>
+  h.canGoBack() ? h.back() : h.replace(to)
+
+/** The next title takes the player's place, so leaving it still goes back where this began. */
+export const playNext = (h: Pick<PlayerHistory, 'replace'>, id: string | number) =>
+  h.replace(`/play/${id}`)
+
+/** What the player knows of an episode, once shows come; films have none. */
+export type EpisodeOf = {
+  show: { id: string | number; title: string }
+  code: string
+  title: string
+}
+
+type Titled = {
+  item: { id: string | number; title: string }
+  episode?: EpisodeOf | null
+}
+
+/** The title's page, where leaving a player opened directly goes: an episode's show. */
+export const titlePage = (d: Titled | undefined, id: string | number) =>
+  d?.episode ? `/shows/${d.episode.show.id}` : `/movies/${id}`
+
+/** The player's title and the line under it: an episode is its show, then "S1, E1 · Pilot". */
+export const titleLines = (d: Titled | undefined) =>
+  d?.episode
+    ? { title: d.episode.show.title, line: `${d.episode.code} · ${d.episode.title}` }
+    : { title: d?.item.title ?? '', line: null }
+
+/** How many of More like this Next up offers when nothing comes next by itself. */
+export const NEXT_CHOICES = 3
+
+/**
+ * Next up (player.md › Next up): the next episode or a collection's next part, which counts down;
+ * otherwise a few choices that play only when picked (prototype-gaps.md answer 4).
+ */
+export type UpNext<Item, Id = string | number, Still extends string | null = string | null> =
+  | {
+      kind: 'episode' | 'part'
+      id: Id
+      title: string
+      /** "S1, E2 · The Long Night", or the collection's name. */
+      line: string
+      still: Still
+      /** The next season's first episode: the card says the season starts. */
+      season: number | null
+    }
+  | { kind: 'choices'; items: Item[] }
+
+/**
+ * A film's Next up: its collection's next part (the server's `items/{type}/{id}/next`), else the
+ * first of More like this, as choices.
+ */
+export function filmUpNext<Item, Id, Still extends string | null>(
+  part: { id: Id; title: string; still: Still } | null,
+  collection: string | null,
+  related: Item[],
+): UpNext<Item, Id, Still> | null {
+  if (part)
+    return {
+      kind: 'part',
+      id: part.id,
+      title: part.title,
+      line: collection ?? '',
+      still: part.still,
+      season: null,
+    }
+  return related.length ? { kind: 'choices', items: related.slice(0, NEXT_CHOICES) } : null
+}
+
+/** Whether Next up counts down to play by itself: choices wait to be picked. */
+export const countsDown = (u: UpNext<unknown, unknown> | null | undefined) =>
+  !!u && u.kind !== 'choices'
+
+/**
+ * What Back does in the player (prototype-gaps.md › 1.2), as the Apple TV app does: it closes an
+ * open panel, hides controls that show while playing, and otherwise leaves. It never wakes the
+ * controls; paused, they always show, so Back leaves at once.
+ */
+export function backStep(s: { panel: boolean; shown: boolean; playing: boolean }) {
+  if (s.panel) return 'close-panel' as const
+  if (s.shown && s.playing) return 'hide' as const
+  return 'leave' as const
+}
+
 /** Seconds to seek to, kept inside the film. */
 export const clampSeek = (s: Pick<PlayerState, 'duration'>, to: number) =>
   Math.max(0, s.duration > 0 ? Math.min(s.duration, to) : to)
@@ -224,6 +331,36 @@ export function cuesAt(cues: Iterable<Cue>, t: number, offsetMs: number): string
   const out: string[] = []
   for (const c of cues) if (c.startTime <= at && at < c.endTime) out.push(c.text)
   return out
+}
+
+const VTT_TIME = /^(?:(\d+):)?(\d{2}):(\d{2})\.(\d{3})/
+
+/**
+ * The cues of a WebVTT file, for players with no `<track>` to read it (the native apps). It
+ * follows the W3C's parser where it matters here (https://www.w3.org/TR/webvtt1/#webvtt-parser-algorithm):
+ * blocks are separated by blank lines, a cue's timing line holds `-->`, after an optional
+ * identifier line, and a cue whose times don't parse is dropped. NOTE, STYLE and REGION blocks
+ * have no `-->`, so they fall away.
+ */
+export function parseCues(text: string): Cue[] {
+  const seconds = (m: RegExpExecArray) =>
+    Number(m[1] ?? 0) * 3600 + Number(m[2]) * 60 + Number(m[3]) + Number(m[4]) / 1000
+  const cues: Cue[] = []
+  for (const block of text.replace(/\r\n?/g, '\n').split(/\n{2,}/)) {
+    const lines = block.split('\n')
+    const at = lines.findIndex((l) => l.includes('-->'))
+    if (at < 0 || at > 1) continue
+    const [from = '', to = ''] = (lines[at] ?? '').split('-->')
+    const start = VTT_TIME.exec(from.trim())
+    const end = VTT_TIME.exec(to.trim())
+    if (!start || !end) continue
+    cues.push({
+      startTime: seconds(start),
+      endTime: seconds(end),
+      text: lines.slice(at + 1).join('\n'),
+    })
+  }
+  return cues
 }
 
 /** WebVTT cue text without its tags (`<i>`, `<c.yellow>`, `<00:01.000>`), as plain lines. */
@@ -273,6 +410,8 @@ export type Base =
   | 'desktop-macos'
   | 'desktop-windows'
   | 'desktop-linux'
+  | 'ios'
+  | 'tvos'
 
 /**
  * The built-in profile a browser starts from, from its user agent. The desktop app names its
@@ -360,6 +499,8 @@ export const playerMessages = defineMessages({
   hintOnTime: 'Subtitles match the audio track’s timing.',
   hintLater: 'Subtitles appear {ms} ms later.',
   hintEarlier: 'Subtitles appear {ms} ms earlier.',
+  speedNormal: 'Normal',
+  speed: '{speed}×',
 })
 
 export function createPlayerText(locale = 'en') {
@@ -371,5 +512,7 @@ export function createPlayerText(locale = 'en') {
     /** Plain words for the nudge's direction. */
     offsetHint: (ms: number) =>
       ms === 0 ? t('hintOnTime') : t(ms > 0 ? 'hintLater' : 'hintEarlier', { ms: Math.abs(ms) }),
+    /** "Normal" at 1, "1.5×" otherwise. */
+    speedLabel: (x: number) => (x === 1 ? t('speedNormal') : t('speed', { speed: x })),
   }
 }

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // End to end: release names through @highsea-tv/parser, then the engine, with the seeded profiles and
-// formats. The names are the prototype's search results (design/prototypes/src/mock/server.ts).
+// formats. The names are the prototype's search results (packages/mock/src/server.ts).
 import { describe, expect, test } from 'bun:test'
 import { parse } from '@highsea-tv/parser'
 import { type DecisionInput, decide } from '../src/decision.ts'

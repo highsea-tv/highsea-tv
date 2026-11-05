@@ -4,6 +4,7 @@
 // with restore, and updates. The one place, with the sidebar's server card, that shows health.
 
 import { bytes, bytesParts, duration, percent, relative } from '@highsea-tv/core/format'
+import type { Backup, HealthCheck, Job, LogEntry, ServerEvent } from '@highsea-tv/mock/types'
 import {
   Badge,
   type BadgeTone,
@@ -29,17 +30,16 @@ import {
   TabsList,
   TabsTrigger,
   toast,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import { useEffect, useState } from 'react'
-import { useLocation } from 'wouter'
-import { GetTheAppsDialog } from '../../client/get-the-apps.tsx'
 import { Soon } from '../../kit/soon.tsx'
 import { useAction, useClient, useNow, useQuery } from '../../mock/hooks.tsx'
-import type { Backup, HealthCheck, Job, LogEntry, ServerEvent } from '../../mock/types.ts'
 import { Loadable } from '../loadable.tsx'
 import { AdminPage, adminHref, useShell } from '../shell.tsx'
+import { useTabAddress } from '../tabs.ts'
+import { GetTheAppsDialog } from './get-the-apps.tsx'
 
-const tabs = [
+export const systemTabs = [
   { id: 'status', label: 'Status' },
   { id: 'health', label: 'Health' },
   { id: 'tasks', label: 'Tasks' },
@@ -49,23 +49,19 @@ const tabs = [
   { id: 'updates', label: 'Updates' },
 ] as const
 
-export type SystemTab = (typeof tabs)[number]['id']
+export type SystemTab = (typeof systemTabs)[number]['id']
 
 export function System({ tab: asked = 'status' }: { tab?: SystemTab }) {
-  const [, navigate] = useLocation()
+  const setTab = useTabAddress<SystemTab>('/system', 'status')
   // backups are the owner's alone; an admin doesn't see the tab (ADR 0032)
   const owner = useShell().role === 'owner'
-  const shown = tabs.filter((t) => owner || t.id !== 'backups')
+  const shown = systemTabs.filter((t) => owner || t.id !== 'backups')
   const tab = shown.some((t) => t.id === asked) ? asked : 'status'
   const health = useQuery('system:health', (c) => c.system.health(), ['health.updated'])
   const problems = (health.data ?? []).filter((h) => h.level === 'warning' || h.level === 'error')
   return (
     <AdminPage title="System" description="What the server is doing, and how it’s holding up.">
-      <Tabs
-        value={tab}
-        onValueChange={(v) => navigate(v === 'status' ? '/system' : `/system/${v}`)}
-        variant="line"
-      >
+      <Tabs value={tab} onValueChange={(v) => setTab(v as SystemTab)} variant="line">
         <TabsList aria-label="System sections">
           {shown.map((t) => (
             <TabsTrigger
@@ -171,7 +167,7 @@ function Status() {
                 </button>
               </div>
               <GetTheAppsDialog
-                server={server.data?.name ?? 'Harbor'}
+                server={server.data?.name ?? 'this server'}
                 address={server.data?.addresses.public ?? server.data?.addresses.local[0] ?? ''}
                 open={apps}
                 onOpenChange={setApps}
@@ -519,6 +515,8 @@ const backupDate = new Intl.DateTimeFormat('en-GB', {
 })
 
 function Backups() {
+  const server = useQuery('server', (c) => c.system.server(), ['server.updated'])
+  const name = server.data?.name ?? 'The server'
   const backups = useQuery('system:backups', (c) => c.system.backups(), ['jobs.updated'])
   const make = useAction((c) => c.system.backupNow())
   const restore = useAction((c, id: string) => c.system.restore(id))
@@ -590,7 +588,7 @@ function Backups() {
             open={!!restoring}
             onOpenChange={(o) => !o && setRestoring(null)}
             title={`Restore the backup from ${restoring ? backupDate.format(new Date(restoring.createdAt)) : ''}?`}
-            description="Harbor restarts on it: settings, users and history go back to that moment, and anything since is lost. Media files aren’t touched. Apps reconnect on their own."
+            description={`${name} restarts on it: settings, users and history go back to that moment, and anything since is lost. Media files aren’t touched. Apps reconnect on their own.`}
             confirmLabel="Restore and restart"
             destructive
             onConfirm={() => {
@@ -599,7 +597,7 @@ function Backups() {
                 restore.run(b.id).then(() =>
                   toast({
                     title: 'Restoring',
-                    description: 'Harbor is restarting. It’s back in about a minute.',
+                    description: `${name} is restarting. It’s back in about a minute.`,
                   }),
                 )
             }}

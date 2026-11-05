@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The Watching guide's screenshots (apps/docs/content/watch/): the web app at /web, signed in as
-// the seed's owner, as any Admin or User sees it.
+// The Watching guide's screenshots (apps/docs/content/watch/): the web app at /web (the one
+// client's web export, apps/client), signed in as the seed's owner, as any Admin or User sees it.
 import type { Area } from '../shot.ts'
 
 export default {
@@ -10,7 +10,7 @@ export default {
       path: '/web/',
       act: async (p) => {
         await p.getByRole('navigation', { name: 'Main' }).first().waitFor()
-        await p.locator('main h2').first().waitFor()
+        await p.getByRole('heading', { level: 2 }).first().waitFor()
       },
     },
     {
@@ -35,8 +35,8 @@ export default {
       act: async (p) => {
         await p.getByRole('button', { name: 'Audio and subtitles' }).click()
         await p
-          .locator('[role=radiogroup][aria-labelledby=p-subs] label')
-          .filter({ hasText: /^English$/ })
+          .getByRole('radiogroup', { name: 'Subtitles' })
+          .getByRole('radio', { name: 'English', exact: true })
           .click()
         await p.getByRole('heading', { name: 'Subtitle timing' }).waitFor()
       },

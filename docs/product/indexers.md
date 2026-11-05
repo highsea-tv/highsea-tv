@@ -19,7 +19,7 @@ Where highsea looks for releases. The page shows whether each indexer is working
 ## Layout
 
 - `PageHeader`: "Indexers"; the description "Catalog 2026.10.14, updated on its own schedule. **What changed**"; **Add indexer** (jumps to the Catalog tab).
-- Tabs (line): **Installed** (count), **Catalog**.
+- Tabs (line): **Installed** (count), **Catalog**, at `/indexers` and `/indexers/catalog`.
 - **Installed:** a `TableFrame`. Columns: indexer (privacy and priority under it), health (badge, with the error and "Trying again in 4m" under it when not healthy), queries 24h, grabs 24h, response time, success rate, an Enabled switch, actions (**Retry now** while backing off; More: **Edit**, Test, Remove). An indexer from `/config/definitions` carries a **Local** badge. One whose new definition version asks for a setting, or whose definition is gone, says so under its health and skips searches until it's fixed.
 - **Catalog:** a search field, a privacy segmented control (All, Public, Semi-private, Private), a language select; then cards in 1, 2 or 3 columns. Each card: name, privacy badge (and **Local** for a definition from `/config/definitions`), description, then language · version · license in mono, and **Add** (public, with nothing to fill in), **Set up** (others, and public ones that need a setting such as an address) or an **Installed** badge.
 - **Private setup** dialog (`md`): one field per setting in the definition, each with its "where to find this" help as the hint; **Test and save**.

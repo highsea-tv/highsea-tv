@@ -18,3 +18,7 @@ highsea.tv is licensed **AGPL-3.0-only**.
 The desktop app brings Rust's crates into the repository ([ADR 0058](0058-desktop-app.md)), and `bun run licenses` reads them too, for every platform, from `cargo metadata --locked`. It now reads SPDX expressions in full ([SPDX annex D](https://spdx.github.io/spdx-spec/v2.3/SPDX-license-expressions/)): brackets, `AND` binding tighter than `OR`, `WITH` (only `LLVM-exception`, which only adds permissions), and Cargo's old `/` as `OR`.
 
 Two licences were reviewed. `Unicode-3.0`, which ICU4X's crates use, is allowed: the FSF lists it as free and GPL-compatible ([its licence list](https://www.gnu.org/licenses/license-list.html#Unicode)). `webpki-root-certs` is `CDLA-Permissive-2.0`, Mozilla's root certificates as data, and is an exception with its reason in `scripts/license-exceptions.json`.
+
+## 2026-10-29: the audit covers CocoaPods' pods (checkpoint 4.5a)
+
+The phone app's native side is CocoaPods' pods, which a prebuild writes into `apps/mobile/ios/`. `bun run licenses` reads each pod named in `Podfile.lock`, and takes its licence from its spec in `Pods/Local Podspecs`, as CocoaPods keeps it ([CocoaPods › license](https://guides.cocoapods.org/syntax/podspec.html#license): a string, or `{ type, file }`). The rules and exceptions are the same as for packages and crates. The iOS project isn't committed, so without a prebuild the audit says it read no pods; CI's `native.yml` runs it after one. On 2026-10-29 the audit read 121 pods, all compatible ([ADR 0059](0059-native-apps.md)).

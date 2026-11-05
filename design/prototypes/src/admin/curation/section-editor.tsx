@@ -1,8 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The featured-section composer (A11, docs/product/curation.md#section-composer): a title, a
-// layout, where its titles come from (picked by hand, or a rule that keeps itself fresh), hero
-// taglines, who sees it and when, beside the live client preview.
+// layout, where its titles come from (films and shows picked by hand, or a rule that keeps itself
+// fresh), hero taglines, who sees it and when, beside the live client preview.
+
+import type { ClientItem, CurationPreview, FeaturedSection } from '@highsea-tv/mock/types'
 import {
+  Badge,
   Button,
   ConfirmDialog,
   Field,
@@ -11,11 +14,10 @@ import {
   Select,
   SortableList,
   toast,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useParams } from 'wouter'
 import { useAction, useNow, useQuery } from '../../mock/hooks.tsx'
-import type { ClientItem, CurationPreview, FeaturedSection, MediaItem } from '../../mock/types.ts'
 import { Loadable } from '../loadable.tsx'
 import { AdminPage, adminHref } from '../shell.tsx'
 import { layoutLabels } from './curation.tsx'
@@ -148,7 +150,7 @@ function Composer({ initial }: { initial: FeaturedSection | null }) {
   }
 
   return (
-    <div className="grid gap-6 expanded:grid-cols-[minmax(22rem,28rem)_minmax(0,1fr)] expanded:items-start">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-6 expanded:grid-cols-[minmax(min(22rem,50%),min(28rem,50%))_minmax(0,1fr)] expanded:items-start">
       <form
         aria-label="Featured section"
         className="grid gap-6"
@@ -221,9 +223,9 @@ function Composer({ initial }: { initial: FeaturedSection | null }) {
           {initial && (
             <Button
               type="button"
-              variant="ghost"
+              variant="danger-ghost"
               icon="delete"
-              className="ms-auto text-danger"
+              className="ms-auto"
               onClick={() => setConfirm(true)}
             >
               Delete
@@ -389,20 +391,41 @@ function Source({
   )
 }
 
-/** Titles picked by hand: search the playable library, then order them. */
+type Choice = { id: string; title: string; year: number; poster: string; show: boolean }
+
+/**
+ * Titles picked by hand: search the playable library, films and shows together, then order them.
+ * A show can play when an episode has a file.
+ */
 function Picker({ ids, onChange }: { ids: string[]; onChange: (ids: string[]) => void }) {
-  const library = useQuery('curation:titles', (c) => c.movies.list())
+  const films = useQuery('curation:titles', (c) => c.movies.list(), ['movies.updated'])
+  const shows = useQuery('curation:shows', (c) => c.shows.list(), ['shows.updated'])
   const [query, setQuery] = useState('')
-  const all = (library.data ?? []).filter((m) => m.versions.some((v) => v.fileId))
+  const all: Choice[] = [
+    ...(films.data ?? [])
+      .filter((m) => m.versions.some((v) => v.fileId))
+      .map((m) => ({ id: m.id, title: m.title, year: m.year, poster: m.art.poster, show: false })),
+    ...(shows.data ?? [])
+      .filter((s) => s.episodes.have > 0)
+      .map((s) => ({ id: s.id, title: s.title, year: s.year, poster: s.art.poster, show: true })),
+  ]
   const byId = (id: string) => all.find((m) => m.id === id)
   const q = query.trim().toLowerCase()
-  const matches: MediaItem[] = q
+  const matches = q
     ? all.filter((m) => !ids.includes(m.id) && m.title.toLowerCase().includes(q)).slice(0, 6)
     : []
   const picked = ids.flatMap((id) => {
     const m = byId(id)
     return m ? [m] : []
   })
+  const name = (m: Choice) => (
+    <span className="flex min-w-0 items-center gap-2 text-text text-ui">
+      <span className="truncate">
+        {m.title} <span className="text-text-3">{m.year}</span>
+      </span>
+      {m.show && <Badge>Show</Badge>}
+    </span>
+  )
   return (
     <div className="grid gap-3">
       {picked.length > 0 && (
@@ -418,14 +441,8 @@ function Picker({ ids, onChange }: { ids: string[]; onChange: (ids: string[]) =>
           {(m, handle) => (
             <>
               {handle}
-              <img
-                src={m.art.poster}
-                alt=""
-                className="aspect-poster w-8 rounded-[4px] object-cover"
-              />
-              <span className="truncate text-text text-ui">
-                {m.title} <span className="text-text-3">{m.year}</span>
-              </span>
+              <img src={m.poster} alt="" className="aspect-poster w-8 rounded-[4px] object-cover" />
+              {name(m)}
               <Button
                 size="sm"
                 variant="ghost"
@@ -438,7 +455,7 @@ function Picker({ ids, onChange }: { ids: string[]; onChange: (ids: string[]) =>
           )}
         </SortableList>
       )}
-      <Field label="Add titles" hint="Only titles people can play show up.">
+      <Field label="Add titles" hint="Films and shows. Only titles people can play show up.">
         <Input
           icon="search"
           value={query}
@@ -461,9 +478,7 @@ function Picker({ ids, onChange }: { ids: string[]; onChange: (ids: string[]) =>
                   }}
                   className="grid w-full cursor-pointer grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-md px-2 py-1.5 text-start text-ui outline-none hover:bg-s2 focus-visible:ring-focus"
                 >
-                  <span className="truncate text-text">
-                    {m.title} <span className="text-text-3">{m.year}</span>
-                  </span>
+                  {name(m)}
                   <span className="text-accent-text text-caption">Add</span>
                 </button>
               </li>

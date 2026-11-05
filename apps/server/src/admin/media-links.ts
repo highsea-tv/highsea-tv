@@ -4,7 +4,7 @@
 // a title's address is its TMDB id, the same whether it's in the library or not (ADR 0014,
 // amended 2026-10-20). Also the library statuses' tones.
 import type { MovieStatus } from '@highsea-tv/api-contract'
-import type { BadgeTone } from '@highsea-tv/ui-web'
+import type { BadgeTone } from '@highsea-tv/ui'
 import type { library } from './library-messages.ts'
 
 export const moviePath = (id: number) => `/movies/${id}`

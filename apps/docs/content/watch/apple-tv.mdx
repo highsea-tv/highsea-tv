@@ -1,0 +1,86 @@
+---
+title: The highsea app for Apple TV
+description: Signing in the Apple TV app with your phone or a password, finding your way with the remote, and watching on it.
+---
+
+{/* SPDX-License-Identifier: AGPL-3.0-only */}
+{/*
+  Sources:
+  - The app: apps/client built for the TV (EXPO_TV=1), its screens in src/app/, with their words in
+    src/messages.ts and each screen folder's messages.ts (shell, connect, forget, home, library,
+    detail, search, tracks, settings, player).
+  - The remote's keys: apps/client/src/back-key.ts and packages/ui/src/native/tv/.
+  - Finding servers: packages/native/ios/HighseaDiscoveryModule.swift and packages/native/src/nearby.ts.
+  - The player: apps/client/src/player/tv.tsx and packages/native/src/playback.ts; the seek and
+    timing steps from packages/client/src/player (SEEK_S, NUDGE_MS).
+*/}
+
+Written for highsea 0.4.0.
+
+The highsea app for Apple TV has Home, the library, search and the player, drawn for a television and moved around with the remote. It finds the highsea servers on your network by itself, and you sign it in with your phone, so nobody types a password with a remote.
+
+## Getting the app
+
+The app isn't on the App Store or TestFlight yet. Everything on this page applies once it's available.
+
+## Signing in
+
+The app looks for highsea servers on your network as it opens. When it finds exactly one, it goes straight to signing in to it. When it finds several, **Servers on this network** lists them; choose yours. A server on another network is added by address from [the highsea app on your phone](/watch/iphone/).
+
+### With your phone
+
+**Sign in with your phone** shows a code and a QR code:
+
+1. Scan the QR code with your phone's camera, or go to the address it shows in a browser on your phone or computer, already signed in to the same server.
+2. Check the code matches, and approve this TV. With the iPhone app you can also use **Sign in a TV**, as [its guide](/watch/iphone/#signing-in-a-tv) says.
+
+The TV says **Approved. Signing in…** and opens Home. A code works for 10 minutes; when one runs out, the TV shows a new one by itself.
+
+### With a password
+
+**Use a password** asks for your highsea username and password, typed on the keys on screen. If your account has two-step verification, it then asks for the 6-digit code from your authenticator app. Two-step verification is set up on the server's sign-in page in a browser, not on the TV.
+
+The TV stays signed in until you sign it out, here or from **Settings › Your devices** on any of your devices.
+
+## Finding your way with the remote
+
+- **The touch surface or the arrows** move between things. The page and its rows scroll to follow.
+- **Select (OK)** opens or chooses what's highlighted.
+- **Back** (the **Menu** or **‹** button) goes back a step. On Home, it leaves highsea.
+- **Play/Pause** plays the highlighted film from wherever you are, or pauses and resumes the one playing.
+- **Home**, **Search**, **Library** and **Settings** stay at the top of every screen but the player. **Up** from the top of a page reaches them.
+
+Each key plays a short sound, which you can turn off or quieten in **Settings › Sounds**.
+
+## Watching
+
+- **Home** shows a film at the top, with **Play** or **Resume** and **Details**; it changes to whichever film you rest on in the first row. **Continue watching**, **Recently added** and the rows the server's owner set up follow below.
+- **Library** lists every film, sorted **A–Z**, **Recently added** or **Newest**, with **Unwatched** to show only what you haven't seen. **Collections** lists the server's collections.
+- **Search** has keys on the left and results on the right, which change as you type. **&123** switches to numbers and symbols.
+- **A film's page** has **Play** or **Resume**, **From the start**, and **Audio and subtitles**, which sets its version, sound and subtitles for all your devices. Hold Select on any of these for **Mark as watched** or **Mark as unwatched**.
+
+### The player
+
+While a film plays, any key shows the controls, and they hide again after a few seconds.
+
+- **Left** and **Right** move back or forward 10 seconds. A preview of that point in the film shows above the bar once highsea has made the film's previews.
+- **Select** or **Play/Pause** pauses and plays.
+- **Down** reaches **Audio and subtitles**. With a subtitle on, **Subtitle timing** moves it by 50 ms at a time when it doesn't match the voices, and the timing is saved for that film.
+- **Back** hides the controls, and with them hidden, leaves the film. highsea remembers where you were, on all your devices.
+
+In a film's last seconds, **Next up** offers the next film in its collection, and starts it when the count reaches zero. **Cancel** lets the film end.
+
+If the server is already making as many films as it's set to, the player says so; try again when one finishes. If the server's owner stops your film from [Now playing](/now-playing/), the player says so too, and **Start again** picks up where you were.
+
+## Settings
+
+- **Theme** sets how the app looks, with a preview of each theme's colours. **Use on all my devices** makes it your theme everywhere.
+- **Sounds** turns the remote's sounds on or off and sets their volume.
+- **Home screen** shows, hides and reorders the rows on Home, on every device.
+- **Servers** says which server and account this TV uses, with **Another server** and **Sign out**.
+- **Your devices** lists where you're signed in, and signs any of them out.
+- **About** has the app's and the server's versions.
+
+## When highsea can't reach your server
+
+The app says **Can’t reach** and your server's name. **Try again** looks once more, **Another server** goes back to the list, and **Forget this server** signs this TV out of it and stops listing it.

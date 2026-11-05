@@ -1,0 +1,1727 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "https://api.themoviedb.org/3/movie/4808?append_to_response=credits%2Cvideos%2Crelease_dates%2Cexternal_ids%2Crecommendations%2Ckeywords&language=en-US",
+    "credential": "valid"
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json;charset=utf-8"
+    },
+    "body": {
+      "adult": false,
+      "backdrop_path": "/1Q1yTxHjadsLMf7yy9xABUH6zaT.jpg",
+      "belongs_to_collection": null,
+      "budget": 4000000,
+      "genres": [
+        {
+          "id": 35,
+          "name": "Comedy"
+        },
+        {
+          "id": 9648,
+          "name": "Mystery"
+        },
+        {
+          "id": 10749,
+          "name": "Romance"
+        }
+      ],
+      "homepage": "",
+      "id": 4808,
+      "imdb_id": "tt0056923",
+      "origin_country": ["US"],
+      "original_language": "en",
+      "original_title": "Charade",
+      "overview": "After Regina Lampert falls for the dashing Peter Joshua on a skiing holiday in the French Alps, she discovers upon her return to Paris that her husband has been murdered. Soon, she and Peter are giving chase to three of her late husband's World War II cronies, Tex, Scobie and Gideon, who are after a quarter of a million dollars the quartet stole while behind enemy lines.",
+      "popularity": 6.1069,
+      "poster_path": "/qqaPjC5FQidtKY65jbAKZPiOTaS.jpg",
+      "production_companies": [
+        {
+          "id": 11404,
+          "logo_path": null,
+          "name": "Stanley Donen Films",
+          "origin_country": "GB"
+        },
+        {
+          "id": 33,
+          "logo_path": "/8lvHyhjr8oUKOOy2dKXoALWKdp0.png",
+          "name": "Universal Pictures",
+          "origin_country": "US"
+        }
+      ],
+      "production_countries": [
+        {
+          "iso_3166_1": "US",
+          "name": "United States of America"
+        }
+      ],
+      "release_date": "1963-12-01",
+      "revenue": 13475000,
+      "runtime": 113,
+      "softcore": false,
+      "spoken_languages": [
+        {
+          "english_name": "English",
+          "iso_639_1": "en",
+          "name": "English"
+        },
+        {
+          "english_name": "French",
+          "iso_639_1": "fr",
+          "name": "Français"
+        },
+        {
+          "english_name": "German",
+          "iso_639_1": "de",
+          "name": "Deutsch"
+        },
+        {
+          "english_name": "Italian",
+          "iso_639_1": "it",
+          "name": "Italiano"
+        }
+      ],
+      "status": "Released",
+      "tagline": "Is anyone really who they seem to be?",
+      "title": "Charade",
+      "video": false,
+      "vote_average": 7.66,
+      "vote_count": 1625,
+      "credits": {
+        "cast": [
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 2638,
+            "known_for_department": "Acting",
+            "name": "Cary Grant",
+            "original_name": "Cary Grant",
+            "popularity": 1.6473,
+            "profile_path": "/lcNAirMFcyM7WIiCmaabjbNZVOJ.jpg",
+            "cast_id": 9,
+            "character": "Peter Joshua",
+            "credit_id": "52fe43dbc3a36847f80745c9",
+            "order": 0
+          },
+          {
+            "adult": false,
+            "gender": 1,
+            "id": 1932,
+            "known_for_department": "Acting",
+            "name": "Audrey Hepburn",
+            "original_name": "Audrey Hepburn",
+            "popularity": 2.5004,
+            "profile_path": "/wg3RRHA5jV755dV0ksQ9g0Nc2xE.jpg",
+            "cast_id": 10,
+            "character": "Regina Lampert",
+            "credit_id": "52fe43dbc3a36847f80745cd",
+            "order": 1
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 6837,
+            "known_for_department": "Acting",
+            "name": "Walter Matthau",
+            "original_name": "Walter Matthau",
+            "popularity": 1.4132,
+            "profile_path": "/pm1YEQPlsNcHQHZJBgcXvu4U4vg.jpg",
+            "cast_id": 11,
+            "character": "Hamilton Bartholemew",
+            "credit_id": "52fe43dbc3a36847f80745d1",
+            "order": 2
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 5563,
+            "known_for_department": "Acting",
+            "name": "James Coburn",
+            "original_name": "James Coburn",
+            "popularity": 3.7434,
+            "profile_path": "/9GApjInyrVvjnTAr652C1aViPqZ.jpg",
+            "cast_id": 12,
+            "character": "Tex Panthollow",
+            "credit_id": "52fe43dbc3a36847f80745d5",
+            "order": 3
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 12950,
+            "known_for_department": "Acting",
+            "name": "George Kennedy",
+            "original_name": "George Kennedy",
+            "popularity": 1.3435,
+            "profile_path": "/fIVmcPEcPmh0Rbx4mYf9aneCmDe.jpg",
+            "cast_id": 13,
+            "character": "Herman Scobie",
+            "credit_id": "52fe43dbc3a36847f80745d9",
+            "order": 4
+          },
+          {
+            "adult": false,
+            "gender": 1,
+            "id": 41714,
+            "known_for_department": "Acting",
+            "name": "Dominique Minot",
+            "original_name": "Dominique Minot",
+            "popularity": 0.3215,
+            "profile_path": "/hqcFGt26XKYSvLN1PaijXZD75u4.jpg",
+            "cast_id": 14,
+            "character": "Sylvie Gaudel",
+            "credit_id": "52fe43dbc3a36847f80745dd",
+            "order": 5
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 18870,
+            "known_for_department": "Acting",
+            "name": "Ned Glass",
+            "original_name": "Ned Glass",
+            "popularity": 0.8218,
+            "profile_path": "/8Nq6Ma9r2L4kys0NrJirnEcrbvW.jpg",
+            "cast_id": 15,
+            "character": "Leopold Gideon",
+            "credit_id": "52fe43dbc3a36847f80745e1",
+            "order": 6
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 26890,
+            "known_for_department": "Acting",
+            "name": "Jacques Marin",
+            "original_name": "Jacques Marin",
+            "popularity": 0.6708,
+            "profile_path": "/jEu3VtkwfYV0JLAb80kTusABhIF.jpg",
+            "cast_id": 16,
+            "character": "Edouard Grandpierre",
+            "credit_id": "52fe43dbc3a36847f80745e5",
+            "order": 7
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 41716,
+            "known_for_department": "Acting",
+            "name": "Paul Bonifas",
+            "original_name": "Paul Bonifas",
+            "popularity": 0.905,
+            "profile_path": "/5f64JtplnHJDWpSMEP1EjKjkbDc.jpg",
+            "cast_id": 17,
+            "character": "Mr. Felix",
+            "credit_id": "52fe43dbc3a36847f80745e9",
+            "order": 8
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 41717,
+            "known_for_department": "Acting",
+            "name": "Thomas Chelimsky",
+            "original_name": "Thomas Chelimsky",
+            "popularity": 0.2746,
+            "profile_path": null,
+            "cast_id": 18,
+            "character": "Jean-Louis Gaudel",
+            "credit_id": "52fe43dbc3a36847f80745ed",
+            "order": 9
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 580699,
+            "known_for_department": "Acting",
+            "name": "Marc Arian",
+            "original_name": "Marc Arian",
+            "popularity": 0.4372,
+            "profile_path": "/stEJEk2sARwb4hlE8acJccqctQb.jpg",
+            "cast_id": 24,
+            "character": "Subway Passenger (uncredited)",
+            "credit_id": "55e0fea09251416bff0003e8",
+            "order": 10
+          },
+          {
+            "adult": false,
+            "gender": 1,
+            "id": 37119,
+            "known_for_department": "Acting",
+            "name": "Claudine Berg",
+            "original_name": "Claudine Berg",
+            "popularity": 0.4364,
+            "profile_path": null,
+            "cast_id": 25,
+            "character": "Maid (uncredited)",
+            "credit_id": "55e0fec19251416bfa0003f7",
+            "order": 11
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 579437,
+            "known_for_department": "Acting",
+            "name": "Marcel Bernier",
+            "original_name": "Marcel Bernier",
+            "popularity": 0.7624,
+            "profile_path": "/doPfKEWweUo2EJoHR6qje5gQhf5.jpg",
+            "cast_id": 26,
+            "character": "Taxi Driver (uncredited)",
+            "credit_id": "55e0ff709251416c0900046c",
+            "order": 12
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 1100817,
+            "known_for_department": "Acting",
+            "name": "Albert Daumergue",
+            "original_name": "Albert Daumergue",
+            "popularity": 0.3236,
+            "profile_path": null,
+            "cast_id": 27,
+            "character": "Man in Stamp Market (uncredited)",
+            "credit_id": "55e0ffa8c3a3682cb20003e3",
+            "order": 13
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 38172,
+            "known_for_department": "Acting",
+            "name": "Raoul Delfosse",
+            "original_name": "Raoul Delfosse",
+            "popularity": 0.4547,
+            "profile_path": "/7flMF4x36ceEa1AGVLvLjgoGVxz.jpg",
+            "cast_id": 28,
+            "character": "Taxi Driver (uncredited)",
+            "credit_id": "55e0ffccc3a3682cb0000464",
+            "order": 14
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 13284,
+            "known_for_department": "Directing",
+            "name": "Stanley Donen",
+            "original_name": "Stanley Donen",
+            "popularity": 1.1792,
+            "profile_path": "/7AKYfZe60bW2ZVuLB0IBHtqk9TJ.jpg",
+            "cast_id": 29,
+            "character": "Man in Elevator (voice) (uncredited)",
+            "credit_id": "55e100029251416bf7000445",
+            "order": 15
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 1326575,
+            "known_for_department": "Acting",
+            "name": "Jean Gold",
+            "original_name": "Jean Gold",
+            "popularity": 0.4039,
+            "profile_path": null,
+            "cast_id": 30,
+            "character": "Writer On Cafe Terrace (uncredited)",
+            "credit_id": "55e100879251416bfa000462",
+            "order": 16
+          },
+          {
+            "adult": false,
+            "gender": 1,
+            "id": 24801,
+            "known_for_department": "Acting",
+            "name": "Chantal Goya",
+            "original_name": "Chantal Goya",
+            "popularity": 0.6524,
+            "profile_path": "/oBxDt0Y1bOhmQLE3PqOvuRW11UP.jpg",
+            "cast_id": 31,
+            "character": "(uncredited)",
+            "credit_id": "55e100b49251416bf700046c",
+            "order": 17
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 32162,
+            "known_for_department": "Acting",
+            "name": "Clément Harari",
+            "original_name": "Clément Harari",
+            "popularity": 0.7755,
+            "profile_path": "/ntzRkm93e586RTnDC5iJT7OwEd3.jpg",
+            "cast_id": 32,
+            "character": "German Tourist (uncredited)",
+            "credit_id": "55e100d4c3a3682cb40004d6",
+            "order": 18
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 44823,
+            "known_for_department": "Acting",
+            "name": "Monte Landis",
+            "original_name": "Monte Landis",
+            "popularity": 0.9657,
+            "profile_path": "/lTsPA1axwQIXgyGgU4nYfW9riKb.jpg",
+            "cast_id": 33,
+            "character": "Master of Ceremonies at Club (uncredited)",
+            "credit_id": "55e100f99251416bfc000489",
+            "order": 19
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 25976,
+            "known_for_department": "Acting",
+            "name": "Bernard Musson",
+            "original_name": "Bernard Musson",
+            "popularity": 1.2875,
+            "profile_path": "/zbgaGfQbcIi7iUy3PhIBa0WB2kY.jpg",
+            "cast_id": 34,
+            "character": "Hotel Receptionnist (uncredited)",
+            "credit_id": "55e101169251416c03000479",
+            "order": 20
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 251135,
+            "known_for_department": "Acting",
+            "name": "Antonio Passalia",
+            "original_name": "Antonio Passalia",
+            "popularity": 0.5945,
+            "profile_path": "/d9nFv77SX0KV5GTK0CD57KfuBC4.jpg",
+            "cast_id": 35,
+            "character": "Italian Representative at URESCO (uncredited)",
+            "credit_id": "55e10142c3a3682cc300043b",
+            "order": 21
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 580200,
+            "known_for_department": "Acting",
+            "name": "Jacques Préboist",
+            "original_name": "Jacques Préboist",
+            "popularity": 0.3711,
+            "profile_path": "/5zywZFpfhqoY33DFF2OiE3kbDMO.jpg",
+            "cast_id": 36,
+            "character": "Ice Cream Salesman (uncredited)",
+            "credit_id": "55e101669251416c0b00050b",
+            "order": 22
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 41712,
+            "known_for_department": "Writing",
+            "name": "Peter Stone",
+            "original_name": "Peter Stone",
+            "popularity": 0.5848,
+            "profile_path": "/vr7a1t0Sj2C11l2U0B2xcnvvjhK.jpg",
+            "cast_id": 37,
+            "character": "Man in Elevator / Marine (voice) (uncredited)",
+            "credit_id": "55e1018cc3a3682cc80004c3",
+            "order": 23
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 1326565,
+            "known_for_department": "Acting",
+            "name": "Michel Thomass",
+            "original_name": "Michel Thomass",
+            "popularity": 0.589,
+            "profile_path": "/xDPJKwzqhQ4JKgE96UhWhYgChTM.jpg",
+            "cast_id": 38,
+            "character": "Embassy Driver (uncredited)",
+            "credit_id": "55e101d8c3a3682cbc0004ce",
+            "order": 24
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 3523,
+            "known_for_department": "Acting",
+            "name": "Roger Trapp",
+            "original_name": "Roger Trapp",
+            "popularity": 0.7574,
+            "profile_path": "/ueUk6K1GwNmTf2L6FqvpPVNfYxr.jpg",
+            "cast_id": 39,
+            "character": "Mortuary Employee (uncredited)",
+            "credit_id": "55e1026c9251416bf70004d4",
+            "order": 25
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 144970,
+            "known_for_department": "Acting",
+            "name": "Louis Viret",
+            "original_name": "Louis Viret",
+            "popularity": 0.3902,
+            "profile_path": "/nc63Dv38s8kGPf7GOfohwt5WPxw.jpg",
+            "cast_id": 40,
+            "character": "Hallmark Employee On Subway (uncredited)",
+            "credit_id": "55e1028fc3a3682cb0000502",
+            "order": 26
+          }
+        ],
+        "crew": [
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 41011,
+            "known_for_department": "Art",
+            "name": "Jean d'Eaubonne",
+            "original_name": "Jean d'Eaubonne",
+            "popularity": 0.443,
+            "profile_path": null,
+            "credit_id": "52fe43dbc3a36847f80745c5",
+            "department": "Art",
+            "job": "Art Direction"
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 41712,
+            "known_for_department": "Writing",
+            "name": "Peter Stone",
+            "original_name": "Peter Stone",
+            "popularity": 0.5848,
+            "profile_path": "/vr7a1t0Sj2C11l2U0B2xcnvvjhK.jpg",
+            "credit_id": "52fe43dbc3a36847f80745f9",
+            "department": "Writing",
+            "job": "Story"
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 29496,
+            "known_for_department": "Writing",
+            "name": "Marc Behm",
+            "original_name": "Marc Behm",
+            "popularity": 1.0369,
+            "profile_path": "/n4uWhHn2RopkAuBJOqTvn6nN2ut.jpg",
+            "credit_id": "52fe43dbc3a36847f80745ff",
+            "department": "Writing",
+            "job": "Story"
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 41712,
+            "known_for_department": "Writing",
+            "name": "Peter Stone",
+            "original_name": "Peter Stone",
+            "popularity": 0.5848,
+            "profile_path": "/vr7a1t0Sj2C11l2U0B2xcnvvjhK.jpg",
+            "credit_id": "52fe43dbc3a36847f80745a7",
+            "department": "Writing",
+            "job": "Screenplay"
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 13284,
+            "known_for_department": "Directing",
+            "name": "Stanley Donen",
+            "original_name": "Stanley Donen",
+            "popularity": 1.1792,
+            "profile_path": "/7AKYfZe60bW2ZVuLB0IBHtqk9TJ.jpg",
+            "credit_id": "52fe43dbc3a36847f80745ad",
+            "department": "Production",
+            "job": "Producer"
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 8970,
+            "known_for_department": "Editing",
+            "name": "Jim Clark",
+            "original_name": "Jim Clark",
+            "popularity": 0.7029,
+            "profile_path": "/sQ6hauV0xjvIOwMebG2tM9DJ6RF.jpg",
+            "credit_id": "52fe43dbc3a36847f80745bf",
+            "department": "Editing",
+            "job": "Editor"
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 13284,
+            "known_for_department": "Directing",
+            "name": "Stanley Donen",
+            "original_name": "Stanley Donen",
+            "popularity": 1.1792,
+            "profile_path": "/7AKYfZe60bW2ZVuLB0IBHtqk9TJ.jpg",
+            "credit_id": "52fe43dbc3a36847f80745a1",
+            "department": "Directing",
+            "job": "Director"
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 1938,
+            "known_for_department": "Sound",
+            "name": "Henry Mancini",
+            "original_name": "Henry Mancini",
+            "popularity": 1.2758,
+            "profile_path": "/sXl1lCYNnSf10ESG1nyCEDYGs1L.jpg",
+            "credit_id": "52fe43dbc3a36847f80745b3",
+            "department": "Sound",
+            "job": "Original Music Composer"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 41713,
+            "known_for_department": "Production",
+            "name": "Marc Maurette",
+            "original_name": "Marc Maurette",
+            "popularity": 0.5255,
+            "profile_path": null,
+            "credit_id": "52fe43dbc3a36847f80745f3",
+            "department": "Crew",
+            "job": "Second Unit"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 1045774,
+            "known_for_department": "Costume & Make-Up",
+            "name": "Hubert de Givenchy",
+            "original_name": "Hubert de Givenchy",
+            "popularity": 0.4617,
+            "profile_path": null,
+            "credit_id": "52fe43dbc3a36847f807460b",
+            "department": "Costume & Make-Up",
+            "job": "Costume Design"
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 3148,
+            "known_for_department": "Camera",
+            "name": "Charles Lang",
+            "original_name": "Charles Lang",
+            "popularity": 0.847,
+            "profile_path": "/gSPlvM65CY8WITIugbO2PyKMDaU.jpg",
+            "credit_id": "52fe43dbc3a36847f80745b9",
+            "department": "Camera",
+            "job": "Director of Photography"
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 89539,
+            "known_for_department": "Costume & Make-Up",
+            "name": "John O'Gorman",
+            "original_name": "John O'Gorman",
+            "popularity": 0.476,
+            "profile_path": null,
+            "credit_id": "56d8756dc3a3682cef00eb93",
+            "department": "Costume & Make-Up",
+            "job": "Makeup Artist"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 73259,
+            "known_for_department": "Production",
+            "name": "Edward Muhl",
+            "original_name": "Edward Muhl",
+            "popularity": 0.4399,
+            "profile_path": null,
+            "credit_id": "56d875acc3a3681e440225ee",
+            "department": "Production",
+            "job": "Executive In Charge Of Production"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 32123,
+            "known_for_department": "Editing",
+            "name": "Allan Morrison",
+            "original_name": "Allan Morrison",
+            "popularity": 0.5752,
+            "profile_path": null,
+            "credit_id": "56d878319251414291007632",
+            "department": "Sound",
+            "job": "Sound Editor"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 25806,
+            "known_for_department": "Costume & Make-Up",
+            "name": "Alberto De Rossi",
+            "original_name": "Alberto De Rossi",
+            "popularity": 0.5431,
+            "profile_path": null,
+            "credit_id": "56d87533c3a36870ac00cf42",
+            "department": "Costume & Make-Up",
+            "job": "Makeup Artist"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 13323,
+            "known_for_department": "Sound",
+            "name": "Bob Jones",
+            "original_name": "Bob Jones",
+            "popularity": 0.4286,
+            "profile_path": null,
+            "credit_id": "56d8770f9251412e28002481",
+            "department": "Sound",
+            "job": "Sound Mixer"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 41713,
+            "known_for_department": "Production",
+            "name": "Marc Maurette",
+            "original_name": "Marc Maurette",
+            "popularity": 0.5255,
+            "profile_path": null,
+            "credit_id": "56d876649251414291007601",
+            "department": "Directing",
+            "job": "Assistant Director"
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 1317194,
+            "known_for_department": "Sound",
+            "name": "Jacques Carrère",
+            "original_name": "Jacques Carrère",
+            "popularity": 0.382,
+            "profile_path": null,
+            "credit_id": "56d876e59251416ff200402d",
+            "department": "Sound",
+            "job": "Sound Mixer"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 38646,
+            "known_for_department": "Sound",
+            "name": "Douglas Gamley",
+            "original_name": "Douglas Gamley",
+            "popularity": 0.4056,
+            "profile_path": null,
+            "credit_id": "56d87bcfc3a3682cef00ec5f",
+            "department": "Sound",
+            "job": "Orchestrator"
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 161961,
+            "known_for_department": "Crew",
+            "name": "Paul Stader",
+            "original_name": "Paul Stader",
+            "popularity": 0.5115,
+            "profile_path": null,
+            "credit_id": "56d878dc92514162b7008088",
+            "department": "Crew",
+            "job": "Stunts"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 14236,
+            "known_for_department": "Art",
+            "name": "Auguste Capelier",
+            "original_name": "Auguste Capelier",
+            "popularity": 0.3564,
+            "profile_path": null,
+            "credit_id": "56d876aec3a3681e4a01ee35",
+            "department": "Art",
+            "job": "Assistant Art Director"
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 26186,
+            "known_for_department": "Camera",
+            "name": "Vincent Rossell",
+            "original_name": "Vincent Rossell",
+            "popularity": 0.4034,
+            "profile_path": "/xHd3dSA4eEZD9EPZtgHaB154KK8.jpg",
+            "credit_id": "56d87967c3a3681e3901f6dd",
+            "department": "Camera",
+            "job": "Still Photographer"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 936831,
+            "known_for_department": "Camera",
+            "name": "Henri Persin",
+            "original_name": "Henri Persin",
+            "popularity": 0.3342,
+            "profile_path": null,
+            "credit_id": "56d87916925141340201c195",
+            "department": "Crew",
+            "job": "Second Unit Cinematographer"
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 1311099,
+            "known_for_department": "Camera",
+            "name": "Henri Tiquet",
+            "original_name": "Henri Tiquet",
+            "popularity": 0.3348,
+            "profile_path": null,
+            "credit_id": "56d87935c3a36870ac00cfc7",
+            "department": "Camera",
+            "job": "Camera Operator"
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 1532767,
+            "known_for_department": "Crew",
+            "name": "Garth Inns",
+            "original_name": "Garth Inns",
+            "popularity": 0.3656,
+            "profile_path": null,
+            "credit_id": "56d878b9c3a3681e3601f4ab",
+            "department": "Crew",
+            "job": "Special Effects"
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 3892,
+            "known_for_department": "Acting",
+            "name": "Johnny Mercer",
+            "original_name": "Johnny Mercer",
+            "popularity": 0.679,
+            "profile_path": "/fe7QwANelGt0M1PLKj9qTJF9FZu.jpg",
+            "credit_id": "5ac23802c3a3682d3501df41",
+            "department": "Sound",
+            "job": "Songs"
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 1348145,
+            "known_for_department": "Art",
+            "name": "Maurice Binder",
+            "original_name": "Maurice Binder",
+            "popularity": 0.7552,
+            "profile_path": "/tLZ4mMzNIjcJSaUUCAMh1Zacc1X.jpg",
+            "credit_id": "5ac23912c3a3682d660215f2",
+            "department": "Art",
+            "job": "Title Designer"
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 1938,
+            "known_for_department": "Sound",
+            "name": "Henry Mancini",
+            "original_name": "Henry Mancini",
+            "popularity": 1.2758,
+            "profile_path": "/sXl1lCYNnSf10ESG1nyCEDYGs1L.jpg",
+            "credit_id": "5ac23814c3a3682d3301c511",
+            "department": "Sound",
+            "job": "Songs"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 74695,
+            "known_for_department": "Production",
+            "name": "James H. Ware",
+            "original_name": "James H. Ware",
+            "popularity": 0.7179,
+            "profile_path": null,
+            "credit_id": "5ac239b10e0a260c3901f45f",
+            "department": "Production",
+            "job": "Associate Producer"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 2013626,
+            "known_for_department": "Visual Effects",
+            "name": "Robert Ellis",
+            "original_name": "Robert Ellis",
+            "popularity": 0.353,
+            "profile_path": "/eh0JsnWDf1sY358p7AdeHCO2McE.jpg",
+            "credit_id": "5ac2397492514126b001c90e",
+            "department": "Visual Effects",
+            "job": "Animation"
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 1632957,
+            "known_for_department": "Production",
+            "name": "Léopold Schlosberg",
+            "original_name": "Léopold Schlosberg",
+            "popularity": 0.2837,
+            "profile_path": null,
+            "credit_id": "5ac2386d0e0a264a4e062205",
+            "department": "Production",
+            "job": "Production Manager"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 1986226,
+            "known_for_department": "Production",
+            "name": "Arthur Carroll",
+            "original_name": "Arthur Carroll",
+            "popularity": 0.2725,
+            "profile_path": null,
+            "credit_id": "5ac238cb0e0a260c4d01f2c5",
+            "department": "Production",
+            "job": "Production Director"
+          }
+        ]
+      },
+      "videos": {
+        "results": [
+          {
+            "iso_639_1": "en",
+            "iso_3166_1": "US",
+            "name": "The Opening Scene",
+            "key": "1IaUdCwtKzg",
+            "site": "YouTube",
+            "size": 1080,
+            "type": "Clip",
+            "official": true,
+            "id": "6a20758a94565f21161fa718",
+            "published_at": "2026-06-03T18:00:22.000Z"
+          },
+          {
+            "iso_639_1": "en",
+            "iso_3166_1": "US",
+            "name": "Trailer",
+            "key": "OpuGXAlvDZs",
+            "site": "YouTube",
+            "size": 1080,
+            "type": "Trailer",
+            "official": true,
+            "id": "6936e3bfd17b46e00e48f357",
+            "published_at": "2025-05-19T17:39:14.000Z"
+          },
+          {
+            "iso_639_1": "en",
+            "iso_3166_1": "US",
+            "name": "Charade (1963) Trailer",
+            "key": "ruwaGhI49kQ",
+            "site": "YouTube",
+            "size": 480,
+            "type": "Teaser",
+            "official": false,
+            "id": "58b7a616c3a36835a300153b",
+            "published_at": "2015-08-10T23:08:18.000Z"
+          },
+          {
+            "iso_639_1": "en",
+            "iso_3166_1": "US",
+            "name": "Larry Cohen on CHARADE",
+            "key": "df2zfLNhg40",
+            "site": "YouTube",
+            "size": 1080,
+            "type": "Featurette",
+            "official": false,
+            "id": "533ec65fc3a3685448000f42",
+            "published_at": "2013-10-10T22:12:17.000Z"
+          },
+          {
+            "iso_639_1": "en",
+            "iso_3166_1": "US",
+            "name": "CHARADE - by Stanley Donen",
+            "key": "L8dnaIRz0mE",
+            "site": "YouTube",
+            "size": 1080,
+            "type": "Trailer",
+            "official": false,
+            "id": "62752184c04429380a130775",
+            "published_at": "2012-04-13T15:07:35.000Z"
+          },
+          {
+            "iso_639_1": "en",
+            "iso_3166_1": "US",
+            "name": "Charade (1963) Official Trailer - Cary Grant, Audrey Hepburn Movie HD",
+            "key": "C6T2Q4XO7uA",
+            "site": "YouTube",
+            "size": 360,
+            "type": "Trailer",
+            "official": false,
+            "id": "58f1ee6dc3a3682ece0062bd",
+            "published_at": "2012-01-10T07:13:38.000Z"
+          }
+        ]
+      },
+      "release_dates": {
+        "results": [
+          {
+            "iso_3166_1": "AT",
+            "release_dates": [
+              {
+                "certification": "12",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "1963-12-01T00:00:00.000Z",
+                "type": 3
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "AU",
+            "release_dates": [
+              {
+                "certification": "PG",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "VHS",
+                "release_date": "1990-01-01T00:00:00.000Z",
+                "type": 5
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "BE",
+            "release_dates": [
+              {
+                "certification": "14",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "1963-12-01T00:00:00.000Z",
+                "type": 3
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "BR",
+            "release_dates": [
+              {
+                "certification": "12",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "2005-12-08T00:00:00.000Z",
+                "type": 5
+              },
+              {
+                "certification": "14",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "1999-10-26T00:00:00.000Z",
+                "type": 6
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "DE",
+            "release_dates": [
+              {
+                "certification": "12",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "1963-12-12T00:00:00.000Z",
+                "type": 3
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "DK",
+            "release_dates": [
+              {
+                "certification": "11",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "1963-12-01T00:00:00.000Z",
+                "type": 6
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "ES",
+            "release_dates": [
+              {
+                "certification": "APTA",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "1963-12-23T00:00:00.000Z",
+                "type": 3
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "FI",
+            "release_dates": [
+              {
+                "certification": "K-12",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "1963-12-01T00:00:00.000Z",
+                "type": 6
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "FR",
+            "release_dates": [
+              {
+                "certification": "",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "1964-01-08T00:00:00.000Z",
+                "type": 3
+              },
+              {
+                "certification": "TP",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "re-release",
+                "release_date": "2021-07-07T00:00:00.000Z",
+                "type": 3
+              },
+              {
+                "certification": "",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "Prime Video",
+                "release_date": "2021-02-25T00:00:00.000Z",
+                "type": 4
+              },
+              {
+                "certification": "",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "2020-05-10T00:00:00.000Z",
+                "type": 4
+              },
+              {
+                "certification": "12",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "DVD",
+                "release_date": "2004-08-26T00:00:00.000Z",
+                "type": 5
+              },
+              {
+                "certification": "",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "Blu-ray",
+                "release_date": "2014-10-12T00:00:00.000Z",
+                "type": 5
+              },
+              {
+                "certification": "",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "France 5",
+                "release_date": "2025-10-17T00:00:00.000Z",
+                "type": 6
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "GB",
+            "release_dates": [
+              {
+                "certification": "PG",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "1963-12-05T00:00:00.000Z",
+                "type": 3
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "IE",
+            "release_dates": [
+              {
+                "certification": "PG",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "1963-12-05T00:00:00.000Z",
+                "type": 3
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "JP",
+            "release_dates": [
+              {
+                "certification": "R18+",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "1963-12-21T00:00:00.000Z",
+                "type": 3
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "KR",
+            "release_dates": [
+              {
+                "certification": "19",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "1992-01-21T00:00:00.000Z",
+                "type": 5
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "MX",
+            "release_dates": [
+              {
+                "certification": "B",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "1963-12-01T00:00:00.000Z",
+                "type": 2
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "NL",
+            "release_dates": [
+              {
+                "certification": "6",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "DVD",
+                "release_date": "2004-01-01T00:00:00.000Z",
+                "type": 5
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "NO",
+            "release_dates": [
+              {
+                "certification": "12",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "1963-12-01T00:00:00.000Z",
+                "type": 3
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "PH",
+            "release_dates": [
+              {
+                "certification": "",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "ABS-CBN",
+                "release_date": "1990-02-11T00:00:00.000Z",
+                "type": 6
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "SE",
+            "release_dates": [
+              {
+                "certification": "15",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "1963-12-01T00:00:00.000Z",
+                "type": 3
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "US",
+            "release_dates": [
+              {
+                "certification": "NR",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "1963-12-05T00:00:00.000Z",
+                "type": 3
+              }
+            ]
+          }
+        ]
+      },
+      "external_ids": {
+        "imdb_id": "tt0056923",
+        "wikidata_id": "Q496266",
+        "facebook_id": null,
+        "instagram_id": null,
+        "twitter_id": null
+      },
+      "recommendations": {
+        "page": 1,
+        "results": [
+          {
+            "adult": false,
+            "backdrop_path": "/AwB7HGeDTrBGkP2WEnNwg8Wa0E4.jpg",
+            "id": 638974,
+            "title": "Murder Mystery 2",
+            "original_title": "Murder Mystery 2",
+            "overview": "After starting their own detective agency, Nick and Audrey Spitz land a career-making case when their billionaire pal is kidnapped from his wedding.",
+            "poster_path": "/s1VzVhXlqsevi8zeCMG9A16nEUf.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [35, 9648, 80, 28, 12],
+            "popularity": 7.7648,
+            "release_date": "2023-03-28",
+            "softcore": false,
+            "video": false,
+            "vote_average": 6.35,
+            "vote_count": 2075
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/bOKIpYOm5WSeMCI6nGHWbEavCER.jpg",
+            "id": 4706,
+            "title": "The Lady Vanishes",
+            "original_title": "The Lady Vanishes",
+            "overview": "On the eve of World War II, zany heiress Amanda Kelly travels by train to Switzerland. While passing through Germany, she meets a sweet elderly lady, who suddenly vanishes. Distraught, she questions her fellow passengers who claim that the woman was never there. Unsure if it's all in her mind or if there's a more sinister plot afoot, Amanda teams up with photographer Robert Condon to discover the truth.",
+            "poster_path": "/xw0GhX9M3zjbFd7OeYdNHrmZSiH.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [9648, 53, 35, 10749],
+            "popularity": 2.9582,
+            "release_date": "1979-04-30",
+            "softcore": false,
+            "video": false,
+            "vote_average": 6,
+            "vote_count": 72
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/4KN06gns94rQFoYQWDGunK7Cob4.jpg",
+            "id": 744653,
+            "title": "The Thursday Murder Club",
+            "original_title": "The Thursday Murder Club",
+            "overview": "A group of senior sleuths passionate about solving cold cases get plunged into a real-life murder mystery in this comic crime caper.",
+            "poster_path": "/jbnazCHr8S2l2glyvjPTpa4NbEw.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [35, 9648, 80],
+            "popularity": 8.8063,
+            "release_date": "2025-08-22",
+            "softcore": false,
+            "video": false,
+            "vote_average": 6.582,
+            "vote_count": 1187
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/dvIvwj6tZ60do6pCMHQOL6onpqq.jpg",
+            "id": 15659,
+            "title": "Foul Play",
+            "original_title": "Foul Play",
+            "overview": "A shy San Francisco librarian and a bumbling cop fall in love as they solve a crime involving albinos, dwarves, and the Catholic Church.",
+            "poster_path": "/mk3enoeLNRXRnYGxKcvPXYY1xci.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [35, 9648, 53],
+            "popularity": 6.2249,
+            "release_date": "1978-07-14",
+            "softcore": false,
+            "video": false,
+            "vote_average": 6.3,
+            "vote_count": 277
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/wL8KA3zIJQPbbU5hJlyIdmmLZit.jpg",
+            "id": 514999,
+            "title": "Murder Mystery",
+            "original_title": "Murder Mystery",
+            "overview": "On a long-awaited trip to Europe, a New York City cop and his hairdresser wife scramble to solve a baffling murder aboard a billionaire's yacht.",
+            "poster_path": "/bSMSO9xupd4R4vwTPqigHn2quLN.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [35, 9648, 80, 10749],
+            "popularity": 8.0457,
+            "release_date": "2019-05-25",
+            "softcore": false,
+            "video": false,
+            "vote_average": 6.248,
+            "vote_count": 4974
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/pp3QUzMXfP7q0ocmE1b15FH6PQ6.jpg",
+            "id": 868759,
+            "title": "Ghosted",
+            "original_title": "Ghosted",
+            "overview": "Salt-of-the-earth Cole falls head over heels for enigmatic Sadie—but then makes the shocking discovery that she's a secret agent. Before they can decide on a second date, Cole and Sadie are swept away on an international adventure to save the world.",
+            "poster_path": "/liLN69YgoovHVgmlHJ876PKi5Yi.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [28, 35, 10749],
+            "popularity": 8.5163,
+            "release_date": "2023-04-18",
+            "softcore": false,
+            "video": false,
+            "vote_average": 6.861,
+            "vote_count": 2315
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/qcVrlyPFlPgCsmzorvELvpJN9Be.jpg",
+            "id": 1597,
+            "title": "Meet the Parents",
+            "original_title": "Meet the Parents",
+            "overview": "Greg Focker is ready to marry his girlfriend, Pam, but before he pops the question, he must win over her formidable father, humorless former CIA agent Jack Byrnes, at the wedding of Pam's sister. As Greg bends over backward to make a good impression, his visit to the Byrnes home turns into a hilarious series of disasters, and everything that can go wrong does, all under Jack's critical, hawklike gaze.",
+            "poster_path": "/5tXJ9ctuyEOMUFLaeqRisbXowWs.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [35, 10749],
+            "popularity": 10.1751,
+            "release_date": "2000-10-06",
+            "softcore": false,
+            "video": false,
+            "vote_average": 6.7,
+            "vote_count": 6633
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/bVq7z035uryQm51JpbJr58okxig.jpg",
+            "id": 14590,
+            "title": "Shadow of the Thin Man",
+            "original_title": "Shadow of the Thin Man",
+            "overview": "While attending a major horse race with their young son, Nick Jr., Nick and Nora Charles witnesse a shocking murder from the crowded grandstand. What first appears to be an isolated killing soon leads to a maze of corruption, blackmail, gambling scandals, and criminal intrigue. As Nick investigates, he encounters suspicious bookmakers, dishonest officials, rival gangsters, and a mysterious killer determined to stay ahead of the law. Nora, as always, is never far from the action, bringing her quick wit and fearless curiosity to the case.",
+            "poster_path": "/sYiasULoMJj84A5zheNyChGuhHY.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [35, 80, 9648],
+            "popularity": 2.9894,
+            "release_date": "1941-11-21",
+            "softcore": false,
+            "video": false,
+            "vote_average": 7,
+            "vote_count": 130
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/eVzJW6RplVDLMfcmeQ5Yjan0hRb.jpg",
+            "id": 2687,
+            "title": "Memoirs of an Invisible Man",
+            "original_title": "Memoirs of an Invisible Man",
+            "overview": "After a freak accident, an invisible yuppie runs for his life from a treacherous CIA official while trying to cope with his new life.",
+            "poster_path": "/xaWEFy06BpceS8zH6e4nmawkRpp.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [878, 35, 10749],
+            "popularity": 3.9503,
+            "release_date": "1992-02-28",
+            "softcore": false,
+            "video": false,
+            "vote_average": 5.901,
+            "vote_count": 689
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/nhsjEEct8f4GDDSAvkpEJJWfuf2.jpg",
+            "id": 22829,
+            "title": "Paris When It Sizzles",
+            "original_title": "Paris When It Sizzles",
+            "overview": "Hollywood producer Alexander Meyerheimer has hired drunken writer Richard Benson to write his latest movie. Benson has been in Paris supposedly working on the script for months, but instead has spent the time living it up. Benson now has just two days to the deadline and thus hires a temporary secretary, Gabrielle Simpson, to help him finish on time.",
+            "poster_path": "/aojHngnnK0kTYjvCwtlfAj8xf4B.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [10749, 35],
+            "popularity": 3.1463,
+            "release_date": "1964-03-01",
+            "softcore": false,
+            "video": false,
+            "vote_average": 6.3,
+            "vote_count": 205
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/vq4vYFV0TWCCovAFLcdZLCo4Qud.jpg",
+            "id": 2779,
+            "title": "The Curse of the Jade Scorpion",
+            "original_title": "The Curse of the Jade Scorpion",
+            "overview": "CW Briggs is a veteran insurance investigator, with many successes. Betty Ann Fitzgerald is a new employee in the company he works for, with the task of reorganizing the office. They don't like each other - or at least that's what they think. During a night out with the rest of the office employees, they go to watch Voltan, a magician who secretly hypnotizes both of them.",
+            "poster_path": "/mfvWefUp09oaLLxb8KhsvUYi7mX.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [35, 80, 10749],
+            "popularity": 3.0361,
+            "release_date": "2001-08-24",
+            "softcore": false,
+            "video": false,
+            "vote_average": 6.6,
+            "vote_count": 858
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/llOXGvKkFyUAaabusi4JMHM7OKy.jpg",
+            "id": 10918,
+            "title": "Undertaking Betty",
+            "original_title": "Undertaking Betty",
+            "overview": "A politician's wife and the mortician who has secretly loved her for years plan to fake her death so they can run away together.",
+            "poster_path": "/zAXWOj1qznqWWVcXpZ0JZOgvSp2.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [35, 10749],
+            "popularity": 5.3287,
+            "release_date": "2002-12-04",
+            "softcore": false,
+            "video": false,
+            "vote_average": 6.1,
+            "vote_count": 120
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/cQ9sbPLBox8z2LIYsExHnsvgrzZ.jpg",
+            "id": 33666,
+            "title": "The Glass Bottom Boat",
+            "original_title": "The Glass Bottom Boat",
+            "overview": "Bruce, the owner of an aerospace company, is infatuated with Jennifer and hires her to be his biographer so that he can be near her and win her affections. Is she actually a Russian spy trying to obtain aerospace secrets?",
+            "poster_path": "/jlj5rCl7jfW7QskJ1vucd7j5n5M.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [35, 10749],
+            "popularity": 2.2939,
+            "release_date": "1966-06-09",
+            "softcore": false,
+            "video": false,
+            "vote_average": 6.3,
+            "vote_count": 71
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/pR2UeB0QXN1n8Rs68ryMHDgEibq.jpg",
+            "id": 11718,
+            "title": "Who's Harry Crumb?",
+            "original_title": "Who's Harry Crumb?",
+            "overview": "Harry Crumb is a bumbling and inept private investigator who is hired to solve the kidnapping of a young heiress which he's not expected to solve because his employer is the mastermind behind the kidnapping.",
+            "poster_path": "/6iUoyyaMklULVoGJDyHcN4nGgSX.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [35, 80, 9648],
+            "popularity": 2.6512,
+            "release_date": "1989-02-03",
+            "softcore": false,
+            "video": false,
+            "vote_average": 5.962,
+            "vote_count": 377
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/znDbUAz0uPgc329iHBiobnnYA2P.jpg",
+            "id": 276908,
+            "title": "Comet",
+            "original_title": "Comet",
+            "overview": "When a chance encounter brings together the cynical Dell and the quick-witted Kimberly, the stage is set for a tempestuous love affair that unfolds like a puzzle. As the film zigzags back and forth in time — from a meteor shower in LA, to an encounter in a Paris hotel room, to a fateful phone call — an unforgettable portrait of a relationship emerges.",
+            "poster_path": "/4zOOSa5zyJDvqDDKFwUQVMK6eDe.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [878, 35, 10749],
+            "popularity": 4.2765,
+            "release_date": "2014-12-05",
+            "softcore": false,
+            "video": false,
+            "vote_average": 6.622,
+            "vote_count": 478
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/nmElbl3SyII4gJ8uo1jYYHFjmlK.jpg",
+            "id": 16558,
+            "title": "Duplicity",
+            "original_title": "Duplicity",
+            "overview": "Two romantically involved government operatives Claire Stenwick and Ray Koval team up to manipulate a race between opposing corporations to corner the market on a medical innovation that will reap huge profits and allow them to lead an extravagant lifestyle together. They find themselves on opposing sides as corporate spies; however, as they each try to outdo the other, neither one can decide how far to trust the other in this high-stakes game of cat-and-mouse.",
+            "poster_path": "/vpWQs3CjwG6Er3DgZlv4L3NFjXg.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [10749, 35, 80],
+            "popularity": 9.2352,
+            "release_date": "2009-03-18",
+            "softcore": false,
+            "video": false,
+            "vote_average": 5.9,
+            "vote_count": 908
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/cVkb5wUZrO71wCFM7nDyqPDezCL.jpg",
+            "id": 540,
+            "title": "D.E.B.S.",
+            "original_title": "D.E.B.S.",
+            "overview": "The star of a team of teenage crime fighters falls for the alluring villainess she must bring to justice.",
+            "poster_path": "/68BfXrFQPHg9iBWJVgp5R48gTix.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [28, 35, 10749],
+            "popularity": 5.5028,
+            "release_date": "2005-03-25",
+            "softcore": false,
+            "video": false,
+            "vote_average": 6.6,
+            "vote_count": 669
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/rTxTqBJ3tawnkFrqfmCS8gZxE2D.jpg",
+            "id": 37821,
+            "title": "Killers",
+            "original_title": "Killers",
+            "overview": "When an elite assassin marries a beautiful computer whiz after a whirlwind romance, he gives up the gun and settles down with his new bride. That is, until he learns that someone from his past has put a contract out on his life.",
+            "poster_path": "/9VB8vGV4Aznf6GUc9C7a1EzGHLz.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [28, 35, 53, 10749],
+            "popularity": 5.486,
+            "release_date": "2010-06-04",
+            "softcore": false,
+            "video": false,
+            "vote_average": 6,
+            "vote_count": 2367
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/ayRhG0eoQwJ6il7bmXGrZx8rUta.jpg",
+            "id": 10833,
+            "title": "Heartbreakers",
+            "original_title": "Heartbreakers",
+            "overview": "Max and Page are a brilliant mother/daughter con team who have their grift down to a fine science. Max targets wealthy, willing men and marries them. Page then seduces them, and Max catches her husband in the act. Then it's off to palimony city and the next easy mark.",
+            "poster_path": "/bwvec0gRMSpLakcPuxe0RWScNv3.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [35, 10749, 80],
+            "popularity": 5.207,
+            "release_date": "2001-03-23",
+            "softcore": false,
+            "video": false,
+            "vote_average": 6.151,
+            "vote_count": 1038
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/w80kFufwkLNqoiLJVUBaO9pe1UL.jpg",
+            "id": 763532,
+            "title": "Long Story Short",
+            "original_title": "Long Story Short",
+            "overview": "Teddy wakes up the morning after his wedding to discover that he's jumped forward a year in his life to his first anniversary. Trapped in an endless cycle of time jumps, transported another year ahead every few minutes, he is faced with a race against time as his life crumbles around him.",
+            "poster_path": "/oAJ95mBgB0yAKCS5a3Tw5UxjLEp.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [10749, 35, 14],
+            "popularity": 3.1902,
+            "release_date": "2021-02-11",
+            "softcore": false,
+            "video": false,
+            "vote_average": 6.7,
+            "vote_count": 232
+          }
+        ],
+        "total_pages": 15,
+        "total_results": 287
+      },
+      "keywords": {
+        "keywords": [
+          {
+            "id": 591,
+            "name": "central intelligence agency (cia)"
+          },
+          {
+            "id": 90,
+            "name": "paris, france"
+          },
+          {
+            "id": 5265,
+            "name": "espionage"
+          },
+          {
+            "id": 965,
+            "name": "age difference"
+          },
+          {
+            "id": 697,
+            "name": "loss of loved one"
+          },
+          {
+            "id": 4129,
+            "name": "widow"
+          },
+          {
+            "id": 470,
+            "name": "spy"
+          },
+          {
+            "id": 2297,
+            "name": "interpreter"
+          },
+          {
+            "id": 4698,
+            "name": "stamp"
+          },
+          {
+            "id": 9728,
+            "name": "caper"
+          },
+          {
+            "id": 12570,
+            "name": "whodunit"
+          },
+          {
+            "id": 13008,
+            "name": "train"
+          },
+          {
+            "id": 14554,
+            "name": "alias"
+          },
+          {
+            "id": 155457,
+            "name": "screwball comedy"
+          },
+          {
+            "id": 159333,
+            "name": "caper comedy"
+          },
+          {
+            "id": 160175,
+            "name": "alps mountains"
+          },
+          {
+            "id": 163138,
+            "name": "notre dame cathedral"
+          },
+          {
+            "id": 197822,
+            "name": "american spy"
+          }
+        ]
+      }
+    }
+  }
+}

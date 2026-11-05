@@ -375,7 +375,7 @@ export function resolutionOf(v: Pick<VideoInfo, 'width' | 'height'> | null) {
   return null
 }
 
-/** The prototype's stream shapes (design/prototypes/src/mock/types.ts, `Stream`). */
+/** The prototype's stream shapes (packages/mock/src/types.ts, `Stream`). */
 export type Stream =
   | {
       index: number

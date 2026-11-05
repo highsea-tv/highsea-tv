@@ -6,7 +6,7 @@
 
 import logo from '@highsea-tv/brand/icons/web/icon-192.png'
 import { compileOptions, palette } from '@highsea-tv/notifications/mail'
-import { cn, SegmentedControl, Select } from '@highsea-tv/ui-web'
+import { cn, SegmentedControl, Select } from '@highsea-tv/ui'
 import mjml2html from 'mjml-browser'
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { HARBOR_URL, renderSample, type SampleId, sampleIds, sampleLabels } from './samples.ts'

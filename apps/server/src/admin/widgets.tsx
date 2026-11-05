@@ -65,7 +65,7 @@ import {
   useClip,
   useWidth,
   WidgetFrame,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import { useRouter } from 'next/navigation'
 import { type ReactNode, useState } from 'react'
 import { widgets as messages } from './dashboard-messages.ts'
@@ -641,7 +641,8 @@ function UpcomingMovies(props: WidgetProps) {
                 </li>
               ))}
             </ul>
-            <More count={clip.hidden} page={t('page.movies')} path="/movies" />
+            {/* the rest of what's coming is the calendar's, not the library's (prototype-gaps.md, stage 5) */}
+            <More count={clip.hidden} page={t('page.calendar')} path="/wanted/calendar" />
           </>
         )
       }
@@ -1135,7 +1136,7 @@ function SystemHealth(props: WidgetProps) {
                 </li>
               ))}
             </ul>
-            <More count={clip.hidden} page={t('page.system')} path="/system" />
+            <More count={clip.hidden} page={t('page.health')} path="/system/health" />
           </>
         )
       }

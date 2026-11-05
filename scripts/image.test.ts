@@ -12,7 +12,13 @@ import {
 } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { attestationProblems, type Inspect, pruneOtherLibc, publishedProblems } from './image.ts'
+import {
+  attestationProblems,
+  type Inspect,
+  pruneOptionalPeers,
+  pruneOtherLibc,
+  publishedProblems,
+} from './image.ts'
 
 const dirs: string[] = []
 const temp = () => {
@@ -79,6 +85,47 @@ describe('pruneOtherLibc', () => {
   test('keeps everything for the C library the packages ask for', () => {
     const { root } = store()
     expect(pruneOtherLibc(root, 'musl')).toEqual(['@img/sharp-linux-x64'])
+  })
+})
+
+describe('pruneOptionalPeers', () => {
+  test('drops an optional peer no workspace depends on, with what only it reached', () => {
+    const root = temp()
+    const bun = join(root, 'node_modules', '.bun')
+    const pkg = (entry: string, name: string) => {
+      const dir = join(bun, entry, 'node_modules', name)
+      mkdirSync(dir, { recursive: true })
+      writeFileSync(join(dir, 'package.json'), JSON.stringify({ name }))
+      return dir
+    }
+    const linkTo = (from: string, name: string, target: string) => {
+      mkdirSync(from, { recursive: true })
+      symlinkSync(target, join(from, name))
+    }
+    // as @highsea-tv/ui: react is a dependency, react-native an optional peer apps/client resolved
+    const ui = join(root, 'packages', 'ui')
+    mkdirSync(ui, { recursive: true })
+    writeFileSync(
+      join(ui, 'package.json'),
+      JSON.stringify({
+        name: '@highsea-tv/ui',
+        dependencies: { react: '1' },
+        peerDependencies: { 'react-native': '*', react: '*' },
+        peerDependenciesMeta: { 'react-native': { optional: true } },
+      }),
+    )
+    const react = pkg('react@1', 'react')
+    const native = pkg('react-native@1', 'react-native')
+    const only = pkg('only-native@1', 'only-native')
+    linkTo(join(bun, 'react-native@1', 'node_modules'), 'only-native', only)
+    linkTo(join(bun, 'react-native@1', 'node_modules'), 'react', react)
+    linkTo(join(ui, 'node_modules'), 'react', react)
+    linkTo(join(ui, 'node_modules'), 'react-native', native)
+
+    expect(pruneOptionalPeers(root, ['packages/ui'])).toEqual(['only-native@1', 'react-native@1'])
+    expect(existsSync(join(ui, 'node_modules', 'react-native'))).toBe(false)
+    expect(existsSync(join(ui, 'node_modules', 'react', 'package.json'))).toBe(true)
+    expect(existsSync(join(bun, 'react@1'))).toBe(true)
   })
 })
 

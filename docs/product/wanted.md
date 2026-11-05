@@ -16,7 +16,7 @@ What the library is still waiting for: monitored movies with no file yet, movies
 ## Layout
 
 - Page header: "Wanted", "Monitored movies highsea is still looking for, and what's coming out."
-- Line tabs: **Missing** and **Cutoff unmet** (with counts), **Calendar**; each has its own address.
+- Line tabs: **Missing** and **Cutoff unmet** (with counts), **Calendar**; each has its own address (`/wanted`, `/wanted/cutoff`, `/wanted/calendar`), and any other `/wanted/…` draws not found.
 - **Missing / Cutoff unmet:** a table: the poster and title (to the media page), Released, then the quality profile (Missing) or "has · wants" ("WEB 1080p · WEB 2160p", Cutoff unmet), and **Search** per row. Above it, why the list exists and **Search all {n}**.
 - **Calendar:**
   - the month ("October 2026") between **Previous month** and **Next month**, **This month** when away from it, and a key (In the library, Downloading, Wanted, by outline color);
@@ -68,6 +68,15 @@ What the library is still waiting for: monitored movies with no file yet, movies
 - **The feed uses an API key,** so calendar apps can fetch it without a session, and it can be revoked like any key. *Changed in 8a (the owner's answer 10):* the key has its own scope, `calendar`, which opens the feed and nothing else, since it sits in an address other apps keep. Each person makes, replaces and turns off their own from Calendar. The owner still sees them in Users and devices › API keys.
 - **Each of a movie's dates is its own entry** (8a, the owner's answer 2): in cinemas, digital and physical, as Radarr shows them.
 - **highsea looks on its own** (8a): RSS every 15 minutes, and a sweep every 6 hours of the 20 wanted movies searched longest ago, each pushed back 1, 3, 7, then 14 days ([ADR 0045](../adr/0045-automation.md)). Search and Search all look now.
+
+## Episodes (prototype-gaps stage 6, 2026-11-01)
+
+- **One table per tab, with a kind filter:** All, Movies · n, Episodes · n, beside the explanation and **Search all {n}**. One table rather than two sections, so Search all, the counts and the empty state stay one each, and the filter answers "just the episodes". The tab counts are films and episodes together.
+- **An episode's row:** the show's poster, then "Show · S03E05" (to the show's page) and the episode's title below; **Released or aired** (the column, renamed from Released) is its air date; Cutoff unmet's "has · wants" as a film's. **Search** is labelled "Search for {Show} S03E05".
+- **Search all** searches the films in one `bulkSearch` and each episode with `shows.search(show, { episode })`; the toast counts both ("Searching for 2 movies and 2 episodes").
+- **The calendar** puts episodes on their air dates beside films, as chips "Show · S03E05" with the episode's title in the chip's tooltip, outlined by the same three states; an episode below its cutoff is Wanted, as a film is. The phone's list shows the episode's title under its chip. A month with nothing: "Nothing monitored comes out or airs this month." The iCal hint names releases and episodes' air dates.
+- **Empty:** the copy names movies and episodes; a filter with nothing in it has its own line ("No episodes are missing.", "Every movie meets its cutoff.").
+- **Data:** `shows.wanted()` (missing and cutoff unmet) and `shows.airing(from, to)` beside the movie calls; the event `shows.updated`.
 
 ## Open questions
 

@@ -46,8 +46,7 @@ Layouts are saved per user, and owners can set role defaults (see the roadmap's 
 | --- | --- |
 | Base text | 13px |
 | Table row | About 60px with a two-line title cell (title + release name); 40px for single-line rows |
-| Buttons | 36px default, 30px small |
-| Inputs | 38px |
+| Controls | 36px default, 30px small, inputs and selects included ([controls](../controls.md)) |
 | Badges | 22px |
 
 Comfortable spacing comes from grouping, not from padding. Whitespace separates regions, while rows within a region stay tight.

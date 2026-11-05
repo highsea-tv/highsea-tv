@@ -8,7 +8,7 @@
 // sample people.
 import type { ClientType, CurationPreviewInput } from '@highsea-tv/api-contract'
 import { useQuery } from '@highsea-tv/sdk/react'
-import { Icon, SegmentedControl, Select, useWidth } from '@highsea-tv/ui-web'
+import { Icon, SegmentedControl, Select, useWidth } from '@highsea-tv/ui'
 import { useEffect, useRef, useState } from 'react'
 import { FRAME_READY, type FrameMessage, type PreviewPlatform } from './curation-frame.tsx'
 import { useCurationT, useKept, usePeople, useSettled } from './curation-shared.tsx'
@@ -123,7 +123,6 @@ export function ClientPreview({
         <h2 className="me-auto font-medium text-text text-ui">{t('preview')}</h2>
         <SegmentedControl
           aria-label={t('previewOn')}
-          size="sm"
           value={platform}
           onValueChange={(v) => setPlatform(v as PreviewPlatform)}
           options={(Object.keys(screens) as PreviewPlatform[]).map((p) => ({

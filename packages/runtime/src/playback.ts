@@ -12,6 +12,9 @@
 // - A direct stream or a transcode is HLS made on demand (4.1b, ADR 0051): each session has a
 //   folder in the data folder's `transcodes/`, which goes when the session ends. A direct stream's
 //   segments follow the file's keyframes, read once by ffprobe and kept (`file_keyframes`).
+// - The person's own playback preferences (client-settings.md › Playback, ADR 0027's 2026-11-01
+//   section) start a film in their audio language and with their subtitles, unless they've picked
+//   for that title already, and cap its quality at home and away; the remote ceiling still holds.
 // - Text subtitles are sent as WebVTT, converted once a session; picture subtitles aren't sent.
 // - Now playing (4.3a) hears each session start, report and end through `hooks`, and staff stop a
 //   session with `stopFor`: its player's next report gets a 404 saying who stopped it and why,
@@ -29,6 +32,7 @@ import { type Db, schema } from '@highsea-tv/db'
 import type { Movies } from '@highsea-tv/media/movies'
 import { type MediaInfo, trackIndex } from '@highsea-tv/media/shared'
 import { PRIVATE_RANGES, parseTrustedProxies } from '@highsea-tv/network'
+import { capOf, type Preferences } from '@highsea-tv/personalization/keys'
 import {
   type Ceiling,
   type DecisionInput,
@@ -60,6 +64,7 @@ import {
 } from '@highsea-tv/stream/profiles'
 import { createSessions, type EndReason, type PlaySession } from '@highsea-tv/stream/sessions'
 import type { TrickplayManifest } from '@highsea-tv/stream/trickplay'
+import { toLanguageCode } from '@highsea-tv/subtitles/shared'
 import { and, eq } from 'drizzle-orm'
 import type { NowPlayingService } from './now-playing.ts'
 import type { Trickplay } from './trickplay.ts'
@@ -110,6 +115,8 @@ export function createPlayback(deps: {
   transcodes: Transcodes
   /** Settings › Playback's remote ceiling, or null for none (4.3a). */
   ceiling(): Ceiling | null
+  /** The person's preferences on the device, resolved through ADR 0027's layers. */
+  preferences?: (userId: string, deviceId: string | null) => Preferences
   /** ffprobe's binary, for keyframes. */
   ffprobe: string
   /** A file's subtitle tracks, as the client API lists them. */
@@ -223,6 +230,40 @@ export function createPlayback(deps: {
         field: 'subtitleId',
       })
     return { kind: 'sidecar', id: row.id, format: row.format }
+  }
+
+  /** The film's track in a language, the default one first. */
+  function audioIn(info: MediaInfo, language: string): number | null {
+    const tracks = info.audio.filter((a) => toLanguageCode(a.language) === language)
+    return (tracks.find((a) => a.default) ?? tracks[0])?.index ?? null
+  }
+
+  /**
+   * The person's subtitles for a film they haven't picked for: a full track in their language
+   * (forced ones are for foreign lines only), unless they want them only for foreign audio and
+   * this is in their language.
+   */
+  function subtitleFor(
+    fileId: string,
+    info: MediaInfo,
+    audio: number | null,
+    mine: Preferences,
+  ): string | null {
+    const wanted = mine['playback.subtitles']
+    if (wanted === 'off') return null
+    const heard = info.audio.find((a) => a.index === audio) ?? info.audio.find((a) => a.default)
+    const spoken = toLanguageCode((heard ?? info.audio[0])?.language)
+    if (mine['playback.onlyForeign'] && spoken === wanted) return null
+    const tracks = deps.subtitles(fileId).filter((t) => t.language === wanted && !t.forced)
+    return (tracks.find((t) => !t.hi) ?? tracks[0])?.id ?? null
+  }
+
+  /** The tighter of two ceilings, each part on its own. */
+  function under(a: Ceiling | null, b: Ceiling | null): Ceiling | null {
+    if (!a || !b) return a ?? b
+    const least = (x: number | null, y: number | null) =>
+      x === null ? y : y === null ? x : Math.min(x, y)
+    return { bitrate: least(a.bitrate, b.bitrate), height: least(a.height, b.height) }
   }
 
   /** What a run burns in (4.3): the film's picture track, or ASS from the film or a sidecar. */
@@ -340,12 +381,24 @@ export function createPlayback(deps: {
         reason: 'no-probe',
       })
     const prefs = movies.playback.prefs(viewer.userId, tmdbId)
+    const mine = deps.preferences?.(viewer.userId, viewer.deviceId) ?? null
+    // the person's languages stand back once they've picked anything for the title
+    const own = movies.playback.hasPrefs(viewer.userId, tmdbId)
     // a pick is the version's only when it names this file's track
     const audioId = request.audioId !== undefined ? request.audioId : prefs.audioId
-    const audio = audioId ? trackIndex(src.file.id, audioId) : null
+    let audio = audioId ? trackIndex(src.file.id, audioId) : null
     if (request.audioId && audio === null)
       throw new AppError('invalid', 'That sound track isn’t this version’s.', { field: 'audioId' })
-    const asked = request.subtitleId !== undefined ? request.subtitleId : prefs.subtitleId
+    if (audio === null && request.audioId === undefined && mine) {
+      const language = mine['playback.audio']
+      if (language !== 'original') audio = audioIn(info, language)
+    }
+    const asked =
+      request.subtitleId !== undefined
+        ? request.subtitleId
+        : mine && !own
+          ? subtitleFor(src.file.id, info, audio, mine)
+          : prefs.subtitleId
     let subtitleId = asked
     let subtitle: SubtitlePick | null
     try {
@@ -362,7 +415,9 @@ export function createPlayback(deps: {
       profile,
       audio,
       subtitle,
-      ceiling: home.has(address) ? null : deps.ceiling(),
+      ceiling: home.has(address)
+        ? mine && capOf(mine['playback.qualityHome'])
+        : under(deps.ceiling(), mine && capOf(mine['playback.qualityAway'])),
       // tone mapped when it's on and something here can: the path in use, or the processor (4.3b)
       server: { burnIn: true, toneMapping: toneMaps(info.video?.hdr ?? 'none') },
       locale,

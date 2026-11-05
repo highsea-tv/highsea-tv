@@ -5,6 +5,7 @@
 // plays a transcode that can't keep up, and the empty server has nobody watching.
 
 import { duration, percent, relative } from '@highsea-tv/core/format'
+import type { SessionView } from '@highsea-tv/mock/sessions'
 import {
   Badge,
   Button,
@@ -33,18 +34,22 @@ import {
   Textarea,
   TitleCell,
   toast,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import { useState } from 'react'
 import { useAction, useNow, useQuery } from '../../mock/hooks.tsx'
-import type { SessionView } from '../../mock/sessions.ts'
 import { Loadable } from '../loadable.tsx'
 import { AdminPage, adminHref } from '../shell.tsx'
+import { useTabAddress } from '../tabs.ts'
 import { behind, clientIcon, mbps, methods, timecode, transcodedBy } from './delivery.ts'
+import { PlayingTitle, playingAspect, playingHref, playingName } from './item.tsx'
 
-type Tab = 'now' | 'history'
+/** The tabs, each at its own address (/now-playing/{tab}, the first at /now-playing), so Back and links work. */
+export const nowPlayingTabs = ['now', 'history'] as const
+export type NowPlayingTab = (typeof nowPlayingTabs)[number]
+type Tab = NowPlayingTab
 
-export function NowPlaying() {
-  const [tab, setTab] = useState<Tab>('now')
+export function NowPlaying({ tab = 'now' }: { tab?: Tab }) {
+  const setTab = useTabAddress<Tab>('/now-playing', 'now')
   const live = useQuery('sessions', (c) => c.sessions.list(), ['sessions.updated'])
   return (
     <AdminPage
@@ -126,19 +131,18 @@ function SessionRow({ s, onStop }: { s: SessionView; onStop: () => void }) {
         'grid min-w-0 grid-cols-[64px_minmax(0,1fr)] gap-4 rounded-lg border border-line bg-s1 p-4',
         s.stopped && 'opacity-60',
       )}
-      aria-label={`${s.user.displayName}, ${s.item.title}`}
+      aria-label={`${s.user.displayName}, ${playingName(s.item)}`}
     >
-      <Poster title={s.item.title} src={s.item.poster} href={adminHref(`/movies/${s.item.id}`)} />
+      <Poster
+        title={playingName(s.item)}
+        src={s.item.poster}
+        aspect={playingAspect(s.item)}
+        href={playingHref(s.item)}
+      />
       <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] content-start gap-3">
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div className="min-w-0 [overflow-wrap:anywhere]">
-            <a
-              href={adminHref(`/movies/${s.item.id}`)}
-              className="font-medium text-text hover:underline"
-            >
-              {s.item.title}
-            </a>
-            {s.item.year && <span className="ms-2 text-text-3">{s.item.year}</span>}
+            <PlayingTitle item={s.item} />
             <div className="mt-0.5 flex items-center gap-1.5 text-caption text-text-2">
               <Icon name={clientIcon[s.client]} size={14} aria-hidden />
               <span className="truncate">
@@ -173,7 +177,9 @@ function SessionRow({ s, onStop }: { s: SessionView; onStop: () => void }) {
           <Progress
             value={(s.position / s.runtime) * 100}
             tone={late ? 'danger' : 'accent'}
-            aria-label={download ? 'Made so far' : 'Watched so far'}
+            aria-label={
+              download ? 'Made so far' : s.item.kind === 'song' ? 'Played so far' : 'Watched so far'
+            }
           />
           <div className="flex justify-between font-mono text-figure text-text-3">
             <span>
@@ -313,7 +319,7 @@ function History() {
           <TableFrame>
             <TableToolbar>
               <span className="me-auto text-caption text-text-3">
-                {xs.length} {xs.length === 1 ? 'film' : 'films'} watched
+                {xs.length} {xs.length === 1 ? 'title' : 'titles'} played
               </span>
               <Select
                 aria-label="Whose history"
@@ -329,7 +335,7 @@ function History() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Movie</TableHead>
+                  <TableHead>Title</TableHead>
                   <TableHead>Who</TableHead>
                   <TableHead>Device</TableHead>
                   <TableHead>Sent as</TableHead>
@@ -340,14 +346,7 @@ function History() {
               <TableBody>
                 {xs.map((w) => (
                   <TableRow key={w.id}>
-                    <TitleCell
-                      art={w.item.poster}
-                      title={
-                        <a href={adminHref(`/movies/${w.item.id}`)} className="hover:underline">
-                          {w.item.title}
-                        </a>
-                      }
-                    />
+                    <TitleCell art={w.item.poster} title={<PlayingTitle item={w.item} />} />
                     <TableCell className="text-text-2">{w.user.displayName}</TableCell>
                     <TableCell className="text-text-2">
                       <span className="inline-flex items-center gap-1.5">

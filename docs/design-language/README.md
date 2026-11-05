@@ -3,7 +3,7 @@
 - **Status:** v1.0, signed off 2026-10-16 ([roadmap](../roadmap.md)).
 - **Builds on:** the locked brand direction, [Abyss Neutral (Bone)](../brand/direction.md) ([ADR 0013](../adr/0013-brand-direction-abyss-neutral.md)).
 
-These documents turn the brand direction into rules that designers and engineers can apply on every surface. `@highsea-tv/tokens`, `@highsea-tv/ui-web`, `@highsea-tv/ui-native` and every app implement what is written here. If code and docs disagree, one of them is a bug.
+These documents turn the brand direction into rules that designers and engineers can apply on every surface. `@highsea-tv/tokens`, `@highsea-tv/ui`, `@highsea-tv/ui` and every app implement what is written here. If code and docs disagree, one of them is a bug.
 
 ## How to read these docs
 
@@ -24,6 +24,7 @@ These documents turn the brand direction into rules that designers and engineers
 | [Motion](motion.md) | Springs, durations, choreography, reduced motion |
 | [Sound](sound.md) | Event taxonomy, recipe format, loudness, defaults |
 | [Accessibility](accessibility.md) | The standard every surface meets |
+| [Controls](controls.md) | One spec for every control, its rule per platform, looks and contrast (design system 1.1) |
 | **Platform guides** | |
 | [TV (10-foot)](platforms/tv.md) | Safe area, type in screen units, the spatial focus model, remote keys |
 | [Mobile](platforms/mobile.md) | Tabs + carousel home, touch targets, safe areas |

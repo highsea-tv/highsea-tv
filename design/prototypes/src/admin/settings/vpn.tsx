@@ -4,6 +4,15 @@
 // mock plays connecting, connected, down and the ways a connection fails.
 
 import {
+  providerById,
+  type VpnCheck,
+  type VpnMode,
+  type VpnProvider,
+  type VpnSettings,
+  type VpnStatus,
+  vpnProviders,
+} from '@highsea-tv/mock/vpn'
+import {
   Badge,
   type BadgeTone,
   Button,
@@ -12,22 +21,15 @@ import {
   Icon,
   type IconName,
   Input,
+  Radio,
+  RadioGroup,
   Select,
   Switch,
   Textarea,
   toast,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import { type ReactNode, useState } from 'react'
 import { useAction, useNow, useQuery } from '../../mock/hooks.tsx'
-import {
-  providerById,
-  type VpnCheck,
-  type VpnMode,
-  type VpnProvider,
-  type VpnSettings,
-  type VpnStatus,
-  vpnProviders,
-} from '../../mock/vpn.ts'
 import { AreaPage, Group, SaveBar, useSettingsDraft } from './settings.tsx'
 
 const modes: { id: VpnMode; label: string; line: string }[] = [
@@ -275,9 +277,14 @@ type Set = (patch: Partial<VpnSettings>) => void
 function ConnectionGroup({ v, set }: { v: VpnSettings; set: Set }) {
   return (
     <Group title="Connection" description="How torrents reach your VPN.">
-      <fieldset className="grid gap-2 medium:grid-cols-2">
-        <legend className="sr-only">Mode</legend>
+      <RadioGroup
+        aria-label="Mode"
+        value={v.mode}
+        onValueChange={(mode) => set({ mode: mode as VpnSettings['mode'] })}
+        className="medium:grid-cols-2"
+      >
         {modes.map((m) => (
+          // biome-ignore lint/a11y/noLabelWithoutControl: the control is its child, the library’s Radio, a button with the radio role and so a labelable element
           <label
             key={m.id}
             className={cn(
@@ -285,14 +292,7 @@ function ConnectionGroup({ v, set }: { v: VpnSettings; set: Set }) {
               v.mode === m.id ? 'border-accent bg-accent-soft' : 'border-line hover:bg-s2',
             )}
           >
-            <input
-              type="radio"
-              name="vpn-mode"
-              value={m.id}
-              checked={v.mode === m.id}
-              onChange={() => set({ mode: m.id })}
-              className="mt-1 accent-[var(--color-accent)] outline-none"
-            />
+            <Radio value={m.id} className="mt-1" />
             <span className="font-semibold text-text text-ui">
               {m.label}
               {m.id === 'builtin' && (
@@ -304,11 +304,11 @@ function ConnectionGroup({ v, set }: { v: VpnSettings; set: Set }) {
             <span className="col-start-2 text-caption text-text-3">{m.line}</span>
           </label>
         ))}
-      </fieldset>
+      </RadioGroup>
       {v.mode === 'builtin' && <BuiltIn v={v} set={set} />}
       {v.mode === 'container' && <Container v={v} set={set} />}
       {v.mode === 'interface' && (
-        <div className="grid gap-4 medium:grid-cols-2">
+        <div className="grid grid-cols-[minmax(0,1fr)] gap-4 medium:grid-cols-2">
           <Field label="Interface" hint="The ones this server has, besides the LAN.">
             <Select
               value={v.interface}
@@ -327,7 +327,7 @@ function ConnectionGroup({ v, set }: { v: VpnSettings; set: Set }) {
 
 function Steps({ provider }: { provider: VpnProvider }) {
   return (
-    <ol className="grid list-decimal gap-1 ps-5 text-caption text-text-2 marker:text-text-3">
+    <ol className="grid list-decimal grid-cols-[minmax(0,1fr)] gap-1 ps-5 text-caption text-text-2 marker:text-text-3 [overflow-wrap:anywhere]">
       {provider.steps.map((step) => (
         <li key={step}>{step}</li>
       ))}
@@ -339,8 +339,8 @@ function BuiltIn({ v, set }: { v: VpnSettings; set: Set }) {
   const provider = providerById(v.provider) ?? (vpnProviders[0] as VpnProvider)
   const [pasting, setPasting] = useState(false)
   return (
-    <div className="grid gap-4 border-line border-t pt-4">
-      <div className="grid gap-4 medium:grid-cols-2">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-4 border-line border-t pt-4">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-4 medium:grid-cols-2">
         <Field label="Provider">
           <Select
             value={v.provider}
@@ -532,8 +532,8 @@ function Container({ v, set }: { v: VpnSettings; set: Set }) {
   const [composeProvider, setComposeProvider] = useState('proton')
   const urlError = !/^https?:\/\/[^\s/]+/.test(v.containerUrl)
   return (
-    <div className="grid gap-4 border-line border-t pt-4">
-      <div className="grid gap-4 medium:grid-cols-2">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-4 border-line border-t pt-4">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-4 medium:grid-cols-2">
         <Field
           label="Control server"
           hint="The containers share a network, so gluetun is on this machine’s loopback."
@@ -574,7 +574,7 @@ function Container({ v, set }: { v: VpnSettings; set: Set }) {
             A gluetun service for your compose file, with highsea joined to its network. Fill in
             what your provider gives you; highsea never gets the Docker socket.
           </p>
-          <div className="grid gap-4 medium:grid-cols-2">
+          <div className="grid grid-cols-[minmax(0,1fr)] gap-4 medium:grid-cols-2">
             <Field label="Provider">
               <Select
                 value={composeProvider}
@@ -658,7 +658,7 @@ export function VpnSummary({ action }: { action: ReactNode }) {
   return (
     <div className="flex flex-wrap items-center gap-2 rounded-md border border-line bg-s2 p-3">
       <Badge tone={toneOf[v.state]}>{head.title}</Badge>
-      <span className="min-w-0 flex-1 text-caption text-text-3">{head.line}</span>
+      <span className="min-w-0 flex-1 basis-48 text-caption text-text-3">{head.line}</span>
       {action}
     </div>
   )

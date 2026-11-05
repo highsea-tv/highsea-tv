@@ -10,7 +10,7 @@
 // refusal is one, and the page says where to allow it.
 import { relative } from '@highsea-tv/core/format'
 import { useLocale, useT } from '@highsea-tv/i18n/react'
-import { Button, Field, Icon, Input, Lockup, Mark } from '@highsea-tv/ui-web'
+import { Button, Disclosure, Field, Icon, Input, Lockup, Mark } from '@highsea-tv/ui'
 import { type FormEvent, useCallback, useEffect, useRef, useState } from 'react'
 import { type AppServer, type CurrentServer, desktop } from '../host.ts'
 import { connect as messages } from '../messages.ts'
@@ -249,13 +249,9 @@ export function Choose({
                       {lan === 'asking' ? t('waitingMac') : t('looking')}
                     </>
                   ) : (
-                    <button
-                      type="button"
-                      onClick={rescan}
-                      className="cursor-pointer underline-offset-2 hover:underline"
-                    >
+                    <Button variant="ghost" size="sm" onClick={rescan}>
                       {t('lookAgain')}
-                    </button>
+                    </Button>
                   )}
                 </span>
               </div>
@@ -323,9 +319,24 @@ export function Choose({
                 {t('connect')}
               </Button>
             </form>
+            <Cloud />
           </div>
         </section>
       </div>
     </main>
+  )
+}
+
+/** Find my servers with a highsea account, collapsed and explained as C1 prototypes it
+ * (phase-4-checkpoint-4.md): highsea cloud isn't built yet. */
+function Cloud() {
+  const t = useT(messages)
+  const [open, setOpen] = useState(false)
+  return (
+    <div className="border-line border-t pt-4">
+      <Disclosure icon="globe" title={t('cloud')} open={open} onOpenChange={setOpen}>
+        <p className="text-caption text-text-3">{t('cloudDetail')}</p>
+      </Disclosure>
+    </div>
   )
 }

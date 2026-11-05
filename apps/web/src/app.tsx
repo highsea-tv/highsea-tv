@@ -7,18 +7,19 @@
 // the route without loading the page again.
 import type { CurrentSession } from '@highsea-tv/api-contract'
 import { useSession } from '@highsea-tv/client/data'
+import { type WebHost, WebHostProvider } from '@highsea-tv/native/web-host'
 import { ApiError, createClient } from '@highsea-tv/sdk'
 import { ClientProvider, useClient } from '@highsea-tv/sdk/react'
-import { Skeleton, UIProvider } from '@highsea-tv/ui-web'
+import { Skeleton, UIProvider } from '@highsea-tv/ui'
 import { openUrl } from '@tauri-apps/plugin-opener'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Route, Router, Switch, useLocation } from 'wouter'
 import { WebCollection, WebCollections } from './collections.tsx'
 import { DesktopRoot, DesktopUnreachable, useDesktop } from './desktop/root.tsx'
-import { WindowFrame } from './desktop/window.tsx'
+import { desktopOs, WindowFrame } from './desktop/window.tsx'
 import { WebDetail } from './detail.tsx'
 import { WebHome } from './home.tsx'
-import { hostFetch, inApp } from './host.ts'
+import { hostFetch, inApp, media } from './host.ts'
 import { WebLibrary } from './library.tsx'
 import { WebPlayer } from './player.tsx'
 import { ApplyDevicePrefs } from './prefs.tsx'
@@ -43,15 +44,26 @@ export function App() {
   )
 }
 
+/** Where the player runs: through the desktop app's Rust side in the app, as is in a browser. */
+const playbackHost: WebHost = {
+  media,
+  fetch: hostFetch,
+  ...(inApp ? { app: desktopOs } : {}),
+}
+
 /** One server's client, its routes and its gate. The desktop app makes a new one per server. */
 function Connected() {
   const client = useMemo(() => createClient({ fetch: hostFetch }), [])
   return (
     <ClientProvider client={client}>
-      <Router base={BASE}>
-        <Chrome />
-        <Gate />
-      </Router>
+      {/* every player stays inside this: outside it, the desktop app's player would load its
+          streams from the page instead of the server (it warns in development) */}
+      <WebHostProvider value={playbackHost}>
+        <Router base={BASE}>
+          <Chrome />
+          <Gate />
+        </Router>
+      </WebHostProvider>
     </ClientProvider>
   )
 }
@@ -77,6 +89,7 @@ function Gate() {
           name={app.current.name}
           onRetry={() => app.reconnect().then(session.refetch)}
           onSwitch={app.choose}
+          onForget={app.forget}
           className="min-h-screen bg-bg text-text"
         />
       ) : (
@@ -148,7 +161,10 @@ function useLinks() {
       if (leaves) return
       if (url.pathname !== BASE && !url.pathname.startsWith(`${BASE}/`)) return
       e.preventDefault()
-      navigate(url.pathname.slice(BASE.length) + url.search + url.hash || '/')
+      // the entry says it was opened from inside the app, so the player can go back to it
+      navigate(url.pathname.slice(BASE.length) + url.search + url.hash || '/', {
+        state: { inApp: true },
+      })
     }
     document.addEventListener('click', on)
     return () => document.removeEventListener('click', on)

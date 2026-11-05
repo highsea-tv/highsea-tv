@@ -39,7 +39,7 @@ const { act, cleanup, fireEvent, render, within } = await import('@testing-libra
 const { default: userEvent } = await import('@testing-library/user-event')
 const { createClient } = await import('@highsea-tv/sdk')
 const { ClientProvider } = await import('@highsea-tv/sdk/react')
-const { TooltipProvider } = await import('@highsea-tv/ui-web')
+const { TooltipProvider } = await import('@highsea-tv/ui')
 const { defaultQualitySizes } = await import('@highsea-tv/quality/browser')
 const { FormatEditor, ProfileEditor, SizeEditor } = await import('../src/admin/quality-editors.tsx')
 

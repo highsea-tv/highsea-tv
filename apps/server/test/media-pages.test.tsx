@@ -8,14 +8,21 @@
 import './dom.ts'
 import { afterEach, beforeEach, describe, expect, mock, spyOn, test } from 'bun:test'
 import type { ReactNode } from 'react'
+import type { MovieTab } from '../src/admin/movie-detail.tsx'
+import { navigation, Routed } from './router.tsx'
 
 let role: 'owner' | 'admin' = 'owner'
 const pushed: string[] = []
 
+// a movie's tabs are its own addresses (router.tsx); `pushed` keeps the moves to other pages
 mock.module('next/navigation', () => ({
-  useRouter: () => ({ push: (path: string) => pushed.push(path) }),
-  usePathname: () => '/',
-  useSearchParams: () => new URLSearchParams(),
+  ...navigation,
+  useRouter: () => ({
+    push: (path: string) => {
+      if (!path.startsWith('/movies/')) pushed.push(path)
+      navigation.useRouter().push(path)
+    },
+  }),
 }))
 mock.module('../src/admin/shell.tsx', () => ({
   useShell: () => ({ role }),
@@ -40,7 +47,7 @@ const { act, cleanup, render, within } = await import('@testing-library/react')
 const { default: userEvent } = await import('@testing-library/user-event')
 const { createClient } = await import('@highsea-tv/sdk')
 const { ClientProvider } = await import('@highsea-tv/sdk/react')
-const { UIProvider } = await import('@highsea-tv/ui-web')
+const { UIProvider } = await import('@highsea-tv/ui')
 const { MovieDetail } = await import('../src/admin/movie-detail.tsx')
 const { PersonPage } = await import('../src/admin/person.tsx')
 const { CollectionPage } = await import('../src/admin/collection.tsx')
@@ -586,7 +593,9 @@ const requested = (method: string, path: string) =>
 
 describe('a movie that isn’t in the library', () => {
   test('shows the metadata layer with Add movie, two tabs and the release line', async () => {
-    const { page } = await open(<MovieDetail id="603" />)
+    const { page } = await open(
+      <Routed<MovieTab> base="/movies/603">{(tab) => <MovieDetail id="603" tab={tab} />}</Routed>,
+    )
     expect(page.getByRole('heading', { level: 1, name: 'The Matrix' })).toBeTruthy()
     expect(page.getByText('Not in the library')).toBeTruthy()
     expect(page.getByText('Released 31 March 1999')).toBeTruthy()
@@ -598,7 +607,9 @@ describe('a movie that isn’t in the library', () => {
   })
 
   test('Overview: the top ten cast, the trailer by kind, the collection, More like this, About', async () => {
-    const { page } = await open(<MovieDetail id="603" />)
+    const { page } = await open(
+      <Routed<MovieTab> base="/movies/603">{(tab) => <MovieDetail id="603" tab={tab} />}</Routed>,
+    )
     const cast = page.getByRole('region', { name: 'Cast' })
     expect(within(cast).getAllByRole('link')).toHaveLength(10)
     expect(page.getByRole('link', { name: /Lana Wachowski/ }).getAttribute('href')).toBe(
@@ -629,7 +640,9 @@ describe('a movie that isn’t in the library', () => {
   })
 
   test('a trailer loads nothing until it’s clicked, then plays from youtube-nocookie.com', async () => {
-    const { page, user } = await open(<MovieDetail id="603" />)
+    const { page, user } = await open(
+      <Routed<MovieTab> base="/movies/603">{(tab) => <MovieDetail id="603" tab={tab} />}</Routed>,
+    )
     expect(document.querySelector('iframe')).toBeNull()
     // happy-dom refuses to load the frame (no network in tests) and logs that it didn't
     const quiet = spyOn(console, 'error').mockImplementation(() => {})
@@ -645,7 +658,9 @@ describe('a movie that isn’t in the library', () => {
   })
 
   test('Cast and crew groups the crew by TMDB’s departments, with every job', async () => {
-    const { page, user } = await open(<MovieDetail id="603" />)
+    const { page, user } = await open(
+      <Routed<MovieTab> base="/movies/603">{(tab) => <MovieDetail id="603" tab={tab} />}</Routed>,
+    )
     await user.click(page.getByRole('button', { name: 'All cast and crew' }))
     await settle()
     const crew = page.getByRole('region', { name: 'Crew' })
@@ -658,7 +673,9 @@ describe('a movie that isn’t in the library', () => {
   })
 
   test('Add movie adds it and the page gains the library layer in place', async () => {
-    const { page, user } = await open(<MovieDetail id="603" />)
+    const { page, user } = await open(
+      <Routed<MovieTab> base="/movies/603">{(tab) => <MovieDetail id="603" tab={tab} />}</Routed>,
+    )
     await user.click(page.getByRole('button', { name: 'Add movie' }))
     await settle()
     const dialog = page.getByRole('dialog', { name: /Add The Matrix/ })
@@ -679,7 +696,9 @@ describe('a movie that isn’t in the library', () => {
 
   test('Add {n} missing opens the dialog for every part that isn’t here, this one too', async () => {
     state.owned.clear()
-    const { page, user } = await open(<MovieDetail id="603" />)
+    const { page, user } = await open(
+      <Routed<MovieTab> base="/movies/603">{(tab) => <MovieDetail id="603" tab={tab} />}</Routed>,
+    )
     await user.click(page.getByRole('button', { name: 'Add 3 missing' }))
     await settle()
     const dialog = page.getByRole('dialog', { name: 'Add 3 movies' })
@@ -688,19 +707,25 @@ describe('a movie that isn’t in the library', () => {
 
   test('an admin gets the owner’s page: one shape for staff (ADR 0032)', async () => {
     role = 'admin'
-    const { page } = await open(<MovieDetail id="603" />)
+    const { page } = await open(
+      <Routed<MovieTab> base="/movies/603">{(tab) => <MovieDetail id="603" tab={tab} />}</Routed>,
+    )
     expect(page.getByRole('button', { name: 'Add movie' })).toBeTruthy()
   })
 
   test('without a TMDB key, a title the server hasn’t seen says where to add one', async () => {
-    const { page, user } = await open(<MovieDetail id="604" />)
+    const { page, user } = await open(
+      <Routed<MovieTab> base="/movies/604">{(tab) => <MovieDetail id="604" tab={tab} />}</Routed>,
+    )
     expect(page.getByText('Add a TMDB key to find movies.')).toBeTruthy()
     await user.click(page.getByRole('button', { name: 'Go to Settings' }))
     expect(pushed).toEqual(['/settings/general#metadata'])
   })
 
   test('a key TMDB stopped accepting says to copy it again, and where', async () => {
-    const { page, user } = await open(<MovieDetail id="605" />)
+    const { page, user } = await open(
+      <Routed<MovieTab> base="/movies/605">{(tab) => <MovieDetail id="605" tab={tab} />}</Routed>,
+    )
     expect(page.getByText('TMDB didn’t accept that key.')).toBeTruthy()
     expect(page.getByText('Copy it again from your TMDB account.')).toBeTruthy()
     await user.click(page.getByRole('button', { name: 'Go to Settings' }))
@@ -708,12 +733,20 @@ describe('a movie that isn’t in the library', () => {
   })
 
   test('an id TMDB doesn’t know, or one that isn’t an id, says so', async () => {
-    const { page, user } = await open(<MovieDetail id="999999" />)
+    const { page, user } = await open(
+      <Routed<MovieTab> base="/movies/999999">
+        {(tab) => <MovieDetail id="999999" tab={tab} />}
+      </Routed>,
+    )
     expect(page.getByText('TMDB doesn’t know that title')).toBeTruthy()
     await user.click(page.getByRole('button', { name: 'Go to Discover' }))
     expect(pushed).toEqual(['/discover'])
     cleanup()
-    const again = await open(<MovieDetail id="the-matrix" />)
+    const again = await open(
+      <Routed<MovieTab> base="/movies/the-matrix">
+        {(tab) => <MovieDetail id="the-matrix" tab={tab} />}
+      </Routed>,
+    )
     expect(again.page.getByText('TMDB doesn’t know that title')).toBeTruthy()
   })
 })
@@ -726,7 +759,9 @@ describe('a movie in the library', () => {
   })
 
   test('shows its status, a tag per version, the path and the library’s tabs', async () => {
-    const { page } = await open(<MovieDetail id="603" />)
+    const { page } = await open(
+      <Routed<MovieTab> base="/movies/603">{(tab) => <MovieDetail id="603" tab={tab} />}</Routed>,
+    )
     const summary = page.getByRole('region', { name: 'Summary' })
     expect(within(summary).getByText('Wanted')).toBeTruthy()
     expect(within(summary).getByText('HD 1080p')).toBeTruthy()
@@ -739,7 +774,9 @@ describe('a movie in the library', () => {
   })
 
   test('search waits for indexers: Search is disabled, the Search tab says why and links', async () => {
-    const { page, user } = await open(<MovieDetail id="603" />)
+    const { page, user } = await open(
+      <Routed<MovieTab> base="/movies/603">{(tab) => <MovieDetail id="603" tab={tab} />}</Routed>,
+    )
     expect((page.getByRole('button', { name: 'Search' }) as HTMLButtonElement).disabled).toBe(true)
     await user.click(page.getByRole('button', { name: 'Interactive search' }))
     await settle()
@@ -754,7 +791,9 @@ describe('a movie in the library', () => {
     })
 
     test('Search queues a search for this movie', async () => {
-      const { page, user } = await open(<MovieDetail id="603" />)
+      const { page, user } = await open(
+        <Routed<MovieTab> base="/movies/603">{(tab) => <MovieDetail id="603" tab={tab} />}</Routed>,
+      )
       const search = page.getByRole('button', { name: 'Search' }) as HTMLButtonElement
       expect(search.disabled).toBe(false)
       await user.click(search)
@@ -766,7 +805,9 @@ describe('a movie in the library', () => {
     })
 
     test('the tab searches when nothing is cached: dashes for what an indexer left out, a quiet note for one that failed', async () => {
-      const { page, user } = await open(<MovieDetail id="603" />)
+      const { page, user } = await open(
+        <Routed<MovieTab> base="/movies/603">{(tab) => <MovieDetail id="603" tab={tab} />}</Routed>,
+      )
       await user.click(page.getByRole('button', { name: 'Interactive search' }))
       await settle()
       expect(requested('GET', '/api/v1/movies/603/releases')).toHaveLength(1)
@@ -788,7 +829,9 @@ describe('a movie in the library', () => {
 
     test('recent results are shown without asking the indexers again; Search again asks', async () => {
       state.cached = [release(3, true)]
-      const { page, user } = await open(<MovieDetail id="603" />)
+      const { page, user } = await open(
+        <Routed<MovieTab> base="/movies/603">{(tab) => <MovieDetail id="603" tab={tab} />}</Routed>,
+      )
       await user.click(page.getByRole('button', { name: 'Interactive search' }))
       await settle()
       expect(page.getByText('1 release')).toBeTruthy()
@@ -800,7 +843,9 @@ describe('a movie in the library', () => {
     })
 
     test('Grab sends the release’s indexer, and the row says Grabbed', async () => {
-      const { page, user } = await open(<MovieDetail id="603" />)
+      const { page, user } = await open(
+        <Routed<MovieTab> base="/movies/603">{(tab) => <MovieDetail id="603" tab={tab} />}</Routed>,
+      )
       await user.click(page.getByRole('button', { name: 'Interactive search' }))
       await settle()
       await user.click(page.getByRole('button', { name: /^Grab The\.Matrix.*GRP1$/ }))
@@ -815,7 +860,9 @@ describe('a movie in the library', () => {
     })
 
     test('Grab anyway sends force for a rejected release', async () => {
-      const { page, user } = await open(<MovieDetail id="603" />)
+      const { page, user } = await open(
+        <Routed<MovieTab> base="/movies/603">{(tab) => <MovieDetail id="603" tab={tab} />}</Routed>,
+      )
       await user.click(page.getByRole('button', { name: 'Interactive search' }))
       await settle()
       await user.click(page.getByRole('button', { name: /^Grab anyway/ }))
@@ -828,7 +875,9 @@ describe('a movie in the library', () => {
 
     test('a refused grab says why and leaves the button', async () => {
       state.blocked.add('g1')
-      const { page, user } = await open(<MovieDetail id="603" />)
+      const { page, user } = await open(
+        <Routed<MovieTab> base="/movies/603">{(tab) => <MovieDetail id="603" tab={tab} />}</Routed>,
+      )
       await user.click(page.getByRole('button', { name: 'Interactive search' }))
       await settle()
       await user.click(page.getByRole('button', { name: /^Grab The\.Matrix.*GRP1$/ }))
@@ -841,7 +890,9 @@ describe('a movie in the library', () => {
 
   test('In the queue: each of its downloads with live progress, and none of another movie’s', async () => {
     state.queue = [queueItem(1, 603), queueItem(2, 604, { release: 'Reloaded.2003' })]
-    const { page } = await open(<MovieDetail id="603" />)
+    const { page } = await open(
+      <Routed<MovieTab> base="/movies/603">{(tab) => <MovieDetail id="603" tab={tab} />}</Routed>,
+    )
     const card = page.getByRole('region', { name: 'In the queue' })
     expect(within(card).getByText('The.Matrix.1999.1080p.BluRay.x264-GRP1')).toBeTruthy()
     expect(within(card).getByText('Downloading')).toBeTruthy()
@@ -877,7 +928,9 @@ describe('a movie in the library', () => {
       historyEvent(2, 'grabbed'),
       historyEvent(3, 'download-failed', { indexer: null }),
     ]
-    const { page, user } = await open(<MovieDetail id="603" />)
+    const { page, user } = await open(
+      <Routed<MovieTab> base="/movies/603">{(tab) => <MovieDetail id="603" tab={tab} />}</Routed>,
+    )
     await user.click(page.getByRole('tab', { name: 'Files' }))
     await settle()
     const version = page.getByRole('region', { name: 'HD 1080p version' })
@@ -905,7 +958,9 @@ describe('a movie in the library', () => {
   })
 
   test('Files and History show their empty states', async () => {
-    const { page, user } = await open(<MovieDetail id="603" />)
+    const { page, user } = await open(
+      <Routed<MovieTab> base="/movies/603">{(tab) => <MovieDetail id="603" tab={tab} />}</Routed>,
+    )
     await user.click(page.getByRole('tab', { name: 'Files' }))
     await settle()
     expect(page.getByRole('region', { name: 'HD 1080p version' })).toBeTruthy()
@@ -922,7 +977,9 @@ describe('a movie in the library', () => {
         track('t1'),
         track('t2', { kind: 'bundled', provider: null, score: 100, forced: true, language: 'fr' }),
       ]
-      const { page, user } = await open(<MovieDetail id="603" />)
+      const { page, user } = await open(
+        <Routed<MovieTab> base="/movies/603">{(tab) => <MovieDetail id="603" tab={tab} />}</Routed>,
+      )
       await user.click(page.getByRole('tab', { name: 'Subtitles' }))
       await settle()
       expect(page.getByText('2 external · 1 embedded')).toBeTruthy()
@@ -957,7 +1014,9 @@ describe('a movie in the library', () => {
         }),
         track('t2', { kind: 'bundled', provider: null, format: 'sup', language: 'fr' }),
       ]
-      const { page, user } = await open(<MovieDetail id="603" />)
+      const { page, user } = await open(
+        <Routed<MovieTab> base="/movies/603">{(tab) => <MovieDetail id="603" tab={tab} />}</Routed>,
+      )
       await user.click(page.getByRole('tab', { name: 'Subtitles' }))
       await settle()
       expect(page.getByText('Framerate corrected (25 → 23.976)')).toBeTruthy()
@@ -997,7 +1056,9 @@ describe('a movie in the library', () => {
         subtitleResult(2, 'OpenSubtitles.com', credit),
         subtitleResult(3, 'Subdl', null),
       ]
-      const { page, user } = await open(<MovieDetail id="603" />)
+      const { page, user } = await open(
+        <Routed<MovieTab> base="/movies/603">{(tab) => <MovieDetail id="603" tab={tab} />}</Routed>,
+      )
       await user.click(page.getByRole('tab', { name: 'Subtitles' }))
       await settle()
       await user.click(page.getByRole('button', { name: 'Search providers' }))
@@ -1021,7 +1082,9 @@ describe('a movie in the library', () => {
     test('no provider on, or none answering, says so in place of the results', async () => {
       state.files = [mediaFile('v1')]
       state.subtitleSearch = { status: 409, reason: 'no-providers' }
-      const { page, user } = await open(<MovieDetail id="603" />)
+      const { page, user } = await open(
+        <Routed<MovieTab> base="/movies/603">{(tab) => <MovieDetail id="603" tab={tab} />}</Routed>,
+      )
       await user.click(page.getByRole('tab', { name: 'Subtitles' }))
       await settle()
       await user.click(page.getByRole('button', { name: 'Search providers' }))
@@ -1037,7 +1100,9 @@ describe('a movie in the library', () => {
     })
 
     test('a movie without a file says subtitles come after the import', async () => {
-      const { page, user } = await open(<MovieDetail id="603" />)
+      const { page, user } = await open(
+        <Routed<MovieTab> base="/movies/603">{(tab) => <MovieDetail id="603" tab={tab} />}</Routed>,
+      )
       await user.click(page.getByRole('tab', { name: 'Subtitles' }))
       await settle()
       expect(page.getByText('No file to find subtitles for yet')).toBeTruthy()
@@ -1045,7 +1110,9 @@ describe('a movie in the library', () => {
   })
 
   test('Monitored saves at once', async () => {
-    const { page, user } = await open(<MovieDetail id="603" />)
+    const { page, user } = await open(
+      <Routed<MovieTab> base="/movies/603">{(tab) => <MovieDetail id="603" tab={tab} />}</Routed>,
+    )
     const monitored = page.getByRole('switch', { name: 'Monitored' })
     expect(monitored.getAttribute('aria-checked')).toBe('true')
     await user.click(monitored)
@@ -1057,7 +1124,9 @@ describe('a movie in the library', () => {
   })
 
   test('versions: the last can’t be removed; one is added, then removed', async () => {
-    const { page, user } = await open(<MovieDetail id="603" />)
+    const { page, user } = await open(
+      <Routed<MovieTab> base="/movies/603">{(tab) => <MovieDetail id="603" tab={tab} />}</Routed>,
+    )
     const lib = () => page.getByRole('region', { name: 'In the library' })
     const removeFirst = within(lib()).getByRole('button', { name: 'Remove HD 1080p' })
     expect((removeFirst as HTMLButtonElement).disabled).toBe(true)
@@ -1084,7 +1153,9 @@ describe('a movie in the library', () => {
   })
 
   test('Edit saves the movie’s own options', async () => {
-    const { page, user } = await open(<MovieDetail id="603" />)
+    const { page, user } = await open(
+      <Routed<MovieTab> base="/movies/603">{(tab) => <MovieDetail id="603" tab={tab} />}</Routed>,
+    )
     await user.click(page.getByRole('button', { name: 'More actions' }))
     await settle()
     await user.click(page.getByRole('menuitem', { name: 'Edit' }))
@@ -1102,7 +1173,9 @@ describe('a movie in the library', () => {
   })
 
   test('Refresh metadata queues the refresh', async () => {
-    const { page, user } = await open(<MovieDetail id="603" />)
+    const { page, user } = await open(
+      <Routed<MovieTab> base="/movies/603">{(tab) => <MovieDetail id="603" tab={tab} />}</Routed>,
+    )
     await user.click(page.getByRole('button', { name: 'More actions' }))
     await settle()
     await user.click(page.getByRole('menuitem', { name: 'Refresh metadata' }))
@@ -1111,7 +1184,9 @@ describe('a movie in the library', () => {
   })
 
   test('Remove, with its files, keeps the page where it is without the library layer', async () => {
-    const { page, user } = await open(<MovieDetail id="603" />)
+    const { page, user } = await open(
+      <Routed<MovieTab> base="/movies/603">{(tab) => <MovieDetail id="603" tab={tab} />}</Routed>,
+    )
     await user.click(page.getByRole('button', { name: 'More actions' }))
     await settle()
     await user.click(page.getByRole('menuitem', { name: 'Remove from library' }))
@@ -1127,7 +1202,9 @@ describe('a movie in the library', () => {
 
   test('Remove, with an import list, can keep lists from adding it again', async () => {
     state.importLists = 1
-    const { page, user } = await open(<MovieDetail id="603" />)
+    const { page, user } = await open(
+      <Routed<MovieTab> base="/movies/603">{(tab) => <MovieDetail id="603" tab={tab} />}</Routed>,
+    )
     await user.click(page.getByRole('button', { name: 'More actions' }))
     await settle()
     await user.click(page.getByRole('menuitem', { name: 'Remove from library' }))
@@ -1140,7 +1217,9 @@ describe('a movie in the library', () => {
   })
 
   test('without import lists, Remove doesn’t mention them', async () => {
-    const { page, user } = await open(<MovieDetail id="603" />)
+    const { page, user } = await open(
+      <Routed<MovieTab> base="/movies/603">{(tab) => <MovieDetail id="603" tab={tab} />}</Routed>,
+    )
     await user.click(page.getByRole('button', { name: 'More actions' }))
     await settle()
     await user.click(page.getByRole('menuitem', { name: 'Remove from library' }))
@@ -1151,7 +1230,9 @@ describe('a movie in the library', () => {
 
   test('a movie TMDB no longer has keeps its page and offers Discover to find its match', async () => {
     state.gone = true
-    const { page, user } = await open(<MovieDetail id="603" />)
+    const { page, user } = await open(
+      <Routed<MovieTab> base="/movies/603">{(tab) => <MovieDetail id="603" tab={tab} />}</Routed>,
+    )
     expect(page.getByText('TMDB no longer has this movie')).toBeTruthy()
     expect(page.getByText('HD 1080p (HD 1080p)')).toBeTruthy()
     await user.click(page.getByRole('button', { name: 'Find it on Discover' }))
@@ -1159,7 +1240,9 @@ describe('a movie in the library', () => {
   })
 
   test('live: an update elsewhere refetches the movie in place', async () => {
-    const { page } = await open(<MovieDetail id="603" />)
+    const { page } = await open(
+      <Routed<MovieTab> base="/movies/603">{(tab) => <MovieDetail id="603" tab={tab} />}</Routed>,
+    )
     state.movie = { status: 'available' }
     await act(async () => {
       state.push?.('movies.updated')

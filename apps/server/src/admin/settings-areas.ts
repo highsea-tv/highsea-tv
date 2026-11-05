@@ -2,7 +2,7 @@
 // Settings' areas in their six groups (System and its Migration area came with 6b, Playback with
 // 4.3a) (the prototype's settings.tsx). Plain data, so the
 // `/settings/{area}` route can check an id on the server.
-import type { IconName } from '@highsea-tv/ui-web'
+import type { IconName } from '@highsea-tv/ui'
 
 export type AreaId =
   | 'general'
@@ -63,7 +63,8 @@ export const areaGroups: {
       { id: 'vpn', icon: 'shield', ownerOnly: true },
       // the port and encryption are network settings, the owner's (checkpoint 6's access table)
       { id: 'downloads', icon: 'downloads', ownerOnly: true },
-      { id: 'subtitles', icon: 'subtitles', href: '/subtitles' },
+      // its settings, not its wanted list (prototype-gaps.md, stage 5)
+      { id: 'subtitles', icon: 'subtitles', href: '/subtitles/providers' },
       { id: 'connections', icon: 'notification' },
     ],
   },

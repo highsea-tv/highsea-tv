@@ -1,0 +1,1698 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// The mock server's entities: a first draft of the shapes @highsea-tv/sdk will return in Phase 3.
+// Names follow the roadmap (docs/roadmap.md, Phase 3) and ADR 0012 (the unified media item tree).
+// Times are ISO 8601 strings; sizes are bytes; rates are bytes per second; durations are seconds
+// unless a name says otherwise.
+
+export type ISODate = string
+
+// ---------------------------------------------------------------- server
+
+export type Reachability = 'local' | 'remote'
+
+export type Server = {
+  id: string
+  name: string
+  version: string
+  /** Inherited by every client (roadmap › personalization). */
+  branding: { name: string; accent: string | null; customMark: boolean }
+  addresses: { local: string[]; public: string | null }
+  /** How this client reached the server: the LAN address won, or it failed over to remote. */
+  reachability: Reachability
+  setupComplete: boolean
+  catalogVersion: string
+  clientsConnected: number
+}
+
+/** `GET /api/v1/system/info/public`: unauthenticated, for discovery and the sign-in screen. */
+export type PublicServerInfo = {
+  id: string
+  name: string
+  version: string
+  setupComplete: boolean
+  auth: { local: boolean; oidc: { name: string } | null }
+}
+
+/** A server answering LAN discovery (UDP broadcast or mDNS `_highsea._tcp`). */
+export type DiscoveredServer = {
+  id: string
+  name: string
+  version: string
+  address: string
+  latencyMs: number
+  owner: string
+  discoveredAt: ISODate
+}
+
+// ---------------------------------------------------------------- users and devices
+
+/** The owner and admins run the server; users watch (ADR 0032). */
+export type UserRole = 'owner' | 'admin' | 'user'
+
+/** A user's, set per person: ask for titles, download for offline. Staff hold every power by role. */
+export type Permission = 'request' | 'download'
+
+export type User = {
+  id: string
+  username: string
+  displayName: string
+  role: UserRole
+  permissions: Permission[]
+  /** Library-level access: every library, or the listed ones. */
+  libraries: 'all' | string[]
+  twoFactor: boolean
+  lastSeen: ISODate | null
+  /** Pending until the invite is accepted. */
+  invited: boolean
+}
+
+export type ClientType =
+  | 'admin'
+  | 'web'
+  | 'desktop'
+  | 'ios'
+  | 'android'
+  | 'tvos'
+  | 'androidtv'
+  | 'webos'
+  | 'tizen'
+
+/** A per-server device token: listed and revocable (roadmap › auth). */
+export type Device = {
+  id: string
+  userId: string
+  name: string
+  client: ClientType
+  appVersion: string
+  address: string
+  lastSeen: ISODate
+}
+
+export type Session = { user: User; deviceId: string; expiresAt: ISODate }
+
+export type InviteInput = {
+  displayName: string
+  /** Optional: the invite can go by email, or as a link the owner shares. */
+  email: string | null
+  role: Exclude<UserRole, 'owner'>
+  libraries: 'all' | string[]
+}
+
+/** A pending user and the single-use link that finishes their account. */
+export type Invite = { user: User; link: string; expiresAt: ISODate }
+
+/** For scripts and other apps (Home Assistant, a backup job). The secret shows once. */
+export type ApiKey = {
+  id: string
+  name: string
+  /** The first characters, to tell keys apart: `hs_7Kq2…`. */
+  prefix: string
+  scope: 'read' | 'full'
+  /** Who made it: the key acts for them, never beyond an admin. */
+  userId: string
+  createdAt: ISODate
+  lastUsed: ISODate | null
+}
+
+export type CreatedApiKey = ApiKey & { secret: string }
+
+export type SignInResult =
+  | { status: 'signed-in'; session: Session }
+  | { status: 'two-factor'; challenge: string }
+
+// ---------------------------------------------------------------- media (ADR 0012)
+
+export type MediaType =
+  | 'movie'
+  | 'series'
+  | 'season'
+  | 'episode'
+  | 'artist'
+  | 'album'
+  | 'track'
+  | 'book'
+
+export type MediaStatus =
+  | 'available'
+  | 'downloading'
+  | 'queued'
+  | 'missing'
+  | 'cutoff-unmet'
+  | 'unreleased'
+
+export type MinimumAvailability = 'announced' | 'in-cinemas' | 'released'
+
+/** One version of an item, with its own quality profile (4K HDR beside 1080p SDR). */
+export type MediaVersion = {
+  id: string
+  label: string
+  qualityProfileId: string
+  fileId: string | null
+}
+
+export type MediaItem = {
+  id: string
+  type: MediaType
+  parentId: string | null
+  title: string
+  originalTitle?: string | null
+  sortTitle: string
+  year: number
+  runtimeMinutes: number
+  genres: string[]
+  synopsis: string
+  /** Community rating out of 5. */
+  rating: number
+  tmdbId: number
+  monitored: boolean
+  minimumAvailability: MinimumAvailability
+  languageProfileId: string
+  rootFolder: string
+  path: string
+  addedAt: ISODate
+  releaseDate: ISODate
+  status: MediaStatus
+  versions: MediaVersion[]
+  quality: string[]
+  /** `logo`: the title's logo from TMDB, when it has one (the TV's hero sets it in place of the name). */
+  art: { poster: string; backdrop: string; still: string; logo?: string }
+}
+
+export type VideoStream = {
+  index: number
+  type: 'video'
+  codec: string
+  width: number
+  height: number
+  hdr: 'none' | 'hdr10' | 'dolby-vision' | 'hlg'
+  bitrate: number
+}
+export type AudioStream = {
+  index: number
+  type: 'audio'
+  codec: string
+  language: string
+  channels: string
+  title: string | null
+  default: boolean
+}
+export type SubtitleStream = {
+  index: number
+  type: 'subtitle'
+  codec: string
+  language: string
+  forced: boolean
+  hi: boolean
+  default: boolean
+}
+export type Stream = VideoStream | AudioStream | SubtitleStream
+
+/** A file on disk with its ffprobe stream info (`media_files`). */
+export type MediaFile = {
+  id: string
+  itemId: string
+  versionId: string
+  path: string
+  size: number
+  quality: { resolution: '2160p' | '1080p' | '720p' | '480p'; source: string; codec: string }
+  releaseGroup: string | null
+  sceneName: string
+  addedAt: ISODate
+  streams: Stream[]
+}
+
+// ---------------------------------------------------------------- acquisition
+
+// Profiles, custom formats and the decision engine's reasons are @highsea-tv/quality's (ADR 0031).
+import type { CustomFormat, DecisionReason, QualityProfile } from '@highsea-tv/quality'
+
+export type { CustomFormat, DecisionReason, QualityProfile }
+
+/**
+ * A title the metadata source knows (TMDB simulation). `id` is its media id: the same before and
+ * after it's added to the library (ADR 0014).
+ */
+export type DiscoverMovie = {
+  id: string
+  tmdbId: number
+  title: string
+  year: number
+  runtimeMinutes: number
+  genres: string[]
+  synopsis: string
+  rating: number
+  releaseDate: ISODate
+  art: { poster: string; backdrop: string; still: string }
+  inLibrary: boolean
+}
+
+// ---------------------------------------------------------------- shows in the admin (stage 6)
+
+/**
+ * Which episodes a show added watches, as Sonarr's Monitor choice: every one, only those not yet
+ * aired, those without a file, the first season, or none.
+ */
+export type ShowMonitor = 'all' | 'future' | 'missing' | 'first-season' | 'none'
+
+/**
+ * An episode as the admin sees it: watched for or not, and its file. `unaired` until its air
+ * date; `cutoff-unmet` when its file is below its profile's cutoff.
+ */
+export type EpisodeStatus = 'available' | 'missing' | 'downloading' | 'cutoff-unmet' | 'unaired'
+
+export type AdminEpisode = {
+  id: string
+  show: string
+  season: number
+  number: number
+  title: string
+  /** First aired, YYYY-MM-DD. */
+  aired: string
+  runtimeMinutes: number
+  monitored: boolean
+  status: EpisodeStatus
+  /** Its file, or null; a multi-episode file names every episode it holds in `episodes`. */
+  file: {
+    path: string
+    size: number
+    quality: string
+    releaseGroup: string | null
+    episodes: number[]
+  } | null
+  /** 0–100 while it downloads. */
+  progress?: number
+}
+
+export type AdminSeason = {
+  number: number
+  /** "Season 2", or "Specials". */
+  title: string
+  monitored: boolean
+  poster: string
+  episodes: AdminEpisode[]
+}
+
+/** A show in the admin's library: Sonarr's series. */
+export type AdminShow = {
+  id: string
+  tmdbId: number
+  title: string
+  sortTitle: string
+  year: number
+  endYear: number | null
+  /** Still making episodes, or not. */
+  airing: boolean
+  network: string
+  genres: string[]
+  synopsis: string
+  rating: number
+  certification: string
+  runtimeMinutes: number
+  monitored: boolean
+  qualityProfileId: string
+  languageProfileId: string
+  rootFolder: string
+  path: string
+  /** Files go in "Season 01" folders. */
+  seasonFolders: boolean
+  addedAt: ISODate
+  art: { poster: string; backdrop: string }
+  /** Seasons, specials not counted. */
+  seasons: number
+  /**
+   * Aired episodes monitored or with a file (Sonarr's count), how many of them have a file, and
+   * the whole show's.
+   */
+  episodes: { monitored: number; have: number; total: number }
+  /** Bytes on disk. */
+  size: number
+  /** The next monitored episode to air, or null. */
+  nextAiring: { id: string; code: string; title: string; aired: string } | null
+}
+
+/** `shows.get(id)`: a show with its seasons (specials first, as Sonarr lists them) and episodes. */
+export type AdminShowDetail = AdminShow & { seasonList: AdminSeason[] }
+
+/** A show TMDB knows, for Discover and Add a show. */
+export type DiscoverShow = {
+  id: string
+  tmdbId: number
+  title: string
+  year: number
+  endYear: number | null
+  seasons: number
+  network: string
+  genres: string[]
+  synopsis: string
+  rating: number
+  art: { poster: string; backdrop: string }
+  inLibrary: boolean
+}
+
+export type AddShowInput = {
+  tmdbId: number
+  title: string
+  year: number
+  qualityProfileId: string
+  languageProfileId: string
+  rootFolder: string
+  monitor: ShowMonitor
+  seasonFolders: boolean
+  /** Look for the missing episodes once it's added. */
+  search: boolean
+}
+
+// ---------------------------------------------------------------- metadata (media pages, ADR 0014)
+
+export type Department =
+  | 'Acting'
+  | 'Directing'
+  | 'Writing'
+  | 'Production'
+  | 'Sound'
+  | 'Camera'
+  | 'Editing'
+
+/** A person's part in a title: a character (cast) or a job (crew). */
+export type Credit = {
+  personId: string
+  name: string
+  photo: string
+  department: Department
+  /** Cast: who they play. */
+  character: string | null
+  /** Crew: what they did ("Director", "Screenplay"). */
+  job: string | null
+}
+
+/** A trailer or extra, hosted on YouTube and embedded from youtube-nocookie.com on click. */
+export type Video = {
+  id: string
+  name: string
+  kind: 'Trailer' | 'Teaser' | 'Clip' | 'Featurette'
+  site: 'YouTube'
+  key: string
+  lengthSeconds: number
+  publishedAt: ISODate
+  still: string
+}
+
+export type CollectionRef = { id: string; name: string }
+
+export type Collection = CollectionRef & { overview: string; parts: DiscoverMovie[] }
+
+/** `GET /api/v1/metadata/movies/{tmdbId}`: everything the metadata source knows, in any state. */
+export type MovieMetadata = DiscoverMovie & {
+  originalTitle: string
+  /** ISO 639-1. */
+  originalLanguage: string
+  tagline: string | null
+  /** US certification ("PG-13"), or null when unrated. */
+  certification: string | null
+  /** USD; null when unknown. */
+  budget: number | null
+  revenue: number | null
+  studios: string[]
+  imdbId: string
+  wikidataId: string
+  cast: Credit[]
+  crew: Credit[]
+  videos: Video[]
+  collection: CollectionRef | null
+}
+
+/** A title in a person's filmography, with their part in it. */
+export type PersonCredit = DiscoverMovie & { role: string; department: Department }
+
+/** A show someone is in, for the admin's person page (stage 6): TMDB's show, marked if it's here. */
+export type PersonShowCredit = DiscoverShow & { role: string; department: Department }
+
+/** An artist in the music library, with how many of their albums are here. */
+export type ClientArtist = {
+  id: string
+  name: string
+  /** For A–Z: the name without a leading "The". */
+  sortName: string
+  photo: string
+  albums: number
+  genres: string[]
+  addedAt: string
+}
+
+/** An album in the music library: square cover art, its artist, year and tracks. */
+export type ClientAlbum = {
+  id: string
+  title: string
+  sortTitle: string
+  artist: { id: string; name: string }
+  year: number
+  cover: string
+  genres: string[]
+  tracks: number
+  /** Album, EP, single, soundtrack or compilation, as Plexamp groups them. */
+  kind: 'album' | 'ep' | 'single' | 'soundtrack' | 'compilation'
+  addedAt: string
+}
+
+/** `GET /api/v1/library/music`: every artist and album the household can play. */
+export type ClientMusic = { artists: ClientArtist[]; albums: ClientAlbum[] }
+
+/** A song on an album, in its order there. */
+export type ClientSong = {
+  id: string
+  /** Its place on the album, from 1. */
+  number: number
+  title: string
+  /** Seconds. */
+  duration: number
+}
+
+/**
+ * A song in the player's queue: the song, its album, and its loudness from the server's analysis
+ * of the file (as Plex's loudness analysis gives Plexamp its waveform), drawn as the scrubber.
+ */
+export type QueuedSong = ClientSong & {
+  album: ClientAlbum
+  /** The song's loudness from start to end in even steps, each 0 to 1. */
+  loudness: number[]
+}
+
+/** `GET /api/v1/library/music/songs`: a song with its album, as Music's Songs lists it. */
+export type ClientLibrarySong = ClientSong & {
+  album: ClientAlbum
+  /** How many times the household has played it, for Most played. */
+  plays: number
+}
+
+/** What the player was asked to play, for "Playing from". */
+export type MusicSource =
+  | { album: string }
+  | { artist: string }
+  | { playlist: string }
+  | { songs: string[] }
+
+/**
+ * `GET /api/v1/library/music/playlists`: one of the person's own playlists. Each person's are
+ * their own (prototype-gaps.md, question 11); smart and shared playlists come later.
+ */
+export type ClientPlaylist = {
+  id: string
+  name: string
+  /** How many songs, and their length in seconds. */
+  songs: number
+  duration: number
+  /** The first four albums' covers, for the mosaic; fewer when the playlist has fewer albums. */
+  covers: string[]
+  updatedAt: string
+}
+
+/** `GET /api/v1/library/music/playlists/{id}`: a playlist and its songs, in its order. */
+export type ClientPlaylistDetail = {
+  playlist: ClientPlaylist
+  /** `entry` tells two of the same song apart, for reordering and removing. */
+  songs: (ClientLibrarySong & { entry: string })[]
+}
+
+/**
+ * `GET /api/v1/library/music/albums/{id}`: an album with its songs, its length, when and by whom
+ * it was released, the film here it scores, and the artist's other albums.
+ */
+export type ClientAlbumDetail = {
+  album: ClientAlbum
+  songs: ClientSong[]
+  /** Seconds, every song together. */
+  duration: number
+  /** The release date, YYYY-MM-DD. */
+  released: string
+  label: string
+  /** The album's note from its metadata, when there is one. */
+  about: string | null
+  /** The film here this album is the score of. */
+  film: ClientItem | null
+  /** The artist's other albums here, newest first. */
+  more: ClientAlbum[]
+}
+
+/** How an artist's albums are grouped on their page, as Apple Music and Plexamp group them. */
+export type DiscographyKind = 'albums' | 'singles' | 'soundtracks' | 'compilations'
+
+/**
+ * `GET /api/v1/library/music/artists/{id}`: an artist, their albums here grouped by kind (newest
+ * first in each), and artists who share a genre with them.
+ */
+export type ClientArtistDetail = {
+  artist: ClientArtist
+  bio: string | null
+  /** The newest album's cover, blurred behind the page. */
+  backdrop: string
+  songs: number
+  /** Their person page, when they're credited on a film here. */
+  person: string | null
+  sections: { kind: DiscographyKind; albums: ClientAlbum[] }[]
+  similar: ClientArtist[]
+}
+
+/**
+ * A show in the shows library: a series, its years on air, how many seasons and episodes are here,
+ * and this person's place in it (how many episodes they haven't watched, and the one to play next).
+ */
+export type ClientShow = {
+  id: string
+  title: string
+  /** For A–Z: the title without a leading "The" or "A". */
+  sortTitle: string
+  /** The year it first aired. */
+  year: number
+  /** The year it ended, or null while it's still airing. */
+  endYear: number | null
+  genres: string[]
+  /** Community rating out of 5. */
+  rating: number
+  certification: string
+  synopsis: string
+  /** An episode's usual length, in minutes. */
+  runtimeMinutes: number
+  /** Seasons here, specials not counted. */
+  seasons: number
+  /** Episodes here, specials not counted. */
+  episodes: number
+  addedAt: string
+  art: { poster: string; backdrop: string; logo: string }
+  /** Episodes this person hasn't watched, specials not counted: the poster's count. */
+  unwatched: number
+  /** Every episode watched. */
+  watched: boolean
+  /** What Play plays, and how it's named; null when nothing here can play. */
+  next: NextEpisode | null
+}
+
+/** An episode, with this person's watch state as a film has it (ClientItem). */
+export type ClientEpisode = {
+  id: string
+  /** The show's id. */
+  show: string
+  /** Its season, 0 for specials. */
+  season: number
+  /** Its place in the season, from 1. */
+  number: number
+  title: string
+  synopsis: string
+  runtimeMinutes: number
+  /** First aired, YYYY-MM-DD. */
+  aired: string
+  still: string
+  /** 0–1 through the episode, or null if not started (or finished). */
+  progress: number | null
+  /** Seconds in, for Resume. */
+  position: number
+  watched: boolean
+}
+
+/**
+ * The episode Play plays, as the Apple TV app, Netflix and Plex choose it: the one part way
+ * through; else the one after the last watched; else the first. `resume` part way, `next` after
+ * one watched, `start` before any, `again` once every episode is watched.
+ */
+export type NextEpisode = { episode: ClientEpisode; kind: 'resume' | 'next' | 'start' | 'again' }
+
+export type ClientSeason = {
+  /** 0 for specials. */
+  number: number
+  /** "Season 2", or "Specials". */
+  title: string
+  /** The year it aired; null for specials. */
+  year: number | null
+  poster: string
+  episodes: ClientEpisode[]
+}
+
+/** `GET /api/v1/library/shows/{id}`: a show with its seasons, episodes, people and like shows. */
+export type ClientShowDetail = {
+  show: ClientShow
+  /** Seasons in order, specials last, as Plex and the Apple TV app place them. */
+  seasons: ClientSeason[]
+  cast: Credit[]
+  creators: Credit[]
+  /** The rest of the crew: who wrote the score. */
+  crew: Credit[]
+  /** Shows here that share a genre, closest first. */
+  related: ClientShow[]
+  /** Its trailers from the metadata, newest first; none for some shows. */
+  videos: Video[]
+  /**
+   * The languages its episodes have, for Audio and subtitles on the show's page: picked once for
+   * the show, they apply to every episode, as a film's picks apply to the film.
+   */
+  tracks: { audio: { id: string; label: string }[]; subtitles: { id: string; label: string }[] }
+  /** This person's picks for the show, or the server's defaults. */
+  defaults: { audioId: string | null; subtitleId: string | null }
+}
+
+/**
+ * `GET /api/v1/library/people/{id}`: a person on the clients, with everything they're part of on
+ * this server: films by department (the one they're known for first), newest first in each, then
+ * shows, then the albums they're the artist of.
+ */
+export type ClientPerson = {
+  id: string
+  name: string
+  photo: string
+  knownFor: Department
+  bio: string | null
+  born: { date: string; place: string } | null
+  died: { date: string; place: string } | null
+  /** The best-rated film here (or show, or the newest album), whose art sits behind the page. */
+  backdrop: string
+  /** How many films, shows and albums here they're part of. */
+  counts: { films: number; shows: number; albums: number }
+  departments: { department: Department; credits: { item: ClientItem; role: string }[] }[]
+  /** Their shows, newest first, with every role they had in each. */
+  shows: { show: ClientShow; role: string }[]
+  /** Their albums here, newest first, and their artist page, when they're an artist here. */
+  albums: ClientAlbum[]
+  artist: string | null
+}
+
+/** `GET /api/v1/metadata/people/{id}`. */
+export type Person = {
+  id: string
+  name: string
+  photo: string
+  knownFor: Department
+  bio: string | null
+  born: { date: string; place: string } | null
+  died: { date: string; place: string } | null
+  credits: PersonCredit[]
+  /** Their shows, newest first (stage 6); left out by TMDB's own answer for the films. */
+  shows?: PersonShowCredit[]
+}
+
+export type AddMovieInput = {
+  tmdbId?: number
+  title: string
+  year: number
+  rootFolder: string
+  qualityProfileId: string
+  languageProfileId: string
+  monitored: boolean
+  minimumAvailability: MinimumAvailability
+  searchNow?: boolean
+}
+
+export type SubtitleSearchResult = {
+  id: string
+  language: string
+  releaseName: string
+  provider: string
+  score: number
+  forced: boolean
+  hi: boolean
+  format: 'srt' | 'ass' | 'vtt'
+}
+
+export type SubtitleProvider = {
+  id: string
+  name: string
+  enabled: boolean
+  rateLimitRemaining: number
+  rateLimitMax: number
+  requiresAuth: boolean
+  username?: string
+  /** The line the provider's terms ask for where its subtitles are picked. */
+  attribution?: string
+}
+
+export type TorrentLimits = {
+  downRateLimit: number
+  upRateLimit: number
+  vpnConnected: boolean
+  vpnInterface: string
+  vpnIp: string
+}
+
+export type AddTorrentInput = {
+  urlOrMagnet: string
+  category: string
+  savePath: string
+  startImmediately?: boolean
+}
+
+/** A search result with the decision engine's verdict and its reasons. */
+export type Release = {
+  guid: string
+  title: string
+  indexerId: string
+  indexer: string
+  size: number
+  seeders: number
+  leechers: number
+  ageHours: number
+  quality: string
+  customFormats: string[]
+  formatScore: number
+  approved: boolean
+  reasons: DecisionReason[]
+}
+
+export type TorrentState =
+  | 'queued'
+  | 'checking'
+  | 'downloading'
+  | 'stalled'
+  | 'paused'
+  | 'importing'
+  /** Import refused, for example a release that contains an executable. */
+  | 'import-blocked'
+  | 'seeding'
+  | 'completed'
+  | 'error'
+
+export type TorrentFile = {
+  path: string
+  size: number
+  progress: number
+  priority: 'skip' | 'normal' | 'high'
+}
+
+export type Tracker = {
+  url: string
+  status: 'working' | 'updating' | 'error'
+  peers: number
+  message: string | null
+}
+
+export type SeedingRule = { ratio: number | null; minutes: number | null }
+
+export type Torrent = {
+  id: string
+  name: string
+  infoHash: string
+  /** The media item it was grabbed for; null for manual adds. */
+  itemId: string | null
+  category: string
+  size: number
+  downloaded: number
+  uploaded: number
+  /** 0–1. */
+  progress: number
+  downRate: number
+  upRate: number
+  /** Seconds left, or null when unknown (stalled). */
+  eta: number | null
+  peers: { connected: number; total: number }
+  seeds: { connected: number; total: number }
+  ratio: number
+  state: TorrentState
+  /** Why it's stalled, blocked or failed, in plain words. */
+  stateReason: string | null
+  indexer: string | null
+  quality: string | null
+  addedAt: ISODate
+  completedAt: ISODate | null
+  savePath: string
+  files: TorrentFile[]
+  trackers: Tracker[]
+  seedingRule: SeedingRule
+}
+
+/** A row in Activity › Queue: a torrent seen from the media item it's for. */
+export type QueueItem = {
+  id: string
+  torrentId: string
+  itemId: string | null
+  title: string
+  year: number | null
+  /** An episode's show and number ("S03E06"), when the item is an episode; `title` is the show's. */
+  episode?: { show: string; code: string; title: string }
+  release: string
+  quality: string | null
+  size: number
+  progress: number
+  downRate: number
+  upRate: number
+  eta: number | null
+  ratio: number
+  state: TorrentState
+  stateReason: string | null
+}
+
+export type HistoryEventType =
+  | 'grabbed'
+  | 'imported'
+  | 'import-failed'
+  | 'deleted'
+  | 'renamed'
+  | 'subtitle-downloaded'
+  | 'subtitle-synced'
+  | 'blocklisted'
+
+export type HistoryEvent = {
+  id: string
+  itemId: string
+  type: HistoryEventType
+  date: ISODate
+  sourceTitle: string
+  quality: string | null
+  indexer: string | null
+  message: string | null
+}
+
+export type BlocklistEntry = {
+  id: string
+  itemId: string
+  sourceTitle: string
+  indexer: string
+  reason: string
+  date: ISODate
+}
+
+/** Where an import list's movies come from (ADR 0045): TMDB, Trakt, or a generic JSON list. */
+export type ImportListSettings =
+  | {
+      kind: 'tmdb'
+      /** Upcoming and Now playing are movies' charts; On the air and Airing today, shows'. */
+      source:
+        | 'list'
+        | 'popular'
+        | 'top-rated'
+        | 'upcoming'
+        | 'now-playing'
+        | 'on-the-air'
+        | 'airing-today'
+      /** A TMDB list's number or address, for `source: 'list'`. */
+      list?: string
+    }
+  | {
+      kind: 'trakt'
+      source: 'list' | 'trending' | 'popular' | 'anticipated' | 'watchlist'
+      /** A public list's address, for `source: 'list'`. */
+      list?: string
+    }
+  | { kind: 'generic'; url: string }
+
+/** An import list's last check: what it found, added and skipped, or why it failed. */
+export type ImportListResult = {
+  found: number
+  added: number
+  skipped: number
+  /** Titles the list named that TMDB couldn't match. */
+  unresolved: string[]
+  error: string | null
+}
+
+export type ImportList = {
+  id: string
+  /** What the list adds: TMDB and Trakt lists hold movies or shows; a generic list, movies. */
+  kind: 'movies' | 'shows'
+  name: string
+  enabled: boolean
+  settings: ImportListSettings
+  rootFolder: string
+  qualityProfileId: string
+  /** null: the root folder's default. */
+  languageProfileId: string | null
+  monitored: boolean
+  minimumAvailability: MinimumAvailability
+  /** Searches for what it adds. */
+  searchOnAdd: boolean
+  /** A list of shows: which episodes a show it adds watches for (stage 6). */
+  monitor?: ShowMonitor
+  tags: string[]
+  /** Titles on the list at the last check. */
+  items: number
+  lastSync: ISODate | null
+  lastResult: ImportListResult | null
+}
+
+export type ImportListInput = Omit<ImportList, 'id' | 'items' | 'lastSync' | 'lastResult'>
+
+/** A file manual import (A17) found, and what highsea thinks it is. */
+export type ImportCandidate = {
+  path: string
+  size: number
+  quality: string
+  language: string
+  /** The movie it matched, by name; null when nothing did. */
+  itemId: string | null
+  /**
+   * An episode file's match instead (stage 6): the show and the episodes in it, more than one for
+   * a double episode. `itemId` stays null for these.
+   */
+  episodes?: { show: string; episodeIds: string[] } | null
+  /** Why it would be skipped, when it would. */
+  skip: string | null
+}
+
+/** Root folders and the hardlink check (roadmap › Docker: a single `/data` root). */
+export type RootFolder = { path: string; free: number; total: number; device: string }
+
+export type FsEntry = { name: string; path: string; kind: 'folder' | 'file'; size?: number }
+
+export type HardlinkCheck = {
+  ok: boolean
+  /** Same filesystem: imports hardlink, so seeding takes no extra space. */
+  sameDevice: boolean
+  message: string
+}
+
+// ---------------------------------------------------------------- indexers
+
+export type SettingField = {
+  key: string
+  label: string
+  type: 'text' | 'password' | 'select' | 'checkbox' | 'number'
+  required: boolean
+  /** "Where to find this", shown inline. */
+  help: string | null
+  options?: { value: string; label: string }[]
+}
+
+export type IndexerPrivacy = 'public' | 'semi-private' | 'private'
+
+export type CatalogDefinition = {
+  id: string
+  version: string
+  name: string
+  description: string
+  privacy: IndexerPrivacy
+  language: string
+  categories: string[]
+  settings: SettingField[]
+  /** Every definition records its source and license (roadmap › indexers). */
+  source: { name: string; license: string }
+  minEngineVersion: string
+  /** In the setup wizard's starter pack. */
+  starter: boolean
+}
+
+export type IndexerHealth = 'healthy' | 'backoff' | 'failing' | 'disabled'
+
+export type Indexer = {
+  id: string
+  definitionId: string
+  name: string
+  privacy: IndexerPrivacy
+  enabled: boolean
+  priority: number
+  health: IndexerHealth
+  backoffUntil: ISODate | null
+  lastError: string | null
+  stats: { queries24h: number; grabs24h: number; avgResponseMs: number; successRate: number }
+}
+
+// ---------------------------------------------------------------- subtitles
+
+export type LanguageRule = {
+  code: string
+  forced: 'no' | 'also' | 'only'
+  hi: 'no' | 'also' | 'only'
+}
+
+export type LanguageProfile = {
+  id: string
+  name: string
+  /** In order of preference. */
+  languages: LanguageRule[]
+  /** Stop upgrading once this language is found; null to keep looking for better matches. */
+  cutoff: string | null
+  minScore: number
+}
+
+export type SyncStatus = 'synced' | 'syncing' | 'queued' | 'unsynced' | 'failed' | 'not-needed'
+
+export type SubtitleTrack = {
+  id: string
+  itemId: string
+  fileId: string
+  language: string
+  kind: 'external' | 'embedded' | 'bundled'
+  format: 'srt' | 'ass' | 'vtt' | 'pgs'
+  forced: boolean
+  hi: boolean
+  provider: string | null
+  /** Match score, 0–100 (hash match > release match > title and year). */
+  score: number | null
+  sync: { status: SyncStatus; confidence: number | null; offsetMs: number }
+  path: string | null
+}
+
+export type SubtitleStats = {
+  syncedToday: number
+  waiting: number
+  avgOffsetMs: number
+  avgConfidence: number
+}
+
+export type Language = { code: string; name: string }
+
+/** Settings › Subtitles: scoring and the automatic sync (roadmap › subtitles). */
+export type SubtitleSettings = {
+  /** Never download below this score, 0–100. Language profiles can raise it. */
+  minScore: number
+  /** Sync every downloaded subtitle to the audio. */
+  autoSync: boolean
+  /** Below this confidence, keep the original timing and mark it for review, 0–1. */
+  minConfidence: number
+  /** Look for a better match for this many days after import. */
+  upgradeDays: number
+  /** Prefer subtitles that match the release (hash or name) over title and year. */
+  preferReleaseMatch: boolean
+}
+
+// ---------------------------------------------------------------- curation
+
+export type Audience =
+  | { kind: 'everyone' }
+  | { kind: 'roles'; roles: UserRole[] }
+  | { kind: 'users'; userIds: string[] }
+  | { kind: 'clients'; clients: ClientType[] }
+
+export type Placement = 'banner' | 'modal' | 'toast' | 'card'
+
+export type Announcement = {
+  id: string
+  title: string
+  /** Markdown. */
+  body: string
+  image: string | null
+  cta: { label: string; url: string } | null
+  severity: 'info' | 'notice' | 'warning' | 'critical'
+  placements: Placement[]
+  audience: Audience
+  schedule: { start: ISODate; end: ISODate | null }
+  acknowledgement: 'dismiss' | 'require'
+  status: 'draft' | 'scheduled' | 'live' | 'ended'
+  /** For the signed-in user: dismissed or acknowledged. */
+  seen: boolean
+}
+
+export type FeaturedSection = {
+  id: string
+  title: string
+  tagline: string | null
+  layout: 'hero' | 'row' | 'spotlight'
+  source: /** Films' ids and shows' together, in the owner's order. */
+    | { kind: 'manual'; itemIds: string[] }
+    /** `collection`: a TMDB collection's id or a smart collection's (`sc-…`). */
+    | { kind: 'rule'; rule: 'recently-added' | 'genre' | 'collection'; value: string }
+  overrides: { itemId: string; artwork: string | null; tagline: string | null }[]
+  audience: Audience
+  schedule: { start: ISODate; end: ISODate | null }
+  order: number
+}
+
+export type CurationStatus = 'draft' | 'scheduled' | 'live' | 'ended'
+
+/** An announcement in the admin's list: how many of its audience have seen it. */
+export type AnnouncementSummary = Announcement & { seenBy: number; audienceSize: number }
+
+/** A featured section in the admin's list: what its source resolves to right now. */
+export type SectionSummary = FeaturedSection & {
+  status: Exclude<CurationStatus, 'draft'>
+  itemCount: number
+  /** The first few titles, for the list's art strip. */
+  sample: { id: string; title: string; poster: string }[]
+}
+
+/** The curation a client preview renders: the saved lists with the draft merged in. */
+export type CurationPreview = {
+  announcements: Announcement[]
+  featured: FeaturedSection[]
+  /** The saved collections, for sections that draw on one. */
+  collections?: SmartCollection[]
+}
+
+// ---------------------------------------------------------------- collections (docs/product/collections.md)
+
+/** What a condition looks at. Grouped in the editor as the plan's table is. */
+export type RuleField =
+  | 'title'
+  | 'year'
+  | 'releaseDate'
+  | 'decade'
+  | 'rating'
+  | 'votes'
+  | 'certification'
+  | 'originalLanguage'
+  | 'audioLanguage'
+  | 'subtitleLanguage'
+  | 'genre'
+  | 'runtime'
+  | 'keyword'
+  | 'studio'
+  | 'country'
+  | 'actor'
+  | 'director'
+  | 'writer'
+  | 'composer'
+  | 'producer'
+  | 'cinematographer'
+  | 'editor'
+  | 'person'
+  | 'collection'
+  | 'added'
+  | 'status'
+  | 'tag'
+  | 'rootFolder'
+  | 'qualityProfile'
+  | 'resolution'
+  | 'hdr'
+  | 'videoCodec'
+  | 'edition'
+  | 'size'
+  | 'watched'
+  | 'lastPlayed'
+
+export type RuleOp =
+  | 'contains'
+  | 'is'
+  | 'isNot'
+  | 'between'
+  | 'before'
+  | 'after'
+  | 'inLast'
+  | 'atLeast'
+  | 'atMost'
+  | 'oneOf'
+  | 'notOneOf'
+  | 'includes'
+  | 'excludes'
+  | 'only'
+  | 'anyOf'
+  | 'allOf'
+  | 'noneOf'
+
+/**
+ * A condition's value, by its comparison: a number (at least, in the last N), a pair (between), a
+ * date (before, after), one choice (is), or several (one of, any of, includes).
+ */
+export type RuleValue = number | string | string[] | [number, number]
+
+export type RuleCondition = {
+  kind: 'condition'
+  id: string
+  field: RuleField
+  op: RuleOp
+  value: RuleValue
+}
+
+/** All or any of its rules. The top level may hold groups; a group holds conditions only. */
+export type RuleGroup = {
+  kind: 'group'
+  id: string
+  match: 'all' | 'any'
+  rules: (RuleCondition | RuleGroup)[]
+}
+
+export type CollectionSort =
+  | 'manual'
+  | 'rating'
+  | 'release'
+  | 'year'
+  | 'added'
+  | 'title'
+  | 'runtime'
+  | 'popularity'
+  | 'random'
+
+/**
+ * One kind of collection: rules are optional. Without them it holds what's picked (`include`, in
+ * its order); with them, what matches, plus `include`, less `exclude`.
+ */
+export type SmartCollection = {
+  id: string
+  name: string
+  summary: string
+  /** An uploaded poster; null draws a mosaic of the first four. */
+  artwork: string | null
+  rules: RuleGroup | null
+  /** Always include: the picks, for a collection without rules. */
+  include: string[]
+  /** Never include. */
+  exclude: string[]
+  /**
+   * Shows picked by hand, in their order: rules match films only (prototype-gaps.md › stage 6).
+   * The apps list them after the films.
+   */
+  shows: string[]
+  sort: CollectionSort
+  /** Highest, newest, longest or Z first. */
+  descending: boolean
+  limit: number | null
+  audience: Audience
+  updatedAt: ISODate
+}
+
+/** A field as the editor offers it: its comparisons, its choices, and whether it works yet. */
+export type RuleFieldInfo = {
+  field: RuleField
+  label: string
+  group: 'Release' | 'Ratings' | 'Language' | 'Content' | 'People' | 'Library' | 'File' | 'Playback'
+  type: 'number' | 'date' | 'choice' | 'list' | 'person' | 'text'
+  ops: RuleOp[]
+  /** For choice and list fields: value and label. People are searched instead. */
+  options?: { value: string; label: string }[]
+  /** "2010", "4.5", "GB": what the number means. */
+  unit?: string
+  /** Shown but not offered yet: "Comes with playback". */
+  disabled?: string
+}
+
+/** What a draft collection holds right now (the editor's live result). */
+export type CollectionPreview = {
+  /** Films that match, files or not. */
+  matched: number
+  /** Of those, the ones with a file: what the apps show. */
+  playable: number
+  /** In the collection's order, after its limit. */
+  items: { id: string; title: string; year: number; poster: string; playable: boolean }[]
+  /** The rules in words: "Released 2010–2020, rated 4.5 or more, in English". */
+  words: string | null
+  /** Its shows, in their order; `playable` when an episode has a file, so the apps list it. */
+  shows: { id: string; title: string; year: number; poster: string; playable: boolean }[]
+}
+
+/** A collection in the admin's list. */
+export type CollectionSummary = SmartCollection & {
+  matched: number
+  playable: number
+  /** Its shows in the library, and of those the ones the apps list (an episode has a file). */
+  showsHere: number
+  showsPlayable: number
+  /** Up to four posters for the mosaic. */
+  mosaic: string[]
+  words: string | null
+}
+
+// ---------------------------------------------------------------- appearance (A12)
+
+/** A custom theme: a partial override of a built-in one (the theme engine's `ThemeInput`). */
+export type CustomTheme = {
+  id: string
+  name: string
+  base: 'default' | 'oled' | 'high-contrast'
+  accent: string
+  colors?: Record<string, string>
+}
+
+/** What clients play until someone changes it on their own device. */
+export type SoundDefaults = {
+  tv: boolean
+  phone: boolean
+  web: boolean
+  /** 0–1. */
+  volume: number
+  pack: string
+}
+
+export type Appearance = {
+  /** A built-in theme id or a custom theme's. Clients use it until someone picks their own. */
+  defaultTheme: string
+  themes: CustomTheme[]
+  sound: SoundDefaults
+}
+
+// ---------------------------------------------------------------- personalization
+
+// the registry's types, from the package the server uses, with the widgets proposed since
+import type { WidgetPlacement } from './widgets.ts'
+
+export type { WidgetKind, WidgetPlacement, WidgetSpan } from './widgets.ts'
+
+/** Only staff have a dashboard: it's the admin's. */
+export type StaffRole = Exclude<UserRole, 'user'>
+
+export type LayoutScope = { kind: 'user'; userId: string } | { kind: 'role'; role: StaffRole }
+
+export type WidgetLayout = {
+  scope: LayoutScope
+  widgets: WidgetPlacement[]
+  updatedAt: ISODate
+  /** True when the user has no layout of their own and sees their role's default. */
+  inherited: boolean
+}
+
+// ---------------------------------------------------------------- system
+
+export type JobKind =
+  | 'rss-sync'
+  | 'refresh-movies'
+  | 'movie-search'
+  | 'import'
+  | 'subtitle-search'
+  | 'subtitle-sync'
+  | 'catalog-sync'
+  | 'health-check'
+  | 'backup'
+
+export type Job = {
+  id: string
+  kind: JobKind
+  name: string
+  state: 'running' | 'queued' | 'idle' | 'failed'
+  progress: number | null
+  lastRun: ISODate | null
+  nextRun: ISODate | null
+  /** Repeats every this many seconds; null for one-off jobs. */
+  interval: number | null
+  message: string | null
+}
+
+export type HealthCheck = {
+  id: string
+  source: string
+  level: 'ok' | 'notice' | 'warning' | 'error'
+  message: string
+  since: ISODate
+}
+
+export type Disk = {
+  path: string
+  label: string
+  total: number
+  free: number
+  usedBy: { movies: number; tv: number; music: number; downloads: number; other: number }
+}
+
+export type SystemStatus = {
+  version: string
+  catalogVersion: string
+  startedAt: ISODate
+  cpu: number
+  memory: { used: number; total: number }
+  disks: Disk[]
+}
+
+export type SpeedSample = { t: number; down: number; up: number }
+
+export type LogEntry = {
+  time: ISODate
+  level: 'debug' | 'info' | 'warn' | 'error'
+  logger: string
+  message: string
+}
+
+export type Backup = {
+  id: string
+  createdAt: ISODate
+  size: number
+  kind: 'scheduled' | 'manual' | 'pre-migration'
+}
+
+// ---------------------------------------------------------------- setup
+
+export type RemoteAccess =
+  | { kind: 'local-only' }
+  | { kind: 'reverse-proxy'; url: string }
+  | { kind: 'port-forward'; port: number }
+
+export type SetupInput = {
+  serverName: string
+  owner: { username: string; displayName: string; password: string }
+  /** A folder for each kind of library, '' for a kind there's none of, and the downloads. */
+  folders: { movies: string; shows: string; music: string; downloads: string }
+  indexers: string[]
+  subtitleLanguages: string[]
+  remoteAccess: RemoteAccess
+  cloudLink: boolean
+  /** The owner's own TMDB key; without one, the key built into the image (install-simplicity B). */
+  metadataKey?: string
+  /** An IANA zone, from the browser unless changed. */
+  timeZone: string
+  /** The address apps on the network use (ADR 0020's advertised address). */
+  address: string
+}
+
+/**
+ * What the server found before setup (install-simplicity B). Each is a default the owner can
+ * change on Review; null means setup asks.
+ */
+export type SetupDetected = {
+  /** The host's name as a server name; null when the container's hostname is only its id. */
+  serverName: string | null
+  /**
+   * A folder for each kind under /data (movies, tv, music; null for a kind it didn't find) and a
+   * downloads folder, or null to ask: when it found no downloads folder or no media folder at all.
+   */
+  folders: {
+    movies: string | null
+    shows: string | null
+    music: string | null
+    downloads: string
+  } | null
+  /** The host's LAN address, with host networking; null in bridge mode, where the browser's is used. */
+  address: string | null
+  /** The graphics chip whose check passed at boot, or null for the processor. */
+  graphics: { name: string; path: string } | null
+}
+
+// ---------------------------------------------------------------- events (SSE stand-in)
+
+export type ServerEvent =
+  | { type: 'tick'; now: number }
+  | { type: 'torrents.updated' }
+  | { type: 'queue.updated' }
+  | { type: 'item.updated'; id: string }
+  | { type: 'movies.updated' }
+  | { type: 'music.updated' }
+  | { type: 'playlists.updated' }
+  | { type: 'profiles.updated' }
+  | { type: 'shows.updated' }
+  | { type: 'history.updated' }
+  | { type: 'jobs.updated' }
+  | { type: 'indexers.updated' }
+  | { type: 'health.updated' }
+  | { type: 'subtitles.updated'; itemId?: string }
+  | { type: 'announcements.updated' }
+  | { type: 'curation.updated' }
+  | { type: 'collections.updated' }
+  | { type: 'users.updated' }
+  | { type: 'settings.updated' }
+  | { type: 'vpn.updated' }
+  | { type: 'playback.updated' }
+  | { type: 'sessions.updated' }
+  | { type: 'layout.updated' }
+  | { type: 'server.updated' }
+  | { type: 'watch.updated' }
+
+export type EventTopic = ServerEvent['type']
+
+// ---------------------------------------------------------------- clients (C1–C5)
+
+/** A server this device has signed in to before (the multi-server switcher). */
+export type KnownServer = {
+  id: string
+  name: string
+  owner: string
+  /** The LAN address, then the remote one the client fails over to. */
+  addresses: { local: string; remote: string | null }
+  signedIn: boolean
+  lastSeen: ISODate
+}
+
+/** `POST /api/v1/connect/probe`: what an address answered, before signing in. */
+export type ProbeResult = PublicServerInfo & { address: string; reachability: Reachability }
+
+/** Sign-in by code (TV): the code a phone or computer approves at `url`. */
+export type Pairing = { code: string; url: string; expiresAt: ISODate }
+
+/** A title as the clients see it: the library item plus this user's watch state. */
+export type ClientItem = MediaItem & {
+  /** 0–1 through the movie, or null if not started (or finished). */
+  progress: number | null
+  /** Seconds in, for Resume. */
+  position: number
+  /** A featured section's override, if any. */
+  tagline: string | null
+  /** Played to the end, or marked as watched (client-detail.md#mark-as-watched, checkpoint 4.0b). */
+  watched: boolean
+  /**
+   * An episode on Home's cards: its show, its place and its own title. Its card is the show's
+   * name over "S2, E6", and Go to opens the show at it. Null for a film.
+   */
+  show: { id: string; title: string; code: string; episode: string } | null
+  /**
+   * A show on a featured section's card, beside its films: the card opens the show, Play starts
+   * `play` (the episode it's on, or its first), and the meta line is its seasons and years.
+   * Absent for films and episodes.
+   */
+  series?: { seasons: number; endYear: number | null; play: string }
+}
+
+/** Recently played on Home: an album, or an artist played as a whole. */
+export type HomeMusic =
+  | { kind: 'album'; album: ClientAlbum }
+  | { kind: 'artist'; artist: ClientArtist }
+
+/**
+ * A row on Home. Featured sections hold films; Continue watching holds films and episodes, one
+ * card per show; Next up and New episodes hold episodes; Recently added shows holds shows, and
+ * Recently played albums and artists.
+ */
+export type HomeSection = {
+  id: string
+  title: string
+  /** A curated-by suffix ("by Ines") or a tagline. */
+  suffix: string | null
+} & (
+  | { layout: 'hero' | 'row' | 'spotlight' | 'continue' | 'episodes'; items: ClientItem[] }
+  | { layout: 'shows'; items: ClientShow[] }
+  | { layout: 'music'; items: HomeMusic[] }
+)
+
+/** A Home row of films (or films and episodes): the featured sections, Continue watching, Next up. */
+export type FilmSection = Extract<HomeSection, { items: ClientItem[] }>
+
+/** Someone credited on what's here, with how many films and shows they're in. */
+export type SearchPerson = { id: string; name: string; photo: string; films: number; shows: number }
+
+/** An episode found by its title: its still, its show and its place, to open the show at it. */
+export type SearchEpisode = {
+  id: string
+  show: { id: string; title: string }
+  /** "S1, E2". */
+  code: string
+  title: string
+  still: string
+}
+
+/** A song found by its title, on its album: choosing it plays the album from it. */
+export type SearchSong = {
+  id: string
+  title: string
+  number: number
+  duration: number
+  album: ClientAlbum
+}
+
+/** A collection as clients see it: only its parts on this server count. */
+export type ClientCollection = {
+  id: string
+  name: string
+  overview: string
+  /** The first part's art. */
+  art: { poster: string; backdrop: string }
+  /** How many of its films are here. */
+  count: number
+  /** How many of its shows are here, when it holds any. */
+  shows?: number
+  /** "2010–2016", or one year: its films' release years and its shows' first. */
+  years: string
+  /** A smart collection (`sc-…`): its rules in words, and up to four posters for its mosaic. */
+  smart?: { words: string | null; mosaic: string[] }
+}
+
+/**
+ * One kind of result. New media types (shows, episodes, music) join as new kinds; clients show
+ * the sections in the order the server ranks them, and skip kinds they don't know yet.
+ */
+export type SearchSection =
+  | { kind: 'movies'; items: ClientItem[] }
+  | { kind: 'shows'; items: ClientShow[] }
+  | { kind: 'episodes'; items: SearchEpisode[] }
+  | { kind: 'people'; items: SearchPerson[] }
+  | { kind: 'collections'; items: ClientCollection[] }
+  | { kind: 'artists'; items: ClientArtist[] }
+  | { kind: 'albums'; items: ClientAlbum[] }
+  | { kind: 'songs'; items: SearchSong[] }
+
+export type SearchKind = SearchSection['kind']
+
+/** Search (C6): results grouped by kind, the best-matching kind first. Empty kinds are left out. */
+export type SearchResults = { sections: SearchSection[] }
+
+/** A person's own home screen order (C7): ids of featured sections and `continue`. */
+export type HomeLayout = { order: string[]; hidden: string[] }
+
+export type ClientTrack = {
+  id: string
+  kind: 'audio' | 'subtitle'
+  label: string
+  language: string
+  /** Subtitles: forced, SDH; audio: channels. */
+  detail: string | null
+  default: boolean
+  /**
+   * Subtitles drawn as pictures (PGS, VobSub), which the server burns into the film (checkpoint
+   * 4.3), so the player can't move their timing. Always false for audio.
+   */
+  picture: boolean
+}
+
+export type ClientVersion = {
+  id: string
+  label: string
+  /** "4K · HDR10 · HEVC · 18.2 GB". */
+  detail: string
+  audio: ClientTrack[]
+  subtitles: ClientTrack[]
+}
+
+/** `GET /api/v1/items/{id}` for clients: the page and the player read the same shape. */
+export type ClientDetail = {
+  item: ClientItem
+  versions: ClientVersion[]
+  cast: Credit[]
+  directors: Credit[]
+  /** The rest of the crew who matter on a title's page: writers, then music, camera and editing. */
+  crew: Credit[]
+  related: ClientItem[]
+  /** From the metadata (client-detail.md › Data): for the page's About and its trailers. */
+  originalTitle: string
+  certification: string | null
+  studios: string[]
+  videos: Video[]
+  collection: CollectionRef | null
+  /**
+   * The collections holding the title that this person and app see, smart ones first, then
+   * TMDB's: the page's Collections row.
+   */
+  collections: ClientCollection[]
+  /** This user's remembered picks for the title, or the server's defaults. */
+  defaults: { versionId: string; audioId: string | null; subtitleId: string | null }
+  /** An episode's show and place, for the player's title lines and its way back; null for a film. */
+  episode: EpisodePlace | null
+  /** What Next up offers as the title ends (player.md › Next up), or null when nothing follows. */
+  upNext: UpNext | null
+  /** The album here that's its score, for Information's Soundtrack line; null for most. */
+  soundtrack: { id: string; title: string } | null
+}
+
+export type EpisodePlace = {
+  show: { id: string; title: string }
+  season: number
+  number: number
+  title: string
+  /** "S1, E1", or "Special 2". */
+  code: string
+  /** The intro, in seconds, from the server's markers: Skip intro shows while it plays. */
+  intro: { start: number; end: number } | null
+  /** Where the credits start, in seconds: Next up comes in there. */
+  credits: number | null
+}
+
+/**
+ * Next up (player.md › Next up): the next episode, the next season's first, or a film's
+ * collection's next part, each counting down; otherwise a few choices that play only when picked.
+ */
+export type UpNext =
+  | {
+      kind: 'episode' | 'part'
+      id: string
+      title: string
+      /** "S1, E2 · The Long Night", or the collection's name. */
+      line: string
+      still: string
+      /** The next season's first episode: the card says the season starts. */
+      season: number | null
+    }
+  | { kind: 'choices'; items: ClientItem[] }
+
+/** This user's per-title player settings, saved as they change. */
+export type PlaybackPrefs = {
+  versionId?: string
+  audioId?: string | null
+  subtitleId?: string | null
+  /** Subtitle timing nudge for this title, in ms (±50 steps). */
+  subtitleOffsetMs?: number
+}

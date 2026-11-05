@@ -1,6 +1,6 @@
 # @highsea-tv/prototypes
 
-The Phase 2 design prototypes: every admin and client flow, built with [`@highsea-tv/ui-web`](../../packages/ui-web/README.md) against an in-browser mock server, so the owner can review the product before any of it is built for real. The plan is [phase-2-prototypes.md](../../docs/plans/phase-2-prototypes.md). Each flow has a written spec under [docs/product](../../docs/product/).
+The Phase 2 design prototypes: every admin and client flow, built with [`@highsea-tv/ui`](../../packages/ui/README.md) against an in-browser mock server, so the owner can review the product before any of it is built for real. The plan is [phase-2-prototypes.md](../../docs/plans/phase-2-prototypes.md). Each flow has a written spec under [docs/product](../../docs/product/).
 
 Nothing here ships. Phase 3 rebuilds these screens in `apps/server` against the real API, and the mock's types are the draft of that API.
 
@@ -28,7 +28,7 @@ The build opens straight from disk: open `dist/index.html` in a browser, with no
 | `src/client/` | What the three client apps share: their data calls, the connect flow, the player's state, settings and device preferences, formatting |
 | `src/email/` | The email preview: samples and the `?emails` page. The templates, words and tokens are the server's, imported from `@highsea-tv/notifications/mail` |
 | `src/kit/` | Pieces the flows share that aren't in ui-web yet (the widget editor, the stepper, `useWidth`, the phone and TV frames) |
-| `src/mock/` | The mock server, its seeds, clock and event stream, the metadata source (credits, trailers, collections, people) and the typed client the screens call |
+| `src/mock/` | The screens' hooks over the mock, and the featured films' downloaded logos. The mock server itself, its seeds, clock and event stream, the metadata source (credits, trailers, collections, people), the typed client the screens call and the SDK's transport, is `@highsea-tv/mock` in `packages/mock/src/` |
 | `src/flows.ts` | The flow registry the launcher lists: ids, routes, specs, test hints |
 
 ## The mock server
@@ -41,6 +41,10 @@ The build opens straight from disk: open `dist/index.html` in a browser, with no
 - **Connection.** On the client platforms, **Connection** puts the app on the LAN, failed over to the server's remote address, or unable to reach it, so the connectivity states can be reviewed on any screen.
 - **Persistence.** Saved layouts, setup progress, the server's name and each client's device preferences (theme, sound) live in `localStorage` under `highsea-proto:`. Clear site data to start fresh.
 - **Curation previews.** The curation composers (A11) run the clients' home screens in a frame (`?screen&preview`) against that frame's own copy of the server, and send it the draft over `postMessage`. Nothing reaches the real one until Save.
+
+## apps/client in the frames
+
+On the routes apps/client holds (Choose a server, its sign-in and Settings, listed in `src/chrome/client.ts`), the web, phone and TV frames hold the client's mock web export (`bun run --cwd apps/client export:web:mock`, served at `/web` by `client-export.ts`). The prototype has no screen of its own there any more: those screens are `apps/client/src/app/connect.tsx`, `sign-in.tsx` and `(in)/settings.tsx`. The states the client doesn't follow yet are dimmed. The export is made again when the client's or its packages' files change (its stamp, `apps/client/scripts/stamp.ts`, is written by every export, a manual one included), as the server starts or the prototypes build, never while they run: restart `bun run prototypes` after editing the client. A failed export is logged and the last one stays served. `HIGHSEA_CLIENT_EXPORT=0` serves what's there. The sweeps open these routes in the client itself (`/web/connect?ff=touch&…`).
 
 ## URL parameters
 

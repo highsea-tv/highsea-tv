@@ -1,0 +1,229 @@
+# 0061. One client platform: every client and its prototype in one Expo project, drawn once in React Native
+
+- **Status:** Proposed
+- **Date:** 2026-11-03
+
+Scoped in [one-client-platform.md](../plans/one-client-platform.md) and approved with the owner's answers of 2026-11-02. This records part A, the foundation. It stays Proposed until the owner signs off part A, and parts B to E add dated sections as they land.
+
+## Context
+
+Design system 1.1 ([ADR 0060](0060-one-design-system-one-library.md)) gave each component one props type but two drawings: a web renderer (`packages/ui/src/web`, DOM and Tailwind) and a React Native renderer (`src/native`). It also left every client screen in three or four copies: `apps/web`, `apps/mobile` and `apps/tv`, each beside its own prototype folder in `design/prototypes/src/{web,mobile,tv}`.
+
+Part C of the apps' catch-up showed the cost on 2026-11-02. Put beside its prototype, the phone drifted wherever two drawings or two copies of a screen existed:
+
+- the native Banner had a 36pt disc and 17pt text, the web's 32 and 13;
+- the native Switch was iOS's UISwitch, the web's a drawn track;
+- `usePosterWidth` took a share of the screen where the prototype took a share of the row inside its gutters;
+- Settings on the phone became an iOS grouped list where the prototype draws cards.
+
+None of the checks noticed. The parity test compared the renderers' export names, the controls check found controls drawn by hand, and the compare sheets were read by eye.
+
+The owner's rule (2026-11-02) is that a token, component, element or layout is defined in one place, for every client and every prototype, and they called it foundational. The admin is the one exception as an app: it stays on Next.js ([ADR 0003](0003-server-runtime-custom-entry.md)) and moves onto the library in part D.
+
+The alternatives the plan weighed were three Expo projects sharing a screens package (question 1), importing the client's screens into the prototypes' Vite app (question 3), one JavaScript focus engine everywhere (question 5), and expo-video on the web (question 6). Each kept something in two places or gave up a platform's own engine.
+
+## Decision
+
+### One Expo project, `apps/client`
+
+The phone, the TV and the web client are one Expo project, `apps/client` (package `@highsea-tv/app`, since `@highsea-tv/client` is the shared logic of [ADR 0055](0055-clients-shared-logic.md)):
+
+- It's on Expo SDK 58, with react-native-tvos 0.88 under the `react-native` alias, as `apps/tv` is, and Expo Router, with one route tree in `src/app/`.
+- The phone and the TV are its native builds from one `app.config.ts`. `EXPO_TV=1` at prebuild chooses the Apple TV's project, which `@react-native-tvos/config-tv` retargets to tvOS ([Expo › Building for TV](https://docs.expo.dev/guides/building-for-tv/), [react-native-tvos](https://github.com/react-native-tvos/react-native-tvos#readme)). The two share `ios/`, which is generated and never committed, so each prebuild starts it afresh.
+- The web is `expo export -p web` ([Expo › Publish websites](https://docs.expo.dev/guides/publishing-websites/)), a single-page app (`web.output: 'single'`) with every address and asset under `/web` (`experiments.baseUrl: '/web'`, [Expo › app config](https://docs.expo.dev/versions/latest/config/app/)). `export:web` turns on Expo's tree shaking, which SDK 58 documents as experimental and production-only ([Expo › Tree shaking](https://docs.expo.dev/guides/tree-shaking/#enabling-tree-shaking)). Without it the export is about twice the size.
+- Until part C sets the shipping values, it installs beside the shipping apps: `tv.highsea.client.mobile`, `tv.highsea.client.tv` and the URL scheme `highsea-client`. Apple leaves undefined which app opens a link when two register the same scheme ([Apple › Defining a custom URL scheme](https://developer.apple.com/documentation/xcode/defining-a-custom-url-scheme-for-your-app)).
+
+### react-native-web is the only drawing
+
+`@highsea-tv/ui`'s React Native renderer (`src/native`) is the one drawing of each component on all three targets. It runs on the web through react-native-web 0.21.4, the version SDK 58 expects (`~0.21.4` in Expo's `bundledNativeModules.json`, in the `expo` package 58.0.11; [react-native-web › Setup](https://necolas.github.io/react-native-web/docs/setup/)).
+
+`apps/client/metro.config.js` adds three rules in `resolveRequest`, chaining to Expo's own resolver ([Metro › Resolution](https://metrobundler.dev/docs/resolution/#resolverequest-customresolver)):
+
+1. `react-native` always resolves from the app, so two copies never load ([Expo › Monorepos](https://docs.expo.dev/guides/monorepos/#duplicate-native-packages-within-monorepos)).
+2. On the web, React, react-dom, react-native-web, and the app's other dependencies when our packages import them, resolve from the app, so there's one copy of each and their contexts work. Expo's autolinking resolver does this on iOS and Android (`experiments.autolinkingModuleResolution`, on in a monorepo since SDK 55, [Expo › app config](https://docs.expo.dev/versions/latest/config/app/)) but leaves the web out (@expo/cli's `createExpoAutolinkingResolver`).
+3. On the web, `@highsea-tv/*` packages resolve under the `react-native` condition, as Metro's own custom-resolver example does for one package ([Metro › Package Exports](https://metrobundler.dev/docs/package-exports/#example-custom-resolver)). So the library draws with `src/native` through react-native-web. Third-party packages keep Expo's web conditions, since a `react-native` target there can be native-only code.
+
+Vite, Next and Bun never read this file. The admin, `apps/web` and the prototypes' own screens keep the library's `default` export, the DOM renderer, until parts B and D move them.
+
+What react-native-web leaves to the page, the library does once, in platform files, and no screen does it again:
+
+- **Focus and keys** (`src/native/dom.ts` and `dom.web.ts`). On the web the ring is drawn only at `:focus-visible` ([MDN › :focus-visible](https://developer.mozilla.org/en-US/docs/Web/CSS/:focus-visible)). Space presses checkboxes, radios, switches, tabs, options and the menu's checkable items (`menuitemcheckbox`, `menuitemradio`), as WAI-ARIA's patterns give those roles ([APG › Patterns](https://www.w3.org/WAI/ARIA/apg/patterns/)), where react-native-web presses on Space only for a button. Off the web the platform draws its own focus, so the library draws no ring.
+- **Hover**, from `Pressable`'s `hovered` state.
+- **Touch's hit area.** react-native-web drops `hitSlop` ([Pressable › hitSlop](https://reactnative.dev/docs/pressable#hitslop)), so on the web `Press` draws the 44 hit area as a layer.
+- **Scrollbars** (`src/native/scrollbar.tsx` and `scrollbar.web.tsx`). react-native-web draws a ScrollView with the browser's own bar, which takes a column of its own. So `ScrollView` turns it off and draws the web's bar over the scroller, in `PageScrollbar`'s measures (`src/shared/scrollbar.ts`). On the phone and the TV the platform's own indicator stays.
+- **Text** picks each form factor's type scale (`text.tsx`'s `NEAREST`): the phone's in points, the TV's in screen units, and a pointer's from the web's scale. Every size multiplies by ThemeProvider's `fontScale`, held to `maxFontSizeMultiplier` as the OS's own text size is ([React Native › Text](https://reactnative.dev/docs/text#maxfontsizemultiplier)). ThemeProvider's `reducedMotion` stands in for the OS's in a preview.
+
+### The form-factor rule
+
+A screen asks the rule, never the OS. The rule is in `@highsea-tv/tokens` (`src/form-factor.ts`, beside the control spec, [controls.md › The form factor](../design-language/controls.md#the-form-factor)), and the library reads it through one hook, `useFormFactor`:
+
+- **The input** is the control spec's platform: pointer, touch or the TV. The library decides it in one place (`src/native/input.ts`): `Platform.isTV` on a TV, touch on iOS and Android, and on the web a pointer unless the primary pointer is coarse (`(pointer: coarse)`, [MDN › pointer](https://developer.mozilla.org/en-US/docs/Web/CSS/@media/pointer)).
+- **The width class** is compact below 768, regular from 768, and the TV's own class on a TV, named after Apple's horizontal size classes ([Apple › UIUserInterfaceSizeClass](https://developer.apple.com/documentation/uikit/uiuserinterfacesizeclass)). It's read from `Dimensions`, off the TV as only which side of 768 the window is on, so a resize within a class renders nothing. On the TV the width is read in full, for the TV's unit.
+- **The form factors** are named, `FORM_FACTORS`: `compact-touch`, `regular-touch`, `compact-pointer`, `regular-pointer` and `tv`. `formFactorLayouts` gives a layout only where a platform guide states one: the phone's (mobile.md), the web's and desktop's (desktop-web.md) and the TV's (tv.md, with the gutter at `tv.safe.x` as the owner tightened it on 2026-10-30).
+- **The TV's reference screen**, `TV_REFERENCE` (1920 × 1080), is exported from `controls.ts`, so the TV's unit, a page rendered ahead of time and the prototypes' TV frame use one number.
+- **ThemeProvider** resolves the form factor once, from the device, or from a `formFactor` setting a frame passes (an input, or a whole form factor where the width can't be measured). The theme's `platform` is gone, and a screen reads `useTheme().formFactor` or `useFormFactor()`. The provider still takes `platform` as the old name for the input, so `apps/mobile` and `apps/tv` needn't change before part B.
+
+### Platform files
+
+When the web needs other code than the phone and the TV, the module is a pair: `name.ts` for the phone and the TV, `name.web.ts` beside it for the web, imported as `./name`, and Metro picks the file per bundle ([Metro › Resolution](https://metrobundler.dev/docs/resolution/), [React Native › Platform-specific extensions](https://reactnative.dev/docs/platform-specific-code#platform-specific-extensions), [Expo Router › Platform-specific modules](https://docs.expo.dev/router/advanced/platform-specific-modules/)). The rules, as `apps/client/README.md` gives them:
+
+1. **A pair is imported without its extension.** Metro tries the exact path first, so `./name.ts` would take the native file on the web too. Type-only imports may keep it.
+2. **Both files take the same extension** (`.ts` beside `.web.ts`, `.tsx` beside `.web.tsx`), since Metro tries the platforms within each extension in turn.
+3. **A pair is never a package's exports target.** Metro takes a target exactly as written and looks for no platform file beside it ([Metro › Replacing platform-specific extensions](https://metrobundler.dev/docs/package-exports/#replacing-platform-specific-extensions)). The exported file stays whole and imports the pair relatively (`@highsea-tv/native/playback` exports `playback-entry.ts`, which re-exports `./playback`). The one exception serves the apps not on Metro: a pair's web file may be a `default` target written after a `react-native` one. Metro asserts `react-native` for our packages and takes the first condition it asserts, in the order written ([Node › Conditional exports](https://nodejs.org/api/packages.html#conditional-exports)), so it never reads the `default`.
+4. **TypeScript sees the native file, and the web file is typed by it** (`export const x: typeof native = …`), or by a shared type both must satisfy where the exports differ by design, as the player's `UsePlayback` does. TypeScript's `moduleSuffixes` was weighed and left out: it applies to every import, third-party types included, and reads `.web.d.ts` files Metro wouldn't ([TypeScript › moduleSuffixes](https://www.typescriptlang.org/tsconfig/#moduleSuffixes)).
+
+`apps/client/test/platform-files.test.ts` holds these rules across the app and every workspace package. The web files that need the DOM's types compile under `packages/ui/tsconfig.dom.json`, so the DOM's lib never leaks into the native project. Today's pairs are the Intl polyfills, the fonts, the frame's form factor, the host (`apps/client/src/host.ts` and `host.web.ts`: the server a build belongs to and the kind of device it is), the player's engine, discovery, the server store, the back key, `dom`, the scrollbar and the TV's focus engine.
+
+### The mock is an SDK transport
+
+The prototypes' mock server moved out of `design/prototypes/src/mock` into its own package, `@highsea-tv/mock`. So the client never depends on the prototypes' app, and the mock's bundle carries no react-dom. The prototypes keep only `local-logos.ts` and their own hooks.
+
+- **`@highsea-tv/mock/transport`'s `createMockFetch`** returns a `Fetch` that `createClient({ baseUrl, fetch })` takes, so the real client runs as a prototype with the mock in place of the network, in a browser and on the simulators.
+  - Each request is matched to its contract route and checked with the route's own schemas, and answered in the contract's shapes, with the server's `ErrorBody` on failure and `/api/v1/events` as a text/event-stream.
+  - Part A's 22 routes are answered (the shell, Choose a server, signing in, pairing, Settings), and every other route answers 501 naming itself. A new route is one typed entry, so it can't drift from the contract.
+  - The mock imports the server's own pure rules rather than copies of them, through new subpaths: `@highsea-tv/core/errors` and `/events`, `@highsea-tv/auth/codes`, `@highsea-tv/subtitles/providers/info`, and `@highsea-tv/personalization/keys` for the preference layers.
+  - `nearby` stands in for Bonjour, and `oidc` for the browser that single sign-on opens.
+- **Mock mode is chosen when the client is bundled:** `EXPO_PUBLIC_HIGHSEA_MOCK=1`, which Expo inlines ([Expo › Environment variables](https://docs.expo.dev/guides/environment-variables/)). Both requires sit inside the condition's branch (`apps/client/src/transport.ts`), so a production build without the variable folds them away, and `scripts/bundles.ts` fails a bundle that carries `packages/mock/src` or the frame channel's name.
+- **The frame channel**, `@highsea-tv/mock/frame`, is the one channel between the prototypes' chrome and the client it frames. The chrome sends the frame's input and the toolbar's states (data, theme, 200% text, reduced motion, time) and navigation. The client sends its route, the role after a sign-in, and that it's ready (`apps/client/src/frame-channel.ts`). Both sides post to the other's origin by name, and drop any message from another window or origin. An opaque origin (`null`) is never posted to or accepted, as the HTML standard and MDN's security notes require ([HTML › Posting messages](https://html.spec.whatwg.org/multipage/web-messaging.html#posting-messages), [MDN › postMessage › Security concerns](https://developer.mozilla.org/en-US/docs/Web/API/Window/postMessage#security_concerns)). Opened on its own, as the sweeps open it, the client reads the same states from its address (`?ff=touch&theme=oled&text=200&motion=reduced`).
+
+### The prototypes' frames hold the client
+
+The prototypes' Vite server serves the client's mock web export (`apps/client/dist-mock`, made by `bun run --cwd apps/client export:web:mock`) at `/web`, on one origin with the chrome (`design/prototypes/client-export.ts`, through Vite's `configureServer` and `configurePreviewServer`, [Vite › Plugin API](https://vite.dev/guide/api-plugin#configureserver)).
+
+- The export is made again when its stamp, a hash of its inputs (`apps/client/scripts/stamp.ts`), differs, as the server starts or the prototypes build. `export-mock.ts` builds into a folder of its own and renames it into place, so a failed run leaves the last export served. `HIGHSEA_CLIENT_EXPORT=0` serves whatever is there.
+- `design/prototypes/src/chrome/client.ts` lists the routes the client holds (`/connect`, `/sign-in`, `/settings` in part A). A frame on one of them holds the client at its input (`touch` in the phone's frame, `pointer` in the window, `tv` in the TV's) instead of the prototype's screen, and the prototype's own copies of these screens were removed. Every other destination keeps its prototype screen until part B.
+- The sweeps open held routes through the client (`clientUrl` in `scripts/sweeps/lib.ts`).
+
+### TV focus in a browser, behind `Focusable`
+
+The TV's parts and `Focusable` reach focus through one pair, `packages/ui/src/native/tv/engine.tsx` and `engine.web.tsx`:
+
+- On tvOS and Android TV it's react-native-tvos's own engine: `hasTVPreferredFocus`, `requestTVFocus`, `TVFocusGuideView`, `useTVEventHandler` and `scrollSnapOffset` ([react-native-tvos › README](https://github.com/react-native-tvos/react-native-tvos#readme)).
+- In a browser it's the spatial engine the TV prototype signed off, moved into `src/native/tv/spatial/` (exported as `@highsea-tv/ui/focus`), behind the same names. Stops and regions mark themselves in the DOM through react-native-web's `dataSet`, and one navigator moves focus by the arrow keys. Enter is `select`, Escape and Backspace are `menu`, and a scroller that follows focus moves by transform.
+- What a stop draws on focus (the lift, the ring) is `Focusable`'s, the same on every platform; only the engine differs. A webOS or Tizen build would use the web engine too ([ADR 0008](0008-clients-react-everywhere.md)).
+
+### The web player is `playback.web.ts`
+
+`@highsea-tv/native/playback` is a pair. On the phone and the TV, `playback.ts` stays on expo-video. On the web, `playback.web.ts` is the `<video>` with hls.js 1.7.3, moved from `apps/web/src/playback.ts`, behind the same `usePlayback`.
+
+- expo-video's web player sets the `<video>`'s `src` to the source's URI (`VideoPlayer.web.tsx` and `VideoView.web.tsx` in expo-video 58.0.11), with no Media Source Extensions and no headers, so it plays HLS only where the browser does, which is Safari.
+- What both engines share is `playback-shared.ts`: the API the screen reads, the person's picks and their rules, when a stream restarts, and the reports' timer.
+- hls.js is now `@highsea-tv/native`'s dependency, loaded as a chunk of its own only when a stream needs it ([hls.js › API](https://github.com/video-dev/hls.js/blob/v1.7.3/docs/API.md)).
+- The desktop app's page says how it reaches the server through `@highsea-tv/native/web-host`'s `WebHostProvider`.
+- `apps/web` already plays through it, as the export's `default` target. The playback sweep passes in Chromium and Firefox.
+
+### Storybook is retired
+
+`apps/storybook` and `bun run storybook` are removed (the owner's answer 10). The workbench is `apps/client` against the mock, in the prototypes' frames, where each component is seen in the screens that use it: in part A on the three routes the client holds (`/connect`, `/sign-in` and `/settings`), and on every client destination once part B moves them.
+
+### The checks
+
+- **`scripts/one-place.ts`** (`bun run one-place`) reads the code with `@babel/parser`, as Metro does, so comments, strings and types never count. It fails on four kinds of drift:
+  - **renderers:** a component drawn by both renderers or in a pair, unless `parity.ts`'s `BOTH` gives its reason;
+  - **screens:** a client screen outside `apps/client/src/app`, or any copy left of a destination that has moved;
+  - **parts:** one component name exported by two modules of the client code and the library;
+  - **values:** a literal colour, size, space or corner in the one drawing where a token should be.
+
+  Exceptions are in `scripts/one-place-exceptions.json`, each with its reason, the part that removes it, and how many it excuses, so a new one still fails and a stale one fails too.
+- **`scripts/sweeps/layout.ts`** captures part A's proof screens (Choose a server, Harbor's sign-in, the shell, Settings) against the same mock in Playwright's Chromium at `compact-touch`, `regular-pointer` and `tv`, on the iPhone simulator and on the Apple TV simulator. The devices are captured through `apps/client/uitest`'s XCUITest ([Apple › XCUIElementSnapshotProviding › snapshot()](https://developer.apple.com/documentation/xctest/xcuielementsnapshotproviding/snapshot())). It compares their boxes, kinds and text from the accessibility trees, 1:1 in points and CSS pixels. A node that differs by more than 4 (`TOLERANCE`), a control of another kind, a different text, or a node on one side only fails, unless an exception gives the reason. `regular-pointer` has no device, so it's captured for the sheet only. Its sheet, written outside the repository for the owner, puts each screen's web capture beside its device capture. The old prototype screens were reviewed on a compare sheet made before they were deleted, which goes with the checkpoint report.
+- **`scripts/bundles.ts`** also checks the client's three bundles. The web export draws with the native renderer through react-native-web, so it carries no React Native of its own and none of the DOM renderer. The iPhone's and the Apple TV's carry no `.web` file of ours. Each takes its own side of every pair, and none built without mock mode carries the mock.
+- **`scripts/controls.ts`** reads `apps/client/src` beside the old apps.
+- **The sweeps** run on the client wherever it holds a route.
+
+## Consequences
+
+- A component, a layout value or a client screen is changed in one place for the phone, the TV and the web, and the prototypes show the change because, on the three routes part A holds (`/connect`, `/sign-in` and `/settings`), they are the client. Part B extends that to every client destination. A check fails when something is drawn or written twice without a listed reason.
+- Part A proves one destination end to end: Choose a server, its sign-in, the shell and Settings, on the web at each form factor, on the iPhone and Apple TV simulators, and in the prototypes' frames. The layout check's last run found every pair the same.
+- **The 4-point tolerance** is what's left between React Native's text on iOS and the browser's, after two fixes the layout check found:
+  - iOS adds one device pixel to every text frame whose height is already on the pixel grid, so `Text` takes it back with a margin of `-1 / PixelRatio`;
+  - any `letterSpacing`, 0 included, becomes `NSKernAttributeName` on iOS (React Native's `RCTAttributedTextUtils.mm`), and Core Text's `kCTKernAttributeName` at 0 turns the font's kerning off, where the web's `letter-spacing: 0` keeps it. So `Text` leaves `letterSpacing` unset when a style has no tracking ([React Native › Text](https://reactnative.dev/docs/text); [Apple › kCTKernAttributeName](https://developer.apple.com/documentation/coretext/kctkernattributename)).
+
+  With both, the iPhone is within 1.33 points of the web and the TV within 1.27, so 4 holds every node. `TEXT_SHAPING`, the extra allowance for a text's size, is 0.
+- **The web bundle grows.** The client's web export measured 2.98 MB (661 kB gzipped) during part A, against `apps/web`'s 1.41 MB (406 kB), mostly Reanimated, zod, Expo Router and react-native-web. Geist adds about 680 kB of TTF on the web. There's no player in the export yet. Once part B brings it in, hls.js is kept in a chunk of its own, as `scripts/bundles.ts` already expects.
+- **Copies until part B,** each listed in `one-place-exceptions.json` or noted where no rule reads them:
+  - the screens of `apps/web`, `apps/mobile` and `apps/tv`, and the prototypes' own client screens that haven't moved yet;
+  - `apps/client/src/back.tsx`, which copies `apps/tv`'s Back;
+  - the not-found screen's words, in `apps/client`, `apps/mobile` and `apps/tv`;
+  - the font lists in `apps/mobile`'s and `apps/tv`'s app configs.
+
+  The web renderer, `src/web`, stays for the admin, `apps/web` and the prototypes until part D.
+- **Left for later parts:**
+  - B moves C1 to C8 and the player into `apps/client`, each converged screen beside its old prototypes, and removes `apps/mobile`, `apps/tv`, `apps/web` and the prototypes' client folders.
+  - C serves the export at `/web` and wraps it in the desktop app ([ADR 0003](0003-server-runtime-custom-entry.md) and [ADR 0058](0058-desktop-app.md)), sets the shipping bundle identifiers and scheme, and puts the client's bundles, builds and playback sweep in CI. The client's bundles are checked locally until then.
+  - D draws the admin, its own parts included, with the library through react-native-web, and removes `src/web`.
+  - E moves the guides' drawn parts onto the library, brings the design language's guides up to the form-factor rule, and runs every check on the one client. One example: the rule's compact is below 768, where spacing-layout.md's breakpoints put it below 600.
+- `experiments.baseUrl` and tree shaking are under Expo's experiments. If either misbehaves, the documented fallback is serving the export at `/web` with the server rewriting paths, and the export without tree shaking at about twice the size.
+- The TV in a browser uses the spatial engine while the devices use their own, so the D-pad walk keeps running on the Apple TV simulator (`scripts/sweeps/tv.ts`) as well as in the browser.
+
+## 2026-11-03: the films' screens moved, and the prototypes hand them to the client (part B1)
+
+B1 of [one-client-platform-b.md](../plans/one-client-platform-b.md) moved the films' screens into `apps/client`, once for every form factor: Home, Library (Movies, Collections and a collection), a film, a person, Search and the TV's Alerts. They sit under `src/app/(in)/`, with their parts in `src/home/`, `src/library/`, `src/detail/`, `src/search/` and `src/alerts/`, and draw only from `@highsea-tv/ui`.
+
+- **The prototypes' frames hold the client for these routes.** `design/prototypes/src/chrome/client.ts` holds them in three ways:
+  - by prefix (`CLIENT_ROUTES`: `/movies`, `/people`, `/collections`, `/search` and `/alerts`, beside part A's);
+  - as they are (`CLIENT_EXACT`: Home `/` and the phone's `/library`, whose Shows and Music views are B3's);
+  - under another address (`/library/collections` is the client's `/library?view=collections`).
+
+  The prototypes' own copies of those screens are removed from the web, phone and TV routers, along with the tests that drove them; each behaviour is covered by the client's Jest tests. The prototype screens B3 still uses (the TV's library, detail and person, the web's Home and detail) stay until B3 moves them.
+- **The client's routes take the contract's ids.** `packages/mock`'s `SEED` (`@highsea-tv/mock/films`) names the film, person and collection that have every part a screen draws (Tears of Steel is `10111`, the prototype's `4`). The layout check, the compare sheet and the tests open those.
+- **The layout check covers every destination.** `scripts/sweeps/layout.ts` opens each B1 screen by its address. On the web that's inside the running client, with `history.pushState` and a `popstate` event, which React Navigation's web linking follows ([Web support](https://reactnavigation.org/docs/web-support/)), because a reload starts the mock again. On the iPhone and Apple TV simulators it opens the client's `highsea-client://` links through `XCUIApplication.open` ([Apple's documentation](https://developer.apple.com/documentation/xctest/xcuiapplication/open(_:))), from the steps `stepsFor()` gives `apps/client/uitest/Layout.swift`. Alerts is a page only on the TV; with a pointer it's the bell's popover, and the phone has none. The check fails on drift beyond 4 pt, and its report lists the drift B1 leaves for the owner.
+- **Selected chips.** A chip that's one of a set is a `radio` with `checked` on the web. On iOS and tvOS it's a `button` that is `selected`, because React Native maps no accessibility trait for `radio` there (`ReactCommon/react/renderer/components/view/accessibilityPropsConversions.h` in react-native-tvos 0.88; [Accessibility](https://reactnative.dev/docs/accessibility#accessibilityrole)). `RADIO` and `radioState` in `@highsea-tv/ui`'s `chip.tsx` hold the rule. Android's mapping comes with 4.5c.
+- **Pressables that take no focus on the web.** react-native-web's Pressable ignores `focusable` ([its source](https://github.com/necolas/react-native-web/blob/master/packages/react-native-web/src/exports/Pressable/index.js)), so the library's `press.tsx` sets `tabIndex: -1` where `focusable={false}`.
+
+## 2026-11-04: the rest of the films apps moved, and `apps/mobile` and `apps/tv` removed (part B2)
+
+B2 of [one-client-platform-b.md](../plans/one-client-platform-b.md) moved the rest of what the films apps draw into `apps/client`, once for every form factor:
+
+- **The player** at `/play/[id]` and `/play/[id]/start` (`src/player/`): one model (`usePlayerModel` in `parts.tsx`) and three compositions by input, pointer for the web and the desktop app, touch for the phone, and the TV's remote. The picture is a platform pair: `picture.tsx` draws expo-video's `VideoView`, with picture in picture and iOS's AirPlay picker ([expo-video](https://docs.expo.dev/versions/latest/sdk/video/)); `picture.web.tsx` draws a `<video>` with a WebVTT `<track>` and `::cue` ([WebVTT](https://www.w3.org/TR/webvtt1/)), the Picture-in-Picture and Fullscreen APIs. The engine is still `@highsea-tv/native/playback`'s `usePlayback`. The root layout opens the two routes as `fullScreenModal`.
+- **Connect a device** (`(in)/link/index.tsx`, `link/[code].tsx`), **Profile** (`(in)/profile.tsx`, which by touch goes to the phone's You at `/settings`), the pointer's account menu (`src/account/menu.tsx`) and **Get the apps** (`src/account/get-the-apps.tsx`, a dialog from a browser's Settings › About). The phone's camera is expo-camera, loaded only off the web and the TV ([expo-camera](https://docs.expo.dev/versions/latest/sdk/camera/)).
+- **Offline and Downloads** (`(in)/offline.tsx`, `(in)/downloads.tsx`, `src/downloads/`): the device decides the form, the phone's Offline, the desktop app's Downloads with Kept in, or a browser's page pointing at the desktop app; the TV keeps none. Real builds say downloads come in a later update; the list draws only in mock mode, until 4.6 gives the server's copies.
+- **The desktop app's chrome** (`src/desktop/`): `WindowChrome`, Back and Forward from the app's own trail, an update waiting, and Kept in, all behind one seam, `useDesktopHost()`, with no `@tauri-apps/*` import. The mock provides a host when the frame says `app=desktop`; part C provides Tauri's. The bar is a drag region through react-native-web's `dataSet`, which becomes `data-tauri-drag-region` ([Tauri › Window customization](https://v2.tauri.app/learn/window-customization/)).
+
+**The mock plays a film.** `packages/mock/src/play.ts` answers the play, progress, stop, report, next and trickplay routes in the contract's shapes, with the toolbar's `stream` state picking the session (direct play, preparing, buffering, failed, stopped by the owner, Next up). Its file is Sintel's 52 s clip from `packages/subtitles/test/fixtures/sintel/`, made into H.264 and AAC with a WebVTT by ffmpeg into `node_modules/.cache` and served at `/web/mock-media/` by byte ranges (`design/prototypes/mock-media.ts`); nothing new is committed. Native mock builds take its address from `EXPO_PUBLIC_HIGHSEA_MOCK_MEDIA`, which the layout check sets; without it the native player waits, as on a first transcode. The frame's state gains `app`, `os`, `update`, `downloads` and `airplay` (`packages/mock/src/frame.ts`), read through `useFrameState()`.
+
+**The prototypes hand B2's routes to the client.** `design/prototypes/src/chrome/client.ts` adds `/play`, `/link`, `/profile`, `/offline` and `/downloads`, and `/you` as `/settings`. An episode's `/play` stays the prototype's (`EPISODE_PLAY`) until B3 moves shows, so the three prototype players stay with it. The prototypes' copies of the other screens are removed.
+
+**`apps/mobile` and `apps/tv` are removed.** `.github/workflows/native.yml` builds and tests `apps/client` for iOS and tvOS (Jest, the bundle check, prebuild, the licences with the pods, and a Release simulator build), a piece of part C brought forward. `scripts/sweeps/phone.ts` runs Maestro's sign-in-and-play flow (`apps/client/.maestro/`) against the client's Release build, and `tv.ts` the D-pad walk, now `apps/client/dpad-walk`. `phone-compare.ts` and `tv-compare.ts` are gone: with one codebase, the layout check and the compare sheets replace them. `apps/web` stays, frozen, until part C. The client keeps its own identifiers (`tv.highsea.client.*`, `highsea-client://`) until part C ships it.
+
+**The layout check covers B2's destinations:** Connect a device's question, Downloads and the player, each where it exists (no code to approve and no downloads on the TV; Downloads and the player not at a regular pointer, where they are a browser's page and an overlay that hides its controls). The player's anchors are the scrubber on the TV and the stop that shows the controls elsewhere, since the controls hide while playing.
+
+## 2026-11-04: drafted routes for shows, music, playlists and profiles, and a client hiding what its server doesn't serve (part B3's foundation)
+
+B3 of [one-client-platform-b.md](../plans/one-client-platform-b.md) moves shows and music, on routes the mock answers and the real server doesn't have yet (the owner's answer 1 of 2026-11-03). The routes are declared in `@highsea-tv/api-contract`, so the SDK, the mock and the apps share one shape:
+
+- **Shows** (`shows.ts`): `GET /api/v1/shows`, `GET /api/v1/shows/{id}`, `PUT /api/v1/shows/{id}/watched` (a show or one season). An episode is a title like a film: it reads, plays, is marked watched and leaves Continue watching through the films' own routes with `episode` as the type (`TITLE_TYPES` in `kinds.ts`), so the player and its stream tokens stay one path.
+- **Music** (`music.ts`): `GET /api/v1/music`, `…/songs`, `…/albums/{id}`, `…/artists/{id}`, `POST …/queue` (an album, artist, playlist or songs, in order or shuffled), `GET …/tracks?ids=`, and playlists at `/api/v1/music/playlists` (list, get, create, rename, add, remove an entry, reorder, delete).
+- **Profiles** (`profiles.ts`): `/api/v1/me/profiles` (list, create, update, delete) and `POST …/{id}/choose` with the PIN when the profile has one. The server checks the PIN; a profile's JSON says only `hasPin`. A wrong PIN is 403 with `{field:'pin', reason:'wrong-pin'}`, not 401, which means signed out ([RFC 9110 § 15.5.2 and § 15.5.4](https://www.rfc-editor.org/rfc/rfc9110#section-15.5.4)); the fifth wrong PIN rests the profile, 429 with `retryAfter` ([RFC 6585 § 4](https://www.rfc-editor.org/rfc/rfc6585#section-4)).
+- **Home and Search** carry every kind: `HomeRow` is a films row or a media row (`isFilmRow`), and Search's results gain shows, albums, artists and songs. `DRAFT_TOPICS` adds `shows.updated`, `music.updated`, `playlists.updated` and `profiles.updated` to the event stream.
+
+**How drafts are marked.** Each drafted route carries `x-highsea-draft: true` through `draft()` in `common.ts`, an OpenAPI specification extension, which the spec allows on an Operation Object for tooling to read ([OpenAPI 3.1 › Specification Extensions](https://spec.openapis.org/oas/v3.1.0#specification-extensions)); `isDraft()` reads it. Each also documents a 501 (`notServed`). The server registers every drafted route (`apps/server/src/api/drafts.ts`), so it's in `openapi.json` with its mark and the guard still answers first, then answers 501 Not Implemented, "the server does not support the functionality required" ([RFC 9110 § 15.6.2](https://www.rfc-editor.org/rfc/rfc9110#section-15.6.2)), in the usual error body: code `unavailable`, details `{reason:'draft'}`. `/items/episode/…` on the films' routes answers the same. A route loses its mark when the server builds it.
+
+**How a client hides what its server doesn't serve.** `PublicInfo.sources` lists what a server serves; it gains `shows`, `music` and `profiles` (`CLIENT_SOURCES`), which the mock lists and the real server doesn't. `@highsea-tv/client/data`'s `useServes(source)` reads it, false until it's known, and every screen and entry point of a drafted kind goes behind it. A real server's client therefore looks as it did at B2: `useHome` keeps only films rows and films (`filmRows`), with `useHomeRows` giving every row to what B3 draws behind `useServes`. Reading what the server says it serves, rather than its version, follows the same rule as the dashboard's widget sources (ADR 0028).
+
+**The mock answers every draft** (`packages/mock/src/transport.ts`, with `kinds.ts` and `profiles.ts`), each answer checked against the contract's schema in `test/kinds.test.ts`. The profiles moved from the prototype's in-memory store into the mock server, per account, seeded as before (Theo's PIN is 2580), so a switch on one client is seen on another and no app holds a PIN.
+
+## 2026-11-04: shows, music, the music player and profiles moved, and the prototypes' client folders removed (part B3)
+
+B3 moved the rest of what the clients draw into `apps/client`, once for every form factor, behind `useServes` (the section above), so a real server's client stays as it was at B2:
+
+- **Shows** (`src/shows/`, `(in)/shows.tsx`, `(in)/shows/[id].tsx`): the list (Library's Shows view by touch), a show's page with its seasons and episodes, Play's target from the server, and Mark season. An episode plays at `/play/episode/[id]` through the films' player, which the root layout opens as `fullScreenModal` like a film's.
+- **Music** (`src/music/`, `(in)/music.tsx`, `(in)/music/…`): Albums, Artists, Songs and Playlists (Library's Music by touch), an album, an artist and a playlist with its rename, reorder and delete, and Home's rows and Search's kinds for music.
+- **The music player** (`src/music-player/`): one store for the app (`store.ts`, over `@highsea-tv/client/music-player`), mounted once by the shell. With a pointer it's the bar under the page with the queue in a side panel; by touch, the mini player above the tabs and Now playing at `/now-playing`; on the TV, Now playing in the head and its own screen. A film starting pauses it. The library gains `Waveform`, `PlayingBars` and `Slider` (native renderer).
+- **Profiles** (`src/profiles/`, `(in)/who/…`): Who's watching, its PIN pad, a new profile on the TV, and the TV's opening that asks on launch; the phone's Switch profile sheet from Settings. The PIN is checked by the server (the section above).
+
+**A link opened over the player closes it.** Expo Router opens an incoming link as a NAVIGATE to its address (`useLinking.native.js`'s `NAVIGATE_TO_HREF`), which pushes the `(in)` group again above the player's modal, so the player stayed drawn over where the link went. The root layout's `useLinkLeavesPlayer` removes the player's routes from the root stack once the link's place is on top, with React Navigation's `reset`, as its docs remove a screen ([Navigation actions › reset](https://reactnavigation.org/docs/navigation-actions/#reset)); the player unmounts and ends its session, as Back does (B2's answer 1). The layout check no longer leaves the player itself before opening Settings.
+
+**The prototypes' client folders are removed.** Every client platform's route is the client's (`heldByClient` in `design/prototypes/src/chrome/client.ts` is true for any `#/web`, `#/mobile` or `#/tv` address, whose unknown paths draw the client's own not-found page); `CLIENT_ROUTES`, `CLIENT_EXACT` and `EPISODE_PLAY` are gone. `src/web`, `src/mobile`, `src/tv` and `src/client` are deleted with the tests that drove them. The admin's two imports from them moved: a collection's words come from `@highsea-tv/client/format`, and Get the apps is `src/admin/system/get-the-apps.tsx`, the admin's until part D. `bun run one-place` has no "until B" exceptions left for the prototypes; `apps/web`'s is until part C, which removes it.
+
+## 2026-11-04: `/web` on the client's export (part C1)
+
+The server serves the client's web export at `/web` (ADR 0003's and 0053's dated sections of today), so every browser now gets the screens this ADR moved, including shows and music where a server lists them. What the move found in the client's web drawing:
+
+- **Checked state on the web.** react-native-web writes `aria-checked` only from the prop itself, never from `accessibilityState` (its createDOMProps), so `Press` given only `accessibilityState.checked` (the player's tracks, Settings' theme cards) never told the browser which choice was checked. `Press` now writes it as `aria-checked` on the web for the roles that take it ([WAI-ARIA 1.2 › aria-checked](https://www.w3.org/TR/wai-aria-1.2/#aria-checked)), unless the part sets its own, as ControlPress already did.
+- **The tracks panel's blur.** The prototype's panel was `glass-scrim` under an 80% background; the client's had the background only, so the player's top bar read through it. On the web it blurs by the `blur.scrim` token again (react-native-web's `backdropFilter`).
+- **Subtitles the browser draws.** The client hands a chosen text subtitle to the `<video>` as a WebVTT `<track>` drawn by `::cue`, so the playback sweep reads the showing track's active cues ([HTML › activeCues](https://html.spec.whatwg.org/multipage/media.html#dom-texttrack-activecues)) rather than the page's text.
+
+The server sweep over the export found two more of the same kind, fixed once in the library:
+
+- **Values.** react-native-web reads `aria-valuenow`, `aria-valuemin`, `aria-valuemax` and `aria-valuetext`, never `accessibilityValue`, so every `adjustable` drew a slider with no value, which WAI-ARIA requires ([slider](https://www.w3.org/TR/wai-aria-1.2/#slider)). The sliders and `ProgressBar` pass React Native's own `aria-value*` props, which the phone reads as well and which take precedence over `accessibilityValue` ([View › aria-valuenow](https://reactnative.dev/docs/view#aria-valuenow)).
+- **Nesting.** Settings' theme cards drew a `Radio` inside a card that is itself the radio, so the web had a control inside a control; `RadioMark` (native only, in `parity.ts`) draws the mark without one.

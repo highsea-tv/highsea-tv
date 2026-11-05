@@ -35,6 +35,7 @@
         "connect-src": "'self' ipc: http://ipc.localhost server: http://server.localhost",
         "media-src": "'self' blob: data: server: http://server.localhost",
         "worker-src": "'self' blob:",
+        "frame-src": "https://www.youtube-nocookie.com",
         "object-src": "'none'",
         "base-uri": "'self'",
         "form-action": "'none'"

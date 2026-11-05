@@ -19,6 +19,8 @@
 //
 // The desktop app carries the same version (ADR 0050's 4.4 section): prepare sets it in
 // tauri.conf.json, its Cargo.toml and Cargo.lock, and its package.json, and check reads them.
+// The one client (apps/client: the phone, the TV and the web; one-client-platform.md) does too, from
+// its package.json, which its app.config.ts reads; it took over from the phone's and the TV's apps.
 import { execFileSync } from 'node:child_process'
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { basename, join } from 'node:path'
@@ -42,6 +44,7 @@ const FILES = {
   desktopCargo: 'apps/desktop/src-tauri/Cargo.toml',
   desktopLock: 'apps/desktop/src-tauri/Cargo.lock',
   desktopPackage: 'apps/desktop/package.json',
+  clientPackage: 'apps/client/package.json',
 }
 
 /** The desktop app's crate in Cargo.toml and Cargo.lock: its name line, then its version line. */
@@ -61,6 +64,7 @@ function desktopVersions(files: Files): [string, string | null][] {
     [FILES.desktopCargo, files.desktopCargo.match(CRATE_VERSION)?.[2] ?? null],
     [FILES.desktopLock, files.desktopLock.match(CRATE_VERSION)?.[2] ?? null],
     [FILES.desktopPackage, json(files.desktopPackage)],
+    [FILES.clientPackage, json(files.clientPackage)],
   ]
 }
 
@@ -309,6 +313,7 @@ export function prepare(version: string, date: string, files: Files, tags: strin
     desktopCargo: files.desktopCargo.replace(CRATE_VERSION, `$1${version}$3`),
     desktopLock: files.desktopLock.replace(CRATE_VERSION, `$1${version}$3`),
     desktopPackage: withJsonVersion(files.desktopPackage, version),
+    clientPackage: withJsonVersion(files.clientPackage, version),
   }
 }
 

@@ -2,6 +2,13 @@
 // Generates the web outputs: plain CSS custom properties, and a Tailwind v4 theme.
 // Both use the same variable names, so components work with or without Tailwind.
 import { formatCss, parseColor } from './color.ts'
+import {
+  CONTROL_PLATFORMS,
+  type ControlPlatform,
+  type ControlSize,
+  controlMetrics,
+} from './controls.ts'
+import { COARSE_POINTER } from './form-factor.ts'
 import { durations, springs, springToCss } from './motion.ts'
 import { COLOR_ROLES } from './roles.ts'
 import {
@@ -164,6 +171,47 @@ function plainEntries(): Entries {
   ]
 }
 
+// ---- controls: one set of variables, its values by platform (controls.md)
+
+/** The `--control-*` variables for a platform: px as rem for a pointer and touch, cqw on the TV. */
+export function controlEntries(platform: ControlPlatform): Entries {
+  const size = (sz: ControlSize, suffix: string): Entries => {
+    const m = controlMetrics(platform, sz)
+    const len = (n: number) => (m.unit === 'u' ? u(n) : rem(n))
+    const text = m.unit === 'u' ? u(m.text) : rem(m.text)
+    return [
+      [`control-h${suffix}`, len(m.height)],
+      [`control-pad${suffix}`, len(m.pad)],
+      [`control-field-pad${suffix}`, len(m.fieldPad)],
+      [`control-gap${suffix}`, len(m.gap)],
+      [`control-icon${suffix}`, len(m.icon)],
+      [`control-text${suffix}`, text],
+      [`control-leading${suffix}`, m.leading],
+    ]
+  }
+  const md = controlMetrics(platform)
+  const len = (n: number) => (md.unit === 'u' ? u(n) : rem(n))
+  return [
+    ...size('md', ''),
+    ...size('sm', '-sm'),
+    ['control-inset', len(md.inset)],
+    ['control-radius', len(md.radius)],
+    ['control-row-gap', len(md.rowGap)],
+    ['control-hit', md.hit ? rem(md.hit) : '0px'],
+  ]
+}
+
+/**
+ * A pointer by default, touch on a coarse pointer, and any platform where an element says so
+ * (`data-platform`): the prototypes' phone and TV frames, and the TV's web build.
+ */
+const controlBlocks = () =>
+  [
+    block(':root', controlEntries('pointer')),
+    `@media ${COARSE_POINTER} {\n${block(':root', controlEntries('touch'), '  ')}\n}`,
+    ...CONTROL_PLATFORMS.map((p) => block(`[data-platform="${p}"]`, controlEntries(p))),
+  ].join('\n\n')
+
 const reducedMotion = `@media (prefers-reduced-motion: reduce) {
 ${block(
   ':root',
@@ -183,6 +231,7 @@ export function tokensCss(): string {
     HEADER,
     themeBlocks(),
     block(':root', [...themeIndependent, ...plainEntries()]),
+    controlBlocks(),
     reducedMotion,
     '',
   ].join('\n\n')
@@ -219,7 +268,13 @@ export function tailwindCss(): string {
     /\n}$/,
     '\n\n  @keyframes spin {\n    to {\n      transform: rotate(360deg);\n    }\n  }\n}',
   )
-  return [HEADER, theme, themeBlocks(), block(':root', plainEntries()), reducedMotion, ''].join(
-    '\n\n',
-  )
+  return [
+    HEADER,
+    theme,
+    themeBlocks(),
+    block(':root', plainEntries()),
+    controlBlocks(),
+    reducedMotion,
+    '',
+  ].join('\n\n')
 }

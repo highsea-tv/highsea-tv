@@ -1,0 +1,59 @@
+{
+  "name": "@highsea-tv/mock",
+  "version": "0.0.0",
+  "private": true,
+  "license": "AGPL-3.0-only",
+  "type": "module",
+  "exports": {
+    "./client": "./src/client.ts",
+    "./clock": "./src/clock.ts",
+    "./collections": "./src/collections.ts",
+    "./connections": "./src/connections.ts",
+    "./films": "./src/films.ts",
+    "./frame": "./src/frame.ts",
+    "./kinds": "./src/kinds.ts",
+    "./library-settings": "./src/library-settings.ts",
+    "./lists": "./src/lists.ts",
+    "./metadata": "./src/metadata.ts",
+    "./migration": "./src/migration.ts",
+    "./mock": "./src/mock.ts",
+    "./music": "./src/music.ts",
+    "./pairing": "./src/pairing.ts",
+    "./play": "./src/play.ts",
+    "./playback": "./src/playback.ts",
+    "./profiles": "./src/profiles.ts",
+    "./seed": "./src/seed.ts",
+    "./server": "./src/server.ts",
+    "./sessions": "./src/sessions.ts",
+    "./settings": "./src/settings.ts",
+    "./show-admin": "./src/show-admin.ts",
+    "./shows": "./src/shows.ts",
+    "./state": "./src/state.ts",
+    "./timing": "./src/timing.ts",
+    "./transport": "./src/transport.ts",
+    "./types": "./src/types.ts",
+    "./vpn": "./src/vpn.ts",
+    "./widgets": "./src/widgets.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@highsea-tv/api-contract": "workspace:*",
+    "@highsea-tv/auth": "workspace:*",
+    "@highsea-tv/client": "workspace:*",
+    "@highsea-tv/core": "workspace:*",
+    "@highsea-tv/fixtures": "workspace:*",
+    "@highsea-tv/i18n": "workspace:*",
+    "@highsea-tv/media": "workspace:*",
+    "@highsea-tv/personalization": "workspace:*",
+    "@highsea-tv/quality": "workspace:*",
+    "@highsea-tv/sdk": "workspace:*",
+    "@highsea-tv/subtitles": "workspace:*",
+    "@highsea-tv/tokens": "workspace:*",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@highsea-tv/config": "workspace:*"
+  }
+}

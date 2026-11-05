@@ -5,7 +5,7 @@
 // collection's titles here, oldest first, over the first part's backdrop.
 import { useCollection, useCollections } from '@highsea-tv/client/data'
 import { useT } from '@highsea-tv/i18n/react'
-import { Button, cn, EmptyState, Skeleton, SkeletonText } from '@highsea-tv/ui-web'
+import { Button, cn, EmptyState, Skeleton, SkeletonText } from '@highsea-tv/ui'
 import { useParams } from 'wouter'
 import { media } from './host.ts'
 import { CollectionTile } from './kit.tsx'

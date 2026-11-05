@@ -239,6 +239,7 @@ describe('contract', () => {
       studios: [],
       cast: [credit],
       directors: [],
+      crew: [],
       videos: [],
       collection: null,
       versions: [

@@ -8,7 +8,7 @@
 
 import type { DiscoverMovie } from '@highsea-tv/api-contract'
 import { useT } from '@highsea-tv/i18n/react'
-import { Poster } from '@highsea-tv/ui-web'
+import { Poster } from '@highsea-tv/ui'
 import { useState } from 'react'
 import { AddMovieDialog } from './add-dialog.tsx'
 import { collection as messages } from './collection-messages.ts'

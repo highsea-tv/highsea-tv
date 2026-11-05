@@ -1,7 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The collection editor (docs/product/collections.md#the-editor): name, summary and artwork; rules
-// or films picked by hand; Always include and Never include; sort, limit and who sees it. Beside it,
-// what the draft holds right now: both counts, the rules in words and the posters, as rules change.
+// or films picked by hand; Always include and Never include; shows picked by hand, as rules match
+// films only; sort, limit and who sees it. Beside it, what the draft holds right now: both counts,
+// the rules in words and the posters, films then shows, as rules change.
+
+import { sortLabels } from '@highsea-tv/mock/collections'
+import type { CollectionSort, RuleGroup, SmartCollection } from '@highsea-tv/mock/types'
 import {
   Badge,
   Button,
@@ -13,13 +17,11 @@ import {
   SortableList,
   Textarea,
   toast,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import { useEffect, useRef, useState } from 'react'
 import { useLocation, useParams } from 'wouter'
 import { CollectionArt } from '../../kit/collection-art.tsx'
-import { sortLabels } from '../../mock/collections.ts'
 import { useAction, useNow, useQuery } from '../../mock/hooks.tsx'
-import type { CollectionSort, MediaItem, RuleGroup, SmartCollection } from '../../mock/types.ts'
 import { AudienceField, audienceError } from '../curation/shared.tsx'
 import { Loadable } from '../loadable.tsx'
 import { AdminPage, adminHref } from '../shell.tsx'
@@ -42,6 +44,7 @@ function blank(now: number): SmartCollection {
     rules: { kind: 'group', id: ruleId('g'), match: 'all', rules: [] },
     include: [],
     exclude: [],
+    shows: [],
     sort: 'rating',
     descending: true,
     limit: null,
@@ -77,7 +80,7 @@ function usePreview(draft: SmartCollection) {
   const query = useQuery(
     `collections:preview:${JSON.stringify(holds)}`,
     (c) => c.collections.preview(settled),
-    ['movies.updated'],
+    ['movies.updated', 'shows.updated'],
   )
   // keep the last result while the next loads, so the panel doesn't jump on every keystroke
   const last = useRef(query.data)
@@ -105,8 +108,8 @@ function Editor({ initial }: { initial: SmartCollection | null }) {
   const errors = {
     name: !draft.name.trim() ? 'Give the collection a name. The apps show it.' : undefined,
     films:
-      !smart && !draft.include.length
-        ? 'Pick at least one film.'
+      !smart && !draft.include.length && !draft.shows.length
+        ? 'Pick at least one film or show.'
         : smart && draft.rules && ruleErrors(draft.rules)
           ? 'Finish the conditions marked below.'
           : undefined,
@@ -134,16 +137,16 @@ function Editor({ initial }: { initial: SmartCollection | null }) {
   const direction = sortLabels[draft.sort]
 
   return (
-    <div className="grid gap-6 expanded:grid-cols-[minmax(0,1fr)_minmax(18rem,22rem)] expanded:items-start">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-6 expanded:grid-cols-[minmax(0,1fr)_minmax(18rem,22rem)] expanded:items-start">
       <form
         aria-label="Collection"
-        className="grid min-w-0 gap-8"
+        className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-8"
         onSubmit={(e) => {
           e.preventDefault()
           submit()
         }}
       >
-        <div className="grid gap-4 medium:grid-cols-[minmax(0,1fr)_auto]">
+        <div className="grid grid-cols-[minmax(0,1fr)] gap-4 medium:grid-cols-[minmax(0,1fr)_auto]">
           <div className="grid gap-4">
             <Field label="Name" error={show(errors.name)}>
               <Input
@@ -163,7 +166,13 @@ function Editor({ initial }: { initial: SmartCollection | null }) {
               />
             </Field>
           </div>
-          <Artwork draft={draft} set={set} mosaic={result.data?.items.map((m) => m.poster) ?? []} />
+          <Artwork
+            draft={draft}
+            set={set}
+            mosaic={[...(result.data?.items ?? []), ...(result.data?.shows ?? [])].map(
+              (m) => m.poster,
+            )}
+          />
         </div>
 
         <fieldset className="grid gap-3">
@@ -216,6 +225,7 @@ function Editor({ initial }: { initial: SmartCollection | null }) {
             </Loadable>
           ) : (
             <TitlePicker
+              kind="films"
               label="Picked films"
               ids={draft.include}
               onChange={(include) => set({ include })}
@@ -228,6 +238,7 @@ function Editor({ initial }: { initial: SmartCollection | null }) {
           <fieldset className="grid gap-4 medium:grid-cols-2">
             <legend className="mb-1.5 font-medium text-text text-ui">Exceptions</legend>
             <TitlePicker
+              kind="films"
               label="Always include"
               hint="In it whatever the rules say."
               ids={draft.include}
@@ -236,6 +247,7 @@ function Editor({ initial }: { initial: SmartCollection | null }) {
               }
             />
             <TitlePicker
+              kind="films"
               label="Never include"
               hint="Left out whatever the rules say."
               ids={draft.exclude}
@@ -245,6 +257,18 @@ function Editor({ initial }: { initial: SmartCollection | null }) {
             />
           </fieldset>
         )}
+
+        <fieldset className="grid gap-3">
+          <legend className="mb-1.5 font-medium text-text text-ui">Shows</legend>
+          <TitlePicker
+            kind="shows"
+            label="Picked shows"
+            hint="Rules match films, so shows join by hand. The apps list them after the films, in this order."
+            ids={draft.shows}
+            onChange={(shows) => set({ shows })}
+            sortable
+          />
+        </fieldset>
 
         <fieldset className="grid gap-3">
           <legend className="mb-1.5 font-medium text-text text-ui">Order</legend>
@@ -302,9 +326,9 @@ function Editor({ initial }: { initial: SmartCollection | null }) {
           {initial && (
             <Button
               type="button"
-              variant="ghost"
+              variant="danger-ghost"
               icon="delete"
-              className="ms-auto text-danger"
+              className="ms-auto"
               onClick={() => setConfirm(true)}
             >
               Delete
@@ -315,7 +339,7 @@ function Editor({ initial }: { initial: SmartCollection | null }) {
           open={confirm}
           onOpenChange={setConfirm}
           title={`Delete “${draft.name}”?`}
-          description="It leaves every app’s library. The films in it stay in the library."
+          description="It leaves every app’s library. What’s in it stays in the library."
           confirmLabel="Delete"
           destructive
           onConfirm={() =>
@@ -351,7 +375,7 @@ function Artwork({
 }) {
   const input = useRef<HTMLInputElement>(null)
   return (
-    <div className="grid content-start justify-items-start gap-2">
+    <div className="grid grid-cols-[minmax(0,1fr)] content-start justify-items-start gap-2">
       <span className="font-medium text-text text-ui">Artwork</span>
       <CollectionArt poster={draft.artwork} mosaic={mosaic.slice(0, 4)} className="w-28" />
       <input
@@ -383,7 +407,31 @@ function Artwork({
 
 // ---------------------------------------------------------------- result
 
+type Held = { id: string; title: string; poster: string; playable: boolean }
+
+/** Posters, dimmed with "No file" under those the apps don't show yet. */
+function Posters({ label, items, none }: { label: string; items: Held[]; none: string }) {
+  return (
+    <ul aria-label={label} className="grid grid-cols-[repeat(auto-fill,minmax(4rem,1fr))] gap-2">
+      {items.map((m) => (
+        <li key={m.id} className="grid gap-1">
+          <img
+            src={m.poster}
+            alt={m.playable ? m.title : `${m.title}, ${none.toLowerCase()}`}
+            className={`aspect-poster w-full rounded-[4px] object-cover ${m.playable ? '' : 'opacity-40'}`}
+          />
+          {!m.playable && (
+            <span className="truncate text-center text-[11px] text-text-3">{none}</span>
+          )}
+        </li>
+      ))}
+    </ul>
+  )
+}
+
 function Result({ result }: { result: ReturnType<typeof usePreview> }) {
+  const shows = result.data?.shows ?? []
+  const showsShown = shows.filter((x) => x.playable).length
   return (
     <section
       aria-label="What it holds now"
@@ -393,39 +441,41 @@ function Result({ result }: { result: ReturnType<typeof usePreview> }) {
       <h2 className="font-semibold text-text text-ui">Right now</h2>
       {result.status !== 'success' ? (
         <p className="text-caption text-text-3">Checking what it holds…</p>
-      ) : result.data.matched === 0 ? (
+      ) : result.data.matched === 0 && shows.length === 0 ? (
         <p className="text-caption text-text-2">
           No films match yet. The apps don’t show it until one does.
         </p>
       ) : (
         <>
-          <p className="text-text-2 text-ui">
-            <span className="font-mono text-figure text-text">{result.data.matched}</span>{' '}
-            {result.data.matched === 1 ? 'film matches' : 'films match'};{' '}
-            <span className="font-mono text-figure text-text">{result.data.playable}</span>{' '}
-            {result.data.playable === 1 ? 'has a file and shows' : 'have a file and show'} in the
-            apps.
-          </p>
+          {result.data.matched > 0 ? (
+            <p className="text-text-2 text-ui">
+              <span className="font-mono text-figure text-text">{result.data.matched}</span>{' '}
+              {result.data.matched === 1 ? 'film matches' : 'films match'};{' '}
+              <span className="font-mono text-figure text-text">{result.data.playable}</span>{' '}
+              {result.data.playable === 1 ? 'has a file and shows' : 'have a file and show'} in the
+              apps.
+            </p>
+          ) : (
+            <p className="text-caption text-text-2">No films match yet.</p>
+          )}
           {result.data.words && <p className="text-caption text-text-3">{result.data.words}.</p>}
-          <ul
-            aria-label="Films in it"
-            className="grid grid-cols-[repeat(auto-fill,minmax(4rem,1fr))] gap-2"
-          >
-            {result.data.items.slice(0, 24).map((m) => (
-              <li key={m.id} className="grid gap-1">
-                <img
-                  src={m.poster}
-                  alt={m.playable ? m.title : `${m.title}, no file yet`}
-                  className={`aspect-poster w-full rounded-[4px] object-cover ${m.playable ? '' : 'opacity-40'}`}
-                />
-                {!m.playable && (
-                  <span className="truncate text-center text-[11px] text-text-3">No file</span>
-                )}
-              </li>
-            ))}
-          </ul>
+          {result.data.items.length > 0 && (
+            <Posters label="Films in it" items={result.data.items.slice(0, 24)} none="No file" />
+          )}
           {result.data.items.length > 24 && (
             <p className="text-caption text-text-3">And {result.data.items.length - 24} more.</p>
+          )}
+          {shows.length > 0 && (
+            <>
+              <p className="text-text-2 text-ui">
+                <span className="font-mono text-figure text-text">{shows.length}</span>{' '}
+                {shows.length === 1 ? 'show' : 'shows'} picked;{' '}
+                <span className="font-mono text-figure text-text">{showsShown}</span>{' '}
+                {showsShown === 1 ? 'has episodes and shows' : 'have episodes and show'} in the
+                apps, after the films.
+              </p>
+              <Posters label="Shows in it" items={shows} none="No episodes" />
+            </>
           )}
         </>
       )}
@@ -433,42 +483,79 @@ function Result({ result }: { result: ReturnType<typeof usePreview> }) {
   )
 }
 
-// ---------------------------------------------------------------- picking films
+// ---------------------------------------------------------------- picking films and shows
 
-/** Films by hand: search the whole library (files or not), then keep or order them. */
+type Pickable = { id: string; title: string; year: number; poster: string; empty: boolean }
+
+/** The library to pick from: every film (files or not), or every show (episodes or not). */
+function usePickable(kind: 'films' | 'shows') {
+  const films = useQuery(
+    `collections:titles:${kind}`,
+    (c) => (kind === 'films' ? c.movies.list() : Promise.resolve([])),
+    ['movies.updated'],
+  )
+  const shows = useQuery(
+    `collections:shows:${kind}`,
+    (c) => (kind === 'shows' ? c.shows.list() : Promise.resolve([])),
+    ['shows.updated'],
+  )
+  return kind === 'films'
+    ? (films.data ?? [])
+        .filter((m) => m.type === 'movie')
+        .map(
+          (m): Pickable => ({
+            id: m.id,
+            title: m.title,
+            year: m.year,
+            poster: m.art.poster,
+            empty: !m.versions.some((v) => v.fileId),
+          }),
+        )
+    : (shows.data ?? []).map(
+        (s): Pickable => ({
+          id: s.id,
+          title: s.title,
+          year: s.year,
+          poster: s.art.poster,
+          empty: s.episodes.have === 0,
+        }),
+      )
+}
+
+/** Films or shows by hand: search the whole library, then keep or order them. */
 function TitlePicker({
+  kind,
   label,
   hint,
   ids,
   onChange,
   sortable = false,
 }: {
+  kind: 'films' | 'shows'
   label: string
   hint?: string
   ids: string[]
   onChange: (ids: string[]) => void
   sortable?: boolean
 }) {
-  const library = useQuery('collections:titles', (c) => c.movies.list(), ['movies.updated'])
+  const all = usePickable(kind)
   const [query, setQuery] = useState('')
-  const all = (library.data ?? []).filter((m) => m.type === 'movie')
   const q = query.trim().toLowerCase()
-  const matches: MediaItem[] = q
+  const matches = q
     ? all.filter((m) => !ids.includes(m.id) && m.title.toLowerCase().includes(q)).slice(0, 6)
     : []
   const picked = ids.flatMap((id) => {
     const m = all.find((x) => x.id === id)
     return m ? [m] : []
   })
-  const noFile = (m: MediaItem) => !m.versions.some((v) => v.fileId)
-  const row = (m: MediaItem) => (
+  const row = (m: Pickable) => (
     <>
-      <img src={m.art.poster} alt="" className="aspect-poster w-8 rounded-[4px] object-cover" />
+      <img src={m.poster} alt="" className="aspect-poster w-8 rounded-[4px] object-cover" />
       <span className="flex min-w-0 items-center gap-2 text-text text-ui">
         <span className="truncate">
           {m.title} <span className="text-text-3">{m.year}</span>
         </span>
-        {noFile(m) && <Badge>No file</Badge>}
+        {m.empty && <Badge>{kind === 'films' ? 'No file' : 'No episodes'}</Badge>}
       </span>
       <Button
         size="sm"
@@ -487,13 +574,15 @@ function TitlePicker({
           icon="search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search the library"
+          placeholder={kind === 'films' ? 'Search the library' : 'Search the shows'}
         />
       </Field>
       {q && (
         <ul aria-label={`${label}: matches`} aria-live="polite" className="grid gap-1">
           {matches.length === 0 ? (
-            <li className="px-1 text-caption text-text-3">No film matches “{query}”.</li>
+            <li className="px-1 text-caption text-text-3">
+              No {kind === 'films' ? 'film' : 'show'} matches “{query}”.
+            </li>
           ) : (
             matches.map((m) => (
               <li key={m.id}>

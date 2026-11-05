@@ -59,7 +59,7 @@ import {
   TitleCell,
   Tooltip,
   toast,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import { useRouter } from 'next/navigation'
 import { Fragment, useDeferredValue, useRef, useState, useSyncExternalStore } from 'react'
 import { useAddressParam } from './address.ts'
@@ -154,7 +154,13 @@ export function MoviesLibrary() {
       ? last.current.data
       : undefined
   const shownQuery = kept
-    ? { status: 'success' as const, data: kept, error: undefined, refetch: movies.refetch }
+    ? {
+        status: 'success' as const,
+        data: kept,
+        error: undefined,
+        refetch: movies.refetch,
+        refresh: movies.refresh,
+      }
     : movies
 
   const profiles = useQuery('quality-profiles', (c) => c.quality.profiles())
@@ -222,7 +228,6 @@ export function MoviesLibrary() {
     <>
       <SegmentedControl
         aria-label={t('view')}
-        size="sm"
         value={view}
         onValueChange={(v) => setView(v as typeof view)}
         options={[
@@ -299,7 +304,7 @@ export function MoviesLibrary() {
                         options={MOVIE_SORTS.map((k) => ({ value: k, label: t(`sort.${k}`) }))}
                         className="w-36"
                       />
-                      <Button size="sm" icon="library" onClick={saveAsCollection}>
+                      <Button icon="library" onClick={saveAsCollection}>
                         {t('saveAsCollection')}
                       </Button>
                     </div>

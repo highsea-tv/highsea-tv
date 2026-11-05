@@ -14,7 +14,7 @@ import {
   Icon,
   Poster,
   Skeleton,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import { type ReactNode, useState } from 'react'
 import { media } from './host.ts'
 import { home as messages } from './messages.ts'
@@ -128,7 +128,7 @@ function SpotlightRow({ section, title }: { section: HomeSection; title: string 
 function Rows({ sections }: { sections: HomeSection[] }) {
   const t = useT(messages)
   return (
-    <div className="mx-auto w-full grid max-w-[1680px] gap-8 pb-16">
+    <div className="mx-auto grid w-full max-w-[1680px] grid-cols-[minmax(0,1fr)] gap-8 pb-16">
       {sections.map((s) =>
         s.layout === 'hero' || s.items.length === 0 ? null : (
           <div key={s.id} data-section={s.id} className="grid">

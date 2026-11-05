@@ -22,7 +22,7 @@ Two views of the same downloads, for two jobs. **Activity** is the library's vie
 ### Activity (A7)
 
 - `PageHeader`: "Activity", one line of description.
-- Tabs (line): **Queue** (count), **History**, **Blocklist** (count).
+- Tabs (line): **Queue** (count), **History**, **Blocklist** (count), each with its own address (`/activity`, `/activity/history`, `/activity/blocklist`; [admin-shell.md](admin-shell.md#interactions)).
 - **Queue:** a `TableFrame`. Toolbar: filter tabs with counts (All, Downloading, Importing and seeding, Needs attention) and the total download rate. Columns: movie (title and year, release name under it), quality, size, progress, ↓, ETA, status, actions (staff). A row that needs attention (stalled, import blocked, error) shows its reason in plain words under the badge, and its fix as a button in the row.
 - **History:** every event across the library: event (icon and label), movie, what happened (the release name under it), source (indexer or provider), when.
   - *As built:* history comes 50 events at a time, with **Show more** under the table; a failed download is an event of its own; each row carries the movie's title and year from the server. The prototype's **Clear** button is left out (the route exists, `DELETE /api/v1/history`).
@@ -44,7 +44,7 @@ Two views of the same downloads, for two jobs. **Activity** is the library's vie
   - *As built:* a torrent added by hand has a **More** menu beside Remove, with **Import into the library**: it opens A17 on the torrent's folder (or its one file) and looks inside. Until the torrent finishes, the item reads "Import into the library when it finishes" and is disabled. Library grabs have no More menu, since the pipeline imports them (6b, answer 7).
   - *As built:* General adds a **Swarm** row (Public, or "Private: trackers only, no DHT or peer exchange"); a tracker can be **Not contacted yet**; the seeding sentence carries a private tracker's minimum seed time; Files waits for the torrent's details from the swarm and says so.
 - **Add torrent** dialog: magnet or .torrent URL (mono), category, **Start right away**.
-  - *As built:* a link, or a `.torrent` file picked or dropped (sent as base64). The category select offers `manual` (the default) and the owner's categories, not `movies`, which is the library's; its hint says "Sets the folder it saves to. Add categories in Settings › Download client." (6b).
+  - *As built:* a link, or a `.torrent` file picked or dropped (sent as base64). The category select offers `manual` (the default) and the owner's categories, not `movies`, which is the library's; its hint says "Sets the folder it saves to. Add categories in Settings › Download client." (6b). Since stage 5 of prototype-gaps.md the prototype does the same, its categories in sentence case (Manual, Books), in the dialog and the list's filter alike.
 - **Limits** dialog (`sm`): download and upload in MB/s; 0 is no limit.
 
 ## States
@@ -136,6 +136,14 @@ As built in 6a and 6b (`packages/api-contract/src/downloads.ts`). Every route is
   - **Limits:** global only in milestone 1; per-torrent limits and a scheduled alternative speed later (answer 6).
   - **Import into the library:** a finished manual torrent offers it in the sheet's More menu, opening A17 on its folder (answer 7). Built in 6b.
 - **Download client settings are the owner's** (the checkpoint's judgement call 13); A7 and A8 stay staff.
+
+## Episodes (prototype-gaps stage 6, 2026-11-01)
+
+- **Queue:** the column is Title; an episode's download reads "Night Shift at Hollow Creek · S03E06", linked to the show, the release name below. Empty: the copy names movies and episodes.
+- **History** names an episode the same way, linked to the show.
+- **Downloads:** an episode's torrent has **Open the show** where a film's has Open the movie.
+- **Seeded:** Night.Shift.at.Hollow.Creek.S03E06 at 64% in the queue (category tv). With it, three downloads are active from the start, so the last film waits in the queue.
+- **Data:** `QueueItem.episode` (`{ show, code, title }`).
 
 ## Open questions
 

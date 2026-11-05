@@ -22,11 +22,11 @@ Getting from "I installed the app" to watching, on any network, with as little t
 One column (max 28rem), in a card on a desktop and full width on a phone, under the lockup.
 
 - **Choose a server:**
-  - **Your servers:** servers this device has signed in to: the mark, the name, "{Owner}'s server · signed in · just now".
+  - **Your servers:** servers this device has signed in to: the mark, the name, "{Owner}'s server · signed in · just now". On the phone, swiping a row left or pressing it long asks "Forget {name}?" (the owner's answer of 2026-10-29).
   - **On this network:** servers answering discovery that aren't yours yet, appearing as they answer (nearest first, over about two seconds), with "Looking…" while the scan runs and **Look again** after. With nothing new: "Only servers you already use answered." or "No servers answered. They may be on another network, or discovery may be off: add one by address."
   - **Add a server by address:** one field (mono), the hint "Its name or IP, with the port if it isn't 443", **Connect**.
   - **Find my servers with a highsea account** (collapsed): what highsea cloud does and that it's optional.
-- **Sign in to {server}:** the server and how it was reached ("On this network, at 192.168.1.20:3000" or "Remotely, through harbor.example.net"); Username; Password; **Sign in**; **Sign in with {OIDC provider}** when the server offers it.
+- **Sign in to {server}:** the server and how it was reached ("On this network, at 192.168.1.20:3000" or "Remotely, through harbor.example.net"); Username; Password; **Sign in**; **Sign in with {OIDC provider}** when the server offers it. In the apps that keep a list of servers (the phone and the desktop app), **Forget this server** sits at the foot of the screen in the danger ghost button (danger's words without its fill), also when the server doesn't answer, and asks first (the owner's answers of 2026-10-29). The web app has none: it's served by its server, so there's no other to choose.
 - **Two-step verification:** the 6-digit code field; **Verify**.
 - Back (←) returns to Choose a server.
 
@@ -49,9 +49,10 @@ One column (max 28rem), in a card on a desktop and full width on a phone, under 
 
 - **On the LAN:** nothing to say. The address won the latency probe.
 - **Connected remotely:** the LAN didn't answer and the remote address did. The switcher says "Connected remotely" (web: a pill beside the name; mobile: a line under it; TV: under the server name, top left). Everything works; streams may be transcoded down for the connection (C5).
-- **Unreachable:** neither answered. Web and mobile replace the page with "Can't reach {server}" · "highsea tried {server} on this network and at its remote address. It may be off, or the network may be down. Downloads still play." with **Try again** and **Switch server** (mobile: **Watch downloads** first). TV: the same, with **Try again** and **Another server**.
+- **Unreachable:** neither answered. Web and mobile replace the page with "Can't reach {server}" · "highsea tried {server} on this network and at its remote address. It may be off, or the network may be down." with **Try again** and **Switch server**. Where downloads are kept, the line ends "Your downloads still play." and **Watch downloads** opens them: first on the phone, between the two in the desktop app. A browser keeps no downloads, so it has neither. Offline (phone) and Downloads (desktop app) stay open while the server can't be reached, and what's on them plays. TV: the same, with **Try again** and **Another server**.
 - **Discovering:** servers appear one by one; the list never jumps (new ones append).
 - **Local network permission (the desktop app on macOS):** while the system asks, and when it was refused: [desktop-app.md › Local network on a Mac](desktop-app.md#local-network-on-a-mac).
+- **Local network permission (the phone app on iOS, checkpoint 4.5a):** the same two states, in the phone's words. While iOS asks: "Waiting for your iPhone…" beside **On this network**, and "Your iPhone is asking whether highsea may find devices on your local network. Choose Allow to look for servers." Refused: "highsea can't look on this network. Allow it in Settings › Privacy & Security › Local Network, or add the server by address." tvOS doesn't ask (Apple TN3179), so the TV has neither. Prototype: `#/mobile/connect?lan=asking` and `?lan=refused` (toolbar › **Local network**).
 - **Errors:** "That doesn't look like an address. Try harbor.example.net or 192.168.1.20." · "Nothing answered at {address}. Check the address, and that the server is running and reachable from here." · sign-in and 2FA errors as on the admin's sign-in ([login.md](login.md#copy)).
 - **Loading:** buttons show their spinner while probing or signing in.
 
@@ -59,9 +60,35 @@ One column (max 28rem), in a card on a desktop and full width on a phone, under 
 
 - **Choosing a server** probes it first, then asks for sign-in; the probe's answer decides the line under the server's name.
 - **Failover is automatic:** the client probes the LAN addresses and the remote one by latency and keeps the winner; it re-probes on network changes. Nobody picks "local" or "remote".
+- **TV pairing from the phone app (checkpoint 4.5a):** see [Pairing a TV from the phone](#pairing-a-tv-from-the-phone).
 - **TV pairing:** the TV asks the server for a code, shows it and its QR (`{public URL}/link?code=…`), and polls. A signed-in phone or computer opens the link, sees "Sign in {TV name} as {you}?" and approves; the TV receives a device token. The code lasts 10 minutes and is single-use. In the prototype, approval arrives after eight seconds.
 - **Keyboard and D-pad:** web and mobile are native controls in reading order. On TV the key grid is a spatial-focus grid; the fields switch with **Next**.
 - **Sound:** TV plays `navigate` and `select` as everywhere; nothing extra here.
+
+### Pairing a TV from the phone
+
+Added at checkpoint 4.5a, so nobody types on the TV. The words are the server's `/link` page's, so the page and the app say the same thing.
+
+- **Where:** You › Servers has **Sign in a TV** beside **Add a server** (the phone app only). The TV's QR holds `highsea://link?server=…&code=…`, so the iPhone's camera opens the app straight at the question when it's installed, and `{server}/link?code=…` in the browser when it isn't.
+- **Connect a device** (`#/mobile/link`): Back to **Servers**; the title; "Point your camera at the code on the TV."; the camera's picture with a frame for the code and "Looking for a code…"; **Enter the code instead**, which swaps the camera for a **Code** field ("Type the code your TV or app shows."), **Continue** and **Scan the code instead**. In the prototype the camera finds the TV's code after three seconds.
+- **Sign in {device}?** (`#/mobile/link/KQ7-4PM`): the TV's icon; the title; "{app} at {address} signs in as you. It stays signed in until you sign it out from You › Devices."; "Code {code} · it expires in 10 minutes."; **Sign it in** (primary) and **Cancel**.
+- **Signed in:** "{device} is signed in" · "It opens Home on the TV now. Sign it out from You › Devices whenever you like." · **Done**, back to Servers.
+- **A code that isn't waiting** (`#/mobile/link/ABC-123`): "That code isn't waiting" · "Check it on the TV, or start again there for a new one." · **Try again**.
+- **The camera:** iOS asks once for the camera (`NSCameraUsageDescription`: "highsea uses the camera to scan the code a TV shows."). Refused, the screen opens on the code field with "highsea can't use the camera. Allow it in Settings › highsea, or type the code." Not drawn: it's the field state with that line.
+- **Data:** `auth.pairingRequest` with the scanned or typed code, then `auth.approvePairing`, as the `/link` page does.
+
+### Connect a device on the web
+
+Added at prototype-gaps stage 4 (2026-11-01): the page the TV's code screen sends a computer to, in the web client and the desktop app, with the phone's words.
+
+- **Connect a device** (`#/web/link`): the title; "Type the code your TV or app shows. It works for 10 minutes."; the **Code** field and **Continue**. A computer has no camera to point, so there's no scanning.
+- **Sign in {device}?** (`#/web/link/KQ7-4PM`): as on the phone, with "Settings › Devices" for where it's signed out; **Sign it in** and **Cancel**, then "{device} is signed in" and **Done** (Home).
+- **A code that isn't waiting** (`#/web/link/ABC-123`): as on the phone.
+- The server's `/link?code=…` opens the question at once. The prototype's hash can't carry a query, so there the code is in the path.
+
+### Can't reach on the phone
+
+Added at prototype-gaps stage 4 (2026-11-01). When the phone can reach its server neither on this network nor at its remote address, it says so in the page's place: "Can’t reach {server}" · "highsea tried {server} on this network and at its remote address. It may be off, or the network may be down. Your downloads still play." Then **Watch downloads** (Offline), **Try again** and **Switch server**, one under the other.
 
 ## Copy
 
@@ -101,5 +128,5 @@ One column (max 28rem), in a card on a desktop and full width on a phone, under 
 ## Open questions
 
 - **Discovery port and Docker:** discovery needs host networking or a published UDP port (roadmap › Docker). Should the app tell people why nothing answered when it's running in a container on the same machine?
-- **TV approval UI on the phone:** a page on the server (`/link`) or a screen in the mobile app? The page works without the app; the app can skip typing the code with the QR.
+- ~~**TV approval UI on the phone:**~~ both: the `/link` page for a phone without the app, and [a screen in the app](#pairing-a-tv-from-the-phone) that scans the QR (checkpoint 4.5a).
 - **Remember me:** device tokens don't expire unless revoked. Should a TV have a shorter life?

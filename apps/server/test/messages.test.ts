@@ -8,7 +8,8 @@ import { type Messages, unparsable } from '@highsea-tv/i18n'
 import { Glob } from 'bun'
 
 const ROOT = join(import.meta.dir, '../../..')
-const sources = ['apps/server/src', 'apps/web/src', 'packages']
+// apps/web/src until C2 removes it (one-client-platform-c.md)
+const sources = ['apps/server/src', 'apps/client/src', 'apps/web/src', 'packages']
   .flatMap((dir) =>
     [...new Glob('**/*.{ts,tsx}').scanSync(join(ROOT, dir))].map((f) => join(ROOT, dir, f)),
   )

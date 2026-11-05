@@ -1,1 +1,8 @@
-[]
+[
+  {
+    "advisory": "GHSA-mrhx-c7xc-m3w5",
+    "package": "zod",
+    "until": "2026-11-29",
+    "reason": "Zod through 4.6.5: memory exhausted by a large array against an array schema without a length limit. highsea's own packages pin zod 4.6.7, which has the fix (4.6.6). The one older zod is 3.25.76, which only Expo's CLI uses (@expo/cli 58.1.17 requires ^3.25.76, and no 3.x release has the fix): a build tool that runs on a developer's Mac and in CI, is never in the app's bundle or the server image, and doesn't validate input from the internet. Look again when Expo's CLI moves to a fixed zod."
+  }
+]

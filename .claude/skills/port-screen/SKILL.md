@@ -10,7 +10,7 @@ The prototypes are **locked**. The admin matches its prototype's layout, copy, s
 
 ## Read first
 
-- The prototype: `design/prototypes/src/admin/<area>/`, and its mock server in `design/prototypes/src/mock/`, the first draft of the API.
+- The prototype: `design/prototypes/src/admin/<area>/`, and its mock server in `packages/mock/src/` (`@highsea-tv/mock`), the first draft of the API.
 - Its spec in `docs/product/`.
 - The same area's existing pieces in `apps/server/src/admin/` and `apps/server/src/api/`, and any similar screen already ported. Copy their shape.
 - `docs/plans/phase-3-server.md` § "Porting the prototype" and ADR 0018: the admin reads and writes **only through the public API**, never through Server Actions.

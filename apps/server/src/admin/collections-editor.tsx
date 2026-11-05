@@ -33,7 +33,7 @@ import {
   SortableList,
   Textarea,
   toast,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { CollectionArt } from './collection-art.tsx'
@@ -185,16 +185,16 @@ function Editor({ initial }: { initial: CollectionSummary | null }) {
   const preview = result.status === 'success' ? result.data : null
 
   return (
-    <div className="grid gap-6 expanded:grid-cols-[minmax(0,1fr)_minmax(18rem,22rem)] expanded:items-start">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-6 expanded:grid-cols-[minmax(0,1fr)_minmax(18rem,22rem)] expanded:items-start">
       <form
         aria-label={t('form')}
-        className="grid min-w-0 gap-8"
+        className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-8"
         onSubmit={(e) => {
           e.preventDefault()
           submit()
         }}
       >
-        <div className="grid gap-4 medium:grid-cols-[minmax(0,1fr)_auto]">
+        <div className="grid grid-cols-[minmax(0,1fr)] gap-4 medium:grid-cols-[minmax(0,1fr)_auto]">
           <div className="grid gap-4">
             <Field label={t('name')} error={show(errors.name)}>
               <Input
@@ -361,9 +361,9 @@ function Editor({ initial }: { initial: CollectionSummary | null }) {
           {initial && (
             <Button
               type="button"
-              variant="ghost"
+              variant="danger-ghost"
               icon="delete"
-              className="ms-auto text-danger"
+              className="ms-auto"
               onClick={() => setConfirm(true)}
             >
               {t('delete')}
@@ -402,7 +402,7 @@ function Artwork({
   const posters = items.flatMap((m) => (m.poster ? [{ title: m.title, poster: m.poster }] : []))
   const mosaic = posters.slice(0, 4).map((p) => p.poster)
   return (
-    <div className="grid content-start justify-items-start gap-2">
+    <div className="grid grid-cols-[minmax(0,1fr)] content-start justify-items-start gap-2">
       <span className="font-medium text-text text-ui">{t('artwork')}</span>
       <CollectionArt poster={draft.artwork} mosaic={mosaic} className="w-28" />
       <Select

@@ -33,7 +33,10 @@ const expected: Record<Access, Record<Caller, 200 | 401 | 403>> = {
   owner: { nobody: 401, user: 403, admin: 403, 'admin key': 403, owner: 200, 'owner key': 403 },
 }
 
-/** The client API and each person's own account: everything signed-in users may call. */
+/**
+ * The client API and each person's own account: everything signed-in users may call, the drafted
+ * shows, music, playlists and profiles among them (one-client-platform-b.md › B3).
+ */
 const USER_ROUTES = [
   'announcements.active',
   'announcements.seen',
@@ -73,6 +76,13 @@ const USER_ROUTES = [
   'metadata.recommendations',
   'movies.recent',
   'movies.upcoming',
+  'music.album',
+  'music.artist',
+  'music.library',
+  'music.queue',
+  'music.songs',
+  'music.tracks',
+  'playback.dismiss',
   'playback.itemProgress',
   'playback.next',
   'playback.play',
@@ -85,11 +95,27 @@ const USER_ROUTES = [
   'playback.trickplay',
   'playback.trickplaySheet',
   'playback.unplayed',
+  'playlists.add',
+  'playlists.create',
+  'playlists.delete',
+  'playlists.get',
+  'playlists.list',
+  'playlists.remove',
+  'playlists.rename',
+  'playlists.reorder',
   'preferences.get',
   'preferences.save',
+  'profiles.choose',
+  'profiles.create',
+  'profiles.delete',
+  'profiles.list',
+  'profiles.update',
   'pushSubscriptions.add',
   'pushSubscriptions.list',
   'pushSubscriptions.remove',
+  'shows.list',
+  'shows.show',
+  'shows.watched',
   'system.events',
   'system.server',
 ]

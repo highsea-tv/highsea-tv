@@ -28,10 +28,13 @@ This layout is locked in [direction.md](../../brand/direction.md#layouts). From 
 - **Posters:**
   - about 30% of the screen width in rows, so about three visible plus a peek;
   - about 78% of the width in the featured carousel.
+- **Home's other rows** (the prototype's, kept when B1 moved Home to apps/client): Continue watching cards are 62% of the row, and still rows 46%, so two show with a peek. These are values in `apps/client/src/home/sizes.ts` (`HOME`), with no token yet (part E).
+- **A person's page** (B1): the round portrait is centred with the words under it; the biography is 15pt on a 1.45 line, cut at four lines with More. The section headings over its rows are 17pt. Neither size is a token yet (part E).
+- **Music's pages** (B3): an album's cover and an artist's mosaic are 62% of the width inside the gutters; the artist under an album's title is 17pt, the meta lines under a title 13pt, an artist's name 28pt, and a song's cover has a 6pt corner. These are values in `apps/client/src/music/sizes.ts` (`MUSIC`), with no token yet (part E).
 
 ## Touch
 
-- **Targets:** at least 44 × 44pt. Posters are their own target.
+- **Targets:** at least 44 × 44pt. Controls keep their drawn size (36) and reach 44 with an invisible hit area (`hitSlop`), 8pt apart ([controls](../controls.md)). Posters are their own target.
 - **Feedback:** press feedback is a 0.97 scale with `spring.quick`, with no highlight color.
 - **Haptics:** a light haptic on `select`-class actions and a success haptic on `success`, following the platform's haptics setting. Haptics are independent of UI sound.
 - **Gestures:**

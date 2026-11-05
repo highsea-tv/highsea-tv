@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // A15 Settings, the reference areas (docs/product/settings.md): each area's layout, its values and
 // its states, with the main controls working (edit, save, discard) and the rest marked as not in
-// the prototype.
+// the prototype. General, Media management, Import lists and Connections took the built admin's
+// form in prototype-gaps.md's stage 5 and have files of their own.
 
+import type { QualitySize } from '@highsea-tv/mock/settings'
 import { describeFormat } from '@highsea-tv/quality/browser'
 import {
   Badge,
@@ -20,159 +22,19 @@ import {
   TableHeader,
   TableRow,
   toast,
-} from '@highsea-tv/ui-web'
-import type { ReactNode } from 'react'
+} from '@highsea-tv/ui'
+import { useState } from 'react'
 import { Soon } from '../../kit/soon.tsx'
 import { useQuery } from '../../mock/hooks.tsx'
-import type {
-  Settings as AllSettings,
-  NotificationKind,
-  SettingsSection,
-} from '../../mock/settings.ts'
 import { adminHref } from '../shell.tsx'
+import { Area, options } from './parts.tsx'
 import { AreaPage, Group, SaveBar, useSettingsDraft } from './settings.tsx'
 import { VpnSummary } from './vpn.tsx'
 
-/** An area backed by one settings section: loads it, keeps a draft, and shows the save bar. */
-function Area<K extends SettingsSection>({
-  id,
-  section,
-  actions,
-  children,
-}: {
-  id: string
-  section: K
-  actions?: ReactNode
-  children: (
-    value: AllSettings[K],
-    set: (patch: Partial<AllSettings[K]>) => void,
-    replace: (v: AllSettings[K]) => void,
-  ) => ReactNode
-}) {
-  const s = useSettingsDraft(section)
-  return (
-    <AreaPage id={id} actions={actions}>
-      {s.query.status === 'error' ? (
-        <p className="text-badge-danger text-ui">
-          Couldn’t load these settings. {s.query.error.message}
-        </p>
-      ) : !s.draft ? (
-        <p aria-busy className="text-caption text-text-3">
-          Loading…
-        </p>
-      ) : (
-        <>
-          {children(s.draft, s.set, s.replace)}
-          <SaveBar
-            dirty={s.dirty}
-            saving={s.saving}
-            onDiscard={s.discard}
-            onSave={() =>
-              s
-                .save()
-                .then(() => toast.success('Settings saved'))
-                .catch((e: Error) => toast.error('Couldn’t save', { description: e.message }))
-            }
-          />
-        </>
-      )}
-    </AreaPage>
-  )
-}
-
-const options = (xs: [string, string][]) => xs.map(([value, label]) => ({ value, label }))
-
 // ---------------------------------------------------------------- server
 
-export function General() {
-  return (
-    <Area id="general" section="general">
-      {(v, set) => (
-        <>
-          <Group title="Region">
-            <div className="grid gap-4 medium:grid-cols-2">
-              <Field label="Language" hint="For this admin and the server’s messages.">
-                <Select
-                  value={v.language}
-                  onValueChange={(language) => set({ language })}
-                  options={options([
-                    ['en-GB', 'English (UK)'],
-                    ['en-US', 'English (US)'],
-                    ['pt-PT', 'Português'],
-                    ['de-DE', 'Deutsch'],
-                    ['fr-FR', 'Français'],
-                  ])}
-                />
-              </Field>
-              <Field label="Time zone" hint="For schedules, the calendar and logs.">
-                <Select
-                  value={v.timeZone}
-                  onValueChange={(timeZone) => set({ timeZone })}
-                  options={options([
-                    ['Europe/Lisbon', 'Lisbon'],
-                    ['Europe/London', 'London'],
-                    ['Europe/Berlin', 'Berlin'],
-                    ['America/New_York', 'New York'],
-                    ['America/Los_Angeles', 'Los Angeles'],
-                  ])}
-                />
-              </Field>
-            </div>
-          </Group>
-          <Group
-            title="Updates"
-            description="highsea never updates itself unless you turn that on."
-          >
-            <SegmentedControl
-              aria-label="Update channel"
-              size="sm"
-              value={v.updateChannel}
-              onValueChange={(c) => set({ updateChannel: c as 'stable' | 'beta' })}
-              options={[
-                { value: 'stable', label: 'Stable' },
-                { value: 'beta', label: 'Beta' },
-              ]}
-              className="justify-self-start"
-            />
-            <Field
-              inline
-              label="Install updates on their own"
-              hint="At 4 am, after a backup, when nothing is playing."
-            >
-              <Switch
-                checked={v.autoUpdate}
-                onCheckedChange={(autoUpdate) => set({ autoUpdate })}
-              />
-            </Field>
-          </Group>
-          <Group title="Diagnostics">
-            <Field
-              inline
-              label="Send anonymous usage counts"
-              hint="Off. When on: the version, platform and library size, once a week. Never titles or names."
-            >
-              <Switch checked={v.analytics} onCheckedChange={(analytics) => set({ analytics })} />
-            </Field>
-            <Field label="Log level" hint="Debug is chatty: use it while chasing a problem.">
-              <Select
-                value={v.logLevel}
-                onValueChange={(l) => set({ logLevel: l as 'debug' | 'info' | 'warn' })}
-                options={options([
-                  ['warn', 'Warnings and errors'],
-                  ['info', 'Info (default)'],
-                  ['debug', 'Debug'],
-                ])}
-                className="medium:max-w-72"
-              />
-            </Field>
-          </Group>
-        </>
-      )}
-    </Area>
-  )
-}
-
 export function Network() {
+  const server = useQuery('server', (c) => c.system.server(), ['server.updated'])
   return (
     <Area id="network" section="network">
       {(v, set) => {
@@ -242,7 +104,7 @@ export function Network() {
             <Group title="Discovery">
               <Field
                 inline
-                label="Let apps on this network find Harbor"
+                label={`Let apps on this network find ${server.data?.name ?? 'this server'}`}
                 hint="Answers UDP broadcasts and mDNS. In Docker it needs host networking or the published UDP port 7359."
               >
                 <Switch checked={v.discovery} onCheckedChange={(discovery) => set({ discovery })} />
@@ -427,116 +289,6 @@ export function Backups() {
 
 // ---------------------------------------------------------------- library
 
-const sample = {
-  'Movie Title': 'Sintel',
-  'Release Year': '2010',
-  'Quality Full': 'Bluray-1080p',
-  'Movie CleanTitle': 'Sintel',
-  Edition: 'Director’s Cut',
-}
-
-/** `{Movie Title} ({Release Year})` with Sintel's values. Unknown tokens stay visible. */
-const render = (format: string) =>
-  format.replace(/\{([^}]+)\}/g, (m, t: string) => sample[t as keyof typeof sample] ?? m)
-
-export function MediaManagement() {
-  return (
-    <Area id="media" section="media">
-      {(v, set) => (
-        <>
-          <Group title="Naming" description="How highsea names what it imports.">
-            <Field inline label="Rename movies">
-              <Switch checked={v.rename} onCheckedChange={(rename) => set({ rename })} />
-            </Field>
-            <Field
-              label="Folder"
-              hint={
-                <>
-                  Becomes <span className="font-mono text-text-2">{render(v.folderFormat)}</span>
-                </>
-              }
-            >
-              <Input
-                value={v.folderFormat}
-                disabled={!v.rename}
-                onChange={(e) => set({ folderFormat: e.target.value })}
-                className="font-mono"
-              />
-            </Field>
-            <Field
-              label="File"
-              hint={
-                <>
-                  Becomes <span className="font-mono text-text-2">{render(v.fileFormat)}.mkv</span>
-                </>
-              }
-            >
-              <Input
-                value={v.fileFormat}
-                disabled={!v.rename}
-                onChange={(e) => set({ fileFormat: e.target.value })}
-                className="font-mono"
-              />
-            </Field>
-            <p className="text-caption text-text-3">
-              Tokens:{' '}
-              {Object.keys(sample)
-                .map((t) => `{${t}}`)
-                .join(' ')}
-            </p>
-          </Group>
-          <Group title="Importing">
-            <Field
-              inline
-              label="Use hardlinks"
-              hint="Imports take no extra space and torrents keep seeding. Downloads and Movies are on the same disk, so hardlinks work."
-            >
-              <Switch checked={v.hardlinks} onCheckedChange={(hardlinks) => set({ hardlinks })} />
-            </Field>
-            <Field
-              inline
-              label="Write NFO files"
-              hint="For other media players reading the same folders."
-            >
-              <Switch checked={v.nfo} onCheckedChange={(nfo) => set({ nfo })} />
-            </Field>
-            <Field
-              inline
-              label="Stop monitoring movies whose files I delete"
-              hint="Otherwise highsea downloads them again."
-            >
-              <Switch
-                checked={v.unmonitorDeleted}
-                onCheckedChange={(unmonitorDeleted) => set({ unmonitorDeleted })}
-              />
-            </Field>
-            <div className="grid gap-4 medium:grid-cols-2">
-              <Field label="Folder permissions" hint="chmod, for folders highsea makes.">
-                <Input
-                  value={v.chmod}
-                  onChange={(e) => set({ chmod: e.target.value })}
-                  className="font-mono"
-                />
-              </Field>
-              <Field
-                label="Recycle bin"
-                hint="Deleted files go here first. Empty: delete straight away."
-              >
-                <Input
-                  value={v.recycleBin}
-                  placeholder="/data/.recycle"
-                  onChange={(e) => set({ recycleBin: e.target.value })}
-                  className="font-mono"
-                />
-              </Field>
-            </div>
-          </Group>
-        </>
-      )}
-    </Area>
-  )
-}
-
 const presets = [
   {
     name: 'HD Bluray + WEB',
@@ -549,9 +301,19 @@ const presets = [
   { name: 'Remux + WEB 2160p', detail: 'Remuxes first, for big screens and big disks.' },
 ]
 
+const usedBy = ({ movies, shows }: { movies: number; shows: number }) =>
+  movies + shows === 0
+    ? 'Not used yet'
+    : `Used by ${movies === 1 ? '1 movie' : `${movies} movies`} and ${shows === 1 ? '1 show' : `${shows} shows`}`
+
 export function Profiles() {
   const profiles = useQuery('settings:profiles', (c) => c.movies.qualityProfiles())
   const formats = useQuery('settings:formats', (c) => c.movies.customFormats())
+  const usage = useQuery('settings:profile-usage', (c) => c.movies.profileUsage(), [
+    'settings.updated',
+    'movies.updated',
+    'shows.updated',
+  ])
   return (
     <AreaPage
       id="profiles"
@@ -563,7 +325,7 @@ export function Profiles() {
     >
       <Group
         title="Quality profiles"
-        description="Each movie uses one: what to download, and when to stop upgrading."
+        description="Each movie and each show uses one: what to download, and when to stop upgrading. Music has its own with the music library."
       >
         <ul className="grid gap-2">
           {(profiles.data ?? []).map((p) => (
@@ -586,6 +348,11 @@ export function Profiles() {
                   {p.upgradeAllowed ? `Upgrades until ${p.cutoff}` : 'No upgrades'} ·{' '}
                   {p.formats.length} custom format scores
                 </p>
+                {usage.data && (
+                  <p className="text-caption text-text-3">
+                    {usedBy(usage.data[p.id] ?? { movies: 0, shows: 0 })}
+                  </p>
+                )}
               </div>
               <Button size="sm" icon="edit" asChild>
                 <a href={adminHref(`/settings/profiles/${p.id}`)} aria-label={`Edit ${p.name}`}>
@@ -662,134 +429,158 @@ export function Profiles() {
   )
 }
 
+/**
+ * Sizes per kind (stage 6, drawn for the TV series phase): movies' per minute of the film, as
+ * Radarr's, and episodes' per minute of the episode, as Sonarr's. One table at a time, chosen
+ * above it; both drafts are kept, so switching loses nothing, and the save bar saves both.
+ */
 export function QualitySizes() {
+  const [kind, setKind] = useState<SizeKind>('movies')
+  const movies = useSettingsDraft('qualitySizes')
+  const episodes = useSettingsDraft('episodeSizes')
+  const s = kind === 'shows' ? episodes : movies
+  const minutes = kind === 'shows' ? 45 : 120
+  const dirty = movies.dirty || episodes.dirty
   return (
-    <Area
+    <AreaPage
       id="quality"
-      section="qualitySizes"
       actions={
         <Button icon="edit" asChild>
           <a href={adminHref('/settings/quality/sizes')}>Edit sizes</a>
         </Button>
       }
     >
-      {(rows, _set, replace) => (
+      <SegmentedControl
+        aria-label="Sizes for"
+        size="sm"
+        value={kind}
+        onValueChange={(k) => setKind(k as SizeKind)}
+        options={[
+          { value: 'movies', label: 'Movies' },
+          { value: 'shows', label: 'Shows' },
+        ]}
+        className="justify-self-start"
+      />
+      {s.query.status === 'error' ? (
+        <p className="text-badge-danger text-ui">
+          Couldn’t load these settings. {s.query.error.message}
+        </p>
+      ) : !s.draft ? (
+        <p aria-busy className="text-caption text-text-3">
+          Loading…
+        </p>
+      ) : (
         <Group
-          title="Sizes per minute of runtime"
-          description="A release outside the range is rejected; the preferred size wins a tie."
+          title={
+            kind === 'shows' ? 'Sizes per minute of an episode' : 'Sizes per minute of runtime'
+          }
+          description={
+            kind === 'shows'
+              ? 'A release outside the range is rejected; the preferred size wins a tie. A season pack is checked episode by episode.'
+              : 'A release outside the range is rejected; the preferred size wins a tie.'
+          }
         >
-          <TableFrame>
-            <Table aria-label="Sizes per minute of runtime">
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Quality</TableHead>
-                  <TableHead numeric>Min MB/min</TableHead>
-                  <TableHead numeric>Preferred</TableHead>
-                  <TableHead numeric>Max</TableHead>
-                  <TableHead numeric>A 2-hour film</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {rows.map((q, i) => {
-                  // An empty preferred or maximum is no limit (`null`), as TRaSH's defaults are.
-                  const cell = (key: 'min' | 'preferred' | 'max') => (
-                    <TableCell numeric>
-                      <Input
-                        type="number"
-                        min={0}
-                        aria-label={`${q.quality}: ${key === 'preferred' ? 'preferred' : key} MB per minute`}
-                        value={q[key] ?? ''}
-                        placeholder={key === 'min' ? undefined : '∞'}
-                        onChange={(e) =>
-                          replace(
-                            rows.map((r, j) =>
-                              j === i
-                                ? {
-                                    ...r,
-                                    [key]:
-                                      key !== 'min' && e.target.value === ''
-                                        ? null
-                                        : Number(e.target.value),
-                                  }
-                                : r,
-                            ),
-                          )
-                        }
-                        className="ms-auto w-20 text-end font-mono"
-                      />
-                    </TableCell>
-                  )
-                  return (
-                    <TableRow key={q.quality}>
-                      <TableCell className="text-text">{q.quality}</TableCell>
-                      {cell('min')}
-                      {cell('preferred')}
-                      {cell('max')}
-                      <TableCell numeric className="text-text-2">
-                        {q.max === null
-                          ? `${((q.min * 120) / 1000).toFixed(1)} GB or more`
-                          : `${((q.min * 120) / 1000).toFixed(1)}–${((q.max * 120) / 1000).toFixed(1)} GB`}
-                      </TableCell>
-                    </TableRow>
-                  )
-                })}
-              </TableBody>
-            </Table>
-          </TableFrame>
+          <SizeRows
+            key={kind}
+            rows={s.draft}
+            replace={s.replace}
+            minutes={minutes}
+            noun={kind === 'shows' ? 'episode' : 'film'}
+          />
         </Group>
       )}
-    </Area>
+      <SaveBar
+        dirty={dirty}
+        saving={movies.saving || episodes.saving}
+        onDiscard={() => {
+          movies.discard()
+          episodes.discard()
+        }}
+        onSave={() =>
+          Promise.all([movies.dirty && movies.save(), episodes.dirty && episodes.save()])
+            .then(() => toast.success('Settings saved'))
+            .catch((e: Error) => toast.error('Couldn’t save', { description: e.message }))
+        }
+      />
+    </AreaPage>
   )
 }
 
-const listKinds = { trakt: 'Trakt', tmdb: 'TMDB list', imdb: 'IMDb list', letterboxd: 'Letterboxd' }
+type SizeKind = 'movies' | 'shows'
+type SizeRow = QualitySize
 
-export function ImportLists() {
-  const profiles = useQuery('settings:profiles', (c) => c.movies.qualityProfiles())
+function SizeRows({
+  rows,
+  replace,
+  minutes,
+  noun,
+}: {
+  rows: SizeRow[]
+  replace: (rows: SizeRow[]) => void
+  minutes: number
+  noun: 'film' | 'episode'
+}) {
+  const gb = (perMinute: number) => ((perMinute * minutes) / 1000).toFixed(1)
+  const label = noun === 'film' ? 'Sizes per minute of runtime' : 'Sizes per minute of an episode'
   return (
-    <Area id="lists" section="importLists">
-      {(lists, _set, replace) => (
-        <Group
-          title="Lists"
-          description="highsea checks each list every 6 hours and adds new titles as monitored."
-        >
-          <ul className="grid gap-2">
-            {lists.map((l, i) => (
-              <li
-                key={l.id}
-                className="grid gap-3 rounded-md border border-line bg-s2 p-3 medium:grid-cols-[auto_minmax(0,1fr)_14rem] medium:items-center"
-              >
-                <Switch
-                  aria-label={`${l.name}: on`}
-                  checked={l.enabled}
-                  onCheckedChange={(enabled) =>
-                    replace(lists.map((x, j) => (j === i ? { ...x, enabled } : x)))
+    <TableFrame>
+      <Table aria-label={label}>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Quality</TableHead>
+            <TableHead numeric>Min MB/min</TableHead>
+            <TableHead numeric>Preferred</TableHead>
+            <TableHead numeric>Max</TableHead>
+            <TableHead numeric>
+              {noun === 'film' ? 'A 2-hour film' : `A ${minutes}-minute episode`}
+            </TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {rows.map((q, i) => {
+            // An empty preferred or maximum is no limit (`null`), as TRaSH's defaults are.
+            const cell = (key: 'min' | 'preferred' | 'max') => (
+              <TableCell numeric>
+                <Input
+                  type="number"
+                  min={0}
+                  aria-label={`${q.quality}: ${key === 'preferred' ? 'preferred' : key} MB per minute`}
+                  value={q[key] ?? ''}
+                  placeholder={key === 'min' ? undefined : '∞'}
+                  onChange={(e) =>
+                    replace(
+                      rows.map((r, j) =>
+                        j === i
+                          ? {
+                              ...r,
+                              [key]:
+                                key !== 'min' && e.target.value === ''
+                                  ? null
+                                  : Number(e.target.value),
+                            }
+                          : r,
+                      ),
+                    )
                   }
+                  className="ms-auto w-20 text-end font-mono"
                 />
-                <div className="grid gap-0.5">
-                  <p className="text-text text-ui">{l.name}</p>
-                  <p className="text-caption text-text-3">
-                    {listKinds[l.kind]} · {l.items} titles ·{' '}
-                    {l.search ? 'adds and searches' : 'adds without searching'}
-                  </p>
-                </div>
-                <Select
-                  aria-label={`${l.name}: quality profile`}
-                  value={l.profileId}
-                  onValueChange={(profileId) =>
-                    replace(lists.map((x, j) => (j === i ? { ...x, profileId } : x)))
-                  }
-                  options={(profiles.data ?? []).map((p) => ({ value: p.id, label: p.name }))}
-                />
-              </li>
-            ))}
-          </ul>
-          <Soon icon="add" className="justify-self-start">
-            Add a list
-          </Soon>
-        </Group>
-      )}
-    </Area>
+              </TableCell>
+            )
+            return (
+              <TableRow key={q.quality}>
+                <TableCell className="text-text">{q.quality}</TableCell>
+                {cell('min')}
+                {cell('preferred')}
+                {cell('max')}
+                <TableCell numeric className="text-text-2">
+                  {q.max === null ? `${gb(q.min)} GB or more` : `${gb(q.min)}–${gb(q.max)} GB`}
+                </TableCell>
+              </TableRow>
+            )
+          })}
+        </TableBody>
+      </Table>
+    </TableFrame>
   )
 }
 
@@ -857,85 +648,6 @@ export function DownloadClient() {
             </a>
             .
           </p>
-        </>
-      )}
-    </Area>
-  )
-}
-
-const kindLabels: Record<NotificationKind, string> = {
-  discord: 'Discord',
-  slack: 'Slack',
-  telegram: 'Telegram',
-  ntfy: 'ntfy',
-  gotify: 'Gotify',
-  pushover: 'Pushover',
-  email: 'Email',
-  webhook: 'Webhook',
-  apprise: 'Apprise',
-}
-
-const eventLabels = {
-  grab: 'Grabbed',
-  import: 'Imported',
-  upgrade: 'Upgraded',
-  health: 'Health',
-  update: 'Update',
-}
-
-export function Connections() {
-  return (
-    <Area id="connections" section="connections">
-      {(list, _set, replace) => (
-        <>
-          <Group
-            title="Notifications"
-            description="Where highsea tells you about downloads, imports and problems."
-          >
-            <ul className="grid gap-2">
-              {list.map((n, i) => (
-                <li
-                  key={n.id}
-                  className="grid gap-3 rounded-md border border-line bg-s2 p-3 medium:grid-cols-[auto_minmax(0,1fr)_auto] medium:items-center"
-                >
-                  <Switch
-                    aria-label={`${n.name}: on`}
-                    checked={n.enabled}
-                    onCheckedChange={(enabled) =>
-                      replace(list.map((x, j) => (j === i ? { ...x, enabled } : x)))
-                    }
-                  />
-                  <div className="grid gap-1">
-                    <p className="text-text text-ui">
-                      {n.name} <span className="text-text-3">· {kindLabels[n.kind]}</span>
-                    </p>
-                    <p className="flex flex-wrap gap-1">
-                      {n.events.map((e) => (
-                        <Badge key={e}>{eventLabels[e]}</Badge>
-                      ))}
-                    </p>
-                  </div>
-                  <Button
-                    size="sm"
-                    icon="notification"
-                    disabled={!n.enabled}
-                    onClick={() => toast({ title: `Sent a test to ${n.name}` })}
-                  >
-                    Test
-                  </Button>
-                </li>
-              ))}
-            </ul>
-          </Group>
-          <Group title="Add a connection">
-            <ul className="grid grid-cols-2 gap-2 medium:grid-cols-3 wide:grid-cols-5">
-              {(Object.keys(kindLabels) as NotificationKind[]).map((k) => (
-                <li key={k}>
-                  <Soon className="w-full">{kindLabels[k]}</Soon>
-                </li>
-              ))}
-            </ul>
-          </Group>
         </>
       )}
     </Area>

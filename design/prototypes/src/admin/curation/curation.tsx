@@ -2,6 +2,8 @@
 // A11 Curation (docs/product/curation.md): what the household sees first. Announcements, with how
 // far each has reached, and the featured sections in their home-screen order. Each opens its
 // composer, where a live client preview shows the draft on a TV, the web and a phone.
+
+import type { AnnouncementSummary, Placement, SectionSummary } from '@highsea-tv/mock/types'
 import {
   Badge,
   Button,
@@ -20,11 +22,10 @@ import {
   TabsList,
   TabsTrigger,
   toast,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import { type ReactNode, useState } from 'react'
 import { useLocation } from 'wouter'
 import { useAction, useQuery } from '../../mock/hooks.tsx'
-import type { AnnouncementSummary, Placement, SectionSummary } from '../../mock/types.ts'
 import { Loadable } from '../loadable.tsx'
 import { AdminPage, adminHref } from '../shell.tsx'
 import { audienceSummary, StatusBadge, scheduleSummary, useUsers } from './shared.tsx'

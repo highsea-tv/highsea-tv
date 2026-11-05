@@ -1,7 +1,7 @@
 # Now playing
 
 - **Platforms:** Admin, every breakpoint; a widget on the dashboard.
-- **Prototype:** `design/prototypes/src/admin/now-playing/` (`#/admin/now-playing`), with its mock in `src/mock/sessions.ts`, and the **Now playing** widget in `src/admin/dashboard/widgets.tsx`. Prototyped at Phase 4's checkpoint 4.0b, 2026-10-23, and waiting for the owner's approval. In the prototype, four sessions move with the mock's clock; **Prototype only · Slow a transcode** plays one that can't keep up; Stop plays a stopped session; and the empty server has nobody watching.
+- **Prototype:** `design/prototypes/src/admin/now-playing/` (`#/admin/now-playing`), with its mock in `packages/mock/src/sessions.ts`, and the **Now playing** widget in `src/admin/dashboard/widgets.tsx`. Prototyped at Phase 4's checkpoint 4.0b, 2026-10-23, and waiting for the owner's approval. In the prototype, four sessions move with the mock's clock; **Prototype only · Slow a transcode** plays one that can't keep up; Stop plays a stopped session; and the empty server has nobody watching.
 - **Built:** at 4.3 (sessions), on [ADR 0051](../adr/0051-playback-engine.md) and [ADR 0052](../adr/0052-device-profiles.md).
 - **Plan:** [phase-4-checkpoint-0.md › Now playing](../plans/phase-4-checkpoint-0.md#now-playing-admin-and-its-widget).
 
@@ -21,7 +21,7 @@ The owner and admins, like the rest of the admin ([answer 5](../plans/phase-4-ch
 
 ## Layout
 
-Two tabs: **Now** (with the count) and **Last 30 days**.
+Two tabs: **Now** (with the count) and **Last 30 days**, at `/now-playing` and `/now-playing/history`.
 
 ### Now
 
@@ -70,6 +70,16 @@ Registry kind `now-playing`: 1 to 4 columns, 2 to 5 rows, default 2 × 3; owner 
 - **A download is a session,** since its transcode costs the same as a stream's.
 - **30 days of history** ([Phase 4 answer 10](../plans/phase-4-clients.md#the-owners-answers)): long enough for "who watched what last weekend", short enough not to be a record of people's viewing.
 - **Stop takes a message, not a reason list:** the owner knows their household; a free line says more than a menu.
+
+## Episodes and songs (prototype-gaps stage 6, 2026-11-01)
+
+- **What's playing** is named by its kind, in the session row, the history and the widget alike:
+  - a film: its title (to its page) and year;
+  - an episode: "Saltmarsh · S2, E4 · Strangers", the show linked to `/admin/shows/{id}` (the number as the apps write it, not the admin tables' S02E04);
+  - a song: "Wild Rooms · Aurora Fields · Low Tide Hours", unlinked (music has no admin page yet), its cover square.
+- A song's progress is "Played so far"; when it ends, the session moves to the album's next song.
+- **History's** column is Title, and the count reads "{n} titles played".
+- **Seeded:** an episode on the Bedroom Fire TV and a song on Theo's iPhone (FLAC), with history for two episodes and a song.
 
 ## Open questions
 

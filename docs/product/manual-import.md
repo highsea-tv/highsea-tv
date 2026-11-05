@@ -76,6 +76,18 @@ As built in 6a; every route is staff.
 | `libraryImport.run({ items, rename, qualityProfileId? })` | `POST /api/v1/import/library` | `items` are `{ folder, tmdbId }`. Starts the `library.import` job and answers its `LibraryImportStatus`; a second run while one is going is refused (409) |
 | `libraryImport.status()` | `GET /api/v1/import/library` | `LibraryImportStatus`: idle, running or done, how far, and the failures |
 
+## Episodes (prototype-gaps stage 6, 2026-11-01)
+
+- **Matches** replaces the Movie column: a button that shows the match ("Night Shift at Hollow Creek · S03E05", "Saltmarsh · S01E01–E02", "Sintel (2010)") or "Choose a match", and opens **Choose a match**:
+  - **A movie** or **Episodes of a show**, as a segmented choice;
+  - a movie: the library's films in a select;
+  - episodes: the show, the season, then the season's episodes as checkboxes. "Episodes in the file. Tick two or more for a double episode." **Use this match** keeps it.
+- **Becomes** for an episode follows Settings › Media management's episode naming: the series folder, the season folder when seasons have folders, then the standard format (the multi-episode style for a double).
+- **Unmatched:** "Didn’t match a movie or an episode. Choose one."
+- **Importing** an episode gives it the file and makes it available, with a history entry.
+- **Seeded:** Night.Shift.at.Hollow.Creek.S03E05 (WEB 1080p) and Saltmarsh.S01E01-E02 (BluRay 1080p, a double episode).
+- **Data:** `ImportCandidate.episodes` (`{ show, episodeIds }` or null) beside `itemId`; `manualImport.run` takes `{ path, itemId?, episodes? }`.
+
 ## Open questions
 
 - **Language detection** from the audio, for files with no language in the name?

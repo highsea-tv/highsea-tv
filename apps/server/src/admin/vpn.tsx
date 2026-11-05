@@ -28,11 +28,13 @@ import {
   Icon,
   type IconName,
   Input,
+  Radio,
+  RadioGroup,
   Select,
   Switch,
   Textarea,
   toast,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import { type ReactNode, useState } from 'react'
 import { Loadable } from './loadable.tsx'
 import { AreaPage, Group, SaveBar } from './settings.tsx'
@@ -332,9 +334,14 @@ function ConnectionGroup({
   const t = useT(messages)
   return (
     <Group title={t('connection.title')} description={t('connection.description')}>
-      <fieldset className="grid gap-2 medium:grid-cols-2">
-        <legend className="sr-only">{t('mode.legend')}</legend>
+      <RadioGroup
+        aria-label={t('mode.legend')}
+        value={v.mode}
+        onValueChange={(mode) => set({ mode: mode as VpnSettings['mode'] })}
+        className="medium:grid-cols-2"
+      >
         {MODES.map((m) => (
+          // biome-ignore lint/a11y/noLabelWithoutControl: the control is its child, the library’s Radio, a button with the radio role and so a labelable element
           <label
             key={m}
             className={cn(
@@ -342,14 +349,7 @@ function ConnectionGroup({
               v.mode === m ? 'border-accent bg-accent-soft' : 'border-line hover:bg-s2',
             )}
           >
-            <input
-              type="radio"
-              name="vpn-mode"
-              value={m}
-              checked={v.mode === m}
-              onChange={() => set({ mode: m })}
-              className="mt-1 accent-[var(--color-accent)]"
-            />
+            <Radio value={m} className="mt-1" />
             <span className="font-semibold text-text text-ui">
               {t(`mode.${m}`)}
               {m === 'builtin' && (
@@ -361,7 +361,7 @@ function ConnectionGroup({
             <span className="col-start-2 text-caption text-text-3">{t(`mode.${m}.line`)}</span>
           </label>
         ))}
-      </fieldset>
+      </RadioGroup>
       {v.mode === 'builtin' && <BuiltIn v={v} set={set} />}
       {v.mode === 'container' && <Container v={v} set={set} errors={errors} />}
       {v.mode === 'interface' && <InterfacePicker v={v} set={set} error={errors.interface} />}
@@ -374,7 +374,7 @@ function InterfacePicker({ v, set, error }: { v: Draft; set: Set; error?: string
   const interfaces = useQuery('vpn:interfaces', (c) => c.vpn.interfaces())
   const label = (i: VpnInterface) => (i.ipv4 ? `${i.name} · ${i.ipv4}` : i.name)
   return (
-    <div className="grid gap-4 medium:grid-cols-2">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-4 medium:grid-cols-2">
       <Loadable query={interfaces} what={t('interface').toLowerCase()} skeleton={null}>
         {(list) => {
           const options = list.map((i) => ({ value: i.name, label: label(i) }))
@@ -404,7 +404,7 @@ function InterfacePicker({ v, set, error }: { v: Draft; set: Set; error?: string
 
 function Steps({ provider }: { provider: VpnProvider }) {
   return (
-    <ol className="grid list-decimal gap-1 ps-5 text-caption text-text-2 marker:text-text-3">
+    <ol className="grid list-decimal grid-cols-[minmax(0,1fr)] gap-1 ps-5 text-caption text-text-2 marker:text-text-3 [overflow-wrap:anywhere]">
       {provider.steps.map((step) => (
         <li key={step}>{step}</li>
       ))}
@@ -423,8 +423,8 @@ function BuiltIn({ v, set }: { v: Draft; set: Set }) {
         const provider = list.find((p) => p.id === v.provider) ?? list[0]
         if (!provider) return null
         return (
-          <div className="grid gap-4 border-line border-t pt-4">
-            <div className="grid gap-4 medium:grid-cols-2">
+          <div className="grid grid-cols-[minmax(0,1fr)] gap-4 border-line border-t pt-4">
+            <div className="grid grid-cols-[minmax(0,1fr)] gap-4 medium:grid-cols-2">
               <Field label={t('provider')}>
                 <Select
                   value={provider.id}
@@ -542,8 +542,8 @@ function Container({ v, set, errors }: { v: Draft; set: Set; errors: Record<stri
   const t = useT(messages)
   const urlError = !CONTAINER_URL.test(v.containerUrl)
   return (
-    <div className="grid gap-4 border-line border-t pt-4">
-      <div className="grid gap-4 medium:grid-cols-2">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-4 border-line border-t pt-4">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-4 medium:grid-cols-2">
         <Field
           label={t('controlServer')}
           hint={t('controlServerHint')}
@@ -599,7 +599,7 @@ function Compose() {
     <Loadable query={providers} what={t('provider').toLowerCase()} skeleton={null}>
       {(list) => (
         <>
-          <div className="grid gap-4 medium:grid-cols-2">
+          <div className="grid grid-cols-[minmax(0,1fr)] gap-4 medium:grid-cols-2">
             <Field label={t('provider')}>
               <Select
                 value={id ?? undefined}
@@ -685,7 +685,7 @@ export function VpnSummary({ action }: { action: ReactNode }) {
   return (
     <div className="flex flex-wrap items-center gap-2 rounded-md border border-line bg-s2 p-3">
       <Badge tone={toneOf[status.data.state]}>{head.title}</Badge>
-      <span className="min-w-0 flex-1 text-caption text-text-3">{head.line}</span>
+      <span className="min-w-0 flex-1 basis-48 text-caption text-text-3">{head.line}</span>
       {action}
     </div>
   )

@@ -32,10 +32,18 @@ export function useClient(): HighseaClient {
   return client
 }
 
-export type Query<T> =
-  | { status: 'loading'; data: undefined; error: undefined; refetch: () => void }
-  | { status: 'error'; data: undefined; error: Error; refetch: () => void }
-  | { status: 'success'; data: T; error: undefined; refetch: () => void }
+/**
+ * `refetch` starts over from loading (a Retry); `refresh` fetches again quietly, keeping what's on
+ * screen until the answer comes (after a save, so the controls a person is on stay put). `refresh`
+ * returns that fetch: it resolves with the answer and rejects with its error, while a failure
+ * keeps the old data on screen, so a pull to refresh can end when it settles. Calling it without
+ * waiting is safe: a failure nobody awaits isn't an unhandled rejection.
+ */
+export type Query<T> = (
+  | { status: 'loading'; data: undefined; error: undefined }
+  | { status: 'error'; data: undefined; error: Error }
+  | { status: 'success'; data: T; error: undefined }
+) & { refetch: () => void; refresh: () => Promise<T> }
 
 export type QueryOptions = {
   /** Refetch quietly this often, in milliseconds, for numbers no event announces (CPU, memory). */
@@ -58,10 +66,11 @@ export function useQuery<T>(
   const liveKey = live.join(',')
 
   const load = useCallback(
-    (silent: boolean) => {
+    (silent: boolean): Promise<T> => {
       const id = ++run.current
       if (!silent) setState({ status: 'loading' })
-      fetchRef.current(client).then(
+      const answer = fetchRef.current(client)
+      answer.then(
         (data) => {
           if (id === run.current) setState({ status: 'success', data })
         },
@@ -70,6 +79,10 @@ export function useQuery<T>(
           if (id === run.current && !silent) setState({ status: 'error', error })
         },
       )
+      // handled here, so a caller that doesn't wait leaves no unhandled rejection; one that
+      // awaits `answer` still sees it reject
+      answer.catch(() => {})
+      return answer
     },
     [client],
   )
@@ -104,7 +117,13 @@ export function useQuery<T>(
     return () => clearInterval(timer)
   }, [interval, load])
 
-  return { ...state, refetch: () => load(false) } as Query<T>
+  return {
+    ...state,
+    refetch: () => {
+      load(false)
+    },
+    refresh: () => load(true),
+  } as Query<T>
 }
 
 /** Wraps a change: `run(...)` returns its promise; `pending` and `error` follow the last call. */

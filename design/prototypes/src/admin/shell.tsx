@@ -5,6 +5,7 @@
 // (ADR 0032), so it has one shape; a user is sent to the web client instead (checkpoint 4.2a).
 
 import { bytes, relative } from '@highsea-tv/core/format'
+import type { Announcement, StaffRole, UserRole } from '@highsea-tv/mock/types'
 import {
   Banner,
   Button,
@@ -25,12 +26,13 @@ import {
   toast,
   useCommandPaletteShortcut,
   useSidebarMode,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import {
   createContext,
   type ReactNode,
   useCallback,
   useContext,
+  useDeferredValue,
   useEffect,
   useMemo,
   useRef,
@@ -39,9 +41,9 @@ import {
 import { useLocation } from 'wouter'
 import { Cta, Inline } from '../kit/inline.tsx'
 import { useClient, useNow, useQuery } from '../mock/hooks.tsx'
-import type { Announcement, StaffRole, UserRole } from '../mock/types.ts'
 import { useProto } from '../screen/screen.tsx'
 import { pageAt, pageGroups } from './nav.ts'
+import { areaGroups } from './settings/settings.tsx'
 
 type Shell = {
   role: StaffRole
@@ -114,6 +116,7 @@ function Navigation({ mode, onNavigate }: { mode?: 'full'; onNavigate?: () => vo
   const current = pageAt(location)
   const server = useQuery('server', (c) => c.system.server(), ['server.updated'])
   const movies = useQuery('movies', (c) => c.movies.list(), ['item.updated'])
+  const shows = useQuery('admin-shows', (c) => c.shows.list(), ['shows.updated'])
   const queue = useQuery('queue', (c) => c.queue.list(), ['queue.updated'])
   const playing = useQuery('sessions', (c) => c.sessions.list(), ['sessions.updated'])
   // the rail is 64px: the mark alone (brand.tsx: the lockup needs 96px)
@@ -121,6 +124,7 @@ function Navigation({ mode, onNavigate }: { mode?: 'full'; onNavigate?: () => vo
   const health = useQuery('health', (c) => c.system.health(), ['health.updated'])
   const counts: Record<string, number | undefined> = {
     movies: movies.data?.length || undefined,
+    shows: shows.data?.length || undefined,
     activity: queue.data?.length || undefined,
     'now-playing': playing.data?.sessions.length || undefined,
   }
@@ -170,10 +174,23 @@ function Navigation({ mode, onNavigate }: { mode?: 'full'; onNavigate?: () => vo
 
 // ---------------------------------------------------------------- palette
 
-function usePaletteGroups(shell: Pick<Shell, 'setCustomizing'>): CommandGroup[] {
+/**
+ * The palette searches what its trigger says (prototype-gaps.md › 5.2): the pages and actions, the
+ * library's movies, TMDB through Discover's results for what isn't in the library yet, and every
+ * Settings area by name.
+ */
+function usePaletteGroups(shell: Pick<Shell, 'setCustomizing'>, search: string): CommandGroup[] {
   const client = useClient()
   const [, navigate] = useLocation()
+  const owner = useRole() === 'owner'
   const movies = useQuery('movies', (c) => c.movies.list(), ['item.updated'])
+  const query = useDeferredValue(search.trim())
+  // nothing typed, nothing from TMDB: Discover's trending list would bury the pages
+  const tmdb = useQuery(
+    `palette-tmdb:${query}`,
+    (c) => (query ? c.movies.discover(query) : Promise.resolve([])),
+    ['item.updated'],
+  )
   return useMemo(() => {
     const go: CommandGroup = {
       heading: 'Go to',
@@ -256,8 +273,36 @@ function usePaletteGroups(shell: Pick<Shell, 'setCustomizing'>): CommandGroup[] 
         onSelect: () => navigate(`/movies/${m.id}`),
       })),
     }
-    return titles.items.length ? [go, actions, titles] : [go, actions]
-  }, [movies.data, navigate, client, shell])
+    const found: CommandGroup = {
+      heading: 'On TMDB',
+      items: (tmdb.data ?? [])
+        .filter((m) => !m.inLibrary)
+        .slice(0, 8)
+        .map((m) => ({
+          id: `tmdb-${m.id}`,
+          label: `${m.title} (${m.year})`,
+          icon: 'discover',
+          // the query itself, so cmdk's own filter keeps what TMDB matched by genre or year
+          keywords: [query, ...m.genres],
+          onSelect: () => navigate(`/movies/${m.id}`),
+        })),
+    }
+    const settings: CommandGroup = {
+      heading: 'Settings',
+      items: areaGroups
+        .flatMap((g) => g.areas)
+        .filter((a) => owner || !a.ownerOnly)
+        .map((a) => ({
+          id: `settings-${a.id}`,
+          label: a.label,
+          icon: a.icon,
+          // by name: cmdk's fuzzy match over the descriptions found something for every word
+          keywords: ['settings'],
+          onSelect: () => navigate(a.href ?? `/settings/${a.id}`),
+        })),
+    }
+    return [go, actions, titles, found, settings].filter((g) => g.items.length)
+  }, [movies.data, tmdb.data, query, owner, navigate, client, shell])
 }
 
 // ---------------------------------------------------------------- announcements
@@ -272,8 +317,10 @@ function Announcements() {
   ])
   const banners = (active.data ?? []).filter((a) => !a.seen && a.placements.includes('banner'))
   if (!banners.length) return null
+  // one column at the page's width: an auto column would grow to a banner's widest word and
+  // buttons at 200% text, past a phone's edge
   return (
-    <div className="grid gap-2">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-2">
       {banners.map((a) => {
         const done = () => client.announcements.dismiss(a.id)
         return (
@@ -403,18 +450,19 @@ function StaffShell({ role, children }: { role: StaffRole; children: ReactNode }
     }),
     [role, customizing],
   )
-  const groups = usePaletteGroups(shell)
+  const [search, setSearch] = useState('')
+  const groups = usePaletteGroups(shell, search)
 
   return (
     <ShellContext.Provider value={shell}>
       <div className="flex h-screen bg-bg text-text">
-        <button
-          type="button"
+        {/* fixed above the screen until focused: in the row, even sr-only, it pushed the sidebar along */}
+        <Button
           onClick={() => main.current?.focus()}
-          className="sr-only z-50 rounded-sm bg-s3 px-3 py-2 text-ui focus:not-sr-only focus:fixed focus:start-3 focus:top-3"
+          className="fixed start-3 top-3 z-50 -translate-y-20 focus:translate-y-0"
         >
           Skip to content
-        </button>
+        </Button>
         <Navigation />
         <div className="flex min-w-0 flex-1 flex-col">
           <div className="relative min-h-0 flex-1 overflow-y-auto">
@@ -435,7 +483,16 @@ function StaffShell({ role, children }: { role: StaffRole; children: ReactNode }
             <Navigation mode="full" onNavigate={() => setMenu(false)} />
           </SheetContent>
         </Sheet>
-        <CommandPalette open={palette} onOpenChange={setPalette} groups={groups} />
+        <CommandPalette
+          open={palette}
+          onOpenChange={(open) => {
+            setPalette(open)
+            if (!open) setSearch('')
+          }}
+          onSearchChange={setSearch}
+          placeholder="Search the library, TMDB, Settings and actions"
+          groups={groups}
+        />
       </div>
     </ShellContext.Provider>
   )

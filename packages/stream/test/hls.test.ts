@@ -257,7 +257,12 @@ describe('ffmpeg’s command lines', () => {
       ...['-sn', '-dn', '-map_metadata', '-1', '-map_chapters', '-1'],
       // the copied sound starts where the picture does
       ...['-ss', '600.000000', '-output_ts_offset', '600.000000'],
-      ...['-vf', 'scale=1280:534,format=yuv420p'],
+      // HDR relabelled as SDR on the frames, which the encoder takes its labels from
+      ...[
+        '-vf',
+        'scale=1280:534:out_color_matrix=bt709,' +
+          'setparams=color_primaries=bt709:color_trc=bt709:colorspace=bt709,format=yuv420p',
+      ],
       ...['-c:v', 'libx264', '-preset', 'veryfast', '-crf', '23'],
       ...['-maxrate', '4000000', '-bufsize', '8000000', '-profile:v', 'high', '-level:v', '4.1'],
       ...['-force_key_frames', 'expr:gte(t,n_forced*6)'],
