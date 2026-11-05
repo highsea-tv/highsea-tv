@@ -9,6 +9,7 @@
     "./native-fonts": "./src/native-fonts.ts",
     "./native-font-assets": "./src/native-font-assets.ts",
     "./fonts.css": "./fonts/fonts.css",
+    "./native-fonts.css": "./fonts/native-fonts.css",
     "./fonts/*": "./fonts/*",
     "./logo/*": "./assets/logo/*",
     "./icons/*": "./assets/icons/*",

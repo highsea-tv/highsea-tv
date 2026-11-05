@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
+
+import { Dashboard } from '@highsea-tv/admin/dashboard.tsx'
 import type { Metadata } from 'next'
-import { Dashboard } from '../../src/admin/dashboard.tsx'
 
 export const metadata: Metadata = { title: 'Dashboard' }
 

@@ -178,14 +178,16 @@ export function createSubtitles(deps: SubtitlesDeps) {
    * rewritten. Events carry TMDB ids, or none for many.
    */
   function follow(): () => void {
-    const pending = new Set<NodeJS.Immediate>()
+    // each waiting refresh's cancel, so the handle's type is never named: in the server's program it
+    // types as React Native's number (@highsea-tv/core/timers says why)
+    const pending = new Set<() => void>()
     const off = events.subscribe((e) => {
       if (e.topic !== 'movies.updated') return
       const ids = e.ids
       // after the bus has handed this event to every listener: queueing announces a job, and
       // that event mustn't reach subscribers before the one that caused it
       const later = setImmediate(() => {
-        pending.delete(later)
+        pending.delete(cancel)
         if (!ids) {
           jobs.queueRefresh()
           return
@@ -199,12 +201,13 @@ export function createSubtitles(deps: SubtitlesDeps) {
           .all())
           jobs.queueRefresh(row.id)
       })
-      pending.add(later)
+      const cancel = () => clearImmediate(later)
+      pending.add(cancel)
     })
     // stopping drops what's still waiting, so nothing reaches a closed database
     return () => {
       off()
-      for (const later of pending) clearImmediate(later)
+      for (const cancel of pending) cancel()
       pending.clear()
     }
   }

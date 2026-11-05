@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
+
+import { Network } from '@highsea-tv/admin/network.tsx'
+import { seesArea } from '@highsea-tv/admin/settings-areas.ts'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import { Network } from '../../../../src/admin/network.tsx'
 import { currentSession } from '../../../../src/admin/session.ts'
-import { seesArea } from '../../../../src/admin/settings-areas.ts'
 
 export const metadata: Metadata = { title: 'Network and remote access' }
 

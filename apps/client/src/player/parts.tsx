@@ -543,7 +543,8 @@ export function Waiting({ preparing }: { preparing: boolean }) {
           backgroundColor: GLASS,
         }}
       >
-        <ActivityIndicator size="large" color={theme.colors.text} />
+        {/* the box above is the progress bar, with its name; the spinner only draws it */}
+        <ActivityIndicator aria-hidden size="large" color={theme.colors.text} />
         {preparing ? (
           <>
             <Text variant={tv ? 'rowTitle' : 'title'}>{t('preparing')}</Text>

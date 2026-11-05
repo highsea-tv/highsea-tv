@@ -42,6 +42,7 @@ import { SettingsArea, SettingsIndex } from './settings/settings.tsx'
 import { UsersDevices } from './settings/users.tsx'
 import { Vpn } from './settings/vpn.tsx'
 import { Setup } from './setup/setup.tsx'
+import { SharedSystemStatus } from './shared.tsx'
 import { AdminPage, AdminShell } from './shell.tsx'
 import { ShowDetail, showTabs } from './shows/detail.tsx'
 import { ShowsLibrary } from './shows/library.tsx'
@@ -133,6 +134,14 @@ export function AdminApp() {
       </Route>
       <Route path="/setup">
         <Setup />
+      </Route>
+      {/* the admin's own screens, shared with the server's (one-client-platform-d.md › D1), in
+          their own shell; the rest are this prototype's copies until their batch moves them */}
+      <Route path="/system">
+        <SharedSystemStatus />
+      </Route>
+      <Route path="/system/status">
+        <SharedSystemStatus />
       </Route>
       <Route>
         <AdminShell>

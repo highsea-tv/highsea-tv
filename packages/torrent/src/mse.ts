@@ -20,8 +20,10 @@
 //
 // Diffie-Hellman is Node's (https://nodejs.org/docs/latest-v24.x/api/crypto.html#cryptocreatediffiehellmanprime-primeencoding-generator-generatorencoding);
 // RC4 is ours (rc4.ts), because Node 24's OpenSSL 3 keeps it in the legacy provider.
+
 import { createDiffieHellman, createHash, randomBytes, randomInt } from 'node:crypto'
 import { Duplex } from 'node:stream'
+import { unref } from '@highsea-tv/core/timers'
 import { createRc4, type Rc4 } from './rc4.ts'
 
 /** Settings › Download client's encryption (settings.md). */
@@ -230,7 +232,7 @@ async function within<T>(raw: Duplex, ms: number, work: Promise<T>): Promise<T> 
           raw.destroy()
           reject(new Error('The encryption handshake took too long.'))
         }, ms)
-        timer.unref?.()
+        unref(timer)
       }),
     ])
   } finally {

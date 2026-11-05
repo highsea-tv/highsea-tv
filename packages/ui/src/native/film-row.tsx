@@ -728,10 +728,13 @@ function Slot({
     }
     was.current = hidden
   }, [x, from, hidden, reduced, spring, tx, opacity])
-  const style = useAnimatedStyle(() => ({
-    opacity: opacity.value,
-    transform: [{ translateX: tx.value }],
-  }))
+  const style = useAnimatedStyle(
+    () => ({
+      opacity: opacity.value,
+      transform: [{ translateX: tx.value }],
+    }),
+    [opacity, tx],
+  )
   return (
     <Animated.View
       pointerEvents={hidden ? 'none' : 'auto'}

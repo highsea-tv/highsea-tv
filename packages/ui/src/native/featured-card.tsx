@@ -410,7 +410,7 @@ export function Bloom({ color, shown = true }: BloomProps) {
   useEffect(() => {
     opacity.value = reduced ? (on ? 1 : 0) : withTiming(on ? 1 : 0, { duration: BLOOM_FADE })
   }, [on, reduced, opacity])
-  const fade = useAnimatedStyle(() => ({ opacity: opacity.value }))
+  const fade = useAnimatedStyle(() => ({ opacity: opacity.value }), [opacity])
   if (input === 'touch' || !color) return null
   const tv = input === 'tv'
   const at = tv ? '42% 45%' : '40% 50%'

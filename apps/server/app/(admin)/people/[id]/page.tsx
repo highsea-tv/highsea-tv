@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // A person's page by TMDB id (media-pages.md § Person page).
+
+import { PersonPage } from '@highsea-tv/admin/person.tsx'
 import type { Metadata } from 'next'
-import { PersonPage } from '../../../../src/admin/person.tsx'
 
 export const metadata: Metadata = { title: 'Person' }
 

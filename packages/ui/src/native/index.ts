@@ -2,6 +2,7 @@
 // The design system's React Native renderer (ADR 0059; design system 1.1): the same components as
 // the web's, by name and props (src/shared), drawn for React Native at the form factor's rule (a
 // pointer's, touch's or the TV's, controls.md), on @highsea-tv/tokens/native.
+export * from './admin.tsx'
 export * from './alpha.ts'
 export * from './badge.tsx'
 export * from './banner.tsx'

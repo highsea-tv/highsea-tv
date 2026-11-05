@@ -17,6 +17,7 @@ export const ROOT = join(import.meta.dir, '..')
 export const WEB_DIRS = [
   'apps/server/src',
   'apps/server/app',
+  'packages/admin/src',
   'apps/desktop/src',
   'apps/docs/app',
   'apps/docs/components',

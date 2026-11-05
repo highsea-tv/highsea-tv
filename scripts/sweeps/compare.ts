@@ -6,9 +6,13 @@
 // exists, then seeds it and captures the rest; the prototypes come from `bun run prototypes`,
 // started here if nothing answers on :4500. Writes the pairs, index.html (side by side) and
 // checklist.md (the same order, one box a pair) to a folder outside the repository.
-// Usage: bun scripts/sweeps/compare.ts [folder]   (COMPARE_DEV=1: Next's dev server, no build)
+// Usage: bun scripts/sweeps/compare.ts [folder] [--before <folder>]
+//   COMPARE_DEV=1: Next's dev server, no build. COMPARE_ONLY=<regex>: only the pairs whose screen
+//   and name match ("A16 System status"). --before: an earlier run's folder (from a checkout of the
+//   last commit, say), whose server shots join each pair as a third column, "Before": a screen moved
+//   beside its old self (one-client-platform-d.md › The checks).
 import { type ChildProcess, execFileSync, spawn } from 'node:child_process'
-import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
+import { copyFileSync, mkdirSync, mkdtempSync, readdirSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { SETTINGS_SECTIONS } from '@highsea-tv/client/prefs'
@@ -30,7 +34,12 @@ const WIDTHS = [1440, 390]
 /** Long pages are cut here: the top of a page is what differs, and a library's grid is long. */
 const MAX_HEIGHT = 4000
 const OWNER = { username: 'compare', displayName: 'Ines', password: 'compare compare compare' }
-const out = process.argv[2] ?? mkdtempSync(join(tmpdir(), 'highsea-compare-'))
+const args = process.argv.slice(2)
+const flag = args.indexOf('--before')
+const before = flag >= 0 ? args[flag + 1] : undefined
+const folder = args.filter((_, i) => flag < 0 || (i !== flag && i !== flag + 1))[0]
+const out = folder ?? mkdtempSync(join(tmpdir(), 'highsea-compare-'))
+const only = process.env.COMPARE_ONLY ? new RegExp(process.env.COMPARE_ONLY, 'i') : null
 mkdirSync(out, { recursive: true })
 
 type Side = {
@@ -50,7 +59,7 @@ type Pair = {
   /** A difference already known, and where it was decided. */
   note?: string
 }
-type Shots = Record<number, { prototype?: string; server?: string }>
+type Shots = Record<number, { prototype?: string; server?: string; before?: string }>
 
 const tab = (name: string | RegExp) => (p: Page) => p.getByRole('tab', { name }).first().click()
 const button = (name: string | RegExp) => (p: Page) =>
@@ -579,7 +588,8 @@ async function captureServer(
   }
 }
 
-async function capture(list: Pair[], context: () => Promise<BrowserContext>, base: string) {
+async function capture(all: Pair[], context: () => Promise<BrowserContext>, base: string) {
+  const list = only ? all.filter((p) => only.test(`${p.screen} ${p.name}`)) : all
   const entries = list.map((pair) => ({
     pair,
     index: ++next,
@@ -656,6 +666,21 @@ try {
   if (prototypes?.pid) process.kill(-prototypes.pid, 'SIGTERM')
 }
 
+// the earlier run's server shot of each pair, by the pair's name and width (its number may differ)
+const slug = (name: string) => name.replaceAll(/[^\w]+/g, '-')
+if (before) {
+  const files = readdirSync(before)
+  for (const d of done)
+    for (const w of WIDTHS) {
+      const end = `-${slug(d.pair.name)}-${w}-server.png`
+      const found = files.find((f) => /^\d{3}-/.test(f) && f.slice(3) === end)
+      if (!found) continue
+      const file = `${String(d.index).padStart(3, '0')}-${slug(d.pair.name)}-${w}-before.png`
+      copyFileSync(join(before, found), join(out, file))
+      d.shots[w] = { ...d.shots[w], before: file }
+    }
+}
+
 // ---------------------------------------------------------------- the review's pages
 
 done.sort((a, b) => a.index - b.index)
@@ -688,8 +713,8 @@ writeFileSync(
 <style>
   body { font: 14px/1.4 system-ui, sans-serif; margin: 24px; background: #111; color: #ddd }
   section { margin: 0 0 48px } h2 { margin: 32px 0 4px; font-size: 18px } p { margin: 4px 0; color: #aaa }
-  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 12px 0; align-items: start }
-  .narrow { grid-template-columns: repeat(2, minmax(0, 390px)) }
+  .row { display: grid; grid-template-columns: repeat(${before ? 3 : 2}, minmax(0, 1fr)); gap: 12px; margin: 12px 0; align-items: start }
+  .narrow { grid-template-columns: repeat(${before ? 3 : 2}, minmax(0, 390px)) }
   figure { margin: 0 } figcaption { color: #888; font-size: 12px; margin-bottom: 4px }
   img { max-width: 100%; border: 1px solid #333 } .none { padding: 24px; border: 1px dashed #444; color: #777 }
 </style></head><body>
@@ -703,7 +728,7 @@ ${WIDTHS.map((w) => {
   const s = d.shots[w] ?? {}
   const fig = (label: string, file?: string, side?: Side | null) =>
     `<figure><figcaption>${label} · ${w} · ${html(side?.path ?? 'none')}</figcaption>${file ? `<img src="${file}" loading="lazy" alt="${label} at ${w}">` : '<div class="none">Nothing to show</div>'}</figure>`
-  return `<div class="row${w < 768 ? ' narrow' : ''}">${fig('Prototype', s.prototype, d.pair.prototype)}${fig('Server', s.server, d.pair.server)}</div>`
+  return `<div class="row${w < 768 ? ' narrow' : ''}">${before ? fig('Before', s.before, d.pair.server) : ''}${fig('Prototype', s.prototype, d.pair.prototype)}${fig('Server', s.server, d.pair.server)}</div>`
 }).join('\n')}
 </section>`,
   )

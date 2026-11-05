@@ -50,7 +50,7 @@ const OTHER_SCREENS = [
   'design/prototypes/src/client',
   // the admin, a Next.js host
   'apps/server/app',
-  'apps/server/src/admin',
+  'packages/admin/src',
   'design/prototypes/src/admin',
 ]
 /** The prototypes' client folders, where a destination that has moved must leave no copy. */

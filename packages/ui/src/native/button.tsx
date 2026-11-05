@@ -139,7 +139,7 @@ export function Button({
         return (
           <>
             {loading ? (
-              <ActivityIndicator size="small" color={fg} />
+              <ActivityIndicator aria-hidden size="small" color={fg} />
             ) : icon ? (
               <Icon name={icon} size={iconSize} color={look.label} />
             ) : null}

@@ -13,6 +13,7 @@ import { choreography, durations, springs } from './motion.ts'
 import { COLOR_ROLES, type ColorRole } from './roles.ts'
 import {
   aspect,
+  density,
   elevation,
   focus,
   icon,
@@ -28,7 +29,7 @@ import { defaultSoundPack } from './sound/pack.ts'
 import { NAVIGATE_THROTTLE_MS } from './sound/rules.ts'
 import { type ResolvedTheme, resolveTheme } from './theme.ts'
 import { type BuiltInThemeId, builtInThemes } from './themes.ts'
-import { fonts, mobileText, tracking, tvText, webText, weights } from './typography.ts'
+import { adminText, fonts, mobileText, tracking, tvText, webText, weights } from './typography.ts'
 
 export type NativeTheme = {
   id: string
@@ -57,6 +58,10 @@ export const nativeTokens = {
   weights,
   tracking,
   text: { mobile: mobileText, tv: tvText, web: webText },
+  /** The admin's denser type with a pointer (typography.md › Admin), in CSS pixels. */
+  adminText,
+  /** The admin's layout sizes (spacing-layout.md): the sidebar, rows, widgets, the page's padding. */
+  density,
   springs,
   durations,
   choreography,

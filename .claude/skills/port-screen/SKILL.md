@@ -12,7 +12,7 @@ The prototypes are **locked**. The admin matches its prototype's layout, copy, s
 
 - The prototype: `design/prototypes/src/admin/<area>/`, and its mock server in `packages/mock/src/` (`@highsea-tv/mock`), the first draft of the API.
 - Its spec in `docs/product/`.
-- The same area's existing pieces in `apps/server/src/admin/` and `apps/server/src/api/`, and any similar screen already ported. Copy their shape.
+- The same area's existing pieces in `packages/admin/src/` and `apps/server/src/api/`, and any similar screen already ported. Copy their shape.
 - `docs/plans/phase-3-server.md` § "Porting the prototype" and ADR 0018: the admin reads and writes **only through the public API**, never through Server Actions.
 
 ## The API first
@@ -26,9 +26,9 @@ The prototypes are **locked**. The admin matches its prototype's layout, copy, s
 
 ## Then the screen
 
-1. Copy the screen to `apps/server/src/admin/<area>.tsx`, and its route to `apps/server/app/(admin)/<area>/`.
+1. Copy the screen to `packages/admin/src/<area>.tsx`, and its route to `apps/server/app/(admin)/<area>/`.
 2. Swap the mock client for `@highsea-tv/sdk/react`, keeping the hook shape: `useQuery(key, call, topics)` for reads, with the event topics that refresh it, and `useAction(call)` for writes.
-3. **Strings** move into `apps/server/src/admin/<area>-messages.ts` with `defineMessages` from `@highsea-tv/i18n`, in the prototype's wording. Start the file with a comment naming the screen (for example `A14 Wanted`) and what real data changed in its copy. A literal `<` or `{` in a message needs ICU quoting, or the dialog fails with INVALID_TAG.
+3. **Strings** move into `packages/admin/src/<area>-messages.ts` with `defineMessages` from `@highsea-tv/i18n`, in the prototype's wording. Start the file with a comment naming the screen (for example `A14 Wanted`) and what real data changed in its copy. A literal `<` or `{` in a message needs ICU quoting, or the dialog fails with INVALID_TAG.
 4. **Shared pieces** the prototype also uses move into a package (`ui-web`, `@highsea-tv/core` and so on) and the prototype imports them from there, so the two can't drift. `ui-web` client modules start with `'use client'`, above the SPDX header.
 5. Mind the UI pitfalls in the Phase 2 plan: the Tailwind theme reset, literal class maps, and `min-w-0` with `grid-cols-[minmax(0,1fr)]` around scrollers.
 6. **Tests:** a screen test in `apps/server/test/<area>-screen.test.tsx`, covering each data state the prototype has (loading, empty, error, full) and each action.

@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The featured-section composer; `new` adds one.
+
+import { SectionEditor } from '@highsea-tv/admin/curation-section.tsx'
 import type { Metadata } from 'next'
-import { SectionEditor } from '../../../../../src/admin/curation-section.tsx'
 
 export const metadata: Metadata = { title: 'Featured section' }
 

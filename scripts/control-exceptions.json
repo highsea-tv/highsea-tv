@@ -1,72 +1,72 @@
 [
   {
-    "file": "apps/server/src/admin/appearance.tsx",
+    "file": "packages/admin/src/appearance.tsx",
     "tag": "input",
     "contains": "type=\"color\"",
     "reason": "A colour picker beside its hex field: the library has no colour field. It takes the field's corner, edge and fill (radius-sm, control-edge, s1) and the control's height"
   },
   {
-    "file": "apps/server/src/admin/appearance.tsx",
+    "file": "packages/admin/src/appearance.tsx",
     "tag": "input",
     "contains": "type=\"range\"",
     "reason": "The sound volume's slider: the spec and the library have no slider"
   },
   {
-    "file": "apps/server/src/admin/collections-editor.tsx",
+    "file": "packages/admin/src/collections-editor.tsx",
     "tag": "button",
     "contains": "grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-md px-2 py-1.5",
     "reason": "A search result's whole row (its name and Add), which adds that title to the list: a list row, not a control in the spec's sense"
   },
   {
-    "file": "apps/server/src/admin/collections-rules.tsx",
+    "file": "packages/admin/src/collections-rules.tsx",
     "tag": "button",
     "contains": "grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-md px-2 py-1.5",
     "reason": "A search result's whole row (its name and Add), which adds that title to the list: a list row, not a control in the spec's sense"
   },
   {
-    "file": "apps/server/src/admin/curation-section.tsx",
+    "file": "packages/admin/src/curation-section.tsx",
     "tag": "button",
     "contains": "grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-md px-2 py-1.5",
     "reason": "A search result's whole row (its name and Add), which adds that title to the list: a list row, not a control in the spec's sense"
   },
   {
-    "file": "apps/server/src/admin/dashboard.tsx",
+    "file": "packages/admin/src/dashboard.tsx",
     "tag": "button",
     "contains": "onClick={() => add(d.kind)}",
     "reason": "A tile in the Add a widget sheet, with the widget's title and description, that adds it: a tile, not a control in the spec's sense"
   },
   {
-    "file": "apps/server/src/admin/downloads.tsx",
+    "file": "packages/admin/src/downloads.tsx",
     "tag": "button",
     "contains": "onClick={() => setOpen(",
     "reason": "A torrent's name in its table row, drawn as the row's title, that opens its details: TitleCell has no way to make its title open something"
   },
   {
-    "file": "apps/server/src/admin/indexers.tsx",
+    "file": "packages/admin/src/indexers.tsx",
     "tag": "button",
     "contains": "onClick={() => setNotes(true)}",
     "reason": "What changed, an inline link in the page's description line that opens the catalog's notes: the library has no link look for a button"
   },
   {
-    "file": "apps/server/src/admin/lists.tsx",
+    "file": "packages/admin/src/lists.tsx",
     "tag": "button",
     "contains": "type=\"submit\" hidden",
     "reason": "A hidden submit button, never drawn, so Enter in a field submits the dialog's form (HTML's implicit submission needs one when a form has several fields)"
   },
   {
-    "file": "apps/server/src/admin/movie-detail.tsx",
+    "file": "packages/admin/src/movie-detail.tsx",
     "tag": "button",
     "contains": "onClick={() => setOpen(expanded ? null : r.guid)}",
     "reason": "A release row's Accepted or Rejected badge, which shows the row's reasons under it: a badge in a table row, not a control in the spec's sense"
   },
   {
-    "file": "apps/server/src/admin/setup.tsx",
+    "file": "packages/admin/src/setup.tsx",
     "tag": "button",
     "contains": "flex h-9 w-full items-center gap-2.5 rounded-sm px-2.5",
     "reason": "A folder's row in the folder picker's list, which opens that folder: a list row, not a control in the spec's sense"
   },
   {
-    "file": "apps/server/src/admin/setup.tsx",
+    "file": "packages/admin/src/setup.tsx",
     "tag": "button",
     "contains": "onClick={() => setPath(",
     "reason": "A step of the folder picker's path, a breadcrumb in the mono path line: a link in role, not a control in the spec's sense"

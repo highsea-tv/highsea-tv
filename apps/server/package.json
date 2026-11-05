@@ -6,12 +6,13 @@
   "type": "module",
   "scripts": {
     "dev": "node ../../scripts/check-node.ts && NODE_ENV=development HIGHSEA_CONFIG_DIR=../../.dev/config HIGHSEA_DATA_DIR=../../.dev/data node --env-file-if-exists=../../.env.local server.ts",
-    "build": "next build",
+    "build": "next build --webpack",
     "start": "NODE_ENV=production node server.ts",
     "openapi": "bun scripts/openapi.ts",
     "typecheck": "next typegen && tsc -p tsconfig.json"
   },
   "dependencies": {
+    "@highsea-tv/admin": "workspace:*",
     "@highsea-tv/api-contract": "workspace:*",
     "@highsea-tv/auth": "workspace:*",
     "@highsea-tv/brand": "workspace:*",
@@ -45,11 +46,19 @@
     "@simplewebauthn/browser": "14.0.0",
     "@simplewebauthn/server": "14.0.3",
     "better-sqlite3": "13.0.3",
+    "expo-haptics": "58.0.6",
+    "expo-image": "58.0.15",
     "hono": "4.13.13",
+    "lucide-react-native": "1.57.0",
     "motion": "14.3.0",
     "next": "16.4.1",
     "react": "19.3.1",
     "react-dom": "19.3.1",
+    "react-native-reanimated": "4.7.1",
+    "react-native-safe-area-context": "5.10.1",
+    "react-native-svg": "15.16.0",
+    "react-native-web": "0.21.4",
+    "react-native-worklets": "0.13.0",
     "zod": "4.6.7"
   },
   "devDependencies": {

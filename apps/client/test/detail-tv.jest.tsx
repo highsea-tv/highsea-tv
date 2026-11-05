@@ -90,9 +90,6 @@ jest.mock('react-native-gesture-handler/ReanimatedSwipeable', () =>
 )
 require('react-native-gesture-handler/jestSetup')
 
-// the TV's pages draw more than the gate's, and the first render loads the TV's parts
-jest.setTimeout(30_000)
-
 beforeEach(() => {
   fresh()
   headDown.length = 0

@@ -29,7 +29,7 @@ description: More than 20 characters, plain YAML (no ": " inside a value).
 {/* SPDX-License-Identifier: AGPL-3.0-only */}
 {/*
   Sources:
-  - The screen: apps/server/src/admin/<area>.tsx and <area>-messages.ts.
+  - The screen: packages/admin/src/<area>.tsx and <area>-messages.ts.
   - The behaviour it describes: packages/<pkg>/src/….
 */}
 

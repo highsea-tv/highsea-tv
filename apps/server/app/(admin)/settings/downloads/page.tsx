@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Settings › Download client: the owner's only (ADR 0032's answers), so an admin finds nothing here.
+
+import { DownloadClient } from '@highsea-tv/admin/download-client.tsx'
+import { seesArea } from '@highsea-tv/admin/settings-areas.ts'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import { DownloadClient } from '../../../../src/admin/download-client.tsx'
 import { currentSession } from '../../../../src/admin/session.ts'
-import { seesArea } from '../../../../src/admin/settings-areas.ts'
 
 export const metadata: Metadata = { title: 'Download client' }
 

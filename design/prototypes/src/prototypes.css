@@ -1,7 +1,10 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
 @import "@highsea-tv/ui/styles.css";
+/* the library's native text names each weight's face, as the server's admin loads them (D1) */
+@import "@highsea-tv/brand/native-fonts.css";
 
 @source "./";
+@source "../../../packages/admin/src";
 
 /*
  * The toolbar's Reduced motion toggle, without touching the OS setting: the same overrides

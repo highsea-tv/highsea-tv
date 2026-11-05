@@ -7,8 +7,10 @@
 // 6b: each address family the binding allows (sockets.ts) gets a TCP listener and a UDP socket on
 // the same port. The UDP socket carries uTP (utp.ts) and that family's DHT (dht.ts), split by
 // udp.ts; the IPv6 DHT is BEP 32's second DHT, with the IPv4 one's node id.
+
 import type net from 'node:net'
 import { AppError, type Clock, type Logger, newId, systemClock } from '@highsea-tv/core'
+import { unref } from '@highsea-tv/core/timers'
 import { type Db, readSetting, schema, writeSetting } from '@highsea-tv/db'
 import Wire from 'bittorrent-protocol'
 import { asc, eq } from 'drizzle-orm'
@@ -200,7 +202,7 @@ export function createTorrentEngine(options: {
     changed.add(id)
     if (!changeTimer) {
       changeTimer = setTimeout(flushChanges, CHANGE_EVERY_MS)
-      changeTimer.unref?.()
+      unref(changeTimer)
     }
   }
 
@@ -433,7 +435,7 @@ export function createTorrentEngine(options: {
       return
     }
     const timer = setTimeout(() => socket.destroy(), 25_000)
-    timer.unref?.()
+    unref(timer)
     socket.once('close', () => clearTimeout(timer))
     // plaintext or MSE, as the policy allows (mse.ts); the wire reads what comes after
     secureIncoming(socket, encryption, () => byHash.keys()).then(
@@ -611,7 +613,7 @@ export function createTorrentEngine(options: {
         } else if ((await s.storage()?.fileStats())?.some((f) => f !== null)) queueCheck(r.id)
       }
       resumeTimer = setInterval(() => void persistAll(), RESUME_EVERY_MS)
-      resumeTimer.unref?.()
+      unref(resumeTimer)
       schedule()
     },
 

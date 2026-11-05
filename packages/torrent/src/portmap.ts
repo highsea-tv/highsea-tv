@@ -19,9 +19,11 @@
 //   VPN, when there's no binding address to keep to anyway.
 // The default gateway is read from Linux's routing table, `/proc/net/route` (proc(5)); where that
 // file doesn't exist (a developer's Mac), NAT-PMP is skipped and UPnP is tried alone.
+
 import type dgram from 'node:dgram'
 import { readFileSync } from 'node:fs'
 import { networkInterfaces } from 'node:os'
+import { unref } from '@highsea-tv/core/timers'
 
 export type MappingStatus = {
   via: 'nat-pmp' | 'upnp'
@@ -130,7 +132,7 @@ function pmpClient(
         answer,
         new Promise<null>((resolve) => {
           timer = setTimeout(() => resolve(null), wait)
-          timer.unref?.()
+          unref(timer)
         }),
       ])
       clearTimeout(timer)
@@ -228,7 +230,7 @@ export function createPortMapper(options: PortMapperOptions) {
             options.log('warn', 'The NAT-PMP mapping couldn’t be renewed.', { error: String(e) }),
           )
         }, seconds * 1000)
-        renewTimer.unref?.()
+        unref(renewTimer)
         return tcp.externalPort
       }
       const externalPort = await renew()

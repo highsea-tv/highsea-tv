@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
+
+import { Indexers } from '@highsea-tv/admin/indexers.tsx'
 import type { Metadata } from 'next'
-import { Indexers } from '../../../src/admin/indexers.tsx'
 
 export const metadata: Metadata = { title: 'Indexers' }
 

@@ -229,14 +229,29 @@ describe('errors', () => {
 
   test('an uncovered route answers 501, naming it', async () => {
     const { app } = setup({ state: { role: 'admin' } })
-    const e = await caught((await app(LAN, 'theo')).system.status())
+    const e = await caught((await app(LAN, 'theo')).system.tasks())
     expect(e.status).toBe(501)
-    expect(e.message).toContain('system.status')
+    expect(e.message).toContain('system.tasks')
     expect(e.details).toEqual({
-      route: 'system.status',
+      route: 'system.tasks',
       method: 'GET',
-      path: '/api/v1/system/status',
+      path: '/api/v1/system/tasks',
     })
+  })
+
+  test('System › Status and its catalog answer in the contract’s shapes (D1)', async () => {
+    const { app } = setup({ state: { role: 'admin' } })
+    const c = await app(LAN, 'theo')
+    const status = await c.system.status()
+    expect(status.disks.length).toBeGreaterThan(0)
+    expect(Object.keys(status.disks[0]?.usedBy ?? {})).toEqual(['movies', 'downloads', 'other'])
+    expect(status.uptime).toBeGreaterThanOrEqual(0)
+    expect(Array.isArray(await c.system.healthChecks())).toBe(true)
+    expect((await c.system.jobs()).some((j) => j.name === 'Catalog sync')).toBe(true)
+    const before = await c.catalog.status()
+    expect(before.version).toBe(status.catalogVersion)
+    const after = await c.catalog.check()
+    expect(after.lastCheck?.ok).toBe(true)
   })
 
   test('a path outside the contract is the server’s 404, and an unknown host doesn’t answer', async () => {

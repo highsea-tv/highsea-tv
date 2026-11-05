@@ -22,6 +22,13 @@ module.exports = {
   testMatch: ['<rootDir>/test/**/*.jest.tsx'],
   resolver: 'react-native-reanimated/jest/resolver',
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
+  // One limit for every file. The first test in a file renders the router, which requires every
+  // route and what it draws; Jest transforms each module through Babel the first time it's
+  // required and counts that against the test (https://jestjs.io/docs/code-transformation,
+  // https://jestjs.io/docs/configuration#testtimeout-number).
+  // With a cold cache, as on every CI runner, that first test takes about 35 s with a worker per
+  // core; once the cache is warm, about 1.5 s. A file's own lower limit made CI fail since C1.
+  testTimeout: 120000,
   transform: { ...preset.transform, '\\.mjs$': babel },
   moduleNameMapper: {
     // Babel's helpers, for the workspace's packages too, which don't depend on them themselves

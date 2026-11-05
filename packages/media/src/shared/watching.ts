@@ -10,8 +10,10 @@
 // (https://man7.org/linux/man-pages/man7/inotify.7.html). So a watch that can't start, or that
 // fails later, is closed and becomes a health note, never an error: the 12-hourly scan still finds
 // every change. No dependency: chokidar would add little here (the checkpoint's judgement call 10).
+
 import { type FSWatcher, watch as fsWatch, type WatchListener } from 'node:fs'
 import { join, sep } from 'node:path'
+import { unref } from '@highsea-tv/core/timers'
 
 /** `fs.watch`'s shape, so a test can make watching fail. */
 export type WatchFn = (
@@ -60,7 +62,7 @@ export function createLibraryWatch(options: LibraryWatchOptions) {
       options.onChange(folder)
     }, quietMs)
     // never keeps the process alive on its own
-    timer.unref?.()
+    unref(timer)
     pending.set(folder, timer)
   }
 

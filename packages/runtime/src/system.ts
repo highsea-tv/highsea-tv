@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The status bar's numbers (CPU, memory, disks) from node:os and node:fs, the last minute of them
 // for System › Status (8b), and the health checks behind the server card's dot.
+
 import {
   accessSync,
   constants,
@@ -12,6 +13,7 @@ import {
 } from 'node:fs'
 import { cpus, freemem, totalmem } from 'node:os'
 import { join, resolve } from 'node:path'
+import { unref } from '@highsea-tv/core/timers'
 
 export type Disk = { path: string; label: string; free: number; total: number; usedBy: DiskUse }
 
@@ -76,7 +78,7 @@ export function createResourceMonitor(everyMs = 10_000, keep = 6) {
   return {
     start() {
       timer ??= setInterval(read, everyMs)
-      timer.unref?.()
+      unref(timer)
     },
     stop() {
       if (timer) clearInterval(timer)

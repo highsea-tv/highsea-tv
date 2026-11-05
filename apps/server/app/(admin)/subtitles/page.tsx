@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
+
+import { Subtitles } from '@highsea-tv/admin/subtitles.tsx'
 import type { Metadata } from 'next'
-import { Subtitles } from '../../../src/admin/subtitles.tsx'
 
 export const metadata: Metadata = { title: 'Subtitles' }
 

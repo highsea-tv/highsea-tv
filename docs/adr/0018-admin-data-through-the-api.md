@@ -19,3 +19,7 @@ The signed-off admin prototype is written against an SDK-shaped client: `useQuer
 - One set of permission checks and one set of tests per capability.
 - Admin screens port from the prototype by swapping the mock client for the SDK.
 - Some screens pay a client round trip on first load that Server Actions would avoid. The shell's first paint is server-rendered to keep that small.
+
+## 2026-11-04: the screens shared with their prototype (one client platform, part D1)
+
+The admin's screens are now written once, in `@highsea-tv/admin` (`packages/admin`), and both the server's admin and its prototype draw them. The decision above is what makes that possible: a screen only reads and writes through `@highsea-tv/sdk/react`, so the prototype hands it an SDK client over `@highsea-tv/mock`'s transport ([ADR 0061](0061-one-client-platform.md)), and the server an SDK client over `/api/v1`. What differs between the two hosts is the router, which `packages/admin/src/navigation.tsx`'s `NavigationProvider` takes from each (Next's `useRouter` and `usePathname` in the server, wouter in the prototype). In the prototype, `design/prototypes/src/admin/shared.tsx` signs the page in through the transport as the toolbar's role, as someone would at `/login`, so the screens see a session as they do on a real server. Since D1 the shell and System › Status are shared; the rest of the admin moves in D2 and D3.

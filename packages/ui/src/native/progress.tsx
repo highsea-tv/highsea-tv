@@ -6,8 +6,22 @@ import { View } from 'react-native'
 import { Text } from './text.tsx'
 import { tokens, useTheme } from './theme.tsx'
 
-/** The tones the clients draw: the accent while it moves, neutral while it's held. */
-export type ProgressBarTone = 'accent' | 'neutral'
+/**
+ * The tones: the accent while it moves, neutral while it's held, and the admin's status tones
+ * (success when complete, warning when stalled or nearly full, danger when failed).
+ */
+export type ProgressBarTone = 'accent' | 'neutral' | 'success' | 'warning' | 'danger'
+
+const FILL = {
+  accent: 'accent',
+  neutral: 'text-3',
+  success: 'success',
+  warning: 'warning',
+  danger: 'danger',
+} as const satisfies Record<ProgressBarTone, string>
+
+/** A panel's bar (web/components/progress.tsx's `sm`): 5 tall on `s3`. */
+const PANEL_HEIGHT = 5
 
 const percent = (v: number) => `${v < 10 && v > 0 && v % 1 ? v.toFixed(1) : Math.round(v)}%`
 
@@ -17,6 +31,7 @@ export function ProgressBar({
   height = 4,
   tone = 'accent',
   showValue = false,
+  look = 'overlay',
 }: {
   /** 0–100. */
   value: number
@@ -25,7 +40,13 @@ export function ProgressBar({
   tone?: ProgressBarTone
   /** Shows the percentage beside the bar, so progress never relies on the bar alone. */
   showValue?: boolean
+  /**
+   * `overlay`: on artwork and the player, a faint track of the text colour. `panel`: in the
+   * admin's panels, 5 tall on `s3` with the value in the admin's `figure` type.
+   */
+  look?: 'overlay' | 'panel'
 }) {
+  const panel = look === 'panel'
   const theme = useTheme()
   const v = Math.max(0, Math.min(100, value))
   const bar = (
@@ -36,10 +57,10 @@ export function ProgressBar({
       aria-valuemax={100}
       aria-valuenow={Math.round(v)}
       style={{
-        height: height * theme.u,
+        height: (panel ? PANEL_HEIGHT : height) * theme.u,
         borderRadius: tokens.radius.pill,
         overflow: 'hidden',
-        backgroundColor: `${theme.colors.text}40`,
+        backgroundColor: panel ? theme.colors.s3 : `${theme.colors.text}40`,
         flexGrow: showValue ? 1 : undefined,
       }}
     >
@@ -48,7 +69,7 @@ export function ProgressBar({
           width: `${v}%`,
           height: '100%',
           borderRadius: tokens.radius.pill,
-          backgroundColor: theme.colors[tone === 'neutral' ? 'text-3' : 'accent'],
+          backgroundColor: theme.colors[FILL[tone]],
         }}
       />
     </View>
@@ -66,6 +87,7 @@ export function ProgressBar({
       {bar}
       <Text
         variant="caption"
+        size={panel ? tokens.adminText.figure.size : undefined}
         color="text-2"
         mono
         align="right"

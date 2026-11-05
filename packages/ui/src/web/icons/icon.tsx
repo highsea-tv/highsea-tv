@@ -97,7 +97,7 @@ import {
   Wifi,
   X,
 } from 'lucide-react'
-import { glyphs } from './glyphs.ts'
+import { glyphs } from '../../shared/glyphs.ts'
 
 const custom = Object.fromEntries(
   Object.entries(glyphs).map(([name, node]) => [name, createLucideIcon(name, node)]),

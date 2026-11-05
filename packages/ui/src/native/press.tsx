@@ -97,7 +97,7 @@ export function Press({
   const hit = tokens.controls[input].md.hit
   const hitSlop = slop ? hitSlopFor(hit, slop.height, slop.width) : undefined
   const scale = useSharedValue(1)
-  const animated = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }))
+  const animated = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }), [scale])
   const [hovered, setHovered] = useState(false)
   const [pressed, setPressed] = useState(false)
   const [focused, setFocused] = useState(false)

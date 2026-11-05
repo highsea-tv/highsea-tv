@@ -10,8 +10,11 @@ import { act, cleanup, render, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { memoryLocation } from 'wouter/memory-location'
 import { defaultState, type Role } from '../src/proto/state.ts'
-import { ScreenApp } from '../src/screen/screen.tsx'
 import { classes, collect, unknownClasses, violations } from './check.ts'
+
+// the app after dom.ts has set React Native up for the admin's shared screens: a static import
+// is linked before dom.ts runs
+const { ScreenApp } = await import('../src/screen/screen.tsx')
 
 beforeEach(() => {
   localStorage.clear()

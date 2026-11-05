@@ -222,6 +222,7 @@ export function LibraryGridList<T>({
   // the fallback's second try, cleared if the page goes first
   const retry = useRef<ReturnType<typeof setTimeout> | null>(null)
   useEffect(() => () => clearTimeout(retry.current ?? undefined), [])
+  // biome-ignore lint/correctness/useExhaustiveDependencies: the handle reads this render's rows
   useImperativeHandle(ref, () => ({
     toItem: (index, { animated, offset }) => {
       const row = Math.floor(index / columns)

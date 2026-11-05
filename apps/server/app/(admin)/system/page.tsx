@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
+
+import { System } from '@highsea-tv/admin/system.tsx'
 import type { Metadata } from 'next'
-import { System } from '../../../src/admin/system.tsx'
 
 export const metadata: Metadata = { title: 'System' }
 

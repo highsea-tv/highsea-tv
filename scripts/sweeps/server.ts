@@ -282,9 +282,37 @@ try {
     await page.waitForURL((u) => u.pathname === '/' || u.pathname === '/web/')
     const storageState = await login.storageState()
     await login.close()
-    return () => context({ storageState })
+    return (options: BrowserContextOptions = {}) => context({ storageState, ...options })
   }
   const ownerContext = await signIn(OWNER.username, OWNER.password)
+
+  // the library's drawing written by the server (one-client-platform-d.md › D1): with JavaScript
+  // off (https://playwright.dev/docs/api/class-browser#browser-new-context-option-java-script-enabled)
+  // System › Status's HTML carries react-native-web's sheet and the page, hidden, so nothing but
+  // the background shows until the page hydrates (the owner's answer of 2026-11-05)
+  for (const width of WIDTHS) {
+    const ctx = await ownerContext({ javaScriptEnabled: false })
+    try {
+      const page = await ctx.newPage()
+      await page.setViewportSize({ width, height: heightFor(width) })
+      await page.goto(`${BASE}/system`)
+      const sheet = await page
+        .locator('style#react-native-stylesheet')
+        .first()
+        .evaluate((el) => el.textContent ?? '')
+        .catch(() => '')
+      const rules = sheet.match(/\.r-[\w-]+\{/g)?.length ?? 0
+      const heading = page.getByRole('heading', { name: 'System', level: 1, includeHidden: true })
+      const rendered = (await heading.count()) > 0
+      const shown = rendered && (await heading.first().isVisible())
+      if (rules < 50 || !rendered || shown)
+        problems.push(
+          `no-js /system ${width}: ${rules} of react-native-web's rules, the page ${rendered ? (shown ? 'shown before hydrating' : 'hidden') : 'not rendered'}`,
+        )
+    } finally {
+      await ctx.close()
+    }
+  }
   const tab = (name: string | RegExp) => (p: Page) => p.getByRole('tab', { name }).click()
   const customize = (p: Page) => p.getByRole('button', { name: 'Customize' }).click()
   await sweep(

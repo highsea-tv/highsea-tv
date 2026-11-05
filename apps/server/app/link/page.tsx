@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Where a TV's code is approved (connectivity.md § Pairing): the URL and QR code the TV shows.
+
+import { Pair } from '@highsea-tv/admin/links.tsx'
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
-import { Pair } from '../../src/admin/links.tsx'
 import { currentSession, setupComplete } from '../../src/admin/session.ts'
 
 export const metadata: Metadata = { title: 'Connect a device' }

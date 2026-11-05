@@ -131,7 +131,7 @@ export function Focusable({
   const [focused, setFocused] = useState(false)
   const scale = useSharedValue(1)
   const to = typeof lift === 'number' ? lift : LIFT[lift]
-  const animated = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }))
+  const animated = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }), [scale])
   const stop = useStop(ref, { preferred, disabled })
   return (
     <AnimatedPressable

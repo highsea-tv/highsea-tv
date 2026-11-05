@@ -35,6 +35,14 @@ import { applyEnvironment } from './environment.ts'
 const speeds: Record<TimeMode, number> = { play: 1, pause: 0, fast: 10 }
 
 const ProtoContext = createContext<ProtoState | null>(null)
+const MockContext = createContext<Mock | null>(null)
+
+/** The mock the screen answers from, for the admin's shared screens' transport (admin/shared.tsx). */
+export function useMock(): Mock {
+  const mock = useContext(MockContext)
+  if (!mock) throw new Error('useMock needs a ScreenApp')
+  return mock
+}
 
 /** The toolbar state, for the few screens that show prototype-only affordances. */
 export function useProto(): ProtoState {
@@ -87,14 +95,16 @@ export function ScreenApp({
 
   return (
     <ProtoContext.Provider value={state}>
-      <ClientProvider client={client}>
-        <Router hook={hook}>
-          <Platformed state={state}>
-            <Routes />
-            {children}
-          </Platformed>
-        </Router>
-      </ClientProvider>
+      <MockContext.Provider value={mock}>
+        <ClientProvider client={client}>
+          <Router hook={hook}>
+            <Platformed state={state}>
+              <Routes />
+              {children}
+            </Platformed>
+          </Router>
+        </ClientProvider>
+      </MockContext.Provider>
     </ProtoContext.Provider>
   )
 }

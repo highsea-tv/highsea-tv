@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
+
+import { Login } from '@highsea-tv/admin/login.tsx'
+import { safeNext } from '@highsea-tv/admin/next-path.ts'
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
-import { Login } from '../../src/admin/login.tsx'
-import { safeNext } from '../../src/admin/next-path.ts'
 import { currentSession, setupComplete } from '../../src/admin/session.ts'
 
 export const metadata: Metadata = { title: 'Sign in' }

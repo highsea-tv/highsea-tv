@@ -13,7 +13,7 @@ description: Run highsea with Docker Compose on Linux, macOS or Windows.
   - The compose files are compose.yaml and compose.bridge.yaml at the repository's root.
   - The user highsea runs as: docker/entrypoint.sh (ADR 0057).
   - Bind mounts make a missing source folder: https://docs.docker.com/engine/storage/bind-mounts/
-  - Setup and its copy: apps/server/src/admin/setup.tsx and setup-messages.ts; what it finds by
+  - Setup and its copy: packages/admin/src/setup.tsx and setup-messages.ts; what it finds by
     itself: packages/runtime/src/setup.ts (detectServerName, detectFolders, detectAddress).
 */}
 

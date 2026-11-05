@@ -20,9 +20,11 @@
 // halves it at most once per window (BEP 29 › packet loss), a timeout sets it to one MSS (RFC 6817).
 // Packets are at most 1200 bytes of UDP payload, the size QUIC chose to cross any path without
 // fragmenting, IPv6 and tunnels included (RFC 9000 § 14), so no path MTU discovery is needed.
+
 import { randomBytes } from 'node:crypto'
 import { isIP } from 'node:net'
 import { Duplex } from 'node:stream'
+import { unref } from '@highsea-tv/core/timers'
 import type { UdpInfo, UdpSend } from './udp.ts'
 
 export const ST_DATA = 0
@@ -648,7 +650,7 @@ export function createUtp(options: {
     const now = nowMs()
     for (const s of [...streams.values()]) s.tick(now)
   }, TICK_MS)
-  timer.unref?.()
+  unref(timer)
 
   const reset = (to: UdpInfo, p: Packet) => {
     if (closed) return

@@ -1,5 +1,7 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
 @import "@highsea-tv/ui/styles.css";
+@import "@highsea-tv/brand/native-fonts.css";
 
 @source "../src";
+@source "../../../packages/admin/src";
 @source "./";

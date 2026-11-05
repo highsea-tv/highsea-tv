@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
+
+import { Setup } from '@highsea-tv/admin/setup.tsx'
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { setupComplete } from '../../src/admin/session.ts'
-import { Setup } from '../../src/admin/setup.tsx'
 
 export const metadata: Metadata = { title: 'Set up highsea' }
 export const dynamic = 'force-dynamic'

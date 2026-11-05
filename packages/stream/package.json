@@ -17,6 +17,7 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
+    "@highsea-tv/core": "workspace:*",
     "@highsea-tv/i18n": "workspace:*",
     "@highsea-tv/media": "workspace:*",
     "zod": "4.6.7"

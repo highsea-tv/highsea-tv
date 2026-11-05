@@ -66,8 +66,6 @@ jest.mock('react-native-gesture-handler/ReanimatedSwipeable', () =>
 )
 require('react-native-gesture-handler/jestSetup')
 
-jest.setTimeout(30_000)
-
 const video = () => require('expo-video') as FakeVideo
 const player = () => {
   const p = video().players.at(-1)

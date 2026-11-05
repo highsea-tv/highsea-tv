@@ -8,8 +8,6 @@ import { createMock } from '@highsea-tv/mock/client'
 import { act, cleanup, render } from '@testing-library/react'
 import { memoryLocation } from 'wouter/memory-location'
 import { heldByClient } from '../src/chrome/client.ts'
-import { Launcher } from '../src/chrome/launcher.tsx'
-import { Toolbar } from '../src/chrome/toolbar.tsx'
 import {
   type DataState,
   defaultState,
@@ -17,9 +15,14 @@ import {
   type Role,
   stateFromParams,
 } from '../src/proto/state.ts'
-import { screenRoutes } from '../src/routes.tsx'
-import { ScreenApp } from '../src/screen/screen.tsx'
 import { classes, collect, unknownClasses, violations } from './check.ts'
+
+// the app after dom.ts has set React Native up for the admin's shared screens: a static import
+// is linked before dom.ts runs
+const { Launcher } = await import('../src/chrome/launcher.tsx')
+const { Toolbar } = await import('../src/chrome/toolbar.tsx')
+const { screenRoutes } = await import('../src/routes.tsx')
+const { ScreenApp } = await import('../src/screen/screen.tsx')
 
 afterEach(() => cleanup())
 

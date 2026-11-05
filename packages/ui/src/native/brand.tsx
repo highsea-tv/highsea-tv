@@ -6,6 +6,7 @@ import { MARK_GRID, MARK_SMALL_BELOW, markGeometry } from '@highsea-tv/brand'
 import { useId } from 'react'
 import { View } from 'react-native'
 import Svg, { Circle, Defs, LinearGradient, Mask, Path, Rect, Stop } from 'react-native-svg'
+import { svgName } from './icon.tsx'
 import { Text } from './text.tsx'
 import { tokens, useFormFactor, useTheme } from './theme.tsx'
 
@@ -25,13 +26,7 @@ export function Mark({
   const px = size * theme.u
   const cut = px < MARK_SMALL_BELOW ? g.cutSmall : g.cut
   return (
-    <Svg
-      width={px}
-      height={px}
-      viewBox={`0 0 ${MARK_GRID} ${MARK_GRID}`}
-      accessible={!!label}
-      accessibilityLabel={label}
-    >
+    <Svg width={px} height={px} viewBox={`0 0 ${MARK_GRID} ${MARK_GRID}`} {...svgName(label)}>
       <Defs>
         <LinearGradient id={`${id}g`} x1="0" y1="0" x2="0" y2="1">
           <Stop offset="0" stopColor={theme.colors.accent} />

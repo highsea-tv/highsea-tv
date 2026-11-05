@@ -63,12 +63,27 @@ export const BOTH: Record<string, string> = {
     "The web renderer's is drawn by the admin and the prototypes until part D moves them onto this one",
   TitleCell:
     "The web renderer's is drawn by the admin and the prototypes until part D moves them onto this one",
+  NavItem:
+    "The admin's part, drawn by the native renderer since D1 (one-client-platform-d.md); the web renderer's is drawn by the admin's prototype until D3 removes src/web",
+  PageHeader:
+    "The admin's part, drawn by the native renderer since D1 (one-client-platform-d.md); the web renderer's is drawn by the admin's prototype until D3 removes src/web",
+  SearchTrigger:
+    "The admin's part, drawn by the native renderer since D1 (one-client-platform-d.md); the web renderer's is drawn by the admin's prototype until D3 removes src/web",
+  ServerCard:
+    "The admin's part, drawn by the native renderer since D1 (one-client-platform-d.md); the web renderer's is drawn by the admin's prototype until D3 removes src/web",
+  Sidebar:
+    "The admin's part, drawn by the native renderer since D1 (one-client-platform-d.md); the web renderer's is drawn by the admin's prototype until D3 removes src/web",
+  StatusBar:
+    "The admin's part, drawn by the native renderer since D1 (one-client-platform-d.md); the web renderer's is drawn by the admin's prototype until D3 removes src/web",
+  StatusItem:
+    "The admin's part, drawn by the native renderer since D1 (one-client-platform-d.md); the web renderer's is drawn by the admin's prototype until D3 removes src/web",
   Menu: "A menu of actions or choices: the web renderer's (Radix) is drawn by the admin and the prototypes until part D; this one is a Sheet by touch, a dropdown hung from its trigger with a pointer (WAI-ARIA's menu button pattern on react-native-web's Modal) and TvMenu on the TV",
   Popover:
     "A panel hung from a pointer's trigger: the web renderer's (Radix) is drawn by the admin and the prototypes until part D; this one is the pointer's only, on react-native-web's Modal, since touch and the TV show the same content in a Sheet or a dialog",
   Skeleton:
     "A loading placeholder: the web renderer's is drawn by the admin and the prototypes until part D; this one draws the same shimmer at every form factor",
   SkeletonText: "Lines of Skeleton, as the web renderer's, until part D",
+  Stat: "A figure in an admin panel, drawn by the native renderer since D1 for System › Status; the web renderer's is drawn by the admin's widgets until D2",
   // platform files behind a component: the web draws what react-native-web doesn't
   Scrollbar:
     'ScrollView’s own bar, drawn only on the web (scrollbar.web.tsx) where the browser’s takes a column; the phone and the TV keep the platform’s indicator',
@@ -84,15 +99,10 @@ export const BOTH: Record<string, string> = {
 /** Only on the web, and why no phone or TV screen needs it. */
 export const WEB_ONLY: Record<string, string> = {
   // the admin's furniture: the admin is a browser app only (ADR 0032), so no phone or TV draws it
-  Sidebar:
-    "The admin's and the web client's navigation; the phone and TV have tab bars and the TV's rail",
-  NavGroup: "Part of the web's Sidebar",
-  NavItem: "Part of the web's Sidebar",
-  ServerCard: "The web Sidebar's footer",
-  PageHeader: "The admin's page title bar; native screens take the platform's navigation header",
+  NavGroup:
+    "Part of the web's Sidebar; the native Sidebar's groups are NavGroups, which draws the line between them",
   PageScrollbar:
     "The document's own bar, for the web renderer's pages, which scroll the document; the native renderer's screens scroll in a ScrollView, which draws the same bar from the same measures on the web (Scrollbar)",
-  SearchTrigger: "Opens the web's CommandPalette",
   CommandPalette: 'A keyboard-first command menu (cmdk); phones and TVs have no keyboard shortcuts',
   ModKey: "Names the platform's modifier key in a shortcut; phones and TVs have none",
   Table: 'Dense data tables are the admin’s, which is browser only; native lists use Row',
@@ -106,10 +116,7 @@ export const WEB_ONLY: Record<string, string> = {
   RowActions: "A web Table row's hover actions; touch has no hover",
   WidgetFrame: "The admin dashboard's widget, browser only",
   WidgetEditor: "Edits the admin dashboard's layout, browser only",
-  Stat: 'A figure in an admin widget, browser only',
   Sparkline: 'A chart in an admin widget, browser only',
-  StatusBar: "The admin's status bar, browser only",
-  StatusItem: "Part of the admin's StatusBar",
   Stepper: "The admin's setup steps, browser only",
   // web primitives that React Native draws another way, or the platform draws itself
   Label:
@@ -153,6 +160,19 @@ export const WEB_ONLY: Record<string, string> = {
 
 /** Only in React Native, and why the web has no counterpart. */
 export const NATIVE_ONLY: Record<string, string> = {
+  NavGroups:
+    "The native Sidebar's groups with the hairline between them, which the web's NavGroup draws by its sibling selector; React Native has none",
+  Kbd: "A key's hint in the admin's SearchTrigger; the web renderer's Kbd is web-only until D3",
+  Panel:
+    "A region of an admin page (System's panels, a settings group), which the web renderer's screens write as classes on a section until D3",
+  TextLink:
+    'A link in running text in the admin, which the web renderer’s screens write as an underlined <a> until D3',
+  Details:
+    'A description list of terms and values (System’s Addresses and About), which the web renderer’s screens write as a <dl> until D3',
+  Figure:
+    'A figure, path or address in the admin’s mono figure type, a class on the web renderer’s screens until D3',
+  Attribution:
+    'A data service’s logo and notice (System › About’s TMDB), drawn only by the native renderer since D1, when its one screen moved to it',
   UNCHOSEN_ALPHA:
     'An unchosen destination’s strength in the one client’s top bar and the TV’s head (the prototypes’ `text-text/65`); the web renderer draws no bar, and the admin writes the class itself.',
   RADIO:

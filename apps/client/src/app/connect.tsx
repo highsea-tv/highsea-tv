@@ -94,7 +94,7 @@ const SWIPE_PANEL = space['16'] + space['6']
  */
 function ForgetPanel({ translation, label }: { translation: SharedValue<number>; label: string }) {
   const theme = useTheme()
-  const reveal = useAnimatedStyle(() => ({ width: Math.max(0, -translation.value) }))
+  const reveal = useAnimatedStyle(() => ({ width: Math.max(0, -translation.value) }), [translation])
   return (
     <View
       importantForAccessibility="no-hide-descendants"
@@ -393,6 +393,7 @@ function TvServers() {
 
   // zero configuration: the only server answering, with none known yet, is the one
   const took = useRef(false)
+  // biome-ignore lint/correctness/useExhaustiveDependencies: checked after every render, once (`took`)
   useEffect(() => {
     if (took.current || servers.known.length > 0 || nearby.scanning) return
     const only = nearby.found.length === 1 ? nearby.found[0] : undefined
