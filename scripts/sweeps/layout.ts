@@ -21,7 +21,7 @@
 //   the mock approves after 8 seconds), press Got it on the owner's announcement that must be
 //   acknowledged (it comes over the shell, and on the TV hides it), then open each of B1's
 //   destinations by its address inside the running client (ROUTES: a history push on the web, the
-//   client's `highsea-client://` link on the devices), waiting for its anchors, and last open
+//   client's `highsea://` link on the devices), waiting for its anchors, and last open
 //   Settings from the shell (the phone's You tab, the account in the TV's head). Alerts is a page
 //   only on the TV (appliesTo), so only the TV pair has it.
 // - **The checks** (pure, `assess` and `compare`, tested in layout.test.ts): every capture the run
@@ -1141,11 +1141,11 @@ const TITLES: Record<Screen, string> = {
 export const GOT_IT = 'got it'
 
 /** The client's own URL scheme (apps/client's app.config.ts), which the devices' links use. */
-export const CLIENT_SCHEME = 'highsea-client'
+export const CLIENT_SCHEME = 'highsea'
 
 /**
  * A device's B1 steps for Layout.swift (its STEPS): each screen asked for that the device has, in
- * order, its link in the client's scheme (Expo Router takes `highsea-client://movies/1` as
+ * order, its link in the client's scheme (Expo Router takes `highsea://movies/1` as
  * `/movies/1`), and its anchors' patterns, which Layout.swift waits for before it captures.
  */
 export const stepsFor = (target: Target, screens: readonly Screen[]) =>
@@ -1193,7 +1193,7 @@ const WEB_FORMS: WebForm[] = [
   { target: 'tv', platform: 'tv', scale: 1 },
 ]
 
-const BUNDLES = { iphone: 'tv.highsea.client.mobile', appletv: 'tv.highsea.client.tv' } as const
+const BUNDLES = { iphone: 'tv.highsea.mobile', appletv: 'tv.highsea.tv' } as const
 
 /** A device run is stopped after ten minutes: part A's four screens and B1's nine take a few. */
 const DEVICE_TIMEOUT = 10 * 60 * 1000

@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The bundle check for design system 1.1 (ADR 0060): @highsea-tv/ui's root export picks its
 // renderer by the `react-native` condition, so each app's bundle carries only its own.
-// - The web client's build (apps/web/dist, after `bun run --filter @highsea-tv/web build`) has no
-//   React Native and none of the library's native renderer.
 // - The one client (apps/client, ADR 0061) in its three bundles. Its iPhone and Apple TV bundles
 //   (Metro, through `expo export:embed`; the TV's with EXPO_TV=1 on react-native-tvos) have none of
 //   the web renderer: no tailwind-merge, no react-dom and no `ui/src/web`, nor the spatial focus
@@ -10,17 +8,19 @@
 //   draws with the native renderer through react-native-web, so it has no React Native itself and
 //   none of the DOM renderer. Each takes its own side of a platform pair (apps/client/README.md ›
 //   Platform files): the web no native side, the others no `.web` file.
+// - The desktop app's export (`export:desktop`, ADR 0058) is the web export with its host on
+//   Tauri's Rust side (apps/client/src/desktop/tauri.tsx), which must be in it; nothing else
+//   carries @tauri-apps, since only that export loads it (apps/client/src/desktop/app.ts).
 // - hls.js (the web's player engine, @highsea-tv/native/playback.web.ts) is in the web's builds as
 //   a chunk of its own, loaded only when a stream needs it, and never in the entry the page loads
-//   first; in apps/web always, in the client's web export once the web engine is in it. The
-//   client's phone and TV bundles never carry it.
+//   first, once the web engine is in the export. The client's phone and TV bundles never carry it.
 // - The client's web export reports its first load, the scripts its page loads first, gzipped.
 //   It's a figure for the report with no budget: the owner doesn't consider it to matter
 //   (one-client-platform-c.md, answer 4).
 // No bundle built without mock mode (EXPO_PUBLIC_HIGHSEA_MOCK) carries the prototypes' mock.
-// `bun scripts/bundles.ts [web] [client-phone] [client-tv] [client-web]` checks the ones named, or
-// the first three. CI runs it for web and client-web (ci.yml) and for client-phone and client-tv
-// (native.yml).
+// `bun scripts/bundles.ts [client-phone] [client-tv] [client-web] [client-desktop]` checks the
+// ones named, or all four. CI runs it for client-web and client-desktop (ci.yml) and for
+// client-phone and client-tv (native.yml).
 import { spawnSync } from 'node:child_process'
 import { existsSync, mkdirSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
@@ -40,8 +40,12 @@ const NO_MOCK = [
 /** hls.js: its events' names in the code (`hlsManifestLoading`), or its path in a source map. */
 const HLS = /hlsManifestLoading|node_modules\/hls\.js\//
 
+/** Tauri's JavaScript side: its packages' paths in a source map, or a plugin command's name. */
+const TAURI = ['@tauri-apps', /node_modules\/@tauri-apps\/|plugin:updater\|/] as const
+
 /** What a React Native app's bundle must not contain. */
 const NATIVE = [
+  TAURI,
   ['hls.js', HLS],
   ['the web renderer', /packages\/ui\/src\/web\//],
   ['tailwind-merge', /tailwind-merge|twMerge/],
@@ -49,12 +53,6 @@ const NATIVE = [
   // the TV's focus in a browser (engine.web.tsx); the TVs move focus with their own engines
   ['the spatial focus engine', /packages\/ui\/src\/native\/tv\/spatial\/navigator\.ts/],
   ...NO_MOCK,
-] as const
-
-/** React Native, or react-native-web, which apps/web (on the DOM renderer) carries neither of. */
-const REACT_NATIVE = [
-  'react-native',
-  /\breact-native(?:-web)?\/(?:Libraries|src)\b|__fbBatchedBridge|TurboModuleRegistry/,
 ] as const
 
 /** React Native itself, which the client's web export draws without: react-native-web stands in
@@ -89,16 +87,18 @@ export function pairs(root = ROOT): { native: string; web: string }[] {
 const PAIRS = pairs()
 
 /** What a bundle must not contain, with why. */
+const CLIENT_WEB = [
+  REACT_NATIVE_ITSELF,
+  ['the web renderer', /packages\/ui\/src\/web\//],
+  ['tailwind-merge', /tailwind-merge|twMerge/],
+  ['the Hermes Intl polyfills', /@formatjs\/intl-(?:locale|pluralrules|numberformat)\//],
+  ...PAIRS.map(({ native }) => [`${native}, a native side`, exactly(native)] as const),
+  ...NO_MOCK,
+] as const
+
 export const FORBIDDEN = {
-  web: [REACT_NATIVE, ['the native renderer', /packages\/ui\/src\/native\//], ...NO_MOCK],
-  'client-web': [
-    REACT_NATIVE_ITSELF,
-    ['the web renderer', /packages\/ui\/src\/web\//],
-    ['tailwind-merge', /tailwind-merge|twMerge/],
-    ['the Hermes Intl polyfills', /@formatjs\/intl-(?:locale|pluralrules|numberformat)\//],
-    ...PAIRS.map(({ native }) => [`${native}, a native side`, exactly(native)] as const),
-    ...NO_MOCK,
-  ],
+  'client-web': [...CLIENT_WEB, TAURI],
+  'client-desktop': CLIENT_WEB,
   'client-phone': [
     ...NATIVE,
     ...PAIRS.map(({ web }) => [`${web}, a web side`, exactly(web)] as const),
@@ -169,32 +169,31 @@ export function hlsOffences(entryText: string, allText: string, needed: boolean)
   return found
 }
 
-function web() {
-  const dist = join(ROOT, 'apps/web/dist')
-  const all = read(dist)
-  const entry = entries(dist).map(readFile).join('\n')
-  return [...offences('web', all), ...hlsOffences(entry, all, true)]
-}
-
-/** The client's web export with its source maps, built into .dev/bundles/client-web and checked,
- *  through the app's own `export:web` (its last --output-dir wins). */
-function clientWeb() {
-  const out = join(ROOT, '.dev/bundles/client-web')
-  const run = spawnSync('bun', ['run', 'export:web', '--output-dir', out, '--source-maps'], {
+/** A web export of the client with its source maps, built into .dev/bundles/<kind> and checked,
+ *  through the app's own script (its last --output-dir wins). */
+function clientExport(kind: 'client-web' | 'client-desktop', script: string) {
+  const out = join(ROOT, `.dev/bundles/${kind}`)
+  const run = spawnSync('bun', ['run', script, '--output-dir', out, '--source-maps'], {
     cwd: join(ROOT, 'apps/client'),
     stdio: 'inherit',
     env: { ...process.env, EXPO_PUBLIC_HIGHSEA_MOCK: '' },
   })
-  if (run.status !== 0) throw new Error('the client’s web export did not build')
+  if (run.status !== 0) throw new Error(`the client’s ${script} did not build`)
   const all = read(out)
   const entry = entries(out).map(readFile).join('\n')
   const first = entries(out)
     .map((path) => path.replace(/\.map$/, ''))
     .reduce((sum, path) => sum + gzipSync(readFileSync(path)).length, 0)
-  console.log(`client-web: the first load is ${(first / 1000).toFixed(0)} kB gzipped`)
+  console.log(`${kind}: the first load is ${(first / 1000).toFixed(0)} kB gzipped`)
   // the web engine is in once a screen plays; from then on it brings hls.js's chunk
   const engine = exactly('packages/native/src/playback.web.ts').test(all)
-  return [...offences('client-web', all), ...hlsOffences(entry, all, engine)]
+  return { all, found: [...offences(kind, all), ...hlsOffences(entry, all, engine)] }
+}
+
+/** The desktop app's export, which must carry its host on Tauri. */
+function clientDesktop() {
+  const { all, found } = clientExport('client-desktop', 'export:desktop')
+  return TAURI[1].test(all) ? found : [...found, 'no @tauri-apps: its host is missing']
 }
 
 type NativeKind = 'client-phone' | 'client-tv'
@@ -232,15 +231,15 @@ function native(kind: NativeKind, app: string, env: Record<string, string> = {})
 }
 
 const BUILDS: Record<string, () => string[]> = {
-  web,
-  'client-web': clientWeb,
+  'client-web': () => clientExport('client-web', 'export:web').found,
+  'client-desktop': clientDesktop,
   'client-phone': () => native('client-phone', 'apps/client'),
   'client-tv': () => native('client-tv', 'apps/client', { EXPO_TV: '1' }),
 }
 
 if (import.meta.main) {
   const asked = process.argv.slice(2)
-  const kinds = asked.length ? asked : ['web', 'client-phone', 'client-tv']
+  const kinds = asked.length ? asked : Object.keys(BUILDS)
   let failed = false
   for (const kind of kinds) {
     const found = BUILDS[kind]?.() ?? [`no bundle named ${kind}`]

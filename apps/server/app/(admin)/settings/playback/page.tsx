@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The owner's and admins' (the 4.0b scope's answer 6), as every admin page.
+
+import { PlaybackSettingsPage } from '@highsea-tv/admin/playback.tsx'
+import { seesArea } from '@highsea-tv/admin/settings-areas.ts'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import { PlaybackSettingsPage } from '../../../../src/admin/playback.tsx'
 import { currentSession } from '../../../../src/admin/session.ts'
-import { seesArea } from '../../../../src/admin/settings-areas.ts'
 
 export const metadata: Metadata = { title: 'Playback' }
 

@@ -179,7 +179,7 @@ function Art({
   useEffect(() => {
     scale.value = withSpring(focused && !reduced ? tokens.focus.tv.scalePoster : 1, TRACK_SPRING)
   }, [focused, reduced, scale])
-  const lifted = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }))
+  const lifted = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }), [scale])
   return (
     <Animated.View
       style={[

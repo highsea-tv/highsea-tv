@@ -38,6 +38,27 @@
   "assist": { "actions": { "source": { "organizeImports": "on" } } },
   "overrides": [
     {
+      "includes": ["packages/ui/src/native/**", "apps/client/src/**", "packages/admin/src/**"],
+      "linter": {
+        "rules": {
+          "correctness": {
+            "useExhaustiveDependencies": {
+              "level": "error",
+              "options": {
+                "reportMissingDependenciesArray": true,
+                "hooks": [
+                  { "name": "useAnimatedStyle", "closureIndex": 0, "dependenciesIndex": 1 },
+                  { "name": "useDerivedValue", "closureIndex": 0, "dependenciesIndex": 1 },
+                  { "name": "useAnimatedProps", "closureIndex": 0, "dependenciesIndex": 1 },
+                  { "name": "useAnimatedReaction", "closureIndex": 0, "dependenciesIndex": 2 }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
       "includes": ["design/assets/icons/**"],
       "linter": { "rules": { "a11y": { "noSvgWithoutTitle": "off" } } }
     },

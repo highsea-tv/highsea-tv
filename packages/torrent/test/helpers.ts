@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Test helpers: torrents made in memory, a tracker on loopback (HTTP and UDP, BEP 3, 15 and 23, and
 // over IPv6 BEP 7's `peers6`) and engines with their own database. Nothing reaches the network.
+
 import { createHash, randomBytes } from 'node:crypto'
 import dgram from 'node:dgram'
 import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
@@ -9,6 +10,7 @@ import { type AddressInfo, isIP } from 'node:net'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { silentLogger } from '@highsea-tv/core'
+import { unref } from '@highsea-tv/core/timers'
 import { migrate, openDatabase } from '@highsea-tv/db'
 import bencode from 'bencode'
 import { createTorrentEngine, type EngineEvent } from '../src/index.ts'
@@ -312,7 +314,7 @@ export function lossyLink(options: { seed: number; loss: number; reorder: number
       if (random() < options.reorder) {
         counts.delayed++
         const copy = Buffer.from(data)
-        setTimeout(() => send(copy, port, host), 5 + Math.floor(random() * 15)).unref?.()
+        unref(setTimeout(() => send(copy, port, host), 5 + Math.floor(random() * 15)))
         return
       }
       send(data, port, host)

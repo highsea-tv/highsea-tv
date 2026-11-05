@@ -39,8 +39,8 @@ const exportsOf = (file: string) => transpiler(file).scan(readFileSync(file, 'ut
  * Metro asserts `react-native` for our packages on every platform (metro.config.js), and takes the
  * first condition it asserts in the order written
  * (https://nodejs.org/api/packages.html#conditional-exports), so a pair's web file as a `default`
- * after `react-native` is only ever read by Vite and Bun: `@highsea-tv/native/playback`'s web
- * engine for apps/web (README.md › Platform files, rule 3). Any other `default` still counts.
+ * after `react-native` is only ever read by TypeScript and Bun: `@highsea-tv/native/playback`'s
+ * web engine (README.md › Platform files, rule 3). Any other `default` still counts.
  */
 const metroTargetsOf = (exports: unknown): string[] => {
   if (typeof exports === 'string') return [exports]

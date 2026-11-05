@@ -6,13 +6,17 @@
 import { forgetMessages } from '@highsea-tv/client/gate'
 import { useT } from '@highsea-tv/i18n/react'
 import { useServers } from '@highsea-tv/native/servers'
+import { useDesktopHost } from './desktop/host.ts'
 import { useDevice } from './host'
 import { useConfirm } from './kit.tsx'
 
 export function useForget() {
   const t = useT(forgetMessages)
   const servers = useServers()
-  const device = useDevice()
+  // the desktop app is a computer, not a browser, though it draws the web's form (ADR 0058)
+  const inApp = useDesktopHost() !== null
+  const kind = useDevice()
+  const device = inApp ? 'desktop' : kind
   const { ask, prompt } = useConfirm()
   const forget = (id: string, name: string) =>
     ask({

@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
+
 import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { networkInterfaces } from 'node:os'
 import { join, resolve } from 'node:path'
@@ -33,6 +34,7 @@ import {
   type Sealer,
   systemClock,
 } from '@highsea-tv/core'
+import { unref } from '@highsea-tv/core/timers'
 import { type Collections, createCollections } from '@highsea-tv/curation/collections'
 import { type Curation, createCuration } from '@highsea-tv/curation/service'
 import {
@@ -1191,7 +1193,7 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
         options.restart ??
         (() => void runtime.shutdown().finally(() => process.exit(RESTART_EXIT_CODE)))
       // after the response that asked for it has gone
-      setTimeout(restart, 250).unref?.()
+      unref(setTimeout(restart, 250))
     },
     sources: {
       clientsConnected: () => network.clientsConnected(),
@@ -1255,7 +1257,7 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
           log.warn('couldn’t compare the health issues', { error: (e as Error).message })
         }
       }, HEALTH_EVERY_MS)
-  healthTimer?.unref?.()
+  unref(healthTimer)
 
   const stopOperations = operations.start(clock.now())
   const resources = createResourceMonitor()

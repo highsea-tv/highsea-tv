@@ -6,7 +6,7 @@
 # app on a simulator, runs this, and checks the server saw the film played. Elements are found by
 # the labels VoiceOver reads, from the client's i18n catalogs (apps/client and @highsea-tv/client)
 # (https://docs.maestro.dev/api-reference/selectors).
-appId: tv.highsea.client.mobile
+appId: tv.highsea.mobile
 env:
   SERVER: http://localhost:3160
   USERNAME: theo

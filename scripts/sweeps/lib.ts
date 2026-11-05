@@ -317,6 +317,19 @@ export const mixedRows = (page: Page) =>
       }
       return null
     }
+    // the font size of the element holding a control's first text, or '' when it shows none; a
+    // field's text is what's typed in its input, so a wrapper holding one (a field with a unit or
+    // a clear button beside it) takes the input's size
+    const labelSize = (e: Element) => {
+      const input = e.querySelector('input:not([type=hidden]),select,textarea')
+      if (input) return getComputedStyle(input).fontSize
+      const w = document.createTreeWalker(e, NodeFilter.SHOW_TEXT, {
+        acceptNode: (n) =>
+          n.textContent?.trim() ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP,
+      })
+      const text = w.nextNode()
+      return text?.parentElement ? getComputedStyle(text.parentElement).fontSize : ''
+    }
     const sel =
       '[data-control], button, a[class*="rounded"], input:not([type=hidden]):not([type=checkbox]):not([type=radio]):not([type=range]), select, textarea, [role=radiogroup], [role=tablist], [role=switch]'
     const out: C[] = []
@@ -354,8 +367,10 @@ export const mixedRows = (page: Page) =>
         kind,
         h: e.offsetHeight,
         r,
-        // an icon-only control shows no text, so its text size can't differ
-        t: e.innerText.trim() || e.matches('input,select,textarea') ? cs.fontSize : '',
+        // an icon-only control shows no text, so its text size can't differ; otherwise it's the
+        // size of the label's own text, since a react-native-web control is a box whose label is a
+        // child with its own size (the box itself inherits the page's)
+        t: e.matches('input,select,textarea') ? cs.fontSize : labelSize(e),
         x: b.left,
         w: b.width,
         y: b.top + b.height / 2,

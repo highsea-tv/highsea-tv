@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
+
+import { Activity } from '@highsea-tv/admin/activity.tsx'
 import type { Metadata } from 'next'
-import { Activity } from '../../../src/admin/activity.tsx'
 
 export const metadata: Metadata = { title: 'Activity' }
 

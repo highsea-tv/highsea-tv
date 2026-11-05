@@ -16,9 +16,11 @@
 // A file that doesn't parse may still be being written, so it's left alone while it's younger
 // than a minute: qBittorrent retries such a file 5 times, 10 seconds apart, before renaming it
 // `.qbt_rejected`. After that highsea renames it `.torrent.invalid` and logs why.
+
 import { readdirSync, readFileSync, renameSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { AppError, type Clock, type Logger } from '@highsea-tv/core'
+import { unref } from '@highsea-tv/core/timers'
 import { parseTorrentFile } from '@highsea-tv/torrent'
 import type { DownloadClientSettings } from './settings.ts'
 
@@ -177,7 +179,7 @@ export function createWatchFolder(deps: WatchDeps) {
           logger.error('the watch folder check failed', { error: (e as Error).message }),
         )
       }, everyMs)
-      timer.unref?.()
+      unref(timer)
       return () => clearInterval(timer)
     },
   }

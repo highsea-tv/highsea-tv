@@ -6,8 +6,8 @@
 // `VideoPlayer.web.tsx`, `replace`, and `VideoView.web.tsx`'s `src={getSourceUri(…)}`), with no
 // Media Source Extensions and no headers, so it plays HLS only where the browser does, which is
 // Safari. Metro takes this file for the client's web build (apps/client/README.md › Platform
-// files); Vite and Bun, which don't read `.web` files, take it as `@highsea-tv/native/playback`'s
-// `default` target (apps/web).
+// files); TypeScript and Bun, which don't read `.web` files, take it as
+// `@highsea-tv/native/playback`'s `default` target.
 //
 // It reports what this browser decodes once per browser version, asks the server for a session
 // with the person's picks, and plays its URL: the file itself for direct play, HLS through hls.js

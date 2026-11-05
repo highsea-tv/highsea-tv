@@ -3,6 +3,7 @@
 // are limited by asking for blocks only when the bucket has room, uploads by holding a block back
 // until it does. A limit of 0 is unlimited.
 
+import { unref } from '@highsea-tv/core/timers'
 export type Bucket = ReturnType<typeof createBucket>
 
 export function createBucket(now: () => number = () => performance.now()) {
@@ -33,7 +34,7 @@ export function createBucket(now: () => number = () => performance.now()) {
     if (waiting.length && rate > 0) {
       const need = Math.min((waiting[0] as (typeof waiting)[number]).bytes, rate) - tokens
       timer = setTimeout(drain, Math.max(5, (need / rate) * 1000))
-      timer.unref?.()
+      unref(timer)
     }
   }
 

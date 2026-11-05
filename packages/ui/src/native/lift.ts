@@ -35,5 +35,5 @@ export function useLift(on: boolean, scale = POINTER_POSTER_SCALE) {
     const to = on && !reduced ? scale : 1
     value.value = reduced ? to : withSpring(to, tokens.springs.base)
   }, [on, reduced, scale, value])
-  return useAnimatedStyle(() => ({ transform: [{ scale: value.value }] }))
+  return useAnimatedStyle(() => ({ transform: [{ scale: value.value }] }), [value])
 }

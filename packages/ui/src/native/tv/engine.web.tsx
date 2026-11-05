@@ -201,6 +201,7 @@ export const FocusGuide: typeof nativeFocusGuide = ({
   const leave = useRef(onFocusLeave)
   enter.current = onFocusEnter
   leave.current = onFocusLeave
+  // biome-ignore lint/correctness/useExhaustiveDependencies: the guides follow every render's destinations
   useEffect(() => {
     const el = node.current
     if (!el) return

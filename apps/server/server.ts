@@ -54,7 +54,8 @@ if (process.env.HIGHSEA_SUBTITLES_FAKE === '1')
 if (process.env.HIGHSEA_FIXTURES_URL)
   log.warn('Every outside request goes to the fixtures service', { env: 'HIGHSEA_FIXTURES_URL' })
 
-const app = next({ dev: config.dev, dir: dirname(fileURLToPath(import.meta.url)) })
+// webpack, for the library's `.web` files in dependencies (next.config.ts says why)
+const app = next({ dev: config.dev, webpack: true, dir: dirname(fileURLToPath(import.meta.url)) })
 await app.prepare()
 const handle = app.getRequestHandler()
 

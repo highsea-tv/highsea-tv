@@ -70,8 +70,6 @@ jest.mock('react-native-gesture-handler/ReanimatedSwipeable', () =>
 )
 require('react-native-gesture-handler/jestSetup')
 
-// signing in and drawing every row takes a few seconds on a cold start
-jest.setTimeout(30_000)
 beforeEach(fresh)
 afterEach(async () => {
   await cleanup()

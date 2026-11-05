@@ -5,6 +5,7 @@
 // event handler (parent plan, Known pitfalls): the import, a refused release's replacement, and
 // letting go after seeding. A download that stalls for 2 hours says so; at 3 it is blocklisted and
 // replaced (activity-downloads.md). Every job checks what already happened, so it's safe to repeat.
+
 import { isAbsolute, join, resolve } from 'node:path'
 import {
   AppError,
@@ -15,6 +16,7 @@ import {
   type Logger,
   newId,
 } from '@highsea-tv/core'
+import { unref } from '@highsea-tv/core/timers'
 import { type Db, readSetting, schema, writeSetting } from '@highsea-tv/db'
 import {
   fetchRelease,
@@ -887,7 +889,7 @@ export function createDownloads(deps: DownloadsDeps) {
         .where(and(eq(downloads.state, 'downloading'), lt(downloads.progressAt, clock.now())))
         .run()
       const timer = setInterval(sample, 1000)
-      timer.unref?.()
+      unref(timer)
       return () => clearInterval(timer)
     },
 

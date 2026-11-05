@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
+
+import { AccountLinkPage } from '@highsea-tv/admin/links.tsx'
 import type { Metadata } from 'next'
-import { AccountLinkPage } from '../../../src/admin/links.tsx'
 
 export const metadata: Metadata = { title: 'Reset password', referrer: 'no-referrer' }
 

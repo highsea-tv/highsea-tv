@@ -125,10 +125,6 @@ function elementsOf(node: unknown, type: string): { props: Record<string, unknow
   return [...(e.type === type ? [e] : []), ...elementsOf(e.props.children, type)]
 }
 
-// the first test loads the whole route tree and the player, which can pass Jest's 5 s default
-// while the other suites run beside it
-jest.setTimeout(30_000)
-
 describe('the player on the phone', () => {
   test('plays the session’s clip, and Pause and Play drive the player', async () => {
     await playing()

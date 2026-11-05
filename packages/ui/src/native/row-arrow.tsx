@@ -38,7 +38,7 @@ export function RowArrow({
     const to = shown ? 1 : 0
     opacity.value = reduced ? to : withTiming(to, { duration: tokens.durations.color })
   }, [shown, reduced, opacity])
-  const fade = useAnimatedStyle(() => ({ opacity: opacity.value }))
+  const fade = useAnimatedStyle(() => ({ opacity: opacity.value }), [opacity])
   return (
     <Animated.View
       pointerEvents={shown ? 'auto' : 'none'}

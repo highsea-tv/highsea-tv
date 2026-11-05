@@ -13,7 +13,7 @@
 // to). Each capture prints `LAYOUT <screen>: n elements`, so the run shows how far it has got.
 // SCREENS (comma-separated, in order) stops after the last one named: the preflight takes only
 // `connect`. STEPS (JSON, from layout.ts) lists B1's destinations between the shell and Settings,
-// each opened by the client's link (`highsea-client://movies/…`) once signed in, and captured once
+// each opened by the client's link (`highsea://movies/…`) once signed in, and captured once
 // the names that only it has are on screen.
 //
 // On the iPhone it taps (XCUIElement.tap) and types (typeText) as Theo, who has no two-step
@@ -29,9 +29,9 @@ struct LayoutFailure: Error, CustomStringConvertible {
 
 final class Layout: XCTestCase {
   #if os(tvOS)
-    let app = XCUIApplication(bundleIdentifier: "tv.highsea.client.tv")
+    let app = XCUIApplication(bundleIdentifier: "tv.highsea.tv")
   #else
-    let app = XCUIApplication(bundleIdentifier: "tv.highsea.client.mobile")
+    let app = XCUIApplication(bundleIdentifier: "tv.highsea.mobile")
   #endif
 
   private var dir = URL(fileURLWithPath: "/tmp")

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
+
+import { SettingsIndex } from '@highsea-tv/admin/settings.tsx'
 import type { Metadata } from 'next'
-import { SettingsIndex } from '../../../src/admin/settings.tsx'
 
 export const metadata: Metadata = { title: 'Settings' }
 

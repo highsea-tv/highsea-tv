@@ -2,6 +2,7 @@
 // The owner's tools (checkpoint 8b, ADR 0047): General's settings (region, updates, diagnostics),
 // the log on disk and its level, crash reports, backups, updates from the signed catalog, and
 // `/metrics`. The runtime joins them to the services they read.
+
 import { monitorEventLoopDelay } from 'node:perf_hooks'
 import { type Catalog, compareAppVersions, type HighseaRelease } from '@highsea-tv/catalog'
 import {
@@ -13,6 +14,7 @@ import {
   type Logger,
   type MemorySink,
 } from '@highsea-tv/core'
+import { unref } from '@highsea-tv/core/timers'
 import { type Db, type RawDatabase, readSetting, writeSetting } from '@highsea-tv/db'
 import type { JobQueue } from '@highsea-tv/jobs'
 import { z } from 'zod'
@@ -169,7 +171,7 @@ export function createOperations(deps: OperationsDeps) {
       appendTimer = null
       events.emit({ topic: LOGS_TOPIC })
     }, 1000)
-    appendTimer.unref?.()
+    unref(appendTimer)
   }
 
   jobs.define({

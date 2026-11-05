@@ -154,7 +154,7 @@ export const forgetMessages = defineMessages({
   thisServer: 'Forget this server',
   confirm: 'Forget {name}?',
   detail:
-    '{device, select, tv {This TV} web {This browser} other {This phone}} signs out of it and stops listing it. You can add it again later.',
+    '{device, select, tv {This TV} desktop {This computer} web {This browser} other {This phone}} signs out of it and stops listing it. You can add it again later.',
   cancel: gateWords.cancel,
 })
 

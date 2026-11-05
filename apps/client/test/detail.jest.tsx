@@ -62,9 +62,6 @@ jest.mock('react-native-gesture-handler/ReanimatedSwipeable', () =>
 )
 require('react-native-gesture-handler/jestSetup')
 
-// a film's page draws more than the gate's, and the first render loads its parts
-jest.setTimeout(30_000)
-
 beforeEach(fresh)
 afterEach(async () => {
   for (const h of asks().hold ?? []) h.release()

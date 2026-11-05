@@ -4,11 +4,12 @@
 // 4.2a section).
 // Server components only redirect here (ADR 0018); the shell and its data are client components
 // on the API.
+
+import { AdminShell } from '@highsea-tv/admin/shell.tsx'
 import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import type { ReactNode } from 'react'
 import { currentSession, setupComplete } from '../../src/admin/session.ts'
-import { AdminShell } from '../../src/admin/shell.tsx'
 import { PATH_HEADER } from '../../src/session-cookie.ts'
 
 // who's signed in is read per request

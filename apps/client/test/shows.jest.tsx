@@ -37,7 +37,6 @@ jest.mock('react-native-gesture-handler/ReanimatedSwipeable', () =>
 )
 require('react-native-gesture-handler/jestSetup')
 
-jest.setTimeout(30_000)
 // shows are served unless a test is a real server's, which serves none yet
 beforeEach(() => {
   fresh()

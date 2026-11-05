@@ -4,6 +4,7 @@ import type { NextConfig } from 'next'
 const config: NextConfig = {
   // workspace packages export raw TypeScript (ADR 0002)
   transpilePackages: [
+    '@highsea-tv/admin',
     '@highsea-tv/api-contract',
     '@highsea-tv/brand',
     '@highsea-tv/core',
@@ -22,6 +23,53 @@ const config: NextConfig = {
     '@highsea-tv/db',
     '@highsea-tv/jobs',
   ],
+  // the library's React Native drawing on the web (one-client-platform-d.md › D1), on webpack:
+  // react-native resolves to react-native-web (through @highsea-tv/ui/next's shim) and `.web` files
+  // come first, as react-native-web's setup asks of a bundler
+  // (https://necolas.github.io/react-native-web/docs/setup/), with `__DEV__`, `EXPO_OS` and the
+  // browser's `global` defined as Metro defines them. Turbopack applies `resolveExtensions` only to
+  // the app's own files, not inside dependencies (vercel/next.js#97567, open), so react-native-svg,
+  // safe-area-context, expo-image and Reanimated would take their native files there; server.ts
+  // and `build` pick webpack (https://nextjs.org/docs/app/guides/custom-server).
+  webpack: (webpack, { dev, isServer, webpack: { DefinePlugin } }) => {
+    webpack.resolve.alias = {
+      ...webpack.resolve.alias,
+      // absolute, since the dependencies that import react-native don't depend on the library
+      'react-native$': require.resolve('@highsea-tv/ui/next/react-native'),
+      'react-native/Libraries/Utilities/codegenNativeComponent$': require.resolve(
+        '@highsea-tv/ui/next/codegen-native-component',
+      ),
+      // react-native-svg's web files read React Native's asset registry, which on the web is
+      // react-native-web's (as Expo's web build has it)
+      '@react-native/assets-registry/registry$': require.resolve(
+        '@highsea-tv/ui/next/asset-registry',
+      ),
+    }
+    // serverExternalPackages matches a package by its path under node_modules, and a workspace
+    // package resolves to its own folder, so the server's ones are named here too: Node loads them
+    // at run time with the process's one runtime, as server.ts does
+    // (https://webpack.js.org/configuration/externals/#function)
+    if (isServer) {
+      const own = /^@highsea-tv\/(runtime|db|jobs)(\/|$)/
+      webpack.externals = [
+        (
+          { request }: { request?: string },
+          done: (error?: Error | null, result?: string) => void,
+        ) => (request && own.test(request) ? done(null, `commonjs ${request}`) : done()),
+        ...[webpack.externals ?? []].flat(),
+      ]
+    }
+    webpack.resolve.extensions = ['.web.tsx', '.web.ts', '.web.js', ...webpack.resolve.extensions]
+    webpack.plugins.push(
+      new DefinePlugin({
+        __DEV__: JSON.stringify(dev),
+        'process.env.EXPO_OS': JSON.stringify('web'),
+        // React Native's `global`, which Reanimated reads; Node has it, the browser has globalThis
+        ...(isServer ? {} : { global: 'globalThis' }),
+      }),
+    )
+    return webpack
+  },
   poweredByHeader: false,
   devIndicators: false,
   reactStrictMode: true,

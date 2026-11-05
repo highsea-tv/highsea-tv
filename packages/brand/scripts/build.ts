@@ -6,7 +6,7 @@ import { createRequire } from 'node:module'
 import { SOUND_EVENTS } from '@highsea-tv/tokens'
 import { Resvg } from '@resvg/resvg-js'
 import { appleTextFiles, TVOS_IMAGES } from '../src/apple.ts'
-import { FONT_FILES, fontsCss } from '../src/fonts.ts'
+import { FONT_FILES, fontsCss, nativeFontsCss } from '../src/fonts.ts'
 import { CONTAINERS, ICON_SVGS, IMAGES, webManifest } from '../src/icons.ts'
 import { type LogoPaint, lockupSvg, wordmarkSvg } from '../src/logo.ts'
 import { markSvg } from '../src/mark.ts'
@@ -35,6 +35,7 @@ export function textOutputs(): Record<string, string> {
   const out: Record<string, string> = {
     'src/wordmark-data.ts': wordmarkDataTs(),
     'fonts/fonts.css': fontsCss(),
+    'fonts/native-fonts.css': nativeFontsCss(),
     'assets/icons/web/manifest.webmanifest': webManifest(),
   }
   const title = 'highsea'

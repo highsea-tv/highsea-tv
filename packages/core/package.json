@@ -9,7 +9,8 @@
     "./format": "./src/format.ts",
     "./fetch": "./src/fetch.ts",
     "./events": "./src/events.ts",
-    "./errors": "./src/errors.ts"
+    "./errors": "./src/errors.ts",
+    "./timers": "./src/timers.ts"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json"

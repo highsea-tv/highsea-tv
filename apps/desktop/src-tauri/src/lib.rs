@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// highsea's desktop app (ADR 0058): apps/web's build in a Tauri 2 window, with what only an app
-// can do on the Rust side. The page calls these commands through `src/host.ts` in apps/web.
+// highsea's desktop app (ADR 0058): the client's desktop export (apps/client, ADR 0061) in a Tauri
+// 2 window, with what only an app can do on the Rust side. The page calls these commands through
+// apps/client's `src/desktop/tauri.ts`.
 mod discovery;
 mod keychain;
 mod oidc;
@@ -88,6 +89,17 @@ async fn server_add(servers: State<'_, Servers>, address: String) -> Result<Know
     let server = servers.remember(&info, &base, now());
     servers.connect(&server.id).await.ok_or("unreachable")?;
     Ok(server)
+}
+
+/// A server's public info at an address, without remembering it: Choose a server asks it of each
+/// server found nearby and each address typed, before anything is kept (one-client-platform-c.md).
+#[tauri::command]
+async fn server_info(
+    servers: State<'_, Servers>,
+    address: String,
+) -> Result<serde_json::Value, String> {
+    let base = servers::normalize(&address)?;
+    servers.info_at(&base).await
 }
 
 #[tauri::command]
@@ -271,6 +283,7 @@ pub fn run() {
             servers_list,
             server_current,
             server_add,
+            server_info,
             server_use,
             server_leave,
             server_forget,

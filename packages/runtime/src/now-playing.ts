@@ -11,6 +11,7 @@
 //   another sound or subtitle track, on the same device within `JOIN_MS`, adds to the row before it,
 //   so one evening's film reads as one row. A session nothing was watched in leaves none. The daily
 //   `playback.prune` removes rows older than 30 days; deleting is safe to repeat (ADR 0022).
+
 import { randomUUID } from 'node:crypto'
 import {
   type ClientType,
@@ -20,6 +21,7 @@ import {
   type WatchRecord,
 } from '@highsea-tv/api-contract'
 import type { Clock, EventBus, Logger } from '@highsea-tv/core'
+import { unref } from '@highsea-tv/core/timers'
 import { type Db, schema } from '@highsea-tv/db'
 import type { JobQueue } from '@highsea-tv/jobs'
 import {
@@ -160,7 +162,7 @@ export function createNowPlaying(deps: {
     const wait = announcedAt + MOVED_MS - clock.now()
     if (wait <= 0) return announce()
     pending = setTimeout(announce, wait)
-    pending.unref?.()
+    unref(pending)
   }
 
   // -------------------------------------------------------------- the view
@@ -272,7 +274,7 @@ export function createNowPlaying(deps: {
       }
       lingering.set(s.id, { view: view(s, f, stopped), until: now + STOPPED_LINGER_MS })
       const t = setTimeout(announce, STOPPED_LINGER_MS)
-      t.unref?.()
+      unref(t)
     }
     try {
       record(s, f, now)

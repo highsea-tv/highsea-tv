@@ -7,6 +7,7 @@
 import type { DeviceInput } from '@highsea-tv/api-contract'
 import { appVersion } from '@highsea-tv/native/device'
 import { useFormFactor } from '@highsea-tv/ui'
+import { desktop } from './desktop/app.ts'
 import { useFrameState } from './frame-channel.ts'
 import type {
   Device,
@@ -25,11 +26,10 @@ export type { Device }
 export const HOME_SERVER: typeof nativeHome = ''
 
 /**
- * The desktop app's webview: Tauri 2 puts `__TAURI_INTERNALS__` on every window it opens before
- * the page's scripts run (https://v2.tauri.app/develop/calling-rust/; ADR 0058). It keeps its
- * servers as the phone does.
+ * The desktop app: its own export, bundled with its host (./desktop/app.ts), which Tauri 2 loads
+ * in its webview (ADR 0058). It keeps its servers as the phone does.
  */
-const desktopApp = () => '__TAURI_INTERNALS__' in globalThis
+const desktopApp = () => desktop !== undefined
 
 /**
  * Whether the client runs inside the desktop app, so its host compositions draw (desktop-app.md):
@@ -49,12 +49,17 @@ export const useDevice: typeof nativeUse = () => {
 
 export const useDeviceClient: typeof nativeClient = () => {
   const device = useDevice()
+  if (desktop) return 'desktop'
   return device === 'tv' ? 'tvos' : device === 'phone' ? 'ios' : 'web'
 }
 
-/** A browser signs in by the cookie and names no device; a mock frame names the one it draws. */
+/**
+ * A browser signs in by the cookie and names no device; the desktop app names this computer, as
+ * its Rust side tells it (`app_device`); a mock frame names the one it draws.
+ */
 export const useDeviceInput: typeof nativeInput = () => {
   const device = useDevice()
+  if (desktop) return desktop.deviceInput
   return (): DeviceInput | undefined =>
     device === 'web'
       ? undefined
@@ -67,22 +72,16 @@ export const useDeviceInput: typeof nativeInput = () => {
 
 export const useKeepsServers: typeof nativeKeeps = () => {
   const device = useDevice()
-  const desktop = useDesktopApp()
-  return mock ? device !== 'web' || desktop : desktop
+  const inApp = useDesktopApp()
+  return mock ? device !== 'web' || inApp : inApp
 }
 
 // About's line names them as desktop-app.md does: "highsea {version} for Mac" (or Windows, or Linux)
 const OS_NAMES = { mac: 'Mac', windows: 'Windows', linux: 'Linux' } as const
 
-/** The desktop app's system, as its webview's user agent names it (Tauri's webviews keep theirs). */
+/** The desktop app's system, as its webview's user agent names it (../desktop/tauri.tsx's `os`). */
 export const useDesktopOs: typeof nativeOs = () => {
   const toolbar = useFrameState()
   if (mock) return toolbar.app === 'desktop' ? OS_NAMES[toolbar.os ?? 'mac'] : undefined
-  if (!desktopApp()) return undefined
-  const agent = (globalThis as { navigator?: { userAgent?: string } }).navigator?.userAgent ?? ''
-  return /Mac/.test(agent)
-    ? OS_NAMES.mac
-    : /Windows/.test(agent)
-      ? OS_NAMES.windows
-      : OS_NAMES.linux
+  return desktop ? OS_NAMES[desktop.os] : undefined
 }

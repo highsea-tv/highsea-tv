@@ -16,7 +16,13 @@
     "./focus": "./src/native/tv/spatial/index.ts",
     "./icons": "./src/native/icons.ts",
     "./tv": "./src/native/tv/index.ts",
-    "./tv/model": "./src/native/tv/model.ts"
+    "./tv/model": "./src/native/tv/model.ts",
+    "./next/react-native": "./src/next/react-native.ts",
+    "./next/codegen-native-component": "./src/next/codegen-native-component.ts",
+    "./next/asset-registry": "./src/next/asset-registry.ts",
+    "./next/server": "./src/next/server.ts",
+    "./next/style-sheet": "./src/next/style-sheet.ts",
+    "./testing/react-native-web": "./src/testing/react-native-web.ts"
   },
   "scripts": {
     "build": "bun scripts/icons.ts",
@@ -33,6 +39,7 @@
     "react-native-reanimated": "*",
     "react-native-safe-area-context": "*",
     "react-native-svg": "*",
+    "react-native-web": "*",
     "react-native-webview": "*",
     "tailwindcss": "^4.3.0"
   },
@@ -59,6 +66,9 @@
       "optional": true
     },
     "react-native-svg": {
+      "optional": true
+    },
+    "react-native-web": {
       "optional": true
     },
     "react-native-webview": {
@@ -103,6 +113,7 @@
     "react-native-reanimated": "4.7.1",
     "react-native-safe-area-context": "5.10.1",
     "react-native-svg": "15.16.0",
+    "react-native-web": "0.21.4",
     "react-native-webview": "14.0.1",
     "react-native-worklets": "0.13.0",
     "tailwindcss": "4.3.3"

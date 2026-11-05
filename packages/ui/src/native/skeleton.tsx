@@ -42,7 +42,7 @@ export function Skeleton({ width = '100%', height, radius }: SkeletonProps) {
     at.value = -1
     at.value = withRepeat(withTiming(1, { duration: SWEEP_MS, easing: Easing.linear }), -1)
   }, [reduced, w, at])
-  const band = useAnimatedStyle(() => ({ transform: [{ translateX: at.value * w }] }))
+  const band = useAnimatedStyle(() => ({ transform: [{ translateX: at.value * w }] }), [at, w])
   const { s2, s3 } = theme.colors
   return (
     <View

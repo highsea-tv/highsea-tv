@@ -19,6 +19,7 @@
 // - Now playing (4.3a) hears each session start, report and end through `hooks`, and staff stop a
 //   session with `stopFor`: its player's next report gets a 404 saying who stopped it and why,
 //   and the person hears `playback.stopped` so it asks at once.
+
 import type {
   PlaybackDecision as ApiDecision,
   PlaySession as ApiSession,
@@ -28,6 +29,7 @@ import type {
 } from '@highsea-tv/api-contract'
 import { SESSIONS_TOPICS } from '@highsea-tv/api-contract'
 import { AppError, type Clock, type EventBus, type Logger } from '@highsea-tv/core'
+import { unref } from '@highsea-tv/core/timers'
 import { type Db, schema } from '@highsea-tv/db'
 import type { Movies } from '@highsea-tv/media/movies'
 import { type MediaInfo, trackIndex } from '@highsea-tv/media/shared'
@@ -171,7 +173,7 @@ export function createPlayback(deps: {
     const t = clock.now()
     for (const [id, n] of notices) if (t - n.at >= NOTICE_MS) notices.delete(id)
   }, SWEEP_MS)
-  timer.unref?.()
+  unref(timer)
 
   /** The device's profile: the built-in one it names (or reported from), with its report over it. */
   function profileFor(deviceId: string | null, named?: string): DeviceProfile {

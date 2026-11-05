@@ -13,6 +13,11 @@
 //   system.publicInfo      GET    /api/v1/system/info/public
 //   system.events          GET    /api/v1/events
 //   system.server          GET    /api/v1/system/server
+//   system.status          GET    /api/v1/system/status          (the admin's, D1)
+//   system.healthChecks    GET    /api/v1/system/health          (the admin's, D1)
+//   system.jobs            GET    /api/v1/system/jobs            (the admin's, D1)
+//   catalog.status         GET    /api/v1/catalog                (the admin's, D1)
+//   catalog.check          POST   /api/v1/catalog/check          (the admin's, D1)
 //   auth.signIn            POST   /api/v1/auth/sign-in
 //   auth.twoFactor         POST   /api/v1/auth/two-factor
 //   auth.signOut           POST   /api/v1/auth/sign-out
@@ -1201,6 +1206,31 @@ export function createMockFetch(options: TransportOptions = {}): MockTransport {
     return s
   }
 
+  /** When Check now last ran, on the real clock; before it, the catalog job's last run. */
+  let lastCatalogCheck: number | null = null
+  const catalogOf = (ctx: Ctx) => {
+    // read as the server's catalog.status reads it, for any staff member: the mock's own
+    // settings call is the owner's (General's Indexer catalog)
+    const settings = ctx.srv.state.settings.catalog
+    const job = ctx.api.system.jobs().find((j) => j.kind === 'catalog-sync')
+    const at = lastCatalogCheck
+      ? new Date(lastCatalogCheck).toISOString()
+      : job?.lastRun
+        ? wall(job.lastRun)
+        : null
+    return {
+      version: ctx.api.system.status().catalogVersion,
+      channel: settings.channel,
+      autoUpdate: settings.autoUpdate,
+      engineVersion: '1',
+      lastCheck: at ? { at, ok: true, message: null } : null,
+      available: null,
+      changes: [],
+      extras: settings.extras.map((x) => ({ url: x.url, keyId: x.keyId, version: null })),
+      brokenLocal: [],
+    }
+  }
+
   // ---------------------------------------------------------------- the answers
 
   const answers: Answers = {
@@ -1208,6 +1238,54 @@ export function createMockFetch(options: TransportOptions = {}): MockTransport {
       health: () => ({ status: 'ok', checks: [{ name: 'database', ok: true }] }),
       publicInfo: (_, { host }) => publicInfoOf(host),
       server: (_, { host }) => serverOf(host),
+      // System › Status and the status bar (one-client-platform-d.md › D1), from the mock's own
+      // status: the disks' TV and music folded into Other, as the server has no shows or music yet
+      status: (_, ctx) => {
+        const st = ctx.api.system.status()
+        const server = serverOf(ctx.host)
+        const started = wall(st.startedAt)
+        return {
+          version: st.version,
+          startedAt: started,
+          uptime: Math.max(0, Math.round((Date.now() - Date.parse(started)) / 1000)),
+          clientsConnected: server.clientsConnected,
+          catalogVersion: st.catalogVersion,
+          addresses: server.addresses,
+          cpu: st.cpu,
+          memory: st.memory,
+          // highsea's own share, which the mock doesn't keep: a steady few percent and its heap
+          process: { cpu: 2, memory: 470 * 1024 ** 2 },
+          disks: st.disks.map((d) => ({
+            path: d.path,
+            label: d.label,
+            free: d.free,
+            total: d.total,
+            usedBy: {
+              movies: d.usedBy.movies,
+              downloads: d.usedBy.downloads,
+              other: d.usedBy.other + d.usedBy.tv + d.usedBy.music,
+            },
+          })),
+        }
+      },
+      healthChecks: (_, ctx) =>
+        ctx.api.system.health().map((h) => ({ ...h, since: wall(h.since) })),
+      jobs: (_, ctx) =>
+        ctx.api.system.jobs().map((j) => ({
+          id: j.id,
+          name: j.name,
+          state: j.state,
+          nextRun: j.nextRun ? wall(j.nextRun) : null,
+        })),
+    },
+
+    // the indexer catalog's status for System › About (D1): its last check is the catalog's job's
+    catalog: {
+      status: (_, ctx) => catalogOf(ctx),
+      check: (_, ctx) => {
+        lastCatalogCheck = Date.now()
+        return catalogOf(ctx)
+      },
     },
 
     auth: {

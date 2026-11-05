@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Subtitles's other tabs, each at its own address (admin-shell.md › Interactions); the first is `/subtitles`.
+
+import { Subtitles, type SubtitlesTab } from '@highsea-tv/admin/subtitles.tsx'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import { Subtitles, type SubtitlesTab } from '../../../../src/admin/subtitles.tsx'
 
 // here, not in the client module: a server component gets only a reference to a client module's values
 const TABS: SubtitlesTab[] = ['providers', 'languages', 'scoring']

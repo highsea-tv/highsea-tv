@@ -1,9 +1,9 @@
 # SPDX-License-Identifier: AGPL-3.0-only
-# highsea's desktop app (ADR 0058): Tauri 2 around apps/web's build. Every version is exact and
-# at least two weeks old (`bun run pin --crate <name>`), as for npm; Cargo.lock is committed.
+# highsea's desktop app (ADR 0058): Tauri 2 around apps/client's desktop export. Every version is
+# exact and at least two weeks old (`bun run pin --crate <name>`), as for npm; Cargo.lock is committed.
 [package]
 name = "highsea-desktop"
-version = "0.3.0"
+version = "0.4.0"
 description = "highsea for Mac, Windows and Linux"
 license = "AGPL-3.0-only"
 edition = "2024"

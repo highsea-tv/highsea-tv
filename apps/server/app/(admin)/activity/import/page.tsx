@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // A17. `?path=` opens it on a folder and looks inside: Downloads' Import into the library (6b).
+
+import { ManualImport } from '@highsea-tv/admin/import.tsx'
+import { LibraryImport } from '@highsea-tv/admin/library-import.tsx'
 import type { Metadata } from 'next'
-import { ManualImport } from '../../../../src/admin/import.tsx'
-import { LibraryImport } from '../../../../src/admin/library-import.tsx'
 
 export const metadata: Metadata = { title: 'Manual import' }
 

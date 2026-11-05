@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The owner's only (ADR 0032): an admin gets not found.
+
+import { Security } from '@highsea-tv/admin/security.tsx'
+import { seesArea } from '@highsea-tv/admin/settings-areas.ts'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import { Security } from '../../../../src/admin/security.tsx'
 import { currentSession } from '../../../../src/admin/session.ts'
-import { seesArea } from '../../../../src/admin/settings-areas.ts'
 
 export const metadata: Metadata = { title: 'Security' }
 

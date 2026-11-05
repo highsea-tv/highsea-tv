@@ -40,13 +40,6 @@
   "exceptions": [
     {
       "rule": "screens",
-      "path": "apps/web/src/**",
-      "count": 17,
-      "until": "C",
-      "reason": "The web client's screens and their parts, drawn with the web renderer. Part C serves apps/client's web export at /web in the server and the desktop app, and removes apps/web (one-client-platform-b.md's answer 2)."
-    },
-    {
-      "rule": "screens",
       "path": "apps/server/app/**",
       "count": 58,
       "until": "D",
@@ -54,7 +47,7 @@
     },
     {
       "rule": "screens",
-      "path": "apps/server/src/admin/**",
+      "path": "packages/admin/src/**",
       "count": 61,
       "until": "D",
       "reason": "The admin's screens, outside this rule until part D draws them with the library."
@@ -62,9 +55,9 @@
     {
       "rule": "screens",
       "path": "design/prototypes/src/admin/**",
-      "count": 48,
+      "count": 49,
       "until": "D",
-      "reason": "The admin's prototype, outside this rule until part D draws it with the library, as the admin. Get the apps (system/get-the-apps.tsx) moved in from the clients' shared folder in B3, for System › Status and the command palette."
+      "reason": "The admin's prototype, outside this rule until part D draws it with the library, as the admin. Get the apps (system/get-the-apps.tsx) moved in from the clients' shared folder in B3, for System › Status and the command palette. D1 added shared.tsx, the host that draws @highsea-tv/admin's shared screens over the mock transport; it stays, and the copies go as their batch moves them."
     },
     {
       "rule": "values",
@@ -236,10 +229,17 @@
     },
     {
       "rule": "values",
-      "path": "packages/ui/src/native/progress.tsx",
-      "count": 1,
+      "path": "packages/ui/src/native/admin.tsx",
+      "count": 21,
       "until": "E",
-      "reason": "ProgressBar's 4 height, written before this check; part A moved its corners onto the pill. The height has no token. A new token value needs the owner's approval; part E removes this entry once they have tokens."
+      "reason": "The admin's parts, drawn to the web renderer's measures (src/web: Sidebar, NavItem, ServerCard, SearchTrigger, Kbd, PageHeader, StatusBar, Panel, Stat, Attribution) when D1 moved the shell and System › Status onto the native renderer: the 1 hairlines, NavItem's 7 padding, the 16 and 11 icons, the search trigger's 320 width and Kbd's 5 corner, PageHeader's 160 and Attribution's 192 bases, and Stat's 26 figure. None has a token. A new token value needs the owner's approval; part E removes this entry once they have tokens."
+    },
+    {
+      "rule": "values",
+      "path": "packages/ui/src/native/progress.tsx",
+      "count": 2,
+      "until": "E",
+      "reason": "ProgressBar's 4 height, written before this check; part A moved its corners onto the pill. D1 added the admin panel's 5 height, the web renderer's sm bar. The heights have no token. A new token value needs the owner's approval; part E removes this entry once they have tokens."
     },
     {
       "rule": "values",

@@ -9,6 +9,7 @@
 //   used by streams that start after it; those playing keep theirs until they end.
 // - The cache's use is the sessions' folders; trickplay's previews are counted apart, never towards
 //   the limit (the spec's Cache group).
+
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import { readdir, stat } from 'node:fs/promises'
 import { isAbsolute, join, resolve } from 'node:path'
@@ -19,6 +20,7 @@ import {
   type PlaybackStatus,
 } from '@highsea-tv/api-contract'
 import { AppError, type Clock, type EventBus, type Logger } from '@highsea-tv/core'
+import { unref } from '@highsea-tv/core/timers'
 import { type Db, readSetting, writeSetting } from '@highsea-tv/db'
 import { isWithin, realOrParent } from '@highsea-tv/media/shared'
 import type { Ceiling } from '@highsea-tv/stream/decision'
@@ -190,7 +192,7 @@ export function createPlaybackSettings(deps: {
       last = n
     })
   }, WATCH_MS)
-  timer.unref?.()
+  unref(timer)
 
   return {
     get,

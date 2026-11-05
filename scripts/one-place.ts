@@ -44,14 +44,13 @@ const LIBRARY = 'packages/ui/src/native'
 const SCREENS = 'apps/client/src/app'
 /** Where client files are drawn today besides apps/client. Each passes only as a listed exception. */
 const OTHER_SCREENS = [
-  'apps/web/src',
   'design/prototypes/src/web',
   'design/prototypes/src/mobile',
   'design/prototypes/src/tv',
   'design/prototypes/src/client',
   // the admin, a Next.js host
   'apps/server/app',
-  'apps/server/src/admin',
+  'packages/admin/src',
   'design/prototypes/src/admin',
 ]
 /** The prototypes' client folders, where a destination that has moved must leave no copy. */

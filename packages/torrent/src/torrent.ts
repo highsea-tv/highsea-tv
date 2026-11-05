@@ -3,6 +3,7 @@
 // BEP 6 and the extension protocol of BEP 10), the blocks it asks for, the pieces it verifies and
 // writes, whom it uploads to, and its trackers. The engine (engine.ts) owns sessions, sockets,
 // limits and persistence; a session only uses what it's handed in its context.
+import { unref } from '@highsea-tv/core/timers'
 import bencode from 'bencode'
 import Wire from 'bittorrent-protocol'
 import utMetadata from 'ut_metadata'
@@ -293,7 +294,7 @@ export function createSession(init: SessionInit, ctx: SessionContext) {
       fillTimer = null
       for (const p of peers.values()) fill(p)
     }, ms)
-    fillTimer.unref?.()
+    unref(fillTimer)
   }
 
   /** Requests in flight for a peer: about two seconds of what it's sending, between 4 and 250. */
@@ -465,7 +466,7 @@ export function createSession(init: SessionInit, ctx: SessionContext) {
     wire.setTimeout(REQUEST_TIMEOUT_MS, true)
 
     const handshakeTimer = setTimeout(() => wire.destroy(), HANDSHAKE_MS)
-    handshakeTimer.unref?.()
+    unref(handshakeTimer)
     const close = () => {
       clearTimeout(handshakeTimer)
       removePeer(peer)
@@ -708,7 +709,7 @@ export function createSession(init: SessionInit, ctx: SessionContext) {
     const schedule = (seconds: number) => {
       if (!running) return
       announceTimer = setTimeout(() => announceLoop(null), seconds * 1000)
-      announceTimer.unref?.()
+      unref(announceTimer)
     }
   }
 
@@ -798,7 +799,7 @@ export function createSession(init: SessionInit, ctx: SessionContext) {
     }
     const every = (ms: number, fn: () => void) => {
       const t = setInterval(fn, ms)
-      t.unref?.()
+      unref(t)
       timers.push(t)
     }
     every(CONNECT_MS, connectMore)
@@ -847,7 +848,7 @@ export function createSession(init: SessionInit, ctx: SessionContext) {
               () => {},
               () => {},
             ),
-            new Promise<void>((r) => setTimeout(r, STOPPED_DEADLINE_MS).unref?.()),
+            new Promise<void>((r) => unref(setTimeout(r, STOPPED_DEADLINE_MS))),
           ])
         : Promise.resolve()
     return stopped

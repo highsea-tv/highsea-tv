@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The announcement composer; `new` writes one.
+
+import { AnnouncementEditor } from '@highsea-tv/admin/curation-announcement.tsx'
 import type { Metadata } from 'next'
-import { AnnouncementEditor } from '../../../../../src/admin/curation-announcement.tsx'
 
 export const metadata: Metadata = { title: 'Announcement' }
 

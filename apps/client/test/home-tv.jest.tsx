@@ -53,8 +53,6 @@ jest.mock('react-native-gesture-handler/ReanimatedSwipeable', () =>
 )
 require('react-native-gesture-handler/jestSetup')
 
-// pairing waits for the mock's approval, and Home draws every row
-jest.setTimeout(30_000)
 beforeEach(() => {
   fresh()
   jest.spyOn(BackHandler, 'addEventListener')

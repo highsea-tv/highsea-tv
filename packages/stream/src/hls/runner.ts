@@ -29,10 +29,12 @@
 //   tone maps where `toneMapOn` says. A run on a GPU that fails goes on on the processor from the
 //   first piece it hadn't made, for the rest of the session, and `onHardwareFailure` lets the
 //   runtime mark the path's check failed.
+
 import { type ChildProcess, execFile, spawn as nodeSpawn } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { copyFile, mkdir, readdir, rm, stat } from 'node:fs/promises'
 import { join } from 'node:path'
+import { unref } from '@highsea-tv/core/timers'
 import type { PlaybackDecision } from '../decision/index.ts'
 import { type Accel, type AccelPath, toneMapOn } from '../hardware/index.ts'
 import {
@@ -244,7 +246,7 @@ function createSlots(limit: () => number, waitMs: number) {
             ),
           )
         }, waitMs)
-        timer.unref?.()
+        unref(timer)
         queue.push({ id, resolve, reject, timer })
       })
       pending.set(id, p)
@@ -396,6 +398,19 @@ function createTranscode(id: string, source: HlsSource, ctx: Context) {
 
   const has = (piece: number) => existsSync(join(dir, pieceName(piece)))
 
+  // The header is ffmpeg's init.mp4, copied once its first piece is out. A copy isn't atomic, so
+  // header.mp4 can exist half written while it's made: init() waits for the copy in flight before
+  // it trusts the file, and callers share that one copy.
+  let headerCopy: Promise<void> | null = null
+  function copyHeader(): Promise<void> {
+    if (headerCopy) return headerCopy
+    const copy = copyFile(join(dir, INIT_NAME), join(dir, HEADER)).finally(() => {
+      if (headerCopy === copy) headerCopy = null
+    })
+    headerCopy = copy
+    return copy
+  }
+
   function settle() {
     if (!run) return
     const was = run.next
@@ -406,7 +421,7 @@ function createTranscode(id: string, source: HlsSource, ctx: Context) {
     for (const w of done) w.resolve()
     void throttle()
     if (!existsSync(join(dir, HEADER)) && existsSync(join(dir, INIT_NAME)) && has(run.first))
-      void copyFile(join(dir, INIT_NAME), join(dir, HEADER)).catch(() => {})
+      void copyHeader().catch(() => {})
     if (now() - heardAt >= idleMs) stop('idle')
   }
 
@@ -547,7 +562,7 @@ function createTranscode(id: string, source: HlsSource, ctx: Context) {
     child.on('error', (e) => finish(r, null, e))
     child.on('exit', (code) => finish(r, code))
     timer ??= setInterval(settle, POLL_MS)
-    timer.unref?.()
+    unref(timer)
   }
 
   /** A progress report: the run's speed over its last few, while it wasn't paused. */
@@ -652,6 +667,7 @@ function createTranscode(id: string, source: HlsSource, ctx: Context) {
   async function init(): Promise<string> {
     heardAt = now()
     const header = join(dir, HEADER)
+    if (headerCopy) await headerCopy.catch(() => {})
     if (existsSync(header)) return header
     const { segments } = await ready()
     if (!run) await start(segmentAt(segments, source.start))
@@ -661,7 +677,7 @@ function createTranscode(id: string, source: HlsSource, ctx: Context) {
       await new Promise<void>((resolve, reject) => {
         waiters.push({ piece: r.first, resolve, reject, init: true })
       })
-    if (!existsSync(header)) await copyFile(join(dir, INIT_NAME), header)
+    if (!existsSync(header)) await copyHeader()
     return header
   }
 
@@ -804,7 +820,7 @@ export function createTranscodes(options: TranscodesOptions) {
             enforcing = null
           })
       }, ENFORCE_MS)
-      enforcing.unref?.()
+      unref(enforcing)
     },
   }
 

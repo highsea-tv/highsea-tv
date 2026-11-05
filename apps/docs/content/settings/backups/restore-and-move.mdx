@@ -6,7 +6,7 @@ description: Restore a backup, restore one you kept somewhere else, and move hig
 {/* SPDX-License-Identifier: AGPL-3.0-only */}
 {/*
   Sources:
-  - In highsea: the Backups tab of System (apps/server/src/admin/system.tsx, system-messages.ts),
+  - In highsea: the Backups tab of System (packages/admin/src/system.tsx, system-messages.ts),
     and packages/runtime/src/backups.ts: the manifest and checksum, refusing a backup from a newer
     version, the restore that keeps a backup first and restarts with exit code 75, putting the old
     database back if the restored one fails to start, and listing every highsea- zip in the folder.
