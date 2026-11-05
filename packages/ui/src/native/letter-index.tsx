@@ -101,7 +101,14 @@ function TouchForm({ letters, present, label, onLetter }: LetterIndexProps) {
       accessible
       accessibilityRole="adjustable"
       accessibilityLabel={label}
-      accessibilityValue={held ? { text: held } : undefined}
+      // a slider's value (https://www.w3.org/TR/wai-aria-1.2/#slider): the letter it's on
+      aria-valuemin={0}
+      aria-valuemax={letters.length - 1}
+      aria-valuenow={Math.max(
+        0,
+        letters.indexOf(held ?? letters.find((x) => present.has(x)) ?? ''),
+      )}
+      aria-valuetext={held ?? letters.find((x) => present.has(x))}
       accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
       onAccessibilityAction={(e) => step(e.nativeEvent.actionName === 'increment' ? -1 : 1)}
       // the column takes the finger itself, so the page's scroll and pull to refresh leave it alone

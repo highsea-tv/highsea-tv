@@ -30,7 +30,7 @@ Use `bun run test`, never a bare `bun test`: it passes `--isolate`, and without 
 For a fix between checkpoint reports, check what it touched and nothing else, and say in the reply what ran and that the full set waits for the report:
 
 - **Tests and types:** `bun run lint`, then the touched workspaces' typecheck and tests (`bun test --isolate <folder>`), not the whole repo.
-- **Sweeps:** only the platform the fix touched. A prototype change to the web screens is `bun scripts/sweeps/pages.ts web` and `bun scripts/sweeps/keyboard.ts web` (a minute or two); `admin` and `mobile` likewise. `dpad.ts` only when TV screens changed. `server.ts` only when `apps/server`, `apps/web` or what they serve changed (`server.ts pages` or `keyboard` halves it).
+- **Sweeps:** only the platform the fix touched. A prototype change to the web screens is `bun scripts/sweeps/pages.ts web` and `bun scripts/sweeps/keyboard.ts web` (a minute or two); `admin` and `mobile` likewise. `dpad.ts` only when TV screens changed. `server.ts` only when `apps/server`, `apps/client`'s web export or what they serve changed (`server.ts pages` or `keyboard` halves it).
 - **Nothing else:** smoke, licences, audit and the docs build only when the fix touched what they check (Node, dependencies, `apps/docs`).
 
 ## Full (before a checkpoint report)

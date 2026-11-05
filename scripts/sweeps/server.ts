@@ -8,8 +8,10 @@
 // (`next build` and the web app's `vite build` first); SWEEP_DEV=1 runs Next's dev server instead,
 // without Next's build.
 // Usage: bun scripts/sweeps/server.ts [pages|keyboard]
+
 import { execFileSync } from 'node:child_process'
 import { join } from 'node:path'
+import { SETTINGS_SECTIONS } from '@highsea-tv/client/prefs'
 import type { BrowserContext, BrowserContextOptions, Page } from 'playwright-core'
 import {
   axe,
@@ -44,8 +46,12 @@ const SHOTS = process.env.SWEEP_SHOTS
 const production = process.env.SWEEP_DEV !== '1'
 if (production)
   execFileSync('bun', ['run', 'build'], { cwd: join(ROOT, 'apps/server'), stdio: 'inherit' })
-// the server serves the web app from its build in either mode
-execFileSync('bun', ['run', 'build'], { cwd: join(ROOT, 'apps/web'), stdio: 'inherit' })
+// the server serves the client's web export in either mode (one-client-platform-c.md › C1)
+execFileSync('bun', ['run', 'export:web'], {
+  cwd: join(ROOT, 'apps/client'),
+  stdio: 'inherit',
+  env: { ...process.env, EXPO_NO_TELEMETRY: '1', EXPO_PUBLIC_HIGHSEA_MOCK: '' },
+})
 const server = await boot(PORT, { production })
 const { base: BASE, dataDir, stop } = server
 const path = (link: string) => new URL(link).pathname
@@ -679,7 +685,7 @@ try {
     theo,
   )
 
-  // the web app (4.2a), signed out: its sign-in, and its routes, which all ask to sign in first
+  // the web app (the client's export since part C), signed out: its sign-in, and its routes, which all ask to sign in first
   await sweep(
     [
       { name: 'web:sign-in', path: '/web/' },
@@ -710,7 +716,7 @@ try {
       // no menus left open: an open Radix menu hides the page behind it with aria-hidden, which axe
       // reads as hidden focusable content (as settings:profiles:edit:grouped says)
       { name: 'web:library', path: '/web/library' },
-      { name: 'web:collections', path: '/web/library/collections' },
+      { name: 'web:collections', path: '/web/collections' },
       { name: 'web:collection', path: `/web/collections/${handPicked.id}` },
       { name: 'web:collection:smart', path: `/web/collections/${decade.id}` },
       { name: 'web:collection:missing', path: '/web/collections/nothing-here' },
@@ -720,10 +726,12 @@ try {
       { name: 'web:search', path: '/web/search' },
       { name: 'web:search:results', path: '/web/search', act: search('sintel') },
       { name: 'web:search:nothing', path: '/web/search', act: search('zzzz') },
-      ...['appearance', 'sounds', 'home', 'servers', 'devices', 'about'].map((s) => ({
+      ...SETTINGS_SECTIONS.map((s) => ({
         name: `web:settings:${s}`,
-        path: `/web/settings/${s}`,
+        path: `/web/settings?section=${s}`,
       })),
+      // an address apps/web had, which the client doesn't: its not-found page (answer 3)
+      { name: 'web:moved', path: '/web/library/collections' },
       { name: 'web:profile', path: '/web/profile' },
       { name: 'web:downloads', path: '/web/downloads' },
       { name: 'web:play', path: '/web/play/45745' },

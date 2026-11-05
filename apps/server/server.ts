@@ -65,11 +65,12 @@ const handlers = {
   api: createApi(runtime),
   next: handle,
   stream: createStream(runtime, { tryPage }),
-  // the web client's build (apps/web); `bun run web` serves it with Vite in development instead
+  // the client's web export (apps/client/dist, ADR 0061); `bun run web` serves it with Expo's dev
+  // server in development instead
   web: createWeb({
     dir:
       process.env.HIGHSEA_WEB_DIR ??
-      join(dirname(fileURLToPath(import.meta.url)), '..', 'web', 'dist'),
+      join(dirname(fileURLToPath(import.meta.url)), '..', 'client', 'dist'),
   }),
 }
 const server = createHttpServer(handlers)

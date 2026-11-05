@@ -338,12 +338,10 @@ export function Scrubber({
       accessible
       accessibilityRole="adjustable"
       accessibilityLabel={t('position')}
-      accessibilityValue={{
-        min: 0,
-        max: Math.round(duration),
-        now: Math.round(position),
-        text: t('positionText', { at: clock(position), total: clock(duration) }),
-      }}
+      aria-valuemin={0}
+      aria-valuemax={Math.round(duration)}
+      aria-valuenow={Math.round(position)}
+      aria-valuetext={t('positionText', { at: clock(position), total: clock(duration) })}
       accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
       onAccessibilityAction={(e) =>
         p.seekBy(e.nativeEvent.actionName === 'increment' ? SEEK_S : -SEEK_S)

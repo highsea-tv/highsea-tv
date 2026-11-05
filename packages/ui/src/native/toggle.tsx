@@ -130,27 +130,30 @@ export function Checkbox(props: ToggleProps) {
 }
 
 export function Radio(props: ToggleProps) {
+  return <ToggleRow {...props} role="radio" radio mark={(on) => <RadioMark checked={on} />} />
+}
+
+/**
+ * The radio's mark alone, with no control of its own: for a card that is itself the radio (Settings'
+ * theme cards), where a second radio inside would nest one control in another
+ * (https://www.w3.org/TR/wai-aria-1.2/#radio: a radio's children are presentational).
+ */
+export function RadioMark({ checked }: { checked: boolean }) {
   const theme = useTheme()
+  const m = useControl()
   return (
-    <ToggleRow
-      {...props}
-      role="radio"
-      radio
-      mark={(on, m) => (
-        <View style={markBox(theme, m, on, true)}>
-          {on ? (
-            <View
-              style={{
-                width: m.icon - m.inset * 2,
-                height: m.icon - m.inset * 2,
-                borderRadius: tokens.radius.pill,
-                backgroundColor: theme.colors[tokens.controls.looks.toggleOn.fill],
-              }}
-            />
-          ) : null}
-        </View>
-      )}
-    />
+    <View style={markBox(theme, m, checked, true)}>
+      {checked ? (
+        <View
+          style={{
+            width: m.icon - m.inset * 2,
+            height: m.icon - m.inset * 2,
+            borderRadius: tokens.radius.pill,
+            backgroundColor: theme.colors[tokens.controls.looks.toggleOn.fill],
+          }}
+        />
+      ) : null}
+    </View>
   )
 }
 

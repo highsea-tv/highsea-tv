@@ -20,15 +20,23 @@ afterEach(async () => {
 
 const INDEX = '<!doctype html><title>highsea</title><div id="root"></div>'
 const SCRIPT = `console.log(${JSON.stringify('x'.repeat(4000))})`
+const FONT = 'f'.repeat(4000)
+const ENTRY = '/web/_expo/static/js/web/entry-0f6ead83.js'
 
 async function serve({ built = true } = {}) {
   const base = mkdtempSync(join(tmpdir(), 'highsea-web-'))
   const dir = join(base, 'dist')
-  mkdirSync(join(dir, 'assets'), { recursive: true })
+  // the Expo web export's layout: scripts under _expo/static, fonts and images under assets
+  const scripts = join(dir, '_expo', 'static', 'js', 'web')
+  const fonts = join(dir, 'assets', '__packages', 'brand', 'fonts')
+  mkdirSync(scripts, { recursive: true })
+  mkdirSync(fonts, { recursive: true })
   if (built) {
     writeFileSync(join(dir, 'index.html'), INDEX)
-    writeFileSync(join(dir, 'assets', 'index-Cx1a2b3c.js'), SCRIPT)
+    writeFileSync(join(scripts, 'entry-0f6ead83.js'), SCRIPT)
+    writeFileSync(join(fonts, 'Geist-Regular.0fa503b9.ttf'), FONT)
     writeFileSync(join(dir, 'favicon.svg'), '<svg xmlns="http://www.w3.org/2000/svg"/>')
+    writeFileSync(join(dir, 'metadata.json'), '{"bundler":"metro"}')
   }
   // a file beside the build that must never be served
   writeFileSync(join(base, 'secret.txt'), 'not for you')
@@ -99,7 +107,7 @@ describe('/web', () => {
 
   test('hashed assets are cached for good, and gzipped for browsers that ask', async () => {
     const { url } = await serve()
-    const res = await fetch(`${url}/web/assets/index-Cx1a2b3c.js`, {
+    const res = await fetch(`${url}${ENTRY}`, {
       headers: { 'accept-encoding': 'gzip' },
       decompress: false,
     } as RequestInit)
@@ -109,8 +117,22 @@ describe('/web', () => {
     expect(res.headers.get('content-encoding')).toBe('gzip')
     expect(gunzipSync(Buffer.from(await res.arrayBuffer())).toString()).toBe(SCRIPT)
 
-    const plain = await raw(url, '/web/assets/index-Cx1a2b3c.js')
+    const plain = await raw(url, ENTRY)
     expect(plain.body).toBe(SCRIPT)
+  })
+
+  test("the export's fonts are cached for good as fonts", async () => {
+    const { url } = await serve()
+    const res = await fetch(`${url}/web/assets/__packages/brand/fonts/Geist-Regular.0fa503b9.ttf`)
+    expect(res.status).toBe(200)
+    expect(res.headers.get('cache-control')).toBe('public, max-age=31536000, immutable')
+    expect(res.headers.get('content-type')).toBe('font/ttf')
+    expect(await res.text()).toBe(FONT)
+  })
+
+  test("the export's manifest isn't served", async () => {
+    const { url } = await serve()
+    expect((await fetch(`${url}/web/metadata.json`)).status).toBe(404)
   })
 
   test('an unchanged file answers 304 to its ETag', async () => {
@@ -124,7 +146,7 @@ describe('/web', () => {
 
   test('a missing file is a 404, not the app', async () => {
     const { url } = await serve()
-    expect((await fetch(`${url}/web/assets/gone-123.js`)).status).toBe(404)
+    expect((await fetch(`${url}/web/_expo/static/js/web/gone-123.js`)).status).toBe(404)
   })
 
   test('nothing outside the build folder is served', async () => {
@@ -147,7 +169,7 @@ describe('/web', () => {
     const { url } = await serve({ built: false })
     const res = await fetch(`${url}/web/`)
     expect(res.status).toBe(503)
-    expect(await res.text()).toContain('bun run --filter @highsea-tv/web build')
+    expect(await res.text()).toContain('bun run --cwd apps/client export:web')
   })
 
   test('other paths still go where they did', async () => {

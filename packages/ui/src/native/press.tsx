@@ -22,7 +22,10 @@
 //   once however long the key is held (`repeat` keydowns are ignored);
 // - the hit area: it drops `hitSlop` (View's forwarded props leave it out), so on the web a
 //   transparent layer reaches past the control by the same insets, and a press on it bubbles to
-//   the control's own element (onPress fires on the DOM's `click`).
+//   the control's own element (onPress fires on the DOM's `click`);
+// - checked: its createDOMProps reads `aria-checked`, never `accessibilityState`, so a radio,
+//   checkbox or switch given only `accessibilityState.checked` (the player's tracks, Settings'
+//   theme cards) is written with it as `aria-checked` too (https://www.w3.org/TR/wai-aria-1.2/#aria-checked).
 import * as Haptics from 'expo-haptics'
 import { type ComponentRef, type ReactNode, type Ref, useRef, useState } from 'react'
 import {
@@ -132,6 +135,7 @@ export function Press({
       // that's no Tab stop (`focusable={false}`) says so with -1 too, React Native's View's
       // tabIndex (https://reactnative.dev/docs/view#tabindex-android)
       {...(props.focusable === false ? { tabIndex: -1 as const } : null)}
+      {...checkedAria(String(role), props)}
       onPressIn={(e) => {
         setPressed(true)
         if (!reduced) scale.value = withSpring(tokens.controls.pressScale, quick)
@@ -198,3 +202,18 @@ export function Press({
 /** The success haptic (mobile.md › Touch), for a finished action. */
 export const successHaptic = () =>
   void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+
+/** The roles that take `aria-checked` (WAI-ARIA 1.2's supported states for each). */
+const CHECKED_ROLES = new Set(['radio', 'checkbox', 'switch', 'menuitemradio', 'menuitemcheckbox'])
+
+/** On the web, `accessibilityState.checked` as `aria-checked`, unless the part sets its own. */
+function checkedAria(
+  role: string,
+  props: Pick<PressableProps, 'accessibilityState'>,
+): object | null {
+  if (Platform.OS !== 'web' || !CHECKED_ROLES.has(role)) return null
+  const own = props as { 'aria-checked'?: unknown }
+  const checked = props.accessibilityState?.checked
+  if (own['aria-checked'] !== undefined || checked === undefined) return null
+  return { 'aria-checked': checked }
+}

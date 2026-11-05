@@ -83,11 +83,12 @@ jobs:
       # dates in scripts/audit-exceptions.json
       - name: Dependency check
         run: bun run audit
-      # the web client's build draws with ui's web renderer only (ADR 0060)
-      - name: Build the web client
-        run: bun run --filter @highsea-tv/web build
-      - name: The web client carries no React Native
-        run: bun scripts/bundles.ts web
+      # the client's web export, which /web serves (ADR 0061): react-native-web and the library's
+      # one drawing, no React Native itself, no mock, and hls.js in a chunk of its own
+      - name: The client's web export carries only its own side
+        run: bun scripts/bundles.ts client-web
+        env:
+          EXPO_NO_TELEMETRY: 1
       - name: Build the admin
         run: bun run --filter @highsea-tv/server build
         env:

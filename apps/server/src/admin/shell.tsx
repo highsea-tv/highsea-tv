@@ -401,7 +401,7 @@ function AdminStatusBar() {
  * Same-origin links go through Next's router, so the shell and its data stay put between pages.
  * The design system's links are plain anchors; one handler here covers them all.
  */
-/** The web client (apps/web), where everyone watches; Users are sent there (ADR 0032). */
+/** The web client (apps/client's web export), where everyone watches; Users are sent there (ADR 0032). */
 const WEB_APP = '/web/'
 
 function useClientLinks() {
@@ -420,7 +420,7 @@ function useClientLinks() {
       )
         return
       if (a.origin !== window.location.origin) return
-      // the web client is its own app (served from apps/web's build), not one of Next's routes
+      // the web client is its own app (apps/client's web export), not one of Next's routes
       if (a.pathname === '/web' || a.pathname.startsWith('/web/')) return
       e.preventDefault()
       router.push(a.pathname + a.search + a.hash)

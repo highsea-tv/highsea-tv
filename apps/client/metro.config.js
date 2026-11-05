@@ -32,6 +32,7 @@
 const path = require('node:path')
 const { getDefaultConfig } = require('expo/metro-config')
 const pkg = require('./package.json')
+const { devProxy } = require('./dev-proxy.js')
 
 const config = getDefaultConfig(__dirname)
 const fromApp = path.join(__dirname, 'package.json')
@@ -69,4 +70,5 @@ config.resolver.resolveRequest = (context, name, platform) => {
   return next(ctx, name, platform)
 }
 
-module.exports = config
+// `bun run web`'s `/api` and `/stream`, handed to a real server (./dev-proxy.js)
+module.exports = devProxy(config)

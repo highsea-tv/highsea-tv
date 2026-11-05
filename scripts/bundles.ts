@@ -14,13 +14,17 @@
 //   a chunk of its own, loaded only when a stream needs it, and never in the entry the page loads
 //   first; in apps/web always, in the client's web export once the web engine is in it. The
 //   client's phone and TV bundles never carry it.
+// - The client's web export reports its first load, the scripts its page loads first, gzipped.
+//   It's a figure for the report with no budget: the owner doesn't consider it to matter
+//   (one-client-platform-c.md, answer 4).
 // No bundle built without mock mode (EXPO_PUBLIC_HIGHSEA_MOCK) carries the prototypes' mock.
 // `bun scripts/bundles.ts [web] [client-phone] [client-tv] [client-web]` checks the ones named, or
-// the first three. CI runs it for web (ci.yml) and for client-phone and client-tv (native.yml); the
-// client's web export runs locally until one-client-platform.md's part C puts it in CI.
+// the first three. CI runs it for web and client-web (ci.yml) and for client-phone and client-tv
+// (native.yml).
 import { spawnSync } from 'node:child_process'
 import { existsSync, mkdirSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
+import { gzipSync } from 'node:zlib'
 
 const ROOT = join(import.meta.dir, '..')
 
@@ -184,6 +188,10 @@ function clientWeb() {
   if (run.status !== 0) throw new Error('the client’s web export did not build')
   const all = read(out)
   const entry = entries(out).map(readFile).join('\n')
+  const first = entries(out)
+    .map((path) => path.replace(/\.map$/, ''))
+    .reduce((sum, path) => sum + gzipSync(readFileSync(path)).length, 0)
+  console.log(`client-web: the first load is ${(first / 1000).toFixed(0)} kB gzipped`)
   // the web engine is in once a screen plays; from then on it brings hls.js's chunk
   const engine = exactly('packages/native/src/playback.web.ts').test(all)
   return [...offences('client-web', all), ...hlsOffences(entry, all, engine)]

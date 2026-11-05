@@ -198,6 +198,8 @@ export const NATIVE_ONLY: Record<string, string> = {
   PlayingBars: 'The playing mark beside what’s playing, still while paused.',
   Slider:
     'A 0 to 1 slider by press, drag, the arrow keys and VoiceOver’s adjust, for the music player’s volume; the admin has no slider.',
+  RadioMark:
+    'The radio’s mark alone, for a card that is itself the radio (Settings’ theme cards), so no control nests in another; the web renderer’s cards are Radix’s radios.',
   TvKey: 'A key on the TV’s on-screen keyboard; the web has the device’s keyboard.',
   TvMessage: 'A message that fills the TV’s screen with its actions.',
   StopScope: 'Names the TV’s focus stops for the D-pad walk (scripts/sweeps/tv.ts).',

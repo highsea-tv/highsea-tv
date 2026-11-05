@@ -175,7 +175,7 @@ describe('the player on the phone', () => {
     await act(async () => player().at(12))
     await flush()
     const slider = screen.getByRole('adjustable', { name: 'Position' })
-    expect(slider.props.accessibilityValue.text).toBe('0:12 of 0:52')
+    expect(slider.props['aria-valuetext']).toBe('0:12 of 0:52')
     await act(async () =>
       slider.props.onAccessibilityAction({ nativeEvent: { actionName: 'increment' } }),
     )
@@ -304,7 +304,7 @@ describe('the player with a pointer', () => {
     await playing()
     await act(async () => player().at(12))
     await flush()
-    expect(screen.getByRole('adjustable', { name: 'Position' }).props.accessibilityValue.text).toBe(
+    expect(screen.getByRole('adjustable', { name: 'Position' }).props['aria-valuetext']).toBe(
       '0:12 of 0:52',
     )
     await fireEvent.press(pause())

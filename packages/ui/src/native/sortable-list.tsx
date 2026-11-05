@@ -184,6 +184,10 @@ function SortableRow({
       accessible
       accessibilityRole="adjustable"
       accessibilityLabel={messages.move(name)}
+      // a slider's value (https://www.w3.org/TR/wai-aria-1.2/#slider): the row's place in the list
+      aria-valuemin={1}
+      aria-valuemax={count}
+      aria-valuenow={index + 1}
       accessibilityActions={[
         { name: 'increment', label: messages.moveDown(name) },
         { name: 'decrement', label: messages.moveUp(name) },

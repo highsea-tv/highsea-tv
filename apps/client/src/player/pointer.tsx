@@ -9,9 +9,10 @@
 import { SEEK_S, titleLines } from '@highsea-tv/client/player'
 import { useT } from '@highsea-tv/i18n/react'
 import type { Playback } from '@highsea-tv/native/playback'
+import { blur } from '@highsea-tv/tokens'
 import { alpha, Button, Icon, QualityTag, Text, tokens, useTheme } from '@highsea-tv/ui'
 import { useState } from 'react'
-import { type LayoutChangeEvent, ScrollView, View } from 'react-native'
+import { type LayoutChangeEvent, Platform, ScrollView, View } from 'react-native'
 import {
   TITLE_BAR_HEIGHT,
   TRAFFIC_LIGHT_ROOM,
@@ -52,12 +53,10 @@ function Volume({ c }: { c: MediaControls }) {
       accessible
       accessibilityRole="adjustable"
       accessibilityLabel={t('volume')}
-      accessibilityValue={{
-        min: 0,
-        max: 100,
-        now: Math.round(level * 100),
-        text: c.muted ? t('muted') : t('volumeText', { percent: Math.round(level * 100) }),
-      }}
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-valuenow={Math.round(level * 100)}
+      aria-valuetext={c.muted ? t('muted') : t('volumeText', { percent: Math.round(level * 100) })}
       accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
       onAccessibilityAction={(e) => step(e.nativeEvent.actionName === 'increment' ? 0.05 : -0.05)}
       onStartShouldSetResponder={() => true}
@@ -79,6 +78,13 @@ function Volume({ c }: { c: MediaControls }) {
     </View>
   )
 }
+
+/**
+ * The web blurs the film behind the panel (react-native-web's backdropFilter) by the scrim's
+ * token, as the prototype's glass-scrim did, so the top bar and its badge don't read through it.
+ */
+const PANEL_BLUR =
+  Platform.OS === 'web' ? ({ backdropFilter: `blur(${blur.scrim.radius}px)` } as object) : null
 
 export function PointerPlayer({
   id,
@@ -331,6 +337,7 @@ export function PointerPlayer({
             borderColor: theme.colors.line,
             backgroundColor: alpha(theme.colors.bg, 0.8),
             zIndex: 20,
+            ...PANEL_BLUR,
           }}
         >
           <View

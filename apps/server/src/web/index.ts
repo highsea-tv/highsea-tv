@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// `/web` (ADR 0003's 4.2a section, ADR 0053): the web client's static build, served by the server
-// that it talks to, so its session cookie and every call stay on one origin. `http.ts` hands
-// `/web` here, as it hands `/stream/` to playback.
+// `/web` (ADR 0003's 4.2a section, ADR 0053, ADR 0061): the client's Expo web export
+// (apps/client's `export:web`), served by the server that it talks to, so its session cookie and
+// every call stay on one origin. `http.ts` hands `/web` here, as it hands `/stream/` to playback.
 //
 // - Files resolve under the build folder; a path that leaves it is refused. Only GET and HEAD.
-// - Vite names what it builds under `assets/` by a hash of the content
-//   (https://vite.dev/guide/build.html#public-base-path), so those are cached for a year and never
-//   asked for again (`immutable`, RFC 8246); `index.html` and the icons are checked each time
-//   (`no-cache` with an ETag, RFC 9111 § 5.2.2.4, RFC 9110 § 8.8.3).
+// - Expo's export names its scripts under `_expo/static/` and its fonts and images under
+//   `assets/` by a hash of their content (https://docs.expo.dev/guides/publishing-websites/), so
+//   those are cached for a year and never asked for again (`immutable`, RFC 8246); `index.html`
+//   and the icon are checked each time (`no-cache` with an ETag, RFC 9111 § 5.2.2.4,
+//   RFC 9110 § 8.8.3). `metadata.json`, the export's manifest for Expo's own tools, isn't served.
 // - An address without a file extension is a route of the app: it gets `index.html`, and the app's
 //   router draws the page (the history API's fallback). A missing file with an extension is a 404.
 // - Text is gzipped once and kept, for the browsers that ask (RFC 9110 § 8.4.1).
@@ -37,6 +38,8 @@ const TYPES: Record<string, string> = {
   '.webp': 'image/webp',
   '.woff2': 'font/woff2',
   '.woff': 'font/woff',
+  // the export's Geist faces (RFC 8081)
+  '.ttf': 'font/ttf',
   '.txt': 'text/plain; charset=utf-8',
   '.wasm': 'application/wasm',
 }
@@ -50,7 +53,14 @@ const COMPRESSIBLE = new Set([
   '.map',
   '.svg',
   '.txt',
+  '.ttf',
 ])
+
+/** Named by a hash of their content, so never asked for again. */
+const HASHED = ['_expo/static/', 'assets/']
+
+/** In the export, but not for the browser. */
+const UNSERVED = new Set(['metadata.json'])
 
 export const CSP = [
   "default-src 'self'",
@@ -64,8 +74,7 @@ export const CSP = [
   "worker-src 'self' blob:",
   // a film's trailer: YouTube's privacy-enhanced embed, that host alone (ADR 0003's 2026-11-03
   // section; https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Content-Security-Policy/frame-src).
-  // /web still serves apps/web until part C, which has no trailer; it's ready for the client's
-  // export (apps/client/src/detail/trailer-player.web.tsx) when that moves here
+  // (apps/client/src/detail/trailer-player.web.tsx)
   'frame-src https://www.youtube-nocookie.com',
   "object-src 'none'",
   "base-uri 'self'",
@@ -85,7 +94,7 @@ const REVALIDATE = 'no-cache'
 type Loaded = { mtime: number; body: Buffer; gzip: Buffer | null; etag: string }
 
 const MISSING = `<!doctype html><meta charset="utf-8"><title>highsea</title>
-<p>The web app isn’t built. Run <code>bun run --filter @highsea-tv/web build</code>, then reload.</p>`
+<p>The web app isn’t built. Run <code>bun run --cwd apps/client export:web</code>, then reload.</p>`
 
 export function createWeb({ dir }: { dir: string }): WebHandler {
   const root = normalize(dir)
@@ -128,6 +137,10 @@ export function createWeb({ dir }: { dir: string }): WebHandler {
       res.writeHead(404, SECURITY).end()
       return
     }
+    if (UNSERVED.has(path)) {
+      res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8', ...SECURITY }).end()
+      return
+    }
     const route = !extname(path)
     const file = route ? join(root, 'index.html') : wanted
     const loaded = await load(file)
@@ -143,7 +156,7 @@ export function createWeb({ dir }: { dir: string }): WebHandler {
     const headers: Record<string, string> = {
       ...SECURITY,
       'content-type': TYPES[ext] ?? 'application/octet-stream',
-      'cache-control': path.startsWith('assets/') ? IMMUTABLE : REVALIDATE,
+      'cache-control': HASHED.some((d) => path.startsWith(d)) ? IMMUTABLE : REVALIDATE,
       etag: loaded.etag,
       vary: 'accept-encoding',
     }

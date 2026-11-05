@@ -195,12 +195,10 @@ export function Waveform({
       focusable
       accessibilityRole="adjustable"
       accessibilityLabel={label}
-      accessibilityValue={{
-        min: 0,
-        max: Math.round(duration),
-        now: Math.round(position),
-        text: valueText,
-      }}
+      aria-valuemin={0}
+      aria-valuemax={Math.round(duration)}
+      aria-valuenow={Math.round(position)}
+      aria-valuetext={valueText}
       accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
       onAccessibilityAction={(e) => by(e.nativeEvent.actionName === 'increment' ? step : -step)}
       onStartShouldSetResponder={() => true}

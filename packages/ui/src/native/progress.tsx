@@ -32,7 +32,9 @@ export function ProgressBar({
     <View
       accessibilityRole="progressbar"
       accessibilityLabel={label}
-      accessibilityValue={{ min: 0, max: 100, now: Math.round(v) }}
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-valuenow={Math.round(v)}
       style={{
         height: height * theme.u,
         borderRadius: tokens.radius.pill,

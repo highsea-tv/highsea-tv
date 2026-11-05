@@ -7,6 +7,7 @@
   "scripts": {
     "dev": "expo start",
     "web": "expo start --web",
+    "web:server": "HIGHSEA_WEB_PROXY=${HIGHSEA_WEB_PROXY:-http://localhost:3000} EXPO_NO_TELEMETRY=1 expo start --web --port 3200",
     "prebuild": "expo prebuild --platform ios --clean",
     "prebuild:tv": "EXPO_TV=1 expo prebuild --platform ios --clean",
     "ios": "expo run:ios",

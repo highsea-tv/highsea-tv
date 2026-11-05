@@ -50,7 +50,10 @@ export function Slider({
       focusable
       accessibilityRole="adjustable"
       accessibilityLabel={label}
-      accessibilityValue={{ min: 0, max: 100, now: Math.round(v * 100), text: valueText }}
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-valuenow={Math.round(v * 100)}
+      aria-valuetext={valueText}
       accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
       onAccessibilityAction={(e) => by(e.nativeEvent.actionName === 'increment' ? step : -step)}
       onStartShouldSetResponder={() => true}

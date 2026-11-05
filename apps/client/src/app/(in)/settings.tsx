@@ -46,7 +46,7 @@ import {
   Icon,
   Mark,
   Press,
-  Radio,
+  RadioMark,
   ScrollView,
   Select,
   SortableList,
@@ -615,9 +615,7 @@ function ThemeSection() {
               accessibilityLabel={c.detail ? `${c.name}, ${c.detail}` : c.name}
             >
               <Card chosen={chosen}>
-                <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-                  <Radio label={c.name} hideLabel checked={chosen} onCheckedChange={pick} />
-                </View>
+                <RadioMark checked={chosen} />
                 <Words title={c.name} detail={c.detail} />
                 {c.theme ? <Swatch theme={c.theme} /> : null}
               </Card>

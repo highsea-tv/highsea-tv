@@ -103,3 +103,18 @@ On the owner's answers 2 and 9 at B1's review, a film's page on the web plays it
 `/web`'s policy (`apps/server/src/web/index.ts`) gains `frame-src https://www.youtube-nocookie.com`. Without it a frame falls back to `default-src 'self'` and the browser refuses the embed ([MDN: CSP `frame-src`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Content-Security-Policy/frame-src), which falls back to `child-src`, then `default-src`). That host alone: no `www.youtube.com` and no Vimeo (answer 9). The page's own `referrer-policy: same-origin` stays; the iframe asks for `strict-origin-when-cross-origin` itself, which the `referrerpolicy` attribute does for that one request ([MDN: `<iframe>` referrerpolicy](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/iframe#referrerpolicy)), because YouTube's embeds need the page's origin to play ([YouTube API Services: required minimum functionality](https://developers.google.com/youtube/terms/required-minimum-functionality#embedded-player-api-client-identity)).
 
 `/web` still serves `apps/web`, which has no trailer, until part C moves the client's export there; the directive is ready for it. `apps/server/test/web.test.ts` holds the policy to that one host.
+
+## 2026-11-04: `/web` serves the client's export (one client platform, C1)
+
+`/web` now serves `apps/client/dist`, Expo's single-page export with `experiments.baseUrl: '/web'` ([Expo CLI › Hosting with sub-paths](https://docs.expo.dev/more/expo-cli/#hosting-with-sub-paths)), in place of `apps/web`'s Vite build. `apps/server/server.ts` reads it by default and `apps/server/src/web/index.ts` serves it as before (every unknown path under `/web` falls back to `index.html`, under the same policy), with what the export's layout needs:
+
+- Expo writes content-hashed scripts under `_expo/static/js/web/` and hashed assets (the fonts among them) under `assets/`, so both are cached for good (`immutable`); `index.html` and `favicon.ico` are revalidated.
+- `.ttf` is served as `font/ttf` ([RFC 8081](https://www.rfc-editor.org/rfc/rfc8081)) and compressed, since a TrueType file isn't compressed already.
+- `metadata.json`, Expo's build manifest, isn't served: it answers 404.
+
+The image builds the export (`EXPO_NO_TELEMETRY=1 bun run export:web` in `apps/client`) and `scripts/image.ts` copies only `apps/client/dist`. On the owner's answer 3, addresses the old web app had and the client doesn't (`/web/library/collections`, `/web/settings/<section>`) aren't redirected: they draw the client's not-found page. `/web`'s policy, including its `frame-src` for youtube-nocookie, is unchanged and now has the trailer it was made for.
+
+Building the image for C1 found two faults from after 0.3.0's image, the last one built, and fixed both:
+
+- The manifests stage kept only `package.json` and `bun.lock`, so `bun install` failed on `patches/react-native-screens@4.30.0.patch` (4.5b's), which Bun reads as it installs ([Bun › Patch dependencies](https://bun.sh/docs/install/patch)). The stage keeps `patches/` now, and `scripts/image.ts production` copies the patches `patchedDependencies` names.
+- Bun's isolated install links a workspace's optional peer whenever the lockfile has it resolved anywhere in the repository ([Bun › Isolated installs](https://bun.sh/docs/install/isolated)), so `--filter @highsea-tv/server` brought `@highsea-tv/ui`'s React Native and Expo peers, resolved for `apps/client`, into production: 583 store entries. `--omit peer` would drop required peers as well ([`bun install`](https://bun.sh/docs/cli/install)), so `pruneOptionalPeers` removes the links to optional peers no production workspace depends on, then every store entry nothing left links to.
