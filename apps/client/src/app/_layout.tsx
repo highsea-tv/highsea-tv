@@ -8,7 +8,8 @@
 // the client again on it. The web is served by its server, which is known and in use from the
 // start (./host.web.ts), and asks it who's signed in by the session cookie, so it opens signed in,
 // or on the sign-in after a 401, as apps/web's gate did; in mock mode it opens on Choose a server,
-// as the prototype does. Framed by the prototypes' chrome, the frame sets the form factor and the
+// as the prototype does. The desktop app's export keeps its servers on its Rust side
+// (../desktop/tauri.tsx), which opens on the server last used, or on Choose a server. Framed by the prototypes' chrome, the frame sets the form factor and the
 // theme (../frame-channel.ts).
 import '@highsea-tv/native/intl'
 import { I18nProvider } from '@highsea-tv/i18n/react'
@@ -34,6 +35,7 @@ import { Platform, View } from 'react-native'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { BackKeys } from '../back.tsx'
+import { desktop } from '../desktop/app.ts'
 import { WindowChrome } from '../desktop/window.tsx'
 import { useBrandFonts } from '../fonts'
 import { FrameStateContext, useFrameChannel } from '../frame-channel.ts'
@@ -67,11 +69,7 @@ export default function Layout() {
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: background }}>
       <SafeAreaProvider>
         <I18nProvider locale="en">
-          <ServersProvider
-            fetch={transport}
-            home={mock ? undefined : HOME_SERVER}
-            nearby={mock?.transport.nearby}
-          >
+          <Servers>
             <ThemeProvider
               formFactor={channel.formFactor}
               theme={framed}
@@ -90,10 +88,28 @@ export default function Layout() {
                 </FrameStateContext.Provider>
               </FramedTheme.Provider>
             </ThemeProvider>
-          </ServersProvider>
+          </Servers>
         </I18nProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
+  )
+}
+
+/**
+ * The servers this client knows: the desktop app's Rust side in its own export (../desktop/
+ * tauri.tsx), and otherwise @highsea-tv/native's, with the mock's server and nearby servers in
+ * mock mode.
+ */
+function Servers({ children }: { children: ReactNode }) {
+  if (desktop) return <desktop.DesktopRoot>{children}</desktop.DesktopRoot>
+  return (
+    <ServersProvider
+      fetch={transport}
+      home={mock ? undefined : HOME_SERVER}
+      nearby={mock?.transport.nearby}
+    >
+      {children}
+    </ServersProvider>
   )
 }
 

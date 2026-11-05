@@ -40,7 +40,7 @@ let failed: string | null = null
 try {
   const { token } = await seed(server, OWNER, 'Phone script')
   // a fresh install: no servers, no keychain items (the flow's launchApp clears both too)
-  execFileSync('xcrun', ['simctl', 'uninstall', udid, 'tv.highsea.client.mobile'])
+  execFileSync('xcrun', ['simctl', 'uninstall', udid, 'tv.highsea.mobile'])
   execFileSync('xcrun', ['simctl', 'install', udid, app])
   const started = Date.now()
   try {

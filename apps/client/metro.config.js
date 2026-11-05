@@ -26,7 +26,7 @@
 //    (https://metrobundler.dev/docs/package-exports/#example-custom-resolver), draws the library
 //    with react-native-web (src/native). A third-party package's `react-native` target can be
 //    native-only code, so the rule stops at ours. Vite, Next and Bun never read this file: the
-//    admin, apps/web and the prototypes keep `default`.
+//    admin and the prototypes keep `default`.
 //
 // ADR 0061: one drawing for every client, the library's React Native renderer, on the web too.
 const path = require('node:path')

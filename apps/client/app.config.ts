@@ -5,12 +5,15 @@
 // (https://docs.expo.dev/guides/building-for-tv/); the two share ios/, which is never committed.
 // The web is `expo export --platform web`: a single-page app with every resource under /web, where
 // the server serves the web client (ADR 0053; https://docs.expo.dev/versions/latest/config/app/
-// › web.output and experiments.baseUrl).
+// › web.output and experiments.baseUrl). The desktop app's export (`export:desktop`, with
+// EXPO_PUBLIC_HIGHSEA_APP=desktop) is the same at the window's root, where Tauri serves its folder
+// of static files (https://v2.tauri.app/start/frontend/).
 //
-// Until part C ships it, the client installs beside the shipping apps rather than over them: its
-// bundle identifiers aren't tv.highsea.mobile and tv.highsea.tv, and its URL scheme isn't
-// `highsea`, since "if multiple apps register the same scheme, the app the system targets is
-// undefined" (https://developer.apple.com/documentation/xcode/defining-a-custom-url-scheme-for-your-app).
+// Since part C's C2 the client is the shipping app: it takes tv.highsea.mobile and tv.highsea.tv
+// and the URL scheme `highsea` that connectivity.md's links use (`highsea://connect`, `link` and
+// `oidc`), so it installs over the 4.5a app and keeps the servers it knew, since a keychain item
+// belongs to the app's bundle identifier and access group
+// (https://developer.apple.com/documentation/security/sharing-access-to-keychain-items-among-a-collection-of-apps).
 import type { ExpoConfig } from 'expo/config'
 import { nativeFontPaths } from '../../packages/brand/src/native-fonts.ts'
 import { withAppleTVIcons, withReactNativeDir } from '../../packages/native/plugins/index.ts'
@@ -23,6 +26,9 @@ const brand = '../../packages/brand/assets/icons'
 
 /** As config-tv reads it (getenv's boolish): `1` or `true` builds for the TV. */
 const tv = /^(1|true)$/i.test(process.env.EXPO_TV ?? '')
+
+/** The desktop app's export, at the window's root rather than /web. */
+const desktopApp = process.env.EXPO_PUBLIC_HIGHSEA_APP === 'desktop'
 
 /** The default theme's page colour, behind the splash, the root view and the web's page. */
 const background = defaultTheme.colors.bg
@@ -41,8 +47,8 @@ const shared = {
   name: 'highsea',
   slug: 'highsea-client',
   version: pkg.version,
-  // highsea-client://… until part C, then highsea://connect, link and oidc (connectivity.md)
-  scheme: 'highsea-client',
+  // highsea://connect, link and oidc (connectivity.md)
+  scheme: 'highsea',
   userInterfaceStyle: 'dark',
   backgroundColor: background,
   web: {
@@ -52,7 +58,7 @@ const shared = {
     backgroundColor: background,
     themeColor: background,
   },
-  experiments: { baseUrl: '/web' },
+  experiments: { baseUrl: desktopApp ? '' : '/web' },
 } satisfies Partial<ExpoConfig>
 
 const phone: ExpoConfig = {
@@ -60,7 +66,7 @@ const phone: ExpoConfig = {
   orientation: 'portrait',
   icon: `${brand}/ios/icon.png`,
   ios: {
-    bundleIdentifier: 'tv.highsea.client.mobile',
+    bundleIdentifier: 'tv.highsea.mobile',
     supportsTablet: false,
     icon: {
       light: `${brand}/ios/icon.png`,
@@ -101,7 +107,7 @@ const phone: ExpoConfig = {
 const appleTV: ExpoConfig = {
   ...shared,
   ios: {
-    bundleIdentifier: 'tv.highsea.client.tv',
+    bundleIdentifier: 'tv.highsea.tv',
     infoPlist: {
       // tvOS never asks for the local network, but browsing still declares the type (Apple TN3179)
       NSBonjourServices: ['_highsea._tcp'],

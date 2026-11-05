@@ -7,6 +7,26 @@ While highsea is at 0.x, any release may change how something works. When one do
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-11-04
+
+### Added
+
+- A page for each person: the cast and crew on a film's page, and the people in search, open a page with their photo, biography and the films they're part of on this server, by department.
+- Trailers on a film's page in the web app and the highsea app, played from YouTube's privacy-enhanced embed once you open one.
+- **Remove from Continue watching**, in its row's menu, takes a film off the row without marking it watched.
+- Settings › Playback in the apps: the audio and subtitle languages to start with, subtitles only for foreign speech, and the quality to ask for at home and away. They follow you to every device you're signed in on.
+- Alerts, a page of the owner's announcements, in place of the bars across the top.
+
+### Changed
+
+- The web app at `/web` and the highsea app for macOS, Windows and Linux are rebuilt on the same code as highsea's iPhone and Apple TV apps, so every app has the same screens: Home, the library, collections, a film's page, search, the player, settings and choosing a server. They look as before, with the changes above.
+- Two addresses in the web app moved: `/web/library/collections` and `/web/settings/<section>`. Old bookmarks to them open a page that says so, with a way back to Home.
+- In the highsea app, choosing the server's name at the top left opens **Choose a server**, with the servers you use, the others on your network, and adding one by address.
+
+### Fixed
+
+- HDR films converted to SDR for a device that can't show HDR no longer keep HDR's colour labels, which some players refused.
+
 ## [0.3.0] - 2026-10-29
 
 ### Added
@@ -79,7 +99,10 @@ While highsea is at 0.x, any release may change how something works. When one do
 
 
 
-[unreleased]: https://github.com/highsea-tv/highsea-tv/compare/v0.3.0...HEAD
+
+
+[unreleased]: https://github.com/highsea-tv/highsea-tv/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/highsea-tv/highsea-tv/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/highsea-tv/highsea-tv/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/highsea-tv/highsea-tv/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/highsea-tv/highsea-tv/releases/tag/v0.1.0

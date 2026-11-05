@@ -102,12 +102,18 @@ describe('renderers', () => {
 
 describe('screens', () => {
   test('a client file outside apps/client fails unless it is listed', async () => {
-    const files = { 'apps/web/src/home.tsx': component('Home') }
+    const files = { 'design/prototypes/src/web/home.tsx': component('Home') }
     expect(await run(files)).toEqual([
-      'screens apps/web/src/home.tsx:1 a client file outside apps/client',
+      'screens design/prototypes/src/web/home.tsx:1 a client file outside apps/client',
     ])
     const exceptions = [
-      { rule: 'screens', path: 'apps/web/src/**', count: 1, until: 'B', reason: 'B moves it' },
+      {
+        rule: 'screens',
+        path: 'design/prototypes/src/web/**',
+        count: 1,
+        until: 'B',
+        reason: 'B moves it',
+      },
     ]
     const listed = await check(repo({ ...files, ...listing({ exceptions }) }))
     expect(listed.findings).toEqual([])
@@ -116,13 +122,13 @@ describe('screens', () => {
     expect(
       await run({
         ...files,
-        'apps/web/src/search.tsx': component('Search'),
+        'design/prototypes/src/web/search.tsx': component('Search'),
         ...listing({ exceptions }),
       }),
     ).toEqual([
-      'exceptions scripts/one-place-exceptions.json:3 apps/web/src/** has 2 client files, listed as 1',
-      'screens apps/web/src/home.tsx:1 a client file outside apps/client',
-      'screens apps/web/src/search.tsx:1 a client file outside apps/client',
+      'exceptions scripts/one-place-exceptions.json:3 design/prototypes/src/web/** has 2 client files, listed as 1',
+      'screens design/prototypes/src/web/home.tsx:1 a client file outside apps/client',
+      'screens design/prototypes/src/web/search.tsx:1 a client file outside apps/client',
     ])
   })
 
@@ -403,7 +409,13 @@ describe('values', () => {
 describe('the exceptions', () => {
   test('one that matches nothing fails', async () => {
     const exceptions = [
-      { rule: 'screens', path: 'apps/web/src/**', count: 3, until: 'B', reason: 'B moves them' },
+      {
+        rule: 'screens',
+        path: 'design/prototypes/src/web/**',
+        count: 3,
+        until: 'B',
+        reason: 'B moves them',
+      },
       {
         rule: 'parts',
         path: 'apps/client/src/poster.tsx',
@@ -419,7 +431,7 @@ describe('the exceptions', () => {
         ...listing({ exceptions }),
       }),
     ).toEqual([
-      'exceptions scripts/one-place-exceptions.json:3 apps/web/src/** matches nothing the screens rule finds',
+      'exceptions scripts/one-place-exceptions.json:3 design/prototypes/src/web/** matches nothing the screens rule finds',
       'exceptions scripts/one-place-exceptions.json:10 apps/client/src/poster.tsx (Poster) matches nothing the parts rule finds',
       'exceptions scripts/one-place-exceptions.json:17 apps/client/src/plain.tsx matches nothing the values rule finds',
     ])

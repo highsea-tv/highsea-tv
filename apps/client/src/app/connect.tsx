@@ -6,7 +6,7 @@
 // tv/connect.tsx list: the servers it knows, then the ones answering, the only one answering taken
 // without asking when none is known yet (zero configuration). Choosing one makes it the server in
 // use, and leads to its sign-in, or Home when this device is still signed in there. A
-// `highsea://connect?address=` link fills the address in. A known server is forgotten by swiping its
+// `highsea://connect?server=` link fills the address in. A known server is forgotten by swiping its
 // row on touch, by pressing it long, or by VoiceOver's action (the owner's answer of 2026-10-29).
 import type { PublicInfo } from '@highsea-tv/api-contract'
 import {
@@ -150,7 +150,9 @@ function ChooseServer() {
   // open, doesn't open its server.
   const swiped = useRef<string | null>(null)
   const swipes = useRef(new Map<string, SwipeableMethods>())
-  const linked = useLocalSearchParams<{ address?: string }>().address
+  // `highsea://connect?server=` (ADR 0058, connectivity.md); `address` as the screens pass it
+  const params = useLocalSearchParams<{ server?: string; address?: string }>()
+  const linked = params.server ?? params.address
   const { found, lan, scanning, rescan } = useNearby()
   const [address, setAddress] = useState(linked ?? '')
   const [pending, setPending] = useState<string | null>(null)

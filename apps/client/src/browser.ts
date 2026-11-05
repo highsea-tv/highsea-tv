@@ -6,6 +6,7 @@
 // module 'ExpoWebBrowser'". The TV signs in from the phone, by code, so it never needs one.
 import type * as WebBrowserModule from 'expo-web-browser'
 import { Platform } from 'react-native'
+import { desktop } from './desktop/app.ts'
 
 type WebBrowser = typeof WebBrowserModule
 
@@ -18,8 +19,12 @@ function browser(): WebBrowser | null {
   return loaded
 }
 
-/** Opens a page in the system browser; nothing on the TV. */
+/**
+ * Opens a page in the system browser; nothing on the TV. The desktop app opens it through Tauri's
+ * opener plugin, since a webview's window.open isn't the system browser.
+ */
 export async function openBrowser(url: string) {
+  if (desktop) return desktop.openBrowser(url)
   await browser()?.openBrowserAsync(url)
 }
 

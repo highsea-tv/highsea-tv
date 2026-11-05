@@ -84,9 +84,10 @@ jobs:
       - name: Dependency check
         run: bun run audit
       # the client's web export, which /web serves (ADR 0061): react-native-web and the library's
-      # one drawing, no React Native itself, no mock, and hls.js in a chunk of its own
-      - name: The client's web export carries only its own side
-        run: bun scripts/bundles.ts client-web
+      # one drawing, no React Native itself, no mock, and hls.js in a chunk of its own; and the
+      # desktop app's export, the same with its host on Tauri, which only it carries (ADR 0058)
+      - name: The client's web and desktop exports carry only their own side
+        run: bun scripts/bundles.ts client-web client-desktop
         env:
           EXPO_NO_TELEMETRY: 1
       - name: Build the admin

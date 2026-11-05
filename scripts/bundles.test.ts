@@ -5,14 +5,15 @@ import { join } from 'node:path'
 import { hlsOffences, offences, pairs, read } from './bundles.ts'
 
 describe('bundle check', () => {
-  test('finds React Native or the native renderer in the web build', () => {
-    expect(offences('web', 'import "react-native/Libraries/Pressability"')).toEqual([
-      'react-native',
+  test('keeps Tauri in the desktop app’s export only', () => {
+    const tauri = '"/node_modules/@tauri-apps/api/core.js"'
+    for (const kind of ['client-web', 'client-phone', 'client-tv'] as const)
+      expect(offences(kind, tauri)).toEqual(['@tauri-apps'])
+    expect(offences('client-web', 'invoke("plugin:updater|check")')).toEqual(['@tauri-apps'])
+    expect(offences('client-desktop', tauri)).toEqual([])
+    expect(offences('client-desktop', '"/packages/ui/src/web/button.tsx"')).toEqual([
+      'the web renderer',
     ])
-    expect(offences('web', '//# ../../packages/ui/src/native/button.tsx')).toEqual([
-      'the native renderer',
-    ])
-    expect(offences('web', 'var a=1')).toEqual([])
   })
 
   test('finds the web renderer in the phone’s bundle', () => {
@@ -76,7 +77,6 @@ describe('bundle check', () => {
     for (const kind of ['client-phone', 'client-tv'] as const)
       expect(offences(kind, hls)).toEqual(['hls.js'])
     expect(offences('client-web', hls)).toEqual([])
-    expect(offences('web', 'e.MANIFEST_LOADING="hlsManifestLoading"')).toEqual([])
   })
 
   test('holds hls.js to a chunk of its own in the web’s builds', () => {
@@ -89,7 +89,7 @@ describe('bundle check', () => {
   })
 
   test('finds the mock in any bundle built without mock mode', () => {
-    for (const kind of ['web', 'client-web', 'client-phone', 'client-tv'] as const)
+    for (const kind of ['client-web', 'client-desktop', 'client-phone', 'client-tv'] as const)
       expect(offences(kind, '"/packages/mock/src/transport.ts"')).toEqual(['the mock server'])
     expect(offences('client-web', '"/design/prototypes/src/mock/hooks.tsx"')).toEqual([
       'the mock server',
@@ -97,7 +97,7 @@ describe('bundle check', () => {
   })
 
   test('finds the prototypes’ frame channel by its name, minified or not', () => {
-    for (const kind of ['web', 'client-web', 'client-phone', 'client-tv'] as const)
+    for (const kind of ['client-web', 'client-desktop', 'client-phone', 'client-tv'] as const)
       expect(offences(kind, 'n.channel==="highsea:frame"')).toEqual([
         'the prototypes’ frame channel',
       ])

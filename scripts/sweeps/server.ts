@@ -730,7 +730,7 @@ try {
         name: `web:settings:${s}`,
         path: `/web/settings?section=${s}`,
       })),
-      // an address apps/web had, which the client doesn't: its not-found page (answer 3)
+      // an address the old web client had, which the client doesn't: its not-found page (answer 3)
       { name: 'web:moved', path: '/web/library/collections' },
       { name: 'web:profile', path: '/web/profile' },
       { name: 'web:downloads', path: '/web/downloads' },

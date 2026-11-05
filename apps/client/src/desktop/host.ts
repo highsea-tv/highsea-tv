@@ -1,14 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The one seam between the client and the desktop app around it (ADR 0058, desktop-app.md):
-// the window's buttons, the app's own updates and the folder Kept in names. apps/web puts Tauri
-// behind the same kind of interface (apps/web/src/host.ts's `desktop`, desktop/updates.ts,
-// desktop/window.tsx); here nothing imports @tauri-apps, so the client builds without it and the
-// mock answers in the prototypes' frames. Part C wraps the client's export in Tauri and provides
-// the real host with DesktopHostProvider at the root:
+// the window's buttons, the app's own updates and the folder Kept in names. Nothing here imports
+// @tauri-apps, so the client's other builds carry none of it and the mock answers in the
+// prototypes' frames. The desktop export (EXPO_PUBLIC_HIGHSEA_APP=desktop) provides the real host
+// with DesktopHostProvider at the root, in ./tauri.tsx:
 // - `window`: getCurrentWindow()'s minimize, toggleMaximize and close
 //   (https://v2.tauri.app/reference/javascript/api/namespacewindow/);
 // - `updates`: the updater plugin's check and download at start and every 6 hours, install and
-//   the process plugin's relaunch (https://v2.tauri.app/plugin/updater/), as apps/web's updates.ts;
+//   the process plugin's relaunch (https://v2.tauri.app/plugin/updater/);
 // - `keptIn`: the dialog plugin's folder picker (https://v2.tauri.app/plugin/dialog/) and a Rust
 //   command that moves the downloads (4.6).
 // The client asks useDesktopHost(): the provided host, or in mock mode the toolbar's (`?app=desktop`,

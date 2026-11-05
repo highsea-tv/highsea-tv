@@ -7,7 +7,7 @@
 // XCUIRemote, so it drives tvOS's own focus engine; tv-uitest.ts runs it.
 //
 // `bun scripts/sweeps/tv.ts [screen ...]`, with an Apple TV simulator booted and the client's
-// Release build installed on it (tv.highsea.client.tv: `bun run --cwd apps/client prebuild:tv`,
+// Release build installed on it (tv.highsea.tv: `bun run --cwd apps/client prebuild:tv`,
 // then xcodebuild as native.yml's tvos job does, without mock mode) and signed in to a server with
 // films (the seeded server, as phone.ts uses, with a film to resume on Home). XcodeGen is
 // `brew install xcodegen`. TV_SIMULATOR picks the simulator by UDID.

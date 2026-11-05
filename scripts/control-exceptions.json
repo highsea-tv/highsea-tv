@@ -72,66 +72,6 @@
     "reason": "A step of the folder picker's path, a breadcrumb in the mono path line: a link in role, not a control in the spec's sense"
   },
   {
-    "file": "apps/web/src/desktop/connect.tsx",
-    "tag": "button",
-    "contains": "className={row}",
-    "reason": "A server's row on C1 (its mark, name and line, a chevron): list rows, not controls."
-  },
-  {
-    "file": "apps/web/src/desktop/window.tsx",
-    "tag": "button",
-    "contains": "aria-label={t(c.kind)}",
-    "reason": "The window's own minimise, maximise and close on Windows and Linux, drawn as those systems draw them, out of the tab order."
-  },
-  {
-    "file": "apps/web/src/home.tsx",
-    "tag": "button",
-    "contains": "aria-pressed={i === index}",
-    "reason": "The hero's page dots: a carousel's position indicator, not a control in the spec's sense."
-  },
-  {
-    "file": "apps/web/src/player.tsx",
-    "tag": "button",
-    "contains": "glass-badge absolute top-1/2",
-    "reason": "The player's big Play over the frame, aria-hidden and out of the tab order (the transport's Play is the one assistive tech uses); a media player's own control."
-  },
-  {
-    "file": "apps/web/src/player.tsx",
-    "tag": "button",
-    "contains": "glassButton",
-    "reason": "The film player's own controls over the picture (data-player-controls): Back, Play and Pause, skip, Mute, Audio and subtitles, Picture in picture and Full screen, which may stay round (controls.md › Rules)."
-  },
-  {
-    "file": "apps/web/src/player.tsx",
-    "tag": "input",
-    "contains": "type=\"radio\"",
-    "reason": "A visually hidden native radio inside a row of the player's Audio and subtitles panel: the row with its check is the control, a list of choices as a menu's radio items are. The library has no such list."
-  },
-  {
-    "file": "apps/web/src/player.tsx",
-    "tag": "input",
-    "contains": "type=\"range\"",
-    "reason": "The player's scrubber, a media player's own control; the library has no slider."
-  },
-  {
-    "file": "apps/web/src/search.tsx",
-    "tag": "button",
-    "contains": "onPerson(p.name)",
-    "reason": "A person's result tile (photo, name and count), a tile rather than a control."
-  },
-  {
-    "file": "apps/web/src/settings.tsx",
-    "tag": "input",
-    "contains": "type=\"range\"",
-    "reason": "Settings › Sound's volume: the library has no slider yet."
-  },
-  {
-    "file": "apps/web/src/shell.tsx",
-    "tag": "button",
-    "contains": "profileUpdate",
-    "reason": "The profile's avatar opening the account menu: a picture of the person, round as every avatar in highsea, not a button in a row of controls."
-  },
-  {
     "file": "design/prototypes/src/admin/collections/editor.tsx",
     "tag": "button",
     "contains": "grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-md px-2 py-1.5",

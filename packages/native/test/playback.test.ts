@@ -87,7 +87,7 @@ describe('the player’s engines', () => {
     expect(hls.map((i) => i.kind)).toEqual(['dynamic-import'])
   })
 
-  test('Metro takes the pair through the entry; Vite and Bun the web’s file', () => {
+  test('Metro takes the pair through the entry; TypeScript and Bun the web’s file', () => {
     const manifest = JSON.parse(readFileSync(join(import.meta.dir, '../package.json'), 'utf8'))
     expect(Object.entries(manifest.exports['./playback'])).toEqual([
       ['react-native', './src/playback-entry.ts'],

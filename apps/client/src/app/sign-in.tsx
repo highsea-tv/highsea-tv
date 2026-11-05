@@ -11,8 +11,9 @@
 // https://docs.expo.dev/versions/latest/sdk/webbrowser/#webbrowseropenauthsessionasyncurl-redirecturl-options)
 // with a PKCE challenge, and the code that comes back to `highsea://oidc` is exchanged for the
 // token (RFC 8252, ADR 0024); on the web the page goes to the start and comes back signed in. In
-// mock mode the mock's `oidc` stands in for the browser. Setting up two-step verification stays
-// on the server's sign-in page.
+// mock mode the mock's `oidc` stands in for the browser; the desktop app's Rust side opens the
+// system browser and exchanges the code itself (../desktop/tauri.tsx's signInInBrowser). Setting
+// up two-step verification stays on the server's sign-in page.
 //
 // On the TV, the prototype's tv/connect.tsx: by code first (RFC 8628's device flow: `startPairing`,
 // then `pollPairing` every `interval` seconds until a phone approves it or the code runs out, when
@@ -62,6 +63,7 @@ import { type ComponentRef, type ReactNode, useEffect, useRef, useState } from '
 import { ActivityIndicator, type TextInput, View } from 'react-native'
 import { useBack } from '../back.tsx'
 import { openAuthSession, openBrowser } from '../browser.ts'
+import { desktop } from '../desktop/app.ts'
 import { useForget } from '../forget.tsx'
 import { TV_GATE } from '../gate-sizes.ts'
 import { useDeviceClient, useDeviceInput, useKeepsServers } from '../host'
@@ -159,8 +161,10 @@ function SignInForm() {
   )
 
   const keep = async (token: string | undefined, named = device() !== undefined) => {
-    // a device that named itself is answered with its token; a browser's cookie is its sign-in
-    if (!token && named) return setSsoError(t('noToken', { name: current.server.name }))
+    // a device that named itself is answered with its token; a browser's cookie is its sign-in.
+    // The desktop app's Rust side keeps the token from the answer and leaves it out of what the
+    // page sees (proxy.rs's keep_token)
+    if (!token && named && !desktop) return setSsoError(t('noToken', { name: current.server.name }))
     try {
       await servers.signedIn(token)
     } catch {
@@ -225,6 +229,12 @@ function SignInForm() {
       return
     }
     setStep({ kind: 'sso' })
+    // the desktop app's Rust side opens the system browser, and exchanges the code that comes
+    // back to highsea://oidc with its own PKCE verifier, keeping the token (lib.rs's oidc_finish)
+    if (desktop) {
+      const reason = await desktop.signInInBrowser()
+      return reason === null ? keep(undefined) : failed(reason)
+    }
     try {
       const { verifier, challenge } = await pkce()
       const start = oidcStart(base, app, challenge)

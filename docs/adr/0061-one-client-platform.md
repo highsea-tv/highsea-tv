@@ -227,3 +227,9 @@ The server sweep over the export found two more of the same kind, fixed once in 
 
 - **Values.** react-native-web reads `aria-valuenow`, `aria-valuemin`, `aria-valuemax` and `aria-valuetext`, never `accessibilityValue`, so every `adjustable` drew a slider with no value, which WAI-ARIA requires ([slider](https://www.w3.org/TR/wai-aria-1.2/#slider)). The sliders and `ProgressBar` pass React Native's own `aria-value*` props, which the phone reads as well and which take precedence over `accessibilityValue` ([View › aria-valuenow](https://reactnative.dev/docs/view#aria-valuenow)).
 - **Nesting.** Settings' theme cards drew a `Radio` inside a card that is itself the radio, so the web had a control inside a control; `RadioMark` (native only, in `parity.ts`) draws the mark without one.
+
+## 2026-11-04: the desktop app on the client, and `apps/web` removed (part C2)
+
+With C2 every client is `apps/client`: the browser at `/web` (C1), the desktop app around the client's desktop export ([ADR 0058](0058-desktop-app.md)'s section of today), and the phone and the TV under highsea's shipping identifiers ([ADR 0059](0059-native-apps.md)'s section of today). `apps/web` is removed, with its exceptions in `scripts/one-place-exceptions.json` and `scripts/control-exceptions.json`, and `scripts/one-place.ts` and `scripts/controls.ts` no longer read it, so `bun run one-place` has no "until C" exceptions left. `@highsea-tv/native/playback` keeps its web engine as the `default` target, which TypeScript and Bun read, while Metro takes `react-native` first (`apps/client/README.md` › Platform files, rule 3).
+
+`scripts/bundles.ts` checks four builds of the one client: the phone's and the TV's carry no web renderer and no `@tauri-apps`, `/web`'s carries no `@tauri-apps`, and the desktop's carries it.

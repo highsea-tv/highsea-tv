@@ -15,14 +15,14 @@ on:
     branches: [main]
     paths:
       - 'apps/desktop/**'
-      - 'apps/web/**'
+      - 'apps/client/**'
       - 'packages/**'
       - 'bun.lock'
       - '.github/workflows/desktop.yml'
   pull_request:
     paths:
       - 'apps/desktop/**'
-      - 'apps/web/**'
+      - 'apps/client/**'
       - 'packages/**'
       - 'bun.lock'
       - '.github/workflows/desktop.yml'
@@ -92,3 +92,6 @@ jobs:
       - name: The app and its installers
         working-directory: apps/desktop
         run: bun run tauri build --ci --target ${{ matrix.target }} -- --locked
+        # Tauri runs the client's desktop export first (tauri.conf.json's beforeBuildCommand)
+        env:
+          EXPO_NO_TELEMETRY: 1

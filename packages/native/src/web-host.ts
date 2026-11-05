@@ -3,7 +3,7 @@
 // server with when the page is closing, and which computer's app it's in. In a browser at /web the
 // page and the server share an origin and the session cookie signs every request, so the
 // defaults change nothing. The desktop app's page reaches the server through its Rust side
-// instead (ADR 0058, apps/web/src/host.ts) and says so with `WebHostProvider`, which must hold
+// instead (ADR 0058, apps/client/src/desktop/tauri.tsx) and says so with `WebHostProvider`, which must hold
 // every player it renders: outside it, the player loads streams from the page's own origin, which
 // in the app isn't the server, and says so in development.
 import { createContext, createElement, type ReactNode, useContext } from 'react'
@@ -34,8 +34,8 @@ let warned = false
 export function useWebHost(): WebHost {
   const host = useContext(Host)
   if (host) return host
-  // Tauri 2 puts `__TAURI_INTERNALS__` on every window it opens (apps/web/src/host.ts's `inApp`);
-  // `process.env.NODE_ENV` is replaced by Vite and Metro at build time
+  // Tauri 2 puts `__TAURI_INTERNALS__` on every window it opens (https://v2.tauri.app/reference/javascript/api/namespacecore/);
+  // `process.env.NODE_ENV` is replaced by Metro at build time
   if (
     !warned &&
     process.env.NODE_ENV !== 'production' &&

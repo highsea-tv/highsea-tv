@@ -61,9 +61,9 @@ Short records of decisions that shape the system. Each one is immutable once acc
 | [0055](0055-clients-shared-logic.md) | The clients' shared logic: `@highsea-tv/client`, everything but the drawing | Accepted; amended 2026-10-29, 2026-11-01, 2026-11-02 (twice), 2026-11-03 (twice) and 2026-11-04 (twice), and by 0061 |
 | [0056](0056-hardware-acceleration.md) | Hardware acceleration: four paths, each used only once a check on this host passes | Accepted; amended 2026-10-28 |
 | [0057](0057-installing-without-configuration.md) | Installing without configuration: graphics handed over by default, the user, time zone, folders and address detected, and highsea's own TMDB key | Accepted; amended 2026-10-29 |
-| [0058](0058-desktop-app.md) | The desktop app: Tauri around the web build, with the server reached through Rust | Accepted; amended 2026-10-29 and 2026-11-03, and by 0061 |
-| [0059](0059-native-apps.md) | The native apps: Expo on React Native, two apps sharing ui-native and the client | Proposed; amended 2026-10-29, 2026-11-01, 2026-11-02, 2026-11-03 and 2026-11-04, and by 0061 |
+| [0058](0058-desktop-app.md) | The desktop app: Tauri around the web build, with the server reached through Rust | Accepted; amended 2026-10-29, 2026-11-03 and 2026-11-04, and by 0061 |
+| [0059](0059-native-apps.md) | The native apps: Expo on React Native, two apps sharing ui-native and the client | Proposed; amended 2026-10-29, 2026-11-01, 2026-11-02, 2026-11-03 and 2026-11-04 (twice), and by 0061 |
 | [0060](0060-one-design-system-one-library.md) | One design system and one component library, adaptive to the app it's in | Proposed; amended 2026-11-02 (twice), 2026-11-03 (twice) and 2026-11-04 (twice), and by 0061 |
-| [0061](0061-one-client-platform.md) | One client platform: every client and its prototype in one Expo project, drawn once in React Native | Proposed; amended 2026-11-03 and 2026-11-04 (four times) |
+| [0061](0061-one-client-platform.md) | One client platform: every client and its prototype in one Expo project, drawn once in React Native | Proposed; amended 2026-11-03 and 2026-11-04 (five times) |
 
 Template: copy [`template.md`](template.md).

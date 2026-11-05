@@ -16,7 +16,7 @@
 import XCTest
 
 final class DpadWalk: XCTestCase {
-  let app = XCUIApplication(bundleIdentifier: "tv.highsea.client.tv")
+  let app = XCUIApplication(bundleIdentifier: "tv.highsea.tv")
   let remote = XCUIRemote.shared
 
   /**

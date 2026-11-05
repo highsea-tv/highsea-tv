@@ -95,7 +95,7 @@ export type Current = {
   round: number
 }
 
-type ServersValue = {
+export type ServersValue = {
   ready: boolean
   known: KnownView[]
   current: Current | null
@@ -113,7 +113,12 @@ type ServersValue = {
   nearby?: NearbySource
 }
 
-const ServersContext = createContext<ServersValue | null>(null)
+/**
+ * What useServers() reads. ServersProvider fills it on the phone, the TV and the web; the desktop
+ * app fills it from its Rust side, which keeps the servers and their tokens itself
+ * (apps/client/src/desktop/tauri.tsx, ADR 0058).
+ */
+export const ServersContext = createContext<ServersValue | null>(null)
 
 /** The id the page's own server goes by while it hasn't answered with its own. */
 const HOME_UNREACHED = 'home'

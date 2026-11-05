@@ -12,53 +12,52 @@
 /** Drawn twice, by name, with the reason. */
 export const BOTH: Record<string, string> = {
   Badge:
-    "The web renderer's is drawn by the admin, apps/web and the prototypes until part D moves them onto this one",
+    "The web renderer's is drawn by the admin and the prototypes until part D moves them onto this one",
   Banner:
-    "The web renderer's is drawn by the admin, apps/web and the prototypes until part D moves them onto this one",
+    "The web renderer's is drawn by the admin and the prototypes until part D moves them onto this one",
   Button:
-    "The web renderer's is drawn by the admin, apps/web and the prototypes until part D moves them onto this one",
+    "The web renderer's is drawn by the admin and the prototypes until part D moves them onto this one",
   Checkbox:
     "The web renderer's is drawn by the admin and the prototypes until part D moves them onto this one",
-  Chip: "The web renderer's is drawn by the admin, apps/web and the prototypes until part D moves them onto this one",
+  Chip: "The web renderer's is drawn by the admin and the prototypes until part D moves them onto this one",
   Dialog:
-    "The web renderer's is drawn by the admin, apps/web and the prototypes until part D moves them onto this one",
-  Disclosure:
-    "The web renderer's is drawn by apps/web and the prototypes until part D moves them onto this one",
+    "The web renderer's is drawn by the admin and the prototypes until part D moves them onto this one",
+  Disclosure: "The web renderer's is drawn by the prototypes until part D moves them onto this one",
   EmptyState:
-    "The web renderer's is drawn by the admin, apps/web and the prototypes until part D moves them onto this one",
+    "The web renderer's is drawn by the admin and the prototypes until part D moves them onto this one",
   Field:
-    "The web renderer's is drawn by the admin, apps/web and the prototypes until part D moves them onto this one",
-  Icon: "The web renderer's is drawn by the admin, apps/web and the prototypes until part D moves them onto this one",
+    "The web renderer's is drawn by the admin and the prototypes until part D moves them onto this one",
+  Icon: "The web renderer's is drawn by the admin and the prototypes until part D moves them onto this one",
   Input:
-    "The web renderer's is drawn by the admin, apps/web and the prototypes until part D moves them onto this one",
+    "The web renderer's is drawn by the admin and the prototypes until part D moves them onto this one",
   Lockup:
-    "The web renderer's is drawn by the admin, the guides, apps/web and the prototypes until part D moves them onto this one",
-  Mark: "The web renderer's is drawn by the admin, apps/web and the prototypes until part D moves them onto this one",
+    "The web renderer's is drawn by the admin, the guides and the prototypes until part D moves them onto this one",
+  Mark: "The web renderer's is drawn by the admin and the prototypes until part D moves them onto this one",
   MultiSelect:
     "The web renderer's is drawn by no app, only its own tests and fixtures, and goes with src/web in part D",
   Poster:
-    "The web renderer's is drawn by the admin, apps/web and the prototypes until part D moves them onto this one",
+    "The web renderer's is drawn by the admin and the prototypes until part D moves them onto this one",
   ProgressBar:
     "The web renderer's is drawn by no app, only its own tests and fixtures, and goes with src/web in part D",
   QrCode: "The web renderer's is drawn by the admin until part D moves them onto this one",
   QualityTag:
-    "The web renderer's is drawn by the admin, apps/web and the prototypes until part D moves them onto this one",
+    "The web renderer's is drawn by the admin and the prototypes until part D moves them onto this one",
   Radio:
-    "The web renderer's is drawn by the admin, apps/web and the prototypes until part D moves them onto this one",
+    "The web renderer's is drawn by the admin and the prototypes until part D moves them onto this one",
   Rating:
-    "The web renderer's is drawn by the admin, apps/web and the prototypes until part D moves them onto this one",
+    "The web renderer's is drawn by the admin and the prototypes until part D moves them onto this one",
   SearchField:
     "The web renderer's is drawn by no app, only its own tests and fixtures, and goes with src/web in part D",
   SegmentedControl:
     "The web renderer's is drawn by the admin and the prototypes until part D moves them onto this one",
   Select:
-    "The web renderer's is drawn by the admin, apps/web and the prototypes until part D moves them onto this one",
+    "The web renderer's is drawn by the admin and the prototypes until part D moves them onto this one",
   Sheet:
     "The web renderer's is drawn by the admin and the prototypes until part D moves them onto this one",
   SortableList:
-    "The web renderer's is drawn by the admin, apps/web and the prototypes until part D moves them onto this one. The native one's `look: 'line'` (a playlist's rows, B3) is what the web's takes as classes",
+    "The web renderer's is drawn by the admin and the prototypes until part D moves them onto this one. The native one's `look: 'line'` (a playlist's rows, B3) is what the web's takes as classes",
   Switch:
-    "The web renderer's is drawn by the admin, apps/web and the prototypes until part D moves them onto this one",
+    "The web renderer's is drawn by the admin and the prototypes until part D moves them onto this one",
   Tabs: "The web renderer's is drawn by the admin and the prototypes until part D moves them onto this one",
   Textarea:
     "The web renderer's is drawn by the admin and the prototypes until part D moves them onto this one",
@@ -168,11 +167,11 @@ export const NATIVE_ONLY: Record<string, string> = {
     'React Native’s scroller with the web’s bar drawn over it on the web; the web renderer’s pages scroll the document, under PageScrollbar.',
   Row: 'A titled row that scrolls sideways, at every form factor: edge to edge by touch, paged by its arrows with a pointer, kept in place by focus on the TV. The web renderer’s CarouselRow is the admin’s and the prototypes’ until part D.',
   FilmRow:
-    'Home’s row of films, at every form factor: the card and its strip of posters with a pointer and on the TV, a Row of Posters by touch. The web renderer has none: apps/web draws its own until part C replaces it with apps/client.',
+    'Home’s row of films, at every form factor: the card and its strip of posters with a pointer and on the TV, a Row of Posters by touch. The web renderer has none: the client draws it with this one on the web too.',
   HiddenHeading:
-    'A heading only screen readers read, at its aria-level; the web renderer’s pages use the sr-only class on their own h1 until part C replaces apps/web with apps/client.',
+    'A heading only screen readers read, at its aria-level; the web renderer’s pages (the admin’s and the prototypes’) use the sr-only class on their own h1.',
   SectionHeading:
-    'A section’s title with its suffix or count, which Row, FilmRow and Search’s sections share; the web renderer’s pages and CarouselRow write their own h2 until part C replaces apps/web with apps/client.',
+    'A section’s title with its suffix or count, which Row, FilmRow and Search’s sections share; the web renderer’s pages and CarouselRow write their own h2 until part D moves the admin onto this one.',
   Text: 'React Native draws text only inside <Text>; the web styles its elements with the tokens’ classes.',
   ThemeProvider:
     'Passes the resolved theme and the platform’s rule down; on the web the tokens’ CSS variables do.',
@@ -238,7 +237,7 @@ export const NATIVE_ONLY: Record<string, string> = {
     'Menu’s TV form, a menu over the page that keeps focus inside it until Back, which Menu draws on the TV and a TV screen may draw on its own.',
   TvConfirm: 'A TV confirmation with Cancel first and focus kept in it; the web has Dialog.',
   FeaturedCard:
-    'Home’s featured card at every form factor: a 4:5 card by touch, a banner with its actions and Pager with a pointer, a focus stop that lifts slightly on the TV. The web renderer’s BackdropHero is apps/web’s until part C.',
+    'Home’s featured card at every form factor: a 4:5 card by touch, a banner with its actions and Pager with a pointer, a focus stop that lifts slightly on the TV. The web renderer’s BackdropHero is the admin’s curation preview’s until part D.',
   Bloom:
     'The glow behind Home’s featured card in the art’s colour, with a pointer and on the TV; the web renderer’s Home has none until part C.',
   Pager:

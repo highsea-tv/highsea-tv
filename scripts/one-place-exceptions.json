@@ -40,13 +40,6 @@
   "exceptions": [
     {
       "rule": "screens",
-      "path": "apps/web/src/**",
-      "count": 17,
-      "until": "C",
-      "reason": "The web client's screens and their parts, drawn with the web renderer. Part C serves apps/client's web export at /web in the server and the desktop app, and removes apps/web (one-client-platform-b.md's answer 2)."
-    },
-    {
-      "rule": "screens",
       "path": "apps/server/app/**",
       "count": 58,
       "until": "D",
