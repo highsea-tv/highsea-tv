@@ -2,7 +2,8 @@
 // D2's admin parts in the native renderer (src/native/table.tsx, toaster.tsx, confirm-dialog.tsx
 // and widget.tsx), drawn through react-native-web in happy-dom as the admin draws them: the table
 // lays out as a CSS table with ARIA's roles, a row tints while a pointer is over it and shows its
-// actions, the last row has no line under it, the toast stack keeps the last three and Dismiss
+// actions, the last row has no line under it, cells centre their content and a path cut to fit
+// gives way to the other columns, whole in a tooltip (HT-3), the toast stack keeps the last three and Dismiss
 // takes one away, and a confirmation runs its action once and closes.
 import { GlobalRegistrator } from '@happy-dom/global-registrator'
 
@@ -113,6 +114,68 @@ describe('the admin’s table', () => {
     const firstCell = row.firstElementChild as HTMLElement
     expect(firstCell.style.borderBottomWidth).toBe('1px')
     expect(lastCell.style.borderBottomWidth).toBe('0px')
+  })
+
+  const PATH =
+    '/data/media/movies-4k/Ultra HD Blu-ray remuxes from the original discs/Sintel (2010)'
+  const pathTable = () => (
+    <ThemeProvider formFactor={{ input: 'pointer', widthClass: 'regular' }}>
+      <Table label="Library">
+        <TableHeader>
+          <TableRow>
+            <TableHead>Path</TableHead>
+            <TableHead numeric>Year</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          <TableRow>
+            <TableCell truncate>{PATH}</TableCell>
+            <TableCell numeric>2010</TableCell>
+          </TableRow>
+        </TableBody>
+      </Table>
+    </ThemeProvider>
+  )
+
+  test('cells centre their content in the row, as a block', () => {
+    // react-native-web's View sets align-content: flex-start, which would override
+    // vertical-align on a table cell (https://www.w3.org/TR/css-align-3/#distribution-block)
+    const html = renderToString(pathTable())
+    expect(html.match(/vertical-align:middle;align-content:center/g)).toHaveLength(4)
+    render(pathTable())
+    const head = screen.getByRole('columnheader', { name: 'Year' })
+    // the label sits in a block, not on the cell's line box
+    expect(head.firstElementChild?.textContent).toBe('Year')
+    expect(head.firstElementChild?.getAttribute('dir')).toBeNull()
+  })
+
+  test('a path cut to fit takes the room left over and stays whole for a screen reader', () => {
+    const html = renderToString(pathTable())
+    expect(html).toContain('width:100%')
+    expect(html).toContain('contain:inline-size')
+    // the year keeps its whole width beside it
+    expect(html).toContain('min-width:max-content')
+    render(pathTable())
+    expect(screen.getByRole('cell', { name: PATH }).textContent).toBe(PATH)
+  })
+
+  test('the whole path shows in a tooltip only when it’s cut', async () => {
+    render(pathTable())
+    const text = screen.getByText(PATH)
+    const trigger = text.parentElement as HTMLElement
+    act(() => {
+      fireEvent.focus(trigger)
+    })
+    expect(screen.queryByRole('tooltip')).toBeNull()
+    act(() => {
+      fireEvent.blur(trigger)
+    })
+    Object.defineProperty(text, 'scrollWidth', { value: 600 })
+    Object.defineProperty(text, 'clientWidth', { value: 200 })
+    act(() => {
+      fireEvent.focus(trigger)
+    })
+    expect(screen.getByRole('tooltip').textContent).toBe(PATH)
   })
 })
 
