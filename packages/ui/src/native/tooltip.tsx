@@ -9,6 +9,7 @@
 // draws only its trigger, and the trigger's own label carries what it says.
 import { type ComponentRef, type ReactNode, useEffect, useId, useRef, useState } from 'react'
 import { Platform, View, type ViewStyle } from 'react-native'
+import { OWN_SIZE } from './own-size.ts'
 import { Text } from './text.tsx'
 import { tokens, useTheme } from './theme.tsx'
 
@@ -84,7 +85,7 @@ export function Tooltip({ content, disabled, focusable, whenTruncated, children 
   useEffect(() => clear, [])
   if (!pointer || disabled) {
     return focusable ? (
-      <View focusable role="group" aria-label={content} style={{ alignSelf: 'flex-start' }}>
+      <View focusable role="group" aria-label={content} style={OWN_SIZE}>
         {children}
       </View>
     ) : (
@@ -108,7 +109,7 @@ export function Tooltip({ content, disabled, focusable, whenTruncated, children 
       } as object)}
       style={[
         // no wider than its place: a title cell inside one is cut to fit (a table's truncate)
-        { alignSelf: 'flex-start', maxWidth: '100%', borderRadius: tokens.radius.sm },
+        { ...OWN_SIZE, maxWidth: '100%', borderRadius: tokens.radius.sm },
         // a cut text's box can be narrower than its text
         whenTruncated ? { minWidth: 0 } : null,
       ]}

@@ -9,11 +9,11 @@
 import type { ReactNode } from 'react'
 import { View } from 'react-native'
 import type { ToggleCommon } from '../shared/controls.ts'
-import { ControlPress, ControlText, useControllable } from './control.tsx'
+import { ControlPress, ControlText, labelStyle, useControllable } from './control.tsx'
 import { Icon } from './icon.tsx'
 import type { ControlPoints } from './metrics.ts'
 import { Text } from './text.tsx'
-import { type Theme, tokens, useControl, useTheme } from './theme.tsx'
+import { fontScaleFor, type Theme, tokens, useControl, useTheme } from './theme.tsx'
 
 export type ToggleProps = ToggleCommon & {
   /** A quieter line under the words. */
@@ -73,15 +73,25 @@ function ToggleRow({
   hint,
   radio,
   mark,
+  markHeight,
 }: ToggleProps & {
   role: 'checkbox' | 'radio' | 'switch'
   radio?: boolean
   mark: (on: boolean, m: ControlPoints) => ReactNode
+  /** The mark's height when it isn't the box's (a switch's track). */
+  markHeight?: number
 }) {
+  const theme = useTheme()
   const m = useControl()
   const [on, set] = useControllable(checked, defaultChecked ?? false, onCheckedChange)
   const box = m.icon + m.inset * 2
   const words = hideLabel ? undefined : label
+  // With a hint under the words, the mark sits on the label's first line, as the prototype's
+  // `items-start` rows draw it, not centred across label and hint (HT-4). Whichever of the mark and
+  // the line is shorter is centred on the other.
+  const top = words && hint
+  const line = labelStyle(m, m.weight, fontScaleFor(theme)).lineHeight ?? box
+  const markH = markHeight ?? box
   return (
     <ControlPress
       role={role}
@@ -98,12 +108,25 @@ function ToggleRow({
         // with no words it's the end of a row (a list row's switch), centred in it
         alignSelf: words ? 'stretch' : 'center',
         flexDirection: 'row',
-        alignItems: 'center',
+        alignItems: top ? 'flex-start' : 'center',
         gap: m.gap,
       }}
     >
-      <View style={{ opacity: disabled ? tokens.controls.disabledOpacity : 1 }}>{mark(on, m)}</View>
-      <Words m={m} label={words} hint={hint} off={disabled} />
+      <View
+        style={{
+          opacity: disabled ? tokens.controls.disabledOpacity : 1,
+          marginTop: top ? Math.max(0, (line - markH) / 2) : 0,
+        }}
+      >
+        {mark(on, m)}
+      </View>
+      {top ? (
+        <View style={{ flex: 1, paddingTop: Math.max(0, (markH - line) / 2) }}>
+          <Words m={m} label={words} hint={hint} off={disabled} />
+        </View>
+      ) : (
+        <Words m={m} label={words} hint={hint} off={disabled} />
+      )}
     </ControlPress>
   )
 }
@@ -159,7 +182,18 @@ export function RadioMark({ checked }: { checked: boolean }) {
 
 /** A switch before its words, the whole row pressable. */
 export function Switch(props: ToggleProps) {
-  return <ToggleRow {...props} role="switch" mark={(on, m) => <Track on={on} m={m} />} />
+  const theme = useTheme()
+  const m = useControl()
+  // the track's height, as Track draws it
+  const height = theme.formFactor.input === 'tv' ? m.icon + m.inset * 2 : 24
+  return (
+    <ToggleRow
+      {...props}
+      role="switch"
+      markHeight={height}
+      mark={(on, m) => <Track on={on} m={m} />}
+    />
+  )
 }
 
 /**

@@ -25,6 +25,7 @@ import { Icon, type IconName } from './icon.tsx'
 import { Image } from './image.tsx'
 import { brighten, HOVER_BRIGHTNESS } from './lift.ts'
 import { centredPadding } from './metrics.ts'
+import { OWN_SIZE } from './own-size.ts'
 import { tokens, useControl, useTheme } from './theme.tsx'
 import type { ViewHandle } from './tv/focusable.tsx'
 import type { TileSource } from './tv/tiles.tsx'
@@ -135,7 +136,7 @@ export function Button({
         return {
           minHeight: m.height,
           minWidth: square ? m.height : undefined,
-          alignSelf: block ? 'stretch' : 'flex-start',
+          ...(block ? { alignSelf: 'stretch' as const } : OWN_SIZE),
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'center',

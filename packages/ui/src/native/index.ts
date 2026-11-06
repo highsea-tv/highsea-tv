@@ -14,6 +14,7 @@ export * from './color-well'
 export * from './command-palette.tsx'
 export * from './confirm-dialog.tsx'
 export * from './date-time'
+export * from './dense.tsx'
 export * from './disclosure.tsx'
 // a platform pair: an <iframe> on the web (embed.web.tsx)
 export * from './embed'

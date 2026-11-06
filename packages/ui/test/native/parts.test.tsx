@@ -847,8 +847,13 @@ describe('PersonTile', () => {
       )
       const out = [...container.querySelectorAll('*')]
         .map((el) => (el as HTMLElement).style)
-        // the circles: square by aspect ratio, or by their width and height (the TV's)
-        .filter((st) => st.aspectRatio === '1 / 1' || (st.width && st.width === st.height))
+        // the circles: square by aspect ratio, or by their width and height in pixels (the TV's;
+        // a chip that's its content's size is `fit-content` both ways, and no circle)
+        .filter(
+          (st) =>
+            st.aspectRatio === '1 / 1' ||
+            (st.width && st.width === st.height && !Number.isNaN(parseFloat(st.width))),
+        )
         .map((st) => parseFloat(st.width))
       cleanup()
       return out

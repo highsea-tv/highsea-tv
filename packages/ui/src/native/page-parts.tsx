@@ -14,6 +14,7 @@ import { focusVisible } from './dom'
 import { Icon, type IconName } from './icon.tsx'
 import { Image } from './image.tsx'
 import { useLift } from './lift.ts'
+import { OWN_SIZE } from './own-size.ts'
 import { Press } from './press.tsx'
 import { PHONE_SECTION_TITLE } from './section-heading.tsx'
 import { Text } from './text.tsx'
@@ -296,7 +297,7 @@ function PersonChip(props: PersonTileProps) {
       accessibilityRole="link"
       accessibilityLabel={labelOf(props)}
       style={(s) => ({
-        alignSelf: 'flex-start',
+        ...OWN_SIZE,
         flexDirection: 'row',
         alignItems: 'center',
         gap: tokens.space['2'] + tokens.space['0.5'],

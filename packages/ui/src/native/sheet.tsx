@@ -16,8 +16,8 @@ import { Button } from './button.tsx'
 import { uiMessages } from './messages.ts'
 import { useScrimStyle } from './scrim.ts'
 import { ScrollView } from './scroll-view.tsx'
-import { Text } from './text.tsx'
-import { tokens, useTheme } from './theme.tsx'
+import { Text, textStyle } from './text.tsx'
+import { tokens, useControl, useTheme } from './theme.tsx'
 
 // ---------------------------------------------------------------- yielding to a link
 
@@ -309,14 +309,7 @@ function SideSheet({
                     description
                   )}
                 </View>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  icon="close"
-                  iconOnly
-                  accessibilityLabel={t('close')}
-                  onPress={onClose}
-                />
+                <TitleClose label={t('close')} onPress={onClose} />
               </View>
             )}
             <View style={{ minWidth: 0 }}>{children}</View>
@@ -448,14 +441,7 @@ export function Dialog({
               >
                 {title}
               </Text>
-              <Button
-                variant="ghost"
-                size="sm"
-                icon="close"
-                iconOnly
-                accessibilityLabel={t('close')}
-                onPress={onClose}
-              />
+              <TitleClose label={t('close')} onPress={onClose} />
             </View>
           ) : (
             <Text variant="title" accessibilityRole="header" aria-level={2} nativeID={titleId}>
@@ -500,5 +486,29 @@ export function Dialog({
         </View>
       </View>
     </Modal>
+  )
+}
+
+/**
+ * The close button beside a sheet's or dialog's title, centred on the title's first line: the row
+ * tops them both (a title that wraps keeps its first line by the button, as the web's
+ * `items-start` header), and the button, taller than the title's line, is raised by half the
+ * difference so its icon sits on that line rather than below it (HT-4).
+ */
+function TitleClose({ label, onPress }: { label: string; onPress: () => void }) {
+  const theme = useTheme()
+  const m = useControl('sm')
+  const line = textStyle(theme, 'title').lineHeight
+  return (
+    <View style={{ marginTop: Math.min(0, (line - m.height) / 2) }}>
+      <Button
+        variant="ghost"
+        size="sm"
+        icon="close"
+        iconOnly
+        accessibilityLabel={label}
+        onPress={onPress}
+      />
+    </View>
   )
 }

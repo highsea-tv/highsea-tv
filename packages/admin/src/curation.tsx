@@ -261,7 +261,10 @@ function AnnouncementRow({ a }: { a: AnnouncementSummary }) {
           </>
         )}
       </View>
-      <View style={{ flexDirection: 'row', gap: s['1'], alignSelf: 'flex-end' }}>
+      <View
+        // centred in a wide card's row with the rest; at the end of a narrow card's column
+        style={{ flexDirection: 'row', gap: s['1'], alignSelf: wide ? undefined : 'flex-end' }}
+      >
         <Button
           size="sm"
           icon="edit"

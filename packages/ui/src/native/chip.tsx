@@ -9,6 +9,7 @@ import type { ChipCommon } from '../shared/controls.ts'
 import { ControlPress, ControlText, lookAt } from './control.tsx'
 import { Icon, type IconName } from './icon.tsx'
 import { centredPadding } from './metrics.ts'
+import { OWN_SIZE } from './own-size.ts'
 import { tokens, useControl, useTheme } from './theme.tsx'
 import type { ViewHandle } from './tv/focusable.tsx'
 
@@ -105,7 +106,7 @@ export function Chip({
       slop={{ height: m.height }}
       style={{
         minHeight: m.height,
-        alignSelf: 'flex-start',
+        ...OWN_SIZE,
         flexDirection: 'row',
         alignItems: 'center',
         gap: m.gap,

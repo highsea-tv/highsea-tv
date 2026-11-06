@@ -104,15 +104,22 @@ export function Subtitles({ tab = 'wanted' }: { tab?: Tab }) {
     <AdminPage title={t('title')} description={t('description')}>
       <Stats />
       <View>
-        {/* the tabs scroll sideways rather than wrap in a narrow window (the web's overflow-x-auto) */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          <Tabs
-            variant="line"
-            aria-label={t('sections')}
-            options={tabs}
-            value={tab}
-            onValueChange={setTab}
-          />
+        {/* the tabs scroll sideways rather than wrap in a narrow window (the web's overflow-x-auto),
+            and their rule runs the page's width, as the web's line list does */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ flexGrow: 1 }}
+        >
+          <View style={{ flexGrow: 1 }}>
+            <Tabs
+              variant="line"
+              aria-label={t('sections')}
+              options={tabs}
+              value={tab}
+              onValueChange={setTab}
+            />
+          </View>
         </ScrollView>
         <View
           role="tabpanel"
@@ -813,7 +820,7 @@ function ProfileEditor({
             const i = draft.languages.findIndex((x) => x.code === l.code)
             const words = (
               <Text size={ui.size} leading={ui.leading} style={{ flex: 1, minWidth: 0 }}>
-                <Text mono size={ui.size} color="text-3">
+                <Text mono size={ui.size} leading={ui.leading} color="text-3">
                   {`${i + 1}.`}
                 </Text>{' '}
                 {name(l.code)}

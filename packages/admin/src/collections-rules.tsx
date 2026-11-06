@@ -226,7 +226,7 @@ export function MatchItem({
         <Text size={ui.size} leading={ui.leading} numberOfLines={1} style={{ flex: 1 }}>
           {name}
           {detail ? (
-            <Text size={ui.size} color="text-3">
+            <Text size={ui.size} leading={ui.leading} color="text-3">
               {` ${detail}`}
             </Text>
           ) : null}

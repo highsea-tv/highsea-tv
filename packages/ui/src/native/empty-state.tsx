@@ -2,6 +2,7 @@
 // An empty or error state: an icon in a soft disc, a title, what to do, and an action.
 import type { ReactNode } from 'react'
 import { View } from 'react-native'
+import { useDense } from './dense.tsx'
 import { Icon, type IconName } from './icon.tsx'
 import { Text } from './text.tsx'
 import { tokens, useTheme } from './theme.tsx'
@@ -29,27 +30,14 @@ export function EmptyState({
   size?: 'md' | 'sm'
 }) {
   const theme = useTheme()
+  // The admin's (inside Dense) is the web renderer's `md`, as its signed-off screens drew it: a 44
+  // disc with a 20 icon, the words 12 under it and 4 apart, 48 above and below
+  // (web/components/page.tsx's `gap-3 px-6 py-12`, `size-11`, `gap-1`; HT-4).
+  const dense = useDense()
   if (size === 'sm') return <Small {...{ icon, title, children, action, tone, level }} />
-  return (
-    <View
-      style={{
-        alignItems: 'center',
-        gap: tokens.space['3'] * theme.u,
-        paddingVertical: tokens.space['2'] * theme.u,
-      }}
-    >
-      <View
-        style={{
-          width: 56 * theme.u,
-          height: 56 * theme.u,
-          borderRadius: tokens.radius.pill,
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: theme.colors[tone === 'error' ? 'badge-danger-bg' : 's2'],
-        }}
-      >
-        <Icon name={icon} size={26} color={tone === 'error' ? 'badge-danger' : 'text-2'} />
-      </View>
+  const disc = dense ? 44 : 56
+  const words = (
+    <>
       <Text variant="title" align="center" accessibilityRole="header" aria-level={level}>
         {title}
       </Text>
@@ -58,6 +46,37 @@ export function EmptyState({
           {children}
         </Text>
       ) : null}
+    </>
+  )
+  return (
+    <View
+      style={{
+        alignItems: 'center',
+        gap: tokens.space['3'] * theme.u,
+        paddingVertical: tokens.space[dense ? '12' : '2'] * theme.u,
+      }}
+    >
+      <View
+        style={{
+          width: disc * theme.u,
+          height: disc * theme.u,
+          borderRadius: tokens.radius.pill,
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: theme.colors[tone === 'error' ? 'badge-danger-bg' : 's2'],
+        }}
+      >
+        <Icon
+          name={icon}
+          size={dense ? 20 : 26}
+          color={tone === 'error' ? 'badge-danger' : 'text-2'}
+        />
+      </View>
+      {dense ? (
+        <View style={{ alignItems: 'center', gap: tokens.space['1'] * theme.u }}>{words}</View>
+      ) : (
+        words
+      )}
       {action ? (
         // centred, as ui-web's is: a row, since Button sets its own alignSelf (flex: 1 fills it)
         <View

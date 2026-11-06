@@ -7,6 +7,7 @@
 // so every admin address is drawn here, an unknown one by the admin's not-found page.
 
 import { Activity, type ActivityTab } from '@highsea-tv/admin/activity.tsx'
+import { AdminFrame } from '@highsea-tv/admin/admin-frame.tsx'
 import { Appearance } from '@highsea-tv/admin/appearance.tsx'
 import { BackupsSettings } from '@highsea-tv/admin/backups.tsx'
 import { CollectionPage } from '@highsea-tv/admin/collection.tsx'
@@ -196,10 +197,17 @@ function Host({
     <ClientProvider client={client}>
       <NavigationProvider value={navigation}>
         <ThemeProvider>
-          <div style={{ display: 'contents' }} onClickCapture={follow}>
-            {/* a user never reaches the shell: drawn signed in, they're sent away above */}
-            {shell && role !== 'user' ? <AdminShell role={role}>{children}</AdminShell> : children}
-          </div>
+          {/* the admin's dense form labels (AdminFrame), as the server's providers have them */}
+          <AdminFrame>
+            <div style={{ display: 'contents' }} onClickCapture={follow}>
+              {/* a user never reaches the shell: drawn signed in, they're sent away above */}
+              {shell && role !== 'user' ? (
+                <AdminShell role={role}>{children}</AdminShell>
+              ) : (
+                children
+              )}
+            </div>
+          </AdminFrame>
         </ThemeProvider>
       </NavigationProvider>
     </ClientProvider>

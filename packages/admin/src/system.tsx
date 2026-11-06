@@ -107,15 +107,22 @@ export function System({ tab: asked = 'status' }: { tab?: SystemTab }) {
   return (
     <AdminPage title={t('title')} description={t('description')}>
       <View>
-        {/* the tabs scroll sideways rather than wrap in a narrow window (the web's overflow-x-auto) */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          <Tabs
-            variant="line"
-            aria-label={t('sections')}
-            options={tabs}
-            value={tab}
-            onValueChange={setTab}
-          />
+        {/* the tabs scroll sideways rather than wrap in a narrow window (the web's overflow-x-auto),
+            and their rule runs the page's width, as the web's line list does */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ flexGrow: 1 }}
+        >
+          <View style={{ flexGrow: 1 }}>
+            <Tabs
+              variant="line"
+              aria-label={t('sections')}
+              options={tabs}
+              value={tab}
+              onValueChange={setTab}
+            />
+          </View>
         </ScrollView>
         <View
           role="tabpanel"
@@ -809,7 +816,9 @@ function Logs() {
                           ROW_PAD,
                           {
                             flexDirection: columns ? 'row' : 'column',
-                            alignItems: columns ? 'flex-start' : 'stretch',
+                            // the level's badge on the line's baseline, not its padded top
+                            // (https://reactnative.dev/docs/layout-props#alignitems)
+                            alignItems: columns ? 'baseline' : 'stretch',
                             gap: columns ? sp['3'] : sp['1'],
                           },
                           divided(i, theme.colors.line),
