@@ -27,8 +27,15 @@
 // in the inline axis, so the path's own width doesn't count towards the column's
 // (https://www.w3.org/TR/css-contain-2/#containment-inline-size), only TRUNCATE_MIN does. The
 // path is then cut to a line with an ellipsis. A number holds the content to that width instead:
-// a box's max-width caps its contributions (https://www.w3.org/TR/css-sizing-3/#intrinsic-contribution),
-// where a table cell's own max-width is undefined (https://www.w3.org/TR/CSS22/visudet.html#min-max-widths).
+// a box's max-width caps its contributions
+// (https://www.w3.org/TR/css-sizing-3/#intrinsic-contribution), where a table cell's own
+// max-width is undefined (https://www.w3.org/TR/CSS22/visudet.html#min-max-widths).
+// That leaves every other column its content's min-content width, so their content asks for its
+// max-content width as its minimum (https://www.w3.org/TR/css-sizing-3/#valdef-width-max-content):
+// a badge's words or a one-line text would report less than they draw, and tables never squeeze
+// text into wrapping (admin.md › Tables). A cell held to a width (`maxWidth`) is as wide as its
+// content up to that width, where it wraps (max-width clamps a max-content width); one spanning
+// columns takes what it's given.
 import {
   Children,
   type ComponentRef,
@@ -405,6 +412,9 @@ export function TableCell({
           {children}
         </Text>
       )
+    ) : most !== undefined ? (
+      // held to a width: its content fills it and wraps there (a row's items don't shrink)
+      children
     ) : (
       <View
         style={{
@@ -445,7 +455,14 @@ export function TableCell({
       <View
         style={[
           { minWidth: 0, maxWidth: most === undefined ? undefined : most - s['3'] * 2 },
-          fill ? css('flex', { contain: 'inline-size', minWidth: TRUNCATE_MIN }) : null,
+          fill
+            ? css('flex', { contain: 'inline-size', minWidth: TRUNCATE_MIN })
+            : span
+              ? null
+              : // the rest never squeeze, or only to their width: see the file's header
+                most === undefined
+                ? css('flex', { minWidth: 'max-content' })
+                : css('flex', { width: 'max-content' }),
         ]}
       >
         {content}

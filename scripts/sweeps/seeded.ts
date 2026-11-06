@@ -189,13 +189,21 @@ export async function seed(
   mkdirSync(join(dataDir, 'films'), { recursive: true })
   await api('POST', '/rootfolders', { path: join(dataDir, 'films') }, token)
   const movies = join(dataDir, 'movies')
-  const add = (tmdbId: number, versions = [{ label: '1080p', qualityProfileId: 'qp-hd' }]) =>
+  // a root folder with a long path, for the tables' truncation (HT-3)
+  const remuxes = join(dataDir, 'movies-4k', 'Ultra HD Blu-ray remuxes from the original discs')
+  mkdirSync(remuxes, { recursive: true })
+  await api('POST', '/rootfolders', { path: remuxes }, token)
+  const add = (
+    tmdbId: number,
+    versions = [{ label: '1080p', qualityProfileId: 'qp-hd' }],
+    rootFolder = movies,
+  ) =>
     api(
       'POST',
       '/movies',
       {
         tmdbId,
-        rootFolder: movies,
+        rootFolder,
         monitored: true,
         minimumAvailability: 'released',
         versions,
@@ -208,7 +216,9 @@ export async function seed(
     { label: '4K HDR', qualityProfileId: 'qp-uhd' },
     { label: '1080p', qualityProfileId: 'qp-hd' },
   ])
-  for (const id of [10378, 133701, 9761, 653, 832, 1117898]) await add(id)
+  // Elephants Dream in the long root folder
+  for (const id of [10378, 133701, 9761, 653, 832, 1117898])
+    await add(id, undefined, id === 9761 ? remuxes : movies)
   await api('PATCH', '/movies/832', { monitored: false }, token)
   // 8c: tags, one on Sintel, for the library's filter, the movie's Tags and Settings › Tags
   const kids = await api<{ id: string }>('POST', '/tags', { label: 'Kids' }, token)

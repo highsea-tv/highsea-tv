@@ -295,7 +295,7 @@ function Wanted() {
                 <TableBody>
                   {wanted.items.map(({ movie: m, missingLanguages }) => (
                     <TableRow key={m.id}>
-                      <TableCell tall>
+                      <TableCell tall truncate>
                         <TitleCell
                           title={
                             <TitleLink href={moviePath(m.id)}>
@@ -402,7 +402,7 @@ function Providers() {
                       (needsAccount && !p.enabled ? t('providers.addAccountFirst') : null)
                     return (
                       <TableRow key={p.id}>
-                        <TableCell tall>
+                        <TableCell tall truncate>
                           <TitleCell title={p.name} detail={why ?? undefined} />
                         </TableCell>
                         <TableCell>

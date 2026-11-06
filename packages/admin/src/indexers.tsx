@@ -404,7 +404,7 @@ function Installed({ onBrowse }: { onBrowse: () => void }) {
                     })
                     return (
                       <TableRow key={ix.id}>
-                        <TableCell tall>
+                        <TableCell tall truncate>
                           {ix.local ? (
                             <LocalTitle name={ix.name} detail={detail} />
                           ) : (

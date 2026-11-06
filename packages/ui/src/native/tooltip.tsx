@@ -107,9 +107,10 @@ export function Tooltip({ content, disabled, focusable, whenTruncated, children 
         onBlur: hide,
       } as object)}
       style={[
-        { alignSelf: 'flex-start', borderRadius: tokens.radius.sm },
-        // a cut text's box: as wide as its column lets it be, no wider
-        whenTruncated ? { maxWidth: '100%', minWidth: 0 } : null,
+        // no wider than its place: a title cell inside one is cut to fit (a table's truncate)
+        { alignSelf: 'flex-start', maxWidth: '100%', borderRadius: tokens.radius.sm },
+        // a cut text's box can be narrower than its text
+        whenTruncated ? { minWidth: 0 } : null,
       ]}
     >
       {children}
