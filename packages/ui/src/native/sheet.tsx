@@ -14,6 +14,7 @@ import { Modal, Platform, Pressable, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Button } from './button.tsx'
 import { uiMessages } from './messages.ts'
+import { useScrimStyle } from './scrim.ts'
 import { ScrollView } from './scroll-view.tsx'
 import { Text } from './text.tsx'
 import { tokens, useTheme } from './theme.tsx'
@@ -244,6 +245,7 @@ function SideSheet({
   const t = useT(uiMessages)
   const titleId = useId()
   const { visible, dismissed } = useYielding(open)
+  const scrim = useScrimStyle()
   const corner = tokens.radius.xl
   return (
     <Modal
@@ -261,7 +263,7 @@ function SideSheet({
         style={{
           flex: 1,
           flexDirection: side === 'right' ? 'row-reverse' : 'row',
-          backgroundColor: 'rgba(0,0,0,0.6)',
+          ...scrim,
         }}
       >
         <View
@@ -398,6 +400,7 @@ export function Dialog({
   const pointer = theme.formFactor.input === 'pointer'
   const titleId = useId()
   const { visible, dismissed } = useYielding(open)
+  const scrim = useScrimStyle()
   return (
     <Modal
       visible={visible}
@@ -414,7 +417,7 @@ export function Dialog({
           justifyContent: 'center',
           alignItems: pointer ? 'center' : undefined,
           padding: tokens.space['6'],
-          backgroundColor: 'rgba(0,0,0,0.6)',
+          ...scrim,
         }}
       >
         <View

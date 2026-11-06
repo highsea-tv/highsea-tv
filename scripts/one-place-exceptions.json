@@ -258,16 +258,16 @@
     {
       "rule": "values",
       "path": "packages/ui/src/native/command-palette.tsx",
-      "count": 12,
+      "count": 11,
       "until": "E",
-      "reason": "The command palette's measures from the web renderer's (cmdk's, which D3 replaced): the 560 card, the 48 field, the 36 rows and their 13.5 type, the list's 360 height, and the 1.5 and 2.5 steps of the 4px base (6 and 10) that the space scale doesn't name; the scrim, black at 0.6, and the 1 border under the field, as Sheet's and Dialog's; and the visually hidden title (1 by 1 at -1, WAI's visually hidden pattern, as Sheet's) that names the dialog. A new token value needs the owner's approval; part E removes this entry once they have tokens."
+      "reason": "The command palette's measures from the web renderer's (cmdk's, which D3 replaced): the 560 card, the 48 field, the 36 rows and their 13.5 type, the list's 360 height, and the 1.5 and 2.5 steps of the 4px base (6 and 10) that the space scale doesn't name; the 1 border under the field, as Sheet's and Dialog's; and the visually hidden title (1 by 1 at -1, WAI's visually hidden pattern, as Sheet's) that names the dialog. A new token value needs the owner's approval; part E removes this entry once they have tokens."
     },
     {
       "rule": "values",
       "path": "packages/ui/src/native/sheet.tsx",
-      "count": 8,
+      "count": 6,
       "until": "E",
-      "reason": "Sheet's and Dialog's measures from the prototype, written before this check; part A moved their spaces onto the space scale. The 56 header height, the dialog's 1 border and its scrim, black at 0.6, have no token; D2 added the pointer's centred dialog with the same scrim and 32 side margin, and the visually hidden title (1 by 1 at -1, WAI's visually hidden pattern) that names a dialog without a drawn heading. A new token value needs the owner's approval; part E removes this entry once they have tokens."
+      "reason": "Sheet's and Dialog's measures from the prototype, written before this check; part A moved their spaces onto the space scale. The 56 header height and the dialog's 1 border have no token; D2 added the pointer's side sheet's 32 side margin, and the visually hidden title (1 by 1 at -1, WAI's visually hidden pattern) that names a dialog without a drawn heading. A new token value needs the owner's approval; part E removes this entry once they have tokens."
     },
     {
       "rule": "values",
