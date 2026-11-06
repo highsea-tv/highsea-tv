@@ -12,6 +12,7 @@ import { type ComponentProps, createContext, type ReactNode, useContext, useStat
 import { Platform, TextInput, type TextStyle, View, type ViewStyle } from 'react-native'
 import type { ControlSize, FieldCommon } from '../shared/controls.ts'
 import { ControlPress } from './control.tsx'
+import { useDense } from './dense.tsx'
 import { family, smoothing } from './fonts.ts'
 import { Icon, type IconName } from './icon.tsx'
 import type { ControlPoints } from './metrics.ts'
@@ -33,22 +34,16 @@ export function useField() {
   return useContext(FieldContext)
 }
 
-/** The admin's field labels (DenseFields): its ui type, medium, 6 above the control. */
+/**
+ * The admin's field labels (inside Dense): its ui type (13, medium) and 6 above its control and
+ * hint, as the admin's signed-off forms drew them (the web's Label, `text-[13px] font-medium`, in
+ * a `gap-1.5` grid), where a client's label is its scale's callout, a step larger (the owner's
+ * answer of 2026-11-06 at HT-4).
+ */
 const DENSE = {
   ...tokens.adminText.ui,
   weight: 500 as const,
   gap: tokens.space['1'] + tokens.space['0.5'],
-}
-const DenseContext = createContext(false)
-
-/**
- * The admin's forms: each Field's label in the admin's ui type (13, medium) and 6 above its
- * control and hint, as the admin's signed-off forms drew them (the web's Label, `text-[13px]
- * font-medium`, in a `gap-1.5` grid), where a client's label is its scale's callout, a step
- * larger (the owner's answer of 2026-11-06 at HT-4). The admin's hosts wrap their pages in it.
- */
-export function DenseFields({ children }: { children: ReactNode }) {
-  return <DenseContext.Provider value>{children}</DenseContext.Provider>
 }
 
 export function Field({
@@ -62,7 +57,7 @@ export function Field({
 }: FieldCommon & { children: ReactNode }) {
   const theme = useTheme()
   const m = useControl(size)
-  const dense = useContext(DenseContext)
+  const dense = useDense()
   return (
     <View style={{ gap: dense ? DENSE.gap : m.gap }}>
       {hideLabel ? null : (

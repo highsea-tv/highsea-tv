@@ -181,9 +181,9 @@
     {
       "rule": "values",
       "path": "packages/ui/src/native/empty-state.tsx",
-      "count": 8,
+      "count": 9,
       "until": "E",
-      "reason": "EmptyState's measures from the prototype, written before this check; part A moved its spaces and the circle's corner (the pill) onto their tokens. The 56 icon circle, the 26 icon and the 320 text width have no token, nor (D2) the admin's compact EmptyState: its 32 circle, 16 icon and 440 text width. A new token value needs the owner's approval; part E removes this entry once they have tokens."
+      "reason": "EmptyState's measures from the prototype, written before this check; part A moved its spaces and the circle's corner (the pill) onto their tokens. The 56 icon circle, the 26 icon and the 320 text width have no token, nor (D2) the admin's compact EmptyState: its 32 circle, 16 icon and 440 text width, nor (HT-4) the admin's own, the web renderer's 44 circle and 20 icon. A new token value needs the owner's approval; part E removes this entry once they have tokens."
     },
     {
       "rule": "values",

@@ -143,6 +143,7 @@ function LineTabs<V extends string>({
 }: SegmentedControlProps<V>) {
   const theme = useTheme()
   const m = useControl(size)
+  const tv = theme.formFactor.input === 'tv'
   const [chosen, choose] = useControllable<V | undefined>(
     value,
     defaultValue ?? options[0]?.value,
@@ -155,7 +156,9 @@ function LineTabs<V extends string>({
       accessibilityLabel={label}
       style={{
         flexDirection: 'row',
-        gap: m.pad,
+        // the web renderer's line list: 20 between tabs on a pointer (web/components/tabs.tsx's
+        // `gap-5`), the control's padding on the TV (HT-4)
+        gap: tv ? m.pad : tokens.space['5'] * theme.u,
         borderBottomWidth: 1,
         borderBottomColor: theme.colors.line,
         ...SIDEWAYS,
@@ -178,31 +181,48 @@ function LineTabs<V extends string>({
               minHeight: m.height,
               alignItems: 'center',
               justifyContent: 'center',
-              borderBottomWidth: 2,
-              borderBottomColor: on ? theme.colors.accent : 'transparent',
+              paddingHorizontal: tv ? 0 : tokens.space['0.5'] * theme.u,
               marginBottom: -1,
               opacity: o.disabled ? tokens.controls.disabledOpacity : 1,
             }}
           >
             {(_focused, state) => (
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: m.gap }}>
-                <ControlText
-                  m={m}
-                  weight={on ? looks.selected.weight : looks.track.weight}
-                  color={
-                    theme.colors[
-                      on
-                        ? looks.selected.label
-                        : lookAt(looks.track, o.disabled ? { ...state, hovered: false } : state)
-                            .label
-                    ]
-                  }
-                  lines={1}
-                >
-                  {o.label}
-                </ControlText>
-                {o.count == null ? null : <Count on={on} n={o.count} />}
-              </View>
+              <>
+                {/* the chosen tab's line: a 2pt bar with round ends over the list's rule (the web
+                    renderer's `h-0.5 rounded-full`); a bottom border would follow the tab's corner
+                    radius and curve up at its ends */}
+                {on ? (
+                  <View
+                    style={{
+                      position: 'absolute',
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      height: 2,
+                      borderRadius: tokens.radius.pill,
+                      backgroundColor: theme.colors.accent,
+                    }}
+                  />
+                ) : null}
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: m.gap }}>
+                  <ControlText
+                    m={m}
+                    weight={on ? looks.selected.weight : looks.track.weight}
+                    color={
+                      theme.colors[
+                        on
+                          ? looks.selected.label
+                          : lookAt(looks.track, o.disabled ? { ...state, hovered: false } : state)
+                              .label
+                      ]
+                    }
+                    lines={1}
+                  >
+                    {o.label}
+                  </ControlText>
+                  {o.count == null ? null : <Count on={on} n={o.count} />}
+                </View>
+              </>
             )}
           </ControlPress>
         )
