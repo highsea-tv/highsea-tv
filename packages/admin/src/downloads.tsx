@@ -220,7 +220,7 @@ export function Downloads() {
                           const s = torrentTone[x.state]
                           return (
                             <TableRow key={x.id}>
-                              <TableCell tall>
+                              <TableCell tall truncate>
                                 <TitleCell
                                   title={
                                     <TitleButton onPress={() => setOpen(x.id)}>

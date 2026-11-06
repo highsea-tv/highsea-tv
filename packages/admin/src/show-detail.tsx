@@ -685,7 +685,7 @@ function Files({ show: sh }: { show: SeriesDetail }) {
                   {episodeCode(season, f.episodes)}
                 </Text>
               </TableCell>
-              <TableCell tall>
+              <TableCell tall truncate>
                 <TitleCell title={basename(f.path)} detail={dirname(f.path)} />
               </TableCell>
               <TableCell tall>

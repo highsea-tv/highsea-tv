@@ -388,7 +388,7 @@ function Library() {
                               onCheckedChange={(on) => toggle(s.id, on)}
                             />
                           </TableCell>
-                          <TableCell tall>
+                          <TableCell tall truncate>
                             <TitleCell
                               title={<TitleLink href={showPath(s.id)}>{s.title}</TitleLink>}
                               detail={s.path}

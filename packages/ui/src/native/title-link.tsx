@@ -45,7 +45,9 @@ function Title({
     <Press
       role={role}
       {...extra}
-      style={{ flexShrink: 1, minWidth: 0, borderRadius: tokens.radius.sm }}
+      // no wider than its line, so a long title is cut with an ellipsis: inside a TitleCell's
+      // text, react-native-web draws a View `inline-flex`, which is as wide as its content
+      style={{ flexShrink: 1, minWidth: 0, maxWidth: '100%', borderRadius: tokens.radius.sm }}
     >
       {({ hovered }) => (
         <Text

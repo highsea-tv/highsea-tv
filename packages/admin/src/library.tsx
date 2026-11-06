@@ -519,7 +519,7 @@ export function MoviesLibrary() {
                               onCheckedChange={(on) => toggle(m.id, on)}
                             />
                           </TableCell>
-                          <TableCell tall>
+                          <TableCell tall truncate>
                             <TitleCell
                               title={<TitleLink href={moviePath(m.id)}>{m.title}</TitleLink>}
                               detail={m.path}

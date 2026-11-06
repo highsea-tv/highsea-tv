@@ -131,8 +131,6 @@ const FIGURE = tokens.adminText.figure
 const RELEASE = tokens.adminText.release
 /** A tab's content under the tabs (the web's pt-5). */
 const PANEL_TOP = s['5']
-/** A title cell's widest (the web's max-w-80). */
-const TITLE_WIDTH = 320
 
 /** Where Discover finds a title by name: its search is kept in the address (movies.md). */
 const discoverSearch = (title: string) => `/discover?q=${encodeURIComponent(title)}`
@@ -176,7 +174,7 @@ function FormError({ children }: { children: string }) {
 /** The web's TitleCell is a cell of its own: here the library's TitleCell inside a tall cell. */
 function TitleTd({ title, detail }: { title: string; detail?: string | null }) {
   return (
-    <TableCell tall maxWidth={TITLE_WIDTH}>
+    <TableCell tall truncate>
       <TitleCell title={title} detail={detail ?? undefined} />
     </TableCell>
   )

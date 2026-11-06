@@ -108,6 +108,12 @@ export type MediaSettings = {
   episodes: EpisodeNaming
 }
 
+/**
+ * The second films root folder, where the 4K films sit: its long path shows the admin's tables
+ * truncating one (HT-3).
+ */
+export const UHD_ROOT = '/data/media/movies-4k/Ultra HD Blu-ray remuxes from the original discs'
+
 /** A root folder as Settings › Media management lists it (`rootFolders.list`). */
 export type RootFolderRow = {
   id: string
@@ -366,7 +372,7 @@ export const defaultSettings = (
             {
               id: 'rf-movies-4k',
               kind: 'movies' as const,
-              path: '/data/media/movies-4k',
+              path: UHD_ROOT,
               free: 3.4 * TB,
               total: 16 * TB,
               accessible: true,

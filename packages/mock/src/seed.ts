@@ -8,7 +8,7 @@ import { seedFormats, seedProfiles } from '@highsea-tv/quality'
 import { iso } from './clock.ts'
 import { type PlaybackRuntime, seedPlayback } from './playback.ts'
 import { type SessionsRuntime, seedSessions } from './sessions.ts'
-import { defaultSettings, type Settings } from './settings.ts'
+import { defaultSettings, type Settings, UHD_ROOT } from './settings.ts'
 import type {
   Announcement,
   ApiKey,
@@ -624,8 +624,11 @@ const minutes = (runtime: string) => {
   return Number(h ?? 0) * 60 + Number(m ?? 0)
 }
 
-const folder = (t: { title: string; year: number }) =>
-  `/data/media/movies/${t.title.replace(/[:/]/g, '')} (${t.year})`
+// the 4K films sit in the second root folder, UHD_ROOT
+const root = (t: { quality: readonly string[] }) =>
+  t.quality.includes('4K') ? UHD_ROOT : '/data/media/movies'
+const folder = (t: { title: string; year: number; quality: readonly string[] }) =>
+  `${root(t)}/${t.title.replace(/[:/]/g, '')} (${t.year})`
 
 function item(t: Title, i: number, now: number): MediaItem {
   const uhd = t.quality.includes('4K')
@@ -644,7 +647,7 @@ function item(t: Title, i: number, now: number): MediaItem {
     monitored: true,
     minimumAvailability: 'released',
     languageProfileId: 'lp-en',
-    rootFolder: '/data/media/movies',
+    rootFolder: root(t),
     path: folder(t),
     // the first ten were added over the last month, the rest across the year
     addedAt: iso(now - (i < 10 ? i * 2.6 * DAY : (30 + i * 8) * DAY)),
