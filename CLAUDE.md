@@ -12,7 +12,7 @@ highsea is a self-hosted replacement for the *ARR suite (Radarr, Sonarr, Prowlar
 
 ## Now
 
-Phase 4, the one client platform ([plan](docs/plans/one-client-platform.md)): part D3 (the rest of the admin on the library, and TanStack Virtual's core as the library's virtualizer) is built and waits for the owner's review ([its plan](docs/plans/one-client-platform-d.md)). Next: the [one compose file](docs/plans/one-compose-file.md) follow-up, then part E. Keep this section to a few lines; the history goes in docs/status.md.
+Phase 4, the one client platform ([plan](docs/plans/one-client-platform.md)): part D3 (the rest of the admin on the library, and TanStack Virtual's core as the library's virtualizer) is built and waits for the owner's review ([its plan](docs/plans/one-client-platform-d.md)). Work now lands on `next`, with CI by branch ([its plan](docs/plans/next-branch.md), built and waiting for review). Next: the [one compose file](docs/plans/one-compose-file.md) follow-up, then part E. Keep this section to a few lines; the history goes in docs/status.md.
 
 ## Rules from the owner
 
@@ -20,7 +20,7 @@ The plan's standing rules in short; Phase 3's plan has the full text.
 
 - **Gated work.** Stop at each checkpoint, report, and ask for review before moving on.
 - **Decisions rest on official documentation, not experiments.** Choose libraries, settings and patterns from the docs and established practice, and cite them (ADR, code comment or checkpoint report). Experiments only confirm what the docs say. When something misbehaves, find the documented cause before working around it.
-- **Git:** commit only when the owner asks; never push unless asked; **no attribution or co-author lines** in commit messages; match earlier commits (an imperative subject, then a bulleted body). Pushing to `main` deploys docs.highsea.tv. Never tag, publish an image or run the release workflow without the owner's separate word.
+- **Git:** commit only when the owner asks; never push unless asked; **no attribution or co-author lines** in commit messages; match earlier commits (an imperative subject, then a bulleted body). Work lands on `next`, and `main` changes only through the owner's merge of `next` (which deploys docs.highsea.tv). Never tag, publish an image or run the release workflow without the owner's separate word.
 - **SPDX header on every source file:** `// SPDX-License-Identifier: AGPL-3.0-only` (`/* … */` in CSS, `#` in shell and YAML). `'use client'` goes above it.
 - **Dependencies:** exact versions released at least two weeks ago (`bun run pin <pkg>`), licences compatible with AGPL-3.0 (`bun run licenses`; exceptions with a reason in `scripts/license-exceptions.json`). The `add-dependency` skill has the steps.
 - **Locked:** design system v1.0 and the signed-off prototypes. The admin UI matches its prototype; list any change real data forces in the checkpoint report. Token values, design-language rules and locked layouts change only with the owner's approval.
