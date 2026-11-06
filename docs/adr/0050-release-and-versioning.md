@@ -169,3 +169,7 @@ The TV app carries the release's version as the phone does: its `app.config.ts` 
 ## 2026-11-04: the phone's and the TV's version from `apps/client` (one client platform, part B2)
 
 `apps/mobile` and `apps/tv` are removed ([ADR 0061](0061-one-client-platform.md)'s 2026-11-04 section). The phone and the TV now carry the release's version from `apps/client/package.json`, which its `app.config.ts` reads and `scripts/release.ts prepare` already set; `prepare` and `check` no longer touch the two removed apps. Nothing is built or uploaded for them by the release workflow until the Apple Developer membership and the owner's word.
+
+## 2026-11-06: work lands on `next` (next-branch.md)
+
+Work now collects on `next`, and `main` changes only through the owner's merge of `next` into it, by a pull request that runs every job ([ADR 0062](0062-next-branch-and-ci-by-branch.md)). Releases still come from `main`, and `release.yml` still fails unless it runs there; it calls `ci.yml` and `e2e.yml` whole, as before. The docs still deploy from `main` (the 2026-10-23 section), so a guide goes out when `next` reaches `main`, not when a part is committed. `next` gets Vercel's previews like any other branch ([Vercel: Git deployments](https://vercel.com/docs/deployments/git)). A push to `main` now runs only `ci.yml`'s `check`: the pull request from `next` ran everything on the same result.

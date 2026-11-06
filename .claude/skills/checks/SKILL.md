@@ -56,6 +56,15 @@ bun scripts/sweeps/playback.ts             # the web player in Chromium and Fire
 
 If the work touched packaging, also run `docker compose -f compose.dev.yaml up --build`, then `HIGHSEA_IMAGE=highsea:dev bun scripts/e2e/run.ts` and `bun scripts/image.ts size highsea:dev` (it reports the size; there is no budget since 2026-11-05) and `bun scripts/image.ts hardware highsea:dev`.
 
+## What CI runs, by branch
+
+The full local run before a report stays as above. CI runs two tiers ([ADR 0062](../../../docs/adr/0062-next-branch-and-ci-by-branch.md)):
+
+- **Fast:** `ci.yml`'s `check` (lint, types, the Bun tests, smoke, licences, audit, the client's exports, the admin's and the docs' builds) on every pull request and every push to `next` or `main`, and `catalog.yml` when the catalog changes.
+- **Heavy:** `ci.yml`'s `playback`, `leak` and `image`, `e2e.yml`, `desktop.yml` (`build`) and `native.yml` (`ios`, `tvos`) on a push to `next`, the pull request from `next` into `main`, a pull request with the `full-ci` label, and a release. On a task's pull request into `next` without the label they show as skipped.
+
+So a task's pull request proves only the fast tier. When a change could break the heavy jobs (packaging, the Dockerfile, the native or desktop builds, the workflows), run their local counterparts here (the image and the end-to-end run, `playback.ts`, the simulator builds), or ask for the `full-ci` label on its pull request.
+
 ## Known false alarms
 
 Don't report these as failures. Do report anything else.

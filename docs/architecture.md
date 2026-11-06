@@ -58,6 +58,11 @@ Conventions:
 
 Every command, with the development switches, the image, release and packaging. CLAUDE.md keeps the everyday ones.
 
+**Branches and CI** ([ADR 0062](adr/0062-next-branch-and-ci-by-branch.md)). Work lands on `next`: each task branches from it, and its pull request merges into it. `main` changes only when the owner merges `next` into it by a pull request, and releases and the docs come from `main`. CI runs in two tiers:
+
+- **Fast:** `ci.yml`'s `check` (lint, types, the Bun tests, smoke, licences, the dependency check, the client's exports, the admin's and the docs' builds) on every pull request and every push to `next` or `main`; `catalog.yml` when the catalog changes.
+- **Heavy:** `ci.yml`'s `playback`, `leak` and `image`, `e2e.yml`, `desktop.yml` and `native.yml` on a push to `next`, a pull request into `main`, a pull request with the `full-ci` label (for packaging, the Dockerfile, the native and desktop builds and the workflows), and a release. On a pull request into `next` without the label they show as skipped.
+
 ```sh
 bun install
 bun run lint            # Biome

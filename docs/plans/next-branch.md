@@ -46,6 +46,15 @@ One gated part. It's small, but it changes how every later change lands, so it's
 
 ## Progress
 
+- **The branch (A), done on 2026-11-06:** `claude/determined-maxwell-xohgoy` was pushed with D2 and D3, HT-1 to HT-3 and HT-5 accepted into it, and it was renamed `next` on GitHub and in the owner's checkout. Shepherdr's tasks now branch from `next` and merge into it.
+- **CI by branch, the workflow around it and the ADRs (A), built on 2026-11-06 (HT-6) and waiting for the owner's review:**
+  - `ci.yml`'s `check` runs on every pull request and every push to `next` or `main`. Its pull requests have no path filter any more, so `check` always reports and both branches can require it; a docs-only pull request now runs it too.
+  - The heavy jobs (`ci.yml`'s `playback`, `leak` and `image`, `e2e.yml`, `desktop.yml`, `native.yml`) carry one condition per workflow, with its reason and GitHub's docs beside it, repeated with a YAML alias where a workflow has several jobs: a push to `next`, a pull request into `main`, a pull request with `full-ci`, and a release. The heavy workflows push on `next` only, take every pull request with `labeled` added to the types, and keep their paths. A push to `main` runs only `check`. Every action stays pinned to its SHA.
+  - The `signoff`, `checks` and `handoff` skills, CLAUDE.md's git rule and "Now", and `docs/architecture.md`'s commands follow; ADR 0062 and 0050's 2026-11-06 section record it.
+  - Checked with `actionlint` and `bun run lint`, and by this part's own pull request into `next` (#8), which ran only `check` while every heavy job showed as skipped.
+  - Left for the coordinator after the owner's Accept: the `full-ci` label and the two rulesets (their bodies are in HT-6's Accept card). Still to prove after the merge: the first push to `next` running everything, and a pull request with `full-ci` running everything.
+  - Not done here: the `work-through-shepherdr-tasks` memory lives outside the repository, so the coordinator updates it.
+
 ## The branch (A)
 
 - **`next` is the work branch, renamed.** First `claude/determined-maxwell-xohgoy` is pushed, so GitHub's copy has D2 and D3. Then it's renamed `next` in GitHub's settings. Renaming a branch on GitHub retargets the open pull requests that have it as their base, and old links to it redirect, but closes any open pull request it is the head of, so none may be open from it ([Renaming a branch](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-branches-in-your-repository/renaming-a-branch)). This checkout then follows the new name: `git branch -m`, then `git fetch` and `git branch -u origin/next`.

@@ -41,8 +41,11 @@ EOF
 
 ## 3. Push, if asked
 
-- On the default branch `main`, `git push`. **Pushing to `main` deploys `docs.highsea.tv`** (Vercel's `highsea-docs` project), so say so when the commit touches `apps/docs`.
-- On a work branch, push it. Merge into `main` only if the owner said merge.
+Work lands on `next`, and `main` changes only through the owner's merge of `next` ([ADR 0062](../../../docs/adr/0062-next-branch-and-ci-by-branch.md)).
+
+- **Push** means pushing the part's commit to `next` (`git push origin next`). That push runs every CI job once, the heavy ones included.
+- **Merge** means opening the pull request from `next` into `main`, or updating the one that's open (`gh pr create --base main --head next`), and merging it once its checks pass. Do it only if the owner said merge.
+- **`main` deploys `docs.highsea.tv`** (Vercel's `highsea-docs` project), so the guides go out when `next` reaches `main`, not when a part is committed. Say so when the commits being merged touch `apps/docs`.
 - Never tag, publish an image or run the release workflow without the owner's separate word (checkpoint 9's rule).
 
 ## 4. Move on
