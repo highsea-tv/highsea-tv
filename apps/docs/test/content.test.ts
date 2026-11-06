@@ -4,10 +4,11 @@
 // every page; and the copy keeps the brand brief's rule of no exclamation marks. No build, no network.
 import { describe, expect, test } from 'bun:test'
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { basename, dirname, join, resolve } from 'node:path'
 
 const dir = join(import.meta.dir, '..', 'content')
 const publicDir = join(import.meta.dir, '..', 'public')
+const root = join(import.meta.dir, '..', '..', '..')
 const pages = readdirSync(dir, { recursive: true, encoding: 'utf8' })
   .filter((f) => f.endsWith('.mdx'))
   .map((f) => {
@@ -21,6 +22,40 @@ const pages = readdirSync(dir, { recursive: true, encoding: 'utf8' })
     )
     return { slug: f.slice(0, -'.mdx'.length), front, body: match?.[2] ?? '' }
   })
+
+/** The repository's compose files, as paths from its root (one-compose-file.md › Tests). */
+const composeFiles = (() => {
+  const skip = new Set(['node_modules', '.git', '.next', '.dev', 'dist', 'build', 'out'])
+  const found: string[] = []
+  const walk = (folder: string) => {
+    for (const entry of readdirSync(join(root, folder), { withFileTypes: true })) {
+      const path = folder ? `${folder}/${entry.name}` : entry.name
+      if (entry.isDirectory()) {
+        if (!skip.has(entry.name)) walk(path)
+      } else if (/^compose[\w.-]*\.ya?ml$/.test(entry.name)) found.push(path)
+    }
+  }
+  walk('')
+  return found
+})()
+
+/**
+ * The compose files a guide names, in its words, code or comments: a bare name such as
+ * `compose.yaml`, a path from the repository's root such as `templates/synology/compose.yaml`, or a
+ * path relative to the guide, as an include has. Each is a path from the repository's root, or a bare
+ * name.
+ */
+function composeNamed(slug: string, body: string) {
+  return [...body.matchAll(/(?<![\w/.-])((?:\.{1,2}\/|[\w-]+\/)*compose[\w.-]*\.ya?ml)\b/g)].map(
+    (m) => {
+      const name = m[1] ?? ''
+      if (!name.startsWith('.')) return name
+      return resolve(dirname(join(dir, slug)), name)
+        .slice(root.length + 1)
+        .replaceAll('\\', '/')
+    },
+  )
+}
 
 /** The body without fenced code, inline code, images and MDX comments: the words a reader sees. */
 function prose(body: string) {
@@ -190,6 +225,16 @@ describe('the guides', () => {
           const target = pages.find((p) => p.slug === slug || p.slug === `${slug}/index`)
           expect(target, `${link} in ${page.slug}`).toBeDefined()
           if (hash && target) expect([...anchors(target.body)], link).toContain(hash)
+        }
+      })
+
+      test('names only compose files the repository has', () => {
+        for (const name of composeNamed(page.slug, page.body)) {
+          // a bare name is a file of that name anywhere in the repository; a path is that file
+          const there = name.includes('/')
+            ? composeFiles.includes(name)
+            : composeFiles.some((f) => basename(f) === name)
+          expect(there, `${name} in ${page.slug}`).toBe(true)
         }
       })
 

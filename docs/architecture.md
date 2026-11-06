@@ -36,7 +36,7 @@ What each folder holds, and the conventions every change follows. CLAUDE.md list
 | `packages/tokens`, `brand`, `fixtures` | The design system: the tokens (the control spec in `src/controls.ts`, the `--control-*` CSS per platform), the brand and the fixtures |
 | `docs/` | Roadmap, plans, ADRs, product specs, brand and design language |
 | `templates/` | The NAS templates (Unraid's XML, compose files for TrueNAS and Synology, and the Synology package in `synology/spk/`, which `scripts/spk.ts` builds) and the store listings for TrueNAS's community train, Umbrel and CasaOS, copied into those stores' repositories by pull request (`templates/README.md`). `ca_profile.xml` at the root is Unraid's Community Applications profile |
-| `scripts/` | License audit, dependency check, version pinning, browser sweeps; `image.ts` (the slim image's production install, its size and attestation checks), `e2e/` (the end-to-end run through the container and its fixtures service) and `release.ts` (versions, image tags, the changelog's notes and preparing a release, ADR 0050) |
+| `scripts/` | License audit, dependency check, version pinning, browser sweeps; `image.ts` (the slim image's production install, its size and attestation checks), `e2e/` (the end-to-end run through the container, its fixtures service and its compose file) and `release.ts` (versions, image tags, the changelog's notes and preparing a release, ADR 0050) |
 
 Conventions:
 
@@ -93,10 +93,10 @@ bun run licenses        # the license audit
 bun run catalog:build   # validate, bundle and sign the catalog (dev key unless HIGHSEA_CATALOG_KEY)
 bun run record:tmdb     # in packages/metadata: refresh the TMDB recordings, with HIGHSEA_TMDB_READ_TOKEN from .env.local (never in CI)
 bun scripts/calibrate-sync.ts <library> --cache <dir>   # the sync's confidence on real films: reads them, never writes (never in CI)
-docker compose -f compose.dev.yaml up --build   # the image from this checkout (compose.yaml runs the published one)
+docker compose -f docker/compose.dev.yaml up --build   # the image from this checkout (compose.yaml runs the published one)
 bun run audit           # the dependency check: npm's advisories, exceptions in scripts/audit-exceptions.json
 actionlint              # the workflows in .github/workflows, before a push that changes them (brew install actionlint)
-HIGHSEA_IMAGE=highsea:dev bun scripts/e2e/run.ts   # the end-to-end run through the image (compose.e2e.yaml)
+HIGHSEA_IMAGE=highsea:dev bun scripts/e2e/run.ts   # the end-to-end run through the image (scripts/e2e/compose.yaml)
 bun scripts/image.ts size highsea:dev               # the image's size and largest folders (no budget since 2026-11-05)
 bun scripts/image.ts hardware highsea:dev           # its hardware encoders, filters and drivers (ADR 0056)
 bun scripts/image.ts user highsea:dev               # the user its entrypoint picks from /data (ADR 0057)

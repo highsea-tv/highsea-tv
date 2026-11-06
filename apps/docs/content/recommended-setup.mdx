@@ -9,8 +9,9 @@ description: What to set up after installing highsea, and the choices that suit 
   - Hardlinks across one filesystem: https://man7.org/linux/man-pages/man2/link.2.html (EXDEV)
   - gluetun's control server: https://github.com/qdm12/gluetun-wiki/blob/main/setup/advanced/control-server.md
   - WireGuard: https://www.wireguard.com/
-  - In highsea: compose.gluetun.yaml and compose.connects.yaml at the repository's root, and the
-    admin's Settings areas (packages/admin/src).
+  - In highsea: the admin's Settings areas (packages/admin/src), with Settings › VPN's
+    Compose for your provider (packages/vpn/src/compose.ts), and highsea connects' lines in
+    settings/vpn/connects.mdx.
 */}
 
 Written for highsea 0.1.0.
@@ -48,14 +49,14 @@ On the **Subtitles** page, add a provider: OpenSubtitles.com, Subdl or SubSource
 
 **Settings › VPN** has four modes:
 
-- **highsea connects** (recommended): highsea runs its own WireGuard tunnel to your provider. Only torrents use it, and they can't leave outside it. It needs Linux and one extra permission, which `compose.connects.yaml` adds:
+- **highsea connects** (recommended): highsea runs its own WireGuard tunnel to your provider. Only torrents use it, and they can't leave outside it. It needs Linux and one extra permission in highsea's service, with published ports in place of host networking, as [highsea connects](/settings/vpn/connects/#what-it-needs) shows:
 
   ```yaml
   cap_add: [NET_ADMIN]
   ```
 
   Pick your provider and add its WireGuard configuration. highsea uses your provider's port forwarding where it has one.
-- **A VPN container**: highsea shares a gluetun container's network and reads its status and forwarded port. All of highsea's traffic goes through the container, not only torrents. `compose.gluetun.yaml` sets this up; in Settings › VPN, give the address `http://127.0.0.1:8000` and the API key from gluetun's control server. This suits providers that only offer OpenVPN.
+- **A VPN container**: highsea shares a gluetun container's network and reads its status and forwarded port. All of highsea's traffic goes through the container, not only torrents. **Compose for your provider** in Settings › VPN writes the gluetun service for your provider; then give the address `http://127.0.0.1:8000` and the API key from gluetun's control server. This suits providers that only offer OpenVPN.
 - **An interface on this machine**: torrents are bound to a tunnel you run yourself.
 - **Off**: torrents use your own connection, and anyone in the swarm can see your address.
 
