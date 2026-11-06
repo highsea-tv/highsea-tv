@@ -7,6 +7,7 @@
 // so every admin address is drawn here, an unknown one by the admin's not-found page.
 
 import { Activity, type ActivityTab } from '@highsea-tv/admin/activity.tsx'
+import { AdminFrame } from '@highsea-tv/admin/admin-frame.tsx'
 import { Appearance } from '@highsea-tv/admin/appearance.tsx'
 import { BackupsSettings } from '@highsea-tv/admin/backups.tsx'
 import { CollectionPage } from '@highsea-tv/admin/collection.tsx'
@@ -56,7 +57,7 @@ import { userFor } from '@highsea-tv/mock/mock'
 import { browserStorage, createMockFetch, type MockTransport } from '@highsea-tv/mock/transport'
 import { createClient, type HighseaClient } from '@highsea-tv/sdk'
 import { ClientProvider } from '@highsea-tv/sdk/react'
-import { DenseFields, ThemeProvider } from '@highsea-tv/ui/native'
+import { ThemeProvider } from '@highsea-tv/ui/native'
 import {
   type MouseEvent,
   type ReactNode,
@@ -196,8 +197,8 @@ function Host({
     <ClientProvider client={client}>
       <NavigationProvider value={navigation}>
         <ThemeProvider>
-          {/* the admin's dense form labels, as the server's providers have them */}
-          <DenseFields>
+          {/* the admin's dense form labels (AdminFrame), as the server's providers have them */}
+          <AdminFrame>
             <div style={{ display: 'contents' }} onClickCapture={follow}>
               {/* a user never reaches the shell: drawn signed in, they're sent away above */}
               {shell && role !== 'user' ? (
@@ -206,7 +207,7 @@ function Host({
                 children
               )}
             </div>
-          </DenseFields>
+          </AdminFrame>
         </ThemeProvider>
       </NavigationProvider>
     </ClientProvider>
