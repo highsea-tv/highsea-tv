@@ -3,7 +3,7 @@
 // Small parts the work screens' tables share (Activity, Downloads, Now playing), on the library's
 // native renderer: the line a filter that shows nothing leaves, a toolbar's figure at its end, a
 // row's More menu, and a cell's quieter text.
-import { Button, Menu, type MenuOption, Text, tokens } from '@highsea-tv/ui/native'
+import { Button, Menu, type MenuOption, Text, Tooltip, tokens } from '@highsea-tv/ui/native'
 import { type ComponentRef, type ReactNode, useRef, useState } from 'react'
 import { View } from 'react-native'
 
@@ -74,7 +74,7 @@ export function Muted({ children }: { children: ReactNode }) {
   )
 }
 
-/** A path or release name in mono at the admin's `release` size, cut to one line, whole on hover. */
+/** A path or release name in mono at the admin's `release` size, cut to one line, whole in a tooltip when cut. */
 export function Release({
   children,
   color = 'text-2',
@@ -84,15 +84,10 @@ export function Release({
 }) {
   const release = tokens.adminText.release
   return (
-    <Text
-      size={release.size}
-      leading={release.leading}
-      mono
-      color={color}
-      numberOfLines={1}
-      {...({ title: children } as object)}
-    >
-      {children}
-    </Text>
+    <Tooltip content={children} whenTruncated>
+      <Text size={release.size} leading={release.leading} mono color={color} numberOfLines={1}>
+        {children}
+      </Text>
+    </Tooltip>
   )
 }

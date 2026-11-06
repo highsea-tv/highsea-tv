@@ -290,7 +290,7 @@ function Filmography({
             <TableBody>
               {shown.map((r) => (
                 <TableRow key={r.id}>
-                  <TableCell tall>
+                  <TableCell tall truncate>
                     <TitleCell
                       art={r.art.poster ?? ''}
                       title={<TitleLink href={moviePath(r.id)}>{r.title}</TitleLink>}

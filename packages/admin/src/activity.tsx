@@ -224,7 +224,7 @@ function Queue() {
                       ]
                       return (
                         <TableRow key={q.id}>
-                          <TableCell tall>
+                          <TableCell tall truncate>
                             <TitleCell
                               title={
                                 q.movieId ? (
@@ -441,7 +441,7 @@ function HistoryTable({ events, showTitle }: { events: HistoryEvent[]; showTitle
                 <TitleLink href={moviePath(e.movieId)}>{e.title}</TitleLink>
               </TableCell>
             )}
-            <TableCell tall={Boolean(e.message && e.sourceTitle)}>
+            <TableCell tall={Boolean(e.message && e.sourceTitle)} truncate>
               <TitleCell
                 title={e.message ?? e.sourceTitle ?? '—'}
                 detail={e.message ? (e.sourceTitle ?? undefined) : undefined}
@@ -493,7 +493,7 @@ function Blocklist() {
               <TableBody>
                 {xs.map((b) => (
                   <TableRow key={b.id}>
-                    <TableCell tall={b.movieId !== null}>
+                    <TableCell tall={b.movieId !== null} truncate>
                       <TitleCell
                         title={release(b)}
                         detail={b.movieId === null ? undefined : b.sourceTitle}

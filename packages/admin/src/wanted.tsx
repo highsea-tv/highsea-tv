@@ -185,7 +185,7 @@ function WantedList({ list }: { list: List }) {
                     const p = profiles.data?.find((x) => x.id === m.qualityProfileId)
                     return (
                       <TableRow key={m.id}>
-                        <TableCell tall>
+                        <TableCell tall truncate>
                           <TitleCell
                             art={m.art.poster ?? null}
                             title={

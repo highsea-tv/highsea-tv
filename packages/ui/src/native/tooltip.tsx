@@ -25,6 +25,12 @@ export type TooltipProps = {
    * still reach the reason (Radix's documented wrapper for a disabled trigger).
    */
   focusable?: boolean
+  /**
+   * Shown only when its trigger, one text cut to a line, is cut: a path or a release name, whole
+   * here (typography.md › Line length and truncation). A text is cut when its content is wider
+   * than its box (https://drafts.csswg.org/cssom-view/#dom-element-scrollwidth).
+   */
+  whenTruncated?: boolean
   children: ReactNode
 }
 
@@ -33,9 +39,12 @@ type Place = { left: number; top: number; width: number }
 /** The DOM's window and an element's box, which React Native's types leave out: only the web draws a tooltip. */
 type Listen = (type: string, listener: (e: { key?: string }) => void, capture?: boolean) => void
 const win = globalThis as unknown as { addEventListener: Listen; removeEventListener: Listen }
-type Box = { getBoundingClientRect?: () => { left: number; top: number; width: number } }
+type Box = {
+  getBoundingClientRect?: () => { left: number; top: number; width: number }
+  firstElementChild?: { scrollWidth: number; clientWidth: number } | null
+}
 
-export function Tooltip({ content, disabled, focusable, children }: TooltipProps) {
+export function Tooltip({ content, disabled, focusable, whenTruncated, children }: TooltipProps) {
   const theme = useTheme()
   const pointer = theme.formFactor.input === 'pointer' && Platform.OS === 'web'
   const ref = useRef<ComponentRef<typeof View>>(null)
@@ -49,6 +58,8 @@ export function Tooltip({ content, disabled, focusable, children }: TooltipProps
   const show = () => {
     clear()
     const el = ref.current as unknown as Box | null
+    const text = el?.firstElementChild
+    if (whenTruncated && text && text.scrollWidth <= text.clientWidth) return
     const r = el?.getBoundingClientRect?.()
     if (r) setPlace({ left: r.left + r.width / 2, top: r.top, width: r.width })
   }
@@ -95,7 +106,12 @@ export function Tooltip({ content, disabled, focusable, children }: TooltipProps
         onFocus: show,
         onBlur: hide,
       } as object)}
-      style={{ alignSelf: 'flex-start', borderRadius: tokens.radius.sm }}
+      style={[
+        // no wider than its place: a title cell inside one is cut to fit (a table's truncate)
+        { alignSelf: 'flex-start', maxWidth: '100%', borderRadius: tokens.radius.sm },
+        // a cut text's box can be narrower than its text
+        whenTruncated ? { minWidth: 0 } : null,
+      ]}
     >
       {children}
       {place ? (

@@ -10,6 +10,7 @@ import { View } from 'react-native'
 import { Image } from './image.tsx'
 import { Text } from './text.tsx'
 import { tokens, useControl, useTheme } from './theme.tsx'
+import { Tooltip } from './tooltip.tsx'
 
 export type TitleCellProps = {
   title: ReactNode
@@ -28,7 +29,16 @@ export function TitleCell({ title, detail, art, aspect = 'poster' }: TitleCellPr
   const m = useControl()
   const height = m.height + m.inset * 2
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: m.fieldPad, minWidth: 0 }}>
+    <View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: m.fieldPad,
+        // shrinks in a cell cut to fit (TableCell's truncate): a View doesn't by default
+        flexShrink: 1,
+        minWidth: 0,
+      }}
+    >
       {art === undefined ? null : (
         <View
           style={{
@@ -54,9 +64,11 @@ export function TitleCell({ title, detail, art, aspect = 'poster' }: TitleCellPr
       <View style={{ flex: 1, minWidth: 0 }}>
         <Text numberOfLines={1}>{title}</Text>
         {detail ? (
-          <Text variant="caption" mono color="text-3" numberOfLines={1}>
-            {detail}
-          </Text>
+          <Tooltip content={detail} whenTruncated>
+            <Text variant="caption" mono color="text-3" numberOfLines={1}>
+              {detail}
+            </Text>
+          </Tooltip>
         ) : null}
       </View>
     </View>

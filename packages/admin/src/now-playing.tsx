@@ -493,7 +493,7 @@ function History() {
               <TableBody>
                 {xs.map((w) => (
                   <TableRow key={w.id}>
-                    <TableCell tall>
+                    <TableCell tall truncate>
                       <TitleCell
                         art={w.item.poster ?? null}
                         title={

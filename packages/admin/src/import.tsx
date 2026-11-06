@@ -334,7 +334,7 @@ export function ManualImport({ initialPath }: { initialPath?: string } = {}) {
                         </Text>
                       </TableCell>
                       <TableCell numeric>{bytes(r.size)}</TableCell>
-                      <TableCell maxWidth={NAME_WIDTH}>
+                      <TableCell truncate>
                         <Release>{becomes}</Release>
                       </TableCell>
                     </TableRow>

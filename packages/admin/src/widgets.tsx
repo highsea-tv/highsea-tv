@@ -1031,7 +1031,7 @@ function QueueRows({ items, layout }: { items: QueueItem[]; layout: 'table' | 'm
             const st = torrentTone[q.state]
             return (
               <TableRow key={q.id} testID="queue-row">
-                <TableCell tall>
+                <TableCell tall truncate>
                   {/* the reason a torrent is held is its tooltip, as the web's row title */}
                   <Tooltip content={q.stateReason ?? ''} disabled={!q.stateReason}>
                     <TitleCell

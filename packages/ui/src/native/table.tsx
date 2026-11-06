@@ -14,6 +14,28 @@
 // scroller (the library's Virtual, TanStack Virtual's core: ./virtual.tsx), with a spacer row
 // before and after them; a shorter one draws every row, so the page's find and the server's HTML
 // have them all.
+// A cell centres its content in its row: react-native-web gives every View `align-content:
+// flex-start` (its View's base style), and on a table cell a value other than `normal` overrides
+// `vertical-align` (https://www.w3.org/TR/css-align-3/#distribution-block), so cells set it to
+// `center`. Their content is one block, never bare text: a table cell lays text out in line boxes
+// that start with a strut in the cell's own font and line height
+// (https://www.w3.org/TR/CSS22/visudet.html#line-height), so a smaller text would sit on the
+// strut's baseline, off the middle.
+// A path or release name never widens its table (`truncate`): its cell asks for the whole table's
+// width, which auto layout gives it after every other column has its content's width
+// (https://www.w3.org/TR/css-tables-3/#width-distribution), and its content is size-contained
+// in the inline axis, so the path's own width doesn't count towards the column's
+// (https://www.w3.org/TR/css-contain-2/#containment-inline-size), only TRUNCATE_MIN does. The
+// path is then cut to a line with an ellipsis. A number holds the content to that width instead:
+// a box's max-width caps its contributions
+// (https://www.w3.org/TR/css-sizing-3/#intrinsic-contribution), where a table cell's own
+// max-width is undefined (https://www.w3.org/TR/CSS22/visudet.html#min-max-widths).
+// That leaves every other column its content's min-content width, so their content asks for its
+// max-content width as its minimum (https://www.w3.org/TR/css-sizing-3/#valdef-width-max-content):
+// a badge's words or a one-line text would report less than they draw, and tables never squeeze
+// text into wrapping (admin.md › Tables). A cell held to a width (`maxWidth`) is as wide as its
+// content up to that width, where it wraps (max-width clamps a max-content width); one spanning
+// columns takes what it's given.
 import {
   Children,
   type ComponentRef,
@@ -29,6 +51,7 @@ import {
 import { type LayoutChangeEvent, Platform, View, type ViewStyle } from 'react-native'
 import { Text } from './text.tsx'
 import { tokens, useTheme } from './theme.tsx'
+import { Tooltip } from './tooltip.tsx'
 import { useScrollSourceOrNull, Virtual } from './virtual.tsx'
 
 const s = tokens.space
@@ -51,6 +74,9 @@ const MeasureContext = createContext<((e: LayoutChangeEvent) => void) | undefine
 export const VIRTUAL_FROM = 60
 /** Rows drawn past each end of the screen. */
 const OVERSCAN = 10
+
+/** A cell cut to fit takes the table's room left over, and keeps at least this much for its content. */
+export const TRUNCATE_MIN = 160
 
 /** The card a table sits in: `s1`, a `line` border, corners `lg`. */
 export function TableFrame({ children, label }: { children: ReactNode; label?: string }) {
@@ -269,6 +295,7 @@ export function TableHead({ children, numeric, align, width, hidden }: TableHead
       style={[
         css('table-cell', {
           verticalAlign: 'middle',
+          alignContent: 'center',
           whiteSpace: 'nowrap',
           textAlign: textAlign({ numeric, align }),
         }),
@@ -292,16 +319,18 @@ export function TableHead({ children, numeric, align, width, hidden }: TableHead
           </View>
         ) : null
       ) : typeof children === 'string' ? (
-        <Text
-          size={t.size}
-          leading={t.leading}
-          weight={500}
-          color="text-3"
-          align={textAlign({ numeric, align })}
-          numberOfLines={1}
-        >
-          {children}
-        </Text>
+        <View>
+          <Text
+            size={t.size}
+            leading={t.leading}
+            weight={500}
+            color="text-3"
+            align={textAlign({ numeric, align })}
+            numberOfLines={1}
+          >
+            {children}
+          </Text>
+        </View>
       ) : (
         <View style={{ flexDirection: 'row', justifyContent: justify({ numeric, align }) }}>
           {children}
@@ -317,6 +346,14 @@ export type TableCellProps = Align & {
   tall?: boolean
   /** The cell may wrap and is held to this width, in px. */
   maxWidth?: number
+  /**
+   * A path or a long name, cut to one line with an ellipsis and whole in a tooltip when it's cut:
+   * `true` gives its column the table's room left over (one such column a table), a number holds
+   * it to that width in px. Strings are drawn here; a TitleCell or a Release cuts its own lines. The whole text stays in the page, so it's
+   * what a screen reader reads (text-overflow only changes what's drawn,
+   * https://www.w3.org/TR/css-overflow-3/#text-overflow).
+   */
+  truncate?: boolean | number
   /** Spans this many columns. */
   span?: number
 }
@@ -325,13 +362,34 @@ export type TableCellProps = Align & {
  * Body cell, 40 high (60 for a title cell's row). `numeric` cells are mono 12 `text-2`,
  * tabular and end-aligned. Strings are drawn at the admin's 13; anything else lays out in a row.
  */
-export function TableCell({ children, numeric, align, tall, maxWidth, span }: TableCellProps) {
+export function TableCell({
+  children,
+  numeric,
+  align,
+  tall,
+  maxWidth,
+  truncate,
+  span,
+}: TableCellProps) {
   const theme = useTheme()
   const { last } = useContext(RowContext)
   const ui = tokens.adminText.ui
   const figure = tokens.adminText.figure
+  const most = typeof truncate === 'number' ? truncate : maxWidth
+  const fill = truncate === true
   const content =
-    typeof children === 'string' || typeof children === 'number' ? (
+    typeof children === 'string' && truncate ? (
+      <Tooltip content={children} whenTruncated>
+        <Text
+          size={ui.size}
+          leading={ui.leading}
+          align={textAlign({ numeric, align })}
+          numberOfLines={1}
+        >
+          {children}
+        </Text>
+      </Tooltip>
+    ) : typeof children === 'string' || typeof children === 'number' ? (
       numeric ? (
         <Text
           size={figure.size}
@@ -354,6 +412,9 @@ export function TableCell({ children, numeric, align, tall, maxWidth, span }: Ta
           {children}
         </Text>
       )
+    ) : most !== undefined ? (
+      // held to a width: its content fills it and wraps there (a row's items don't shrink)
+      children
     ) : (
       <View
         style={{
@@ -374,12 +435,14 @@ export function TableCell({ children, numeric, align, tall, maxWidth, span }: Ta
       style={[
         css('table-cell', {
           verticalAlign: 'middle',
+          alignContent: 'center',
           whiteSpace: maxWidth ? 'normal' : 'nowrap',
           textAlign: textAlign({ numeric, align }),
         }),
+        fill ? css('table-cell', { width: '100%' }) : null,
         {
           height: tall ? tokens.density.row : tokens.density.rowSingle,
-          maxWidth,
+          maxWidth: most,
           paddingHorizontal: s['3'],
           paddingVertical: s['2'],
           borderBottomWidth: last ? 0 : 1,
@@ -388,7 +451,22 @@ export function TableCell({ children, numeric, align, tall, maxWidth, span }: Ta
         !web ? { flex: 1, justifyContent: 'center' } : null,
       ]}
     >
-      {content}
+      {/* one block, held to the cell's most: see the file's header */}
+      <View
+        style={[
+          { minWidth: 0, maxWidth: most === undefined ? undefined : most - s['3'] * 2 },
+          fill
+            ? css('flex', { contain: 'inline-size', minWidth: TRUNCATE_MIN })
+            : span
+              ? null
+              : // the rest never squeeze, or only to their width: see the file's header
+                most === undefined
+                ? css('flex', { minWidth: 'max-content' })
+                : css('flex', { width: 'max-content' }),
+        ]}
+      >
+        {content}
+      </View>
     </View>
   )
 }
