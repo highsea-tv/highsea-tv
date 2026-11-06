@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The command palette: ⌘K / Ctrl K anywhere (accessibility.md#operable). A searchable list of
-// commands in a level-4 card over the scrim, drawn once for the native renderer
+// commands in a level-4 card over the scrim (./scrim.ts), drawn once for the native renderer
 // (one-client-platform-d.md › D3) at the web renderer's sizes (web/components/command-palette.tsx).
 // It keeps what the web's had from cmdk (https://github.com/pacocoursey/cmdk): each command matched
 // by its label, its id and its keywords, ranked by command-score (./command-score.ts) with the
@@ -25,6 +25,7 @@ import { Icon } from './icon.tsx'
 import type { IconName } from './icons.ts'
 import { uiMessages } from './messages.ts'
 import { Press } from './press.tsx'
+import { useScrimStyle } from './scrim.ts'
 import { ScrollView } from './scroll-view.tsx'
 import { Text } from './text.tsx'
 import { tokens, useTheme } from './theme.tsx'
@@ -145,6 +146,7 @@ export function CommandPalette({
   onSearchChange,
 }: CommandPaletteProps) {
   const theme = useTheme()
+  const scrim = useScrimStyle()
   const t = useT(uiMessages)
   const window = useWindowDimensions()
   const [typed, setTyped] = useState('')
@@ -233,7 +235,7 @@ export function CommandPalette({
             start: 0,
             end: 0,
             bottom: 0,
-            backgroundColor: 'rgba(0,0,0,0.6)',
+            ...scrim,
           }}
         >
           {null}
