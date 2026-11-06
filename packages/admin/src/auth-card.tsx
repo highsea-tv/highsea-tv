@@ -7,7 +7,7 @@
 import { useT } from '@highsea-tv/i18n/react'
 import { Icon, Lockup, Text, Toaster, tokens, useTheme } from '@highsea-tv/ui/native'
 import type { ReactNode } from 'react'
-import { useWindowDimensions, View } from 'react-native'
+import { View } from 'react-native'
 import { shell } from './messages.ts'
 
 const s = tokens.space
@@ -17,12 +17,15 @@ const CARD_WIDTH = 384
 export function Card({ children }: { children: ReactNode }) {
   const theme = useTheme()
   const t = useT(shell)
-  const { height } = useWindowDimensions()
   return (
     <View
       role="main"
       style={{
-        minHeight: height,
+        // the window's height in CSS, not useWindowDimensions(): react-native-web's Dimensions are
+        // 0 in the server render (no DOM), and React doesn't patch a style that differs at
+        // hydration (https://react.dev/reference/react-dom/client/hydrateRoot#caveats), so the
+        // frame stayed the card's height and the card sat at the top
+        minHeight: '100vh' as never,
         alignItems: 'center',
         justifyContent: 'center',
         padding: s['4'],

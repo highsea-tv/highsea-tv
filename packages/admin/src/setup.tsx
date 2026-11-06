@@ -43,7 +43,7 @@ import {
   useWindowAtLeast,
 } from '@highsea-tv/ui/native'
 import { type ComponentRef, type ReactNode, useEffect, useRef, useState } from 'react'
-import { useWindowDimensions, View } from 'react-native'
+import { View } from 'react-native'
 import { shell } from './messages.ts'
 import { errorReason, keyRejected, metadataLocale, tmdbBusy } from './metadata-locale.ts'
 import { useLoad } from './navigation.tsx'
@@ -278,7 +278,6 @@ export function Setup() {
   const theme = useTheme()
   const medium = useWindowAtLeast(breakpoints.medium)
   const expanded = useWindowAtLeast(breakpoints.expanded)
-  const { height } = useWindowDimensions()
   const first = useRef(true)
   const complete = useAction((c, input: SetupInput) => c.setup.complete({ body: input }))
   const { step, reached, draft } = saved
@@ -512,13 +511,20 @@ export function Setup() {
   const gutter = medium ? s['6'] : s['4']
 
   return (
-    <View style={{ minHeight: height, backgroundColor: theme.colors.bg }}>
+    // the window's height in CSS: Dimensions are 0 in the server render (auth-card.tsx says why)
+    <View style={{ minHeight: '100vh' as never, backgroundColor: theme.colors.bg }}>
       <View
         style={{
           minHeight: 56,
           flexDirection: 'row',
           flexWrap: 'wrap',
           alignItems: 'center',
+          // a wrapping row is a multi-line flex container, whose lines align-content places
+          // (https://developer.mozilla.org/en-US/docs/Web/CSS/align-content); react-native-web's
+          // View sets it to flex-start (React Native's default,
+          // https://reactnative.dev/docs/layout-props#aligncontent), which held the lockup at the
+          // top of the bar
+          alignContent: 'center',
           columnGap: s['3'],
           rowGap: s['1'],
           paddingHorizontal: gutter,
