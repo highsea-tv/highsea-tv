@@ -3,12 +3,25 @@
 # image beside the fixtures service on a network with no way out (compose.e2e.yaml), driven by
 # Playwright through setup, a one-click indexer, adding and grabbing Sintel, Activity, the import,
 # the synced subtitle, a theme and a layout across sessions, and an announcement for Admins.
-# On main and on pull requests that touch the server, amd64 only; arm64 boots healthy in ci.yml.
+# In the heavy tier, when a change touches the server, amd64 only; arm64 boots healthy in ci.yml.
 name: End to end
 
+# The heavy tier (ADR 0062, next-branch.md › CI by branch): it runs on a push to next, a pull
+# request into main, a pull request with the `full-ci` label, and a release (release.yml calls it; a called
+# workflow's `github` context is its caller's, whose event is workflow_dispatch). The pull request trigger has no
+# branch filter, so a pull request into next with the label gets here, and `labeled` joins the
+# default types so adding the label starts it
+# (https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#pull_request).
+# A push to main runs only ci.yml's `check` (the owner's answer 3). The jobs' `if:` holds the rest:
+# a pull request into another branch without the label skips them, and a job its `if:` skips
+# reports success rather than leaving a check pending
+# (https://docs.github.com/en/pull-requests/how-tos/merge-and-close-pull-requests/troubleshooting-required-status-checks#handling-skipped-but-required-checks).
+# `github.base_ref` is the base branch, and `contains()` looks for the label among
+# `github.event.pull_request.labels`' names
+# (https://docs.github.com/en/actions/reference/workflows-and-actions/expressions#contains).
 on:
   push:
-    branches: [main]
+    branches: [next]
     paths:
       - 'apps/server/**'
       - 'packages/**'
@@ -24,6 +37,7 @@ on:
       - '.nvmrc'
       - '.github/workflows/e2e.yml'
   pull_request:
+    types: [opened, synchronize, reopened, labeled]
     paths:
       - 'apps/server/**'
       - 'packages/**'
@@ -42,7 +56,7 @@ on:
   workflow_call:
 
 # a called workflow's `github` context is its caller's, so `github.workflow` keeps a release's run apart
-# from a push to main's, and neither cancels the other
+# from a push's, and neither cancels the other
 # (https://docs.github.com/en/actions/reference/workflows-and-actions/reusing-workflow-configurations)
 concurrency:
   group: e2e-${{ github.workflow }}-${{ github.ref }}
@@ -53,6 +67,12 @@ permissions:
 
 jobs:
   e2e:
+    # the heavy tier's condition (the comment above `on:`)
+    if: >-
+      (github.event_name == 'pull_request'
+        && (github.base_ref == 'main' || contains(github.event.pull_request.labels.*.name, 'full-ci')))
+      || (github.event_name == 'push' && github.ref == 'refs/heads/next')
+      || (github.event_name != 'pull_request' && github.event_name != 'push')
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:

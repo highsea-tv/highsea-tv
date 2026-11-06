@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
-# The desktop app (ADR 0058; phase-4-checkpoint-4.md › Signed installers and updates): on every pull
-# request and push to main that could change it, the Rust side's format, lints and tests on all
-# three systems, then the app built and bundled on each, as Tauri's pipeline guide builds it
+# The desktop app (ADR 0058; phase-4-checkpoint-4.md › Signed installers and updates): in the
+# heavy tier (below), on the changes that could reach it, the Rust side's format, lints and tests
+# on all three systems, then the app built and bundled on each, as Tauri's pipeline guide builds it
 # (https://v2.tauri.app/distribute/pipelines/github/). Nothing is signed or uploaded here; the
 # release workflow builds, signs and attaches the installers in the `release` environment.
 #
@@ -10,9 +10,21 @@
 # action is pinned to a full commit SHA, with its version beside it.
 name: Desktop
 
+# The heavy tier (ADR 0062, next-branch.md › CI by branch): it runs on a push to next, a pull
+# request into main, and a pull request with the `full-ci` label. The pull request trigger has no
+# branch filter, so a pull request into next with the label gets here, and `labeled` joins the
+# default types so adding the label starts it
+# (https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#pull_request).
+# A push to main runs only ci.yml's `check` (the owner's answer 3). The jobs' `if:` holds the rest:
+# a pull request into another branch without the label skips them, and a job its `if:` skips
+# reports success rather than leaving a check pending
+# (https://docs.github.com/en/pull-requests/how-tos/merge-and-close-pull-requests/troubleshooting-required-status-checks#handling-skipped-but-required-checks).
+# `github.base_ref` is the base branch, and `contains()` looks for the label among
+# `github.event.pull_request.labels`' names
+# (https://docs.github.com/en/actions/reference/workflows-and-actions/expressions#contains).
 on:
   push:
-    branches: [main]
+    branches: [next]
     paths:
       - 'apps/desktop/**'
       - 'apps/client/**'
@@ -20,6 +32,7 @@ on:
       - 'bun.lock'
       - '.github/workflows/desktop.yml'
   pull_request:
+    types: [opened, synchronize, reopened, labeled]
     paths:
       - 'apps/desktop/**'
       - 'apps/client/**'
@@ -36,6 +49,12 @@ permissions:
 
 jobs:
   build:
+    # the heavy tier's condition (the comment above `on:`)
+    if: >-
+      (github.event_name == 'pull_request'
+        && (github.base_ref == 'main' || contains(github.event.pull_request.labels.*.name, 'full-ci')))
+      || (github.event_name == 'push' && github.ref == 'refs/heads/next')
+      || (github.event_name != 'pull_request' && github.event_name != 'push')
     strategy:
       fail-fast: false
       matrix:

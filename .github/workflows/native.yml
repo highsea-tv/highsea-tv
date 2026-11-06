@@ -1,7 +1,8 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 # The native builds of the one client (apps/client, ADR 0059 and 0061; one-client-platform-b.md ›
-# B2 brings this piece of part C forward): on every pull request and push to main that could change
-# them, the client's types and Jest tests, its iPhone project generated with `expo prebuild`
+# B2 brings this piece of part C forward): in the heavy tier (below), on the
+# changes that could reach them, the client's types and Jest tests, its iPhone project generated
+# with `expo prebuild`
 # (https://docs.expo.dev/workflow/prebuild/), the licence audit over its pods, and the app built for
 # the iOS simulator with xcodebuild, signed ad hoc (`CODE_SIGN_IDENTITY=-`, no certificate): an
 # unsigned build gets no keychain entitlement, so it can't keep a sign-in, which
@@ -16,9 +17,21 @@
 # version beside it.
 name: Native
 
+# The heavy tier (ADR 0062, next-branch.md › CI by branch): it runs on a push to next, a pull
+# request into main, and a pull request with the `full-ci` label. The pull request trigger has no
+# branch filter, so a pull request into next with the label gets here, and `labeled` joins the
+# default types so adding the label starts it
+# (https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#pull_request).
+# A push to main runs only ci.yml's `check` (the owner's answer 3). The jobs' `if:` holds the rest:
+# a pull request into another branch without the label skips them, and a job its `if:` skips
+# reports success rather than leaving a check pending
+# (https://docs.github.com/en/pull-requests/how-tos/merge-and-close-pull-requests/troubleshooting-required-status-checks#handling-skipped-but-required-checks).
+# `github.base_ref` is the base branch, and `contains()` looks for the label among
+# `github.event.pull_request.labels`' names
+# (https://docs.github.com/en/actions/reference/workflows-and-actions/expressions#contains).
 on:
   push:
-    branches: [main]
+    branches: [next]
     paths:
       - 'apps/client/**'
       - 'packages/**'
@@ -27,6 +40,7 @@ on:
       - 'scripts/license-audit.ts'
       - '.github/workflows/native.yml'
   pull_request:
+    types: [opened, synchronize, reopened, labeled]
     paths:
       - 'apps/client/**'
       - 'packages/**'
@@ -44,6 +58,12 @@ permissions:
 
 jobs:
   ios:
+    # the heavy tier's condition (the comment above `on:`)
+    if: &heavy >-
+      (github.event_name == 'pull_request'
+        && (github.base_ref == 'main' || contains(github.event.pull_request.labels.*.name, 'full-ci')))
+      || (github.event_name == 'push' && github.ref == 'refs/heads/next')
+      || (github.event_name != 'pull_request' && github.event_name != 'push')
     runs-on: macos-26
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
@@ -80,6 +100,7 @@ jobs:
             -derivedDataPath build CODE_SIGN_IDENTITY=- CODE_SIGNING_REQUIRED=NO build
 
   tvos:
+    if: *heavy
     runs-on: macos-26
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0

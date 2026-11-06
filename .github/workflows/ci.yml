@@ -1,10 +1,25 @@
 # SPDX-License-Identifier: AGPL-3.0-only
-# Every push and pull request: lint, types, tests (Bun), the platform under Node, the license
-# audit, the dependency check, the admin's build, highsea connects' leak test, the web player in
-# Chromium and Firefox (phase-4-checkpoint-2.md › Tests, 4.2b), and the image on
-# both platforms: built, booted healthy, inside its size budget, with its labels and attestations.
-# Nothing is pushed (phase-3-checkpoint-9.md › Images: "CI builds both platforms … and pushes
-# nothing").
+# Two tiers (ADR 0062, next-branch.md › CI by branch). The fast one, `check`, runs on every pull
+# request and every push to next or main: lint, types, tests (Bun), the platform under Node, the
+# license audit, the dependency check, the client's exports, the admin's and the docs' builds. The
+# heavy one: highsea connects' leak test, the web player in Chromium and Firefox
+# (phase-4-checkpoint-2.md › Tests, 4.2b), and the image on both platforms: built, booted healthy,
+# with its labels and attestations. Nothing is pushed (phase-3-checkpoint-9.md › Images: "CI
+# builds both platforms … and pushes nothing").
+#
+# The heavy jobs share one condition, `&heavy` on `playback` below: they run on a push to next, a
+# pull request into main, a pull request with the `full-ci` label, and a release (called from
+# release.yml, whose event is workflow_dispatch, since a called workflow's `github` context is its
+# caller's). A push to main runs only `check`: the pull request from next already ran everything
+# on the same result, and a release runs it all again (the owner's answer 3). A job its `if:` skips
+# reports success, so the condition never leaves a required check pending
+# (https://docs.github.com/en/pull-requests/how-tos/merge-and-close-pull-requests/troubleshooting-required-status-checks#handling-skipped-but-required-checks).
+# `github.base_ref` is a pull request's base branch, and the label is in
+# `github.event.pull_request.labels`, matched with `contains()` over the names
+# (https://docs.github.com/en/actions/reference/workflows-and-actions/expressions#contains,
+# https://docs.github.com/en/actions/reference/workflows-and-actions/contexts#github-context). It's
+# written once and repeated with YAML aliases
+# (https://docs.github.com/en/actions/reference/workflows-and-actions/reusing-workflow-configurations#yaml-anchors-and-aliases).
 #
 # Each action is pinned to a full commit SHA, with its version beside it, as GitHub's security
 # guidance advises: a tag can be moved, a commit can't
@@ -14,25 +29,31 @@ name: CI
 # The internal docs and the notes for Claude change nothing that's built or tested, so a push that
 # only touches them runs nothing (https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#onpushpull_requestpull_request_targetpathspaths-ignore).
 # The guides in apps/docs are built and tested here, so they're not left out.
+#
+# A pull request has no path filter: next and main require `check`, and a workflow its paths skip
+# leaves its required checks pending, which blocks the merge (troubleshooting-required-status-checks,
+# above). So a pull request that changes only the internal docs runs `check` too.
+#
+# `labeled` joins the default types (opened, synchronize, reopened), so adding `full-ci` to an open
+# pull request starts the heavy jobs
+# (https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#pull_request).
+# Any other label starts a run too, and cancels the one in progress (the concurrency group below);
+# `check` runs again rather than being skipped, so a skipped run can't stand in for a failed one.
 on:
   push:
-    branches: [main]
+    branches: [next, main]
     paths-ignore:
       - 'docs/**'
       - '.claude/**'
       - 'README.md'
       - 'CLAUDE.md'
   pull_request:
-    paths-ignore:
-      - 'docs/**'
-      - '.claude/**'
-      - 'README.md'
-      - 'CLAUDE.md'
+    types: [opened, synchronize, reopened, labeled]
   # the release runs it whole before building anything (release.yml)
   workflow_call:
 
 # a called workflow's `github` context is its caller's, so `github.workflow` keeps a release's run apart
-# from a push to main's, and neither cancels the other
+# from a push's, and neither cancels the other
 # (https://docs.github.com/en/actions/reference/workflows-and-actions/reusing-workflow-configurations)
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
@@ -106,6 +127,12 @@ jobs:
   # libraries are what Firefox decodes H.264 and AAC with on Linux
   # (https://support.mozilla.org/kb/html5-audio-and-video-firefox)
   playback:
+    # the heavy tier's condition (the header above)
+    if: &heavy >-
+      (github.event_name == 'pull_request'
+        && (github.base_ref == 'main' || contains(github.event.pull_request.labels.*.name, 'full-ci')))
+      || (github.event_name == 'push' && github.ref == 'refs/heads/next')
+      || (github.event_name != 'pull_request' && github.event_name != 'push')
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
@@ -134,6 +161,7 @@ jobs:
   # highsea connects' kill switch on a real kernel: the runner's kernel has WireGuard, and sudo
   # gives the test the root it needs to make a network namespace and a second peer
   leak:
+    if: *heavy
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
@@ -161,6 +189,7 @@ jobs:
   # Its cache has a scope per platform, so the two don't overwrite each other
   # (https://docs.docker.com/build/cache/backends/gha/#scope).
   image:
+    if: *heavy
     strategy:
       fail-fast: false
       matrix:
