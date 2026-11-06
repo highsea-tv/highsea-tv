@@ -139,6 +139,7 @@ import type { HighseaClient, Output } from '@highsea-tv/sdk'
 import { PROVIDER_INFO } from '@highsea-tv/subtitles/providers/info'
 import { builtInThemes } from '@highsea-tv/tokens'
 import type { z } from 'zod'
+import { adminAnswers } from './admin/index.ts'
 import { clientMessages } from './client.ts'
 import { EPOCH, iso } from './clock.ts'
 import { FilmRefused, filmsOf, type Refusal } from './films.ts'
@@ -306,7 +307,7 @@ type Grant = {
   }
 }
 
-type Ctx = {
+export type Ctx = {
   host: Host
   caller: Grant | null
   away: boolean
@@ -331,7 +332,7 @@ type Checked<R> = Parsed<R, 'params'> & Parsed<R, 'query'> & ParsedBody<R>
 type Answer<R> = R extends RouteLike
   ? (input: Checked<R>, ctx: Ctx) => Output<R> | Promise<Output<R>>
   : never
-type Answers = {
+export type Answers = {
   [G in keyof Routes]?: { [K in keyof Routes[G]]?: Answer<Routes[G][K]> }
 }
 
@@ -356,6 +357,14 @@ type ContractRoute = {
 /** Refusals are the server's own errors (@highsea-tv/core/errors), answered as its ErrorBody. */
 const refuse = (code: ErrorCode, message: string, details?: unknown) =>
   new AppError(code, message, details)
+
+/** `extra`'s answers added to `base`'s group by group, `base`'s kept where both answer a route. */
+function mergeAnswers(base: Answers, extra: Answers): Answers {
+  const out: Record<string, Record<string, unknown>> = {}
+  for (const source of [extra, base] as Record<string, Record<string, unknown> | undefined>[])
+    for (const [group, routes] of Object.entries(source)) out[group] = { ...out[group], ...routes }
+  return out as Answers
+}
 
 /** A route the mock doesn't answer yet: 501, the server lacking what's needed (RFC 9110 § 15.6.2). */
 class NotAnswered extends AppError {
@@ -1643,6 +1652,13 @@ export function createMockFetch(options: TransportOptions = {}): MockTransport {
     },
   }
 
+  // the admin's screens' routes (one-client-platform-d.md › D2), from the mock's own api in
+  // the contract's shapes, one file per area in ./admin; a route answered above wins
+  const all: Answers = mergeAnswers(
+    answers,
+    adminAnswers({ wall, wallMs, emit: (topic) => bus.emit({ topic }), userOf, catalogOf }),
+  )
+
   // ---------------------------------------------------------------- events
 
   type Stream = { kill(): void; host: Host }
@@ -1815,7 +1831,7 @@ export function createMockFetch(options: TransportOptions = {}): MockTransport {
         }) as unknown as Response
       }
 
-      const group = (answers as Record<string, Record<string, unknown> | undefined>)[entry.group]
+      const group = (all as Record<string, Record<string, unknown> | undefined>)[entry.group]
       const answer = group?.[entry.name] as
         | ((input: unknown, ctx: Ctx) => unknown | Promise<unknown>)
         | undefined

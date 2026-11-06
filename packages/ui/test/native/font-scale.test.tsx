@@ -39,6 +39,7 @@ mock.module('react-native-svg', () => ({
   default: none,
   Circle: none,
   Defs: none,
+  G: none,
   LinearGradient: none,
   Mask: none,
   Path: none,

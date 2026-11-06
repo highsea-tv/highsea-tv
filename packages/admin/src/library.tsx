@@ -16,6 +16,7 @@
 // - Save as smart collection (checkpoint 8d) carries the tag filter into the rules too;
 // - bulk Search is shown but disabled while no indexer is enabled (checkpoint 4 plan, decision 2);
 //   with one, it queues a search for each movie (checkpoint 5).
+// Drawn with the library's native renderer since D2 (one-client-platform-d.md).
 import {
   type BulkInput,
   LIST_TOPICS,
@@ -33,15 +34,11 @@ import {
   Checkbox,
   ConfirmDialog,
   EmptyState,
-  Input,
   Menu,
-  MenuContent,
-  MenuItem,
-  MenuLabel,
-  MenuSeparator,
-  MenuTrigger,
+  type MenuOption,
   Poster,
   QualityTag,
+  SearchField,
   SegmentedControl,
   Select,
   Table,
@@ -53,14 +50,16 @@ import {
   TableRow,
   TableToolbar,
   Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
+  Text,
   TitleCell,
+  TitleLink,
   Tooltip,
   toast,
-} from '@highsea-tv/ui'
-import { Fragment, useDeferredValue, useRef, useState, useSyncExternalStore } from 'react'
+  tokens,
+  useTheme,
+} from '@highsea-tv/ui/native'
+import { type ComponentRef, useDeferredValue, useRef, useState, useSyncExternalStore } from 'react'
+import { View } from 'react-native'
 import { useAddressParam } from './address.ts'
 import { handoff } from './collections-editor.tsx'
 import { ruleId } from './collections-rules.tsx'
@@ -68,6 +67,7 @@ import { useSearchable } from './indexer-state.ts'
 import { library as messages } from './library-messages.ts'
 import { Loadable, PosterSkeletons } from './loadable.tsx'
 import { moviePath, movieStatus } from './media-links.ts'
+import { GridItem, PosterGrid } from './media-sections.tsx'
 import { type LibraryFilters, loadMovies, PAGE } from './movie-data.ts'
 import { useRouter } from './navigation.tsx'
 import { AdminPage } from './shell.tsx'
@@ -175,6 +175,9 @@ export function MoviesLibrary() {
   const hasLists = (lists.data?.length ?? 0) > 0
   const bulkAction = useAction((c, body: BulkInput) => c.movies.bulk({ body }))
   const searchable = useSearchable()
+  const { colors } = useTheme()
+  const editAnchor = useRef<ComponentRef<typeof View>>(null)
+  const [editing, setEditing] = useState(false)
 
   // selection survives filtering; the bar counts every movie still selected
   const ids = [...selected]
@@ -235,11 +238,63 @@ export function MoviesLibrary() {
           { value: 'table', label: t('view.table'), icon: 'list' },
         ]}
       />
-      <Button variant="primary" icon="add" onClick={() => router.push('/discover')}>
+      <Button variant="primary" icon="add" href="/discover">
         {t('add')}
       </Button>
     </>
   )
+
+  const hasTags = (tags.data?.length ?? 0) > 0
+  // the bulk Edit menu: Monitor and Unmonitor, then a heading over each set of choices
+  const editItems: MenuOption[] = [
+    {
+      label: t('monitor'),
+      icon: 'bookmark',
+      onSelect: () => bulk((count) => t('done.monitor', { count }), { action: 'monitor', ids }),
+    },
+    {
+      label: t('unmonitor'),
+      icon: 'close',
+      onSelect: () => bulk((count) => t('done.unmonitor', { count }), { action: 'unmonitor', ids }),
+    },
+    ...(profiles.data ?? []).map((p) => ({
+      label: p.name,
+      group: t('qualityProfile'),
+      onSelect: () =>
+        bulk((count) => t('done.profile', { count, profile: p.name }), {
+          action: 'setQualityProfile',
+          ids,
+          qualityProfileId: p.id,
+        }),
+    })),
+    ...(languageProfiles.data ?? []).map((p) => ({
+      label: p.name,
+      group: t('subtitleLanguages'),
+      onSelect: () =>
+        bulk((count) => t('done.languages', { count, profile: p.name }), {
+          action: 'setLanguageProfile',
+          ids,
+          languageProfileId: p.id,
+        }),
+    })),
+    ...(hasTags
+      ? (['add', 'remove'] as const).flatMap((mode) =>
+          (tags.data ?? []).map((g) => ({
+            label: g.label,
+            group: t(mode === 'add' ? 'addTag' : 'removeTag'),
+            onSelect: () =>
+              bulk(
+                (count) =>
+                  t(mode === 'add' ? 'done.tagAdded' : 'done.tagRemoved', {
+                    count,
+                    tag: g.label,
+                  }),
+                { action: 'setTags', ids, tagIds: [g.id], mode },
+              ),
+          })),
+        )
+      : []),
+  ]
 
   return (
     <AdminPage title={t('title')} actions={actions}>
@@ -256,7 +311,7 @@ export function MoviesLibrary() {
               icon="movie"
               title={t('empty.title')}
               action={
-                <Button variant="primary" icon="discover" onClick={() => router.push('/discover')}>
+                <Button variant="primary" icon="discover" href="/discover">
                   {t('empty.discover')}
                 </Button>
               }
@@ -266,26 +321,38 @@ export function MoviesLibrary() {
           ) : (
             <>
               <TableFrame>
-                <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)}>
-                  <TableToolbar>
-                    <TabsList aria-label={t('tabs')} className="max-w-full overflow-x-auto">
-                      {TABS.map((k) => (
-                        <TabsTrigger key={k} value={k} count={page.counts[k]}>
-                          {t(`tab.${k}`)}
-                        </TabsTrigger>
-                      ))}
-                    </TabsList>
-                    <div className="ms-auto flex min-w-0 flex-wrap items-center gap-2">
-                      <Input
-                        type="search"
+                <TableToolbar>
+                  <Tabs
+                    aria-label={t('tabs')}
+                    value={tab}
+                    onValueChange={(v) => setTab(v as Tab)}
+                    options={TABS.map((k) => ({
+                      value: k,
+                      label: t(`tab.${k}`),
+                      count: page.counts[k],
+                    }))}
+                  />
+                  <View
+                    style={{
+                      marginStart: 'auto',
+                      minWidth: 0,
+                      flexDirection: 'row',
+                      flexWrap: 'wrap',
+                      alignItems: 'center',
+                      gap: tokens.space['2'],
+                    }}
+                  >
+                    <View style={{ width: FILTER_WIDTH }}>
+                      <SearchField
+                        label={t('filter')}
                         icon="filter"
                         value={text}
-                        onChange={(e) => setText(e.target.value)}
+                        onChangeText={setText}
                         placeholder={t('filter')}
-                        aria-label={t('filter')}
-                        className="w-48"
                       />
-                      {(tags.data?.length ?? 0) > 0 && (
+                    </View>
+                    {hasTags && (
+                      <View style={{ width: SELECT_WIDTH }}>
                         <Select
                           value={tag || ANY_TAG}
                           onValueChange={(v) => setTag(v === ANY_TAG ? '' : v)}
@@ -294,271 +361,211 @@ export function MoviesLibrary() {
                             { value: ANY_TAG, label: t('tag.all') },
                             ...(tags.data ?? []).map((g) => ({ value: g.id, label: g.label })),
                           ]}
-                          className="w-36"
                         />
-                      )}
+                      </View>
+                    )}
+                    <View style={{ width: SELECT_WIDTH }}>
                       <Select
                         value={sort}
                         onValueChange={(v) => setSort(v as Sort)}
                         aria-label={t('sortBy')}
                         options={MOVIE_SORTS.map((k) => ({ value: k, label: t(`sort.${k}`) }))}
-                        className="w-36"
                       />
-                      <Button icon="library" onClick={saveAsCollection}>
-                        {t('saveAsCollection')}
-                      </Button>
-                    </div>
-                  </TableToolbar>
-                  {ids.length > 0 && (
-                    <div
-                      role="toolbar"
-                      aria-label={t('bulk')}
-                      className="flex flex-wrap items-center gap-2 border-line border-b bg-accent-soft px-3.5 py-2 text-ui"
+                    </View>
+                    <Button icon="library" onPress={saveAsCollection}>
+                      {t('saveAsCollection')}
+                    </Button>
+                  </View>
+                </TableToolbar>
+                {ids.length > 0 && (
+                  <View
+                    role="toolbar"
+                    aria-label={t('bulk')}
+                    style={{
+                      flexDirection: 'row',
+                      flexWrap: 'wrap',
+                      alignItems: 'center',
+                      gap: tokens.space['2'],
+                      borderBottomWidth: 1,
+                      borderBottomColor: colors.line,
+                      backgroundColor: colors['accent-soft'],
+                      paddingHorizontal: CELL_X,
+                      paddingVertical: tokens.space['2'],
+                    }}
+                  >
+                    <Text
+                      size={tokens.adminText.ui.size}
+                      weight={500}
+                      style={{ marginEnd: 'auto' }}
                     >
-                      <span className="me-auto font-medium text-text">
-                        {t('selected', { count: ids.length })}
-                      </span>
-                      {searchable.canSearch ? (
-                        <Button
-                          size="sm"
-                          icon="search"
-                          loading={bulkAction.pending}
-                          onClick={() =>
-                            bulk((count) => t('done.search', { count }), { action: 'search', ids })
-                          }
-                        >
-                          {t('search')}
-                        </Button>
-                      ) : (
-                        // decision 2: shown but inert while no indexer is enabled. aria-disabled
-                        // rather than disabled keeps it focusable, so the tooltip saying why is
-                        // reachable (the prototype's kit/soon.tsx pattern; WAI-ARIA APG,
-                        // "Focusability of disabled controls")
-                        <Tooltip content={t('search.noIndexers')}>
-                          <Button
-                            size="sm"
-                            icon="search"
-                            aria-disabled
-                            className="cursor-not-allowed opacity-45"
-                          >
-                            {t('search')}
-                          </Button>
-                        </Tooltip>
-                      )}
-                      <Menu>
-                        <MenuTrigger asChild>
-                          <Button size="sm" iconEnd="chevron-down" loading={bulkAction.pending}>
-                            {t('edit')}
-                          </Button>
-                        </MenuTrigger>
-                        <MenuContent>
-                          <MenuItem
-                            icon="bookmark"
-                            onSelect={() =>
-                              bulk((count) => t('done.monitor', { count }), {
-                                action: 'monitor',
-                                ids,
-                              })
-                            }
-                          >
-                            {t('monitor')}
-                          </MenuItem>
-                          <MenuItem
-                            icon="close"
-                            onSelect={() =>
-                              bulk((count) => t('done.unmonitor', { count }), {
-                                action: 'unmonitor',
-                                ids,
-                              })
-                            }
-                          >
-                            {t('unmonitor')}
-                          </MenuItem>
-                          <MenuSeparator />
-                          <MenuLabel>{t('qualityProfile')}</MenuLabel>
-                          {(profiles.data ?? []).map((p) => (
-                            <MenuItem
-                              key={p.id}
-                              onSelect={() =>
-                                bulk((count) => t('done.profile', { count, profile: p.name }), {
-                                  action: 'setQualityProfile',
-                                  ids,
-                                  qualityProfileId: p.id,
-                                })
-                              }
-                            >
-                              {p.name}
-                            </MenuItem>
-                          ))}
-                          <MenuSeparator />
-                          <MenuLabel>{t('subtitleLanguages')}</MenuLabel>
-                          {(languageProfiles.data ?? []).map((p) => (
-                            <MenuItem
-                              key={p.id}
-                              onSelect={() =>
-                                bulk((count) => t('done.languages', { count, profile: p.name }), {
-                                  action: 'setLanguageProfile',
-                                  ids,
-                                  languageProfileId: p.id,
-                                })
-                              }
-                            >
-                              {p.name}
-                            </MenuItem>
-                          ))}
-                          {(tags.data?.length ?? 0) > 0 &&
-                            (['add', 'remove'] as const).map((mode) => (
-                              <Fragment key={mode}>
-                                <MenuSeparator />
-                                <MenuLabel>{t(mode === 'add' ? 'addTag' : 'removeTag')}</MenuLabel>
-                                {(tags.data ?? []).map((g) => (
-                                  <MenuItem
-                                    key={g.id}
-                                    onSelect={() =>
-                                      bulk(
-                                        (count) =>
-                                          t(mode === 'add' ? 'done.tagAdded' : 'done.tagRemoved', {
-                                            count,
-                                            tag: g.label,
-                                          }),
-                                        { action: 'setTags', ids, tagIds: [g.id], mode },
-                                      )
-                                    }
-                                  >
-                                    {g.label}
-                                  </MenuItem>
-                                ))}
-                              </Fragment>
-                            ))}
-                        </MenuContent>
-                      </Menu>
+                      {t('selected', { count: ids.length })}
+                    </Text>
+                    {searchable.canSearch ? (
                       <Button
                         size="sm"
-                        variant="danger"
-                        icon="delete"
-                        onClick={() => setConfirm(true)}
+                        icon="search"
+                        loading={bulkAction.pending}
+                        onPress={() =>
+                          bulk((count) => t('done.search', { count }), { action: 'search', ids })
+                        }
                       >
-                        {t('remove')}
+                        {t('search')}
                       </Button>
-                      <Button size="sm" variant="ghost" onClick={() => setSelected(new Set())}>
-                        {t('clear')}
-                      </Button>
-                    </div>
-                  )}
-                  <TabsContent value={tab}>
-                    {shown.length === 0 ? (
-                      <p className="px-3.5 py-8 text-center text-caption text-text-3">
-                        {t('noMatch')}
-                      </p>
-                    ) : view === 'grid' ? (
-                      <ul className="grid grid-cols-[repeat(auto-fill,minmax(8.5rem,1fr))] gap-x-4 gap-y-5 p-3.5">
-                        {shown.map((m) => (
-                          <li key={m.id}>
-                            <Poster
-                              title={m.title}
-                              src={m.art.poster ?? undefined}
-                              href={moviePath(m.id)}
-                              status={
-                                m.status !== 'available' && (
-                                  <Badge
-                                    overlay
-                                    tone={movieStatus[m.status].tone}
-                                    className="max-w-full"
-                                  >
-                                    <span className="truncate">
-                                      {t(movieStatus[m.status].label)}
-                                    </span>
-                                  </Badge>
-                                )
-                              }
-                              showTitle
-                              caption={m.year ?? undefined}
-                            />
-                          </li>
-                        ))}
-                      </ul>
                     ) : (
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead className="w-10">
-                              <Checkbox
-                                aria-label={t('col.selectAll')}
-                                checked={everyShown}
-                                onCheckedChange={(v) => {
-                                  const next = new Set(selected)
-                                  for (const m of shown)
-                                    if (v === true) next.add(m.id)
-                                    else next.delete(m.id)
-                                  setSelected(next)
-                                }}
-                              />
-                            </TableHead>
-                            <TableHead>{t('col.title')}</TableHead>
-                            <TableHead numeric>{t('col.year')}</TableHead>
-                            <TableHead>{t('col.versions')}</TableHead>
-                            <TableHead>{t('col.status')}</TableHead>
-                            <TableHead>{t('col.monitored')}</TableHead>
-                            <TableHead numeric>{t('col.added')}</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {shown.map((m) => (
-                            <TableRow
-                              key={m.id}
-                              data-state={selected.has(m.id) ? 'selected' : undefined}
-                            >
-                              <TableCell>
-                                <Checkbox
-                                  aria-label={t('col.select', { title: m.title })}
-                                  checked={selected.has(m.id)}
-                                  onCheckedChange={(v) => toggle(m.id, v === true)}
-                                />
-                              </TableCell>
-                              <TitleCell
-                                title={
-                                  <a href={moviePath(m.id)} className="hover:underline">
-                                    {m.title}
-                                  </a>
-                                }
-                                detail={m.path}
-                                art={m.art.poster ?? undefined}
-                              />
-                              <TableCell numeric>{m.year}</TableCell>
-                              <TableCell>
-                                <span className="flex gap-1">
-                                  {m.versions.map((v) => (
-                                    <QualityTag key={v.id}>{v.label}</QualityTag>
-                                  ))}
-                                </span>
-                              </TableCell>
-                              <TableCell>
-                                <Badge tone={movieStatus[m.status].tone}>
+                      // decision 2: shown but inert while no indexer is enabled; the tooltip's
+                      // wrapper takes focus, so the reason is reachable by keyboard (WAI-ARIA APG,
+                      // "Focusability of disabled controls")
+                      <Tooltip content={t('search.noIndexers')} focusable>
+                        <Button size="sm" icon="search" disabled>
+                          {t('search')}
+                        </Button>
+                      </Tooltip>
+                    )}
+                    <Button
+                      ref={editAnchor}
+                      size="sm"
+                      iconEnd="chevron-down"
+                      loading={bulkAction.pending}
+                      hasPopup="menu"
+                      accessibilityState={{ expanded: editing }}
+                      onPress={() => setEditing(true)}
+                    >
+                      {t('edit')}
+                    </Button>
+                    <Menu
+                      title={t('edit')}
+                      open={editing}
+                      onClose={() => setEditing(false)}
+                      anchor={editAnchor}
+                      items={editItems}
+                    />
+                    <Button
+                      size="sm"
+                      variant="danger"
+                      icon="delete"
+                      onPress={() => setConfirm(true)}
+                    >
+                      {t('remove')}
+                    </Button>
+                    <Button size="sm" variant="ghost" onPress={() => setSelected(new Set())}>
+                      {t('clear')}
+                    </Button>
+                  </View>
+                )}
+                {shown.length === 0 ? (
+                  <View style={{ paddingHorizontal: CELL_X, paddingVertical: tokens.space['8'] }}>
+                    <Text variant="caption" color="text-3" align="center">
+                      {t('noMatch')}
+                    </Text>
+                  </View>
+                ) : view === 'grid' ? (
+                  <View style={{ padding: CELL_X }}>
+                    <PosterGrid>
+                      {shown.map((m) => (
+                        <GridItem key={m.id}>
+                          <Poster
+                            title={m.title}
+                            src={m.art.poster ?? undefined}
+                            href={moviePath(m.id)}
+                            status={
+                              m.status !== 'available' ? (
+                                <Badge overlay tone={movieStatus[m.status].tone}>
                                   {t(movieStatus[m.status].label)}
                                 </Badge>
-                              </TableCell>
-                              <TableCell className="text-text-2">
-                                {m.monitored ? t('yes') : t('no')}
-                              </TableCell>
-                              <TableCell numeric>
-                                {shortDate(m.addedAt, locale === 'en' ? undefined : locale)}
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    )}
-                  </TabsContent>
-                </Tabs>
+                              ) : undefined
+                            }
+                            showTitle
+                            titleSize="ui"
+                            caption={m.year === null ? undefined : String(m.year)}
+                          />
+                        </GridItem>
+                      ))}
+                    </PosterGrid>
+                  </View>
+                ) : (
+                  <Table label={t('title')}>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead width={40}>
+                          <Checkbox
+                            label={t('col.selectAll')}
+                            hideLabel
+                            checked={everyShown}
+                            onCheckedChange={(on) => {
+                              const next = new Set(selected)
+                              for (const m of shown)
+                                if (on) next.add(m.id)
+                                else next.delete(m.id)
+                              setSelected(next)
+                            }}
+                          />
+                        </TableHead>
+                        <TableHead>{t('col.title')}</TableHead>
+                        <TableHead numeric>{t('col.year')}</TableHead>
+                        <TableHead>{t('col.versions')}</TableHead>
+                        <TableHead>{t('col.status')}</TableHead>
+                        <TableHead>{t('col.monitored')}</TableHead>
+                        <TableHead numeric>{t('col.added')}</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {shown.map((m) => (
+                        <TableRow key={m.id} selected={selected.has(m.id)}>
+                          <TableCell tall>
+                            <Checkbox
+                              label={t('col.select', { title: m.title })}
+                              hideLabel
+                              checked={selected.has(m.id)}
+                              onCheckedChange={(on) => toggle(m.id, on)}
+                            />
+                          </TableCell>
+                          <TableCell tall>
+                            <TitleCell
+                              title={<TitleLink href={moviePath(m.id)}>{m.title}</TitleLink>}
+                              detail={m.path}
+                              art={m.art.poster ?? undefined}
+                            />
+                          </TableCell>
+                          <TableCell tall numeric>
+                            {m.year === null ? '' : String(m.year)}
+                          </TableCell>
+                          <TableCell tall>
+                            <View style={{ flexDirection: 'row', gap: tokens.space['1'] }}>
+                              {m.versions.map((v) => (
+                                <QualityTag key={v.id} overlay={false}>
+                                  {v.label}
+                                </QualityTag>
+                              ))}
+                            </View>
+                          </TableCell>
+                          <TableCell tall>
+                            <Badge tone={movieStatus[m.status].tone}>
+                              {t(movieStatus[m.status].label)}
+                            </Badge>
+                          </TableCell>
+                          <TableCell tall>
+                            <Text size={tokens.adminText.ui.size} color="text-2">
+                              {m.monitored ? t('yes') : t('no')}
+                            </Text>
+                          </TableCell>
+                          <TableCell tall numeric>
+                            {shortDate(m.addedAt, locale === 'en' ? undefined : locale)}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
               </TableFrame>
               {page.next && (
-                <Button
-                  className="justify-self-center"
-                  loading={Boolean(kept)}
-                  onClick={() => setMore({ filterKey, count: shown.length + PAGE })}
-                >
-                  {t('more')}
-                </Button>
+                <View style={{ alignItems: 'center' }}>
+                  <Button
+                    loading={Boolean(kept)}
+                    onPress={() => setMore({ filterKey, count: shown.length + PAGE })}
+                  >
+                    {t('more')}
+                  </Button>
+                </View>
               )}
             </>
           )
@@ -566,24 +573,27 @@ export function MoviesLibrary() {
       </Loadable>
       <ConfirmDialog
         open={confirm}
-        onOpenChange={(o) => {
-          setConfirm(o)
-          if (!o) setExclude(false)
+        onClose={() => {
+          setConfirm(false)
+          setExclude(false)
         }}
         title={t('confirm.title', { count: ids.length })}
         description={
           hasLists ? (
-            <span className="grid gap-3">
-              {t('confirm.body')}
-              <span className="flex items-center gap-2">
-                <Checkbox
-                  id="exclude-from-lists"
-                  checked={exclude}
-                  onCheckedChange={(v) => setExclude(v === true)}
-                />
-                <label htmlFor="exclude-from-lists">{t('confirm.exclude')}</label>
-              </span>
-            </span>
+            <View style={{ gap: tokens.space['3'] }}>
+              <Text
+                size={tokens.adminText.form.size}
+                leading={tokens.adminText.form.leading}
+                color="text-2"
+              >
+                {t('confirm.body')}
+              </Text>
+              <Checkbox
+                label={t('confirm.exclude')}
+                checked={exclude}
+                onCheckedChange={setExclude}
+              />
+            </View>
           ) : (
             t('confirm.body')
           )
@@ -601,3 +611,9 @@ export function MoviesLibrary() {
     </AdminPage>
   )
 }
+
+/** A table cell's side padding (the web's px-3.5), which the toolbars and the grid share. */
+const CELL_X = 14
+/** The title filter's width (the web's w-48), and the tag and sort selects' (w-36). */
+const FILTER_WIDTH = 192
+const SELECT_WIDTH = 144

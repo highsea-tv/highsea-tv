@@ -170,17 +170,19 @@ jobs:
           - platform: linux/arm64
             runner: ubuntu-24.04-arm
     runs-on: ${{ matrix.runner }}
-    env:
-      # set from the first slim builds (2026-10-22: amd64 1907 MB, arm64 1836 MB), about 5% above the
-      # larger; raising it needs a reason here.
-      # 2026-10-23, 2000 to 2200 (checkpoint 4.0a): Debian trixie adds 139 MB on amd64 and 180 MB on
-      # arm64 to the same packages (arm64 measured at 2078 MB in all). ffmpeg 7.1 brings LLVM 19 and
-      # Mesa's Gallium, and unar's libgnustep-base1.31 declares `Depends: dpkg-dev`, which brings
-      # Perl, binutils and make (apt-cache show libgnustep-base1.31)
-      # 2026-10-28, 2200 to 2300 (checkpoint 4.3b, the owner's answer 3): the hardware drivers on
-      # amd64, about 134 MB measured in a trixie container: Intel's media driver (42 MB), libmfx-gen
-      # (8.7 MB), libvpl and Mesa's VAAPI driver, and Mesa's Vulkan drivers (83 MB) for libplacebo
-      IMAGE_BUDGET_MB: 2300
+    # the size budget's history, kept for the record:
+    # set from the first slim builds (2026-10-22: amd64 1907 MB, arm64 1836 MB), about 5% above the
+    # larger; raising it needs a reason here.
+    # 2026-10-23, 2000 to 2200 (checkpoint 4.0a): Debian trixie adds 139 MB on amd64 and 180 MB on
+    # arm64 to the same packages (arm64 measured at 2078 MB in all). ffmpeg 7.1 brings LLVM 19 and
+    # Mesa's Gallium, and unar's libgnustep-base1.31 declares `Depends: dpkg-dev`, which brings
+    # Perl, binutils and make (apt-cache show libgnustep-base1.31)
+    # 2026-10-28, 2200 to 2300 (checkpoint 4.3b, the owner's answer 3): the hardware drivers on
+    # amd64, about 134 MB measured in a trixie container: Intel's media driver (42 MB), libmfx-gen
+    # (8.7 MB), libvpl and Mesa's VAAPI driver, and Mesa's Vulkan drivers (83 MB) for libplacebo
+    # 2026-11-05 (one-client-platform-d.md, D2's answer 2): the owner removed the size gate. The
+    # image was 2,883 MB with the admin on React Native (expo-image 138 MB, lucide-react-native,
+    # hermes-compiler); the step below reports the size and its largest folders, and fails on nothing
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
@@ -222,7 +224,7 @@ jobs:
           docker stop highsea
           test "$(docker inspect --format '{{.State.ExitCode}}' highsea)" = 0
       - name: Its size and largest folders
-        run: bun scripts/image.ts size highsea:ci "$IMAGE_BUDGET_MB"
+        run: bun scripts/image.ts size highsea:ci
       - name: Its hardware encoders, filters and drivers
         run: bun scripts/image.ts hardware highsea:ci
       - name: The user its entrypoint runs highsea as

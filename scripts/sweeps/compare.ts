@@ -179,7 +179,15 @@ function pairs(ids: Awaited<ReturnType<typeof seed>>): {
       {
         screen: 'A4 Discover',
         name: 'add dialog',
-        ...both('/admin/discover', '/discover', button(/^Add /)),
+        // the mock's Trending is all in the library, so the prototype adds a film it hasn't
+        prototype: {
+          path: '/admin/discover',
+          act: async (p) => {
+            await p.getByLabel('Search for a movie').fill('scarlet street')
+            await button(/^Add /)(p)
+          },
+        },
+        server: { path: '/discover', act: button(/^Add /) },
       },
       { screen: 'A5 Movies', name: 'library', ...both('/admin/movies', '/movies') },
       {
@@ -190,38 +198,42 @@ function pairs(ids: Awaited<ReturnType<typeof seed>>): {
       {
         screen: 'A6 Movie detail',
         name: 'in the library',
-        ...both('/admin/movies/1', '/movies/45745'),
+        ...both('/admin/movies/10000', '/movies/45745'),
       },
       {
         screen: 'A6 Movie detail',
         name: 'files',
-        ...both('/admin/movies/1', '/movies/45745', tab('Files')),
+        ...both('/admin/movies/10000', '/movies/45745', tab('Files')),
       },
       {
         screen: 'A6 Movie detail',
         name: 'history',
-        ...both('/admin/movies/1', '/movies/45745', tab('History')),
+        ...both('/admin/movies/10000', '/movies/45745', tab('History')),
       },
       {
         screen: 'A6 Movie detail',
         name: 'search',
-        ...both('/admin/movies/1', '/movies/45745', tab('Search')),
+        ...both('/admin/movies/10000', '/movies/45745', tab('Search')),
       },
       {
         screen: 'A6 Movie detail',
         name: 'subtitles',
-        ...both('/admin/movies/1', '/movies/45745', tab('Subtitles')),
+        ...both('/admin/movies/10000', '/movies/45745', tab('Subtitles')),
       },
-      { screen: 'A6 Movie detail', name: 'not added', ...both('/admin/movies/107', '/movies/19') },
+      {
+        screen: 'A6 Movie detail',
+        name: 'not added',
+        ...both('/admin/movies/1003005', '/movies/19'),
+      },
       {
         screen: 'A6 Movie detail',
         name: 'cast and crew',
-        ...both('/admin/movies/107', '/movies/19', tab('Cast and crew')),
+        ...both('/admin/movies/1003005', '/movies/19', tab('Cast and crew')),
       },
       {
         screen: 'A6 Movie detail',
         name: 'person',
-        ...both('/admin/people/fritz-lang', '/people/68'),
+        ...both('/admin/people/98979075', '/people/68'),
       },
       {
         screen: 'A6 Movie detail',

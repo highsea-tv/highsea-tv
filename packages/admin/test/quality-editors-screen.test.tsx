@@ -40,6 +40,7 @@ const { default: userEvent } = await import('@testing-library/user-event')
 const { createClient } = await import('@highsea-tv/sdk')
 const { ClientProvider } = await import('@highsea-tv/sdk/react')
 const { TooltipProvider } = await import('@highsea-tv/ui')
+const { ThemeProvider } = await import('@highsea-tv/ui/native')
 const { defaultQualitySizes } = await import('@highsea-tv/quality/browser')
 const { FormatEditor, ProfileEditor, SizeEditor } = await import('../src/quality-editors.tsx')
 
@@ -151,7 +152,9 @@ async function open(ui: ReactNode) {
   await act(async () => {
     render(
       <ClientProvider client={client}>
-        <TooltipProvider>{ui}</TooltipProvider>
+        <ThemeProvider>
+          <TooltipProvider>{ui}</TooltipProvider>
+        </ThemeProvider>
       </ClientProvider>,
     )
   })

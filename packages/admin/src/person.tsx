@@ -11,6 +11,7 @@
 //   handful of votes would put obscure titles first;
 // - a department filter over TMDB's 12 departments, listing the ones this person has credits in;
 // - died shows the date alone (TMDB has no place of death); born's place may be missing.
+// Drawn with the library's native renderer since D2 (one-client-platform-d.md).
 
 import {
   DEPARTMENTS,
@@ -24,8 +25,9 @@ import { useQuery } from '@highsea-tv/sdk/react'
 import {
   Badge,
   Button,
-  CarouselRow,
+  Details,
   Poster,
+  Row,
   Select,
   Table,
   TableBody,
@@ -36,20 +38,23 @@ import {
   TableRow,
   TableToolbar,
   Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
+  Text,
   TitleCell,
-} from '@highsea-tv/ui'
+  TitleLink,
+  tokens,
+} from '@highsea-tv/ui/native'
 import { useState } from 'react'
+import { View } from 'react-native'
 import { AddMovieDialog } from './add-dialog.tsx'
 import { moviePath } from './media-links.ts'
 import {
+  InLibraryLink,
   MetadataError,
+  SummaryCard,
   SummarySkeleton,
   TitlePoster,
-  titleItem,
   useLongDate,
+  useTitleWidth,
 } from './media-sections.tsx'
 import { media } from './media-sections-messages.ts'
 import { parseTmdbId } from './movie-detail.tsx'
@@ -128,68 +133,88 @@ function Summary({ person: p }: { person: Person }) {
   const t = useT(messages)
   const long = useLongDate()
   const count = new Set(p.credits.map((c) => c.id)).size
+  const facts = [
+    ...(p.born
+      ? [
+          {
+            term: t('born'),
+            value:
+              p.born.date && p.born.place
+                ? t('bornAt', { date: long(p.born.date), place: p.born.place })
+                : p.born.date
+                  ? long(p.born.date)
+                  : (p.born.place ?? ''),
+          },
+        ]
+      : []),
+    ...(p.died ? [{ term: t('died'), value: long(p.died.date) }] : []),
+  ]
   return (
-    <section
-      aria-label={t('summary')}
-      className="grid gap-5 rounded-lg border border-line bg-s1 p-4 medium:grid-cols-[9rem_minmax(0,1fr)] medium:p-5"
+    <SummaryCard
+      label={t('summary')}
+      poster={(width) => <Poster title={p.name} src={p.photo ?? undefined} width={width} />}
     >
-      <Poster title={p.name} src={p.photo ?? undefined} className="w-32 medium:w-full" />
-      <div className="grid grid-cols-1 content-start gap-3">
-        <div className="flex flex-wrap items-center gap-2">
-          {p.knownFor && (
-            <Badge tone="neutral" dot={false}>
-              {t(`knownFor.${p.knownFor}`)}
-            </Badge>
-          )}
-          <span className="text-caption text-text-3">{t('titles', { count })}</span>
-        </div>
-        {(p.born || p.died) && (
-          <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-1 text-caption">
-            {p.born && (
-              <>
-                <dt className="text-text-3">{t('born')}</dt>
-                <dd className="text-text-2">
-                  {p.born.date && p.born.place
-                    ? t('bornAt', { date: long(p.born.date), place: p.born.place })
-                    : p.born.date
-                      ? long(p.born.date)
-                      : p.born.place}
-                </dd>
-              </>
-            )}
-            {p.died && (
-              <>
-                <dt className="text-text-3">{t('died')}</dt>
-                <dd className="text-text-2">{long(p.died.date)}</dd>
-              </>
-            )}
-          </dl>
+      <View
+        style={{
+          flexDirection: 'row',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          gap: tokens.space['2'],
+        }}
+      >
+        {p.knownFor && (
+          <Badge tone="neutral" dot={false}>
+            {t(`knownFor.${p.knownFor}`)}
+          </Badge>
         )}
-        <p className="max-w-[65ch] whitespace-pre-line text-body text-text-2">
-          {p.bio ?? t('noBio', { name: p.name })}
-        </p>
-      </div>
-    </section>
+        <Text variant="caption" color="text-3">
+          {t('titles', { count })}
+        </Text>
+      </View>
+      {facts.length > 0 && (
+        <Details
+          rows={facts.map(({ term, value }) => ({
+            term,
+            value: (
+              <Text variant="caption" color="text-2">
+                {value}
+              </Text>
+            ),
+          }))}
+          gap={tokens.space['1']}
+        />
+      )}
+      {/* the biography keeps TMDB's paragraphs: a Text keeps its newlines, as pre-line did */}
+      <Text variant="body" color="text-2" style={{ maxWidth: 600 }}>
+        {p.bio ?? t('noBio', { name: p.name })}
+      </Text>
+    </SummaryCard>
   )
 }
 
 /** Their titles with the most votes. Left out when the filmography is short enough to read. */
 function KnownFor({ credits }: { credits: PersonCredit[] }) {
   const t = useT(messages)
+  const width = useTitleWidth()
   const titles = byTitle(credits)
   if (titles.length < 3) return null
   const best = [...titles].sort((a, b) => b.voteCount - a.voteCount).slice(0, 8)
   return (
-    <CarouselRow flush title={t('knownFor')} itemClassName={titleItem}>
-      {best.map((m) => (
-        <TitlePoster key={m.id} t={m} />
-      ))}
-    </CarouselRow>
+    <Row
+      inset={0}
+      title={t('knownFor')}
+      items={best}
+      keyOf={(m) => m.id}
+      render={(m) => <TitlePoster t={m} width={width} />}
+    />
   )
 }
 
 type Filter = 'all' | 'in' | 'out'
 const ALL = 'all'
+
+/** The department filter's width (the web's w-48). */
+const DEPARTMENT_WIDTH = 192
 
 function Filmography({
   person: p,
@@ -217,25 +242,24 @@ function Filmography({
   // the add dialog takes the movie, without the person's part in it
   const movie = ({ credits: _, ...m }: FilmographyRow): DiscoverMovie => m
   return (
-    <section aria-labelledby="filmography" className="grid gap-3">
-      <h2 id="filmography" className="text-title text-text">
+    <View role="region" aria-label={t('filmography')} style={{ gap: tokens.space['3'] }}>
+      <Text variant="title" role="heading" aria-level={2}>
         {t('filmography')}
-      </h2>
+      </Text>
       <TableFrame>
-        <Tabs value={filter} onValueChange={(v) => setFilter(v as Filter)}>
-          <TableToolbar>
-            <TabsList aria-label={t('filter')} className="max-w-full overflow-x-auto">
-              <TabsTrigger value="all" count={counts.all}>
-                {t('filter.all')}
-              </TabsTrigger>
-              <TabsTrigger value="in" count={counts.in}>
-                {t('filter.in')}
-              </TabsTrigger>
-              <TabsTrigger value="out" count={counts.out}>
-                {t('filter.out')}
-              </TabsTrigger>
-            </TabsList>
-            {departments.length > 1 && (
+        <TableToolbar>
+          <Tabs
+            aria-label={t('filter')}
+            value={filter}
+            onValueChange={(v) => setFilter(v as Filter)}
+            options={[
+              { value: 'all', label: t('filter.all'), count: counts.all },
+              { value: 'in', label: t('filter.in'), count: counts.in },
+              { value: 'out', label: t('filter.out'), count: counts.out },
+            ]}
+          />
+          {departments.length > 1 && (
+            <View style={{ marginStart: 'auto', width: DEPARTMENT_WIDTH }}>
               <Select
                 aria-label={t('department')}
                 value={department}
@@ -244,62 +268,64 @@ function Filmography({
                   { value: ALL, label: t('department.all') },
                   ...departments.map((d) => ({ value: d, label: tm(`department.${d}`) })),
                 ]}
-                className="ms-auto w-48"
               />
-            )}
-          </TableToolbar>
-          <TabsContent value={filter}>
-            {shown.length === 0 ? (
-              <p className="px-3.5 py-8 text-center text-caption text-text-3">{t('nothing')}</p>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{t('title')}</TableHead>
-                    <TableHead>{t('role')}</TableHead>
-                    <TableHead className="w-40">{t('library')}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {shown.map((r) => (
-                    <TableRow key={r.id}>
-                      <TitleCell
-                        art={r.art.poster ?? ''}
-                        title={
-                          <a href={moviePath(r.id)} className="hover:underline">
-                            {r.title}
-                          </a>
-                        }
-                        detail={r.year === null ? undefined : String(r.year)}
+            </View>
+          )}
+        </TableToolbar>
+        {shown.length === 0 ? (
+          <View style={{ paddingHorizontal: 14, paddingVertical: tokens.space['8'] }}>
+            <Text variant="caption" color="text-3" align="center">
+              {t('nothing')}
+            </Text>
+          </View>
+        ) : (
+          <Table label={t('filmography')}>
+            <TableHeader>
+              <TableRow>
+                <TableHead>{t('title')}</TableHead>
+                <TableHead>{t('role')}</TableHead>
+                <TableHead width={160}>{t('library')}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {shown.map((r) => (
+                <TableRow key={r.id}>
+                  <TableCell tall>
+                    <TitleCell
+                      art={r.art.poster ?? ''}
+                      title={<TitleLink href={moviePath(r.id)}>{r.title}</TitleLink>}
+                      detail={r.year === null ? undefined : String(r.year)}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Text size={tokens.adminText.ui.size} color="text-2">
+                      {roles(r) || '—'}
+                    </Text>
+                  </TableCell>
+                  <TableCell>
+                    {r.inLibrary ? (
+                      <InLibraryLink
+                        href={moviePath(r.id)}
+                        label={t('inLibrary.label', { title: r.title })}
+                        text={t('inLibrary')}
                       />
-                      <TableCell className="text-text-2">{roles(r) || '—'}</TableCell>
-                      <TableCell>
-                        {r.inLibrary ? (
-                          <a
-                            href={moviePath(r.id)}
-                            aria-label={t('inLibrary.label', { title: r.title })}
-                          >
-                            <Badge tone="success">{t('inLibrary')}</Badge>
-                          </a>
-                        ) : (
-                          <Button
-                            size="sm"
-                            icon="add"
-                            onClick={() => onAdd(movie(r))}
-                            aria-label={t('add.label', { title: r.title })}
-                          >
-                            {t('add')}
-                          </Button>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </TabsContent>
-        </Tabs>
+                    ) : (
+                      <Button
+                        size="sm"
+                        icon="add"
+                        onPress={() => onAdd(movie(r))}
+                        accessibilityLabel={t('add.label', { title: r.title })}
+                      >
+                        {t('add')}
+                      </Button>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
       </TableFrame>
-    </section>
+    </View>
   )
 }

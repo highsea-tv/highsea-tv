@@ -12,6 +12,7 @@
 // - `initialPath` (Downloads' Import into the library, 6b) opens it on a torrent's folder;
 // - a Version column (6b, answer 8): each file picks one of its movie's versions, the scan's
 //   choice (the first without a file) by default; two files for one version are refused.
+// Drawn with the library's native renderer since D2 (one-client-platform-d.md).
 import type { ImportCandidate, Movie } from '@highsea-tv/api-contract'
 import { bytes } from '@highsea-tv/core/format'
 import { useT } from '@highsea-tv/i18n/react'
@@ -33,14 +34,24 @@ import {
   TableHeader,
   TableRow,
   TableToolbar,
+  Text,
   toast,
-} from '@highsea-tv/ui'
+  tokens,
+} from '@highsea-tv/ui/native'
 import { useEffect, useState } from 'react'
+import { View } from 'react-native'
 import { manualImport as messages } from './import-messages.ts'
 import { clashes, defaultVersion, VersionSelect } from './import-versions.tsx'
-import { ImportModes } from './library-import.tsx'
+import { ImportModes, ImportPanel } from './library-import.tsx'
 import { loadMovies } from './movie-data.ts'
 import { AdminPage } from './shell.tsx'
+import { Release } from './table-parts.tsx'
+
+const sp = tokens.space
+/** The movie and version columns (the web's w-60 and w-44), and a file's or name's (max-w-72). */
+const MOVIE_WIDTH = 240
+const VERSION_WIDTH = 176
+const NAME_WIDTH = 288
 
 type Mode = 'hardlink' | 'move'
 type Row = ImportCandidate & { selected: boolean; done: boolean; error: string | null }
@@ -144,53 +155,59 @@ export function ManualImport({ initialPath }: { initialPath?: string } = {}) {
       title={t('title')}
       description={t('description')}
       actions={
-        <Button variant="ghost" asChild>
-          <a href="/activity">{t('back')}</a>
+        <Button variant="ghost" href="/activity">
+          {t('back')}
         </Button>
       }
     >
-      <div className="grid grid-cols-[minmax(0,1fr)] gap-5">
+      <View style={{ gap: sp['5'], minWidth: 0 }}>
         <ImportModes mode="files" />
-        <section
-          aria-label={t('folder')}
-          className="grid grid-cols-[minmax(0,1fr)] gap-3 rounded-lg border border-line bg-s1 p-4"
-        >
+        <ImportPanel label={t('folder')}>
           <Field label={t('folder')} error={error ?? undefined} hint={t('folderHint')}>
-            <div className="flex flex-wrap gap-2">
-              <Input
-                value={path}
-                onChange={(e) => setPath(e.target.value)}
-                className="min-w-0 flex-1 basis-48 font-mono"
-              />
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: sp['2'] }}>
+              <View style={{ flexGrow: 1, flexShrink: 1, flexBasis: 192, minWidth: 0 }}>
+                <Input mono value={path} onChangeText={setPath} />
+              </View>
               <Button
                 variant="primary"
                 icon="search"
                 loading={scanning}
                 disabled={!path}
-                onClick={() => scan()}
+                onPress={() => scan()}
               >
                 {t('lookInside')}
               </Button>
-            </div>
+            </View>
           </Field>
-          <nav aria-label={t('foldersHere')} className="flex flex-wrap items-center gap-1.5">
+          <View
+            role="navigation"
+            aria-label={t('foldersHere')}
+            style={{
+              flexDirection: 'row',
+              flexWrap: 'wrap',
+              alignItems: 'center',
+              gap: sp['1'] + sp['0.5'],
+            }}
+          >
             {parent && (
-              <Button size="sm" variant="ghost" icon="arrow-left" onClick={() => setPath(parent)}>
+              <Button size="sm" variant="ghost" icon="arrow-left" onPress={() => setPath(parent)}>
                 {t('up')}
               </Button>
             )}
             {(folders.data?.entries ?? [])
               .filter((f) => f.kind === 'folder')
               .map((f) => (
-                <Button key={f.path} size="sm" icon="folder" onClick={() => setPath(f.path)}>
+                <Button key={f.path} size="sm" icon="folder" onPress={() => setPath(f.path)}>
                   {f.name}
                 </Button>
               ))}
-          </nav>
-        </section>
+          </View>
+        </ImportPanel>
 
         {rows === null ? (
-          <p className="text-caption text-text-3">{t('start')}</p>
+          <Text variant="caption" color="text-3">
+            {t('start')}
+          </Text>
         ) : rows.length === 0 ? (
           <EmptyState icon="folder" title={t('empty')}>
             {t('emptyBody', { path: scanned })}
@@ -198,35 +215,34 @@ export function ManualImport({ initialPath }: { initialPath?: string } = {}) {
         ) : (
           <TableFrame>
             <TableToolbar>
-              <SegmentedControl
+              <SegmentedControl<Mode>
                 aria-label={t('how')}
                 size="sm"
                 value={mode}
-                onValueChange={(v) => setMode(v as Mode)}
+                onValueChange={setMode}
                 options={[
                   { value: 'hardlink', label: t('mode.hardlink') },
                   { value: 'move', label: t('mode.move') },
                 ]}
               />
-              <span className="text-caption text-text-3">
+              <Text variant="caption" color="text-3">
                 {mode === 'hardlink' ? t('mode.hardlinkBody') : t('mode.moveBody')}
-              </span>
-              <Button
-                variant="primary"
-                className="ms-auto"
-                disabled={!chosen.length || clash.size > 0}
-                loading={run.pending}
-                onClick={importChosen}
-              >
-                {t('run', { count: chosen.length })}
-              </Button>
+              </Text>
+              <View style={{ marginStart: 'auto' }}>
+                <Button
+                  variant="primary"
+                  disabled={!chosen.length || clash.size > 0}
+                  loading={run.pending}
+                  onPress={importChosen}
+                >
+                  {t('run', { count: chosen.length })}
+                </Button>
+              </View>
             </TableToolbar>
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>
-                    <span className="sr-only">{t('col.import')}</span>
-                  </TableHead>
+                  <TableHead hidden>{t('col.import')}</TableHead>
                   <TableHead>{t('col.file')}</TableHead>
                   <TableHead>{t('col.movie')}</TableHead>
                   <TableHead>{t('col.version')}</TableHead>
@@ -241,70 +257,85 @@ export function ManualImport({ initialPath }: { initialPath?: string } = {}) {
                   const becomes = r.becomes ?? '—'
                   return (
                     <TableRow key={r.path}>
-                      <TableCell className="w-10">
+                      <TableCell>
                         <Checkbox
-                          aria-label={t('importOf', { file })}
+                          label={t('importOf', { file })}
+                          hideLabel
                           checked={r.selected}
                           disabled={r.movieId === null || !!r.skip || r.done}
-                          onCheckedChange={(c) => set(i, { selected: c === true })}
+                          onCheckedChange={(c) => set(i, { selected: c })}
                         />
                       </TableCell>
-                      <TableCell className="max-w-72">
-                        <div className="truncate font-mono text-release text-text" title={r.path}>
-                          {file}
-                        </div>
-                        {r.skip ? (
-                          <div className="text-caption text-text-3">{r.skip}</div>
-                        ) : r.done ? (
-                          <Badge tone="success">{t('imported')}</Badge>
-                        ) : r.error ? (
-                          <div className="whitespace-normal text-caption text-badge-danger">
-                            {r.error}
-                          </div>
-                        ) : r.movieId === null ? (
-                          <div className="text-caption text-badge-warning">{t('noMatch')}</div>
-                        ) : null}
+                      <TableCell tall maxWidth={NAME_WIDTH}>
+                        <View style={{ minWidth: 0, flex: 1, alignItems: 'flex-start', gap: 2 }}>
+                          <Release color="text">{file}</Release>
+                          {r.skip ? (
+                            <Text variant="caption" color="text-3">
+                              {r.skip}
+                            </Text>
+                          ) : r.done ? (
+                            <Badge tone="success">{t('imported')}</Badge>
+                          ) : r.error ? (
+                            <Text variant="caption" color="badge-danger">
+                              {r.error}
+                            </Text>
+                          ) : r.movieId === null ? (
+                            <Text variant="caption" color="badge-warning">
+                              {t('noMatch')}
+                            </Text>
+                          ) : null}
+                        </View>
                       </TableCell>
-                      <TableCell className="w-60">
-                        <Select
-                          aria-label={t('movieOf', { file })}
-                          value={r.movieId === null ? '' : String(r.movieId)}
-                          placeholder={t('choose')}
-                          disabled={!!r.skip || r.done}
-                          onValueChange={(id) =>
-                            set(i, {
-                              movieId: Number(id),
-                              versionId: defaultVersion(
-                                movies.data?.find((m) => m.id === Number(id)),
-                              ),
-                              becomes: null,
-                              selected: true,
-                              error: null,
-                            })
-                          }
-                          options={(movies.data ?? []).map((m) => ({
-                            value: String(m.id),
-                            label: label(m),
-                          }))}
-                        />
+                      <TableCell>
+                        <View style={{ width: MOVIE_WIDTH }}>
+                          <Select
+                            aria-label={t('movieOf', { file })}
+                            value={r.movieId === null ? '' : String(r.movieId)}
+                            placeholder={t('choose')}
+                            disabled={!!r.skip || r.done}
+                            onValueChange={(id) =>
+                              set(i, {
+                                movieId: Number(id),
+                                versionId: defaultVersion(
+                                  movies.data?.find((m) => m.id === Number(id)),
+                                ),
+                                becomes: null,
+                                selected: true,
+                                error: null,
+                              })
+                            }
+                            options={(movies.data ?? []).map((m) => ({
+                              value: String(m.id),
+                              label: label(m),
+                            }))}
+                          />
+                        </View>
                       </TableCell>
-                      <TableCell className="w-44">
-                        <VersionSelect
-                          file={file}
-                          movie={movies.data?.find((m) => m.id === r.movieId)}
-                          value={r.versionId}
-                          disabled={!!r.skip || r.done}
-                          clash={clash.has(r.path)}
-                          onChange={(versionId) => set(i, { versionId, error: null })}
-                        />
+                      <TableCell>
+                        <View style={{ width: VERSION_WIDTH }}>
+                          <VersionSelect
+                            file={file}
+                            movie={movies.data?.find((m) => m.id === r.movieId)}
+                            value={r.versionId}
+                            disabled={!!r.skip || r.done}
+                            clash={clash.has(r.path)}
+                            onChange={(versionId) => set(i, { versionId, error: null })}
+                          />
+                        </View>
                       </TableCell>
-                      <TableCell className="text-text-2">{r.quality}</TableCell>
+                      <TableCell>
+                        <Text
+                          size={tokens.adminText.ui.size}
+                          leading={tokens.adminText.ui.leading}
+                          color="text-2"
+                          numberOfLines={1}
+                        >
+                          {r.quality}
+                        </Text>
+                      </TableCell>
                       <TableCell numeric>{bytes(r.size)}</TableCell>
-                      <TableCell
-                        className="max-w-72 truncate font-mono text-release text-text-2"
-                        title={becomes}
-                      >
-                        {becomes}
+                      <TableCell maxWidth={NAME_WIDTH}>
+                        <Release>{becomes}</Release>
                       </TableCell>
                     </TableRow>
                   )
@@ -313,7 +344,9 @@ export function ManualImport({ initialPath }: { initialPath?: string } = {}) {
             </Table>
           </TableFrame>
         )}
-      </div>
+      </View>
     </AdminPage>
   )
 }
+
+/** The folder picker's frame (the web's section: `s1`, a line, the large corner, 16 in). */

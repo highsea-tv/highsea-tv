@@ -18,13 +18,13 @@
 // Bloom is the glow behind the card with a pointer and on the TV, in the art's colour
 // (client/bloom.tsx).
 import { breakpoints, web } from '@highsea-tv/tokens'
-import { Image } from 'expo-image'
 import { type ReactNode, type Ref, useEffect } from 'react'
 import { StyleSheet, useWindowDimensions, View } from 'react-native'
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
 import { alpha } from './alpha.ts'
 import { QualityTag } from './badge.tsx'
 import { Button } from './button.tsx'
+import { Image } from './image.tsx'
 import { Press } from './press.tsx'
 import { usePageGutter, usePosterWidth } from './row.tsx'
 import { Skeleton, SkeletonText } from './skeleton.tsx'

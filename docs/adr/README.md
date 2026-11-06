@@ -6,7 +6,7 @@ Short records of decisions that shape the system. Each one is immutable once acc
 | --- | --- | --- |
 | [0001](0001-design-first-sequencing.md) | Design-first sequencing | Accepted |
 | [0002](0002-bun-monorepo-multiple-apps.md) | Bun monorepo with multiple apps | Accepted |
-| [0003](0003-server-runtime-custom-entry.md) | Server runtime: custom Node entry hosting Next.js + Hono | Accepted; amended 2026-10-27, 2026-10-28, 2026-11-03 and 2026-11-04 (twice) |
+| [0003](0003-server-runtime-custom-entry.md) | Server runtime: custom Node entry hosting Next.js + Hono | Accepted; amended 2026-10-27, 2026-10-28, 2026-11-03, 2026-11-04 (twice) and 2026-11-05 |
 | [0004](0004-sqlite-drizzle.md) | SQLite + Drizzle for server data | Accepted |
 | [0005](0005-in-process-torrent-engine.md) | In-process TypeScript torrent engine | Accepted; amended by 0037 |
 | [0006](0006-public-api-openapi-sdk.md) | Public API: Hono + OpenAPI, typed SDK | Accepted |
@@ -21,7 +21,7 @@ Short records of decisions that shape the system. Each one is immutable once acc
 | [0015](0015-tv-hero-binds-featured-row.md) | The TV hero binds only the featured row | Accepted |
 | [0016](0016-gentler-poster-lift.md) | A gentler poster lift | Accepted |
 | [0017](0017-web-home-full-bleed-hero.md) | The web home uses a full-bleed hero | Accepted |
-| [0018](0018-admin-data-through-the-api.md) | The admin UI reads and writes through the public API | Accepted; amended 2026-11-04 |
+| [0018](0018-admin-data-through-the-api.md) | The admin UI reads and writes through the public API | Accepted; amended 2026-11-04 and 2026-11-05 |
 | [0019](0019-database-driver-seam.md) | One schema, two SQLite drivers | Accepted |
 | [0020](0020-discovery-port.md) | LAN discovery on UDP 7368, plus mDNS | Accepted; amended 2026-10-28 and 2026-10-29 (three times) |
 | [0021](0021-i18n-message-catalogs.md) | Strings live in typed message catalogs | Accepted |
@@ -63,7 +63,7 @@ Short records of decisions that shape the system. Each one is immutable once acc
 | [0057](0057-installing-without-configuration.md) | Installing without configuration: graphics handed over by default, the user, time zone, folders and address detected, and highsea's own TMDB key | Accepted; amended 2026-10-29 |
 | [0058](0058-desktop-app.md) | The desktop app: Tauri around the web build, with the server reached through Rust | Accepted; amended 2026-10-29, 2026-11-03 and 2026-11-04, and by 0061 |
 | [0059](0059-native-apps.md) | The native apps: Expo on React Native, two apps sharing ui-native and the client | Proposed; amended 2026-10-29, 2026-11-01, 2026-11-02, 2026-11-03 and 2026-11-04 (twice), and by 0061 |
-| [0060](0060-one-design-system-one-library.md) | One design system and one component library, adaptive to the app it's in | Proposed; amended 2026-11-02 (twice), 2026-11-03 (twice) and 2026-11-04 (three times), and by 0061 |
-| [0061](0061-one-client-platform.md) | One client platform: every client and its prototype in one Expo project, drawn once in React Native | Proposed; amended 2026-11-03 and 2026-11-04 (six times) |
+| [0060](0060-one-design-system-one-library.md) | One design system and one component library, adaptive to the app it's in | Proposed; amended 2026-11-02 (twice), 2026-11-03 (twice) and 2026-11-04 (three times) and 2026-11-05, and by 0061 |
+| [0061](0061-one-client-platform.md) | One client platform: every client and its prototype in one Expo project, drawn once in React Native | Proposed; amended 2026-11-03 and 2026-11-04 (six times) and 2026-11-05 |
 
 Template: copy [`template.md`](template.md).

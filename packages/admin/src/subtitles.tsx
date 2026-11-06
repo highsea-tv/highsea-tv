@@ -14,6 +14,8 @@
 //   table;
 // - a new profile gets its id from the server; a refused delete (a profile in use) says why;
 // - the minimum score hint says "about 99", the score a hash match gets (judgement call 8).
+// Since D2 (one-client-platform-d.md) it's drawn with the library's native renderer, on the web
+// through react-native-web, with the same parts, words and behaviour as the web renderer's.
 import type {
   Language,
   LanguageProfile,
@@ -27,15 +29,16 @@ import { percent } from '@highsea-tv/core/format'
 import { useT } from '@highsea-tv/i18n/react'
 import type { HighseaClient } from '@highsea-tv/sdk'
 import { useAction, useQuery } from '@highsea-tv/sdk/react'
+import { breakpoints, type ColorRole } from '@highsea-tv/tokens'
 import {
   Badge,
   Button,
   Dialog,
-  DialogContent,
   EmptyState,
   Field,
   Input,
-  Progress,
+  Panel,
+  ProgressBar,
   Select,
   SortableList,
   Stat,
@@ -49,17 +52,21 @@ import {
   TableRow,
   TableToolbar,
   Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
+  Text,
   TitleCell,
+  TitleLink,
   toast,
-} from '@highsea-tv/ui'
-import { useEffect, useRef, useState } from 'react'
+  tokens,
+  useTheme,
+  useWindowAtLeast,
+} from '@highsea-tv/ui/native'
+import { type ReactNode, useEffect, useRef, useState } from 'react'
+import { ScrollView, View } from 'react-native'
 import { Loadable } from './loadable.tsx'
 import { moviePath } from './media-links.ts'
 import { AdminPage, useShell } from './shell.tsx'
 import { subtitles as messages } from './subtitles-messages.ts'
+import { Muted } from './table-parts.tsx'
 import { useTabAddress } from './tabs.ts'
 import { useRelative } from './time.ts'
 
@@ -72,6 +79,13 @@ const TOPICS = ['subtitles.updated']
 /** Movies a page of the wanted list adds. */
 const PAGE = 50
 
+const sp = tokens.space
+const ui = tokens.adminText.ui
+/** A row of controls that wraps (the web's `flex flex-wrap gap-2`). */
+const ROW = { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: sp['2'] } as const
+/** Pushes what follows to the row's end (the web's `ms-auto`). */
+const END = { marginStart: 'auto' } as const
+
 export function Subtitles({ tab = 'wanted' }: { tab?: Tab }) {
   const t = useT(messages)
   const setTab = useTabAddress<Tab>('/subtitles', 'wanted')
@@ -80,47 +94,109 @@ export function Subtitles({ tab = 'wanted' }: { tab?: Tab }) {
     async (c) => (await c.subtitles.wanted({ query: { limit: 1 } })).total,
     TOPICS,
   )
+  const tabs: { value: Tab; label: string; count?: number }[] = [
+    { value: 'wanted', label: t('tab.wanted'), count: total.data || undefined },
+    { value: 'providers', label: t('tab.providers') },
+    { value: 'languages', label: t('tab.languages') },
+    { value: 'scoring', label: t('tab.scoring') },
+  ]
   return (
     <AdminPage title={t('title')} description={t('description')}>
       <Stats />
-      <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)} variant="line">
-        <TabsList aria-label={t('sections')} className="max-w-full overflow-x-auto">
-          <TabsTrigger value="wanted" count={total.data || undefined}>
-            {t('tab.wanted')}
-          </TabsTrigger>
-          <TabsTrigger value="providers">{t('tab.providers')}</TabsTrigger>
-          <TabsTrigger value="languages">{t('tab.languages')}</TabsTrigger>
-          <TabsTrigger value="scoring">{t('tab.scoring')}</TabsTrigger>
-        </TabsList>
-        <TabsContent value="wanted" className="pt-5">
-          <Wanted />
-        </TabsContent>
-        <TabsContent value="providers" className="pt-5">
-          <Providers />
-        </TabsContent>
-        <TabsContent value="languages" className="pt-5">
-          <Languages />
-        </TabsContent>
-        <TabsContent value="scoring" className="pt-5">
-          <Scoring />
-        </TabsContent>
-      </Tabs>
+      <View>
+        {/* the tabs scroll sideways rather than wrap in a narrow window (the web's overflow-x-auto) */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          <Tabs
+            variant="line"
+            aria-label={t('sections')}
+            options={tabs}
+            value={tab}
+            onValueChange={setTab}
+          />
+        </ScrollView>
+        <View
+          role="tabpanel"
+          aria-label={tabs.find((x) => x.value === tab)?.label}
+          style={{ paddingTop: sp['5'] }}
+        >
+          {tab === 'wanted' ? (
+            <Wanted />
+          ) : tab === 'providers' ? (
+            <Providers />
+          ) : tab === 'languages' ? (
+            <Languages />
+          ) : (
+            <Scoring />
+          )}
+        </View>
+      </View>
     </AdminPage>
   )
 }
 
 function Stats() {
   const t = useT(messages)
+  const four = useWindowAtLeast(breakpoints.medium)
   const stats = useQuery('subtitles:stats', (c) => c.subtitles.stats(), TOPICS)
   if (stats.status !== 'success') return null
   const s = stats.data
+  // two to a row in a compact window, four otherwise; each grows to an equal share
+  const cell = { flexGrow: 1, flexBasis: four ? '20%' : '40%', minWidth: 0 } as const
   return (
-    <div className="grid grid-cols-2 gap-4 rounded-lg border border-line bg-s1 p-4 medium:grid-cols-4">
-      <Stat value={String(s.syncedToday)} caption={t('stats.synced')} />
-      <Stat value={String(s.waiting)} caption={t('stats.waiting')} />
-      <Stat value={String(s.avgOffsetMs)} unit="ms" caption={t('stats.offset')} />
-      <Stat value={percent(s.avgConfidence)} caption={t('stats.confidence')} />
-    </div>
+    <Panel>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: sp['4'] }}>
+        <View style={cell}>
+          <Stat value={String(s.syncedToday)} caption={t('stats.synced')} />
+        </View>
+        <View style={cell}>
+          <Stat value={String(s.waiting)} caption={t('stats.waiting')} />
+        </View>
+        <View style={cell}>
+          <Stat value={String(s.avgOffsetMs)} unit="ms" caption={t('stats.offset')} />
+        </View>
+        <View style={cell}>
+          <Stat value={percent(s.avgConfidence)} caption={t('stats.confidence')} />
+        </View>
+      </View>
+    </Panel>
+  )
+}
+
+/** A caption-sized note in a colour (the web's `text-caption text-…`). */
+function Note({
+  children,
+  color = 'text-3',
+  role,
+}: {
+  children: ReactNode
+  color?: ColorRole
+  role?: 'alert' | 'status'
+}) {
+  return (
+    <Text variant="caption" color={color} role={role}>
+      {children}
+    </Text>
+  )
+}
+
+/** The answer a test or a save gave, in a box on `s2` (the web's `rounded-md border bg-s2 p-3`). */
+function Answer({ ok, children }: { ok: boolean; children: string }) {
+  const theme = useTheme()
+  return (
+    <View
+      role={ok ? 'status' : 'alert'}
+      style={{
+        padding: sp['3'],
+        borderRadius: tokens.radius.md,
+        borderWidth: 1,
+        borderColor: theme.colors.line,
+        backgroundColor: theme.colors.s2,
+      }}
+    >
+      <Text variant="caption" color={ok ? 'success' : 'danger'}>
+        {children}
+      </Text>
+    </View>
   )
 }
 
@@ -183,65 +259,68 @@ function Wanted() {
             </EmptyState>
           )
         return (
-          <div className="grid gap-4">
+          <View style={{ gap: sp['4'] }}>
             <TableFrame>
               <TableToolbar>
-                <span className="text-text">{t('wanted.count', { count: wanted.total })}</span>
-                <Button
-                  size="sm"
-                  icon="search"
-                  className="ms-auto"
-                  loading={searchAll.pending}
-                  onClick={() =>
-                    searchAll.run().then(
-                      ({ queued }) =>
-                        toast.success(t('wanted.searchedAll'), {
-                          description: t('wanted.searchedAllBody', { count: queued }),
-                        }),
-                      (e: Error) => toast.error(t('failed'), { description: e.message }),
-                    )
-                  }
-                >
-                  {t('wanted.searchAll')}
-                </Button>
+                <Text size={ui.size} leading={ui.leading}>
+                  {t('wanted.count', { count: wanted.total })}
+                </Text>
+                <View style={END}>
+                  <Button
+                    size="sm"
+                    icon="search"
+                    loading={searchAll.pending}
+                    onPress={() =>
+                      searchAll.run().then(
+                        ({ queued }) =>
+                          toast.success(t('wanted.searchedAll'), {
+                            description: t('wanted.searchedAllBody', { count: queued }),
+                          }),
+                        (e: Error) => toast.error(t('failed'), { description: e.message }),
+                      )
+                    }
+                  >
+                    {t('wanted.searchAll')}
+                  </Button>
+                </View>
               </TableToolbar>
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>{t('wanted.movie')}</TableHead>
                     <TableHead>{t('wanted.missing')}</TableHead>
-                    <TableHead>
-                      <span className="sr-only">{t('wanted.actions')}</span>
-                    </TableHead>
+                    <TableHead hidden>{t('wanted.actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {wanted.items.map(({ movie: m, missingLanguages }) => (
                     <TableRow key={m.id}>
-                      <TitleCell
-                        title={
-                          <a href={moviePath(m.id)} className="hover:underline">
-                            {m.year ? `${m.title} (${m.year})` : m.title}
-                          </a>
-                        }
-                        detail={m.path}
-                      />
+                      <TableCell tall>
+                        <TitleCell
+                          title={
+                            <TitleLink href={moviePath(m.id)}>
+                              {m.year ? `${m.title} (${m.year})` : m.title}
+                            </TitleLink>
+                          }
+                          detail={m.path}
+                        />
+                      </TableCell>
                       <TableCell>
-                        <span className="flex flex-wrap gap-1">
+                        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: sp['1'] }}>
                           {missingLanguages.map((l) => (
                             <Badge key={l} tone="warning">
                               {name(l)}
                             </Badge>
                           ))}
-                        </span>
+                        </View>
                       </TableCell>
-                      <TableCell className="text-end">
+                      <TableCell align="end">
                         <Button
                           size="sm"
                           icon="search"
                           disabled={searchOne.pending}
-                          aria-label={t('wanted.searchLabel', { title: m.title })}
-                          onClick={() =>
+                          accessibilityLabel={t('wanted.searchLabel', { title: m.title })}
+                          onPress={() =>
                             Promise.all(missingLanguages.map((l) => searchOne.run(m.id, l))).then(
                               () => toast.success(t('wanted.found', { title: m.title })),
                               (e: Error) =>
@@ -260,15 +339,16 @@ function Wanted() {
               </Table>
             </TableFrame>
             {wanted.next && (
-              <Button
-                className="justify-self-center"
-                loading={Boolean(kept)}
-                onClick={() => setCount(wanted.items.length + PAGE)}
-              >
-                {t('wanted.more')}
-              </Button>
+              <View style={{ alignItems: 'center' }}>
+                <Button
+                  loading={Boolean(kept)}
+                  onPress={() => setCount(wanted.items.length + PAGE)}
+                >
+                  {t('wanted.more')}
+                </Button>
+              </View>
             )}
-          </div>
+          </View>
         )
       }}
     </Loadable>
@@ -276,6 +356,9 @@ function Wanted() {
 }
 
 // ---------------------------------------------------------------- providers
+
+/** The quota column's width (the web's w-56). */
+const LEFT_WIDTH = 224
 
 function Providers() {
   const t = useT(messages)
@@ -286,25 +369,22 @@ function Providers() {
     c.subtitles.toggleProvider({ params: { id }, body: { enabled } }),
   )
   const [editing, setEditing] = useState<SubtitleProvider | null>(null)
+  const figure = tokens.adminText.figure
   return (
     <Loadable query={providers} what={t('providers.what')}>
       {(ps) => {
         const attributions = [...new Set(ps.flatMap((p) => (p.attribution ? [p.attribution] : [])))]
         return (
-          <div className="grid gap-3">
+          <View style={{ gap: sp['3'] }}>
             <TableFrame>
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>{t('providers.provider')}</TableHead>
                     <TableHead>{t('providers.account')}</TableHead>
-                    <TableHead>{t('providers.left')}</TableHead>
+                    <TableHead width={LEFT_WIDTH}>{t('providers.left')}</TableHead>
                     <TableHead>{t('providers.enabled')}</TableHead>
-                    {role === 'owner' && (
-                      <TableHead>
-                        <span className="sr-only">{t('providers.actions')}</span>
-                      </TableHead>
-                    )}
+                    {role === 'owner' && <TableHead hidden>{t('providers.actions')}</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -322,37 +402,49 @@ function Providers() {
                       (needsAccount && !p.enabled ? t('providers.addAccountFirst') : null)
                     return (
                       <TableRow key={p.id}>
-                        <TitleCell title={p.name} detail={why ?? undefined} />
-                        <TableCell className="text-text-2">
-                          {p.account ??
-                            (p.requiresAuth
-                              ? t('providers.needsAccount')
-                              : t('providers.notNeeded'))}
+                        <TableCell tall>
+                          <TitleCell title={p.name} detail={why ?? undefined} />
                         </TableCell>
-                        <TableCell className="w-56">
-                          <span className="flex items-center gap-3">
-                            <Progress
-                              value={left * 100}
-                              tone={throttled || left < 0.1 ? 'warning' : 'neutral'}
-                              aria-label={t('providers.leftLabel', { name: p.name })}
-                              className="flex-1"
-                            />
-                            <span className="font-mono text-figure text-text-3">
-                              {known
-                                ? `${p.rateLimitRemaining}/${p.rateLimitMax}`
-                                : t('providers.unknown')}
-                            </span>
-                          </span>
-                          {throttled && p.throttleReason && p.throttledUntil && (
-                            <span className="mt-1 block text-caption text-warning">
-                              {t(`throttle.${p.throttleReason}`, {
-                                when: relative(p.throttledUntil),
-                              })}
-                            </span>
-                          )}
+                        <TableCell>
+                          <Muted>
+                            {p.account ??
+                              (p.requiresAuth
+                                ? t('providers.needsAccount')
+                                : t('providers.notNeeded'))}
+                          </Muted>
+                        </TableCell>
+                        <TableCell>
+                          <View style={{ flex: 1, minWidth: 0, gap: sp['1'] }}>
+                            <View
+                              style={{ flexDirection: 'row', alignItems: 'center', gap: sp['3'] }}
+                            >
+                              <View style={{ flex: 1 }}>
+                                <ProgressBar
+                                  look="panel"
+                                  value={left * 100}
+                                  tone={throttled || left < 0.1 ? 'warning' : 'neutral'}
+                                  label={t('providers.leftLabel', { name: p.name })}
+                                />
+                              </View>
+                              <Text size={figure.size} leading={figure.leading} mono color="text-3">
+                                {known
+                                  ? `${p.rateLimitRemaining}/${p.rateLimitMax}`
+                                  : t('providers.unknown')}
+                              </Text>
+                            </View>
+                            {throttled && p.throttleReason && p.throttledUntil && (
+                              <Note color="warning">
+                                {t(`throttle.${p.throttleReason}`, {
+                                  when: relative(p.throttledUntil),
+                                })}
+                              </Note>
+                            )}
+                          </View>
                         </TableCell>
                         <TableCell>
                           <Switch
+                            label={t('providers.enabledLabel', { name: p.name })}
+                            hideLabel
                             checked={p.enabled}
                             disabled={
                               toggle.pending ||
@@ -366,17 +458,17 @@ function Providers() {
                                   toast.error(t('failed'), { description: e.message }),
                                 )
                             }
-                            aria-label={t('providers.enabledLabel', { name: p.name })}
                           />
                         </TableCell>
                         {role === 'owner' && (
-                          <TableCell className="text-end">
+                          <TableCell align="end">
                             <Button
                               size="sm"
                               icon="edit"
                               disabled={p.unavailable !== null}
-                              aria-label={t('providers.editLabel', { name: p.name })}
-                              onClick={() => setEditing(p)}
+                              accessibilityLabel={t('providers.editLabel', { name: p.name })}
+                              hasPopup="dialog"
+                              onPress={() => setEditing(p)}
                             >
                               {t('providers.edit')}
                             </Button>
@@ -389,16 +481,12 @@ function Providers() {
               </Table>
             </TableFrame>
             {attributions.map((a) => (
-              <p key={a} className="text-caption text-text-3">
-                {a}
-              </p>
+              <Note key={a}>{a}</Note>
             ))}
-            <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
-              {editing && (
-                <AccountForm key={editing.id} provider={editing} onClose={() => setEditing(null)} />
-              )}
-            </Dialog>
-          </div>
+            {editing && (
+              <AccountForm key={editing.id} provider={editing} onClose={() => setEditing(null)} />
+            )}
+          </View>
         )
       }}
     </Loadable>
@@ -451,31 +539,28 @@ function AccountForm({
   }
 
   return (
-    <DialogContent
+    <Dialog
+      open
+      onClose={onClose}
+      closable
       size="md"
       title={t('edit.title', { name: p.name })}
       description={t('edit.description')}
       footer={
         <>
-          <Button variant="ghost" onClick={onClose}>
+          <Button variant="ghost" onPress={onClose}>
             {t('edit.cancel')}
           </Button>
-          <Button loading={test.pending} onClick={runTest}>
+          <Button loading={test.pending} onPress={runTest}>
             {t('edit.test')}
           </Button>
-          <Button variant="primary" loading={save.pending} onClick={submit}>
+          <Button variant="primary" loading={save.pending} onPress={submit}>
             {t('edit.save')}
           </Button>
         </>
       }
     >
-      <form
-        className="grid gap-4"
-        onSubmit={(e) => {
-          e.preventDefault()
-          submit()
-        }}
-      >
+      <View style={{ gap: sp['4'] }}>
         {p.fields.map((f) => (
           <Field
             key={f.key}
@@ -483,32 +568,21 @@ function AccountForm({
             hint={f.secret && f.set ? t('edit.secretKept') : undefined}
           >
             <Input
-              type={f.secret ? 'password' : 'text'}
+              secureTextEntry={f.secret}
               value={values[f.key] ?? ''}
-              onChange={(e) => setValues((old) => ({ ...old, [f.key]: e.target.value }))}
+              onChangeText={(v) => setValues((old) => ({ ...old, [f.key]: v }))}
+              onSubmitEditing={submit}
               autoComplete="off"
+              autoCorrect={false}
+              autoCapitalize="none"
               spellCheck={false}
             />
           </Field>
         ))}
-        {result && (
-          <p
-            role={result.ok ? 'status' : 'alert'}
-            className={`rounded-md border border-line bg-s2 p-3 text-caption ${result.ok ? 'text-success' : 'text-danger'}`}
-          >
-            {result.message}
-          </p>
-        )}
-        {failure && (
-          <p
-            role="alert"
-            className="rounded-md border border-line bg-s2 p-3 text-caption text-danger"
-          >
-            {failure}
-          </p>
-        )}
-      </form>
-    </DialogContent>
+        {result && <Answer ok={result.ok}>{result.message}</Answer>}
+        {failure && <Answer ok={false}>{failure}</Answer>}
+      </View>
+    </Dialog>
   )
 }
 
@@ -534,7 +608,7 @@ function Languages() {
   return (
     <Loadable query={data} what={t('languages.what')}>
       {({ profiles, languages }) => (
-        <div className="grid gap-4">
+        <View style={{ gap: sp['4'] }}>
           {profiles.map((p) =>
             editing === p.id ? (
               <ProfileEditor
@@ -565,13 +639,45 @@ function Languages() {
               onDone={() => setEditing(null)}
             />
           ) : (
-            <Button icon="add" onClick={() => setEditing('new')} className="justify-self-start">
-              {t('profile.new')}
-            </Button>
+            <View style={{ alignItems: 'flex-start' }}>
+              <Button icon="add" onPress={() => setEditing('new')}>
+                {t('profile.new')}
+              </Button>
+            </View>
           )}
-        </div>
+        </View>
       )}
     </Loadable>
+  )
+}
+
+/** A profile's card, or its editor's, on `s1` (the web's `rounded-lg border bg-s1 p-4`). */
+function Card({
+  label,
+  strong,
+  children,
+}: {
+  label: string
+  strong?: boolean
+  children: ReactNode
+}) {
+  const theme = useTheme()
+  return (
+    <View
+      role="region"
+      aria-label={label}
+      style={{
+        gap: sp[strong ? '4' : '2'],
+        padding: sp['4'],
+        borderRadius: tokens.radius.lg,
+        borderWidth: 1,
+        borderColor: theme.colors[strong ? 'line-strong' : 'line'],
+        backgroundColor: theme.colors.s1,
+        minWidth: 0,
+      }}
+    >
+      {children}
+    </View>
   )
 }
 
@@ -585,41 +691,59 @@ function ProfileCard({
   onEdit: () => void
 }) {
   const t = useT(messages)
+  const side = useWindowAtLeast(breakpoints.medium)
   const name = (code: string) => languages.find((l) => l.code === code)?.name ?? code
   return (
-    <section
-      aria-label={p.name}
-      className="grid gap-2 rounded-lg border border-line bg-s1 p-4 medium:grid-cols-[1fr_auto]"
-    >
-      <div className="grid gap-1">
-        <h3 className="font-semibold text-text text-ui">{p.name}</h3>
-        <ol className="flex flex-wrap gap-1.5 text-caption text-text-2">
-          {p.languages.map((l, i) => (
-            <li key={l.code}>
-              {i + 1}. {name(l.code)}
-              {l.forced !== 'no' &&
-                t(l.forced === 'only' ? 'profile.forcedOnly' : 'profile.forcedToo')}
-              {l.hi !== 'no' && t(l.hi === 'only' ? 'profile.sdhOnly' : 'profile.sdhToo')}
-            </li>
-          ))}
-        </ol>
-        <p className="text-caption text-text-3">
-          {p.cutoff ? t('profile.cutoff', { language: name(p.cutoff) }) : t('profile.noCutoff')}{' '}
-          {t('profile.minScore', { score: p.minScore })}
-        </p>
-      </div>
-      <Button
-        size="sm"
-        icon="edit"
-        onClick={onEdit}
-        aria-label={t('profile.editLabel', { name: p.name })}
-        className="self-start"
+    <Card label={p.name}>
+      <View
+        style={{
+          flexDirection: side ? 'row' : 'column',
+          alignItems: 'flex-start',
+          gap: sp['2'],
+        }}
       >
-        {t('profile.edit')}
-      </Button>
-    </section>
+        <View style={{ flex: side ? 1 : undefined, minWidth: 0, gap: sp['1'] }}>
+          <Text size={ui.size} leading={ui.leading} weight={600} role="heading" aria-level={3}>
+            {p.name}
+          </Text>
+          <View
+            role="list"
+            style={{ flexDirection: 'row', flexWrap: 'wrap', gap: sp['1'] + sp['0.5'] }}
+          >
+            {p.languages.map((l, i) => (
+              <Text key={l.code} role="listitem" variant="caption" color="text-2">
+                {i + 1}. {name(l.code)}
+                {l.forced !== 'no' &&
+                  t(l.forced === 'only' ? 'profile.forcedOnly' : 'profile.forcedToo')}
+                {l.hi !== 'no' && t(l.hi === 'only' ? 'profile.sdhOnly' : 'profile.sdhToo')}
+              </Text>
+            ))}
+          </View>
+          <Note>
+            {p.cutoff ? t('profile.cutoff', { language: name(p.cutoff) }) : t('profile.noCutoff')}{' '}
+            {t('profile.minScore', { score: p.minScore })}
+          </Note>
+        </View>
+        <Button
+          size="sm"
+          icon="edit"
+          onPress={onEdit}
+          accessibilityLabel={t('profile.editLabel', { name: p.name })}
+        >
+          {t('profile.edit')}
+        </Button>
+      </View>
+    </Card>
   )
 }
+
+/** A rule's select's width in a regular window (the web's 12rem). */
+const RULE_WIDTH = 192
+/** The add-a-language select's width (the web's w-56). */
+const ADD_WIDTH = 224
+
+/** A score field's number, held to 0 to `max`. */
+const held = (text: string, max: number) => Math.max(0, Math.min(max, Number(text) || 0))
 
 function ProfileEditor({
   profile,
@@ -631,6 +755,7 @@ function ProfileEditor({
   onDone: () => void
 }) {
   const t = useT(messages)
+  const wide = useWindowAtLeast(breakpoints.medium)
   const [draft, setDraft] = useState(profile)
   const [touched, setTouched] = useState(false)
   const save = useAction((c, p: ProfileDraft) => {
@@ -657,117 +782,150 @@ function ProfileEditor({
       : null
 
   return (
-    <section
-      aria-label={draft.name || t('profile.newName')}
-      className="grid grid-cols-[minmax(0,1fr)] gap-4 rounded-lg border border-line-strong bg-s1 p-4"
-    >
+    <Card label={draft.name || t('profile.newName')} strong>
       <Field
         label={t('profile.name')}
         error={touched && !draft.name.trim() ? t('profile.nameRequired') : undefined}
       >
-        <Input value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} />
+        <Input value={draft.name} onChangeText={(v) => setDraft({ ...draft, name: v })} />
       </Field>
-      <div className="grid grid-cols-[minmax(0,1fr)] gap-2">
-        <h3 className="font-medium text-text text-ui">{t('profile.languages')}</h3>
+      <View style={{ gap: sp['2'], minWidth: 0 }}>
+        <Text size={ui.size} leading={ui.leading} weight={500} role="heading" aria-level={3}>
+          {t('profile.languages')}
+        </Text>
         <SortableList
-          aria-label={t('profile.languages')}
+          accessibilityLabel={t('profile.languages')}
           items={draft.languages}
           id={(l) => l.code}
           label={(l) => name(l.code)}
-          onChange={(languages) => setDraft({ ...draft, languages })}
-          className="gap-2"
-          itemClassName="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 rounded-md border border-line bg-s2 p-2.5 medium:grid-cols-[auto_minmax(0,1fr)_12rem_12rem_auto]"
+          onChange={(rules) => setDraft({ ...draft, languages: rules })}
+          messages={{
+            move: (n) => t('profile.move', { name: n }),
+            moveUp: (n) => t('profile.moveUp', { name: n }),
+            moveDown: (n) => t('profile.moveDown', { name: n }),
+            moved: (n, index, count) => t('profile.moved', { name: n, index, count }),
+            pickedUp: (n, index, count) => t('profile.pickedUp', { name: n, index, count }),
+            dropped: (n, index, count) => t('profile.dropped', { name: n, index, count }),
+            cancelled: (n) => t('profile.cancelled', { name: n }),
+          }}
         >
           {(l, handle) => {
             const i = draft.languages.findIndex((x) => x.code === l.code)
-            return (
+            const words = (
+              <Text size={ui.size} leading={ui.leading} style={{ flex: 1, minWidth: 0 }}>
+                <Text mono size={ui.size} color="text-3">
+                  {`${i + 1}.`}
+                </Text>{' '}
+                {name(l.code)}
+              </Text>
+            )
+            const forced = (
+              <Select
+                value={l.forced}
+                onValueChange={(v) => setRule(i, { forced: v as LanguageRule['forced'] })}
+                options={forcedOptions}
+                aria-label={t('profile.forcedLabel', { language: name(l.code) })}
+              />
+            )
+            const hi = (
+              <Select
+                value={l.hi}
+                onValueChange={(v) => setRule(i, { hi: v as LanguageRule['hi'] })}
+                options={hiOptions}
+                aria-label={t('profile.hiLabel', { language: name(l.code) })}
+              />
+            )
+            const drop = (
+              <Button
+                variant="ghost"
+                iconOnly
+                icon="close"
+                accessibilityLabel={t('profile.remove', { language: name(l.code) })}
+                onPress={() =>
+                  setDraft({
+                    ...draft,
+                    languages: draft.languages.filter((x) => x.code !== l.code),
+                    cutoff: draft.cutoff === l.code ? null : draft.cutoff,
+                  })
+                }
+              />
+            )
+            // a regular window: one row; a compact one: the name and remove, the selects under
+            return wide ? (
               <>
                 {handle}
-                <span className="text-text text-ui">
-                  <span className="font-mono text-text-3">{i + 1}.</span> {name(l.code)}
-                </span>
-                <Select
-                  value={l.forced}
-                  onValueChange={(v) => setRule(i, { forced: v as LanguageRule['forced'] })}
-                  options={forcedOptions}
-                  aria-label={t('profile.forcedLabel', { language: name(l.code) })}
-                  className="col-span-3 medium:col-span-1"
-                />
-                <Select
-                  value={l.hi}
-                  onValueChange={(v) => setRule(i, { hi: v as LanguageRule['hi'] })}
-                  options={hiOptions}
-                  aria-label={t('profile.hiLabel', { language: name(l.code) })}
-                  className="col-span-3 medium:col-span-1"
-                />
-                <Button
-                  variant="ghost"
-                  iconOnly
-                  icon="close"
-                  aria-label={t('profile.remove', { language: name(l.code) })}
-                  className="col-start-3 row-start-1 medium:col-start-auto medium:row-start-auto"
-                  onClick={() =>
-                    setDraft({
-                      ...draft,
-                      languages: draft.languages.filter((x) => x.code !== l.code),
-                      cutoff: draft.cutoff === l.code ? null : draft.cutoff,
-                    })
-                  }
-                />
+                {words}
+                <View style={{ width: RULE_WIDTH }}>{forced}</View>
+                <View style={{ width: RULE_WIDTH }}>{hi}</View>
+                {drop}
+              </>
+            ) : (
+              <>
+                {handle}
+                <View style={{ flex: 1, minWidth: 0, gap: sp['2'] }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: sp['2'] }}>
+                    {words}
+                    {drop}
+                  </View>
+                  {forced}
+                  {hi}
+                </View>
               </>
             )
           }}
         </SortableList>
         {unused.length > 0 && (
-          <Select
-            value=""
-            onValueChange={(code) =>
-              setDraft({
-                ...draft,
-                languages: [...draft.languages, { code, forced: 'no', hi: 'no' }],
-              })
-            }
-            placeholder={t('profile.add')}
-            aria-label={t('profile.add')}
-            options={unused.map((l) => ({ value: l.code, label: l.name }))}
-            className="w-56"
-          />
+          <View style={{ width: ADD_WIDTH, maxWidth: '100%' }}>
+            <Select
+              // drawn afresh once a language is added, so it shows its placeholder again
+              key={draft.languages.length}
+              onValueChange={(code) =>
+                setDraft({
+                  ...draft,
+                  languages: [...draft.languages, { code, forced: 'no', hi: 'no' }],
+                })
+              }
+              placeholder={t('profile.add')}
+              aria-label={t('profile.add')}
+              options={unused.map((l) => ({ value: l.code, label: l.name }))}
+            />
+          </View>
         )}
-      </div>
-      <div className="grid gap-4 medium:grid-cols-2">
-        <Field label={t('profile.cutoffLabel')} hint={t('profile.cutoffHint')}>
-          <Select
-            value={draft.cutoff ?? 'none'}
-            onValueChange={(v) => setDraft({ ...draft, cutoff: v === 'none' ? null : v })}
-            options={[
-              { value: 'none', label: t('profile.keepLooking') },
-              ...draft.languages.map((l) => ({ value: l.code, label: name(l.code) })),
-            ]}
-          />
-        </Field>
-        <Field label={t('profile.minScoreLabel')} hint={t('profile.minScoreHint')}>
-          <Input
-            inputMode="numeric"
-            value={String(draft.minScore)}
-            onChange={(e) =>
-              setDraft({
-                ...draft,
-                minScore: Math.max(0, Math.min(100, Number(e.target.value) || 0)),
-              })
-            }
-          />
-        </Field>
-      </div>
+      </View>
+      <View style={{ flexDirection: wide ? 'row' : 'column', gap: sp['4'] }}>
+        <View style={{ flex: wide ? 1 : undefined, minWidth: 0 }}>
+          <Field label={t('profile.cutoffLabel')} hint={t('profile.cutoffHint')}>
+            <Select
+              value={draft.cutoff ?? 'none'}
+              onValueChange={(v) => setDraft({ ...draft, cutoff: v === 'none' ? null : v })}
+              options={[
+                { value: 'none', label: t('profile.keepLooking') },
+                ...draft.languages.map((l) => ({ value: l.code, label: name(l.code) })),
+              ]}
+            />
+          </Field>
+        </View>
+        <View style={{ flex: wide ? 1 : undefined, minWidth: 0 }}>
+          <Field label={t('profile.minScoreLabel')} hint={t('profile.minScoreHint')}>
+            <Input
+              inputMode="numeric"
+              keyboardType="number-pad"
+              value={String(draft.minScore)}
+              onChangeText={(v) => setDraft({ ...draft, minScore: held(v, 100) })}
+            />
+          </Field>
+        </View>
+      </View>
       {touched && error && (
-        <p role="alert" className="text-caption text-danger">
+        <Note color="danger" role="alert">
           {error}
-        </p>
+        </Note>
       )}
-      <div className="flex flex-wrap gap-2">
+      <View style={ROW}>
         <Button
           variant="primary"
           loading={save.pending}
-          onClick={() => {
+          onPress={() => {
             setTouched(true)
             if (error) return
             const named = draft.name.trim()
@@ -782,39 +940,45 @@ function ProfileEditor({
         >
           {t('profile.save')}
         </Button>
-        <Button variant="ghost" onClick={onDone}>
+        <Button variant="ghost" onPress={onDone}>
           {t('profile.cancel')}
         </Button>
         {profile.id && (
-          <Button
-            variant="danger"
-            icon="delete"
-            className="ms-auto"
-            loading={remove.pending}
-            onClick={() => {
-              const id = profile.id
-              if (!id) return
-              remove.run(id).then(
-                () => {
-                  toast({ title: t('profile.deleted', { name: profile.name }) })
-                  onDone()
-                },
-                (e: Error) =>
-                  toast.error(t('profile.notDeleted', { name: profile.name }), {
-                    description: e.message,
-                  }),
-              )
-            }}
-          >
-            {t('profile.delete')}
-          </Button>
+          <View style={END}>
+            <Button
+              variant="danger"
+              icon="delete"
+              loading={remove.pending}
+              onPress={() => {
+                const id = profile.id
+                if (!id) return
+                remove.run(id).then(
+                  () => {
+                    toast({ title: t('profile.deleted', { name: profile.name }) })
+                    onDone()
+                  },
+                  (e: Error) =>
+                    toast.error(t('profile.notDeleted', { name: profile.name }), {
+                      description: e.message,
+                    }),
+                )
+              }}
+            >
+              {t('profile.delete')}
+            </Button>
+          </View>
         )}
-      </div>
-    </section>
+      </View>
+    </Card>
   )
 }
 
 // ---------------------------------------------------------------- scoring and sync
+
+/** A short number field's width (the web's w-32). */
+const SHORT = 128
+/** The form's measure (the web's max-w-2xl). */
+const FORM_WIDTH = 672
 
 function Scoring() {
   const t = useT(messages)
@@ -833,61 +997,62 @@ function ScoringForm({ settings }: { settings: SubtitleSettings }) {
   const save = useAction((c, body: SubtitleSettings) => c.subtitles.saveSettings({ body }))
   const dirty = JSON.stringify(draft) !== JSON.stringify(settings)
   return (
-    <div className="grid max-w-2xl gap-5">
+    <View style={{ maxWidth: FORM_WIDTH, gap: sp['5'] }}>
       <Field label={t('scoring.minScore')} hint={t('scoring.minScoreHint')}>
-        <Input
-          inputMode="numeric"
-          value={String(draft.minScore)}
-          onChange={(e) =>
-            setDraft({
-              ...draft,
-              minScore: Math.max(0, Math.min(100, Number(e.target.value) || 0)),
-            })
-          }
-          className="w-32"
-        />
+        <View style={{ width: SHORT }}>
+          <Input
+            inputMode="numeric"
+            keyboardType="number-pad"
+            value={String(draft.minScore)}
+            onChangeText={(v) => setDraft({ ...draft, minScore: held(v, 100) })}
+          />
+        </View>
       </Field>
-      <Field inline label={t('scoring.prefer')} hint={t('scoring.preferHint')}>
-        <Switch
-          checked={draft.preferReleaseMatch}
-          onCheckedChange={(preferReleaseMatch) => setDraft({ ...draft, preferReleaseMatch })}
-        />
-      </Field>
-      <Field inline label={t('scoring.sync')} hint={t('scoring.syncHint')}>
-        <Switch
-          checked={draft.autoSync}
-          onCheckedChange={(autoSync) => setDraft({ ...draft, autoSync })}
-        />
-      </Field>
+      <Switch
+        label={t('scoring.prefer')}
+        hint={t('scoring.preferHint')}
+        checked={draft.preferReleaseMatch}
+        onCheckedChange={(preferReleaseMatch) => setDraft({ ...draft, preferReleaseMatch })}
+      />
+      <Switch
+        label={t('scoring.sync')}
+        hint={t('scoring.syncHint')}
+        checked={draft.autoSync}
+        onCheckedChange={(autoSync) => setDraft({ ...draft, autoSync })}
+      />
       <Field label={t('scoring.confidence')} hint={t('scoring.confidenceHint')}>
-        <Select
-          value={String(draft.minConfidence)}
-          onValueChange={(v) => setDraft({ ...draft, minConfidence: Number(v) })}
-          options={[0.5, 0.6, 0.7, 0.8, 0.9].map((v) => ({ value: String(v), label: percent(v) }))}
-          disabled={!draft.autoSync}
-          className="w-32"
-        />
+        <View style={{ width: SHORT }}>
+          <Select
+            value={String(draft.minConfidence)}
+            onValueChange={(v) => setDraft({ ...draft, minConfidence: Number(v) })}
+            options={[0.5, 0.6, 0.7, 0.8, 0.9].map((v) => ({
+              value: String(v),
+              label: percent(v),
+            }))}
+            disabled={!draft.autoSync}
+          />
+        </View>
       </Field>
       <Field label={t('scoring.upgrade')} hint={t('scoring.upgradeHint')}>
-        <Input
-          inputMode="numeric"
-          value={String(draft.upgradeDays)}
-          onChange={(e) =>
-            setDraft({
-              ...draft,
-              upgradeDays: Math.max(0, Math.min(365, Number(e.target.value) || 0)),
-            })
-          }
-          end={<span className="text-caption text-text-3">{t('scoring.days')}</span>}
-          className="w-32"
-        />
+        {/* the unit after the field: the web draws it inside the field's end */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: sp['2'] }}>
+          <View style={{ width: SHORT }}>
+            <Input
+              inputMode="numeric"
+              keyboardType="number-pad"
+              value={String(draft.upgradeDays)}
+              onChangeText={(v) => setDraft({ ...draft, upgradeDays: held(v, 365) })}
+            />
+          </View>
+          <Note>{t('scoring.days')}</Note>
+        </View>
       </Field>
-      <div className="flex flex-wrap gap-2">
+      <View style={ROW}>
         <Button
           variant="primary"
           disabled={!dirty}
           loading={save.pending}
-          onClick={() =>
+          onPress={() =>
             save.run(draft).then(
               () => toast.success(t('scoring.saved')),
               (e: Error) => toast.error(t('failed'), { description: e.message }),
@@ -896,10 +1061,10 @@ function ScoringForm({ settings }: { settings: SubtitleSettings }) {
         >
           {t('scoring.save')}
         </Button>
-        <Button variant="ghost" disabled={!dirty} onClick={() => setDraft(settings)}>
+        <Button variant="ghost" disabled={!dirty} onPress={() => setDraft(settings)}>
           {t('scoring.discard')}
         </Button>
-      </div>
-    </div>
+      </View>
+    </View>
   )
 }

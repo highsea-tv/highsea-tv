@@ -10,29 +10,30 @@
 // - the query and the tab live in the address (`?q=`, `?list=`), so Back returns to them;
 // - TMDB answers a page at a time: Show more under the grid loads the next;
 // - no TMDB key says so, and links to Settings › General (decision 1).
+// Drawn with the library's native renderer since D2 (one-client-platform-d.md).
 import { DISCOVER_LISTS, type DiscoverMovie } from '@highsea-tv/api-contract'
 import { useT } from '@highsea-tv/i18n/react'
 import type { HighseaClient } from '@highsea-tv/sdk'
 import { useQuery } from '@highsea-tv/sdk/react'
 import {
-  Badge,
   Button,
   EmptyState,
-  Input,
   Poster,
   Rating,
+  SearchField,
   Skeleton,
   Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '@highsea-tv/ui'
+  Text,
+  tokens,
+} from '@highsea-tv/ui/native'
 import { useDeferredValue, useState } from 'react'
+import { View } from 'react-native'
 import { AddMovieDialog, isNoMetadataKey, METADATA_SETTINGS } from './add-dialog.tsx'
 import { useAddressParam } from './address.ts'
 import { discover as messages } from './discover-messages.ts'
 import { Loadable, PosterSkeletons } from './loadable.tsx'
 import { moviePath } from './media-links.ts'
+import { GridItem, InLibraryLink, PosterGrid } from './media-sections.tsx'
 import { AdminPage } from './shell.tsx'
 
 type List = (typeof DISCOVER_LISTS)[number]
@@ -49,39 +50,49 @@ const fetchPage = (list: List, query: string, page: number) => (c: HighseaClient
 function Result({ movie: m, onAdd }: { movie: DiscoverMovie; onAdd: (m: DiscoverMovie) => void }) {
   const t = useT(messages)
   return (
-    <li className="grid content-start gap-2">
-      <Poster
-        title={m.title}
-        src={m.art.poster ?? undefined}
-        href={moviePath(m.id)}
-        showTitle
-        caption={
-          <span className="flex items-center gap-2">
-            {m.year}
-            {m.rating > 0 && <Rating value={m.rating} size={11} />}
-          </span>
-        }
-      />
-      {m.inLibrary ? (
-        <a
+    <GridItem gap={tokens.space['2']}>
+      <View>
+        <Poster
+          title={m.title}
+          src={m.art.poster ?? undefined}
           href={moviePath(m.id)}
-          className="justify-self-start"
-          aria-label={t('inLibrary.label', { title: m.title })}
+          showTitle
+          titleSize="ui"
+        />
+        {/* the caption: the year and TMDB's rating, which a Poster's string caption can't hold */}
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: tokens.space['2'],
+            marginTop: tokens.space['0.5'],
+          }}
         >
-          <Badge tone="success">{t('inLibrary')}</Badge>
-        </a>
+          {m.year === null ? null : (
+            <Text variant="caption" color="text-3">
+              {String(m.year)}
+            </Text>
+          )}
+          {m.rating > 0 && <Rating value={m.rating} size={11} />}
+        </View>
+      </View>
+      {m.inLibrary ? (
+        <InLibraryLink
+          href={moviePath(m.id)}
+          label={t('inLibrary.label', { title: m.title })}
+          text={t('inLibrary')}
+        />
       ) : (
         <Button
           size="sm"
           icon="add"
-          onClick={() => onAdd(m)}
-          aria-label={t('add.label', { title: m.title })}
-          className="justify-self-start"
+          onPress={() => onAdd(m)}
+          accessibilityLabel={t('add.label', { title: m.title })}
         >
           {t('add')}
         </Button>
       )}
-    </li>
+    </GridItem>
   )
 }
 
@@ -102,18 +113,22 @@ function MoreResults({
   if (results.status === 'loading')
     return Array.from({ length: 6 }, (_, i) => (
       // biome-ignore lint/suspicious/noArrayIndexKey: placeholders have no identity
-      <li key={i} aria-busy>
-        <Skeleton className="aspect-poster rounded-poster" />
-      </li>
+      <GridItem key={i} busy>
+        <View style={{ aspectRatio: 2 / 3 }}>
+          <Skeleton height="100%" radius={tokens.radius.poster} />
+        </View>
+      </GridItem>
     ))
   if (results.status === 'error')
     return (
-      <li className="col-span-full grid justify-items-start gap-2 text-caption text-text-3">
-        {results.error.message}
-        <Button size="sm" onClick={results.refetch}>
+      <GridItem full gap={tokens.space['2']}>
+        <Text variant="caption" color="text-3">
+          {results.error.message}
+        </Text>
+        <Button size="sm" onPress={results.refetch}>
           {t('more')}
         </Button>
-      </li>
+      </GridItem>
     )
   return results.data.items.map((m) => <Result key={m.id} movie={m} onAdd={onAdd} />)
 }
@@ -133,97 +148,87 @@ export function Discover() {
 
   const noKey = first.status === 'error' && isNoMetadataKey(first.error)
 
-  const results = (
-    <>
-      {noKey ? (
-        <EmptyState
-          icon="key"
-          title={t('noKey')}
-          action={
-            <Button asChild>
-              <a href={METADATA_SETTINGS}>{t('noKey.link')}</a>
-            </Button>
-          }
-        />
-      ) : (
-        <Loadable query={first} what={t('what')} skeleton={<PosterSkeletons />}>
-          {(page) =>
-            page.items.length === 0 ? (
-              deferred ? (
-                <EmptyState icon="search" title={t('empty.query', { query: deferred })}>
-                  {t('empty.queryBody')}
-                </EmptyState>
-              ) : (
-                <EmptyState icon="discover" title={t('empty.list')}>
-                  {t('empty.listBody')}
-                </EmptyState>
-              )
-            ) : (
-              <>
-                <ul className="grid grid-cols-[repeat(auto-fill,minmax(8.5rem,1fr))] gap-x-4 gap-y-5">
-                  {page.items.map((m) => (
-                    <Result key={m.id} movie={m} onAdd={onAdd} />
-                  ))}
-                  {Array.from({ length: pages - 1 }, (_, i) => (
-                    <MoreResults
-                      key={pageKey(list, deferred, i + 2)}
-                      list={list}
-                      query={deferred}
-                      page={i + 2}
-                      onAdd={onAdd}
-                    />
-                  ))}
-                </ul>
-                {pages < Math.min(page.totalPages, 500) && (
-                  <Button
-                    className="justify-self-center"
-                    onClick={() => setMore({ view, pages: pages + 1 })}
-                  >
-                    {t('more')}
-                  </Button>
-                )}
-              </>
-            )
-          }
-        </Loadable>
-      )}
-    </>
+  const results = noKey ? (
+    <EmptyState
+      icon="key"
+      title={t('noKey')}
+      action={<Button href={METADATA_SETTINGS}>{t('noKey.link')}</Button>}
+    />
+  ) : (
+    <Loadable query={first} what={t('what')} skeleton={<PosterSkeletons />}>
+      {(page) =>
+        page.items.length === 0 ? (
+          deferred ? (
+            <EmptyState icon="search" title={t('empty.query', { query: deferred })}>
+              {t('empty.queryBody')}
+            </EmptyState>
+          ) : (
+            <EmptyState icon="discover" title={t('empty.list')}>
+              {t('empty.listBody')}
+            </EmptyState>
+          )
+        ) : (
+          <View style={{ gap: tokens.space['5'] }}>
+            <PosterGrid>
+              {page.items.map((m) => (
+                <Result key={m.id} movie={m} onAdd={onAdd} />
+              ))}
+              {Array.from({ length: pages - 1 }, (_, i) => (
+                <MoreResults
+                  key={pageKey(list, deferred, i + 2)}
+                  list={list}
+                  query={deferred}
+                  page={i + 2}
+                  onAdd={onAdd}
+                />
+              ))}
+            </PosterGrid>
+            {pages < Math.min(page.totalPages, 500) && (
+              <View style={{ alignItems: 'center' }}>
+                <Button onPress={() => setMore({ view, pages: pages + 1 })}>{t('more')}</Button>
+              </View>
+            )}
+          </View>
+        )
+      }
+    </Loadable>
   )
 
   return (
     <AdminPage title={t('title')} description={t('description')}>
-      <div className="grid max-w-xl gap-1.5">
-        <Input
-          type="search"
-          icon="search"
+      <View style={{ maxWidth: SEARCH_WIDTH }}>
+        <SearchField
+          label={t('search')}
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChangeText={setQuery}
           placeholder={t('placeholder')}
-          aria-label={t('search')}
           spellCheck={false}
+          autoCorrect={false}
         />
-      </div>
+      </View>
       {deferred ? (
         <>
-          <h2 className="text-title text-text">{t('results', { query: deferred })}</h2>
+          <Text variant="title" role="heading" aria-level={2}>
+            {t('results', { query: deferred })}
+          </Text>
           {results}
         </>
       ) : (
-        // the lists are tabs, and the grid their panel (decision 7)
-        <Tabs value={list} onValueChange={(v) => setList(v as List)} className="grid gap-5">
-          <TabsList aria-label={t('lists')} className="max-w-full overflow-x-auto">
-            {DISCOVER_LISTS.map((l) => (
-              <TabsTrigger key={l} value={l}>
-                {t(`list.${l}`)}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-          <TabsContent value={list} className="grid gap-5">
-            {results}
-          </TabsContent>
-        </Tabs>
+        // the lists are tabs, and the grid what they show (decision 7)
+        <View style={{ gap: tokens.space['5'] }}>
+          <Tabs
+            aria-label={t('lists')}
+            value={list}
+            onValueChange={(v) => setList(v as List)}
+            options={DISCOVER_LISTS.map((l) => ({ value: l, label: t(`list.${l}`) }))}
+          />
+          {results}
+        </View>
       )}
       <AddMovieDialog movies={adding} onOpenChange={(o) => !o && setAdding([])} />
     </AdminPage>
   )
 }
+
+/** The search field's measure (the web's max-w-xl, 576). */
+const SEARCH_WIDTH = 576

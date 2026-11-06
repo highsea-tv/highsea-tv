@@ -36,7 +36,8 @@ const { act, cleanup, render, within } = await import('@testing-library/react')
 const { default: userEvent } = await import('@testing-library/user-event')
 const { createClient } = await import('@highsea-tv/sdk')
 const { ClientProvider } = await import('@highsea-tv/sdk/react')
-const { TooltipProvider } = await import('@highsea-tv/ui')
+const { ThemeProvider, toast } = await import('@highsea-tv/ui/native')
+const { shown } = await import('./modal.ts')
 const { Indexers, isOneClick } = await import('../src/indexers.tsx')
 
 // ---------------------------------------------------------------- the fake API
@@ -170,7 +171,10 @@ async function api(url: string, init: RequestInit = {}): Promise<Response> {
 beforeEach(() => {
   state = { indexers: [indexer()], requests: [], addFails: false }
 })
-afterEach(() => cleanup())
+afterEach(() => {
+  cleanup()
+  toast.clear()
+})
 
 const settle = () =>
   act(async () => {
@@ -182,9 +186,9 @@ async function open() {
   await act(async () => {
     render(
       <ClientProvider client={client}>
-        <TooltipProvider>
+        <ThemeProvider>
           <Routed<IndexersTab> base="/indexers">{(tab) => <Indexers tab={tab} />}</Routed>
-        </TooltipProvider>
+        </ThemeProvider>
       </ClientProvider>,
     )
   })
@@ -206,9 +210,10 @@ describe('A9 Indexers', () => {
 
   test('the header shows the catalog’s version, and What changed its notes', async () => {
     const { user, page } = await open()
-    expect(page.getByText('2026.10.21', { selector: 'span' })).toBeTruthy()
+    expect(page.getByText('2026.10.21')).toBeTruthy()
     await user.click(page.getByRole('button', { name: 'What changed' }))
     await settle()
+    shown()
     const dialog = within(page.getByRole('dialog'))
     expect(dialog.getByText('The first definitions.')).toBeTruthy()
   })
@@ -236,6 +241,7 @@ describe('A9 Indexers', () => {
     await user.click(page.getByRole('button', { name: 'More for Fake Torznab' }))
     await user.click(await page.findByRole('menuitem', { name: 'Edit' }))
     await settle()
+    shown()
     const dialog = within(page.getByRole('dialog'))
     expect((dialog.getByLabelText('Address') as HTMLInputElement).value).toBe(
       'https://fake.test/torznab',
@@ -264,6 +270,7 @@ describe('A9 Indexers', () => {
     await user.click(page.getByRole('button', { name: 'More for Fake Torznab' }))
     await user.click(await page.findByRole('menuitem', { name: 'Edit' }))
     await settle()
+    shown()
     const dialog = within(page.getByRole('dialog'))
     expect((dialog.getByLabelText('Ratio') as HTMLInputElement).value).toBe('2')
     const minimum = dialog.getByLabelText('Minimum, in hours')
@@ -327,6 +334,7 @@ describe('A9’s catalog', () => {
     const { user, page } = await catalogTab()
     await user.click(page.getByRole('button', { name: 'Set up Torznab' }))
     await settle()
+    shown()
     const dialog = within(page.getByRole('dialog'))
     await user.click(dialog.getByRole('button', { name: 'Test and save' }))
     await settle()

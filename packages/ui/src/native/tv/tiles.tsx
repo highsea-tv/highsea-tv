@@ -4,10 +4,11 @@
 // put, clear of it, and the title turns from `text-2` to `text`. It's Poster's TV form
 // (../poster.tsx), and a row of them is Row's (../row.tsx). Poster hands it a collection's mosaic
 // as `artwork` and its Smart mark as `status`, which lift with the art (kit/collection-art.tsx).
-import { Image } from 'expo-image'
+
 import { type ReactNode, type Ref, useEffect, useRef } from 'react'
 import { View } from 'react-native'
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated'
+import { Image } from '../image.tsx'
 import { ProgressBar } from '../progress.tsx'
 import { Text } from '../text.tsx'
 import { tokens, useMotionReduced, useTheme } from '../theme.tsx'

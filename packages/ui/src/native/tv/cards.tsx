@@ -4,13 +4,14 @@
 // can't be taken back, and a notice that must be acknowledged. Each takes its words, artwork and
 // actions as props, so any app on the TV's rule can draw them. The featured card is FeaturedCard's
 // TV form now (../featured-card.tsx).
-import { Image } from 'expo-image'
+
 import type { Ref } from 'react'
 import { StyleSheet, View } from 'react-native'
 import { alpha } from '../alpha.ts'
 import { Button } from '../button.tsx'
 import { Icon } from '../icon.tsx'
 import type { IconName } from '../icons.ts'
+import { Image } from '../image.tsx'
 import { type InlineRun, InlineText } from '../inline-text.tsx'
 import { Text } from '../text.tsx'
 import { useControl, useTheme } from '../theme.tsx'

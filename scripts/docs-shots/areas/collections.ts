@@ -13,13 +13,13 @@ export default {
     {
       name: 'fields',
       path: (c) => `/collections/${c.seeded.decade.id}`,
-      act: (p) => p.getByRole('combobox', { name: 'Condition 1: field' }).click(),
+      act: (p) => p.getByRole('button', { name: 'Condition 1: field' }).click(),
     },
     {
       name: 'delete',
       path: '/collections',
       act: (p) => p.getByRole('button', { name: 'Delete Blender picks' }).click(),
-      crop: (p) => p.getByRole('alertdialog'),
+      crop: (p) => p.getByRole('dialog'),
     },
   ],
 } satisfies Area

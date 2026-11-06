@@ -35,7 +35,7 @@ const { act, cleanup, render, within } = await import('@testing-library/react')
 const { default: userEvent } = await import('@testing-library/user-event')
 const { createClient } = await import('@highsea-tv/sdk')
 const { ClientProvider } = await import('@highsea-tv/sdk/react')
-const { TooltipProvider } = await import('@highsea-tv/ui')
+const { ThemeProvider, toast } = await import('@highsea-tv/ui/native')
 const { LibraryImport } = await import('../src/library-import.tsx')
 const { ManualImport } = await import('../src/import.tsx')
 
@@ -142,7 +142,10 @@ async function api(url: string, init: RequestInit = {}): Promise<Response> {
 beforeEach(() => {
   state = { status: idle, requests: [], noKey: false }
 })
-afterEach(() => cleanup())
+afterEach(() => {
+  cleanup()
+  toast.clear()
+})
 
 const settle = () =>
   act(async () => {
@@ -154,7 +157,7 @@ async function open(screen: ReactNode) {
   await act(async () => {
     render(
       <ClientProvider client={client}>
-        <TooltipProvider>{screen}</TooltipProvider>
+        <ThemeProvider>{screen}</ThemeProvider>
       </ClientProvider>,
     )
   })
@@ -171,18 +174,18 @@ describe('A17 Library import', () => {
     expect(requested('POST', '/api/v1/import/library/scan')[0]?.body).toEqual({ root: ROOT })
 
     const sintel = within(page.getByRole('row', { name: /Sintel \(2010\)/ }))
-    expect(sintel.getByText('Sintel (2010)', { selector: 'td:nth-child(3)' })).toBeTruthy()
+    expect(sintel.getAllByText('Sintel (2010)')).toHaveLength(2)
     expect(
       (sintel.getByRole('checkbox', { name: 'Import Sintel (2010)' }) as HTMLElement).getAttribute(
-        'data-state',
+        'aria-checked',
       ),
-    ).toBe('checked')
+    ).toBe('true')
 
     const mystery = within(page.getByRole('row', { name: /Mystery Film/ }))
     expect(mystery.getByText(/No match on TMDB\. Add \{tmdb-…\} with the movie’s id/)).toBeTruthy()
     expect(
-      mystery.getByRole('checkbox', { name: 'Import Mystery Film' }).hasAttribute('disabled'),
-    ).toBe(true)
+      mystery.getByRole('checkbox', { name: 'Import Mystery Film' }).getAttribute('aria-disabled'),
+    ).toBe('true')
 
     const metropolis = within(page.getByRole('row', { name: /Metropolis \(1927\)/ }))
     expect(metropolis.getByText('In the library')).toBeTruthy()
@@ -208,7 +211,9 @@ describe('A17 Library import', () => {
     const progress = within(page.getByRole('region', { name: 'Importing' }))
     expect(progress.getByText('A library import is running.')).toBeTruthy()
     expect(progress.getByText('1 of 4 done')).toBeTruthy()
-    expect(page.getByRole('button', { name: 'Import 1 movie' }).hasAttribute('disabled')).toBe(true)
+    expect(page.getByRole('button', { name: 'Import 1 movie' }).getAttribute('aria-disabled')).toBe(
+      'true',
+    )
   })
 
   test('without a TMDB key it says where to add one', async () => {

@@ -3,7 +3,8 @@
 // A3 Dashboard (admin.md#main-area; docs/product/dashboard.md), ported from the prototype. The
 // grid shows the person's own layout, or their role's default until they save one. Customize mode
 // edits a draft: move, resize, add and remove widgets, then Done saves it. Owners can also make
-// the draft the default for admins.
+// the draft the default for admins. Drawn with the library's native renderer since D2
+// (one-client-platform-d.md), its editor's customize mode in widget-editor.web.tsx.
 
 import { useLocale, useT } from '@highsea-tv/i18n/react'
 import {
@@ -22,18 +23,18 @@ import {
   EmptyState,
   Icon,
   Menu,
-  MenuContent,
-  MenuItem,
-  MenuLabel,
-  MenuSeparator,
-  MenuTrigger,
+  type MenuOption,
+  Press,
   Sheet,
-  SheetContent,
+  Text,
   toast,
+  tokens,
+  useTheme,
   WidgetEditor,
   type WidgetEditorMessages,
-} from '@highsea-tv/ui'
-import { useEffect, useMemo, useState } from 'react'
+} from '@highsea-tv/ui/native'
+import { type ComponentRef, useEffect, useMemo, useRef, useState } from 'react'
+import { View } from 'react-native'
 import { dashboard as messages } from './dashboard-messages.ts'
 import { shell } from './messages.ts'
 import { AdminPage, useShell } from './shell.tsx'
@@ -75,6 +76,8 @@ export function Dashboard() {
   const [draft, setDraft] = useState<WidgetPlacement[] | null>(null)
   const [fromDefault, setFromDefault] = useState<WidgetPlacement[] | null>(null)
   const [adding, setAdding] = useState(false)
+  const [menu, setMenu] = useState(false)
+  const more = useRef<ComponentRef<typeof View>>(null)
   const editorMessages = useEditorMessages()
 
   const save = useAction((c, widgets: WidgetPlacement[]) =>
@@ -155,39 +158,51 @@ export function Dashboard() {
     })
   }
 
+  const menuItems: MenuOption[] = [
+    { label: t('resetToDefault'), icon: 'replay', onSelect: resetToDefault },
+    ...(role === 'owner'
+      ? [
+          {
+            label: t('makeDefaultAdmins'),
+            icon: 'shield',
+            group: t('defaultLayout'),
+            onSelect: makeAdminDefault,
+          } satisfies MenuOption,
+        ]
+      : []),
+  ]
+
   const actions = editing ? (
     <>
-      <Button icon="add" onClick={() => setAdding(true)} disabled={!missing.length}>
+      <Button icon="add" onPress={() => setAdding(true)} disabled={!missing.length}>
         {t('addWidget')}
       </Button>
-      <Menu>
-        <MenuTrigger asChild>
-          <Button variant="ghost" iconOnly icon="more" aria-label={t('moreOptions')} />
-        </MenuTrigger>
-        <MenuContent>
-          <MenuItem icon="replay" onSelect={resetToDefault}>
-            {t('resetToDefault')}
-          </MenuItem>
-          {role === 'owner' && (
-            <>
-              <MenuSeparator />
-              <MenuLabel>{t('defaultLayout')}</MenuLabel>
-              <MenuItem icon="shield" onSelect={makeAdminDefault}>
-                {t('makeDefaultAdmins')}
-              </MenuItem>
-            </>
-          )}
-        </MenuContent>
-      </Menu>
-      <Button variant="ghost" onClick={() => setCustomizing(false)}>
+      <Button
+        ref={more}
+        variant="ghost"
+        iconOnly
+        icon="more"
+        accessibilityLabel={t('moreOptions')}
+        hasPopup="menu"
+        accessibilityState={{ expanded: menu }}
+        onPress={() => setMenu(true)}
+      />
+      <Menu
+        title={t('moreOptions')}
+        items={menuItems}
+        open={menu}
+        onClose={() => setMenu(false)}
+        anchor={more}
+      />
+      <Button variant="ghost" onPress={() => setCustomizing(false)}>
         {t('cancel')}
       </Button>
-      <Button variant="primary" icon="check" onClick={done} loading={save.pending || reset.pending}>
+      <Button variant="primary" icon="check" onPress={done} loading={save.pending || reset.pending}>
         {t('done')}
       </Button>
     </>
   ) : (
-    <Button icon="grid" onClick={() => setCustomizing(true)} disabled={layout.status !== 'success'}>
+    <Button icon="grid" onPress={() => setCustomizing(true)} disabled={layout.status !== 'success'}>
       {t('customize')}
     </Button>
   )
@@ -203,7 +218,7 @@ export function Dashboard() {
           tone="error"
           icon="alert"
           title={t('loadError')}
-          action={<Button onClick={layout.refetch}>{t('retry')}</Button>}
+          action={<Button onPress={layout.refetch}>{t('retry')}</Button>}
         >
           {layout.error.message}
         </EmptyState>
@@ -224,15 +239,16 @@ export function Dashboard() {
                 settings={w.settings ?? {}}
                 actions={
                   editing ? (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      iconOnly
-                      icon="close"
-                      aria-label={t('remove', { widget: title(w.kind) })}
-                      onClick={() => remove(w.id)}
-                      className="-me-1.5"
-                    />
+                    <View style={{ marginRight: -(tokens.space['1'] + tokens.space['0.5']) }}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        iconOnly
+                        icon="close"
+                        accessibilityLabel={t('remove', { widget: title(w.kind) })}
+                        onPress={() => remove(w.id)}
+                      />
+                    </View>
                   ) : undefined
                 }
               />
@@ -248,7 +264,7 @@ export function Dashboard() {
             <Button
               variant="primary"
               icon="add"
-              onClick={() => (editing ? setAdding(true) : setCustomizing(true))}
+              onPress={() => (editing ? setAdding(true) : setCustomizing(true))}
             >
               {t('addWidget')}
             </Button>
@@ -257,25 +273,64 @@ export function Dashboard() {
           {t('emptyBody')}
         </EmptyState>
       )}
-      <Sheet open={adding} onOpenChange={setAdding}>
-        <SheetContent side="right" title={t('sheetTitle')} description={t('sheetDescription')}>
-          <ul className="grid gap-2">
-            {missing.map((d) => (
-              <li key={d.kind}>
-                <button
-                  type="button"
-                  onClick={() => add(d.kind)}
-                  className="grid w-full grid-cols-[1fr_auto] items-center gap-x-3 gap-y-0.5 rounded-md border border-line bg-s2 p-3 text-start transition-tint hover:border-line-strong hover:bg-s4"
-                >
-                  <span className="font-semibold text-text text-ui">{title(d.kind)}</span>
-                  <Icon name="add" size={16} className="row-span-2 text-text-3" />
-                  <span className="text-caption text-text-2">{tw(`${d.kind}.description`)}</span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        </SheetContent>
+      <Sheet
+        open={adding}
+        onClose={() => setAdding(false)}
+        side="right"
+        title={t('sheetTitle')}
+        description={t('sheetDescription')}
+      >
+        <View role="list" style={{ gap: tokens.space['2'] }}>
+          {missing.map((d) => (
+            <View key={d.kind} role="listitem">
+              <AddRow
+                title={title(d.kind)}
+                description={tw(`${d.kind}.description`)}
+                onPress={() => add(d.kind)}
+              />
+            </View>
+          ))}
+        </View>
       </Sheet>
     </AdminPage>
+  )
+}
+
+/** A widget to add: its name and what it shows, with the add icon at the end. */
+function AddRow({
+  title,
+  description,
+  onPress,
+}: {
+  title: string
+  description: string
+  onPress: () => void
+}) {
+  const theme = useTheme()
+  const ui = tokens.adminText.ui
+  return (
+    <Press
+      onPress={onPress}
+      style={({ hovered }) => ({
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: tokens.space['3'],
+        padding: tokens.space['3'],
+        borderRadius: tokens.radius.md,
+        borderWidth: 1,
+        borderColor: hovered ? theme.colors['line-strong'] : theme.colors.line,
+        backgroundColor: hovered ? theme.colors.s4 : theme.colors.s2,
+      })}
+    >
+      <View style={{ flex: 1, minWidth: 0, gap: tokens.space['0.5'] }}>
+        <Text size={ui.size} leading={ui.leading} weight={600}>
+          {title}
+        </Text>
+        <Text variant="caption" color="text-2">
+          {description}
+        </Text>
+      </View>
+      <Icon name="add" size={16} color="text-3" />
+    </Press>
   )
 }

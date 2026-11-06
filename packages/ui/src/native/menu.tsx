@@ -10,7 +10,7 @@
 // `role="menu"` named by its title, its items `menuitem` (`menuitemradio` with `checked` for a
 // choice); it opens with focus on the choice in force or the first item; Down, Up, Home and End
 // move between the items, wrapping; Enter and Space choose one, which closes it; Escape, Tab and a
-// press outside close it, and focus goes back to the trigger, unless the choice leaves the screen
+// press outside close it (a `keepsOpen` item, a check of several, leaves it open), and focus goes back to the trigger, unless the choice leaves the screen
 // or takes the trigger away (MenuOption's `closes`). Both float on react-native-web's
 // Modal (https://necolas.github.io/react-native-web/docs/modal/), which does the rest: Escape
 // asks it to close (its onRequestClose), it keeps Tab inside while open and gives focus back to
@@ -22,6 +22,7 @@
 // floatingSurface).
 import {
   type ComponentRef,
+  Fragment,
   type ReactNode,
   type RefObject,
   useEffect,
@@ -29,7 +30,14 @@ import {
   useRef,
   useState,
 } from 'react'
-import { type LayoutRectangle, Modal, Pressable, useWindowDimensions, View } from 'react-native'
+import {
+  type LayoutRectangle,
+  Modal,
+  Pressable,
+  ScrollView,
+  useWindowDimensions,
+  View,
+} from 'react-native'
 import { menuItemRole } from './aria.ts'
 import { ControlText } from './control.tsx'
 import { focusedElement, holdFocusReturn } from './dom'
@@ -73,6 +81,23 @@ export type MenuOption = {
    * trigger that's gone or leaving.
    */
   closes?: Exclude<MenuClose, 'stay'>
+  /**
+   * A pointer: the heading of the group it's in. Consecutive items with the same group are drawn
+   * under one heading, with a line above every group but the first, as the web renderer's
+   * MenuLabel and MenuSeparator (`role="group"` named by it).
+   */
+  group?: string
+  /**
+   * One of several chosen at once (a tag picker's): a check while it's on, read as
+   * `menuitemcheckbox`. Independent of `current`.
+   */
+  checked?: boolean
+  /** Choosing it leaves the menu open, so several can be checked in turn (Radix's prevented `onSelect`). */
+  keepsOpen?: boolean
+  /** Its label in mono (a select's option of a release group or a folder). */
+  mono?: boolean
+  /** A destructive action (Delete, Remove), in the danger label colour (the web's MenuItem `danger`). */
+  danger?: boolean
 }
 
 /**
@@ -97,6 +122,12 @@ export type MenuProps = {
   anchor?: RefObject<Handle | null>
   /** The TV: its options in columns (a library's genres, three across). */
   columns?: number
+  /**
+   * A pointer: which of its edges meets the trigger's (`end` by default, a menu button's), and
+   * at least the trigger's width (a select's list, as Radix's `--radix-select-trigger-width`).
+   */
+  align?: 'start' | 'end'
+  matchWidth?: boolean
 }
 
 export function Menu(props: MenuProps) {
@@ -107,8 +138,28 @@ export function Menu(props: MenuProps) {
 }
 
 const choose = (item: MenuOption, onClose: (how: MenuClose) => void) => () => {
-  onClose(item.closes ?? 'stay')
+  if (!item.keepsOpen) onClose(item.closes ?? 'stay')
   item.onSelect()
+}
+
+/** An item's role: a choice (`current`), a check of several (`checked`) or an action. */
+const itemRole = (x: MenuOption, choices: boolean) =>
+  menuItemRole(
+    choices && x.checked === undefined,
+    x.checked ?? !!x.current,
+    !!x.disabled,
+    x.checked !== undefined,
+  )
+
+/** Consecutive items under one group's heading, with each item's index in the menu. */
+function groupsOf(items: readonly MenuOption[]) {
+  const runs: { group?: string; at: number[] }[] = []
+  items.forEach((x, i) => {
+    const last = runs[runs.length - 1]
+    if (last && last.group === x.group) last.at.push(i)
+    else runs.push({ group: x.group, at: [i] })
+  })
+  return runs
 }
 
 /**
@@ -170,7 +221,7 @@ function TouchMenu({ title, items, open, onClose: told }: MenuProps) {
             key={i}
             onPress={choose(x, onClose)}
             disabled={x.disabled}
-            {...menuItemRole(choices, !!x.current, !!x.disabled)}
+            {...itemRole(x, choices)}
             style={{
               minHeight: TOUCH_ITEM,
               flexDirection: 'row',
@@ -179,9 +230,13 @@ function TouchMenu({ title, items, open, onClose: told }: MenuProps) {
               opacity: x.disabled ? tokens.controls.disabledOpacity : 1,
             }}
           >
-            {x.icon ? <Icon name={x.icon} color="text-2" /> : null}
+            {x.icon ? <Icon name={x.icon} color={x.danger ? 'badge-danger' : 'text-2'} /> : null}
             <View style={{ flex: 1 }}>
-              <ControlText m={m} weight={400} color={theme.colors.text}>
+              <ControlText
+                m={m}
+                weight={400}
+                color={theme.colors[x.danger ? 'badge-danger' : 'text']}
+              >
                 {x.label}
               </ControlText>
               {x.detail ? (
@@ -190,7 +245,7 @@ function TouchMenu({ title, items, open, onClose: told }: MenuProps) {
                 </Text>
               ) : null}
             </View>
-            {x.current ? <Icon name="check" color="accent-text" /> : null}
+            {x.current || x.checked ? <Icon name="check" color="accent-text" /> : null}
           </Press>
         ))}
       </View>
@@ -198,7 +253,15 @@ function TouchMenu({ title, items, open, onClose: told }: MenuProps) {
   )
 }
 
-function PointerMenu({ title, items, open, onClose: told, anchor }: MenuProps) {
+function PointerMenu({
+  title,
+  items,
+  open,
+  onClose: told,
+  anchor,
+  align = 'end',
+  matchWidth,
+}: MenuProps) {
   const theme = useTheme()
   const { close: onClose, dismissed } = useFocusReturn(open, told)
   const m = useControl('sm')
@@ -217,6 +280,68 @@ function PointerMenu({ title, items, open, onClose: told, anchor }: MenuProps) {
           : (at + (key === 'ArrowDown' ? 1 : -1) + enabled.length) % enabled.length
     focusAt(enabled[to] ?? 0)
   }
+  const item = (i: number) => {
+    const x = items[i] as MenuOption
+    return (
+      <Press
+        // an item's index in the menu: labels may repeat, and a menu's items are fixed while it's open
+        key={i}
+        ref={(el) => {
+          refs.current[i] = el
+        }}
+        onPress={choose(x, onClose)}
+        disabled={x.disabled}
+        ring={false}
+        {...itemRole(x, choices)}
+        onKeyDown={(e) => {
+          const key = e.nativeEvent.key
+          // Space chooses an item as Enter does: Press presses on its release for a menu's
+          // roles (./dom.web.ts), so it isn't handled here too
+          if (key === 'ArrowDown' || key === 'ArrowUp' || key === 'Home' || key === 'End') {
+            e.preventDefault()
+            move(key, i)
+          } else if (key === 'Tab') {
+            e.preventDefault()
+            onClose('stay')
+          }
+        }}
+        style={(s) => ({
+          minHeight: ITEM.height,
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: ITEM.gap,
+          paddingHorizontal: ITEM.padX,
+          paddingVertical: ITEM.padY,
+          borderRadius: tokens.radius.sm,
+          backgroundColor: s.hovered || s.focused ? theme.colors.s4 : 'transparent',
+          opacity: x.disabled ? tokens.controls.disabledOpacity : 1,
+        })}
+      >
+        {(s) => {
+          const color = x.danger ? 'badge-danger' : s.hovered || s.focused ? 'text' : 'text-2'
+          return (
+            <>
+              {x.icon ? <Icon name={x.icon} size={m.icon} color={color} /> : null}
+              <View style={{ flex: 1 }}>
+                <ControlText m={m} weight={400} mono={x.mono} color={theme.colors[color]} lines={1}>
+                  {x.label}
+                </ControlText>
+                {/* the prototype's MenuItem's second line, text-caption text-text-3 */}
+                {x.detail ? (
+                  <Text variant="caption" color="text-3">
+                    {x.detail}
+                  </Text>
+                ) : null}
+              </View>
+              {x.current || x.checked ? (
+                <Icon name="check" size={m.icon} color={x.checked ? 'accent-text' : 'text'} />
+              ) : null}
+            </>
+          )
+        }}
+      </Press>
+    )
+  }
   return (
     <Anchored
       open={open}
@@ -224,70 +349,55 @@ function PointerMenu({ title, items, open, onClose: told, anchor }: MenuProps) {
       onDismiss={dismissed}
       anchor={anchor}
       place={MENU}
-      align="end"
+      align={align}
+      matchWidth={matchWidth}
       onShown={() => focusAt(start >= 0 ? start : (enabled[0] ?? 0))}
       style={{ minWidth: MENU.minWidth, padding: MENU.pad }}
       label={title}
       role="menu"
     >
-      {items.map((x, i) => (
-        <Press
-          // biome-ignore lint/suspicious/noArrayIndexKey: labels may repeat, and a menu's items are fixed while it's open
-          key={i}
-          ref={(el) => {
-            refs.current[i] = el
-          }}
-          onPress={choose(x, onClose)}
-          disabled={x.disabled}
-          ring={false}
-          {...menuItemRole(choices, !!x.current, !!x.disabled)}
-          onKeyDown={(e) => {
-            const key = e.nativeEvent.key
-            // Space chooses an item as Enter does: Press presses on its release for a menu's
-            // roles (./dom.web.ts), so it isn't handled here too
-            if (key === 'ArrowDown' || key === 'ArrowUp' || key === 'Home' || key === 'End') {
-              e.preventDefault()
-              move(key, i)
-            } else if (key === 'Tab') {
-              e.preventDefault()
-              onClose('stay')
-            }
-          }}
-          style={(s) => ({
-            minHeight: ITEM.height,
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: ITEM.gap,
-            paddingHorizontal: ITEM.padX,
-            paddingVertical: ITEM.padY,
-            borderRadius: tokens.radius.sm,
-            backgroundColor: s.hovered || s.focused ? theme.colors.s4 : 'transparent',
-            opacity: x.disabled ? tokens.controls.disabledOpacity : 1,
-          })}
-        >
-          {(s) => {
-            const color = s.hovered || s.focused ? 'text' : 'text-2'
-            return (
-              <>
-                {x.icon ? <Icon name={x.icon} size={m.icon} color={color} /> : null}
-                <View style={{ flex: 1 }}>
-                  <ControlText m={m} weight={400} color={theme.colors[color]} lines={1}>
-                    {x.label}
-                  </ControlText>
-                  {/* the prototype's MenuItem's second line, text-caption text-text-3 */}
-                  {x.detail ? (
-                    <Text variant="caption" color="text-3">
-                      {x.detail}
-                    </Text>
-                  ) : null}
-                </View>
-                {x.current ? <Icon name="check" size={m.icon} color="text" /> : null}
-              </>
-            )
-          }}
-        </Press>
-      ))}
+      {groupsOf(items).map((run, r) =>
+        run.group === undefined ? (
+          // a line above a run without a heading too, after another run (a picker's Manage tags)
+          <Fragment key={`-${run.at[0]}`}>
+            {r > 0 ? <MenuLine /> : null}
+            {run.at.map(item)}
+          </Fragment>
+        ) : (
+          <View key={`${run.group}-${run.at[0]}`} role="group" aria-label={run.group}>
+            {r > 0 ? <MenuLine /> : null}
+            <View
+              style={{
+                paddingHorizontal: ITEM.padX,
+                paddingTop: space['2'],
+                paddingBottom: space['1'],
+              }}
+            >
+              <Text variant="label" mono color="text-3" aria-hidden>
+                {run.group}
+              </Text>
+            </View>
+            {run.at.map(item)}
+          </View>
+        ),
+      )}
     </Anchored>
+  )
+}
+
+/** Between groups: the web renderer's MenuSeparator, a `line` hairline 4 in and 6 clear. */
+function MenuLine() {
+  const theme = useTheme()
+  return (
+    <View
+      aria-hidden
+      style={{
+        height: 1,
+        marginHorizontal: space['1'],
+        marginVertical: space['1'] + space['0.5'],
+        backgroundColor: theme.colors.line,
+      }}
+    />
   )
 }
 
@@ -359,6 +469,7 @@ function Anchored({
   style,
   label,
   role,
+  matchWidth,
   children,
 }: {
   open: boolean
@@ -372,6 +483,8 @@ function Anchored({
   style: { minWidth?: number; width?: number; padding: number }
   label: string
   role: 'menu' | 'dialog'
+  /** At least the trigger's width. */
+  matchWidth?: boolean
   children: ReactNode
 }) {
   const theme = useTheme()
@@ -402,6 +515,10 @@ function Anchored({
   }, [ready, onShown])
   let left = place.edge
   let top = place.edge
+  // never taller than the room it has: a long menu scrolls inside the window rather than running
+  // off it, as Radix's content does with its available height (the web renderer's,
+  // https://www.radix-ui.com/primitives/docs/components/dropdown-menu#constrain-the-contentsub-content-size)
+  let room = window.height - place.edge * 2
   if (panel && !trigger && free) {
     left = Math.max(place.edge, (window.width - panel.width) / 2)
     top = Math.max(place.edge, (window.height - panel.height) / 2)
@@ -409,8 +526,12 @@ function Anchored({
     const x = align === 'end' ? trigger.x + trigger.width - panel.width : trigger.x
     left = Math.max(place.edge, Math.min(x, window.width - place.edge - panel.width))
     const below = trigger.y + trigger.height + place.offset
-    const above = trigger.y - place.offset - panel.height
-    top = below + panel.height <= window.height - place.edge || above < place.edge ? below : above
+    const roomBelow = window.height - place.edge - below
+    const roomAbove = trigger.y - place.offset - place.edge
+    // below when it fits there, or when there's more room below than above
+    const under = panel.height <= roomBelow || roomBelow >= roomAbove
+    room = Math.max(0, under ? roomBelow : roomAbove)
+    top = under ? below : trigger.y - place.offset - Math.min(panel.height, room)
   }
   return (
     <Modal
@@ -433,6 +554,7 @@ function Anchored({
           top,
           zIndex: 1,
           maxWidth: window.width - place.edge * 2,
+          maxHeight: room,
           opacity: ready ? 1 : 0,
           borderRadius: tokens.radius.md,
           borderWidth: 1,
@@ -440,9 +562,13 @@ function Anchored({
           backgroundColor: theme.colors.s3,
           boxShadow: tokens.elevation[4].boxShadow,
           ...style,
+          ...(matchWidth && trigger
+            ? { minWidth: Math.max(style.minWidth ?? 0, trigger.width) }
+            : null),
         }}
       >
-        {children}
+        {/* its own height while it fits, scrolling once the room is less */}
+        <ScrollView style={{ flexGrow: 0, flexShrink: 1 }}>{children}</ScrollView>
       </View>
       {/* a press outside closes it; never a focus stop of its own */}
       <Pressable

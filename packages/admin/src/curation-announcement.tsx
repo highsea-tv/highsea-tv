@@ -14,12 +14,27 @@ import {
   SegmentedControl,
   Select,
   Switch,
+  Text,
   Textarea,
   toast,
-} from '@highsea-tv/ui'
+  tokens,
+} from '@highsea-tv/ui/native'
 import { useEffect, useMemo, useState } from 'react'
+import { View } from 'react-native'
 import { ClientPreview } from './curation-preview.tsx'
-import { AudienceField, audienceError, ScheduleField, useCurationT } from './curation-shared.tsx'
+import {
+  AudienceField,
+  audienceError,
+  ChoiceWell,
+  ComposerActions,
+  ComposerColumns,
+  FieldGroup,
+  GroupError,
+  Hint,
+  Pair,
+  ScheduleField,
+  useCurationT,
+} from './curation-shared.tsx'
 import { Loadable } from './loadable.tsx'
 import { useRouter } from './navigation.tsx'
 import { AdminPage } from './shell.tsx'
@@ -132,100 +147,105 @@ function Composer({ initial }: { initial: Announcement | null }) {
       .catch((e: Error) => toast.error(t('saveFailed.announcement'), { description: e.message }))
   }
 
+  const publish = () => submit(false)
+  const ui = tokens.adminText.ui
   return (
-    <div className="grid grid-cols-[minmax(0,1fr)] gap-6 expanded:grid-cols-[minmax(min(22rem,50%),min(28rem,50%))_minmax(0,1fr)] expanded:items-start">
-      <form
-        aria-label={t('announcement.form')}
-        className="grid gap-6"
-        onSubmit={(e) => {
-          e.preventDefault()
-          submit(false)
-        }}
-      >
-        <div className="grid gap-4">
-          <Field label={t('field.title')} error={show(errors.title)}>
-            <Input
-              value={draft.title}
-              maxLength={80}
-              onChange={(e) => set({ title: e.target.value })}
-              placeholder={t('field.titlePlaceholder')}
-            />
-          </Field>
-          <Field label={t('field.message')} hint={t('field.messageHint')}>
-            <Textarea
-              rows={4}
-              maxLength={4000}
-              value={draft.body}
-              onChange={(e) => set({ body: e.target.value })}
-              placeholder={t('field.messagePlaceholder')}
-            />
-          </Field>
-          <Field label={t('field.image')} hint={t('field.imageHint')}>
-            <Select
-              value={draft.image ?? 'none'}
-              onValueChange={(v) => set({ image: v === 'none' ? null : v })}
-              options={[
-                { value: 'none', label: t('field.noImage') },
-                // the one saved stays offered, even once it's off the first page
-                ...(draft.image &&
-                !backdrops.data?.items.some((m) => m.art.backdrop === draft.image)
-                  ? [{ value: draft.image, label: draft.image }]
-                  : []),
-                ...(backdrops.data?.items ?? []).flatMap((m) =>
-                  m.art.backdrop
-                    ? [{ value: m.art.backdrop, label: t('field.backdrop', { title: m.title }) }]
-                    : [],
-                ),
-              ]}
-            />
-          </Field>
-          <div className="grid gap-2">
-            <Field inline label={t('field.button')}>
+    <ComposerColumns
+      label={t('announcement.form')}
+      form={
+        <>
+          <View style={{ gap: tokens.space['4'] }}>
+            <Field label={t('field.title')} error={show(errors.title)}>
+              <Input
+                value={draft.title}
+                maxLength={80}
+                onChangeText={(title) => set({ title })}
+                onSubmitEditing={publish}
+                placeholder={t('field.titlePlaceholder')}
+              />
+            </Field>
+            <Field label={t('field.message')} hint={t('field.messageHint')}>
+              <Textarea
+                numberOfLines={4}
+                maxLength={4000}
+                value={draft.body}
+                onChangeText={(body) => set({ body })}
+                placeholder={t('field.messagePlaceholder')}
+              />
+            </Field>
+            <Field label={t('field.image')} hint={t('field.imageHint')}>
+              <Select
+                value={draft.image ?? 'none'}
+                onValueChange={(v) => set({ image: v === 'none' ? null : v })}
+                options={[
+                  { value: 'none', label: t('field.noImage') },
+                  // the one saved stays offered, even once it's off the first page
+                  ...(draft.image &&
+                  !backdrops.data?.items.some((m) => m.art.backdrop === draft.image)
+                    ? [{ value: draft.image, label: draft.image }]
+                    : []),
+                  ...(backdrops.data?.items ?? []).flatMap((m) =>
+                    m.art.backdrop
+                      ? [{ value: m.art.backdrop, label: t('field.backdrop', { title: m.title }) }]
+                      : [],
+                  ),
+                ]}
+              />
+            </Field>
+            <View style={{ gap: tokens.space['2'] }}>
               <Switch
+                label={t('field.button')}
                 checked={!!draft.cta}
                 onCheckedChange={(on) => set({ cta: on ? { label: '', url: 'https://' } : null })}
               />
-            </Field>
-            {draft.cta && (
-              <div className="grid gap-3 medium:grid-cols-2">
-                <Field label={t('field.buttonLabel')}>
-                  <Input
-                    value={draft.cta.label}
-                    maxLength={40}
-                    onChange={(e) => set({ cta: { url: '', ...draft.cta, label: e.target.value } })}
-                    placeholder={t('field.buttonPlaceholder')}
-                  />
-                </Field>
-                <Field label={t('field.link')} error={show(errors.cta)}>
-                  <Input
-                    type="url"
-                    value={draft.cta.url}
-                    onChange={(e) => set({ cta: { label: '', ...draft.cta, url: e.target.value } })}
-                    className="font-mono"
-                  />
-                </Field>
-              </div>
-            )}
-          </div>
-        </div>
+              {draft.cta && (
+                <Pair
+                  first={
+                    <Field label={t('field.buttonLabel')}>
+                      <Input
+                        value={draft.cta.label}
+                        maxLength={40}
+                        onChangeText={(label) => set({ cta: { url: '', ...draft.cta, label } })}
+                        onSubmitEditing={publish}
+                        placeholder={t('field.buttonPlaceholder')}
+                      />
+                    </Field>
+                  }
+                  second={
+                    <Field label={t('field.link')} error={show(errors.cta)}>
+                      <Input
+                        mono
+                        keyboardType="url"
+                        autoCapitalize="none"
+                        value={draft.cta.url}
+                        onChangeText={(url) => set({ cta: { label: '', ...draft.cta, url } })}
+                        onSubmitEditing={publish}
+                      />
+                    </Field>
+                  }
+                />
+              )}
+            </View>
+          </View>
 
-        <div className="grid gap-2">
-          <span className="font-medium text-text text-ui">{t('importance')}</span>
-          <SegmentedControl
-            aria-label={t('importance')}
-            size="sm"
-            value={draft.severity}
-            onValueChange={(v) => set({ severity: v as Announcement['severity'] })}
-            options={SEVERITIES.map((s) => ({ value: s, label: t(`severity.${s}`) }))}
-            className="justify-self-start"
-          />
-          <p className="text-caption text-text-3">{t('importanceHint')}</p>
-        </div>
+          <View style={{ gap: tokens.space['2'] }}>
+            <Text size={ui.size} leading={ui.leading} weight={500} aria-hidden>
+              {t('importance')}
+            </Text>
+            <SegmentedControl
+              aria-label={t('importance')}
+              size="sm"
+              value={draft.severity}
+              onValueChange={(v) => set({ severity: v as Announcement['severity'] })}
+              options={SEVERITIES.map((s) => ({ value: s, label: t(`severity.${s}`) }))}
+            />
+            <Hint>{t('importanceHint')}</Hint>
+          </View>
 
-        <fieldset className="grid gap-3">
-          <legend className="mb-1.5 font-medium text-text text-ui">{t('whereShows')}</legend>
-          <Field inline label={t('acknowledge')} hint={t('acknowledgeHint')}>
+          <FieldGroup label={t('whereShows')} gap={tokens.space['3']}>
             <Switch
+              label={t('acknowledge')}
+              hint={t('acknowledgeHint')}
               checked={require}
               onCheckedChange={(on) =>
                 set({
@@ -236,66 +256,64 @@ function Composer({ initial }: { initial: Announcement | null }) {
                 })
               }
             />
-          </Field>
-          <div className="grid gap-2 rounded-md border border-line bg-s2 p-3">
-            {PLACEMENTS.map((p) => (
-              <Field key={p} inline label={t(`placement.${p}`)} hint={t(`hint.${p}`)}>
-                <Checkbox
-                  checked={draft.placements.includes(p)}
-                  onCheckedChange={(c) =>
-                    set({
-                      placements:
-                        c === true
+            <ChoiceWell columns={1}>
+              {[
+                ...PLACEMENTS.map((p) => (
+                  <Checkbox
+                    key={p}
+                    label={t(`placement.${p}`)}
+                    hint={t(`hint.${p}`)}
+                    checked={draft.placements.includes(p)}
+                    onCheckedChange={(c) =>
+                      set({
+                        placements: c
                           ? [...draft.placements, p]
                           : draft.placements.filter((x) => x !== p),
-                    })
-                  }
-                />
-              </Field>
-            ))}
-            <p className="text-caption text-text-3">{t('tvPill')}</p>
-          </div>
-          {show(errors.placements) && (
-            <p role="alert" className="text-badge-danger text-caption">
-              {errors.placements}
-            </p>
-          )}
-        </fieldset>
+                      })
+                    }
+                  />
+                )),
+                <Hint key="tv">{t('tvPill')}</Hint>,
+              ]}
+            </ChoiceWell>
+            <GroupError>{show(errors.placements)}</GroupError>
+          </FieldGroup>
 
-        <AudienceField
-          value={draft.audience}
-          onChange={(audience) => set({ audience })}
-          error={show(errors.audience)}
-        />
-        <ScheduleField
-          value={draft.schedule}
-          onChange={(schedule) => set({ schedule })}
-          now={now}
-        />
+          <AudienceField
+            value={draft.audience}
+            onChange={(audience) => set({ audience })}
+            error={show(errors.audience)}
+          />
+          <ScheduleField
+            value={draft.schedule}
+            onChange={(schedule) => set({ schedule })}
+            now={now}
+          />
 
-        <div className="flex flex-wrap gap-2 border-line border-t pt-4">
-          <Button type="submit" variant="primary" loading={save.pending}>
-            {later
-              ? t('schedule')
-              : initial && initial.status !== 'draft'
-                ? t('saveChanges')
-                : t('publish')}
-          </Button>
-          <Button type="button" onClick={() => submit(true)} disabled={save.pending}>
-            {t('saveDraft')}
-          </Button>
-          <Button type="button" variant="ghost" asChild>
-            <a href="/curation">{t('cancel')}</a>
-          </Button>
-        </div>
-      </form>
-      <div className="min-w-0 expanded:sticky expanded:top-4">
+          <ComposerActions>
+            <Button variant="primary" loading={save.pending} onPress={publish}>
+              {later
+                ? t('schedule')
+                : initial && initial.status !== 'draft'
+                  ? t('saveChanges')
+                  : t('publish')}
+            </Button>
+            <Button onPress={() => submit(true)} disabled={save.pending}>
+              {t('saveDraft')}
+            </Button>
+            <Button variant="ghost" href="/curation">
+              {t('cancel')}
+            </Button>
+          </ComposerActions>
+        </>
+      }
+      preview={
         <ClientPreview
           draft={preview}
           what={t('thisAnnouncement')}
           note={t('otherAnnouncements')}
         />
-      </div>
-    </div>
+      }
+    />
   )
 }

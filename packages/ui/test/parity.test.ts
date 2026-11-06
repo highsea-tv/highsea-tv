@@ -66,11 +66,14 @@ function platformPairs(dir: string): Set<string> {
 }
 
 const web = exportsOf(join(SRC, 'web/index.ts'))
+const pairs = platformPairs(join(SRC, 'native'))
+// a pair is exported without its extension (`export * from './embed'`), which Metro and webpack
+// resolve per platform, so the native renderer has what its pairs declare
 const native = new Set([
   ...exportsOf(join(SRC, 'native/index.ts')),
   ...exportsOf(join(SRC, 'native/tv/index.ts')),
+  ...pairs,
 ])
-const pairs = platformPairs(join(SRC, 'native'))
 const webConstants = exportsOf(join(SRC, 'web/index.ts'), isConstant)
 const nativeConstants = new Set([
   ...exportsOf(join(SRC, 'native/index.ts'), isConstant),

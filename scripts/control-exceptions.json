@@ -72,54 +72,6 @@
     "reason": "A step of the folder picker's path, a breadcrumb in the mono path line: a link in role, not a control in the spec's sense"
   },
   {
-    "file": "design/prototypes/src/admin/collections/editor.tsx",
-    "tag": "button",
-    "contains": "grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-md px-2 py-1.5",
-    "reason": "A search result's whole row (its name and Add), which adds that title to the list: a list row, not a control in the spec's sense"
-  },
-  {
-    "file": "design/prototypes/src/admin/collections/rules.tsx",
-    "tag": "button",
-    "contains": "grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-md px-2 py-1.5",
-    "reason": "A search result's whole row (its name and Add), which adds that title to the list: a list row, not a control in the spec's sense"
-  },
-  {
-    "file": "design/prototypes/src/admin/curation/section-editor.tsx",
-    "tag": "button",
-    "contains": "grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-md px-2 py-1.5",
-    "reason": "A search result's whole row (its name and Add), which adds that title to the list: a list row, not a control in the spec's sense"
-  },
-  {
-    "file": "design/prototypes/src/admin/dashboard/dashboard.tsx",
-    "tag": "button",
-    "contains": "onClick={() => add(d.kind)}",
-    "reason": "A tile in the Add a widget sheet, with the widget's title and description, that adds it: a tile, not a control in the spec's sense"
-  },
-  {
-    "file": "design/prototypes/src/admin/downloads/downloads.tsx",
-    "tag": "button",
-    "contains": "onClick={() => setOpen(",
-    "reason": "A torrent's name in its table row, drawn as the row's title, that opens its details: TitleCell has no way to make its title open something"
-  },
-  {
-    "file": "design/prototypes/src/admin/indexers/indexers.tsx",
-    "tag": "button",
-    "contains": "onClick={() => setNotes(true)}",
-    "reason": "What changed, an inline link in the page's description line that opens the catalog's notes: the library has no link look for a button"
-  },
-  {
-    "file": "design/prototypes/src/admin/movies/detail.tsx",
-    "tag": "button",
-    "contains": "onClick={() => setOpen(expanded ? null : r.guid)}",
-    "reason": "A release row's Accepted or Rejected badge, which shows the row's reasons under it: a badge in a table row, not a control in the spec's sense"
-  },
-  {
-    "file": "design/prototypes/src/admin/now-playing/now-playing.tsx",
-    "tag": "button",
-    "contains": "onClick={() => slow.run()}",
-    "reason": "A prototype-only switch for the owner's review, drawn dashed and in mono so it reads as outside the design; the built server has none"
-  },
-  {
     "file": "design/prototypes/src/admin/settings/appearance.tsx",
     "tag": "input",
     "contains": "type=\"color\"",

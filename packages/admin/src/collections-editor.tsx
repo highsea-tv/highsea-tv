@@ -23,22 +23,39 @@ import type {
 import { COLLECTION_SORTS } from '@highsea-tv/api-contract'
 import { useT } from '@highsea-tv/i18n/react'
 import { useAction, useQuery } from '@highsea-tv/sdk/react'
+import { breakpoints } from '@highsea-tv/tokens'
 import {
   Badge,
   Button,
   Field,
+  Image,
   Input,
+  SearchField,
   SegmentedControl,
   Select,
   SortableList,
+  Text,
   Textarea,
   toast,
-} from '@highsea-tv/ui'
-import { useState } from 'react'
+  tokens,
+  useTheme,
+  useWindowAtLeast,
+} from '@highsea-tv/ui/native'
+import { type ReactElement, type ReactNode, useState } from 'react'
+import { View } from 'react-native'
 import { CollectionArt } from './collection-art.tsx'
 import { COLLECTION_LIST_TOPICS, DeleteDialog } from './collections.tsx'
 import { collections as messages } from './collections-messages.ts'
-import { completeRules, emptyRules, RuleBuilder, ruleErrors } from './collections-rules.tsx'
+import {
+  completeRules,
+  emptyRules,
+  FormError,
+  MatchItem,
+  MatchList,
+  NoMatch,
+  RuleBuilder,
+  ruleErrors,
+} from './collections-rules.tsx'
 import {
   AudienceField,
   audienceError,
@@ -50,6 +67,13 @@ import { Loadable } from './loadable.tsx'
 import { useRouter } from './navigation.tsx'
 import { AdminPage } from './shell.tsx'
 import { useNow } from './time.ts'
+
+const s = tokens.space
+const ui = tokens.adminText.ui
+const figure = tokens.adminText.figure
+/** The web's 6 and 10 (gap-1.5, gap-2.5), between the space scale's steps. */
+const SIX = s['1'] + s['0.5']
+const TEN = s['2'] + s['0.5']
 
 type Sort = SmartCollectionInput['sort']
 /** Sorts with no direction to choose. */
@@ -132,11 +156,61 @@ function usePreview(id: string | undefined, draft: SmartCollectionInput) {
   )
 }
 
+/** A fieldset's legend: the web's `font-medium text-ui`, 6 above what it names. */
+export function Legend({ children }: { children: string }) {
+  return (
+    <Text size={ui.size} leading={ui.leading} weight={500} style={{ marginBottom: SIX }}>
+      {children}
+    </Text>
+  )
+}
+
+/** A group of fields named by its legend (a `fieldset`, read as a group). */
+function FieldGroup({
+  legend,
+  gap = s['3'],
+  children,
+}: {
+  legend: string
+  gap?: number
+  children: ReactNode
+}) {
+  return (
+    <View role="group" aria-label={legend} style={{ gap }}>
+      <Legend>{legend}</Legend>
+      {children}
+    </View>
+  )
+}
+
+/** Fields side by side from medium, each an equal share; stacked in a compact window. */
+function Columns({ children, gap = s['3'] }: { children: ReactElement[]; gap?: number }) {
+  const side = useWindowAtLeast(breakpoints.medium)
+  return (
+    <View style={{ flexDirection: side ? 'row' : 'column', gap, alignItems: 'flex-start' }}>
+      {children.map((c) => (
+        <View
+          key={c.key}
+          style={side ? { flex: 1, flexBasis: 0, minWidth: 0 } : { alignSelf: 'stretch' }}
+        >
+          {c}
+        </View>
+      ))}
+    </View>
+  )
+}
+
+/** The result's column beside the form (the web's minmax(18rem, 22rem)). */
+const RESULT = { minWidth: 288, maxWidth: 352 }
+
 function Editor({ initial }: { initial: CollectionSummary | null }) {
   const t = useT(messages)
   const tc = useCurationT()
+  const theme = useTheme()
   const now = useNow()
   const router = useRouter()
+  const beside = useWindowAtLeast(breakpoints.expanded)
+  const medium = useWindowAtLeast(breakpoints.medium)
   const [draft, setDraft] = useState<SmartCollectionInput>(() =>
     initial ? draftOf(initial) : blank(),
   )
@@ -181,26 +255,39 @@ function Editor({ initial }: { initial: CollectionSummary | null }) {
       .catch((e: Error) => toast.error(t('saveFailed'), { description: e.message }))
   }
 
-  const sorts = COLLECTION_SORTS.filter((s) => (smart ? s !== 'manual' : true))
+  const sorts = COLLECTION_SORTS.filter((x) => (smart ? x !== 'manual' : true))
   const preview = result.status === 'success' ? result.data : null
+  const directed = draft.sort as Exclude<Sort, 'manual' | 'random'>
 
   return (
-    <div className="grid grid-cols-[minmax(0,1fr)] gap-6 expanded:grid-cols-[minmax(0,1fr)_minmax(18rem,22rem)] expanded:items-start">
-      <form
+    <View
+      style={{
+        flexDirection: beside ? 'row' : 'column',
+        alignItems: beside ? 'flex-start' : 'stretch',
+        gap: s['6'],
+      }}
+    >
+      <View
+        role="form"
         aria-label={t('form')}
-        className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-8"
-        onSubmit={(e) => {
-          e.preventDefault()
-          submit()
-        }}
+        style={{ flex: beside ? 1 : undefined, minWidth: 0, gap: s['8'] }}
       >
-        <div className="grid grid-cols-[minmax(0,1fr)] gap-4 medium:grid-cols-[minmax(0,1fr)_auto]">
-          <div className="grid gap-4">
+        <View
+          style={{
+            flexDirection: medium ? 'row' : 'column',
+            alignItems: 'flex-start',
+            gap: s['4'],
+          }}
+        >
+          <View
+            style={{ gap: s['4'], flex: medium ? 1 : undefined, alignSelf: 'stretch', minWidth: 0 }}
+          >
             <Field label={t('name')} error={show(errors.name)}>
               <Input
                 value={draft.name}
                 maxLength={60}
-                onChange={(e) => set({ name: e.target.value })}
+                onChangeText={(name) => set({ name })}
+                onSubmitEditing={submit}
                 placeholder={t('namePlaceholder')}
               />
             </Field>
@@ -208,51 +295,47 @@ function Editor({ initial }: { initial: CollectionSummary | null }) {
               <Textarea
                 value={draft.summary}
                 maxLength={200}
-                rows={2}
-                onChange={(e) => set({ summary: e.target.value })}
+                numberOfLines={2}
+                onChangeText={(summary) => set({ summary })}
                 placeholder={t('summaryPlaceholder')}
               />
             </Field>
-          </div>
+          </View>
           <Artwork draft={draft} set={set} items={preview?.items ?? []} />
-        </div>
+        </View>
 
-        <fieldset className="grid gap-3">
-          <legend className="mb-1.5 font-medium text-text text-ui">{t('films')}</legend>
-          <SegmentedControl
-            aria-label={t('howFilms')}
-            size="sm"
-            value={smart ? 'rules' : 'picked'}
-            onValueChange={(k) => {
-              if (k === 'picked') {
-                setShelved(draft.rules)
-                set({
-                  rules: null,
-                  // start from what the rules picked, in their order
-                  include: [
-                    ...new Set([...(preview?.items.map((m) => m.id) ?? []), ...draft.include]),
-                  ],
-                  sort: 'manual',
-                })
-              } else
-                set({
-                  rules: shelved ?? emptyRules(),
-                  include: [],
-                  sort: 'rating',
-                  descending: true,
-                })
-            }}
-            options={[
-              { value: 'rules', label: t('useRules') },
-              { value: 'picked', label: t('pickThem') },
-            ]}
-            className="justify-self-start"
-          />
-          {show(errors.films) && (
-            <p role="alert" className="text-badge-danger text-caption">
-              {errors.films}
-            </p>
-          )}
+        <FieldGroup legend={t('films')}>
+          <View style={{ alignSelf: 'flex-start' }}>
+            <SegmentedControl
+              aria-label={t('howFilms')}
+              size="sm"
+              value={smart ? 'rules' : 'picked'}
+              onValueChange={(k) => {
+                if (k === 'picked') {
+                  setShelved(draft.rules)
+                  set({
+                    rules: null,
+                    // start from what the rules picked, in their order
+                    include: [
+                      ...new Set([...(preview?.items.map((m) => m.id) ?? []), ...draft.include]),
+                    ],
+                    sort: 'manual',
+                  })
+                } else
+                  set({
+                    rules: shelved ?? emptyRules(),
+                    include: [],
+                    sort: 'rating',
+                    descending: true,
+                  })
+              }}
+              options={[
+                { value: 'rules', label: t('useRules') },
+                { value: 'picked', label: t('pickThem') },
+              ]}
+            />
+          </View>
+          {show(errors.films) ? <FormError>{errors.films as string}</FormError> : null}
           {draft.rules ? (
             <Loadable query={fields} what={t('rules')}>
               {(fs) => (
@@ -274,76 +357,84 @@ function Editor({ initial }: { initial: CollectionSummary | null }) {
               sortable
             />
           )}
-        </fieldset>
+        </FieldGroup>
 
         {smart && (
-          <fieldset className="grid gap-4 medium:grid-cols-2">
-            <legend className="mb-1.5 font-medium text-text text-ui">{t('exceptions')}</legend>
-            <TitlePicker
-              label={t('always')}
-              hint={t('alwaysHint')}
-              ids={draft.include}
-              shown={preview}
-              onChange={(include) =>
-                set({ include, exclude: draft.exclude.filter((x) => !include.includes(x)) })
-              }
-            />
-            <TitlePicker
-              label={t('never')}
-              hint={t('neverHint')}
-              ids={draft.exclude}
-              shown={preview}
-              onChange={(exclude) =>
-                set({ exclude, include: draft.include.filter((x) => !exclude.includes(x)) })
-              }
-            />
-          </fieldset>
+          <FieldGroup legend={t('exceptions')} gap={s['4']}>
+            <Columns gap={s['4']}>
+              {[
+                <TitlePicker
+                  key="always"
+                  label={t('always')}
+                  hint={t('alwaysHint')}
+                  ids={draft.include}
+                  shown={preview}
+                  onChange={(include) =>
+                    set({ include, exclude: draft.exclude.filter((x) => !include.includes(x)) })
+                  }
+                />,
+                <TitlePicker
+                  key="never"
+                  label={t('never')}
+                  hint={t('neverHint')}
+                  ids={draft.exclude}
+                  shown={preview}
+                  onChange={(exclude) =>
+                    set({ exclude, include: draft.include.filter((x) => !exclude.includes(x)) })
+                  }
+                />,
+              ]}
+            </Columns>
+          </FieldGroup>
         )}
 
-        <fieldset className="grid gap-3">
-          <legend className="mb-1.5 font-medium text-text text-ui">{t('order')}</legend>
-          <div className="grid gap-3 medium:grid-cols-3">
-            <Field label={t('sortBy')}>
-              <Select
-                value={draft.sort}
-                onValueChange={(v) => set({ sort: v as Sort })}
-                options={sorts.map((s) => ({ value: s, label: t(`sort.${s}`) }))}
-              />
-            </Field>
-            {!UNDIRECTED.includes(draft.sort) && (
-              <Field label={t('direction')}>
+        <FieldGroup legend={t('order')}>
+          <Columns>
+            {[
+              <Field key="sort" label={t('sortBy')}>
                 <Select
-                  value={draft.descending ? 'down' : 'up'}
-                  onValueChange={(v) => set({ descending: v === 'down' })}
-                  options={[
-                    {
-                      value: 'down',
-                      label: t(`down.${draft.sort as Exclude<Sort, 'manual' | 'random'>}`),
-                    },
-                    {
-                      value: 'up',
-                      label: t(`up.${draft.sort as Exclude<Sort, 'manual' | 'random'>}`),
-                    },
-                  ]}
+                  value={draft.sort}
+                  onValueChange={(v) => set({ sort: v as Sort })}
+                  options={sorts.map((x) => ({ value: x, label: t(`sort.${x}`) }))}
                 />
-              </Field>
-            )}
-            <Field label={t('howMany')} hint={draft.limit ? undefined : t('howManyHint')}>
-              <Input
-                type="number"
-                min={1}
-                max={500}
-                value={draft.limit ?? ''}
-                placeholder={t('all')}
-                onChange={(e) =>
-                  set({ limit: e.target.value ? Math.max(1, Number(e.target.value)) : null })
-                }
-                end={draft.limit ? <span className="text-caption">{t('first')}</span> : undefined}
-              />
-            </Field>
-          </div>
-          {draft.sort === 'random' && <p className="text-caption text-text-3">{t('randomHint')}</p>}
-        </fieldset>
+              </Field>,
+              UNDIRECTED.includes(draft.sort) ? null : (
+                <Field key="direction" label={t('direction')}>
+                  <Select
+                    value={draft.descending ? 'down' : 'up'}
+                    onValueChange={(v) => set({ descending: v === 'down' })}
+                    options={[
+                      { value: 'down', label: t(`down.${directed}`) },
+                      { value: 'up', label: t(`up.${directed}`) },
+                    ]}
+                  />
+                </Field>
+              ),
+              <Field
+                key="limit"
+                label={t('howMany')}
+                hint={draft.limit ? undefined : t('howManyHint')}
+              >
+                <Input
+                  end={draft.limit ? t('first') : undefined}
+                  inputMode="numeric"
+                  keyboardType="number-pad"
+                  value={draft.limit ? String(draft.limit) : ''}
+                  placeholder={t('all')}
+                  onChangeText={(v) => {
+                    const n = Number.parseInt(v, 10)
+                    set({ limit: v && !Number.isNaN(n) ? Math.min(500, Math.max(1, n)) : null })
+                  }}
+                />
+              </Field>,
+            ].filter((x) => x !== null)}
+          </Columns>
+          {draft.sort === 'random' ? (
+            <Text variant="caption" color="text-3">
+              {t('randomHint')}
+            </Text>
+          ) : null}
+        </FieldGroup>
 
         <AudienceField
           value={draft.audience}
@@ -351,43 +442,58 @@ function Editor({ initial }: { initial: CollectionSummary | null }) {
           error={show(errors.audience)}
         />
 
-        <div className="flex flex-wrap gap-2 border-line border-t pt-4">
-          <Button type="submit" variant="primary" loading={save.pending}>
+        <View
+          style={{
+            flexDirection: 'row',
+            flexWrap: 'wrap',
+            gap: s['2'],
+            borderTopWidth: 1,
+            borderTopColor: theme.colors.line,
+            paddingTop: s['4'],
+          }}
+        >
+          <Button variant="primary" loading={save.pending} onPress={submit}>
             {initial ? t('saveChanges') : t('saveNew')}
           </Button>
-          <Button type="button" variant="ghost" asChild>
-            <a href="/collections">{t('cancel')}</a>
+          <Button variant="ghost" href="/collections">
+            {t('cancel')}
           </Button>
           {initial && (
-            <Button
-              type="button"
-              variant="danger-ghost"
-              icon="delete"
-              className="ms-auto"
-              onClick={() => setConfirm(true)}
-            >
-              {t('delete')}
-            </Button>
+            <View style={{ marginStart: 'auto' }}>
+              <Button variant="danger-ghost" icon="delete" onPress={() => setConfirm(true)}>
+                {t('delete')}
+              </Button>
+            </View>
           )}
-        </div>
+        </View>
         {initial && (
           <DeleteDialog
             collection={{ name: draft.name || initial.name, usedBy: initial.usedBy }}
             open={confirm}
-            onOpenChange={setConfirm}
+            onClose={() => setConfirm(false)}
             remove={() => remove.run(initial.id)}
             onDeleted={() => router.push('/collections')}
           />
         )}
-      </form>
-      <div className="min-w-0 expanded:sticky expanded:top-4">
+      </View>
+      <View
+        style={[
+          { minWidth: 0 },
+          beside ? { ...RESULT, flex: 1 } : null,
+          // it stays in view while the form scrolls (the web's sticky top-4)
+          beside ? ({ position: 'sticky', top: s['4'] } as object) : null,
+        ]}
+      >
         <Result result={result} />
-      </div>
-    </div>
+      </View>
+    </View>
   )
 }
 
 // ---------------------------------------------------------------- artwork
+
+/** The artwork's column (the web's w-40) and its poster (w-28). */
+const ARTWORK = { column: 160, poster: 112 }
 
 function Artwork({
   draft,
@@ -402,98 +508,152 @@ function Artwork({
   const posters = items.flatMap((m) => (m.poster ? [{ title: m.title, poster: m.poster }] : []))
   const mosaic = posters.slice(0, 4).map((p) => p.poster)
   return (
-    <div className="grid grid-cols-[minmax(0,1fr)] content-start justify-items-start gap-2">
-      <span className="font-medium text-text text-ui">{t('artwork')}</span>
-      <CollectionArt poster={draft.artwork} mosaic={mosaic} className="w-28" />
-      <Select
-        aria-label={t('artworkChoice')}
-        value={draft.artwork ?? 'mosaic'}
-        onValueChange={(v) => set({ artwork: v === 'mosaic' ? null : v })}
-        options={[
-          { value: 'mosaic', label: t('artwork.mosaic') },
-          // the one saved stays offered, even once its title has left the collection
-          ...(draft.artwork && !posters.some((p) => p.poster === draft.artwork)
-            ? [{ value: draft.artwork, label: t('artwork.posterHint') }]
-            : []),
-          ...posters
-            .filter((p, i) => posters.findIndex((x) => x.poster === p.poster) === i)
-            .slice(0, 24)
-            .map((p) => ({ value: p.poster, label: t('artwork.poster', { title: p.title }) })),
-        ]}
-        className="w-40"
-      />
-      <p className="max-w-40 text-caption text-text-3">
+    <View style={{ gap: s['2'], alignItems: 'flex-start', width: ARTWORK.column }}>
+      <Text size={ui.size} leading={ui.leading} weight={500}>
+        {t('artwork')}
+      </Text>
+      <CollectionArt poster={draft.artwork} mosaic={mosaic} width={ARTWORK.poster} />
+      <View style={{ alignSelf: 'stretch' }}>
+        <Select
+          aria-label={t('artworkChoice')}
+          value={draft.artwork ?? 'mosaic'}
+          onValueChange={(v) => set({ artwork: v === 'mosaic' ? null : v })}
+          options={[
+            { value: 'mosaic', label: t('artwork.mosaic') },
+            // the one saved stays offered, even once its title has left the collection
+            ...(draft.artwork && !posters.some((p) => p.poster === draft.artwork)
+              ? [{ value: draft.artwork, label: t('artwork.posterHint') }]
+              : []),
+            ...posters
+              .filter((p, i) => posters.findIndex((x) => x.poster === p.poster) === i)
+              .slice(0, 24)
+              .map((p) => ({ value: p.poster, label: t('artwork.poster', { title: p.title }) })),
+          ]}
+        />
+      </View>
+      <Text variant="caption" color="text-3">
         {draft.artwork ? t('artwork.posterHint') : t('artwork.mosaicHint')}
-      </p>
-    </div>
+      </Text>
+    </View>
   )
 }
 
 // ---------------------------------------------------------------- result
 
+/** The result's posters: as many 64-wide columns as fit (the web's auto-fill minmax(4rem, 1fr)). */
+const THUMB = 64
+
 function Result({ result }: { result: ReturnType<typeof usePreview> }) {
   const t = useT(messages)
+  const theme = useTheme()
+  const [width, setWidth] = useState(0)
+  const gap = s['2']
+  const columns = Math.max(1, Math.floor((width + gap) / (THUMB + gap)))
+  const cell = width ? (width - gap * (columns - 1)) / columns : THUMB
   return (
-    <section
+    <View
+      role="region"
       aria-label={t('nowLabel')}
       aria-live="polite"
-      className="grid grid-cols-[minmax(0,1fr)] gap-3 rounded-lg border border-line bg-s1 p-4"
+      style={{
+        gap: s['3'],
+        padding: s['4'],
+        borderWidth: 1,
+        borderColor: theme.colors.line,
+        borderRadius: tokens.radius.lg,
+        backgroundColor: theme.colors.s1,
+        minWidth: 0,
+      }}
     >
-      <h2 className="font-semibold text-text text-ui">{t('now')}</h2>
+      <Text size={ui.size} leading={ui.leading} weight={600} role="heading" aria-level={2}>
+        {t('now')}
+      </Text>
       {result.status === 'error' ? (
-        <p className="text-caption text-text-2">{result.error.message}</p>
+        <Text variant="caption" color="text-2">
+          {result.error.message}
+        </Text>
       ) : result.status !== 'success' ? (
-        <p className="text-caption text-text-3">{t('checking')}</p>
+        <Text variant="caption" color="text-3">
+          {t('checking')}
+        </Text>
       ) : result.data.matched === 0 ? (
-        <p className="text-caption text-text-2">{t('noMatch')}</p>
+        <Text variant="caption" color="text-2">
+          {t('noMatch')}
+        </Text>
       ) : (
         <>
-          <p className="text-text-2 text-ui">
-            <span className="font-mono text-figure text-text">{result.data.matched}</span>{' '}
-            {t('matched', { count: result.data.matched })};{' '}
-            <span className="font-mono text-figure text-text">{result.data.playable}</span>{' '}
-            {t('playable', { count: result.data.playable })}
-          </p>
-          {result.data.words && <p className="text-caption text-text-3">{result.data.words}.</p>}
-          <ul
+          <Text size={ui.size} leading={ui.leading} color="text-2">
+            <Text size={figure.size} mono color="text">
+              {String(result.data.matched)}
+            </Text>
+            {` ${t('matched', { count: result.data.matched })}; `}
+            <Text size={figure.size} mono color="text">
+              {String(result.data.playable)}
+            </Text>
+            {` ${t('playable', { count: result.data.playable })}`}
+          </Text>
+          {result.data.words ? (
+            <Text variant="caption" color="text-3">
+              {`${result.data.words}.`}
+            </Text>
+          ) : null}
+          <View
+            role="list"
             aria-label={t('inIt')}
-            className="grid grid-cols-[repeat(auto-fill,minmax(4rem,1fr))] gap-2"
+            onLayout={(e) => setWidth(e.nativeEvent.layout.width)}
+            style={{ flexDirection: 'row', flexWrap: 'wrap', gap }}
           >
             {result.data.items.slice(0, 24).map((m) => (
-              <li key={m.id} className="grid gap-1">
+              <View key={m.id} role="listitem" style={{ width: cell, gap: s['1'] }}>
                 <Thumb
                   src={m.poster}
                   alt={m.playable ? m.title : t('noFileAlt', { title: m.title })}
                   dim={!m.playable}
                 />
                 {!m.playable && (
-                  <span className="truncate text-center text-[11px] text-text-3">
+                  <Text size={11} color="text-3" align="center" numberOfLines={1}>
                     {t('noFile')}
-                  </span>
+                  </Text>
                 )}
-              </li>
+              </View>
             ))}
-          </ul>
+          </View>
           {result.data.items.length > 24 && (
-            <p className="text-caption text-text-3">
+            <Text variant="caption" color="text-3">
               {t('more', { count: result.data.items.length - 24 })}
-            </p>
+            </Text>
           )}
         </>
       )}
-    </section>
+    </View>
   )
 }
 
 /** A poster, or a plain tile with its name when the title has none. */
 function Thumb({ src, alt, dim = false }: { src: string | null; alt: string; dim?: boolean }) {
-  const className = `aspect-poster w-full rounded-[4px] ${dim ? 'opacity-40' : ''}`
+  const theme = useTheme()
+  const [w, h] = tokens.aspect.poster
+  const style = {
+    width: '100%',
+    aspectRatio: w / h,
+    borderRadius: 4,
+    opacity: dim ? 0.4 : 1,
+  } as const
   return src ? (
-    <img src={src} alt={alt} className={`${className} object-cover`} />
-  ) : alt ? (
-    <span role="img" aria-label={alt} className={`block bg-s3 ${className}`} />
+    <Image
+      source={{ uri: src }}
+      alt={alt}
+      aria-hidden={!alt || undefined}
+      contentFit="cover"
+      style={style}
+    />
   ) : (
-    <span aria-hidden className={`block bg-s3 ${className}`} />
+    <View
+      role={alt ? 'img' : undefined}
+      aria-label={alt || undefined}
+      aria-hidden={!alt || undefined}
+      style={[style, { backgroundColor: theme.colors.s3 }]}
+    />
   )
 }
 
@@ -541,6 +701,7 @@ function TitlePicker({
   sortable?: boolean
 }) {
   const t = useT(messages)
+  const theme = useTheme()
   const [query, setQuery] = useState('')
   const q = useSettled(query.trim(), 200)
   const search = useQuery(
@@ -561,73 +722,78 @@ function TitlePicker({
   }
   const matches = (search.data?.items ?? []).filter((m) => !ids.includes(m.id)).slice(0, 6)
   const remove = (id: number) => onChange(ids.filter((x) => x !== id))
+  const card = {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: TEN,
+    padding: SIX,
+    borderWidth: 1,
+    borderColor: theme.colors.line,
+    borderRadius: tokens.radius.md,
+    backgroundColor: theme.colors.s2,
+  } as const
   return (
-    <div className="grid content-start gap-2">
+    <View style={{ gap: s['2'] }}>
       <Field label={label} hint={hint}>
-        <Input
-          icon="search"
+        <SearchField
+          label={label}
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChangeText={setQuery}
           placeholder={t('searchLibrary')}
         />
       </Field>
-      {q && search.status === 'success' && (
-        <ul aria-label={t('matches', { label })} aria-live="polite" className="grid gap-1">
+      {q !== '' && search.status === 'success' && (
+        <MatchList label={t('matches', { label })}>
           {matches.length === 0 ? (
-            <li className="px-1 text-caption text-text-3">{t('noTitle', { query: q })}</li>
+            <NoMatch>{t('noTitle', { query: q })}</NoMatch>
           ) : (
             matches.map((m) => (
-              <li key={m.id}>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSeen((s) => ({ ...s, [m.id]: fromMovie(m) }))
-                    onChange([...ids, m.id])
-                    setQuery('')
-                  }}
-                  className="grid w-full cursor-pointer grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-md px-2 py-1.5 text-start text-ui outline-none hover:bg-s2 focus-visible:ring-focus"
-                >
-                  <span className="truncate text-text">
-                    {m.title} <span className="text-text-3">{m.year}</span>
-                  </span>
-                  <span className="text-accent-text text-caption">{t('add')}</span>
-                </button>
-              </li>
+              <MatchItem
+                key={m.id}
+                name={m.title}
+                detail={m.year ? String(m.year) : undefined}
+                onPress={() => {
+                  setSeen((x) => ({ ...x, [m.id]: fromMovie(m) }))
+                  onChange([...ids, m.id])
+                  setQuery('')
+                }}
+              />
             ))
           )}
-        </ul>
+        </MatchList>
       )}
       {ids.length > 0 &&
         (sortable ? (
           <SortableList
-            aria-label={label}
+            accessibilityLabel={label}
             items={ids}
             id={String}
             label={(id) => known(id)?.title ?? String(id)}
             onChange={onChange}
-            className="gap-1.5"
-            itemClassName="grid grid-cols-[auto_2rem_minmax(0,1fr)_auto] items-center gap-2.5 rounded-md border border-line bg-s2 p-1.5"
+            messages={{
+              move: (title) => t('order.move', { title }),
+              moveUp: (title) => t('order.moveUp', { title }),
+              moveDown: (title) => t('order.moveDown', { title }),
+              moved: (title, index, count) => t('order.moved', { title, index, count }),
+            }}
           >
             {(id, handle) => (
-              <>
+              <View style={card}>
                 {handle}
                 <PickedRow id={id} known={known(id)} label={label} onRemove={() => remove(id)} />
-              </>
+              </View>
             )}
           </SortableList>
         ) : (
-          <ul aria-label={label} className="grid gap-1.5">
+          <View role="list" aria-label={label} style={{ gap: SIX }}>
             {ids.map((id) => (
-              <li
-                key={id}
-                className="grid grid-cols-[2rem_minmax(0,1fr)_auto] items-center gap-2.5 rounded-md border border-line bg-s2 p-1.5"
-              >
+              <View key={id} role="listitem" style={card}>
                 <PickedRow id={id} known={known(id)} label={label} onRemove={() => remove(id)} />
-              </li>
+              </View>
             ))}
-          </ul>
+          </View>
         ))}
-    </div>
+    </View>
   )
 }
 
@@ -647,22 +813,29 @@ function PickedRow({
   const title = m?.title ?? String(id)
   return (
     <>
-      <div className="w-8">
+      <View style={{ width: s['8'] }}>
         <Thumb src={m?.poster ?? null} alt="" />
-      </div>
-      <span className="flex min-w-0 items-center gap-2 text-text text-ui">
-        <span className="truncate">
-          {title} {m?.year && <span className="text-text-3">{m.year}</span>}
-        </span>
-        {m && !m.file && <Badge>{t('noFile')}</Badge>}
-      </span>
+      </View>
+      <View
+        style={{ flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: s['2'] }}
+      >
+        <Text size={ui.size} leading={ui.leading} numberOfLines={1} style={{ flexShrink: 1 }}>
+          {title}
+          {m?.year ? (
+            <Text size={ui.size} color="text-3">
+              {` ${m.year}`}
+            </Text>
+          ) : null}
+        </Text>
+        {m && !m.file ? <Badge>{t('noFile')}</Badge> : null}
+      </View>
       <Button
         size="sm"
         variant="ghost"
         iconOnly
         icon="close"
-        aria-label={t('removeFrom', { title, label: label.toLowerCase() })}
-        onClick={onRemove}
+        accessibilityLabel={t('removeFrom', { title, label: label.toLowerCase() })}
+        onPress={onRemove}
       />
     </>
   )

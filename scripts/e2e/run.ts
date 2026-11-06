@@ -188,8 +188,8 @@ try {
     await owner.getByRole('button', { name: 'Add Sintel' }).first().click()
     const dialog = owner.getByRole('dialog')
     // the release is 1080p, so the HD profile rather than the dialog's first
-    await dialog.getByRole('combobox', { name: 'Quality profile' }).click()
-    await owner.getByRole('option', { name: 'HD 1080p' }).click()
+    await dialog.getByRole('button', { name: 'Quality profile' }).click()
+    await owner.getByRole('menuitemradio', { name: 'HD 1080p' }).click()
     // the run grabs by hand, from Interactive search, rather than letting Search now pick for it
     await dialog.getByRole('checkbox', { name: 'Search now' }).uncheck()
     await dialog.getByRole('button', { name: 'Add movie' }).click()

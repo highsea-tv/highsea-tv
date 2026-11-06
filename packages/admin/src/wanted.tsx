@@ -21,13 +21,15 @@ import {
 import { useLocale, useT } from '@highsea-tv/i18n/react'
 import type { HighseaClient } from '@highsea-tv/sdk'
 import { useAction, useQuery } from '@highsea-tv/sdk/react'
+import { breakpoints } from '@highsea-tv/tokens'
 import {
+  alpha,
   Button,
   ConfirmDialog,
-  cn,
   EmptyState,
   Field,
   Input,
+  Press,
   Table,
   TableBody,
   TableCell,
@@ -37,19 +39,28 @@ import {
   TableRow,
   TableToolbar,
   Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
+  Text,
   TitleCell,
+  TitleLink,
   toast,
-} from '@highsea-tv/ui'
+  tokens,
+  useTheme,
+  useWindowAtLeast,
+} from '@highsea-tv/ui/native'
 import { useState } from 'react'
+import { View } from 'react-native'
 import { Loadable } from './loadable.tsx'
 import { moviePath } from './media-links.ts'
 import { AdminPage } from './shell.tsx'
 import { useTabAddress } from './tabs.ts'
 import { useNow } from './time.ts'
 import { wanted as messages } from './wanted-messages.ts'
+
+const s = tokens.space
+const ui = tokens.adminText.ui
+const figure = tokens.adminText.figure
+/** react-native-web's link props, which React Native's types don't name (a Press as an `<a>`). */
+const linkTo = (href: string) => ({ href }) as object
 
 export type WantedTab = 'missing' | 'cutoff' | 'calendar'
 type List = 'missing' | 'cutoff'
@@ -91,26 +102,20 @@ export function Wanted({ tab = 'missing' }: { tab?: WantedTab }) {
   const cutoff = useQuery('wanted:total:cutoff', (c) => loadTotal(c, 'cutoff'), LIVE)
   return (
     <AdminPage title={t('title')} description={t('description')}>
-      <Tabs value={tab} onValueChange={(v) => setTab(v as WantedTab)} variant="line">
-        <TabsList aria-label={t('sections')}>
-          <TabsTrigger value="missing" count={missing.data || undefined}>
-            {t('tab.missing')}
-          </TabsTrigger>
-          <TabsTrigger value="cutoff" count={cutoff.data || undefined}>
-            {t('tab.cutoff')}
-          </TabsTrigger>
-          <TabsTrigger value="calendar">{t('tab.calendar')}</TabsTrigger>
-        </TabsList>
-        <TabsContent value="missing" className="pt-5">
-          {tab === 'missing' && <WantedList list="missing" />}
-        </TabsContent>
-        <TabsContent value="cutoff" className="pt-5">
-          {tab === 'cutoff' && <WantedList list="cutoff" />}
-        </TabsContent>
-        <TabsContent value="calendar" className="pt-5">
-          {tab === 'calendar' && <Calendar />}
-        </TabsContent>
-      </Tabs>
+      <Tabs
+        variant="line"
+        aria-label={t('sections')}
+        value={tab}
+        onValueChange={setTab}
+        options={[
+          { value: 'missing', label: t('tab.missing'), count: missing.data || undefined },
+          { value: 'cutoff', label: t('tab.cutoff'), count: cutoff.data || undefined },
+          { value: 'calendar', label: t('tab.calendar') },
+        ]}
+      />
+      <View role="tabpanel" aria-label={t(`tab.${tab}`)} style={{ paddingTop: s['5'] }}>
+        {tab === 'calendar' ? <Calendar /> : <WantedList key={tab} list={tab} />}
+      </View>
     </AdminPage>
   )
 }
@@ -149,30 +154,30 @@ function WantedList({ list }: { list: List }) {
             </EmptyState>
           )
         return (
-          <div className="grid gap-4">
+          <View style={{ gap: s['4'] }}>
             <TableFrame>
               <TableToolbar>
-                <span className="me-auto text-caption text-text-3">
-                  {t(cutoff ? 'cutoff.hint' : 'missing.hint')}
-                </span>
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text variant="caption" color="text-3">
+                    {t(cutoff ? 'cutoff.hint' : 'missing.hint')}
+                  </Text>
+                </View>
                 <Button
                   size="sm"
                   icon="search"
                   loading={search.pending}
-                  onClick={() => go({ all: list })}
+                  onPress={() => go({ all: list })}
                 >
                   {t('searchAll', { count: total })}
                 </Button>
               </TableToolbar>
-              <Table>
+              <Table label={t(`tab.${list}`)}>
                 <TableHeader>
                   <TableRow>
                     <TableHead>{t('col.movie')}</TableHead>
                     <TableHead>{t('col.released')}</TableHead>
                     <TableHead>{t(cutoff ? 'col.wants' : 'col.profile')}</TableHead>
-                    <TableHead>
-                      <span className="sr-only">{t('col.actions')}</span>
-                    </TableHead>
+                    <TableHead hidden>{t('col.actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -180,26 +185,34 @@ function WantedList({ list }: { list: List }) {
                     const p = profiles.data?.find((x) => x.id === m.qualityProfileId)
                     return (
                       <TableRow key={m.id}>
-                        <TitleCell
-                          art={m.art.poster ?? undefined}
-                          title={
-                            <a href={moviePath(m.id)} className="hover:underline">
-                              {m.year ? `${m.title} (${m.year})` : m.title}
-                            </a>
-                          }
-                        />
-                        <TableCell className="text-text-2">
-                          {m.releaseDate ? released.format(new Date(m.releaseDate)) : t('unknown')}
+                        <TableCell tall>
+                          <TitleCell
+                            art={m.art.poster ?? null}
+                            title={
+                              <TitleLink href={moviePath(m.id)}>
+                                {m.year ? `${m.title} (${m.year})` : m.title}
+                              </TitleLink>
+                            }
+                          />
                         </TableCell>
-                        <TableCell className="text-text-2">
-                          {p ? (cutoff ? `${p.name} · ${p.cutoff}` : p.name) : t('unknown')}
+                        <TableCell tall>
+                          <Quiet>
+                            {m.releaseDate
+                              ? released.format(new Date(m.releaseDate))
+                              : t('unknown')}
+                          </Quiet>
                         </TableCell>
-                        <TableCell className="text-end">
+                        <TableCell tall>
+                          <Quiet>
+                            {p ? (cutoff ? `${p.name} · ${p.cutoff}` : p.name) : t('unknown')}
+                          </Quiet>
+                        </TableCell>
+                        <TableCell tall align="end">
                           <Button
                             size="sm"
                             icon="search"
-                            aria-label={t('searchFor', { title: m.title })}
-                            onClick={() => go({ ids: [m.id] }, m.title)}
+                            accessibilityLabel={t('searchFor', { title: m.title })}
+                            onPress={() => go({ ids: [m.id] }, m.title)}
                           >
                             {t('search')}
                           </Button>
@@ -211,11 +224,11 @@ function WantedList({ list }: { list: List }) {
               </Table>
             </TableFrame>
             {more && (
-              <Button className="justify-self-center" onClick={() => setPages(pages + 1)}>
-                {t('more')}
-              </Button>
+              <View style={{ alignSelf: 'center' }}>
+                <Button onPress={() => setPages(pages + 1)}>{t('more')}</Button>
+              </View>
             )}
-          </div>
+          </View>
         )
       }}
     </Loadable>
@@ -227,16 +240,40 @@ function WantedList({ list }: { list: List }) {
 const pad = (n: number) => String(n).padStart(2, '0')
 const isoDay = (y: number, m: number, d: number) => `${y}-${pad(m + 1)}-${pad(d)}`
 
+type Tone = 'library' | 'downloading' | 'wanted'
+
 /** The prototype's tones: in the library, on its way, still wanted. */
-const tone = (m: Movie) =>
-  m.status === 'available'
-    ? 'border-success/40 text-text'
-    : m.status === 'downloading'
-      ? 'border-accent/50 text-text'
-      : 'border-line-strong text-text-2'
+const toneOf = (m: Movie): Tone =>
+  m.status === 'available' ? 'library' : m.status === 'downloading' ? 'downloading' : 'wanted'
+
+/** An entry's edge and words by its tone (the web's border-success/40, border-accent/50, border-line-strong). */
+function useTones() {
+  const { colors } = useTheme()
+  return (tone: Tone) =>
+    tone === 'library'
+      ? { edge: alpha(colors.success, 0.4), words: 'text' as const, dot: colors.success }
+      : tone === 'downloading'
+        ? { edge: alpha(colors.accent, 0.5), words: 'text' as const, dot: colors.accent }
+        : { edge: colors['line-strong'], words: 'text-2' as const, dot: colors['line-strong'] }
+}
+
+/** A table cell's words in `text-2`. */
+function Quiet({ children }: { children: string }) {
+  return (
+    <Text size={ui.size} leading={ui.leading} color="text-2" numberOfLines={1}>
+      {children}
+    </Text>
+  )
+}
+
+/** A day's cell: a seventh of the week (the web's grid-cols-7), at least 96 tall. */
+const DAY = { width: `${100 / 7}%`, minHeight: 96 } as const
 
 function Calendar() {
   const t = useT(messages)
+  const theme = useTheme()
+  const tones = useTones()
+  const grid = useWindowAtLeast(breakpoints.medium)
   const locale = intlLocale(useLocale())
   const now = useNow()
   const [offset, setOffset] = useState(0)
@@ -264,156 +301,243 @@ function Calendar() {
     new Intl.DateTimeFormat(locale, { weekday: 'short' }).format(new Date(2024, 0, 1 + i)),
   )
   const kind = (e: CalendarEntry) => t(`kind.${e.kind}`)
+  const line = theme.colors.line
+  const legend = (tone: Tone, words: string) => (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: s['1'] + s['0.5'] }}>
+      <View
+        style={{
+          width: 10,
+          height: 10,
+          borderRadius: tokens.radius.pill,
+          borderWidth: 1,
+          borderColor: tones(tone).dot,
+        }}
+      />
+      <Text variant="caption" color="text-3">
+        {words}
+      </Text>
+    </View>
+  )
   return (
-    <div className="grid grid-cols-[minmax(0,1fr)] gap-4">
-      <div className="flex flex-wrap items-center gap-2">
+    <View style={{ gap: s['4'] }}>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: s['2'] }}>
         <Button
           size="sm"
           variant="ghost"
           iconOnly
           icon="chevron-left"
-          aria-label={t('calendar.previous')}
-          onClick={() => setOffset(offset - 1)}
+          accessibilityLabel={t('calendar.previous')}
+          onPress={() => setOffset(offset - 1)}
         />
-        <h2
-          className="min-w-[min(10rem,100%)] text-center font-semibold text-text text-title"
-          aria-live="polite"
-        >
-          {monthName}
-        </h2>
+        <View style={{ minWidth: 160 }}>
+          <Text variant="title" align="center" role="heading" aria-level={2} aria-live="polite">
+            {monthName}
+          </Text>
+        </View>
         <Button
           size="sm"
           variant="ghost"
           iconOnly
           icon="chevron-right"
-          aria-label={t('calendar.next')}
-          onClick={() => setOffset(offset + 1)}
+          accessibilityLabel={t('calendar.next')}
+          onPress={() => setOffset(offset + 1)}
         />
         {offset !== 0 && (
-          <Button size="sm" variant="ghost" onClick={() => setOffset(0)}>
+          <Button size="sm" variant="ghost" onPress={() => setOffset(0)}>
             {t('calendar.thisMonth')}
           </Button>
         )}
-        <span className="ms-auto flex flex-wrap gap-3 text-caption text-text-3">
-          <span className="flex items-center gap-1.5">
-            <span className="size-2.5 rounded-full border border-success" /> {t('calendar.library')}
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="size-2.5 rounded-full border border-accent" />{' '}
-            {t('calendar.downloading')}
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="size-2.5 rounded-full border border-line-strong" />{' '}
-            {t('calendar.wanted')}
-          </span>
-        </span>
-      </div>
+        <View style={{ marginStart: 'auto', flexDirection: 'row', flexWrap: 'wrap', gap: s['3'] }}>
+          {legend('library', t('calendar.library'))}
+          {legend('downloading', t('calendar.downloading'))}
+          {legend('wanted', t('calendar.wanted'))}
+        </View>
+      </View>
       <Loadable query={entries} what={t('calendar.what')}>
         {(all) => {
           const on = (day: number) => all.filter((e) => e.date === isoDay(year, month, day))
-          return (
-            <>
-              {/* a month grid from medium; a list of release days on a phone */}
-              <div className="hidden overflow-hidden rounded-lg border border-line medium:block">
-                <div className="grid grid-cols-7 border-line border-b bg-s1">
-                  {weekdays.map((d) => (
-                    <div key={d} className="px-2 py-1.5 font-mono text-label text-text-3 uppercase">
-                      {d}
-                    </div>
-                  ))}
-                </div>
-                <ol className="grid grid-cols-7">
-                  {weekdays.slice(0, lead).map((d) => (
-                    // the blank days before the 1st, keyed by weekday
-                    <li
-                      key={`lead-${d}`}
-                      aria-hidden
-                      className="min-h-24 border-line border-e border-b bg-bg"
-                    />
-                  ))}
-                  {Array.from({ length: days }, (_, i) => {
-                    const day = i + 1
-                    const date = isoDay(year, month, day)
-                    const xs = on(day)
-                    const name = dayName.format(new Date(year, month, day))
-                    return (
-                      <li
-                        key={day}
-                        aria-label={
-                          xs.length
-                            ? t('calendar.dayWith', {
-                                date: name,
-                                titles: xs
-                                  .map((e) =>
-                                    t('entry.label', { title: e.movie.title, kind: kind(e) }),
-                                  )
-                                  .join(', '),
-                              })
-                            : name
-                        }
-                        className="grid min-h-24 min-w-0 content-start gap-1 border-line border-e border-b p-1.5"
-                      >
-                        <span
-                          className={cn(
-                            'grid size-6 place-items-center rounded-full font-mono text-figure',
-                            date === todayIso ? 'bg-accent-fill text-on-accent' : 'text-text-3',
-                          )}
-                        >
-                          {day}
-                        </span>
-                        {xs.map((e) => (
-                          <a
-                            key={`${e.movie.id}-${e.kind}`}
-                            href={moviePath(e.movie.id)}
-                            title={t('entry.label', { title: e.movie.title, kind: kind(e) })}
-                            className={cn(
-                              'truncate rounded-sm border px-1.5 py-0.5 text-caption outline-none hover:bg-s2 focus-visible:ring-focus',
-                              tone(e.movie),
-                            )}
-                          >
-                            {e.movie.title}
-                            <span className="text-text-3"> · {kind(e)}</span>
-                          </a>
-                        ))}
-                      </li>
-                    )
-                  })}
-                </ol>
-              </div>
-              <ul
-                aria-label={t('calendar.releases', { month: monthName })}
-                className="grid gap-2 medium:hidden"
+          // a month grid from medium; a list of release days on a phone
+          return grid ? (
+            <View
+              style={{
+                overflow: 'hidden',
+                borderWidth: 1,
+                borderColor: line,
+                borderRadius: tokens.radius.lg,
+              }}
+            >
+              <View
+                style={{
+                  flexDirection: 'row',
+                  borderBottomWidth: 1,
+                  borderBottomColor: line,
+                  backgroundColor: theme.colors.s1,
+                }}
               >
-                {all.length === 0 ? (
-                  <li className="text-caption text-text-3">{t('calendar.none')}</li>
-                ) : (
-                  all.map((e) => (
-                    <li key={`${e.movie.id}-${e.kind}`}>
-                      <a
-                        href={moviePath(e.movie.id)}
-                        className={cn(
-                          'flex items-center gap-3 rounded-md border bg-s1 p-3 text-ui',
-                          tone(e.movie),
-                        )}
+                {weekdays.map((d) => (
+                  <View
+                    key={d}
+                    style={{ width: DAY.width, paddingHorizontal: s['2'], paddingVertical: 6 }}
+                  >
+                    <Text variant="label" color="text-3">
+                      {d}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+              <View role="list" style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+                {weekdays.slice(0, lead).map((d) => (
+                  // the blank days before the 1st, keyed by weekday
+                  <View
+                    key={`lead-${d}`}
+                    aria-hidden
+                    style={{
+                      ...DAY,
+                      borderEndWidth: 1,
+                      borderBottomWidth: 1,
+                      borderColor: line,
+                      backgroundColor: theme.colors.bg,
+                    }}
+                  />
+                ))}
+                {Array.from({ length: days }, (_, i) => {
+                  const day = i + 1
+                  const date = isoDay(year, month, day)
+                  const xs = on(day)
+                  const name = dayName.format(new Date(year, month, day))
+                  const isToday = date === todayIso
+                  return (
+                    <View
+                      key={day}
+                      role="listitem"
+                      aria-label={
+                        xs.length
+                          ? t('calendar.dayWith', {
+                              date: name,
+                              titles: xs
+                                .map((e) =>
+                                  t('entry.label', { title: e.movie.title, kind: kind(e) }),
+                                )
+                                .join(', '),
+                            })
+                          : name
+                      }
+                      style={{
+                        ...DAY,
+                        minWidth: 0,
+                        gap: s['1'],
+                        padding: 6,
+                        borderEndWidth: 1,
+                        borderBottomWidth: 1,
+                        borderColor: line,
+                      }}
+                    >
+                      <View
+                        style={{
+                          width: s['6'],
+                          height: s['6'],
+                          borderRadius: tokens.radius.pill,
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          backgroundColor: isToday ? theme.colors['accent-fill'] : 'transparent',
+                        }}
                       >
-                        <span className="w-14 shrink-0 font-mono text-figure text-text-3">
-                          {short.format(new Date(year, month, Number(e.date.slice(8))))}
-                        </span>
-                        <span className="min-w-0">
-                          {e.movie.title}
-                          <span className="block text-caption text-text-3">{kind(e)}</span>
-                        </span>
-                      </a>
-                    </li>
-                  ))
-                )}
-              </ul>
-            </>
+                        <Text
+                          size={figure.size}
+                          leading={figure.leading}
+                          mono
+                          color={isToday ? 'on-accent' : 'text-3'}
+                        >
+                          {String(day)}
+                        </Text>
+                      </View>
+                      {xs.map((e) => {
+                        const tone = tones(toneOf(e.movie))
+                        const label = t('entry.label', { title: e.movie.title, kind: kind(e) })
+                        return (
+                          <Press
+                            key={`${e.movie.id}-${e.kind}`}
+                            role="link"
+                            {...linkTo(moviePath(e.movie.id))}
+                            {...({ title: label } as object)}
+                            style={({ hovered }) => ({
+                              paddingHorizontal: 6,
+                              paddingVertical: s['0.5'],
+                              borderWidth: 1,
+                              borderColor: tone.edge,
+                              borderRadius: tokens.radius.sm,
+                              backgroundColor: hovered ? theme.colors.s2 : 'transparent',
+                            })}
+                          >
+                            <Text variant="caption" color={tone.words} numberOfLines={1}>
+                              {e.movie.title}
+                              <Text variant="caption" color="text-3">
+                                {` · ${kind(e)}`}
+                              </Text>
+                            </Text>
+                          </Press>
+                        )
+                      })}
+                    </View>
+                  )
+                })}
+              </View>
+            </View>
+          ) : (
+            <View
+              role="list"
+              aria-label={t('calendar.releases', { month: monthName })}
+              style={{ gap: s['2'] }}
+            >
+              {all.length === 0 ? (
+                <View role="listitem">
+                  <Text variant="caption" color="text-3">
+                    {t('calendar.none')}
+                  </Text>
+                </View>
+              ) : (
+                all.map((e) => {
+                  const tone = tones(toneOf(e.movie))
+                  return (
+                    <View key={`${e.movie.id}-${e.kind}`} role="listitem">
+                      <Press
+                        role="link"
+                        {...linkTo(moviePath(e.movie.id))}
+                        style={{
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          gap: s['3'],
+                          padding: s['3'],
+                          borderWidth: 1,
+                          borderColor: tone.edge,
+                          borderRadius: tokens.radius.md,
+                          backgroundColor: theme.colors.s1,
+                        }}
+                      >
+                        <View style={{ width: 56, flexShrink: 0 }}>
+                          <Text size={figure.size} leading={figure.leading} mono color="text-3">
+                            {short.format(new Date(year, month, Number(e.date.slice(8))))}
+                          </Text>
+                        </View>
+                        <View style={{ flex: 1, minWidth: 0 }}>
+                          <Text size={ui.size} leading={ui.leading} color={tone.words}>
+                            {e.movie.title}
+                          </Text>
+                          <Text variant="caption" color="text-3">
+                            {kind(e)}
+                          </Text>
+                        </View>
+                      </Press>
+                    </View>
+                  )
+                })
+              )}
+            </View>
           )
         }}
       </Loadable>
       <Feed />
-    </div>
+    </View>
   )
 }
 
@@ -429,29 +553,31 @@ function Feed() {
   const off = () => revoke.run().then(() => feed.refetch(), failed)
   return (
     <Field label={t('feed.label')} hint={t('feed.hint')}>
-      <Loadable query={feed} what={t('feed.what')} skeleton={<div className="h-10" />}>
+      <Loadable query={feed} what={t('feed.what')} skeleton={<View style={{ height: s['10'] }} />}>
         {({ url }) =>
           url ? (
-            <div className="grid gap-2">
-              <div className="flex gap-2">
-                <Input readOnly value={url} aria-label={t('feed.label')} className="font-mono" />
+            <View style={{ gap: s['2'] }}>
+              <View style={{ flexDirection: 'row', gap: s['2'] }}>
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Input editable={false} value={url} accessibilityLabel={t('feed.label')} mono />
+                </View>
                 <Button
                   icon="copy"
-                  onClick={() => {
+                  onPress={() => {
                     navigator.clipboard?.writeText(url).catch(() => {})
                     toast({ title: t('feed.copied') })
                   }}
                 >
                   {t('feed.copy')}
                 </Button>
-              </div>
-              <div className="flex flex-wrap gap-2">
+              </View>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: s['2'] }}>
                 <Button
                   size="sm"
                   variant="ghost"
                   icon="refresh"
                   loading={make.pending}
-                  onClick={() => setConfirm('renew')}
+                  onPress={() => setConfirm('renew')}
                 >
                   {t('feed.renew')}
                 </Button>
@@ -459,25 +585,29 @@ function Feed() {
                   size="sm"
                   variant="ghost"
                   loading={revoke.pending}
-                  onClick={() => setConfirm('off')}
+                  onPress={() => setConfirm('off')}
                 >
                   {t('feed.off')}
                 </Button>
-              </div>
-            </div>
+              </View>
+            </View>
           ) : (
-            <div className="flex flex-wrap items-center gap-3">
-              <span className="text-caption text-text-3">{t('feed.none')}</span>
-              <Button size="sm" icon="calendar" loading={make.pending} onClick={renew}>
+            <View
+              style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: s['3'] }}
+            >
+              <Text variant="caption" color="text-3">
+                {t('feed.none')}
+              </Text>
+              <Button size="sm" icon="calendar" loading={make.pending} onPress={renew}>
                 {t('feed.make')}
               </Button>
-            </div>
+            </View>
           )
         }
       </Loadable>
       <ConfirmDialog
         open={confirm !== null}
-        onOpenChange={(o) => !o && setConfirm(null)}
+        onClose={() => setConfirm(null)}
         title={t(confirm === 'off' ? 'feed.offTitle' : 'feed.renewTitle')}
         description={t(confirm === 'off' ? 'feed.offBody' : 'feed.renewBody')}
         confirmLabel={t(confirm === 'off' ? 'feed.offConfirm' : 'feed.renewConfirm')}

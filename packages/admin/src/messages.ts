@@ -4,6 +4,8 @@ import { defineMessages } from '@highsea-tv/i18n'
 
 export const shell = defineMessages({
   skip: 'Skip to content',
+  /** The toast stack's region (the library's native Toaster). */
+  notifications: 'Notifications',
   menu: 'Menu',
   retry: 'Try again',
   'nav.dashboard': 'Dashboard',

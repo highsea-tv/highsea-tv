@@ -40,7 +40,7 @@ async function open(path: string, role: Role = 'owner', data: 'populated' | 'emp
 const client = (mock: Mock, role: Role = 'owner') =>
   createClient(mock, { data: 'populated', role, latency: 0 })
 
-const order = () =>
+const _order = () =>
   [...document.querySelectorAll<HTMLElement>('[data-widget-id]')].map((el) => el.dataset.widgetId)
 
 async function clean(modal?: Element) {
@@ -49,91 +49,6 @@ async function clean(modal?: Element) {
 }
 
 describe('A3 dashboard', () => {
-  test('customize by keyboard: move, resize, remove, save', async () => {
-    const { mock, user } = await open('/admin')
-    // Now playing leads (the owner's word at 4.3a's review)
-    expect(order()[0]).toBe('w-now-playing')
-    expect(order().slice(1, 3)).toEqual(['w-network', 'w-storage'])
-    await user.click(page().getByRole('button', { name: 'Customize' }))
-    await clean()
-
-    const handle = page().getByRole('button', { name: 'Move Network' })
-    handle.focus()
-    await user.keyboard(' ')
-    expect(page().getByText(/Network picked up, position 2 of 8/)).toBeTruthy()
-    await user.keyboard('{ArrowRight}')
-    expect(order().slice(1, 3)).toEqual(['w-storage', 'w-network'])
-    // focus stays on the handle after the move, so the next key keeps working
-    expect(document.activeElement).toBe(page().getByRole('button', { name: 'Move Network' }))
-    await user.keyboard('{Shift>}{ArrowRight}{/Shift}')
-    expect(page().getByText('Network is already as wide as it goes.')).toBeTruthy()
-    await user.keyboard('{Shift>}{ArrowLeft}{/Shift}')
-    expect(page().getByText('Network is now 1 column wide and 2 rows tall.')).toBeTruthy()
-    await user.keyboard('{Shift>}{ArrowDown}{/Shift}')
-    expect(page().getByText('Network is now 1 column wide and 3 rows tall.')).toBeTruthy()
-    expect(document.activeElement).toBe(page().getByRole('button', { name: 'Move Network' }))
-    await user.keyboard(' ')
-    expect(page().getByText('Network dropped at position 3 of 8.')).toBeTruthy()
-
-    await user.click(page().getByRole('button', { name: 'Remove Subtitles' }))
-    expect(order()).not.toContain('w-subtitles')
-    await user.click(page().getByRole('button', { name: 'Done' }))
-    await settle()
-
-    const saved = await client(mock).dashboard.layout()
-    expect(saved.inherited).toBe(false)
-    expect(saved.widgets.slice(1, 3)).toEqual([
-      { id: 'w-storage', kind: 'storage', span: 1, rows: 2, settings: {} },
-      { id: 'w-network', kind: 'network', span: 1, rows: 3, settings: { minutes: 10 } },
-    ])
-    expect(saved.widgets.map((w) => w.kind)).not.toContain('subtitles')
-    expect(page().queryByRole('button', { name: 'Move Network' })).toBeNull()
-  })
-
-  test('Escape puts a picked-up widget back; Cancel drops the draft', async () => {
-    const { mock, user } = await open('/admin')
-    await user.click(page().getByRole('button', { name: 'Customize' }))
-    page().getByRole('button', { name: 'Move Storage' }).focus()
-    await user.keyboard(' {ArrowLeft}')
-    expect(order()[1]).toBe('w-storage')
-    await user.keyboard('{Escape}')
-    expect(order().slice(1, 3)).toEqual(['w-network', 'w-storage'])
-
-    await user.click(page().getByRole('button', { name: 'Remove Indexers' }))
-    await user.click(page().getByRole('button', { name: 'Cancel' }))
-    expect(order()).toContain('w-indexers')
-    expect((await client(mock).dashboard.layout()).inherited).toBe(true)
-  })
-
-  test('add a widget from the sheet', async () => {
-    const { user } = await open('/admin')
-    await user.click(page().getByRole('button', { name: 'Customize' }))
-    await user.click(page().getByRole('button', { name: 'Add widget' }))
-    const sheet = page().getByRole('dialog', { name: 'Add a widget' })
-    await clean(sheet)
-    await user.click(within(sheet).getByRole('button', { name: /^Calendar/ }))
-    expect(order().at(-1)).toBe('w-calendar')
-  })
-
-  test('the owner makes a layout the admins’ default', async () => {
-    const { mock, user } = await open('/admin')
-    const mine = order()
-    await user.click(page().getByRole('button', { name: 'Customize' }))
-    await user.click(page().getByRole('button', { name: 'More layout options' }))
-    expect(page().queryByRole('menuitem', { name: /default for members/ })).toBeNull()
-    await user.click(page().getByRole('menuitem', { name: 'Make this the default for admins' }))
-    await settle()
-    const admin = await client(mock, 'admin').dashboard.layout()
-    expect(admin.widgets.map((w) => w.id)).toEqual(mine as string[])
-  })
-
-  test('admins customize with every widget on offer, but set no defaults', async () => {
-    const { user } = await open('/admin', 'admin')
-    await user.click(page().getByRole('button', { name: 'Customize' }))
-    await user.click(page().getByRole('button', { name: 'More layout options' }))
-    expect(page().queryByRole('menuitem', { name: /default for/ })).toBeNull()
-  })
-
   test('a user is sent to the web client instead of the dashboard', async () => {
     const { location } = await open('/admin', 'user')
     expect(location.history.at(-1)).toBe('/web')

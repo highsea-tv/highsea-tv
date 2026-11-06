@@ -32,6 +32,7 @@ import {
   Sidebar,
   StatusBar,
   StatusItem,
+  Toaster,
   useFormFactor,
 } from '@highsea-tv/ui/native'
 import {
@@ -524,6 +525,8 @@ export function AdminShell({ role: initialRole, children }: { role: Role; childr
           placeholder={t('palette.placeholder')}
         />
         <AccountSheet open={account} onOpenChange={setAccount} />
+        {/* the native renderer's toasts, which D2's screens raise (the web renderer's still mount in UIProvider until D3) */}
+        <Toaster label={t('notifications')} />
       </div>
     </ShellContext.Provider>
   )

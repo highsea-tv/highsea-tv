@@ -9,12 +9,12 @@
 // https://necolas.github.io/react-native-web/docs/view/#href), so a browser can open it in a new
 // tab and the host's router can take the click; `onPress` runs as well.
 import { breakpoints, type ColorRole } from '@highsea-tv/tokens'
-import { Image } from 'expo-image'
 import { type ReactNode, useState, useSyncExternalStore } from 'react'
 import { Dimensions, View } from 'react-native'
 import { alpha } from './alpha.ts'
 import { Icon } from './icon.tsx'
 import type { IconName } from './icons.ts'
+import { Image } from './image.tsx'
 import { Press } from './press.tsx'
 import { Text } from './text.tsx'
 import { tokens, useControl, useTheme } from './theme.tsx'

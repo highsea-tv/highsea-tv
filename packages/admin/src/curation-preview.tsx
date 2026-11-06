@@ -8,10 +8,21 @@
 // sample people.
 import type { ClientType, CurationPreviewInput } from '@highsea-tv/api-contract'
 import { useQuery } from '@highsea-tv/sdk/react'
-import { Icon, SegmentedControl, Select, useWidth } from '@highsea-tv/ui'
+import {
+  Icon,
+  PageFrame,
+  type PageFrameHandle,
+  SegmentedControl,
+  Select,
+  Text,
+  tokens,
+  useTheme,
+} from '@highsea-tv/ui/native'
 import { useEffect, useRef, useState } from 'react'
+import { View } from 'react-native'
 import { FRAME_READY, type FrameMessage, type PreviewPlatform } from './curation-frame.tsx'
 import { useCurationT, useKept, usePeople, useSettled } from './curation-shared.tsx'
+import { useHref } from './navigation.tsx'
 
 const screens: Record<PreviewPlatform, { w: number; h: number; client: ClientType }> = {
   tv: { w: 1600, h: 900, client: 'tvos' },
@@ -38,14 +49,17 @@ export function ClientPreview({
   reveal?: string
 }) {
   const t = useCurationT()
+  const href = useHref()
   const session = useQuery('session', (c) => c.auth.session(), ['users.updated'])
   const people = usePeople()
   const [platform, setPlatform] = useState<PreviewPlatform>('tv')
   const [chosen, setChosen] = useState<string | null>(null)
   const me = session.data?.user
   const viewer = chosen ?? me?.id ?? null
-  const frame = useRef<HTMLIFrameElement>(null)
-  const { ref, width } = useWidth<HTMLDivElement>(560)
+  const theme = useTheme()
+  const frame = useRef<PageFrameHandle | null>(null)
+  // the column's width, measured as it's laid out; 560 until then, as the web's useWidth started
+  const [width, setWidth] = useState(560)
 
   // the web and TV fill the container: wider than their base size, the window itself grows
   // (TV keeps 16:9, the web 16:10); the phone stays a phone and only scales down
@@ -97,30 +111,43 @@ export function ClientPreview({
   const place = t(`place.${platform}`)
 
   const iframe = (
-    <iframe
+    <PageFrame
       key={platform}
       ref={frame}
       title={t('previewTitle', { platform: label, name })}
-      src={FRAME_PATH}
-      inert
-      tabIndex={-1}
-      style={{
-        width: screen.w,
-        height: screen.h,
-        // the phone's bezel scales as a whole, frame included
-        transform: platform === 'mobile' ? undefined : `scale(${scale})`,
-      }}
-      className="block origin-top-left border-0 bg-bg"
+      src={href(FRAME_PATH)}
+      width={screen.w}
+      height={screen.h}
+      // the phone's bezel scales as a whole, frame included
+      scale={platform === 'mobile' ? 1 : scale}
     />
   )
+  const bezel = 12
 
   return (
-    <section
+    <View
+      role="region"
       aria-label={t('clientPreview')}
-      className="grid min-w-0 grid-cols-[minmax(0,1fr)] content-start gap-3"
+      style={{ minWidth: 0, gap: tokens.space['3'] }}
     >
-      <div className="flex flex-wrap items-center gap-2">
-        <h2 className="me-auto font-medium text-text text-ui">{t('preview')}</h2>
+      <View
+        style={{
+          flexDirection: 'row',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          gap: tokens.space['2'],
+        }}
+      >
+        <Text
+          role="heading"
+          aria-level={2}
+          size={tokens.adminText.ui.size}
+          leading={tokens.adminText.ui.leading}
+          weight={500}
+          style={{ marginEnd: 'auto' }}
+        >
+          {t('preview')}
+        </Text>
         <SegmentedControl
           aria-label={t('previewOn')}
           value={platform}
@@ -130,49 +157,75 @@ export function ClientPreview({
             label: t(`platform.${p}`),
           }))}
         />
-        <Select
-          aria-label={t('previewAs')}
-          value={viewer ?? ''}
-          onValueChange={setChosen}
-          options={accepted.map((u) => ({
-            value: u.id,
-            label: u.id === me?.id ? t('you', { name: u.displayName }) : u.displayName,
-          }))}
-          className="w-40"
-        />
-      </div>
-      <div ref={ref} className="min-w-0">
+        <View style={{ width: 160 }}>
+          <Select
+            aria-label={t('previewAs')}
+            value={viewer ?? ''}
+            onValueChange={setChosen}
+            options={accepted.map((u) => ({
+              value: u.id,
+              label: u.id === me?.id ? t('you', { name: u.displayName }) : u.displayName,
+            }))}
+          />
+        </View>
+      </View>
+      <View
+        style={{ minWidth: 0 }}
+        onLayout={(e) => setWidth(Math.round(e.nativeEvent.layout.width))}
+      >
         {platform === 'mobile' ? (
-          <div
-            style={{ width: (screen.w + 24) * scale, height: (screen.h + 24) * scale }}
-            className="mx-auto"
+          <View
+            style={{
+              width: (screen.w + bezel * 2) * scale,
+              height: (screen.h + bezel * 2) * scale,
+              alignSelf: 'center',
+            }}
           >
-            <div
-              style={{ width: screen.w + 24, height: screen.h + 24, transform: `scale(${scale})` }}
-              className="origin-top-left rounded-[56px] bg-s3 p-3 ring-1 ring-line-strong"
+            <View
+              style={{
+                width: screen.w + bezel * 2,
+                height: screen.h + bezel * 2,
+                padding: bezel,
+                borderRadius: 56,
+                backgroundColor: theme.colors.s3,
+                boxShadow: `0 0 0 1px ${theme.colors['line-strong']}`,
+                transformOrigin: 'top left',
+                transform: [{ scale }],
+              }}
             >
-              <div className="size-full overflow-hidden rounded-[44px]">{iframe}</div>
-            </div>
-          </div>
+              <View style={{ flex: 1, overflow: 'hidden', borderRadius: 44 }}>{iframe}</View>
+            </View>
+          </View>
         ) : (
-          <div
-            style={{ height: screen.h * scale }}
-            className="overflow-hidden rounded-md ring-1 ring-line"
+          <View
+            style={{
+              height: screen.h * scale,
+              overflow: 'hidden',
+              borderRadius: tokens.radius.md,
+              boxShadow: `0 0 0 1px ${theme.colors.line}`,
+            }}
           >
             {iframe}
-          </div>
+          </View>
         )}
-      </div>
-      <p aria-live="polite" className="flex items-start gap-1.5 text-caption text-text-3">
-        <Icon name={reaches ? 'info' : 'warning'} size={14} className="mt-px shrink-0" />
-        {preview.status === 'loading'
-          ? t('preview.loading')
-          : preview.status === 'error'
-            ? preview.error.message
-            : reaches
-              ? t('preview.seen', { name, place, what, note })
-              : t('preview.unseen', { name, place, what })}
-      </p>
-    </section>
+      </View>
+      <View
+        aria-live="polite"
+        style={{ flexDirection: 'row', alignItems: 'flex-start', gap: tokens.space['1'] + 2 }}
+      >
+        <View style={{ marginTop: 1 }}>
+          <Icon name={reaches ? 'info' : 'warning'} size={14} color="text-3" />
+        </View>
+        <Text variant="caption" color="text-3" style={{ flex: 1, minWidth: 0 }}>
+          {preview.status === 'loading'
+            ? t('preview.loading')
+            : preview.status === 'error'
+              ? preview.error.message
+              : reaches
+                ? t('preview.seen', { name, place, what, note })
+                : t('preview.unseen', { name, place, what })}
+        </Text>
+      </View>
+    </View>
   )
 }

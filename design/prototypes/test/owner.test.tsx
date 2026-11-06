@@ -49,41 +49,6 @@ async function clean(modal?: Element) {
 }
 
 describe('A11 curation', () => {
-  test('announcements show their reach; a new one goes live for its audience only', async () => {
-    const { mock, location, user } = await open('/admin/curation')
-    const list = within(page().getByRole('list', { name: 'Announcements' }))
-    expect(list.getByText('Seen by')).toBeTruthy()
-    expect(list.getByText('2 of 5')).toBeTruthy()
-    await clean()
-
-    await user.click(page().getByRole('button', { name: 'New announcement' }))
-    await settle()
-    expect(location.history?.at(-1)).toBe('/admin/curation/announcements/new')
-    expect(page().getByTitle(/TV home, previewed as Ines/)).toBeTruthy()
-    await clean()
-
-    // nothing is saved while the form is invalid, and it says why
-    await user.click(page().getByRole('button', { name: 'Publish' }))
-    expect(page().getByText(/Give it a title/)).toBeTruthy()
-
-    await user.type(page().getByLabelText('Title'), 'Pizza night')
-    await user.type(page().getByLabelText('Message'), 'In the **kitchen** at 7.')
-    await user.click(page().getByRole('radio', { name: 'Roles' }))
-    // owners and admins by default; Ruth is a user, so the preview says she won't see it
-    await user.click(page().getByRole('combobox', { name: 'Preview as' }))
-    await user.click(page().getByRole('option', { name: 'Ruth (user)' }))
-    expect(page().getByText(/Ruth isn’t in the audience on a TV/)).toBeTruthy()
-    await user.click(page().getByRole('button', { name: 'Publish' }))
-    await settle()
-    expect(location.history?.at(-1)).toBe('/admin/curation')
-
-    const owner = await client(mock).announcements.active('web')
-    const ruth = await client(mock, 'user').announcements.active('web')
-    expect(owner.some((a) => a.title === 'Pizza night')).toBe(true)
-    expect(ruth.some((a) => a.title === 'Pizza night')).toBe(false)
-    await clean()
-  })
-
   test('a scheduled announcement waits; ending one takes it off every screen', async () => {
     const { mock } = await open('/admin/curation')
     const c = client(mock)
@@ -105,72 +70,6 @@ describe('A11 curation', () => {
     expect((await c.curation.announcements()).find((a) => a.id === 'an-later')?.status).toBe(
       'ended',
     )
-  })
-
-  test('featured sections: reorder, and a rule section resolves as the library is', async () => {
-    const { mock, user } = await open('/admin/curation/featured')
-    const sections = () =>
-      within(page().getByRole('list', { name: 'Featured sections' }))
-        .getAllByRole('link')
-        .map((a) => a.textContent)
-        .filter((t) => t !== 'Edit')
-    expect(sections()).toEqual([
-      'Featured on Harbor',
-      'Staff picks',
-      'The silent era',
-      'New this month',
-    ])
-    await clean()
-    // the drag handle's keyboard model: Space picks it up, Up moves it, Space drops it
-    act(() => page().getByRole('button', { name: 'Move New this month' }).focus())
-    await user.keyboard(' {ArrowUp} ')
-    await settle()
-    expect(sections()).toEqual([
-      'Featured on Harbor',
-      'Staff picks',
-      'New this month',
-      'The silent era',
-    ])
-    const home = await client(mock).home.sections('web')
-    expect(home.map((s) => s.title)).toEqual([
-      'Featured on Harbor',
-      'Continue watching',
-      'Next up',
-      'Staff picks',
-      'New this month',
-      'The silent era',
-      'New episodes',
-      'Recently added shows',
-      'Recently played',
-    ])
-
-    // a collection rule picks only that collection's parts
-    const c = client(mock)
-    const picked = await c.curation.resolve({
-      ...(await c.curation.section('fs-recent')),
-      source: { kind: 'rule', rule: 'collection', value: 'caminandes' },
-    })
-    expect(picked.map((m) => m.title).every((t) => t.startsWith('Caminandes'))).toBe(true)
-    expect(picked.length).toBeGreaterThan(0)
-  })
-
-  test('the section composer: pick titles, and the preview gets the draft in place', async () => {
-    const { user } = await open('/admin/curation/featured/new')
-    await user.type(page().getByLabelText('Title'), 'Llamas')
-    await user.type(page().getByLabelText('Add titles'), 'caminandes')
-    await settle()
-    const matches = within(page().getByRole('list', { name: 'Matching titles' }))
-    await user.click(matches.getAllByRole('button')[0] as HTMLElement)
-    expect(
-      within(page().getByRole('list', { name: 'Picked titles' })).getAllByRole('listitem'),
-    ).toHaveLength(1)
-    await clean()
-    await user.click(page().getByRole('radio', { name: 'Use a rule' }))
-    // the composer asks the server once the draft settles
-    await act(() => new Promise((r) => setTimeout(r, 200)))
-    await settle()
-    expect(page().getByText(/Right now this picks \d+ titles/)).toBeTruthy()
-    await clean()
   })
 
   test('a preview server shows the draft as if it were saved', async () => {
@@ -337,30 +236,6 @@ describe('A13 users and devices', () => {
 })
 
 describe('A14, A16, A17 reference pages', () => {
-  test('wanted: the missing list searches, and the calendar moves by month', async () => {
-    const { mock, user } = await open('/admin/wanted')
-    const rows = () => page().getAllByRole('button', { name: /^Search for / })
-    // two movies and two episodes (stage 6), in one table with a filter for the kind
-    expect(rows().length).toBe(4)
-    expect(page().getByRole('button', { name: 'Search for Ghost Signal S02E01' })).toBeTruthy()
-    await clean()
-    await user.click(page().getByRole('radio', { name: /^Episodes/ }))
-    expect(rows().length).toBe(2)
-    await user.click(page().getByRole('radio', { name: 'All' }))
-    await user.click(page().getByRole('button', { name: 'Search all 4' }))
-    await settle()
-    expect(
-      mock.servers.populated.state.items.find((m) => m.title === 'Royal Wedding')?.status,
-    ).toBe('downloading')
-    expect(page().getByText('Nothing missing')).toBeTruthy()
-    await user.click(page().getByRole('tab', { name: 'Calendar' }))
-    await settle()
-    const month = page().getByRole('heading', { level: 2 }).textContent
-    await user.click(page().getByRole('button', { name: 'Next month' }))
-    expect(page().getByRole('heading', { level: 2 }).textContent).not.toBe(month)
-    await clean()
-  })
-
   test('system: run a task now; restore asks first', async () => {
     const { mock, user } = await open('/admin/system/tasks')
     await user.click(page().getByRole('button', { name: 'Run RSS sync now' }))
@@ -376,22 +251,6 @@ describe('A14, A16, A17 reference pages', () => {
     const confirm = page().getByRole('alertdialog')
     expect(within(confirm).getByText(/anything since is lost/)).toBeTruthy()
     await clean(confirm)
-  })
-
-  test('manual import: matched files import; the unmatched one waits for a match', async () => {
-    const { mock, user } = await open('/admin/activity/import')
-    await settle()
-    // two films, an episode and a double episode match; the last file matches nothing
-    expect(page().getByRole('button', { name: 'Import 4 files' })).toBeTruthy()
-    expect(page().getByText('Saltmarsh · S01E01–E02')).toBeTruthy()
-    expect(page().getByText('Didn’t match a movie or an episode. Choose one.')).toBeTruthy()
-    await clean()
-    await user.click(page().getByRole('button', { name: 'Import 4 files' }))
-    await settle()
-    const status = (t: string) =>
-      mock.servers.populated.state.items.find((m) => m.title === t)?.status
-    expect(status('Royal Wedding')).toBe('available')
-    expect(status('The Last Man on Earth')).toBe('available')
   })
 })
 

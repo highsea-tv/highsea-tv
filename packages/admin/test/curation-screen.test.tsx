@@ -13,6 +13,7 @@ mock.module('../src/navigation.tsx', () => ({
   useRouter: () => ({ push: (path: string) => pushed.push(path) }),
   usePathname: () => '/curation',
   useSearchParams: () => new URLSearchParams(),
+  useHref: () => (path: string) => path,
 }))
 mock.module('../src/shell.tsx', () => ({
   useShell: () => ({ role: 'owner' }),
@@ -29,6 +30,7 @@ const { default: userEvent } = await import('@testing-library/user-event')
 const { createClient } = await import('@highsea-tv/sdk')
 const { ClientProvider } = await import('@highsea-tv/sdk/react')
 const { TooltipProvider } = await import('@highsea-tv/ui')
+const { ThemeProvider, toast } = await import('@highsea-tv/ui/native')
 const { Curation } = await import('../src/curation.tsx')
 const { AnnouncementEditor } = await import('../src/curation-announcement.tsx')
 const { SectionEditor } = await import('../src/curation-section.tsx')
@@ -158,7 +160,10 @@ beforeEach(() => {
   pushed.length = 0
   state = { announcements: [ANNOUNCEMENT], sections: [SECTION], active: [], requests: [] }
 })
-afterEach(() => cleanup())
+afterEach(() => {
+  cleanup()
+  toast.clear()
+})
 
 const settle = (rounds = 6) =>
   act(async () => {
@@ -175,7 +180,9 @@ async function open(ui: ReactNode) {
   await act(async () => {
     render(
       <ClientProvider client={client}>
-        <TooltipProvider>{ui}</TooltipProvider>
+        <ThemeProvider>
+          <TooltipProvider>{ui}</TooltipProvider>
+        </ThemeProvider>
       </ClientProvider>,
     )
   })
@@ -207,7 +214,8 @@ describe('Curation', () => {
 
   test('the sections, in their home-screen order, with what each picks', async () => {
     const { page } = await open(<Curation tab="featured" />)
-    const list = within(page.getByRole('list', { name: 'Featured sections' }))
+    const list = within(page.getByRole('tabpanel', { name: 'Featured sections' }))
+    expect(list.getByRole('slider', { name: 'Move Staff picks' })).toBeTruthy()
     expect(list.getByText('Staff picks')).toBeTruthy()
     expect(list.getByText('by Ines')).toBeTruthy()
     expect(list.getByText(/Picked by hand/)).toBeTruthy()

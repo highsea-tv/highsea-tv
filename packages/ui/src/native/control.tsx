@@ -10,6 +10,7 @@ import {
   type AccessibilityRole,
   type AccessibilityState,
   type DimensionValue,
+  Platform,
   Text as RNText,
   type StyleProp,
   type TextStyle,
@@ -21,6 +22,18 @@ import type { ControlPoints } from './metrics.ts'
 import { AT_REST, Press, type PressState } from './press.tsx'
 import { fontScaleFor, MAX_FONT_MULTIPLIER, useTheme } from './theme.tsx'
 import { Focusable, type ViewHandle } from './tv/focusable.tsx'
+
+const WEB = Platform.OS === 'web'
+// the roles that take aria-selected (WAI-ARIA 1.2: gridcell, option, row, tab and the headers)
+const SELECTABLE: ReadonlySet<string> = new Set([
+  'tab',
+  'option',
+  'row',
+  'gridcell',
+  'columnheader',
+  'rowheader',
+  'treeitem',
+])
 
 export type ControlPressProps = {
   onPress?: () => void
@@ -47,6 +60,13 @@ export type ControlPressProps = {
    * state, so off the web it's the label's to say.
    */
   current?: 'page' | 'true'
+  /**
+   * An address it leads to: on the web the Pressable takes it and react-native-web draws an
+   * `<a href>` with the link role (https://necolas.github.io/react-native-web/docs/accessibility/),
+   * so it opens in a new tab with a modifier as any link does. Elsewhere it's ignored, and
+   * `onPress` is the way.
+   */
+  href?: string
   /** The drawn height, and the width when it's fixed, for touch's hit area. */
   slop?: { height: number; width?: number }
   /** The corner the TV's ring follows. */
@@ -89,6 +109,7 @@ export function ControlPress({
   state,
   hasPopup,
   current,
+  href,
   slop,
   radius,
   lift = 'button',
@@ -134,10 +155,11 @@ export function ControlPress({
       disabled={disabled}
       accessibilityLabel={accessibilityLabel}
       accessibilityHint={accessibilityHint}
-      role={role}
+      role={href && WEB ? 'link' : role}
       state={state}
       hasPopup={hasPopup}
       current={current}
+      {...(href && WEB ? ({ href } as object) : null)}
       slop={slop}
       haptic={haptic}
       testID={testID}
@@ -173,7 +195,9 @@ function PhonePress({
       // only these (its createDOMProps has no accessibilityState), so without them the web never
       // says a checkbox is checked or a tab selected
       {...ariaRole(role, state?.checked)}
-      aria-selected={state?.selected}
+      // ARIA allows aria-selected only on these roles (a radio says it with aria-checked alone),
+      // https://www.w3.org/TR/wai-aria-1.2/#aria-selected; React Native's own state keeps it
+      aria-selected={role && SELECTABLE.has(role) ? state?.selected : undefined}
       aria-busy={state?.busy}
       aria-expanded={state?.expanded}
       {...(hasPopup ? { 'aria-haspopup': hasPopup } : null)}
@@ -208,12 +232,15 @@ export function ControlText({
   color,
   lines,
   filled,
+  mono,
   style,
   children,
 }: {
   m: ControlPoints
   weight: number
   color: string
+  /** In the mono face (a select's release group or folder). */
+  mono?: boolean
   /** It's on an accent or danger fill (labelStyle). */
   filled?: boolean
   /** The TV keeps a label on one line; the phone lets it wrap at 200% text. */
@@ -227,7 +254,12 @@ export function ControlText({
     <RNText
       maxFontSizeMultiplier={MAX_FONT_MULTIPLIER}
       numberOfLines={lines ?? (tv ? 1 : undefined)}
-      style={[labelStyle(m, weight, fontScaleFor(theme), filled), { color }, style]}
+      style={[
+        labelStyle(m, weight, fontScaleFor(theme), filled),
+        { color },
+        mono ? { fontFamily: family(weight, 'mono') } : null,
+        style,
+      ]}
     >
       {children}
     </RNText>

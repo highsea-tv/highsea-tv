@@ -92,6 +92,13 @@ export type RowProps<T> = {
   /** A link or button at the end of the title (touch and a pointer). */
   action?: ReactNode
   /**
+   * A pointer: the title and items' inset from the row's edge, when it isn't the page's gutter
+   * (the admin's rows sit flush in their column, as ui-web's CarouselRow's `flush`, so 0).
+   */
+  inset?: number
+  /** A pointer and touch: the title is a link to this address (a movie's collection's page). */
+  titleHref?: string
+  /**
    * Each item's width in the form factor's unit: on touch, so a fling stops with an item on the
    * gutter; on the TV, when it isn't a poster's or a wide tile's, so it lands where it should.
    */
@@ -131,11 +138,18 @@ function TouchForm<T>({
   itemWidth,
   itemGap = posterGap,
   titleHidden,
+  titleHref,
 }: RowProps<T>) {
   return (
     <View style={{ gap: 10 }} role="group" accessibilityLabel={title}>
       {titleHidden ? null : (
-        <SectionHeading title={title} suffix={suffix} action={action} inset={phoneGutter} />
+        <SectionHeading
+          title={title}
+          href={titleHref}
+          suffix={suffix}
+          action={action}
+          inset={phoneGutter}
+        />
       )}
       <FlatList
         horizontal
@@ -167,8 +181,19 @@ const STEPS: Record<string, number> = {
 /** Marks a row's item for the keyboard's moves (react-native-web writes `dataSet` as data-*). */
 const ITEM = { dataSet: { rowItem: '' } } as object
 
-function PointerForm<T>({ title, suffix, items, keyOf, render, action, onMove }: RowProps<T>) {
-  const gutter = usePageGutter()
+function PointerForm<T>({
+  title,
+  suffix,
+  items,
+  keyOf,
+  render,
+  action,
+  inset,
+  titleHref,
+  onMove,
+}: RowProps<T>) {
+  const pageGutter = usePageGutter()
+  const gutter = inset ?? pageGutter
   const reduced = useMotionReduced()
   const scroller = useRef<ComponentRef<typeof ScrollView>>(null)
   const row = useRef<ComponentRef<typeof View>>(null)
@@ -213,7 +238,13 @@ function PointerForm<T>({ title, suffix, items, keyOf, render, action, onMove }:
         if (moved === 'moved') onMove?.()
       }}
     >
-      <SectionHeading title={title} suffix={suffix} action={action} inset={gutter} />
+      <SectionHeading
+        title={title}
+        href={titleHref}
+        suffix={suffix}
+        action={action}
+        inset={gutter}
+      />
       <View>
         <ScrollView
           ref={scroller}

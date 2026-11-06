@@ -47,7 +47,13 @@ mock.module('react-native-reanimated', () => ({
   withTiming: <T,>(value: T) => value,
 }))
 const none = () => null
-mock.module('react-native-svg', () => ({ default: none, Path: none, Circle: none, Rect: none }))
+mock.module('react-native-svg', () => ({
+  default: none,
+  G: none,
+  Path: none,
+  Circle: none,
+  Rect: none,
+}))
 // a Button's picture, which none of these has
 mock.module('expo-image', () => ({ Image: () => null }))
 mock.module('expo-haptics', () => ({ impactAsync: async () => {}, ImpactFeedbackStyle: {} }))

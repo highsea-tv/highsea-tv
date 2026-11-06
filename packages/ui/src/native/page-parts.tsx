@@ -4,7 +4,6 @@
 // at any: an action named by its icon, a person's round portrait with their role, and a card of
 // facts. Each takes data and callbacks only; the app routes and words them.
 import { breakpoints } from '@highsea-tv/tokens'
-import { Image } from 'expo-image'
 import { type ReactNode, type Ref, useState } from 'react'
 import { type AccessibilityState, StyleSheet, useWindowDimensions, View } from 'react-native'
 import Animated from 'react-native-reanimated'
@@ -13,6 +12,7 @@ import { ariaRole } from './aria.ts'
 import { Button } from './button.tsx'
 import { focusVisible } from './dom'
 import { Icon, type IconName } from './icon.tsx'
+import { Image } from './image.tsx'
 import { useLift } from './lift.ts'
 import { Press } from './press.tsx'
 import { PHONE_SECTION_TITLE } from './section-heading.tsx'
@@ -736,7 +736,7 @@ function TvFacts({
   )
   if (linked)
     return (
-      <View accessibilityLabel={title} style={{ flex: grow, minWidth: 0 }}>
+      <View role="group" accessibilityLabel={title} style={{ flex: grow, minWidth: 0 }}>
         {card(inside)}
       </View>
     )

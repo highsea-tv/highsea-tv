@@ -8,7 +8,7 @@
 // feeds Network and Queue; `subtitles` (checkpoint 7) feeds Subtitles. The rest show their empty
 // states from dashboard.md, which are true on a server without those things yet, and call no route
 // until their checkpoint adds it (Phase 3 plan › Widgets); so does each widget on a server without
-// its source.
+// its source. Drawn with the library's native renderer since D2 (one-client-platform-d.md).
 
 import {
   CURATION_TOPICS,
@@ -41,12 +41,11 @@ import { type Query, useQuery } from '@highsea-tv/sdk/react'
 import {
   Badge,
   Button,
-  cn,
   EmptyState,
-  type FrameProps,
   Icon,
   Poster,
-  Progress,
+  Press,
+  ProgressBar,
   Skeleton,
   SkeletonText,
   Sparkline,
@@ -58,15 +57,20 @@ import {
   TableHeader,
   TableRow,
   Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
+  Text,
   TitleCell,
+  TitleLink,
+  Tooltip,
+  tokens,
   useClip,
+  useTheme,
   useWidth,
+  type WidgetEditorFrameProps,
   WidgetFrame,
-} from '@highsea-tv/ui'
-import { type ReactNode, useState } from 'react'
+} from '@highsea-tv/ui/native'
+import type { ReactNode } from 'react'
+import { useState } from 'react'
+import { View, type ViewStyle } from 'react-native'
 import { widgets as messages } from './dashboard-messages.ts'
 import { behind, mbps, methodTone } from './delivery.ts'
 import { type QueueFilter, queueFilters, torrentTone } from './downloads-status.ts'
@@ -77,18 +81,27 @@ import { nowPlaying } from './now-playing-messages.ts'
 import { useNow } from './time.ts'
 
 export type WidgetProps = {
-  frame: FrameProps
+  frame: WidgetEditorFrameProps
   /** The placement's settings, filled from the widget's defaults by the server. */
   settings: Record<string, unknown>
   /** Header actions: Remove, in customize mode. */
   actions?: ReactNode
 }
 
+const s = tokens.space
+const ui = tokens.adminText.ui
+const figure = tokens.adminText.figure
+/** Inside a widget, the frame's padding (its rows reach the frame's edges in Queue). */
+const PAD = tokens.density.widgetPadding
+
 /** Disks change slowly and have no event: the widget asks again now and then. */
 const STORAGE_INTERVAL = 30_000
 
 /** What changes the movie widgets: the library, or one title in it. */
 const MOVIE_TOPICS = [MEDIA_TOPICS.movies, MEDIA_TOPICS.item]
+
+/** A list's rows, as react-native-web draws a `listitem` View (an `<li>`), for the clip. */
+const LIST_ROWS = ':scope > li, :scope > [role="listitem"]'
 
 /**
  * Whether this server has a source yet: `undefined` until public info answers. Every widget asks
@@ -103,6 +116,37 @@ const useMovieSource = () => useSource('movies')
 
 /** The day a release is out, as the Upcoming badges show it ("Fri 24"), on the local calendar. */
 const releaseDay = (day: string, locale: string) => shortDate(`${day}T12:00:00`, locale)
+
+/** Read and not seen (the web's `sr-only`), inside a line of text. */
+function Unseen({ children }: { children: string }) {
+  return (
+    <Text
+      style={
+        {
+          position: 'absolute',
+          width: 1,
+          height: 1,
+          margin: -1,
+          overflow: 'hidden',
+          clip: 'rect(0 0 0 0)',
+          whiteSpace: 'nowrap',
+        } as object
+      }
+    >
+      {children}
+    </Text>
+  )
+}
+
+/** The admin's ui type, 13. */
+function Ui(props: Omit<Parameters<typeof Text>[0], 'size' | 'leading'>) {
+  return <Text size={ui.size} leading={ui.leading} {...props} />
+}
+
+/** A figure in mono 12 (the admin's `figure`). */
+function Fig(props: Omit<Parameters<typeof Text>[0], 'size' | 'leading' | 'mono'>) {
+  return <Text size={figure.size} leading={figure.leading} mono color="text-3" {...props} />
+}
 
 /** A widget's frame, with its data's loading and error states handled. */
 function Widget<T>({
@@ -131,23 +175,25 @@ function Widget<T>({
       // while arranging, the header needs its room for the handle and Remove
       meta={query.status === 'success' && meta && !frame.editing ? meta(query.data) : undefined}
       actions={actions}
-      aria-label={title}
-      aria-busy={query.status === 'loading' || undefined}
     >
       {query.status === 'loading' ? (
-        (skeleton ?? (
-          <div className="grid gap-2.5">
-            <Skeleton className="h-6 w-24" />
-            <SkeletonText lines={2} />
-          </div>
-        ))
+        <View aria-busy style={{ gap: s['2'] + s['0.5'] }}>
+          {skeleton ?? (
+            <>
+              <Skeleton width={96} height={24} />
+              <SkeletonText lines={2} />
+            </>
+          )}
+        </View>
       ) : query.status === 'error' ? (
         <EmptyState
           size="sm"
           tone="error"
+          icon="alert"
+          level={4}
           title={t('error', { widget: title.toLocaleLowerCase(locale) })}
           action={
-            <Button size="sm" onClick={query.refetch}>
+            <Button size="sm" onPress={query.refetch}>
               {t('retry')}
             </Button>
           }
@@ -170,14 +216,12 @@ function Static({
   children,
 }: Omit<WidgetProps, 'settings'> & { kind: WidgetKind; meta?: ReactNode; children: ReactNode }) {
   const tw = useT(widgetMessages)
-  const title = tw(`${kind}.title`)
   return (
     <WidgetFrame
       {...frame}
-      title={title}
+      title={tw(`${kind}.title`)}
       meta={frame.editing ? undefined : meta}
       actions={actions}
-      aria-label={title}
     >
       {children}
     </WidgetFrame>
@@ -189,17 +233,43 @@ function More({ count, page, path }: { count: number; page: string; path: string
   const t = useT(messages)
   if (!count) return null
   return (
-    <a
-      href={path}
-      className="shrink-0 self-start text-caption text-text-3 hover:text-text hover:underline"
+    <Press
+      role="link"
+      {...({ href: path } as object)}
+      style={{ alignSelf: 'flex-start', flexShrink: 0, borderRadius: tokens.radius.sm }}
     >
-      {t('more', { count, page })}
-    </a>
+      {({ hovered }) => (
+        <Text
+          variant="caption"
+          color={hovered ? 'text' : 'text-3'}
+          style={hovered ? { textDecorationLine: 'underline' } : undefined}
+        >
+          {t('more', { count, page })}
+        </Text>
+      )}
+    </Press>
   )
 }
 
 /** The box a list fills and is clipped by. */
-const fill = 'min-h-0 flex-1 overflow-y-clip'
+const fill: ViewStyle = { minHeight: 0, flex: 1, overflow: 'hidden' }
+
+/** A health or release dot. */
+function Dot({ color, size = 6 }: { color: Parameters<typeof Icon>[0]['color']; size?: number }) {
+  const theme = useTheme()
+  return (
+    <View
+      aria-hidden
+      style={{
+        width: size,
+        height: size,
+        flexShrink: 0,
+        borderRadius: size / 2,
+        backgroundColor: theme.colors[color ?? 'text-3'],
+      }}
+    />
+  )
+}
 
 // ---------------------------------------------------------------- network
 
@@ -218,6 +288,39 @@ function Network(props: WidgetProps) {
   return <NetworkIdle {...props} />
 }
 
+/** The two rates side by side, wrapping when narrow; the upload's a little fainter. */
+function Rates({ down, up }: { down: ReactNode; up: ReactNode }) {
+  return (
+    <View
+      style={{
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        alignItems: 'baseline',
+        columnGap: s['6'],
+        rowGap: s['2'],
+      }}
+    >
+      {down}
+      <View style={{ opacity: 0.85 }}>{up}</View>
+    </View>
+  )
+}
+
+/** The graph fills what the widget has left below the rates, 48 at least. */
+function Graph({ up, down }: { up: number[]; down: number[] }) {
+  return (
+    <View style={{ flex: 1, minHeight: 48 }}>
+      <Sparkline
+        height={'100%' as unknown as number}
+        series={[
+          { values: up, color: 'text-3' },
+          { values: down, color: 'accent', fill: true },
+        ]}
+      />
+    </View>
+  )
+}
+
 /** Without downloads: the speeds at zero (dashboard.md › Network, no downloads). */
 function NetworkIdle(props: WidgetProps) {
   const t = useT(messages)
@@ -228,22 +331,11 @@ function NetworkIdle(props: WidgetProps) {
       kind="network"
       meta={t('network.meta', { minutes: networkMinutes(props.settings) })}
     >
-      <div className="flex flex-wrap items-baseline gap-x-6 gap-y-2">
-        <Stat value={zero} unit={t('network.down', { unit })} caption={t('network.none')} />
-        <Stat
-          value={zero}
-          unit={t('network.up', { unit })}
-          caption={t('network.seeding')}
-          className="opacity-85"
-        />
-      </div>
-      <Sparkline
-        className="h-auto min-h-12 flex-1"
-        series={[
-          { values: [0, 0], className: 'text-text-3' },
-          { values: [0, 0], className: 'text-accent', fill: true },
-        ]}
+      <Rates
+        down={<Stat value={zero} unit={t('network.down', { unit })} caption={t('network.none')} />}
+        up={<Stat value={zero} unit={t('network.up', { unit })} caption={t('network.seeding')} />}
       />
+      <Graph up={[0, 0]} down={[0, 0]} />
     </Static>
   )
 }
@@ -279,38 +371,31 @@ function NetworkLive(props: WidgetProps) {
         const shown = d.speeds.slice(-minutes * 60)
         return (
           <>
-            <div className="flex flex-wrap items-baseline gap-x-6 gap-y-2">
-              <Stat
-                value={down}
-                unit={t('network.down', { unit: downUnit })}
-                caption={
-                  vpnDown
-                    ? t('network.vpnDown')
-                    : d.active
-                      ? t('network.downloads', { count: d.active })
-                      : t('network.idle')
-                }
-              />
-              <Stat
-                value={up}
-                unit={t('network.up', { unit: upUnit })}
-                caption={t('network.seeding')}
-                className="opacity-85"
-              />
-            </div>
-            <Sparkline
-              className="h-auto min-h-12 flex-1"
-              series={[
-                {
-                  values: shown.length ? shown.map((s) => s.up) : [0, 0],
-                  className: 'text-text-3',
-                },
-                {
-                  values: shown.length ? shown.map((s) => s.down) : [0, 0],
-                  className: 'text-accent',
-                  fill: true,
-                },
-              ]}
+            <Rates
+              down={
+                <Stat
+                  value={down}
+                  unit={t('network.down', { unit: downUnit })}
+                  caption={
+                    vpnDown
+                      ? t('network.vpnDown')
+                      : d.active
+                        ? t('network.downloads', { count: d.active })
+                        : t('network.idle')
+                  }
+                />
+              }
+              up={
+                <Stat
+                  value={up}
+                  unit={t('network.up', { unit: upUnit })}
+                  caption={t('network.seeding')}
+                />
+              }
+            />
+            <Graph
+              up={shown.length ? shown.map((x) => x.up) : [0, 0]}
+              down={shown.length ? shown.map((x) => x.down) : [0, 0]}
             />
           </>
         )
@@ -337,6 +422,7 @@ function StorageWithFolders(props: WidgetProps) {
 
 function StorageOf({ folders, ...props }: WidgetProps & { folders: RootFolder[] }) {
   const t = useT(messages)
+  const theme = useTheme()
   const query = useQuery('widget:storage', (c) => c.system.status(), [], {
     interval: STORAGE_INTERVAL,
   })
@@ -348,61 +434,95 @@ function StorageOf({ folders, ...props }: WidgetProps & { folders: RootFolder[] 
       kind="storage"
       query={query}
       // a long data path truncates rather than pushing the title out (the prototype's is /data)
-      meta={(s) =>
-        s.disks[0] && (
-          <span title={s.disks[0].path} className="block max-w-[10rem] truncate">
-            {s.disks[0].path}
-          </span>
+      meta={(st) =>
+        st.disks[0] && (
+          <Tooltip content={st.disks[0].path}>
+            <Text
+              size={12}
+              leading={1.4}
+              color="text-3"
+              numberOfLines={1}
+              style={{ maxWidth: 160 }}
+            >
+              {st.disks[0].path}
+            </Text>
+          </Tooltip>
         )
       }
     >
-      {(s) => {
-        const disk = s.disks[0]
-        if (!disk) return <EmptyState size="sm" title={t('storage.none')} />
+      {(st) => {
+        const disk = st.disks[0]
+        if (!disk) return <EmptyState size="sm" icon="inbox" level={4} title={t('storage.none')} />
         const [free, unit] = bytesParts(disk.free)
         // the space files take arrives with importing (checkpoint 6): until then one bar for all
         // of it, and the root folders on the disk with how many movies each holds
         const used = Math.max(0, disk.total - disk.free)
         const here = foldersOnDisk(folders, disk)
+        const item: ViewStyle = { flexDirection: 'row', alignItems: 'center', gap: 6 }
         return (
           <>
             <Stat value={free} unit={t('storage.free', { unit, total: bytes(disk.total) })} />
-            <div
+            <View
               role="img"
               aria-label={t('storage.bar', { percent: percent(used / Math.max(1, disk.total)) })}
-              className="flex h-2 overflow-hidden rounded-full bg-s3"
+              style={{
+                flexDirection: 'row',
+                height: 8,
+                overflow: 'hidden',
+                borderRadius: tokens.radius.pill,
+                backgroundColor: theme.colors.s3,
+              }}
             >
-              <span
-                className="bg-accent"
-                style={{ width: `${(used / Math.max(1, disk.total)) * 100}%` }}
+              <View
+                style={{
+                  width: `${(used / Math.max(1, disk.total)) * 100}%`,
+                  backgroundColor: theme.colors.accent,
+                }}
               />
-            </div>
-            <ul
-              className={cn(
-                'text-caption text-text-2',
-                tall ? 'grid gap-1.5' : 'flex flex-wrap gap-x-3 gap-y-1',
-              )}
+            </View>
+            <View
+              role="list"
+              style={
+                tall
+                  ? { gap: 6 }
+                  : { flexDirection: 'row', flexWrap: 'wrap', columnGap: s['3'], rowGap: s['1'] }
+              }
             >
-              <li className="flex items-center gap-1.5">
-                <span aria-hidden className="size-2 shrink-0 rounded-[2px] bg-accent" />
-                <span className={cn(tall && 'flex-1')}>{t('storage.used')}</span>{' '}
-                <span className="font-mono text-text-3">{bytes(used)}</span>
-              </li>
+              <View role="listitem" style={item}>
+                <View
+                  aria-hidden
+                  style={{
+                    width: 8,
+                    height: 8,
+                    borderRadius: 2,
+                    backgroundColor: theme.colors.accent,
+                  }}
+                />
+                <Text variant="caption" color="text-2" style={tall ? { flex: 1 } : undefined}>
+                  {t('storage.used')}
+                </Text>
+                <Text variant="caption" mono color="text-3">
+                  {bytes(used)}
+                </Text>
+              </View>
               {here.map((f) => (
-                <li key={f.id} className="flex min-w-0 items-center gap-1.5">
-                  <Icon name="folder" size={12} className="shrink-0 text-text-3" />
-                  <span
-                    className={cn('min-w-0 truncate font-mono', tall && 'flex-1')}
-                    title={f.path}
+                <View key={f.id} role="listitem" style={[item, { minWidth: 0 }]}>
+                  <Icon name="folder" size={12} color="text-3" />
+                  <Text
+                    variant="caption"
+                    mono
+                    color="text-2"
+                    numberOfLines={1}
+                    style={{ minWidth: 0, flexShrink: 1, flexGrow: tall ? 1 : 0 }}
                   >
                     {f.path}
-                  </span>{' '}
-                  <span className="shrink-0 text-text-3">
+                  </Text>
+                  <Text variant="caption" color="text-3" style={{ flexShrink: 0 }}>
                     {t('storage.movies', { count: f.movies })}
-                  </span>
-                </li>
+                  </Text>
+                </View>
               ))}
-            </ul>
+            </View>
           </>
         )
       }}
@@ -419,9 +539,10 @@ function NoIndexers() {
     <EmptyState
       size="sm"
       icon="indexer"
+      level={4}
       title={t('indexers.none')}
       action={
-        <Button size="sm" variant="primary" onClick={() => router.push('/indexers')}>
+        <Button size="sm" variant="primary" onPress={() => router.push('/indexers')}>
           {t('indexers.add')}
         </Button>
       }
@@ -442,10 +563,10 @@ function Indexers(props: WidgetProps) {
 }
 
 const healthDot = {
-  healthy: 'bg-success',
-  backoff: 'bg-warning',
-  failing: 'bg-danger',
-  disabled: 'bg-text-3',
+  healthy: 'success',
+  backoff: 'warning',
+  failing: 'danger',
+  disabled: 'text-3',
 } as const
 
 /** Installed indexers with their health; a health change or a search updates it (ADR 0035). */
@@ -458,7 +579,7 @@ function IndexerList(props: WidgetProps) {
     INDEXER_TOPICS.health,
   ])
   const wide = props.frame.span !== 1
-  const clip = useClip<HTMLUListElement>(':scope > li')
+  const clip = useClip(LIST_ROWS)
   return (
     <Widget
       {...props}
@@ -478,40 +599,35 @@ function IndexerList(props: WidgetProps) {
           <NoIndexers />
         ) : (
           <>
-            <ul ref={clip.ref} className={cn('grid content-start gap-1.5 text-ui', fill)}>
+            <View ref={clip.ref} role="list" style={[{ gap: 6 }, fill]}>
               {xs.map((x) => {
                 const left = x.backoffUntil ? (Date.parse(x.backoffUntil) - now) / 1000 : 0
                 return (
-                  <li key={x.id} className="flex min-w-0 items-center gap-2">
-                    <span
-                      aria-hidden
-                      className={cn('size-1.5 shrink-0 rounded-full', healthDot[x.health])}
-                    />
-                    <span className="min-w-0 flex-1 truncate text-text">
+                  <View
+                    key={x.id}
+                    role="listitem"
+                    style={{ flexDirection: 'row', alignItems: 'center', gap: s['2'], minWidth: 0 }}
+                  >
+                    <Dot color={healthDot[x.health]} />
+                    <Ui numberOfLines={1} style={{ flex: 1, minWidth: 0 }}>
                       {x.name}
-                      <span className="sr-only">: {t(`indexers.${x.health}`)}</span>
-                    </span>
-                    {wide && (
-                      <span className="font-mono text-figure text-text-3">
-                        {t('indexers.grabs', { count: x.stats.grabs24h })}
-                      </span>
-                    )}
-                    <span
-                      className={cn(
-                        'shrink-0 font-mono text-figure',
-                        x.health === 'backoff' ? 'text-warning' : 'text-text-3',
-                      )}
+                      <Unseen>{`: ${t(`indexers.${x.health}`)}`}</Unseen>
+                    </Ui>
+                    {wide ? <Fig>{t('indexers.grabs', { count: x.stats.grabs24h })}</Fig> : null}
+                    <Fig
+                      color={x.health === 'backoff' ? 'warning' : 'text-3'}
+                      style={{ flexShrink: 0 }}
                     >
                       {x.health === 'backoff'
                         ? t('indexers.retry', { in: duration(left, locale) })
                         : x.stats.avgResponseMs === null
                           ? t('indexers.noQueries')
                           : t('indexers.ms', { ms: Math.round(x.stats.avgResponseMs) })}
-                    </span>
-                  </li>
+                    </Fig>
+                  </View>
                 )
               })}
-            </ul>
+            </View>
             <More count={clip.hidden} page={t('page.indexers')} path="/indexers" />
           </>
         )
@@ -531,7 +647,7 @@ function Subtitles(props: WidgetProps) {
       {source === undefined ? (
         <SkeletonText lines={3} />
       ) : (
-        <EmptyState size="sm" icon="subtitles" title={t('subtitles.none')}>
+        <EmptyState size="sm" icon="subtitles" level={4} title={t('subtitles.none')}>
           {t('subtitles.noneBody')}
         </EmptyState>
       )}
@@ -547,29 +663,30 @@ function SubtitleStats(props: WidgetProps) {
   ])
   return (
     <Widget {...props} kind="subtitles" query={query} meta={() => t('subtitles.meta')}>
-      {(s) =>
-        s.syncedToday === 0 && s.waiting === 0 ? (
-          <EmptyState size="sm" icon="subtitles" title={t('subtitles.none')}>
+      {(st) =>
+        st.syncedToday === 0 && st.waiting === 0 ? (
+          <EmptyState size="sm" icon="subtitles" level={4} title={t('subtitles.none')}>
             {t('subtitles.noneBody')}
           </EmptyState>
         ) : (
           <>
             <Stat
-              value={s.syncedToday}
+              value={String(st.syncedToday)}
               unit={t('subtitles.synced')}
-              caption={t('subtitles.waiting', { count: s.waiting })}
+              caption={t('subtitles.waiting', { count: st.waiting })}
             />
-            <Progress
-              value={(s.syncedToday / Math.max(1, s.syncedToday + s.waiting)) * 100}
+            <ProgressBar
+              look="panel"
+              value={(st.syncedToday / Math.max(1, st.syncedToday + st.waiting)) * 100}
               tone="success"
-              aria-label={t('subtitles.progress')}
+              label={t('subtitles.progress')}
             />
-            <p className="text-caption text-text-3">
+            <Text variant="caption" color="text-3">
               {t('subtitles.average', {
-                offset: (s.avgOffsetMs / 1000).toFixed(2),
-                confidence: s.avgConfidence.toFixed(2),
+                offset: (st.avgOffsetMs / 1000).toFixed(2),
+                confidence: st.avgConfidence.toFixed(2),
               })}
-            </p>
+            </Text>
           </>
         )
       }
@@ -592,7 +709,7 @@ function Upcoming(props: WidgetProps) {
       {movies === undefined ? (
         <SkeletonText lines={3} />
       ) : (
-        <EmptyState size="sm" icon="calendar" title={t('upcoming.none', { days })}>
+        <EmptyState size="sm" icon="calendar" level={4} title={t('upcoming.none', { days })}>
           {t('upcoming.noneBody')}
         </EmptyState>
       )}
@@ -609,38 +726,42 @@ function UpcomingMovies(props: WidgetProps) {
     (c) => c.movies.upcoming({ query: { days } }),
     MOVIE_TOPICS,
   )
-  const clip = useClip<HTMLUListElement>(':scope > li')
+  const clip = useClip(LIST_ROWS)
   return (
     <Widget {...props} kind="upcoming" query={query} meta={() => t('upcoming.meta', { days })}>
       {(xs) =>
         xs.length === 0 ? (
-          <EmptyState size="sm" icon="calendar" title={t('upcoming.none', { days })}>
+          <EmptyState size="sm" icon="calendar" level={4} title={t('upcoming.none', { days })}>
             {t('upcoming.noneBody')}
           </EmptyState>
         ) : (
           <>
-            <ul ref={clip.ref} className={cn('grid content-start gap-2 text-ui', fill)}>
+            <View ref={clip.ref} role="list" style={[{ gap: s['2'] }, fill]}>
               {xs.map((m, i) => (
-                <li key={m.id} className="flex min-w-0 items-center gap-2.5">
-                  <Badge
-                    dot={false}
-                    tone={i === 0 ? 'accent' : 'neutral'}
-                    className="w-16 justify-center"
-                  >
-                    {m.releaseDate ? releaseDay(m.releaseDate, locale) : '–'}
-                  </Badge>
-                  <a
-                    href={`/movies/${m.id}`}
-                    className="min-w-0 flex-1 truncate text-text hover:underline"
-                  >
-                    {m.title}
-                  </a>
-                  <span className="shrink-0 text-caption text-text-3">
+                <View
+                  key={m.id}
+                  role="listitem"
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: s['2'] + s['0.5'],
+                    minWidth: 0,
+                  }}
+                >
+                  <View style={{ width: 64, alignItems: 'center' }}>
+                    <Badge dot={false} tone={i === 0 ? 'accent' : 'neutral'}>
+                      {m.releaseDate ? releaseDay(m.releaseDate, locale) : '–'}
+                    </Badge>
+                  </View>
+                  <View style={{ flex: 1, minWidth: 0, flexDirection: 'row' }}>
+                    <TitleLink href={`/movies/${m.id}`}>{m.title}</TitleLink>
+                  </View>
+                  <Text variant="caption" color="text-3" style={{ flexShrink: 0 }}>
                     {m.versions.map((v) => v.label).join(' + ')}
-                  </span>
-                </li>
+                  </Text>
+                </View>
               ))}
-            </ul>
+            </View>
             {/* the rest of what's coming is the calendar's, not the library's (prototype-gaps.md, stage 5) */}
             <More count={clip.hidden} page={t('page.calendar')} path="/wanted/calendar" />
           </>
@@ -653,7 +774,7 @@ function UpcomingMovies(props: WidgetProps) {
 // ---------------------------------------------------------------- announcement
 
 // two rows hold the title and details; taller widgets show the message too
-const bodyLines: Record<number, string | undefined> = { 3: 'line-clamp-3', 4: 'line-clamp-7' }
+const bodyLines: Record<number, number | undefined> = { 3: 3, 4: 7 }
 
 /** The first live announcement, as the prototype shows it (checkpoint 8c): what it says and where. */
 function Announcement(props: WidgetProps) {
@@ -673,9 +794,10 @@ function NoAnnouncement() {
     <EmptyState
       size="sm"
       icon="announcement"
+      level={4}
       title={t('announcement.none')}
       action={
-        <Button size="sm" onClick={() => router.push('/curation')}>
+        <Button size="sm" onPress={() => router.push('/curation')}>
           {t('announcement.write')}
         </Button>
       }
@@ -710,20 +832,25 @@ function LiveAnnouncement(props: WidgetProps) {
         const audience =
           a.audience.kind === 'everyone' ? t('announcement.everyone') : t('announcement.some')
         return (
-          <div className="grid content-start gap-1">
-            <p className="font-semibold text-text text-ui">{a.title}</p>
-            <p className="text-caption text-text-3">
-              {audience} · {a.placements.join(' + ')}
+          <View style={{ gap: s['1'] }}>
+            <Ui weight={600}>{a.title}</Ui>
+            <Text variant="caption" color="text-3">
+              {`${audience} · ${a.placements.join(' + ')}`}
               {a.schedule.end
                 ? ` · ${t('announcement.until', { when: until.format(new Date(a.schedule.end)) })}`
                 : ''}
-            </p>
-            {body && (
-              <p className={cn('mt-1 text-caption text-text-2', body)}>
+            </Text>
+            {body ? (
+              <Text
+                variant="caption"
+                color="text-2"
+                numberOfLines={body}
+                style={{ marginTop: s['1'] }}
+              >
                 {a.body.replaceAll('**', '')}
-              </p>
-            )}
-          </div>
+              </Text>
+            ) : null}
+          </View>
         )
       }}
     </Widget>
@@ -735,6 +862,9 @@ function LiveAnnouncement(props: WidgetProps) {
 /** What changes the Queue: a grab, an import or a removal, and each torrent's progress. */
 const QUEUE_TOPICS = [DOWNLOAD_TOPICS.queue, DOWNLOAD_TOPICS.torrents]
 
+/** The Queue's rows, in either layout, for the clip: a table's body rows, or a list's items. */
+const QUEUE_ROWS = '[data-testid="queue-row"], li, [role="listitem"]'
+
 function Queue(props: WidgetProps) {
   const t = useT(messages)
   const source = useSource('downloads')
@@ -744,7 +874,7 @@ function Queue(props: WidgetProps) {
       {source === undefined ? (
         <SkeletonText lines={3} />
       ) : (
-        <EmptyState size="sm" icon="downloads" title={t('activity.none')}>
+        <EmptyState size="sm" icon="downloads" level={4} title={t('activity.none')}>
           {t('activity.noneBody')}
         </EmptyState>
       )}
@@ -755,14 +885,16 @@ function Queue(props: WidgetProps) {
 const queueFilter = (settings: Record<string, unknown>): QueueFilter =>
   widgetDefinition('activity').settings.parse(settings).filter as QueueFilter
 
+const FILTERS = ['all', 'downloading', 'seeding', 'issues'] as const
+
 /** The prototype's Queue: the filter tabs with counts, then rows laid out for the width. */
 function QueueLive(props: WidgetProps) {
   const t = useT(messages)
   const query = useQuery('widget:activity', (c) => c.queue.list(), QUEUE_TOPICS)
   const [filter, setFilter] = useState<QueueFilter>(() => queueFilter(props.settings))
-  const { ref: body, width } = useWidth<HTMLDivElement>()
+  const { onLayout, width } = useWidth()
   const layout = width >= 760 ? 'table' : width >= 520 ? 'mid' : 'stacked'
-  const clip = useClip<HTMLDivElement>('tbody > tr, ul > li')
+  const clip = useClip(QUEUE_ROWS)
   return (
     <Widget
       {...props}
@@ -772,57 +904,59 @@ function QueueLive(props: WidgetProps) {
         xs.length
           ? t('activity.meta', {
               count: xs.length,
-              rate: rate(xs.reduce((s, q) => s + q.downRate, 0)),
+              rate: rate(xs.reduce((sum, q) => sum + q.downRate, 0)),
             })
           : null
       }
       skeleton={
-        <div className="grid gap-3">
-          <Skeleton className="h-7 w-64" />
+        <View style={{ gap: s['3'] }}>
+          <Skeleton width={256} height={28} />
           {[0, 1, 2].map((i) => (
-            <Skeleton key={i} className="h-10" />
+            <Skeleton key={i} height={40} />
           ))}
-        </div>
+        </View>
       }
     >
       {(xs) => {
         if (xs.length === 0)
           return (
-            <EmptyState size="sm" icon="downloads" title={t('activity.none')}>
+            <EmptyState size="sm" icon="downloads" level={4} title={t('activity.none')}>
               {t('activity.noneBody')}
             </EmptyState>
           )
         const count = (f: QueueFilter) => xs.filter((q) => queueFilters[f](q.state)).length
         const shown = xs.filter((q) => queueFilters[filter](q.state))
         return (
-          <div ref={body} className="flex min-h-0 min-w-0 flex-1 flex-col gap-2">
-            <Tabs
-              value={filter}
-              onValueChange={(v) => setFilter(v as QueueFilter)}
-              className="flex min-h-0 min-w-0 flex-1 flex-col gap-2"
-            >
-              <TabsList
+          <View onLayout={onLayout} style={{ flex: 1, minHeight: 0, minWidth: 0, gap: s['2'] }}>
+            <View style={{ maxWidth: '100%', alignSelf: 'flex-start', overflow: 'hidden' }}>
+              <Tabs
                 aria-label={t('activity.filter')}
-                className="max-w-full justify-self-start overflow-x-auto"
-              >
-                {(['all', 'downloading', 'seeding', 'issues'] as const).map((f) => (
-                  <TabsTrigger key={f} value={f} count={count(f)}>
-                    {t(`activity.${f}`)}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-              <TabsContent ref={clip.ref} value={filter} className={cn('min-w-0', fill)}>
-                {shown.length ? (
-                  <QueueRows items={shown} layout={layout} />
-                ) : (
-                  <p className="py-4 text-center text-caption text-text-3">
-                    {t('activity.nothing')}
-                  </p>
-                )}
-              </TabsContent>
-            </Tabs>
+                size="sm"
+                value={filter}
+                onValueChange={(v) => setFilter(v as QueueFilter)}
+                options={FILTERS.map((f) => ({
+                  value: f,
+                  label: t(`activity.${f}`),
+                  count: count(f),
+                }))}
+              />
+            </View>
+            <View ref={clip.ref} role="tabpanel" style={[{ minWidth: 0 }, fill]}>
+              {shown.length ? (
+                <QueueRows items={shown} layout={layout} />
+              ) : (
+                <Text
+                  variant="caption"
+                  color="text-3"
+                  align="center"
+                  style={{ paddingVertical: s['4'] }}
+                >
+                  {t('activity.nothing')}
+                </Text>
+              )}
+            </View>
             <More count={clip.hidden} page={t('page.activity')} path="/activity" />
-          </div>
+          </View>
         )
       }}
     </Widget>
@@ -832,81 +966,100 @@ function QueueLive(props: WidgetProps) {
 function QueueRows({ items, layout }: { items: QueueItem[]; layout: 'table' | 'mid' | 'stacked' }) {
   const t = useT(messages)
   const ts = useT(torrentState)
+  const theme = useTheme()
   const locale = useLocale()
   const dash = t('activity.unknown')
   if (layout === 'stacked')
     return (
-      <ul className="-mx-(--size-widget-padding) grid">
+      <View role="list" style={{ marginHorizontal: -PAD }}>
         {items.map((q) => {
-          const s = torrentTone[q.state]
+          const st = torrentTone[q.state]
           return (
-            <li
+            <View
               key={q.id}
-              className="grid gap-1.5 border-line border-t px-(--size-widget-padding) py-2.5"
+              role="listitem"
+              style={{
+                gap: 6,
+                borderTopWidth: 1,
+                borderTopColor: theme.colors.line,
+                paddingHorizontal: PAD,
+                paddingVertical: s['2'] + s['0.5'],
+              }}
             >
-              <div className="flex min-w-0 items-center gap-2">
-                <span className="min-w-0 flex-1 truncate text-text text-ui">{q.title}</span>
-                <Badge tone={s.tone}>{ts(q.state)}</Badge>
-              </div>
-              <Progress
+              <View
+                style={{ flexDirection: 'row', alignItems: 'center', gap: s['2'], minWidth: 0 }}
+              >
+                <Ui numberOfLines={1} style={{ flex: 1, minWidth: 0 }}>
+                  {q.title}
+                </Ui>
+                <Badge tone={st.tone}>{ts(q.state)}</Badge>
+              </View>
+              <ProgressBar
+                look="panel"
                 value={q.progress * 100}
-                tone={s.bar}
+                tone={st.bar}
                 showValue
-                aria-label={t('activity.progressOf', { title: q.title })}
+                label={t('activity.progressOf', { title: q.title })}
               />
-              <p className="truncate font-mono text-figure text-text-3">
+              <Fig numberOfLines={1}>
                 {q.state === 'downloading'
                   ? `${rate(q.downRate)} · ${q.eta ? t('activity.left', { duration: duration(q.eta, locale) }) : dash}`
                   : (q.stateReason ?? bytes(q.size))}
-              </p>
-            </li>
+              </Fig>
+            </View>
           )
         })}
-      </ul>
+      </View>
     )
   const full = layout === 'table'
   return (
-    <div className="relative -mx-(--size-widget-padding) overflow-x-auto">
+    <View style={{ marginHorizontal: -PAD }}>
       <Table>
         <TableHeader>
           <TableRow>
             <TableHead>{t('activity.title')}</TableHead>
-            {full && <TableHead numeric>{t('activity.size')}</TableHead>}
+            {full ? <TableHead numeric>{t('activity.size')}</TableHead> : null}
             <TableHead>{t('activity.progress')}</TableHead>
             <TableHead numeric>{t('activity.down')}</TableHead>
-            {full && <TableHead numeric>{t('activity.up')}</TableHead>}
+            {full ? <TableHead numeric>{t('activity.up')}</TableHead> : null}
             <TableHead numeric>{t('activity.eta')}</TableHead>
             <TableHead>{t('activity.status')}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {items.map((q) => {
-            const s = torrentTone[q.state]
+            const st = torrentTone[q.state]
             return (
-              <TableRow key={q.id} title={q.stateReason ?? undefined}>
-                <TitleCell
-                  title={
-                    q.movieId ? (
-                      <a href={`/movies/${q.movieId}`} className="hover:underline">
-                        {q.title}
-                      </a>
-                    ) : (
-                      q.title
-                    )
-                  }
-                  detail={q.release}
-                />
-                {full && <TableCell numeric>{bytes(q.size)}</TableCell>}
-                <TableCell className="w-40">
-                  <Progress
-                    value={q.progress * 100}
-                    tone={s.bar}
-                    showValue
-                    aria-label={t('activity.progressOf', { title: q.title })}
-                  />
+              <TableRow key={q.id} testID="queue-row">
+                <TableCell tall>
+                  {/* the reason a torrent is held is its tooltip, as the web's row title */}
+                  <Tooltip content={q.stateReason ?? ''} disabled={!q.stateReason}>
+                    <TitleCell
+                      title={
+                        q.movieId ? (
+                          <TitleLink href={`/movies/${q.movieId}`}>{q.title}</TitleLink>
+                        ) : (
+                          q.title
+                        )
+                      }
+                      detail={q.release}
+                    />
+                  </Tooltip>
+                </TableCell>
+                {full ? <TableCell numeric>{bytes(q.size)}</TableCell> : null}
+                <TableCell>
+                  <View style={{ width: 160 }}>
+                    <ProgressBar
+                      look="panel"
+                      value={q.progress * 100}
+                      tone={st.bar}
+                      showValue
+                      label={t('activity.progressOf', { title: q.title })}
+                    />
+                  </View>
                 </TableCell>
                 <TableCell numeric>{q.downRate ? rate(q.downRate) : dash}</TableCell>
-                {full && <TableCell numeric>{q.upRate ? rate(q.upRate) : dash}</TableCell>}
+                {full ? <TableCell numeric>{q.upRate ? rate(q.upRate) : dash}</TableCell> : null}
                 <TableCell numeric>
                   {q.state === 'downloading' && q.eta
                     ? duration(q.eta, locale)
@@ -915,26 +1068,30 @@ function QueueRows({ items, layout }: { items: QueueItem[]; layout: 'table' | 'm
                       : dash}
                 </TableCell>
                 <TableCell>
-                  <Badge tone={s.tone}>{ts(q.state)}</Badge>
+                  <Badge tone={st.tone}>{ts(q.state)}</Badge>
                 </TableCell>
               </TableRow>
             )
           })}
         </TableBody>
       </Table>
-    </div>
+    </View>
   )
 }
 
 // ---------------------------------------------------------------- recently added
 
-const posterSkeleton = (
-  <div className="grid grid-cols-4 gap-3">
-    {[0, 1, 2, 3].map((i) => (
-      <Skeleton key={i} className="aspect-poster rounded-poster" />
-    ))}
-  </div>
-)
+function PosterSkeletonRow() {
+  return (
+    <View style={{ flexDirection: 'row', gap: s['3'] }}>
+      {[0, 1, 2, 3].map((i) => (
+        <View key={i} style={{ flex: 1, aspectRatio: 2 / 3 }}>
+          <Skeleton height="100%" radius={tokens.radius.poster} />
+        </View>
+      ))}
+    </View>
+  )
+}
 
 function RecentlyAdded(props: WidgetProps) {
   const t = useT(messages)
@@ -943,9 +1100,9 @@ function RecentlyAdded(props: WidgetProps) {
   return (
     <Static {...props} kind="recently-added">
       {movies === undefined ? (
-        posterSkeleton
+        <PosterSkeletonRow />
       ) : (
-        <EmptyState size="sm" icon="movie" title={t('recent.none')}>
+        <EmptyState size="sm" icon="movie" level={4} title={t('recent.none')}>
           {t('recent.noneBody')}
         </EmptyState>
       )}
@@ -963,37 +1120,46 @@ function RecentMovies(props: WidgetProps) {
     (c) => c.movies.recent({ query: { limit: RECENT_LIMIT } }),
     MOVIE_TOPICS,
   )
-  const { ref: row, width } = useWidth<HTMLDivElement>()
+  const { onLayout, width } = useWidth()
   const columns = Math.max(2, Math.min(8, Math.floor((width + 12) / 112)))
   // as many rows of posters as fit the height; a cut-off row is hidden
-  const clip = useClip<HTMLUListElement>(':scope > li')
+  const clip = useClip(LIST_ROWS)
   return (
-    <Widget {...props} kind="recently-added" query={query} skeleton={posterSkeleton}>
+    <Widget {...props} kind="recently-added" query={query} skeleton={<PosterSkeletonRow />}>
       {(xs: Movie[]) =>
         xs.length === 0 ? (
-          <EmptyState size="sm" icon="movie" title={t('recent.none')}>
+          <EmptyState size="sm" icon="movie" level={4} title={t('recent.none')}>
             {t('recent.addedBody')}
           </EmptyState>
         ) : (
-          <div ref={row} className="flex min-h-0 flex-1 flex-col">
-            <ul
+          <View onLayout={onLayout} style={{ flex: 1, minHeight: 0 }}>
+            <View
               ref={clip.ref}
-              className={cn('grid content-start gap-3', fill)}
-              style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}
+              role="list"
+              style={[
+                {
+                  display: 'grid',
+                  gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
+                  alignContent: 'start',
+                  gap: s['3'],
+                } as unknown as ViewStyle,
+                fill,
+              ]}
             >
               {xs.slice(0, columns * 4).map((m) => (
-                <li key={m.id}>
+                <View key={m.id} role="listitem">
                   <Poster
                     title={m.title}
                     src={m.art.poster ?? undefined}
                     href={`/movies/${m.id}`}
                     showTitle
-                    caption={m.year ?? undefined}
+                    titleSize="ui"
+                    caption={m.year ? String(m.year) : undefined}
                   />
-                </li>
+                </View>
               ))}
-            </ul>
-          </div>
+            </View>
+          </View>
         )
       }
     </Widget>
@@ -1024,6 +1190,7 @@ function CalendarMovies(props: WidgetProps) {
 /** The month, with each day that has a release marked; without `releases`, a month with none. */
 function CalendarOf({ releases, ...props }: WidgetProps & { releases?: Movie[] }) {
   const t = useT(messages)
+  const theme = useTheme()
   const locale = useLocale()
   const now = useNow()
   const today = new Date(now)
@@ -1034,63 +1201,77 @@ function CalendarOf({ releases, ...props }: WidgetProps & { releases?: Movie[] }
   // the date each row starts on (zero or less is last month's tail)
   const weeks = Array.from({ length: Math.ceil((lead + days) / 7) }, (_, i) => i * 7 - lead + 1)
   const byDay = releasesByDay(releases ?? [], today.getFullYear(), today.getMonth())
+  // the table's cells, 2 apart (the web's border-spacing-0.5)
+  const row: ViewStyle = { flexDirection: 'row', gap: 2 }
   return (
     <Static {...props} kind="calendar" meta={month}>
-      <div className="flex min-h-0 flex-1 flex-col gap-2">
-        <table className="h-full w-full table-fixed border-separate border-spacing-0.5 text-center">
-          <caption className="sr-only">{t('calendar.caption', { month })}</caption>
-          <thead>
-            <tr>
-              {WEEKDAYS.map((d) => (
-                <th
-                  key={d}
-                  scope="col"
-                  className="py-1 font-mono font-normal text-label text-text-3"
-                >
+      <View style={{ flex: 1, minHeight: 0, gap: s['2'] }}>
+        <View
+          role="table"
+          aria-label={t('calendar.caption', { month })}
+          style={{ flex: 1, minHeight: 0, gap: 2 }}
+        >
+          <View role="row" style={row}>
+            {WEEKDAYS.map((d) => (
+              <View
+                key={d}
+                role="columnheader"
+                style={{ flex: 1, flexBasis: 0, paddingVertical: s['1'] }}
+              >
+                <Text variant="label" color="text-3" align="center">
                   {t(`calendar.${d}`)}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {weeks.map((start) => (
-              <tr key={start}>
-                {WEEKDAYS.map((d, i) => {
-                  const day = start + i
-                  const valid = day >= 1 && day <= days
-                  const titles = valid ? byDay.get(day) : undefined
-                  return (
-                    <td
-                      key={d}
-                      aria-current={valid && day === today.getDate() ? 'date' : undefined}
-                      className={cn(
-                        'relative h-7 rounded-[6px] p-0 align-middle font-mono text-figure',
-                        !valid && 'invisible',
-                        day === today.getDate() ? 'bg-s3 text-text' : 'text-text-2',
-                        titles && 'font-semibold text-accent-text',
-                      )}
-                    >
-                      {valid ? day : ''}
-                      {titles && (
-                        <>
-                          <span className="sr-only">: {titles.join(', ')}</span>
-                          <span
-                            aria-hidden
-                            className="-translate-x-1/2 absolute start-1/2 bottom-0.5 size-1 rounded-full bg-accent"
-                          />
-                        </>
-                      )}
-                    </td>
-                  )
-                })}
-              </tr>
+                </Text>
+              </View>
             ))}
-          </tbody>
-        </table>
-        {byDay.size === 0 && (
-          <p className="shrink-0 text-caption text-text-3">{t('calendar.none')}</p>
-        )}
-      </div>
+          </View>
+          {weeks.map((start) => (
+            <View key={start} role="row" style={[row, { flex: 1, minHeight: 28 }]}>
+              {WEEKDAYS.map((d, i) => {
+                const day = start + i
+                const valid = day >= 1 && day <= days
+                const titles = valid ? byDay.get(day) : undefined
+                const isToday = valid && day === today.getDate()
+                return (
+                  <View
+                    key={d}
+                    role="cell"
+                    aria-current={isToday ? 'date' : undefined}
+                    style={{
+                      flex: 1,
+                      flexBasis: 0,
+                      minHeight: 28,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      borderRadius: 6,
+                      opacity: valid ? 1 : 0,
+                      backgroundColor: isToday ? theme.colors.s3 : 'transparent',
+                    }}
+                  >
+                    <Fig
+                      weight={titles ? 600 : 400}
+                      color={titles ? 'accent-text' : isToday ? 'text' : 'text-2'}
+                      align="center"
+                    >
+                      {valid ? String(day) : ''}
+                      {titles ? <Unseen>{`: ${titles.join(', ')}`}</Unseen> : null}
+                    </Fig>
+                    {titles ? (
+                      <View style={{ position: 'absolute', bottom: 2 }}>
+                        <Dot color="accent" size={4} />
+                      </View>
+                    ) : null}
+                  </View>
+                )
+              })}
+            </View>
+          ))}
+        </View>
+        {byDay.size === 0 ? (
+          <Text variant="caption" color="text-3" style={{ flexShrink: 0 }}>
+            {t('calendar.none')}
+          </Text>
+        ) : null}
+      </View>
     </Static>
   )
 }
@@ -1112,7 +1293,7 @@ function SystemHealth(props: WidgetProps) {
     DOWNLOAD_TOPICS.queue,
     DOWNLOAD_TOPICS.vpn,
   ])
-  const clip = useClip<HTMLUListElement>(':scope > li')
+  const clip = useClip(LIST_ROWS)
   return (
     <Widget
       {...props}
@@ -1122,20 +1303,24 @@ function SystemHealth(props: WidgetProps) {
     >
       {(xs) =>
         xs.length === 0 ? (
-          <EmptyState size="sm" icon="success" title={t('health.none')} />
+          <EmptyState size="sm" icon="success" level={4} title={t('health.none')} />
         ) : (
           <>
-            <ul ref={clip.ref} className={cn('grid content-start gap-2.5', fill)}>
+            <View ref={clip.ref} role="list" style={[{ gap: s['2'] + s['0.5'] }, fill]}>
               {xs.map((h) => (
-                <li key={h.id} className="grid gap-1">
-                  <div className="flex items-center gap-2">
+                <View key={h.id} role="listitem" style={{ gap: s['1'] }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: s['2'] }}>
                     <Badge tone={levels[h.level]}>{t(`health.${h.level}`)}</Badge>
-                    <span className="text-caption text-text-3">{h.source}</span>
-                  </div>
-                  <p className="text-caption text-text-2">{h.message}</p>
-                </li>
+                    <Text variant="caption" color="text-3">
+                      {h.source}
+                    </Text>
+                  </View>
+                  <Text variant="caption" color="text-2">
+                    {h.message}
+                  </Text>
+                </View>
               ))}
-            </ul>
+            </View>
             <More count={clip.hidden} page={t('page.health')} path="/system/health" />
           </>
         )
@@ -1151,7 +1336,7 @@ function NowPlaying(props: WidgetProps) {
   const tn = useT(nowPlaying)
   // the sidebar's count and the page share this answer
   const query = useQuery('sessions', (c) => c.sessions.list(), [SESSIONS_TOPICS.updated])
-  const clip = useClip<HTMLUListElement>(':scope > li')
+  const clip = useClip(LIST_ROWS)
   return (
     <Widget
       {...props}
@@ -1161,37 +1346,53 @@ function NowPlaying(props: WidgetProps) {
     >
       {(np) =>
         np.sessions.length === 0 ? (
-          <EmptyState size="sm" icon="play" title={t('playing.none')} />
+          <EmptyState size="sm" icon="play" level={4} title={t('playing.none')} />
         ) : (
           <>
-            <ul ref={clip.ref} className={cn('grid content-start gap-3', fill)}>
-              {np.sessions.map((s) => (
-                <li key={s.id} className="grid grid-cols-[32px_minmax(0,1fr)] items-center gap-3">
-                  <Poster title={s.item.title} src={s.item.poster ?? undefined} />
-                  <div className="grid min-w-0 gap-1">
-                    <div className="flex min-w-0 items-center justify-between gap-2">
-                      <span className="truncate text-text">{s.item.title}</span>
-                      {behind(s) ? (
+            <View ref={clip.ref} role="list" style={[{ gap: s['3'] }, fill]}>
+              {np.sessions.map((x) => (
+                <View
+                  key={x.id}
+                  role="listitem"
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: s['3'] }}
+                >
+                  <View style={{ width: 32 }}>
+                    <Poster title={x.item.title} src={x.item.poster ?? undefined} width={32} />
+                  </View>
+                  <View style={{ flex: 1, minWidth: 0, gap: s['1'] }}>
+                    <View
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: s['2'],
+                        minWidth: 0,
+                      }}
+                    >
+                      <Ui numberOfLines={1} style={{ flexShrink: 1, minWidth: 0 }}>
+                        {x.item.title}
+                      </Ui>
+                      {behind(x) ? (
                         <Badge tone="danger">{tn('state.behind')}</Badge>
                       ) : (
-                        <Badge tone={methodTone[s.method]} dot={false}>
-                          {tn(`method.${s.method}`)}
+                        <Badge tone={methodTone[x.method]} dot={false}>
+                          {tn(`method.${x.method}`)}
                         </Badge>
                       )}
-                    </div>
-                    <span className="truncate text-caption text-text-3">
-                      {s.user.displayName} · {s.deviceName}
-                      {s.state === 'paused' && !s.stopped ? t('playing.paused') : ''}
-                    </span>
-                    <Progress
-                      value={s.runtime ? (s.position / s.runtime) * 100 : 0}
-                      tone={behind(s) ? 'danger' : 'accent'}
-                      aria-label={t('playing.so-far', { title: s.item.title })}
+                    </View>
+                    <Text variant="caption" color="text-3" numberOfLines={1}>
+                      {`${x.user.displayName} · ${x.deviceName}${x.state === 'paused' && !x.stopped ? t('playing.paused') : ''}`}
+                    </Text>
+                    <ProgressBar
+                      look="panel"
+                      value={x.runtime ? (x.position / x.runtime) * 100 : 0}
+                      tone={behind(x) ? 'danger' : 'accent'}
+                      label={t('playing.so-far', { title: x.item.title })}
                     />
-                  </div>
-                </li>
+                  </View>
+                </View>
               ))}
-            </ul>
+            </View>
             <More count={clip.hidden} page={t('page.now-playing')} path="/now-playing" />
           </>
         )

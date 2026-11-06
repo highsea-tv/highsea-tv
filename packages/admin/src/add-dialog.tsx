@@ -12,6 +12,7 @@
 // - the last-used folder, profiles, availability and Search now are remembered per person, as the
 //   preference `admin.addMovie.defaults` (movies.md › Decisions; ADR 0027);
 // - no folder yet, or no TMDB key, says so and links to where it's fixed.
+// Drawn with the library's native renderer since D2 (one-client-platform-d.md).
 import type {
   DiscoverMovie,
   MinimumAvailability,
@@ -20,17 +21,23 @@ import type {
 } from '@highsea-tv/api-contract'
 import { useT } from '@highsea-tv/i18n/react'
 import { useAction, useQuery } from '@highsea-tv/sdk/react'
+import { breakpoints } from '@highsea-tv/tokens'
 import {
   Button,
   Checkbox,
   Dialog,
-  DialogContent,
   Field,
+  Icon,
   Select,
   Switch,
+  Text,
+  TextLink,
   toast,
-} from '@highsea-tv/ui'
-import { useState } from 'react'
+  tokens,
+  useWindowAtLeast,
+} from '@highsea-tv/ui/native'
+import { type ReactNode, useState } from 'react'
+import { View } from 'react-native'
 import { addDialog as messages } from './add-dialog-messages.ts'
 import { Loadable } from './loadable.tsx'
 import { moviePath } from './media-links.ts'
@@ -142,69 +149,68 @@ export function AddMovieDialog({
   const noFolders = options.data?.folders.length === 0
   const ready = options.status === 'success' && form && !noFolders && form.qualityProfileId !== ''
 
+  const two = useWindowAtLeast(breakpoints.medium)
+
   return (
-    <Dialog open={open} onOpenChange={close}>
-      <DialogContent
-        size="md"
-        title={
-          movie
-            ? movie.year
-              ? t('title.one', { title: movie.title, year: movie.year })
-              : t('title.oneNoYear', { title: movie.title })
-            : movies.length > 1
-              ? t('title.many', { count: movies.length })
-              : t('title.none')
-        }
-        description={movie ? t('description.one') : t('description.many')}
-        footer={
-          <>
-            <Button variant="ghost" onClick={() => close(false)}>
-              {t('cancel')}
-            </Button>
-            <Button
-              variant="primary"
-              icon="add"
-              onClick={submit}
-              loading={add.pending}
-              disabled={!ready}
-            >
-              {form?.searchNow ? t('add.search') : t(movie ? 'add.one' : 'add.many')}
-            </Button>
-          </>
-        }
-      >
-        {open && (
-          <div className="grid gap-4">
-            {movie ? (
-              <p className="line-clamp-3 text-body text-text-2">{movie.synopsis}</p>
-            ) : (
-              <ul className="grid gap-1 text-body text-text-2">
-                {movies.map((m) => (
-                  <li key={m.id}>
-                    {m.title} {m.year && <span className="font-mono text-text-3">({m.year})</span>}
-                  </li>
-                ))}
-              </ul>
-            )}
-            <Loadable query={options} what={t('what')}>
-              {(o) =>
-                o &&
-                form && (
-                  <div className="grid gap-4 medium:grid-cols-2">
-                    <Field
-                      label={t('folder')}
-                      className="medium:col-span-2"
-                      error={
-                        noFolders ? (
-                          <>
-                            {t('folder.none')}{' '}
-                            <a href={MEDIA_SETTINGS} className="underline">
-                              {t('folder.add')}
-                            </a>
-                          </>
-                        ) : undefined
-                      }
-                    >
+    <Dialog
+      open={open}
+      onClose={() => close(false)}
+      closable
+      size="md"
+      title={
+        movie
+          ? movie.year
+            ? t('title.one', { title: movie.title, year: movie.year })
+            : t('title.oneNoYear', { title: movie.title })
+          : movies.length > 1
+            ? t('title.many', { count: movies.length })
+            : t('title.none')
+      }
+      description={movie ? t('description.one') : t('description.many')}
+      footer={
+        <>
+          <Button variant="ghost" onPress={() => close(false)}>
+            {t('cancel')}
+          </Button>
+          <Button
+            variant="primary"
+            icon="add"
+            onPress={submit}
+            loading={add.pending}
+            disabled={!ready}
+          >
+            {form?.searchNow ? t('add.search') : t(movie ? 'add.one' : 'add.many')}
+          </Button>
+        </>
+      }
+    >
+      {open && (
+        <View style={{ gap: tokens.space['4'] }}>
+          {movie ? (
+            <Text variant="body" color="text-2" numberOfLines={3}>
+              {movie.synopsis}
+            </Text>
+          ) : (
+            <View role="list" style={{ gap: tokens.space['1'] }}>
+              {movies.map((m) => (
+                <Text key={m.id} role="listitem" variant="body" color="text-2">
+                  {m.title}
+                  {m.year ? (
+                    <Text variant="body" mono color="text-3">
+                      {` (${m.year})`}
+                    </Text>
+                  ) : null}
+                </Text>
+              ))}
+            </View>
+          )}
+          <Loadable query={options} what={t('what')}>
+            {(o) =>
+              o &&
+              form && (
+                <View style={{ gap: tokens.space['4'] }}>
+                  <View style={{ gap: tokens.space['1'] + tokens.space['0.5'] }}>
+                    <Field label={t('folder')} disabled={noFolders}>
                       <Select
                         value={form.rootFolder || undefined}
                         disabled={noFolders}
@@ -220,88 +226,108 @@ export function AddMovieDialog({
                           )
                         }}
                         options={o.folders.map((f) => ({ value: f.path, label: f.path }))}
-                        className="font-mono"
                       />
                     </Field>
-                    <Field label={t('qualityProfile')}>
-                      <Select
-                        value={form.qualityProfileId || undefined}
-                        onValueChange={(qualityProfileId) => set({ qualityProfileId })}
-                        options={o.quality.map((p) => ({ value: p.id, label: p.name }))}
-                      />
-                    </Field>
-                    <Field label={t('languageProfile')}>
-                      <Select
-                        value={form.languageProfileId ?? 'none'}
-                        onValueChange={(v) => set({ languageProfileId: v === 'none' ? null : v })}
-                        options={
-                          o.language.length
-                            ? o.language.map((p) => ({ value: p.id, label: p.name }))
-                            : [{ value: 'none', label: t('languageProfile.none') }]
-                        }
-                      />
-                    </Field>
-                    <Field
-                      label={t('availability')}
-                      hint={t('availability.hint')}
-                      className="medium:col-span-2"
-                    >
-                      <Select
-                        value={form.minimumAvailability}
-                        onValueChange={(v) =>
-                          set({ minimumAvailability: v as MinimumAvailability })
-                        }
-                        options={AVAILABILITY.map((value) => ({
-                          value,
-                          label: t(`availability.${value}`),
-                        }))}
-                      />
-                    </Field>
-                    <Field
-                      inline
-                      label={t('monitored')}
-                      hint={t('monitored.hint')}
-                      className="medium:col-span-2"
-                    >
-                      <Switch
-                        checked={form.monitored}
-                        onCheckedChange={(monitored) => set({ monitored })}
-                      />
-                    </Field>
-                    <Field
-                      inline
-                      label={t('searchNow')}
-                      hint={o.canSearch ? t('searchNow.hint') : t('searchNow.noIndexers')}
-                      className="medium:col-span-2"
-                    >
-                      {/* decision 2: shown, disabled and off while no indexer is enabled */}
-                      <Checkbox
-                        checked={form.searchNow}
-                        disabled={!o.canSearch}
-                        onCheckedChange={(v) => set({ searchNow: v === true })}
-                      />
-                    </Field>
-                  </div>
-                )
-              }
-            </Loadable>
-            {add.error && (
-              <p role="alert" className="text-caption text-danger">
-                {isNoMetadataKey(add.error) ? (
-                  <>
-                    {t('noKey')}{' '}
-                    <a href={METADATA_SETTINGS} className="underline">
-                      {t('noKey.link')}
-                    </a>
-                  </>
-                ) : (
-                  add.error.message
-                )}
-              </p>
-            )}
-          </div>
-        )}
-      </DialogContent>
+                    {noFolders && (
+                      <Problem>
+                        <Text variant="caption" color="badge-danger">
+                          {t('folder.none')}
+                        </Text>
+                        <TextLink href={MEDIA_SETTINGS}>{t('folder.add')}</TextLink>
+                      </Problem>
+                    )}
+                  </View>
+                  <View style={{ flexDirection: two ? 'row' : 'column', gap: tokens.space['4'] }}>
+                    <View style={two ? HALF : undefined}>
+                      <Field label={t('qualityProfile')}>
+                        <Select
+                          value={form.qualityProfileId || undefined}
+                          onValueChange={(qualityProfileId) => set({ qualityProfileId })}
+                          options={o.quality.map((p) => ({ value: p.id, label: p.name }))}
+                        />
+                      </Field>
+                    </View>
+                    <View style={two ? HALF : undefined}>
+                      <Field label={t('languageProfile')}>
+                        <Select
+                          value={form.languageProfileId ?? 'none'}
+                          onValueChange={(v) => set({ languageProfileId: v === 'none' ? null : v })}
+                          options={
+                            o.language.length
+                              ? o.language.map((p) => ({ value: p.id, label: p.name }))
+                              : [{ value: 'none', label: t('languageProfile.none') }]
+                          }
+                        />
+                      </Field>
+                    </View>
+                  </View>
+                  <Field label={t('availability')} hint={t('availability.hint')}>
+                    <Select
+                      value={form.minimumAvailability}
+                      onValueChange={(v) => set({ minimumAvailability: v as MinimumAvailability })}
+                      options={AVAILABILITY.map((value) => ({
+                        value,
+                        label: t(`availability.${value}`),
+                      }))}
+                    />
+                  </Field>
+                  <Switch
+                    label={t('monitored')}
+                    hint={t('monitored.hint')}
+                    checked={form.monitored}
+                    onCheckedChange={(monitored) => set({ monitored })}
+                  />
+                  {/* decision 2: shown, disabled and off while no indexer is enabled */}
+                  <Checkbox
+                    label={t('searchNow')}
+                    hint={o.canSearch ? t('searchNow.hint') : t('searchNow.noIndexers')}
+                    checked={form.searchNow}
+                    disabled={!o.canSearch}
+                    onCheckedChange={(searchNow) => set({ searchNow })}
+                  />
+                </View>
+              )
+            }
+          </Loadable>
+          {add.error && (
+            <View role="alert">
+              {isNoMetadataKey(add.error) ? (
+                <Problem icon={false}>
+                  <Text variant="caption" color="badge-danger">
+                    {t('noKey')}
+                  </Text>
+                  <TextLink href={METADATA_SETTINGS}>{t('noKey.link')}</TextLink>
+                </Problem>
+              ) : (
+                <Text variant="caption" color="badge-danger">
+                  {add.error.message}
+                </Text>
+              )}
+            </View>
+          )}
+        </View>
+      )}
     </Dialog>
+  )
+}
+
+/** Two fields side by side from medium up (the web's medium:grid-cols-2). */
+const HALF = { flex: 1, flexBasis: 0, minWidth: 0 } as const
+
+/** What's wrong and where it's fixed, in the danger colour, wrapping (the web's error line). */
+function Problem({ children, icon = true }: { children: ReactNode; icon?: boolean }) {
+  return (
+    <View
+      style={{
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        alignItems: 'center',
+        columnGap: tokens.space['1'] + tokens.space['0.5'],
+        rowGap: tokens.space['0.5'],
+      }}
+    >
+      {icon ? <Icon name="alert" size={14} color="badge-danger" /> : null}
+      {children}
+    </View>
   )
 }

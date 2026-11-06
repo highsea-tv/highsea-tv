@@ -12,6 +12,7 @@ const { default: userEvent } = await import('@testing-library/user-event')
 const { createClient } = await import('@highsea-tv/sdk')
 const { ClientProvider } = await import('@highsea-tv/sdk/react')
 const { TooltipProvider } = await import('@highsea-tv/ui')
+const { ThemeProvider } = await import('@highsea-tv/ui/native')
 const { Setup } = await import('../src/setup.tsx')
 const { metadataLocale } = await import('../src/metadata-locale.ts')
 
@@ -113,9 +114,11 @@ async function open() {
   await act(async () => {
     render(
       <ClientProvider client={client}>
-        <TooltipProvider>
-          <Setup />
-        </TooltipProvider>
+        <ThemeProvider>
+          <TooltipProvider>
+            <Setup />
+          </TooltipProvider>
+        </ThemeProvider>
       </ClientProvider>,
     )
   })

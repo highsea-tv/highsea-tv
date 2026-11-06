@@ -10,7 +10,7 @@
 
 import { useT } from '@highsea-tv/i18n/react'
 import { type ReactNode, useEffect, useId, useRef, useSyncExternalStore } from 'react'
-import { Modal, Platform, View } from 'react-native'
+import { Modal, Platform, Pressable, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Button } from './button.tsx'
 import { uiMessages } from './messages.ts'
@@ -62,7 +62,13 @@ export async function yieldToLink(): Promise<void> {
 
 /** Whether a Modal is visible, given whether it's asked to be, and its part in `yieldToLink`. */
 function useYielding(open: boolean): { visible: boolean; dismissed: () => void } {
-  const shut = useSyncExternalStore(subscribeYield, () => yielding)
+  // the server never yields: without its snapshot React gives up server rendering the page
+  // (https://react.dev/reference/react/useSyncExternalStore#adding-support-for-server-rendering)
+  const shut = useSyncExternalStore(
+    subscribeYield,
+    () => yielding,
+    () => false,
+  )
   const waiting = useRef<(() => void) | null>(null)
   const visible = open && !shut
   useEffect(() => {
@@ -87,14 +93,7 @@ function useYielding(open: boolean): { visible: boolean; dismissed: () => void }
   return { visible, dismissed: () => waiting.current?.() }
 }
 
-export function Sheet({
-  open,
-  onClose,
-  title,
-  children,
-  footer,
-  onDismiss,
-}: {
+export type SheetProps = {
   open: boolean
   onClose: () => void
   /** Once it has gone (React Native's Modal `onDismiss`), after `open` turns false. */
@@ -106,7 +105,27 @@ export function Sheet({
    * that wraps (the web renderer's SheetContent footer, mobile/library.tsx's Reset and Show).
    */
   footer?: ReactNode
-}) {
+  /**
+   * With a pointer, the edge it comes from (the admin's detail and menu sheets): a panel the
+   * window's height at that edge, as the web renderer's SheetContent `side`. Touch and the TV keep
+   * the page sheet.
+   */
+  side?: 'right' | 'left'
+  /** A pointer's side sheet: its widest (416 at the right and 320 at the left, the web's). */
+  width?: number
+  /** A pointer's side sheet: a line under the title. */
+  description?: ReactNode
+  /** A pointer's side sheet: the title is read but not shown (a menu sheet). */
+  hideTitle?: boolean
+}
+
+export function Sheet(props: SheetProps) {
+  const pointer = useTheme().formFactor.input === 'pointer'
+  if (pointer && props.side) return <SideSheet {...props} side={props.side} />
+  return <PageSheet {...props} />
+}
+
+function PageSheet({ open, onClose, title, children, footer, onDismiss }: SheetProps) {
   const theme = useTheme()
   const t = useT(uiMessages)
   const insets = useSafeAreaInsets()
@@ -195,6 +214,149 @@ export function Sheet({
   )
 }
 
+/** A side sheet's widest by its edge (the web renderer's w-[min(26rem,…)] and w-[min(20rem,…)]). */
+const SIDE_WIDTH = { right: 416, left: 320 } as const
+/** The space a side sheet leaves beside it in a narrow window (the web's 100vw - 2rem). */
+const SIDE_MARGIN = 32
+
+/**
+ * A pointer's side sheet (web/components/dialog.tsx's SheetContent at `right` or `left`): over the
+ * scrim, `s3` with the extra-large corner on its inner side and the fourth elevation, 24 of padding
+ * and 20 between its title, body and footer, the whole of it scrolling. Escape and a press on the
+ * scrim close it (React Native's Modal `onRequestClose`, which react-native-web calls on Escape).
+ */
+function SideSheet({
+  open,
+  onClose,
+  onDismiss,
+  title,
+  description,
+  hideTitle,
+  children,
+  footer,
+  side,
+  width,
+}: SheetProps & { side: 'right' | 'left' }) {
+  const theme = useTheme()
+  const t = useT(uiMessages)
+  const titleId = useId()
+  const { visible, dismissed } = useYielding(open)
+  const corner = tokens.radius.xl
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      onRequestClose={onClose}
+      onDismiss={() => {
+        dismissed()
+        onDismiss?.()
+      }}
+      {...named(titleId)}
+    >
+      <View
+        style={{
+          flex: 1,
+          flexDirection: side === 'right' ? 'row-reverse' : 'row',
+          backgroundColor: 'rgba(0,0,0,0.6)',
+        }}
+      >
+        <View
+          accessibilityViewIsModal
+          style={{
+            width: width ?? SIDE_WIDTH[side],
+            maxWidth: `calc(100% - ${SIDE_MARGIN}px)` as unknown as number,
+            height: '100%',
+            backgroundColor: theme.colors.s3,
+            borderTopLeftRadius: side === 'right' ? corner : 0,
+            borderBottomLeftRadius: side === 'right' ? corner : 0,
+            borderTopRightRadius: side === 'left' ? corner : 0,
+            borderBottomRightRadius: side === 'left' ? corner : 0,
+            boxShadow: tokens.elevation[4].boxShadow,
+            overflow: 'hidden',
+          }}
+        >
+          <ScrollView
+            contentContainerStyle={{ padding: tokens.space['6'], gap: tokens.space['5'] }}
+          >
+            {hideTitle ? (
+              <HiddenTitle id={titleId}>{title}</HiddenTitle>
+            ) : (
+              <View
+                style={{ flexDirection: 'row', alignItems: 'flex-start', gap: tokens.space['3'] }}
+              >
+                <View style={{ flex: 1, minWidth: 0, gap: tokens.space['1'] }}>
+                  <Text
+                    variant="title"
+                    accessibilityRole="header"
+                    aria-level={2}
+                    nativeID={titleId}
+                  >
+                    {title}
+                  </Text>
+                  {description == null ? null : typeof description === 'string' ? (
+                    <Text
+                      size={tokens.adminText.form.size}
+                      leading={tokens.adminText.form.leading}
+                      color="text-2"
+                    >
+                      {description}
+                    </Text>
+                  ) : (
+                    description
+                  )}
+                </View>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  icon="close"
+                  iconOnly
+                  accessibilityLabel={t('close')}
+                  onPress={onClose}
+                />
+              </View>
+            )}
+            <View style={{ minWidth: 0 }}>{children}</View>
+            {footer ? (
+              <View
+                style={{
+                  flexDirection: 'row',
+                  flexWrap: 'wrap',
+                  justifyContent: 'flex-end',
+                  gap: tokens.space['2'],
+                }}
+              >
+                {footer}
+              </View>
+            ) : null}
+          </ScrollView>
+        </View>
+        {/* the scrim beside it closes it, as the web's overlay does */}
+        <Pressable
+          accessible={false}
+          tabIndex={-1}
+          onPress={onClose}
+          style={{ flex: 1, alignSelf: 'stretch' }}
+        />
+      </View>
+    </Modal>
+  )
+}
+
+/** A title read but not shown: HiddenHeading's visually-hidden box, with the id that names the sheet. */
+function HiddenTitle({ id, children }: { id: string; children: string }) {
+  return (
+    <View
+      pointerEvents="none"
+      style={{ position: 'absolute', width: 1, height: 1, margin: -1, overflow: 'hidden' }}
+    >
+      <Text accessibilityRole="header" aria-level={2} nativeID={id} numberOfLines={1}>
+        {children}
+      </Text>
+    </View>
+  )
+}
+
 /**
  * Names a Modal by its title. On the web react-native-web's Modal is the `role="dialog"` element
  * and passes its other props to it (exports/Modal/ModalContent.js), and its Text writes `nativeID`
@@ -210,6 +372,7 @@ export function Dialog({
   open,
   onClose,
   title,
+  description,
   children,
   footer,
   size = 'md',
@@ -219,6 +382,8 @@ export function Dialog({
   /** Without it the dialog must be answered by its footer. */
   onClose?: () => void
   title: string
+  /** A line under the title, in the admin's form type and `text-2` (the web's DialogContent's). */
+  description?: string
   children?: ReactNode
   /** Its buttons: with a pointer in a row at its end that wraps; by touch as they're given. */
   footer?: ReactNode
@@ -292,6 +457,16 @@ export function Dialog({
               {title}
             </Text>
           )}
+          {description ? (
+            <Text
+              size={tokens.adminText.form.size}
+              leading={tokens.adminText.form.leading}
+              color="text-2"
+              style={{ marginTop: -tokens.space['3'] }}
+            >
+              {description}
+            </Text>
+          ) : null}
           {children}
           {footer && pointer ? (
             <View

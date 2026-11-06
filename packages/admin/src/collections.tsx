@@ -9,14 +9,33 @@ import { COLLECTION_TOPICS, type CollectionSummary } from '@highsea-tv/api-contr
 import { useT } from '@highsea-tv/i18n/react'
 import { ApiError } from '@highsea-tv/sdk'
 import { useAction, useQuery } from '@highsea-tv/sdk/react'
-import { Badge, Button, ConfirmDialog, EmptyState, toast } from '@highsea-tv/ui'
+import { breakpoints } from '@highsea-tv/tokens'
+import {
+  Badge,
+  Button,
+  ConfirmDialog,
+  EmptyState,
+  Press,
+  Text,
+  toast,
+  tokens,
+  useTheme,
+  useWindowAtLeast,
+} from '@highsea-tv/ui/native'
 import { useState } from 'react'
+import { View } from 'react-native'
 import { CollectionArt } from './collection-art.tsx'
 import { collections as messages } from './collections-messages.ts'
 import { useAudienceSummary, usePeople } from './curation-shared.tsx'
 import { Loadable } from './loadable.tsx'
 import { useRouter } from './navigation.tsx'
 import { AdminPage } from './shell.tsx'
+
+const s = tokens.space
+const ui = tokens.adminText.ui
+
+/** react-native-web's link props, which React Native's types don't name (a Press as an `<a>`). */
+export const linkTo = (href: string) => ({ href }) as object
 
 export const collectionPath = (id: string) => `/collections/${id}`
 
@@ -43,7 +62,7 @@ export function Collections() {
       title={t('title')}
       description={t('description')}
       actions={
-        <Button variant="primary" icon="add" onClick={() => router.push(collectionPath('new'))}>
+        <Button variant="primary" icon="add" onPress={() => router.push(collectionPath('new'))}>
           {t('new')}
         </Button>
       }
@@ -55,7 +74,7 @@ export function Collections() {
               icon="library"
               title={t('none')}
               action={
-                <Button variant="primary" onClick={() => router.push(collectionPath('new'))}>
+                <Button variant="primary" onPress={() => router.push(collectionPath('new'))}>
                   {t('makeOne')}
                 </Button>
               }
@@ -63,11 +82,11 @@ export function Collections() {
               {t('noneBody')}
             </EmptyState>
           ) : (
-            <ul aria-label={t('label')} className="grid gap-3">
+            <View role="list" aria-label={t('label')} style={{ gap: s['3'] }}>
               {xs.map((c) => (
                 <CollectionRow key={c.id} c={c} />
               ))}
-            </ul>
+            </View>
           )
         }
       </Loadable>
@@ -75,49 +94,107 @@ export function Collections() {
   )
 }
 
+/** The poster's width in a row (the web's w-14). */
+const ART = 56
+
 function CollectionRow({ c }: { c: CollectionSummary }) {
   const t = useT(messages)
+  const theme = useTheme()
   const people = usePeople()
   const audience = useAudienceSummary()
   const holds = useHolds()
   const remove = useAction((api) => api.collections.remove({ params: { id: c.id } }))
   const [confirm, setConfirm] = useState(false)
+  // the actions beside the words from medium; under them, at the end, in a compact window
+  const beside = useWindowAtLeast(breakpoints.medium)
+  const actions = (
+    <View
+      style={{
+        flexDirection: 'row',
+        gap: s['1'],
+        alignSelf: beside ? 'center' : 'flex-end',
+        flexShrink: 0,
+      }}
+    >
+      <Button
+        size="sm"
+        icon="edit"
+        accessibilityLabel={t('editNamed', { name: c.name })}
+        href={collectionPath(c.id)}
+      >
+        {t('edit')}
+      </Button>
+      <Button
+        size="sm"
+        variant="ghost"
+        iconOnly
+        icon="delete"
+        accessibilityLabel={t('deleteNamed', { name: c.name })}
+        onPress={() => setConfirm(true)}
+      />
+    </View>
+  )
   return (
-    <li className="grid grid-cols-[3.5rem_minmax(0,1fr)] gap-x-4 gap-y-3 rounded-lg border border-line bg-s1 p-4 medium:grid-cols-[3.5rem_minmax(0,1fr)_auto] medium:items-center">
-      <CollectionArt poster={c.artwork} mosaic={c.mosaic} className="w-14 rounded-[6px]" />
-      <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-1 [overflow-wrap:anywhere]">
-        <p className="flex flex-wrap items-center gap-2">
-          <a
-            href={collectionPath(c.id)}
-            className="font-semibold text-text text-ui outline-none hover:underline focus-visible:ring-focus"
+    <View
+      role="listitem"
+      style={{
+        flexDirection: 'row',
+        alignItems: beside ? 'center' : 'flex-start',
+        columnGap: s['4'],
+        padding: s['4'],
+        borderWidth: 1,
+        borderColor: theme.colors.line,
+        borderRadius: tokens.radius.lg,
+        backgroundColor: theme.colors.s1,
+      }}
+    >
+      <CollectionArt poster={c.artwork} mosaic={c.mosaic} width={ART} radius={6} />
+      <View style={{ flex: 1, minWidth: 0, gap: s['3'] }}>
+        <View style={{ gap: s['1'], minWidth: 0 }}>
+          <View
+            style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: s['2'] }}
           >
-            {c.name}
-          </a>
-          {c.rules ? <Badge tone="accent">{t('smart')}</Badge> : <Badge>{t('picked')}</Badge>}
-          {c.matched > 0 && c.playable === 0 && <Badge tone="warning">{t('hidden')}</Badge>}
-        </p>
-        {c.words && <p className="truncate text-caption text-text-2">{c.words}</p>}
-        <p className="text-caption text-text-3">
-          {holds(c)} · {audience(c.audience, people.data)}
-        </p>
-      </div>
-      <div className="col-start-2 flex gap-1 justify-self-end medium:col-start-auto">
-        <Button size="sm" icon="edit" asChild>
-          <a href={collectionPath(c.id)} aria-label={t('editNamed', { name: c.name })}>
-            {t('edit')}
-          </a>
-        </Button>
-        <Button
-          size="sm"
-          variant="ghost"
-          iconOnly
-          icon="delete"
-          aria-label={t('deleteNamed', { name: c.name })}
-          onClick={() => setConfirm(true)}
-        />
-      </div>
-      <DeleteDialog collection={c} open={confirm} onOpenChange={setConfirm} remove={remove.run} />
-    </li>
+            <Press
+              role="link"
+              {...linkTo(collectionPath(c.id))}
+              style={{ borderRadius: tokens.radius.sm, flexShrink: 1, minWidth: 0 }}
+            >
+              {({ hovered }) => (
+                <Text
+                  size={ui.size}
+                  leading={ui.leading}
+                  weight={600}
+                  style={[
+                    { overflowWrap: 'anywhere' } as object,
+                    hovered ? { textDecorationLine: 'underline' } : null,
+                  ]}
+                >
+                  {c.name}
+                </Text>
+              )}
+            </Press>
+            {c.rules ? <Badge tone="accent">{t('smart')}</Badge> : <Badge>{t('picked')}</Badge>}
+            {c.matched > 0 && c.playable === 0 && <Badge tone="warning">{t('hidden')}</Badge>}
+          </View>
+          {c.words ? (
+            <Text variant="caption" color="text-2" numberOfLines={1}>
+              {c.words}
+            </Text>
+          ) : null}
+          <Text variant="caption" color="text-3">
+            {`${holds(c)} · ${audience(c.audience, people.data)}`}
+          </Text>
+        </View>
+        {beside ? null : actions}
+      </View>
+      {beside ? actions : null}
+      <DeleteDialog
+        collection={c}
+        open={confirm}
+        onClose={() => setConfirm(false)}
+        remove={remove.run}
+      />
+    </View>
   )
 }
 
@@ -125,13 +202,13 @@ function CollectionRow({ c }: { c: CollectionSummary }) {
 export function DeleteDialog({
   collection: c,
   open,
-  onOpenChange,
+  onClose,
   remove,
   onDeleted,
 }: {
   collection: { name: string; usedBy?: CollectionSummary['usedBy'] }
   open: boolean
-  onOpenChange: (open: boolean) => void
+  onClose: () => void
   remove: () => Promise<unknown>
   onDeleted?: () => void
 }) {
@@ -140,7 +217,7 @@ export function DeleteDialog({
   return (
     <ConfirmDialog
       open={open}
-      onOpenChange={onOpenChange}
+      onClose={onClose}
       title={t('deleteTitle', { name: c.name })}
       description={t('deleteBody')}
       confirmLabel={t('delete')}

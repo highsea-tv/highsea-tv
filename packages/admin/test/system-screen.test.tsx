@@ -569,11 +569,10 @@ describe('the Queue widget', () => {
     expect(page.getByText('3 items · 1.0 MB/s')).toBeTruthy()
     expect(page.getByRole('tab', { name: /All/ }).textContent).toContain('3')
     expect(page.getByText('Import blocked')).toBeTruthy()
-    // the reason is the row's title in the table, its line when stacked
-    expect(
-      page.queryByText('No video file in the download') ??
-        document.querySelector('[title="No video file in the download"]'),
-    ).toBeTruthy()
+    // the reason is the title's tooltip in the table (shown as focus comes in), its line when stacked
+    if (!page.queryByText('No video file in the download'))
+      act(() => page.getByRole('link', { name: 'Movie 2' }).focus())
+    expect(page.getByText('No video file in the download')).toBeTruthy()
     expect(page.getByRole('progressbar', { name: 'Movie 1 progress' })).toBeTruthy()
 
     await user.click(page.getByRole('tab', { name: /Issues/ }))

@@ -7,11 +7,12 @@
 // touch the synopsis runs under the row across its width; with a pointer it's beside the still,
 // the play mark showing while the pointer is over the row, and the row's fill a step up. The TV
 // lists episodes as stills in a Row of Posters instead (tv/show.tsx).
-import { Image } from 'expo-image'
+
 import { StyleSheet, View } from 'react-native'
 import { Button } from './button.tsx'
 import { GLASS } from './glass.ts'
 import { Icon } from './icon.tsx'
+import { Image } from './image.tsx'
 import { Press } from './press.tsx'
 import { Text } from './text.tsx'
 import { tokens, useTheme } from './theme.tsx'

@@ -27,6 +27,7 @@ const { default: userEvent } = await import('@testing-library/user-event')
 const { createClient } = await import('@highsea-tv/sdk')
 const { ClientProvider } = await import('@highsea-tv/sdk/react')
 const { toast, TooltipProvider } = await import('@highsea-tv/ui')
+const { ThemeProvider } = await import('@highsea-tv/ui/native')
 const { PlaybackSettingsPage } = await import('../src/playback.tsx')
 
 const GB = 1e9
@@ -145,9 +146,11 @@ async function open() {
   await act(async () => {
     render(
       <ClientProvider client={client}>
-        <TooltipProvider>
-          <PlaybackSettingsPage />
-        </TooltipProvider>
+        <ThemeProvider>
+          <TooltipProvider>
+            <PlaybackSettingsPage />
+          </TooltipProvider>
+        </ThemeProvider>
       </ClientProvider>,
     )
   })

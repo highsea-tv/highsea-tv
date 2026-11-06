@@ -13,8 +13,21 @@ import type {
 import type { T as Translate } from '@highsea-tv/i18n'
 import { useLocale, useT } from '@highsea-tv/i18n/react'
 import { type Query, useQuery } from '@highsea-tv/sdk/react'
-import { Badge, type BadgeTone, Checkbox, Field, Input, SegmentedControl } from '@highsea-tv/ui'
-import { useEffect, useRef, useState } from 'react'
+import { breakpoints } from '@highsea-tv/tokens'
+import {
+  Badge,
+  type BadgeTone,
+  Checkbox,
+  DateTimeInput,
+  Field,
+  SegmentedControl,
+  Text,
+  tokens,
+  useTheme,
+  useWindowAtLeast,
+} from '@highsea-tv/ui/native'
+import { type ReactNode, useEffect, useRef, useState } from 'react'
+import { View } from 'react-native'
 import { curation as messages } from './curation-messages.ts'
 
 export type T = Translate<typeof messages>
@@ -144,6 +157,165 @@ function toggle<T>(xs: T[], x: T, on: boolean): T[] {
   return on ? [...xs.filter((y) => y !== x), x] : xs.filter((y) => y !== x)
 }
 
+const s = tokens.space
+const ui = tokens.adminText.ui
+/** A group's name to its fields (the web's legend, mb-1.5). */
+const LEGEND_GAP = 6
+
+/**
+ * A group of the composer's fields under its name (the web's fieldset and legend): a group named
+ * by its label, which is shown in the admin's ui type at 500.
+ */
+export function FieldGroup({
+  label,
+  gap = s['2'],
+  children,
+}: {
+  label: string
+  gap?: number
+  children: ReactNode
+}) {
+  return (
+    <View role="group" aria-label={label} style={{ gap: LEGEND_GAP }}>
+      <Text size={ui.size} leading={ui.leading} weight={500} aria-hidden>
+        {label}
+      </Text>
+      <View style={{ gap }}>{children}</View>
+    </View>
+  )
+}
+
+/** A line under a group or field: the caption in text-3. */
+export function Hint({ children }: { children: string }) {
+  return (
+    <Text variant="caption" color="text-3">
+      {children}
+    </Text>
+  )
+}
+
+/** A group's own error, read out as it appears. */
+export function GroupError({ children }: { children: string | undefined }) {
+  if (!children) return null
+  return (
+    <Text variant="caption" color="badge-danger" role="alert">
+      {children}
+    </Text>
+  )
+}
+
+/** Choices in a well (s2, a line round it). */
+export function ChoiceWell({
+  children,
+  columns = 2,
+}: {
+  children: ReactNode[]
+  /** One column always, or two from a medium window up (by default). */
+  columns?: 1 | 2
+}) {
+  const theme = useTheme()
+  const medium = useWindowAtLeast(breakpoints.medium)
+  const two = columns === 2 && medium
+  return (
+    <View
+      style={{
+        flexDirection: two ? 'row' : 'column',
+        flexWrap: 'wrap',
+        rowGap: s['2'],
+        columnGap: s['2'],
+        padding: s['3'],
+        borderRadius: tokens.radius.md,
+        borderWidth: 1,
+        borderColor: theme.colors.line,
+        backgroundColor: theme.colors.s2,
+      }}
+    >
+      {children.map((child, i) => (
+        // biome-ignore lint/suspicious/noArrayIndexKey: the choices are fixed, in order
+        <View key={i} style={two ? { flexBasis: '48%', flexGrow: 1, minWidth: 0 } : undefined}>
+          {child}
+        </View>
+      ))}
+    </View>
+  )
+}
+
+/** Two columns side by side from a medium window up (the web's medium:grid-cols-2). */
+export function Pair({ first, second }: { first: ReactNode; second: ReactNode }) {
+  const two = useWindowAtLeast(breakpoints.medium)
+  const column = two ? { flex: 1, flexBasis: 0, minWidth: 0, gap: s['2'] } : { gap: s['2'] }
+  return (
+    <View style={{ flexDirection: two ? 'row' : 'column', gap: s['3'] }}>
+      <View style={column}>{first}</View>
+      <View style={column}>{second}</View>
+    </View>
+  )
+}
+
+/** The form's column in an expanded window (the web's min(28rem, 50%)). */
+const FORM_WIDTH = 448
+
+/**
+ * A composer: its form, and beside it from an expanded window the client preview, held in view as
+ * the page scrolls (the web's sticky top-4); one column below that.
+ */
+export function ComposerColumns({
+  label,
+  form,
+  preview,
+}: {
+  /** The form's name. */
+  label: string
+  form: ReactNode
+  preview: ReactNode
+}) {
+  const side = useWindowAtLeast(breakpoints.expanded)
+  return (
+    <View
+      style={{
+        flexDirection: side ? 'row' : 'column',
+        alignItems: side ? 'flex-start' : 'stretch',
+        gap: s['6'],
+      }}
+    >
+      <View
+        role="form"
+        aria-label={label}
+        style={[
+          { gap: s['6'], minWidth: 0 },
+          side && { flexBasis: FORM_WIDTH, flexShrink: 0, maxWidth: '50%' },
+        ]}
+      >
+        {form}
+      </View>
+      <View
+        style={[{ minWidth: 0 }, side && { flex: 1, position: 'sticky' as never, top: s['4'] }]}
+      >
+        {preview}
+      </View>
+    </View>
+  )
+}
+
+/** A composer's buttons, over a line. */
+export function ComposerActions({ children }: { children: ReactNode }) {
+  const theme = useTheme()
+  return (
+    <View
+      style={{
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: s['2'],
+        borderTopWidth: 1,
+        borderColor: theme.colors.line,
+        paddingTop: s['4'],
+      }}
+    >
+      {children}
+    </View>
+  )
+}
+
 /** Everyone, some roles, some people or some apps. An empty choice is an error the form shows. */
 export function AudienceField({
   value,
@@ -159,17 +331,14 @@ export function AudienceField({
   const choices = (
     items: { id: string; label: string; checked: boolean; on: (c: boolean) => void }[],
   ) => (
-    <div className="grid gap-2 rounded-md border border-line bg-s2 p-3 medium:grid-cols-2">
+    <ChoiceWell>
       {items.map((i) => (
-        <Field key={i.id} inline label={i.label}>
-          <Checkbox checked={i.checked} onCheckedChange={(c) => i.on(c === true)} />
-        </Field>
+        <Checkbox key={i.id} label={i.label} checked={i.checked} onCheckedChange={i.on} />
       ))}
-    </div>
+    </ChoiceWell>
   )
   return (
-    <fieldset className="grid gap-2">
-      <legend className="mb-1.5 font-medium text-text text-ui">{t('whoSees')}</legend>
+    <FieldGroup label={t('whoSees')}>
       <SegmentedControl
         aria-label={t('audience')}
         size="sm"
@@ -191,7 +360,6 @@ export function AudienceField({
           { value: 'users', label: t('audience.users') },
           { value: 'clients', label: t('audience.clients') },
         ]}
-        className="justify-self-start"
       />
       {value.kind === 'roles' &&
         choices(
@@ -228,12 +396,8 @@ export function AudienceField({
               }),
           })),
         )}
-      {error && (
-        <p role="alert" className="text-badge-danger text-caption">
-          {error}
-        </p>
-      )}
-    </fieldset>
+      <GroupError>{error}</GroupError>
+    </FieldGroup>
   )
 }
 
@@ -262,11 +426,11 @@ export function ScheduleField({
       ? t('error.endBeforeStart')
       : undefined
   return (
-    <fieldset className="grid gap-3">
-      <legend className="mb-1.5 font-medium text-text text-ui">{t('when')}</legend>
-      <div className="grid gap-3 medium:grid-cols-2">
-        <div className="grid content-start gap-2">
+    <FieldGroup label={t('when')} gap={s['3']}>
+      <Pair
+        first={[
           <SegmentedControl
+            key="start"
             aria-label={t('start')}
             size="sm"
             value={later ? 'later' : 'now'}
@@ -280,22 +444,19 @@ export function ScheduleField({
               { value: 'now', label: t('startNow') },
               { value: 'later', label: t('startLater') },
             ]}
-            className="justify-self-start"
-          />
-          {later && (
-            <Field label={t('starts')}>
-              <Input
-                type="datetime-local"
+          />,
+          later ? (
+            <Field key="starts" label={t('starts')}>
+              <DateTimeInput
                 value={toLocalInput(value.start)}
-                onChange={(e) =>
-                  e.target.value && onChange({ ...value, start: fromLocalInput(e.target.value) })
-                }
+                onChange={(v) => onChange({ ...value, start: fromLocalInput(v) })}
               />
             </Field>
-          )}
-        </div>
-        <div className="grid content-start gap-2">
+          ) : null,
+        ]}
+        second={[
           <SegmentedControl
+            key="end"
             aria-label={t('end')}
             size="sm"
             value={value.end ? 'at' : 'never'}
@@ -314,22 +475,18 @@ export function ScheduleField({
               { value: 'never', label: t('noEnd') },
               { value: 'at', label: t('endAt') },
             ]}
-            className="justify-self-start"
-          />
-          {value.end && (
-            <Field label={t('ends')} error={endError}>
-              <Input
-                type="datetime-local"
+          />,
+          value.end ? (
+            <Field key="ends" label={t('ends')} error={endError}>
+              <DateTimeInput
                 value={toLocalInput(value.end)}
-                onChange={(e) =>
-                  e.target.value && onChange({ ...value, end: fromLocalInput(e.target.value) })
-                }
+                onChange={(v) => onChange({ ...value, end: fromLocalInput(v) })}
               />
             </Field>
-          )}
-        </div>
-      </div>
-    </fieldset>
+          ) : null,
+        ]}
+      />
+    </FieldGroup>
   )
 }
 

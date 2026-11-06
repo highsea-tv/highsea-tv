@@ -17,6 +17,8 @@ export type InlineTextProps = {
   /** A link was pressed (touch and a pointer): the app opens its page, in the system browser. */
   onLink?: (url: string) => void
   variant?: Variant
+  /** Over the variant's size: an admin banner's `ui` type (13). */
+  size?: number
   /** The plain and italic runs' colour; bold runs and links are in `text`. */
   color?: ColorRole
   numberOfLines?: number
@@ -26,23 +28,30 @@ export function InlineText({
   runs,
   onLink,
   variant = 'body',
+  size,
   color = 'text-2',
   numberOfLines,
 }: InlineTextProps) {
   const tv = useTheme().formFactor.input === 'tv'
   return (
-    <Text variant={variant} color={color} numberOfLines={numberOfLines}>
+    <Text variant={variant} size={size} color={color} numberOfLines={numberOfLines}>
       {runs.map((r, i) => {
         const key = i
         if (r.kind === 'bold')
           return (
-            <Text key={key} variant={variant} weight={600} color="text">
+            <Text key={key} variant={variant} size={size} weight={600} color="text">
               {r.text}
             </Text>
           )
         if (r.kind === 'italic')
           return (
-            <Text key={key} variant={variant} color={color} style={{ fontStyle: 'italic' }}>
+            <Text
+              key={key}
+              variant={variant}
+              size={size}
+              color={color}
+              style={{ fontStyle: 'italic' }}
+            >
               {r.text}
             </Text>
           )
@@ -52,6 +61,7 @@ export function InlineText({
             <Text
               key={key}
               variant={variant}
+              size={size}
               color="text"
               accessibilityRole="link"
               style={{ textDecorationLine: 'underline' }}
@@ -63,7 +73,7 @@ export function InlineText({
         }
         if (r.kind === 'link')
           return (
-            <Text key={key} variant={variant} color="text">
+            <Text key={key} variant={variant} size={size} color="text">
               {r.text}
             </Text>
           )

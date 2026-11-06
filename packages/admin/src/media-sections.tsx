@@ -19,28 +19,36 @@ import { duration } from '@highsea-tv/core/format'
 import { useLocale, useT } from '@highsea-tv/i18n/react'
 import type { ApiError } from '@highsea-tv/sdk'
 import { type Query, useQuery } from '@highsea-tv/sdk/react'
+import { breakpoints } from '@highsea-tv/tokens'
 import {
   Badge,
   Button,
-  CarouselRow,
+  Details,
   Dialog,
-  DialogContent,
+  Embed,
   EmptyState,
   Icon,
   type IconName,
+  Image,
   Poster,
+  Press,
   QualityTag,
   Rating,
+  Row,
   Skeleton,
   SkeletonText,
-} from '@highsea-tv/ui'
+  Text,
+  tokens,
+  useTheme,
+  useWindowAtLeast,
+} from '@highsea-tv/ui/native'
 import { Fragment, type ReactNode, useState } from 'react'
+import { useWindowDimensions, View, type ViewStyle } from 'react-native'
 import { Loadable } from './loadable.tsx'
 import { collectionPath, moviePath, personPath } from './media-links.ts'
 import { media as messages } from './media-sections-messages.ts'
 import { keyRejected, tmdbBusy } from './metadata-locale.ts'
 import { METADATA_SETTINGS } from './movie-data.ts'
-import { useRouter } from './navigation.tsx'
 import { useNow } from './time.ts'
 
 /** What every title has, in or out of the library. */
@@ -81,8 +89,54 @@ export function useLongDate() {
 /** Whether a release day has come, by the calendar day in UTC. */
 const releasedBy = (day: string, now: number) => Date.parse(`${day.slice(0, 10)}T00:00:00Z`) <= now
 
-export const textLink =
-  'text-text underline decoration-text-3 underline-offset-2 hover:decoration-text'
+/** The admin's ui type (13). */
+const ui = tokens.adminText.ui
+/** Running text's measure, the web's `max-w-[65ch]` at the body size. */
+const MEASURE = 600
+/** CSS grid through a View's style, which react-native-web writes as given. */
+const grid = (style: Record<string, unknown>) =>
+  ({ display: 'grid', ...style }) as unknown as ViewStyle
+
+/**
+ * A link inside running text, in `text` and underlined (the web's `textLink`): a nested Text with
+ * an address, which react-native-web draws as an `<a>` (https://necolas.github.io/react-native-web/docs/text/).
+ */
+function InlineLink({
+  href,
+  children,
+  external,
+  numberOfLines,
+  size,
+}: {
+  href: string
+  children: string
+  external?: boolean
+  numberOfLines?: number
+  size?: number
+}) {
+  const [over, setOver] = useState(false)
+  const { colors } = useTheme()
+  return (
+    <Text
+      role="link"
+      {...({
+        href,
+        ...(external ? { hrefAttrs: { target: '_blank', rel: 'noreferrer' } } : {}),
+      } as object)}
+      size={size}
+      color="text"
+      numberOfLines={numberOfLines}
+      onPointerEnter={() => setOver(true)}
+      onPointerLeave={() => setOver(false)}
+      style={{
+        textDecorationLine: 'underline',
+        textDecorationColor: over ? colors.text : colors['text-3'],
+      }}
+    >
+      {children}
+    </Text>
+  )
+}
 
 /** "A", "A and B", "A, B and C", each a link to the person. */
 function People({ people }: { people: Credit[] }) {
@@ -92,9 +146,7 @@ function People({ people }: { people: Credit[] }) {
       {people.map((p, i) => (
         <Fragment key={p.id}>
           {i > 0 && (i === people.length - 1 ? t('and') : t('comma'))}
-          <a href={personPath(p.personId)} className={textLink}>
-            {p.name}
-          </a>
+          <InlineLink href={personPath(p.personId)}>{p.name}</InlineLink>
         </Fragment>
       ))}
     </>
@@ -119,7 +171,6 @@ export function MetadataError({
   unknown?: { title: string; body: string }
 }) {
   const t = useT(messages)
-  const router = useRouter()
   const e = error as ApiError
   const reason = (e.details as { reason?: string } | undefined)?.reason
   if (e.status === 404)
@@ -128,7 +179,7 @@ export function MetadataError({
         tone="error"
         icon={icon}
         title={unknown?.title ?? t('unknown.title')}
-        action={<Button onClick={() => router.push('/discover')}>{t('unknown.action')}</Button>}
+        action={<Button href="/discover">{t('unknown.action')}</Button>}
       >
         {unknown?.body ?? t('unknown.body')}
       </EmptyState>
@@ -139,7 +190,7 @@ export function MetadataError({
       <EmptyState
         icon="key"
         title={reason === 'no-tmdb-key' ? t('noKey.title') : t('keyRejected.title')}
-        action={<Button onClick={() => router.push(METADATA_SETTINGS)}>{t('noKey.action')}</Button>}
+        action={<Button href={METADATA_SETTINGS}>{t('noKey.action')}</Button>}
       >
         {reason === 'no-tmdb-key' ? t('noKey.body') : t('keyRejected.body')}
       </EmptyState>
@@ -152,6 +203,68 @@ export function MetadataError({
 }
 
 // ---------------------------------------------------------------- summary
+
+/** The summary's poster column from medium (the web's 9rem), and its width below (w-32). */
+const SUMMARY_POSTER = { column: 144, compact: 128 }
+
+/**
+ * The summary card's frame (a movie's, a person's): edged in `line` on `s1`, the poster beside
+ * the rest from medium and above it below. Shared with person.tsx.
+ */
+export function SummaryCard({
+  label,
+  backdrop,
+  poster,
+  children,
+}: {
+  label?: string
+  backdrop?: string | null
+  poster: (width: number | undefined) => ReactNode
+  children: ReactNode
+}) {
+  const { colors } = useTheme()
+  const medium = useWindowAtLeast(breakpoints.medium)
+  return (
+    <View
+      role={label ? 'region' : undefined}
+      aria-label={label}
+      style={{
+        position: 'relative',
+        overflow: 'hidden',
+        flexDirection: medium ? 'row' : 'column',
+        alignItems: 'flex-start',
+        gap: tokens.space['5'],
+        padding: medium ? tokens.space['5'] : tokens.space['4'],
+        borderRadius: tokens.radius.lg,
+        borderWidth: 1,
+        borderColor: colors.line,
+        backgroundColor: colors.s1,
+      }}
+    >
+      {backdrop ? (
+        <Image
+          source={{ uri: backdrop }}
+          aria-hidden
+          contentFit="cover"
+          style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, opacity: 0.15 }}
+        />
+      ) : null}
+      <View style={{ width: medium ? SUMMARY_POSTER.column : SUMMARY_POSTER.compact }}>
+        {poster(medium ? SUMMARY_POSTER.column : SUMMARY_POSTER.compact)}
+      </View>
+      <View style={{ flex: medium ? 1 : undefined, minWidth: 0, gap: tokens.space['3'] }}>
+        {children}
+      </View>
+    </View>
+  )
+}
+
+/** A middle dot between a meta line's parts, hidden from assistive tech. */
+const Dot = () => (
+  <Text variant="caption" color="text-2" aria-hidden>
+    ·
+  </Text>
+)
 
 export function MediaSummary({
   item: m,
@@ -170,65 +283,98 @@ export function MediaSummary({
   const locale = useLocale()
   const directors = meta?.crew.filter((c) => c.job === 'Director') ?? []
   return (
-    <section
-      aria-label={t('summary')}
-      className="relative isolate grid gap-5 overflow-hidden rounded-lg border border-line bg-s1 p-4 medium:grid-cols-[9rem_minmax(0,1fr)] medium:p-5"
+    <SummaryCard
+      label={t('summary')}
+      backdrop={m.art.backdrop}
+      poster={(width) => <Poster title={m.title} src={m.art.poster ?? undefined} width={width} />}
     >
-      {m.art.backdrop && (
-        <img
-          src={m.art.backdrop}
-          alt=""
-          className="-z-10 absolute inset-0 size-full object-cover opacity-15"
-        />
+      <View
+        style={{
+          flexDirection: 'row',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          gap: tokens.space['2'],
+        }}
+      >
+        {m.year !== null && (
+          <>
+            <Text variant="caption" color="text-2" mono>
+              {String(m.year)}
+            </Text>
+            <Dot />
+          </>
+        )}
+        <Text variant="caption" color="text-2">
+          {m.runtimeMinutes ? duration(m.runtimeMinutes * 60, locale) : t('runtime.unknown')}
+        </Text>
+        {meta?.certification && (
+          <>
+            <Dot />
+            <QualityTag overlay={false}>{meta.certification}</QualityTag>
+          </>
+        )}
+        {m.genres.length > 0 && (
+          <>
+            <Dot />
+            <Text variant="caption" color="text-2">
+              {m.genres.join(t('comma'))}
+            </Text>
+          </>
+        )}
+        {m.rating > 0 && <Rating value={m.rating} size={12} showValue />}
+      </View>
+      {meta?.tagline && (
+        <Text variant="body" color="text-2">
+          {t('tagline', { tagline: meta.tagline })}
+        </Text>
       )}
-      <Poster title={m.title} src={m.art.poster ?? undefined} className="w-32 medium:w-full" />
-      <div className="grid grid-cols-1 content-start gap-3">
-        <div className="flex flex-wrap items-center gap-2 text-caption text-text-2">
-          {m.year !== null && (
-            <>
-              <span className="font-mono">{m.year}</span>
-              <span aria-hidden>·</span>
-            </>
-          )}
-          <span>
-            {m.runtimeMinutes ? duration(m.runtimeMinutes * 60, locale) : t('runtime.unknown')}
-          </span>
-          {meta?.certification && (
-            <>
-              <span aria-hidden>·</span>
-              <QualityTag>{meta.certification}</QualityTag>
-            </>
-          )}
-          {m.genres.length > 0 && (
-            <>
-              <span aria-hidden>·</span>
-              <span>{m.genres.join(t('comma'))}</span>
-            </>
-          )}
-          {m.rating > 0 && <Rating value={m.rating} size={12} showValue />}
-        </div>
-        {meta?.tagline && (
-          <p className="text-body text-text-2">{t('tagline', { tagline: meta.tagline })}</p>
-        )}
-        {badges && <div className="flex flex-wrap items-center gap-2">{badges}</div>}
-        {m.synopsis && <p className="max-w-[65ch] text-body text-text-2">{m.synopsis}</p>}
-        {directors.length > 0 && (
-          <p className="text-caption text-text-2">
-            {t('directedBy')} <People people={directors} />
-          </p>
-        )}
-        {children}
-      </div>
-    </section>
+      {badges && (
+        <View
+          style={{
+            flexDirection: 'row',
+            flexWrap: 'wrap',
+            alignItems: 'center',
+            gap: tokens.space['2'],
+          }}
+        >
+          {badges}
+        </View>
+      )}
+      {m.synopsis && (
+        <Text variant="body" color="text-2" style={{ maxWidth: MEASURE }}>
+          {m.synopsis}
+        </Text>
+      )}
+      {directors.length > 0 && (
+        <Text variant="caption" color="text-2">
+          {t('directedBy')} <People people={directors} />
+        </Text>
+      )}
+      {children}
+    </SummaryCard>
+  )
+}
+
+/** A poster's placeholder at a width, or the column's. */
+function PosterBlock({ width }: { width?: number }) {
+  return (
+    <View style={{ width: width ?? '100%', aspectRatio: 2 / 3 }}>
+      <Skeleton height="100%" radius={tokens.radius.poster} />
+    </View>
   )
 }
 
 export function SummarySkeleton() {
+  const medium = useWindowAtLeast(breakpoints.medium)
   return (
-    <div aria-busy className="grid gap-5 medium:grid-cols-[10rem_minmax(0,1fr)]">
-      <Skeleton className="aspect-poster rounded-poster" />
-      <SkeletonText lines={4} />
-    </div>
+    <View aria-busy style={{ flexDirection: medium ? 'row' : 'column', gap: tokens.space['5'] }}>
+      <View style={{ width: medium ? 160 : '100%' }}>
+        <PosterBlock />
+      </View>
+      <View style={{ flex: medium ? 1 : undefined }}>
+        <SkeletonText lines={4} />
+      </View>
+    </View>
   )
 }
 
@@ -238,13 +384,79 @@ export function ReleaseLine({ date }: { date: string | null }) {
   const now = useNow()
   const long = useLongDate()
   return (
-    <p className="text-caption text-text-3">
+    <Text variant="caption" color="text-3">
       {date === null
         ? t('release.unknown')
         : releasedBy(date, now)
           ? t('released', { date: long(date) })
           : t('releases', { date: long(date) })}
-    </p>
+    </Text>
+  )
+}
+
+// ---------------------------------------------------------------- grids
+
+/** A grid of posters, as many 136-wide columns as fit (Discover's, a person's Known for). */
+export function PosterGrid({ children, min = 136 }: { children: ReactNode; min?: number }) {
+  return (
+    <View
+      role="list"
+      style={grid({
+        gridTemplateColumns: `repeat(auto-fill, minmax(${min}px, 1fr))`,
+        columnGap: tokens.space['4'],
+        rowGap: tokens.space['5'],
+      })}
+    >
+      {children}
+    </View>
+  )
+}
+
+/** One of a PosterGrid's items: `full` spans every column, `busy` is a placeholder. */
+export function GridItem({
+  children,
+  gap,
+  full,
+  busy,
+}: {
+  children: ReactNode
+  gap?: number
+  full?: boolean
+  busy?: boolean
+}) {
+  return (
+    <View
+      role="listitem"
+      aria-busy={busy || undefined}
+      style={[
+        { gap, alignItems: full ? 'flex-start' : undefined },
+        full ? grid({ gridColumn: '1 / -1' }) : null,
+      ]}
+    >
+      {children}
+    </View>
+  )
+}
+
+/** In library as a badge that links to the movie's page (Discover's results, a filmography). */
+export function InLibraryLink({
+  href,
+  label,
+  text,
+}: {
+  href: string
+  label: string
+  text: string
+}) {
+  return (
+    <Press
+      role="link"
+      {...({ href } as object)}
+      accessibilityLabel={label}
+      style={{ alignSelf: 'flex-start', borderRadius: tokens.radius.pill }}
+    >
+      <Badge tone="success">{text}</Badge>
+    </Press>
   )
 }
 
@@ -269,9 +481,10 @@ export function MediaOverview({
   onAdd: (movies: DiscoverMovie[]) => void
 }) {
   const t = useT(messages)
+  const expanded = useWindowAtLeast(breakpoints.expanded)
   return (
-    <div className="grid grid-cols-1 gap-8 expanded:grid-cols-[minmax(0,1fr)_20rem]">
-      <div className="grid min-w-0 grid-cols-1 content-start gap-8">
+    <View style={{ flexDirection: expanded ? 'row' : 'column', gap: tokens.space['8'] }}>
+      <View style={{ flex: expanded ? 1 : undefined, minWidth: 0, gap: tokens.space['8'] }}>
         {main}
         <Loadable query={meta} what={t('details')} skeleton={<RowSkeleton />}>
           {(md) => (
@@ -285,81 +498,101 @@ export function MediaOverview({
             </>
           )}
         </Loadable>
-      </div>
-      <div className="grid min-w-0 grid-cols-1 content-start gap-8">
+      </View>
+      <View style={{ width: expanded ? 320 : undefined, minWidth: 0, gap: tokens.space['8'] }}>
         {aside}
         {meta.status === 'success' && <About meta={meta.data} />}
-      </div>
-    </div>
+      </View>
+    </View>
   )
 }
 
 export function RowSkeleton() {
   return (
-    <div className="flex gap-4 overflow-hidden">
+    <View style={{ flexDirection: 'row', gap: tokens.space['4'], overflow: 'hidden' }}>
       {[0, 1, 2, 3, 4, 5].map((i) => (
-        <Skeleton key={i} className="aspect-poster w-28 shrink-0 rounded-poster" />
+        <PosterBlock key={i} width={112} />
       ))}
-    </div>
+    </View>
   )
 }
 
-const personItem = 'w-[clamp(6rem,9vw,7.5rem)]'
-/** Titles in the admin's rows: smaller than the clients' default, since the column is narrower. */
-export const titleItem = 'w-[clamp(7rem,11vw,8.5rem)]'
+/** A width that follows the window between two ends, as CSS's clamp() of a vw share. */
+const useClamped = (min: number, share: number, max: number) =>
+  Math.round(Math.min(Math.max(min, useWindowDimensions().width * share), max))
+
+/** People in the admin's rows: the web's clamp(6rem, 9vw, 7.5rem). */
+const usePersonWidth = () => useClamped(96, 0.09, 120)
+/**
+ * Titles in the admin's rows: smaller than the clients' default, since the column is narrower
+ * (the web's clamp(7rem, 11vw, 8.5rem)).
+ */
+export const useTitleWidth = () => useClamped(112, 0.11, 136)
+/** Trailers' stills: the web's clamp(12rem, 22vw, 16rem). */
+const useStillWidth = () => useClamped(192, 0.22, 256)
 
 function CastRow({ cast, onAll }: { cast: Credit[]; onAll: () => void }) {
   const t = useT(messages)
+  const width = usePersonWidth()
   return (
-    <CarouselRow
-      flush
+    <Row
+      inset={0}
       title={t('cast')}
-      itemClassName={personItem}
       action={
-        <Button size="sm" variant="ghost" onClick={onAll}>
+        <Button size="sm" variant="ghost" onPress={onAll}>
           {t('allCast')}
         </Button>
       }
-    >
-      {cast.slice(0, 10).map((c) => (
+      items={cast.slice(0, 10)}
+      keyOf={(c) => c.id}
+      render={(c) => (
         <Poster
-          key={c.id}
           title={c.name}
           src={c.photo ?? undefined}
           href={personPath(c.personId)}
           showTitle
+          titleSize="ui"
           caption={c.character ?? undefined}
+          width={width}
         />
-      ))}
-    </CarouselRow>
+      )}
+    />
   )
 }
 
 function TrailersRow({ videos }: { videos: Video[] }) {
   const t = useT(messages)
+  const width = useStillWidth()
   const [playing, setPlaying] = useState<Video | null>(null)
   return (
     <>
-      <CarouselRow flush title={t('trailers')} itemClassName="w-[clamp(12rem,22vw,16rem)]">
-        {videos.map((v) => (
+      <Row
+        inset={0}
+        title={t('trailers')}
+        items={videos}
+        keyOf={(v) => v.id}
+        render={(v) => (
           <Poster
-            key={v.id}
             title={v.name}
             src={v.still ?? undefined}
             aspect="still"
-            onClick={() => setPlaying(v)}
+            onPress={() => setPlaying(v)}
             showTitle
+            titleSize="ui"
             // TMDB gives no duration, so the kind alone (checkpoint 4, Fields and how they map)
             caption={t(`kind.${v.kind}`)}
+            width={width}
             status={
-              <Badge overlay dot={false} aria-hidden className="px-1.5">
-                <Icon name="play" size={12} />
-              </Badge>
+              <View aria-hidden>
+                <Badge overlay dot={false} icon="play">
+                  {''}
+                </Badge>
+              </View>
             }
           />
-        ))}
-      </CarouselRow>
-      <TrailerDialog video={playing} onOpenChange={(o) => !o && setPlaying(null)} />
+        )}
+      />
+      <TrailerDialog video={playing} onClose={() => setPlaying(null)} />
     </>
   )
 }
@@ -375,45 +608,38 @@ export const playerUrl = (v: Pick<Video, 'site' | 'key'>) =>
     ? `https://www.youtube-nocookie.com/embed/${encodeURIComponent(v.key)}?autoplay=1`
     : `https://player.vimeo.com/video/${encodeURIComponent(v.key)}?autoplay=1&dnt=1`
 
-function TrailerDialog({
-  video: v,
-  onOpenChange,
-}: {
-  video: Video | null
-  onOpenChange: (open: boolean) => void
-}) {
+function TrailerDialog({ video: v, onClose }: { video: Video | null; onClose: () => void }) {
   const t = useT(messages)
   const long = useLongDate()
+  const { colors } = useTheme()
   return (
-    <Dialog open={!!v} onOpenChange={onOpenChange}>
-      <DialogContent size="lg" title={v?.name ?? t('trailers')}>
-        {v && (
-          <div className="grid gap-3">
-            <div className="relative isolate aspect-still overflow-hidden rounded-md bg-s2">
-              <iframe
-                src={playerUrl(v)}
-                title={t('trailer.frame', { name: v.name, site: v.site })}
-                // YouTube's embeds need the referrer to play (its required minimum functionality)
-                referrerPolicy="strict-origin-when-cross-origin"
-                allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
-                allowFullScreen
-                className="absolute inset-0 size-full border-0"
-              />
-            </div>
-            <p className="text-caption text-text-3">
-              {v.publishedAt
-                ? t('trailer.caption', { kind: t(`kind.${v.kind}`), date: long(v.publishedAt) })
-                : t(`kind.${v.kind}`)}
-            </p>
-          </div>
-        )}
-      </DialogContent>
+    <Dialog open={!!v} onClose={onClose} closable size="lg" title={v?.name ?? t('trailers')}>
+      {v && (
+        <View style={{ gap: tokens.space['3'] }}>
+          <View
+            style={{
+              aspectRatio: 16 / 9,
+              overflow: 'hidden',
+              borderRadius: tokens.radius.md,
+              backgroundColor: colors.s2,
+            }}
+          >
+            {/* Embed sends only the origin as the referrer, as YouTube's embeds need */}
+            <Embed src={playerUrl(v)} title={t('trailer.frame', { name: v.name, site: v.site })} />
+          </View>
+          <Text variant="caption" color="text-3">
+            {v.publishedAt
+              ? t('trailer.caption', { kind: t(`kind.${v.kind}`), date: long(v.publishedAt) })
+              : t(`kind.${v.kind}`)}
+          </Text>
+        </View>
+      )}
     </Dialog>
   )
 }
 
 /** A poster of another title, marked if it's in the library. */
-export function TitlePoster({ t: m }: { t: DiscoverMovie }) {
+export function TitlePoster({ t: m, width }: { t: DiscoverMovie; width?: number }) {
   const t = useT(messages)
   return (
     <Poster
@@ -421,13 +647,15 @@ export function TitlePoster({ t: m }: { t: DiscoverMovie }) {
       src={m.art.poster ?? undefined}
       href={moviePath(m.id)}
       showTitle
-      caption={m.year ?? undefined}
+      titleSize="ui"
+      caption={m.year === null ? undefined : String(m.year)}
+      width={width}
       status={
-        m.inLibrary && (
+        m.inLibrary ? (
           <Badge overlay tone="success">
             {t('inLibrary')}
           </Badge>
-        )
+        ) : undefined
       }
     />
   )
@@ -442,45 +670,51 @@ export const useCollection = (id: number) =>
 
 /**
  * A collection's parts in release order, how many are here, and Add {n} missing. The row on a
- * movie's page names the collection and links to its page; the collection's own page titles it
- * itself.
+ * movie's page names the collection and links to its page (`href`); the collection's own page
+ * titles it itself.
  */
 export function CollectionRow({
   collection: c,
   title,
+  href,
   current,
   onAdd,
 }: {
   collection: Collection
-  title: ReactNode
+  title: string
+  /** The title links here: the collection's page. */
+  href?: string
   /** The movie whose page this is: shown as "This one", not linked. */
   current?: number
   onAdd: (movies: DiscoverMovie[]) => void
 }) {
   const t = useT(messages)
+  const width = useTitleWidth()
   const missing = c.parts.filter((p) => !p.inLibrary)
   const here = c.parts.length - missing.length
   return (
-    <CarouselRow
-      flush
+    <Row
+      inset={0}
       title={title}
-      itemClassName={titleItem}
+      titleHref={href}
       suffix={t('collection.suffix', { here, total: c.parts.length })}
       action={
-        missing.length > 0 && (
-          <Button size="sm" icon="add" onClick={() => onAdd(missing)}>
+        missing.length > 0 ? (
+          <Button size="sm" icon="add" onPress={() => onAdd(missing)}>
             {t('collection.addMissing', { count: missing.length })}
           </Button>
-        )
+        ) : undefined
       }
-    >
-      {c.parts.map((p) =>
+      items={c.parts}
+      keyOf={(p) => p.id}
+      render={(p) =>
         p.id === current ? (
           <Poster
-            key={p.id}
             title={p.title}
             src={p.art.poster ?? undefined}
             showTitle
+            titleSize="ui"
+            width={width}
             caption={
               p.year === null
                 ? t('collection.thisOneNoYear')
@@ -488,10 +722,10 @@ export function CollectionRow({
             }
           />
         ) : (
-          <TitlePoster key={p.id} t={p} />
-        ),
-      )}
-    </CarouselRow>
+          <TitlePoster t={p} width={width} />
+        )
+      }
+    />
   )
 }
 
@@ -511,11 +745,8 @@ function MovieCollectionRow({
   return (
     <CollectionRow
       collection={c}
-      title={
-        <a href={collectionPath(c.id)} className="hover:underline">
-          {c.name}
-        </a>
-      }
+      title={c.name}
+      href={collectionPath(c.id)}
       current={current}
       onAdd={onAdd}
     />
@@ -524,6 +755,7 @@ function MovieCollectionRow({
 
 function MoreLikeThis({ id }: { id: number }) {
   const t = useT(messages)
+  const width = useTitleWidth()
   const recs = useQuery(
     `recommendations:${id}`,
     (c) => c.metadata.recommendations({ params: { id } }),
@@ -531,26 +763,26 @@ function MoreLikeThis({ id }: { id: number }) {
   )
   if (recs.status !== 'success' || recs.data.length === 0) return null
   return (
-    <CarouselRow flush title={t('moreLikeThis')} itemClassName={titleItem}>
-      {recs.data.map((m) => (
-        <TitlePoster key={m.id} t={m} />
-      ))}
-    </CarouselRow>
+    <Row
+      inset={0}
+      title={t('moreLikeThis')}
+      items={recs.data}
+      keyOf={(m) => m.id}
+      render={(m) => <TitlePoster t={m} width={width} />}
+    />
   )
 }
 
 // ---------------------------------------------------------------- about
 
+/** Terms and their values in the admin's ui type, the terms in text-3 (the web's `dl`). */
 export function Definition({ items }: { items: [string, ReactNode][] }) {
   return (
-    <dl className="grid grid-cols-[fit-content(40%)_minmax(0,1fr)] gap-x-6 gap-y-2 text-ui">
-      {items.map(([k, v]) => (
-        <div key={k} className="contents">
-          <dt className="text-text-3">{k}</dt>
-          <dd className="min-w-0 text-text [overflow-wrap:anywhere]">{v}</dd>
-        </div>
-      ))}
-    </dl>
+    <Details
+      terms="ui"
+      gap={tokens.space['2']}
+      rows={items.map(([term, value]) => ({ term, value }))}
+    />
   )
 }
 
@@ -563,28 +795,56 @@ function languageName(code: string, locale: string): string {
   }
 }
 
+/** A heading in the web's text-title (19), at a level. */
+function Heading({ children, level = 2 }: { children: string; level?: 2 | 3 }) {
+  return (
+    <Text variant="title" role="heading" aria-level={level}>
+      {children}
+    </Text>
+  )
+}
+
 function About({ meta: m }: { meta: MovieMetadata }) {
   const t = useT(messages)
   const locale = useLocale()
   const now = useNow()
   const long = useLongDate()
+  const { colors } = useTheme()
   const usd = new Intl.NumberFormat(locale, {
     style: 'currency',
     currency: 'USD',
     maximumFractionDigits: 0,
   })
+  // a link out, opening in a new tab, which it says to assistive tech (the web's sr-only words)
   const external = (href: string, label: string) => (
-    <a
+    <Press
       key={label}
-      href={href}
-      target="_blank"
-      rel="noreferrer"
-      className={`inline-flex items-center gap-1 ${textLink}`}
+      role="link"
+      {...({ href, hrefAttrs: { target: '_blank', rel: 'noreferrer' } } as object)}
+      accessibilityLabel={`${label} ${t('about.opensNewTab')}`}
+      style={{ borderRadius: tokens.radius.sm }}
     >
-      {label}
-      <Icon name="external" size={12} />
-      <span className="sr-only">{t('about.opensNewTab')}</span>
-    </a>
+      {({ hovered }) => (
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: tokens.space['1'] }}>
+          <Text
+            size={ui.size}
+            color="text"
+            style={{
+              textDecorationLine: 'underline',
+              textDecorationColor: hovered ? colors.text : colors['text-3'],
+            }}
+          >
+            {label}
+          </Text>
+          <Icon name="external" size={12} />
+        </View>
+      )}
+    </Press>
+  )
+  const figure = (n: number) => (
+    <Text size={ui.size} color="text" mono>
+      {usd.format(n)}
+    </Text>
   )
   const items: [string, ReactNode][] = []
   if (m.releaseDate)
@@ -599,20 +859,8 @@ function About({ meta: m }: { meta: MovieMetadata }) {
     t('about.runtime'),
     m.runtimeMinutes ? duration(m.runtimeMinutes * 60, locale) : t('about.runtimeUnknown'),
   ])
-  if (m.budget)
-    items.push([
-      t('about.budget'),
-      <span key="budget" className="font-mono">
-        {usd.format(m.budget)}
-      </span>,
-    ])
-  if (m.revenue)
-    items.push([
-      t('about.revenue'),
-      <span key="revenue" className="font-mono">
-        {usd.format(m.revenue)}
-      </span>,
-    ])
+  if (m.budget) items.push([t('about.budget'), figure(m.budget)])
+  if (m.revenue) items.push([t('about.revenue'), figure(m.revenue)])
   if (m.studios.length > 0)
     items.push([
       m.studios.length > 1 ? t('about.studios') : t('about.studio'),
@@ -620,19 +868,25 @@ function About({ meta: m }: { meta: MovieMetadata }) {
     ])
   items.push([
     t('about.links'),
-    <span key="links" className="flex flex-wrap gap-x-3 gap-y-1">
+    <View
+      key="links"
+      style={{
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        columnGap: tokens.space['3'],
+        rowGap: tokens.space['1'],
+      }}
+    >
       {external(`https://www.themoviedb.org/movie/${m.id}`, 'TMDB')}
       {m.imdbId && external(`https://www.imdb.com/title/${m.imdbId}/`, 'IMDb')}
       {m.wikidataId && external(`https://www.wikidata.org/wiki/${m.wikidataId}`, 'Wikidata')}
-    </span>,
+    </View>,
   ])
   return (
-    <section aria-labelledby="about" className="grid grid-cols-1 content-start gap-3">
-      <h2 id="about" className="text-title text-text">
-        {t('about')}
-      </h2>
+    <View role="region" aria-label={t('about')} style={{ gap: tokens.space['3'] }}>
+      <Heading>{t('about')}</Heading>
       <Definition items={items} />
-    </section>
+    </View>
   )
 }
 
@@ -657,87 +911,120 @@ export function crewByDepartment(crew: Credit[]) {
     .filter(([, people]) => people.length > 0)
 }
 
+/** A crew member's photo beside their name: 28 wide, the poster's shape, 4 round. */
+const CREW_PHOTO = { width: 28, radius: 4 }
+
+function CrewPhoto({ src }: { src: string | null }) {
+  const { colors } = useTheme()
+  const frame = {
+    width: CREW_PHOTO.width,
+    aspectRatio: 2 / 3,
+    borderRadius: CREW_PHOTO.radius,
+    flexShrink: 0,
+  } as const
+  return src ? (
+    <Image source={{ uri: src }} aria-hidden contentFit="cover" style={frame} />
+  ) : (
+    <View
+      aria-hidden
+      style={[
+        frame,
+        { alignItems: 'center', justifyContent: 'center', backgroundColor: colors.s2 },
+      ]}
+    >
+      <Icon name="user" size={14} color="text-3" />
+    </View>
+  )
+}
+
 export function CastAndCrew({ meta }: { meta: MetadataQuery }) {
   const t = useT(messages)
+  const medium = useWindowAtLeast(breakpoints.medium)
+  const expanded = useWindowAtLeast(breakpoints.expanded)
   return (
     <Loadable query={meta} what={t('cast.what')} skeleton={<RowSkeleton />}>
       {(m) => {
         const crew = crewByDepartment(m.crew)
         return (
-          <div className="grid grid-cols-1 gap-8">
-            <section aria-labelledby="cast" className="grid gap-4">
-              <h2 id="cast" className="text-title text-text">
-                {t('cast')}
-              </h2>
+          <View style={{ gap: tokens.space['8'] }}>
+            <View role="region" aria-label={t('cast')} style={{ gap: tokens.space['4'] }}>
+              <Heading>{t('cast')}</Heading>
               {m.cast.length === 0 ? (
                 <EmptyState icon="users" title={t('cast.none')}>
                   {t('cast.noneBody')}
                 </EmptyState>
               ) : (
-                <ul className="grid grid-cols-[repeat(auto-fill,minmax(7rem,1fr))] gap-x-4 gap-y-5">
+                <View
+                  role="list"
+                  style={grid({
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(112px, 1fr))',
+                    columnGap: tokens.space['4'],
+                    rowGap: tokens.space['5'],
+                  })}
+                >
                   {m.cast.map((c) => (
-                    <li key={c.id}>
+                    <View key={c.id} role="listitem">
                       <Poster
                         title={c.name}
                         src={c.photo ?? undefined}
                         href={personPath(c.personId)}
                         showTitle
+                        titleSize="ui"
                         caption={c.character ?? undefined}
                       />
-                    </li>
+                    </View>
                   ))}
-                </ul>
+                </View>
               )}
-            </section>
+            </View>
             {crew.length > 0 && (
-              <section aria-labelledby="crew" className="grid gap-4">
-                <h2 id="crew" className="text-title text-text">
-                  {t('crew')}
-                </h2>
-                <div className="grid grid-cols-1 gap-6 medium:grid-cols-2 expanded:grid-cols-3">
+              <View role="region" aria-label={t('crew')} style={{ gap: tokens.space['4'] }}>
+                <Heading>{t('crew')}</Heading>
+                <View
+                  style={grid({
+                    gridTemplateColumns: `repeat(${expanded ? 3 : medium ? 2 : 1}, minmax(0, 1fr))`,
+                    gap: tokens.space['6'],
+                  })}
+                >
                   {crew.map(([d, people]) => (
-                    <section
+                    <View
                       key={d}
+                      role="region"
                       aria-label={t(`department.${d}`)}
-                      className="grid content-start gap-2"
+                      style={{ gap: tokens.space['2'] }}
                     >
-                      <h3 className="font-mono text-label text-text-3 uppercase">
+                      <Text variant="label" color="text-3" role="heading" aria-level={3}>
                         {t(`department.${d}`)}
-                      </h3>
-                      <ul className="grid gap-2">
+                      </Text>
+                      <View role="list" style={{ gap: tokens.space['2'] }}>
                         {people.map(({ credit: c, jobs }) => (
-                          <li key={c.personId} className="flex items-center gap-3">
-                            {c.photo ? (
-                              <img
-                                src={c.photo}
-                                alt=""
-                                className="aspect-poster w-7 shrink-0 rounded-[4px] object-cover"
-                              />
-                            ) : (
-                              <span
-                                aria-hidden
-                                className="grid aspect-poster w-7 shrink-0 place-items-center rounded-[4px] bg-s2 text-text-3"
-                              >
-                                <Icon name="user" size={14} />
-                              </span>
-                            )}
-                            <span className="grid min-w-0">
-                              <a href={personPath(c.personId)} className={`truncate ${textLink}`}>
-                                {c.name}
-                              </a>
-                              <span className="text-caption text-text-3">
+                          <View
+                            key={c.personId}
+                            role="listitem"
+                            style={{
+                              flexDirection: 'row',
+                              alignItems: 'center',
+                              gap: tokens.space['3'],
+                            }}
+                          >
+                            <CrewPhoto src={c.photo} />
+                            <View style={{ flex: 1, minWidth: 0 }}>
+                              <Text size={ui.size} numberOfLines={1}>
+                                <InlineLink href={personPath(c.personId)}>{c.name}</InlineLink>
+                              </Text>
+                              <Text variant="caption" color="text-3">
                                 {jobs.join(t('comma'))}
-                              </span>
-                            </span>
-                          </li>
+                              </Text>
+                            </View>
+                          </View>
                         ))}
-                      </ul>
-                    </section>
+                      </View>
+                    </View>
                   ))}
-                </div>
-              </section>
+                </View>
+              </View>
             )}
-          </div>
+          </View>
         )
       }}
     </Loadable>

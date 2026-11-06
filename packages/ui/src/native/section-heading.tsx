@@ -10,7 +10,7 @@
 // - the TV: its row title (1.2u).
 // A suffix (a row's "from your list") follows in `text-2`, and a count (Search's results in a
 // section) in `text-3`, both at the title's size in the regular weight, as the prototypes' spans.
-import type { ReactNode } from 'react'
+import { type ReactNode, useState } from 'react'
 import { View } from 'react-native'
 import { Text, type Variant } from './text.tsx'
 import { useTheme } from './theme.tsx'
@@ -23,6 +23,12 @@ const ACTION_HEIGHT = 28
 
 export type SectionHeadingProps = {
   title: string
+  /**
+   * The title is a link to this address (a movie's collection's page): underlined while a pointer
+   * is over it. react-native-web draws a Text with `href` as an `<a>` inside the heading
+   * (https://necolas.github.io/react-native-web/docs/text/).
+   */
+  href?: string
   /** Words after the title, quieter (`text-2`): a row's "from your list". */
   suffix?: string | null
   /** A number after the title and any suffix, quieter still (`text-3`): a section's results. */
@@ -46,6 +52,7 @@ const VARIANT: Record<'pointer' | 'touch' | 'tv', Variant> = {
 
 export function SectionHeading({
   title,
+  href,
   suffix,
   count,
   action,
@@ -53,6 +60,7 @@ export function SectionHeading({
   level = 2,
 }: SectionHeadingProps) {
   const input = useTheme().formFactor.input
+  const [over, setOver] = useState(false)
   const variant = VARIANT[input]
   const size = input === 'touch' ? PHONE_SECTION_TITLE : undefined
   return (
@@ -72,7 +80,22 @@ export function SectionHeading({
         aria-level={level}
         style={{ flex: 1 }}
       >
-        {title}
+        {href ? (
+          <Text
+            variant={variant}
+            size={size}
+            weight={600}
+            {...({ href } as object)}
+            role="link"
+            onPointerEnter={() => setOver(true)}
+            onPointerLeave={() => setOver(false)}
+            style={over ? { textDecorationLine: 'underline' } : undefined}
+          >
+            {title}
+          </Text>
+        ) : (
+          title
+        )}
         {suffix ? (
           <Text variant={variant} size={size} weight={400} color="text-2">
             {` ${suffix}`}

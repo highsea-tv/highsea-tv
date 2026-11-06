@@ -6,10 +6,10 @@
 // dark glass parts lay over artwork, says what would play there, as the prototype's offline
 // stand-in.
 import { aspect } from '@highsea-tv/tokens'
-import { Image, type ImageSource } from 'expo-image'
 import { StyleSheet, View } from 'react-native'
 import { Embed } from './embed'
 import { GLASS } from './glass.ts'
+import { Image, type ImageSource } from './image.tsx'
 import { Text } from './text.tsx'
 import { tokens, useTheme } from './theme.tsx'
 

@@ -9,6 +9,7 @@ import './dom.ts'
 import { afterEach, beforeEach, describe, expect, mock, spyOn, test } from 'bun:test'
 import type { ReactNode } from 'react'
 import type { MovieTab } from '../src/movie-detail.tsx'
+import { shown } from './modal.ts'
 import { navigation, Routed } from './router.tsx'
 
 let role: 'owner' | 'admin' = 'owner'
@@ -48,6 +49,7 @@ const { default: userEvent } = await import('@testing-library/user-event')
 const { createClient } = await import('@highsea-tv/sdk')
 const { ClientProvider } = await import('@highsea-tv/sdk/react')
 const { UIProvider } = await import('@highsea-tv/ui')
+const { ThemeProvider, Toaster } = await import('@highsea-tv/ui/native')
 const { MovieDetail } = await import('../src/movie-detail.tsx')
 const { PersonPage } = await import('../src/person.tsx')
 const { CollectionPage } = await import('../src/collection.tsx')
@@ -568,17 +570,23 @@ beforeEach(() => {
 })
 afterEach(() => cleanup())
 
-const settle = () =>
-  act(async () => {
+/** Lets the fetches answer, then ends any dialog's fade (modal.ts). */
+const settle = async () => {
+  await act(async () => {
     for (let i = 0; i < 6; i++) await new Promise((r) => setTimeout(r, 0))
   })
+  shown()
+}
 
 async function open(ui: ReactNode) {
   const client = createClient({ fetch: api as never })
   await act(async () => {
     render(
       <ClientProvider client={client}>
-        <UIProvider>{ui}</UIProvider>
+        <ThemeProvider>
+          <UIProvider>{ui}</UIProvider>
+          <Toaster label="Notifications" />
+        </ThemeProvider>
       </ClientProvider>,
     )
   })
@@ -610,7 +618,8 @@ describe('a movie that isn’t in the library', () => {
     const { page } = await open(
       <Routed<MovieTab> base="/movies/603">{(tab) => <MovieDetail id="603" tab={tab} />}</Routed>,
     )
-    const cast = page.getByRole('region', { name: 'Cast' })
+    // a row is a group named by its title (the native Row)
+    const cast = page.getByRole('group', { name: 'Cast' })
     expect(within(cast).getAllByRole('link')).toHaveLength(10)
     expect(page.getByRole('link', { name: /Lana Wachowski/ }).getAttribute('href')).toBe(
       '/people/9339',
@@ -646,7 +655,8 @@ describe('a movie that isn’t in the library', () => {
     expect(document.querySelector('iframe')).toBeNull()
     // happy-dom refuses to load the frame (no network in tests) and logs that it didn't
     const quiet = spyOn(console, 'error').mockImplementation(() => {})
-    await user.click(page.getByRole('button', { name: /Official trailer/ }))
+    // the native Poster is a link's role whether it leads somewhere or opens the player
+    await user.click(page.getByRole('link', { name: /Official trailer/ }))
     await settle()
     quiet.mockRestore()
     const dialog = page.getByRole('dialog', { name: 'Official trailer' })
@@ -714,33 +724,38 @@ describe('a movie that isn’t in the library', () => {
   })
 
   test('without a TMDB key, a title the server hasn’t seen says where to add one', async () => {
-    const { page, user } = await open(
+    const { page } = await open(
       <Routed<MovieTab> base="/movies/604">{(tab) => <MovieDetail id="604" tab={tab} />}</Routed>,
     )
     expect(page.getByText('Add a TMDB key to find movies.')).toBeTruthy()
-    await user.click(page.getByRole('button', { name: 'Go to Settings' }))
-    expect(pushed).toEqual(['/settings/general#metadata'])
+    // a link now, as the native Button with an address is
+    expect(page.getByRole('link', { name: 'Go to Settings' }).getAttribute('href')).toBe(
+      '/settings/general#metadata',
+    )
   })
 
   test('a key TMDB stopped accepting says to copy it again, and where', async () => {
-    const { page, user } = await open(
+    const { page } = await open(
       <Routed<MovieTab> base="/movies/605">{(tab) => <MovieDetail id="605" tab={tab} />}</Routed>,
     )
     expect(page.getByText('TMDB didn’t accept that key.')).toBeTruthy()
     expect(page.getByText('Copy it again from your TMDB account.')).toBeTruthy()
-    await user.click(page.getByRole('button', { name: 'Go to Settings' }))
-    expect(pushed).toEqual(['/settings/general#metadata'])
+    // a link now, as the native Button with an address is
+    expect(page.getByRole('link', { name: 'Go to Settings' }).getAttribute('href')).toBe(
+      '/settings/general#metadata',
+    )
   })
 
   test('an id TMDB doesn’t know, or one that isn’t an id, says so', async () => {
-    const { page, user } = await open(
+    const { page } = await open(
       <Routed<MovieTab> base="/movies/999999">
         {(tab) => <MovieDetail id="999999" tab={tab} />}
       </Routed>,
     )
     expect(page.getByText('TMDB doesn’t know that title')).toBeTruthy()
-    await user.click(page.getByRole('button', { name: 'Go to Discover' }))
-    expect(pushed).toEqual(['/discover'])
+    expect(page.getByRole('link', { name: 'Go to Discover' }).getAttribute('href')).toBe(
+      '/discover',
+    )
     cleanup()
     const again = await open(
       <Routed<MovieTab> base="/movies/the-matrix">
@@ -777,7 +792,7 @@ describe('a movie in the library', () => {
     const { page, user } = await open(
       <Routed<MovieTab> base="/movies/603">{(tab) => <MovieDetail id="603" tab={tab} />}</Routed>,
     )
-    expect((page.getByRole('button', { name: 'Search' }) as HTMLButtonElement).disabled).toBe(true)
+    expect(page.getByRole('button', { name: 'Search' }).getAttribute('aria-disabled')).toBe('true')
     await user.click(page.getByRole('button', { name: 'Interactive search' }))
     await settle()
     expect(page.getByText('Add an indexer to search for releases.')).toBeTruthy()
@@ -794,8 +809,8 @@ describe('a movie in the library', () => {
       const { page, user } = await open(
         <Routed<MovieTab> base="/movies/603">{(tab) => <MovieDetail id="603" tab={tab} />}</Routed>,
       )
-      const search = page.getByRole('button', { name: 'Search' }) as HTMLButtonElement
-      expect(search.disabled).toBe(false)
+      const search = page.getByRole('button', { name: 'Search' })
+      expect(search.getAttribute('aria-disabled')).not.toBe('true')
       await user.click(search)
       await settle()
       expect(requested('POST', '/api/v1/movies/bulk')[0]?.body).toEqual({
@@ -1037,7 +1052,8 @@ describe('a movie in the library', () => {
       expect(page.queryByText('Synced English to the audio')).toBeNull()
       expect(page.getByText('Waiting to sync')).toBeTruthy()
       expect(
-        (page.getByRole('button', { name: 'Re-sync English' }) as HTMLButtonElement).disabled,
+        page.getByRole('button', { name: 'Re-sync English' }).getAttribute('aria-disabled') ===
+          'true',
       ).toBe(true)
 
       const [t1] = state.tracks
@@ -1129,7 +1145,7 @@ describe('a movie in the library', () => {
     )
     const lib = () => page.getByRole('region', { name: 'In the library' })
     const removeFirst = within(lib()).getByRole('button', { name: 'Remove HD 1080p' })
-    expect((removeFirst as HTMLButtonElement).disabled).toBe(true)
+    expect(removeFirst.getAttribute('aria-disabled')).toBe('true')
 
     await user.click(within(lib()).getByRole('button', { name: 'Add version' }))
     await settle()
@@ -1145,7 +1161,7 @@ describe('a movie in the library', () => {
 
     await user.click(within(lib()).getByRole('button', { name: 'Remove 4K HDR' }))
     await settle()
-    const confirm = page.getByRole('alertdialog', { name: 'Remove the 4K HDR version?' })
+    const confirm = page.getByRole('dialog', { name: 'Remove the 4K HDR version?' })
     await user.click(within(confirm).getByRole('button', { name: 'Remove' }))
     await settle()
     expect(requested('DELETE', '/api/v1/movies/603/versions/v2')).toHaveLength(1)
@@ -1191,7 +1207,7 @@ describe('a movie in the library', () => {
     await settle()
     await user.click(page.getByRole('menuitem', { name: 'Remove from library' }))
     await settle()
-    const confirm = page.getByRole('alertdialog', { name: 'Remove The Matrix?' })
+    const confirm = page.getByRole('dialog', { name: 'Remove The Matrix?' })
     await user.click(within(confirm).getByLabelText('Also delete its files from disk'))
     await user.click(within(confirm).getByRole('button', { name: 'Remove' }))
     await settle()
@@ -1209,7 +1225,7 @@ describe('a movie in the library', () => {
     await settle()
     await user.click(page.getByRole('menuitem', { name: 'Remove from library' }))
     await settle()
-    const confirm = page.getByRole('alertdialog', { name: 'Remove The Matrix?' })
+    const confirm = page.getByRole('dialog', { name: 'Remove The Matrix?' })
     await user.click(within(confirm).getByLabelText('Don’t add it again from lists'))
     await user.click(within(confirm).getByRole('button', { name: 'Remove' }))
     await settle()
@@ -1224,7 +1240,7 @@ describe('a movie in the library', () => {
     await settle()
     await user.click(page.getByRole('menuitem', { name: 'Remove from library' }))
     await settle()
-    const confirm = page.getByRole('alertdialog', { name: 'Remove The Matrix?' })
+    const confirm = page.getByRole('dialog', { name: 'Remove The Matrix?' })
     expect(within(confirm).queryByLabelText('Don’t add it again from lists')).toBeNull()
   })
 
@@ -1278,9 +1294,10 @@ describe('a person', () => {
     expect(rows()).toHaveLength(2)
 
     await user.click(page.getByRole('tab', { name: /^All/ }))
-    await user.click(page.getByRole('combobox', { name: 'Department' }))
+    // the native Select is a button that opens its choices as radios in a sheet
+    await user.click(page.getByRole('button', { name: 'Department' }))
     await settle()
-    await user.click(page.getByRole('option', { name: 'Writing' }))
+    await user.click(page.getByRole('menuitemradio', { name: 'Writing' }))
     await settle()
     expect(rows()).toHaveLength(2)
     expect(within(table()).getByText('Writer')).toBeTruthy()

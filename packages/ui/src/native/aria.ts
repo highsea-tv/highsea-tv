@@ -31,12 +31,15 @@ export function ariaRole(
  * "Unsupported Role value" for `menuitemradio`, and iOS maps `menuitem` to no trait
  * (RCTViewManager.m), so a phone's reader would read a choice as plain text. There it's a button,
  * its choice in force `checked` and `selected` (https://reactnative.dev/docs/accessibility#accessibilitystate),
- * which VoiceOver reads as selected.
+ * which VoiceOver reads as selected. A `checkbox` item (one of several chosen at once, a tag picker's)
+ * is `menuitemcheckbox` with `aria-checked` on the web (https://www.w3.org/TR/wai-aria-1.2/#menuitemcheckbox),
+ * and a button `checked` elsewhere.
  */
 export function menuItemRole(
   choice: boolean,
   checked: boolean,
   disabled: boolean,
+  checkbox = false,
 ): {
   role?: Role
   accessibilityRole?: AccessibilityRole
@@ -45,16 +48,17 @@ export function menuItemRole(
 } {
   if (Platform.OS === 'web')
     return {
-      // React Native's Role list has no `menuitemradio`; react-native-web writes it as it is
-      role: (choice ? 'menuitemradio' : 'menuitem') as Role,
-      'aria-checked': choice ? checked : undefined,
+      // React Native's Role list has no `menuitemradio` or `menuitemcheckbox`; react-native-web
+      // writes them as they are
+      role: (checkbox ? 'menuitemcheckbox' : choice ? 'menuitemradio' : 'menuitem') as Role,
+      'aria-checked': choice || checkbox ? checked : undefined,
       accessibilityState: { disabled },
     }
   return {
     accessibilityRole: 'button',
     accessibilityState: {
       disabled,
-      checked: choice ? checked : undefined,
+      checked: choice || checkbox ? checked : undefined,
       selected: choice ? checked : undefined,
     },
   }

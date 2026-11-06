@@ -22,8 +22,8 @@ const SWEEP_MS = 1600
 
 export type SkeletonProps = {
   width?: DimensionValue
-  /** Its height, in the form factor's unit (points, or units on the TV). */
-  height?: number
+  /** Its height, in the form factor's unit (points, or units on the TV), or a percentage of its frame's. */
+  height?: number | `${number}%`
   /**
    * Its corner, in points: `radius.sm` by default, as the web's `rounded-sm`, and on the TV the
    * same in units, so it rounds as much against the screen's larger type.
@@ -52,7 +52,7 @@ export function Skeleton({ width = '100%', height, radius }: SkeletonProps) {
       onLayout={(e) => setW(e.nativeEvent.layout.width)}
       style={{
         width,
-        height: height === undefined ? undefined : height * theme.u,
+        height: typeof height === 'number' ? height * theme.u : height,
         borderRadius: corner,
         overflow: 'hidden',
         backgroundColor: s2,

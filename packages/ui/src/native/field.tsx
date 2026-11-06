@@ -80,6 +80,9 @@ export function Field({
 }
 
 /** The field look's box: fill, edge and corner, by state. */
+/** The field look's edge (one-place-exceptions.json: no border width in the tokens yet). */
+const EDGE = 1
+
 export function fieldBox(theme: Theme, m: ControlPoints, focused: boolean, invalid: boolean) {
   const looks = tokens.controls.looks
   const look = invalid ? looks.fieldInvalid : focused ? looks.fieldFocused : looks.field
@@ -87,7 +90,7 @@ export function fieldBox(theme: Theme, m: ControlPoints, focused: boolean, inval
   return {
     minHeight: m.height,
     borderRadius: m.radius,
-    borderWidth: 1,
+    borderWidth: EDGE,
     borderColor: edge,
     backgroundColor: theme.colors[look.fill],
     boxShadow: focused || invalid ? `0 0 0 1px ${edge}` : undefined,
@@ -106,12 +109,20 @@ export function fieldBox(theme: Theme, m: ControlPoints, focused: boolean, inval
  * on, and the native platforms never get it.
  */
 const NO_BROWSER_OUTLINE = (Platform.OS === 'web' ? { outlineStyle: 'none' } : {}) as TextStyle
+// a field box drawn around its input is one control: react-native-web writes `data-control`
+const FIELD_MARK = { dataSet: { control: 'field' } } as object
 
 type InputOwn = Pick<FieldCommon, 'size' | 'disabled'> & {
   /** Monospace, for codes and addresses. */
   mono?: boolean
   /** The danger edge; a Field with an error sets it. */
   invalid?: boolean
+  /**
+   * A word inside the field's end, after what's typed: a unit ("days", "KB/s"), as the web's
+   * Input `end`. It's part of the field's look, so the focus edge goes round it too; the field's
+   * label should say the unit as well, since it isn't read with the value.
+   */
+  end?: string
 }
 
 export type InputProps = ComponentProps<typeof TextInput> & InputOwn
@@ -174,9 +185,53 @@ export function Input(props: InputProps) {
     disabled: _d,
     onFocus: _f,
     onBlur: _b,
+    end,
     ...rest
   } = props
   const { theme, m, focused, off, bad, common, text } = useInput(props)
+  if (end)
+    return (
+      <View
+        // measured by the sweeps' row check as its box, not the input inside it
+        {...FIELD_MARK}
+        style={[
+          fieldBox(theme, m, focused, bad),
+          {
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: m.gap,
+            paddingEnd: m.fieldPad,
+            opacity: off ? tokens.controls.disabledOpacity : 1,
+          },
+        ]}
+      >
+        <TextInput
+          {...common}
+          style={[
+            text,
+            {
+              flex: 1,
+              minWidth: 0,
+              alignSelf: 'stretch',
+              paddingStart: m.fieldPad,
+              // the box's edge is inside its height, so the input inside it is that much shorter
+              paddingVertical: m.inset - EDGE,
+            },
+            style,
+          ]}
+          {...rest}
+        />
+        <Text
+          aria-hidden
+          size={m.text}
+          color="text-3"
+          numberOfLines={1}
+          maxFontSizeMultiplier={MAX_FONT_MULTIPLIER}
+        >
+          {end}
+        </Text>
+      </View>
+    )
   return (
     <TextInput
       {...common}
@@ -262,6 +317,8 @@ export function SearchField({
   const filled = !!props.value
   return (
     <View
+      // measured by the sweeps' row check as its box, not the input inside it
+      {...FIELD_MARK}
       style={[
         fieldBox(theme, m, focused, bad),
         {
@@ -283,7 +340,8 @@ export function SearchField({
           {
             flex: 1,
             alignSelf: 'stretch',
-            paddingVertical: m.inset,
+            // the box's edge is inside its height (as Input with `end`)
+            paddingVertical: m.inset - EDGE,
             paddingRight: filled ? 0 : m.fieldPad,
           },
           style,
@@ -297,9 +355,10 @@ export function SearchField({
           haptic={false}
           slop={{ height: m.height, width: m.height }}
           onPress={() => props.onChangeText?.('')}
+          // square inside the box's edge, so a filled field is the height an empty one is
           style={{
-            width: m.height,
-            height: m.height,
+            width: m.height - EDGE * 2,
+            height: m.height - EDGE * 2,
             alignItems: 'center',
             justifyContent: 'center',
           }}

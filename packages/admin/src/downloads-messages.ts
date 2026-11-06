@@ -85,6 +85,7 @@ export const downloads = defineMessages({
   'add.needOne': 'Paste a link or pick a .torrent file.',
   'add.file': 'Or a .torrent file',
   'add.fileHint': 'Pick one, or drop it here. It’s used instead of the link.',
+  'add.fileChoose': 'Choose a .torrent file',
   'add.fileChosen': '{name} · {size}',
   'add.fileClear': 'Use the link instead',
   'add.category': 'Category',

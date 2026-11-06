@@ -11,6 +11,12 @@
 
 /** Drawn twice, by name, with the reason. */
 export const BOTH: Record<string, string> = {
+  DateTimeInput:
+    "A pair of platform files since D2: the browser's datetime-local in the field's look on the web, a mono Input elsewhere (Curation's schedule)",
+  PageFrame:
+    'A pair of platform files since D2: an inert, scaled iframe on the web (Curation’s preview), an empty View elsewhere, where the admin is never drawn',
+  WidgetEditor:
+    "A pair of platform files since D2: dnd-kit's drag, keyboard and resize on the web, the grid alone elsewhere, where a dashboard is never edited; the web renderer's own goes with src/web in D3",
   Badge:
     "The web renderer's is drawn by the admin and the prototypes until part D moves them onto this one",
   Banner:
@@ -94,6 +100,34 @@ export const BOTH: Record<string, string> = {
     'A region that steers TV focus: react-native-tvos’s TVFocusGuideView on the TVs, and on the web, which has none, marks the spatial focus engine reads (one-client-platform.md › A, question 5)',
   TvScroll:
     'A TV scroller that follows focus: a ScrollView landing each stop by its scrollSnapOffset on the TVs, and on the web a track the spatial focus engine moves, since react-native-web has neither prop. The track moves by transform behind a clipped view, so on the web a pointer’s wheel or drag doesn’t scroll a TvPage or a Row on the TV’s rule: only focus moves them, as on the TVs, which have no pointer',
+  Table:
+    "Drawn by the native renderer since D2 for the admin's screens; the web renderer's stays for what D2 hasn't moved yet and goes with src/web in D3",
+  TableFrame:
+    "Drawn by the native renderer since D2 for the admin's screens; the web renderer's stays for what D2 hasn't moved yet and goes with src/web in D3",
+  TableToolbar:
+    "Drawn by the native renderer since D2 for the admin's screens; the web renderer's stays for what D2 hasn't moved yet and goes with src/web in D3",
+  TableHeader:
+    "Drawn by the native renderer since D2 for the admin's screens; the web renderer's stays for what D2 hasn't moved yet and goes with src/web in D3",
+  TableBody:
+    "Drawn by the native renderer since D2 for the admin's screens; the web renderer's stays for what D2 hasn't moved yet and goes with src/web in D3",
+  TableRow:
+    "Drawn by the native renderer since D2 for the admin's screens; the web renderer's stays for what D2 hasn't moved yet and goes with src/web in D3",
+  TableHead:
+    "Drawn by the native renderer since D2 for the admin's screens; the web renderer's stays for what D2 hasn't moved yet and goes with src/web in D3",
+  TableCell:
+    "Drawn by the native renderer since D2 for the admin's screens; the web renderer's stays for what D2 hasn't moved yet and goes with src/web in D3",
+  RowActions:
+    "Drawn by the native renderer since D2 for the admin's screens; the web renderer's stays for what D2 hasn't moved yet and goes with src/web in D3",
+  WidgetFrame:
+    "Drawn by the native renderer since D2 for the admin's screens; the web renderer's stays for what D2 hasn't moved yet and goes with src/web in D3",
+  Sparkline:
+    "Drawn by the native renderer since D2 for the admin's screens; the web renderer's stays for what D2 hasn't moved yet and goes with src/web in D3",
+  ConfirmDialog:
+    "Drawn by the native renderer since D2 for the admin's screens; the web renderer's stays for what D2 hasn't moved yet and goes with src/web in D3",
+  Tooltip:
+    "Drawn by the native renderer since D2 for the admin's screens; the web renderer's stays for what D2 hasn't moved yet and goes with src/web in D3",
+  Toaster:
+    "Drawn by the native renderer since D2 for the admin's screens; the web renderer's stays for what D2 hasn't moved yet and goes with src/web in D3",
 }
 
 /** Only on the web, and why no phone or TV screen needs it. */
@@ -105,18 +139,6 @@ export const WEB_ONLY: Record<string, string> = {
     "The document's own bar, for the web renderer's pages, which scroll the document; the native renderer's screens scroll in a ScrollView, which draws the same bar from the same measures on the web (Scrollbar)",
   CommandPalette: 'A keyboard-first command menu (cmdk); phones and TVs have no keyboard shortcuts',
   ModKey: "Names the platform's modifier key in a shortcut; phones and TVs have none",
-  Table: 'Dense data tables are the admin’s, which is browser only; native lists use Row',
-  TableFrame: "Part of the web's Table",
-  TableToolbar: "Part of the web's Table",
-  TableHeader: "Part of the web's Table",
-  TableBody: "Part of the web's Table",
-  TableRow: "Part of the web's Table",
-  TableHead: "Part of the web's Table",
-  TableCell: "Part of the web's Table",
-  RowActions: "A web Table row's hover actions; touch has no hover",
-  WidgetFrame: "The admin dashboard's widget, browser only",
-  WidgetEditor: "Edits the admin dashboard's layout, browser only",
-  Sparkline: 'A chart in an admin widget, browser only',
   Stepper: "The admin's setup steps, browser only",
   // web primitives that React Native draws another way, or the platform draws itself
   Label:
@@ -129,7 +151,6 @@ export const WEB_ONLY: Record<string, string> = {
   TabsTrigger: "Radix's Tabs parts",
   TabsContent: "Radix's Tabs parts",
   DialogContent: "Radix's Dialog parts; the native Dialog is opened by its own prop",
-  ConfirmDialog: "The admin's confirmation; native screens use the platform's alert",
   SheetClose: "Radix's Sheet parts; the native Sheet is opened and closed by its own props",
   SheetContent: "Radix's Sheet parts",
   MenuTrigger: "Part of the web's Menu",
@@ -143,10 +164,7 @@ export const WEB_ONLY: Record<string, string> = {
   PopoverClose: "Part of the web's Popover",
   PopoverAnchor: "Part of the web's Popover",
   PopoverContent: "Part of the web's Popover",
-  Tooltip: 'Shown on hover and keyboard focus; touch and the TV have no hover',
   TooltipProvider: "The web's Tooltip delay",
-  Toaster:
-    "The web renderer's toast stack (motion), the admin's and the prototypes' until part D; the one client draws Toast where its screen stands, and the app takes it away",
   BackdropHero: "The web client's hero; the TV draws its own with TvTile and the phone a Poster",
   CarouselRow: "The web's poster rows with arrow keys; native rows are the platform's FlatList",
   Progress: 'The old name of ProgressBar, kept until part C moves the apps',
@@ -160,6 +178,8 @@ export const WEB_ONLY: Record<string, string> = {
 
 /** Only in React Native, and why the web has no counterpart. */
 export const NATIVE_ONLY: Record<string, string> = {
+  Image:
+    'expo-image, decorative unless labelled (image.tsx), which every native part draws through; the web renderer writes its own <img> with alt',
   NavGroups:
     "The native Sidebar's groups with the hairline between them, which the web's NavGroup draws by its sibling selector; React Native has none",
   Kbd: "A key's hint in the admin's SearchTrigger; the web renderer's Kbd is web-only until D3",
@@ -288,4 +308,9 @@ export const NATIVE_ONLY: Record<string, string> = {
     'A TV list of choices, one in force, as the player’s Audio and subtitles; the web has RadioGroup.',
   TvProgressLine: 'Where a title’s resume stands under its TV hero.',
   TvSideDialog: 'A TV dialog at the screen’s right that keeps focus until Back; the web has Sheet.',
+  TitleLink:
+    "A table row's title that links, underlined on hover (D2): the web renderer draws it inline in each screen with an <a>, so it has no component of its own",
+  TitleButton: 'TitleLink’s look on a button (D2): Downloads’ torrent name, which opens its sheet',
+  WidgetGrid:
+    "The dashboard's grid, drawn by the native renderer since D2; the web renderer keeps its own inside its WidgetEditor until D3",
 }

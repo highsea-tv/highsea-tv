@@ -31,7 +31,6 @@
 // The row knows nothing of servers, routes or sounds: the app hands it each film's artwork as
 // sources, what opening and playing a film do, and what a move sounds like, so any app draws one.
 import { web } from '@highsea-tv/tokens'
-import { Image } from 'expo-image'
 import { type ReactNode, type Ref, useCallback, useEffect, useRef, useState } from 'react'
 import { StyleSheet, useWindowDimensions, View, type ViewStyle } from 'react-native'
 import Animated, {
@@ -45,6 +44,7 @@ import Animated, {
 } from 'react-native-reanimated'
 import { QualityTag } from './badge.tsx'
 import { focusVisible } from './dom'
+import { Image } from './image.tsx'
 import { brighten, HOVER_BRIGHTNESS, useLift } from './lift.ts'
 import { Poster } from './poster.tsx'
 import { Press } from './press.tsx'

@@ -67,12 +67,12 @@ export default {
       act: async (p) => {
         await more(p)
         await p.getByRole('menuitem', { name: 'Remove from library' }).click()
-        // a confirmation is an alertdialog
-        await p.getByRole('alertdialog').waitFor()
+        // a confirmation is a dialog (the library's ConfirmDialog, confirm-dialog.tsx)
+        await p.getByRole('dialog').waitFor()
         await p.waitForTimeout(300)
         await blur(p)
       },
-      crop: (p) => p.getByRole('alertdialog'),
+      crop: (p) => p.getByRole('dialog'),
     },
     { name: 'film-not-added', path: '/movies/19', height: 1000 },
     // People and collections

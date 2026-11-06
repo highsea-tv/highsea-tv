@@ -19,19 +19,22 @@ import type {
 import type { T as Translate } from '@highsea-tv/i18n'
 import { useT } from '@highsea-tv/i18n/react'
 import { useQuery } from '@highsea-tv/sdk/react'
+import { breakpoints } from '@highsea-tv/tokens'
 import {
   Button,
   Chip,
   Input,
-  Menu,
-  MenuCheckboxItem,
-  MenuContent,
-  MenuTrigger,
+  MultiSelect,
+  Press,
+  SearchField,
   Select,
-  SelectGroup,
-  SelectItem,
-} from '@highsea-tv/ui'
-import { useState } from 'react'
+  Text,
+  tokens,
+  useTheme,
+  useWindowAtLeast,
+} from '@highsea-tv/ui/native'
+import { type ReactNode, useState } from 'react'
+import { View } from 'react-native'
 import { collections as messages } from './collections-messages.ts'
 import { useSettled } from './curation-shared.tsx'
 
@@ -158,6 +161,86 @@ export function ruleErrors(g: RuleGroup | Subgroup, t: T): boolean {
   return g.rules.some((r) => (r.kind === 'group' ? ruleErrors(r, t) : !!conditionError(r, t)))
 }
 
+const s = tokens.space
+const ui = tokens.adminText.ui
+/** The web's 6 (gap-1.5, py-1.5), between the space scale's steps. */
+const SIX = s['1'] + s['0.5']
+
+// ---------------------------------------------------------------- the form's small parts
+
+/** An error the form shows under what it's about. */
+export function FormError({ children }: { children: string }) {
+  return (
+    <Text role="alert" variant="caption" color="badge-danger">
+      {children}
+    </Text>
+  )
+}
+
+/** A search's matches, announced as they change. */
+export function MatchList({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <View role="list" aria-label={label} aria-live="polite" style={{ gap: s['1'] }}>
+      {children}
+    </View>
+  )
+}
+
+export function NoMatch({ children }: { children: string }) {
+  return (
+    <View role="listitem" style={{ paddingHorizontal: s['1'] }}>
+      <Text variant="caption" color="text-3">
+        {children}
+      </Text>
+    </View>
+  )
+}
+
+/** A match: its name (and year), and Add at the end; choosing it adds it. */
+export function MatchItem({
+  name,
+  detail,
+  onPress,
+}: {
+  name: string
+  detail?: string
+  onPress: () => void
+}) {
+  const t = useT(messages)
+  const theme = useTheme()
+  return (
+    <View role="listitem">
+      <Press
+        onPress={onPress}
+        accessibilityLabel={[name, detail, t('add')].filter(Boolean).join(' ')}
+        style={({ hovered }) => ({
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: s['2'],
+          paddingHorizontal: s['2'],
+          paddingVertical: SIX,
+          borderRadius: tokens.radius.md,
+          backgroundColor: hovered ? theme.colors.s2 : 'transparent',
+        })}
+      >
+        <Text size={ui.size} leading={ui.leading} numberOfLines={1} style={{ flex: 1 }}>
+          {name}
+          {detail ? (
+            <Text size={ui.size} color="text-3">
+              {` ${detail}`}
+            </Text>
+          ) : null}
+        </Text>
+        <Text variant="caption" color="accent-text">
+          {t('add')}
+        </Text>
+      </Press>
+    </View>
+  )
+}
+
+// ---------------------------------------------------------------- the builder
+
 export function RuleBuilder({
   rules,
   onChange,
@@ -172,6 +255,7 @@ export function RuleBuilder({
   tried: boolean
 }) {
   const t = useT(messages)
+  const theme = useTheme()
   const offered = fields.filter((f) => !f.disabled)
   const first = offered.find((f) => f.field === 'year') ?? offered[0]
   const setAt = (at: number, r: RuleCondition | Subgroup | null) =>
@@ -181,8 +265,16 @@ export function RuleBuilder({
         ? rules.rules.map((x, i) => (i === at ? r : x))
         : rules.rules.filter((_, i) => i !== at),
     })
+  const box = (fill: 's1' | 's2') =>
+    ({
+      padding: s['3'],
+      borderWidth: 1,
+      borderColor: theme.colors.line,
+      borderRadius: tokens.radius.md,
+      backgroundColor: theme.colors[fill],
+    }) as const
   return (
-    <div className="grid gap-3">
+    <View style={{ gap: s['3'] }}>
       <MatchLine
         label={t('match')}
         value={rules.match}
@@ -191,15 +283,24 @@ export function RuleBuilder({
         aria={t('matchAria')}
       />
       {rules.rules.length === 0 ? (
-        <p className="rounded-md border border-line border-dashed p-3 text-caption text-text-3">
-          {t('noRules')}
-        </p>
+        <View style={[box('s1'), { backgroundColor: 'transparent', borderStyle: 'dashed' }]}>
+          <Text variant="caption" color="text-3">
+            {t('noRules')}
+          </Text>
+        </View>
       ) : (
-        <ol aria-label={t('rules')} className="grid gap-2">
+        <View role="list" aria-label={t('rules')} style={{ gap: s['2'] }}>
           {rules.rules.map((r, at) =>
             r.kind === 'group' ? (
-              <li key={r.id} className="grid gap-2 rounded-md border border-line bg-s2 p-3">
-                <div className="flex flex-wrap items-center gap-2">
+              <View key={r.id} role="listitem" style={[box('s2'), { gap: s['2'] }]}>
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    flexWrap: 'wrap',
+                    alignItems: 'center',
+                    gap: s['2'],
+                  }}
+                >
                   <MatchLine
                     label={t('group.match', { n: at + 1 })}
                     value={r.match}
@@ -207,21 +308,28 @@ export function RuleBuilder({
                     what={t('group.of')}
                     aria={t('group.matchAria', { n: at + 1 })}
                   />
-                  <Button
-                    variant="ghost"
-                    iconOnly
-                    icon="delete"
-                    className="ms-auto"
-                    aria-label={t('group.remove', { n: at + 1 })}
-                    onClick={() => setAt(at, null)}
-                  />
-                </div>
-                <ol
+                  <View style={{ marginStart: 'auto' }}>
+                    <Button
+                      variant="ghost"
+                      iconOnly
+                      icon="delete"
+                      accessibilityLabel={t('group.remove', { n: at + 1 })}
+                      onPress={() => setAt(at, null)}
+                    />
+                  </View>
+                </View>
+                <View
+                  role="list"
                   aria-label={t('group', { n: at + 1 })}
-                  className="grid gap-2 border-line border-s-2 ps-3"
+                  style={{
+                    gap: s['2'],
+                    borderStartWidth: 2,
+                    borderStartColor: theme.colors.line,
+                    paddingStart: s['3'],
+                  }}
                 >
                   {r.rules.map((c, j) => (
-                    <li key={c.id}>
+                    <View key={c.id} role="listitem">
                       <ConditionRow
                         name={t('condition', { n: `${at + 1}.${j + 1}` })}
                         condition={c}
@@ -236,25 +344,26 @@ export function RuleBuilder({
                           setAt(at, rest.length ? { ...r, rules: rest } : null)
                         }}
                       />
-                    </li>
+                    </View>
                   ))}
-                </ol>
+                </View>
                 {first && (
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    icon="add"
-                    className="justify-self-start"
-                    onClick={() =>
-                      setAt(at, { ...r, rules: [...r.rules, newCondition(first, now)] })
-                    }
-                  >
-                    {t('group.add', { n: at + 1 })}
-                  </Button>
+                  <View style={{ alignSelf: 'flex-start' }}>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      icon="add"
+                      onPress={() =>
+                        setAt(at, { ...r, rules: [...r.rules, newCondition(first, now)] })
+                      }
+                    >
+                      {t('group.add', { n: at + 1 })}
+                    </Button>
+                  </View>
                 )}
-              </li>
+              </View>
             ) : (
-              <li key={r.id} className="rounded-md border border-line bg-s1 p-3">
+              <View key={r.id} role="listitem" style={box('s1')}>
                 <ConditionRow
                   name={t('condition', { n: at + 1 })}
                   condition={r}
@@ -263,18 +372,18 @@ export function RuleBuilder({
                   tried={tried}
                   onChange={(x) => setAt(at, x)}
                 />
-              </li>
+              </View>
             ),
           )}
-        </ol>
+        </View>
       )}
       {first && (
-        <div className="flex flex-wrap gap-2">
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: s['2'] }}>
           <Button
             size="sm"
             variant="secondary"
             icon="add"
-            onClick={() =>
+            onPress={() =>
               onChange({ ...rules, rules: [...rules.rules, newCondition(first, now)] })
             }
           >
@@ -284,7 +393,7 @@ export function RuleBuilder({
             size="sm"
             variant="secondary"
             icon="add"
-            onClick={() =>
+            onPress={() =>
               onChange({
                 ...rules,
                 rules: [
@@ -301,11 +410,14 @@ export function RuleBuilder({
           >
             {t('addGroup')}
           </Button>
-        </div>
+        </View>
       )}
-    </div>
+    </View>
   )
 }
+
+/** Match's select (the web's w-24). */
+const MATCH_WIDTH = 96
 
 function MatchLine({
   label,
@@ -322,22 +434,30 @@ function MatchLine({
 }) {
   const t = useT(messages)
   return (
-    <div className="flex flex-wrap items-center gap-2 text-text-2 text-ui">
-      <span>{label}</span>
-      <Select
-        aria-label={aria}
-        value={value}
-        onValueChange={(v) => onChange(v as 'all' | 'any')}
-        options={[
-          { value: 'all', label: t('match.all') },
-          { value: 'any', label: t('match.any') },
-        ]}
-        className="w-24"
-      />
-      <span>{what}</span>
-    </div>
+    <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: s['2'] }}>
+      <Text size={ui.size} leading={ui.leading} color="text-2">
+        {label}
+      </Text>
+      <View style={{ width: MATCH_WIDTH }}>
+        <Select
+          aria-label={aria}
+          value={value}
+          onValueChange={(v) => onChange(v as 'all' | 'any')}
+          options={[
+            { value: 'all', label: t('match.all') },
+            { value: 'any', label: t('match.any') },
+          ]}
+        />
+      </View>
+      <Text size={ui.size} leading={ui.leading} color="text-2">
+        {what}
+      </Text>
+    </View>
   )
 }
+
+/** A condition's field and comparison columns from medium (the web's 12rem and 10rem). */
+const COLUMNS = { field: 192, op: 160 }
 
 function ConditionRow({
   name,
@@ -355,75 +475,80 @@ function ConditionRow({
   onChange: (c: RuleCondition | null) => void
 }) {
   const t = useT(messages)
+  const side = useWindowAtLeast(breakpoints.medium)
   const info = fields.find((f) => f.field === c.field)
   const error = tried ? conditionError(c, t) : undefined
   const known = new Set(fields.map((f) => f.field))
+  // the fields in the editor's groups, in order; a field the server marks disabled shows, disabled
+  const options = (Object.keys(FIELD_GROUPS) as (keyof typeof FIELD_GROUPS)[]).flatMap((group) =>
+    FIELD_GROUPS[group]
+      .filter((f) => known.has(f))
+      .map((f) => {
+        const disabled = !!fields.find((x) => x.field === f)?.disabled
+        return {
+          value: f as string,
+          label: disabled ? `${t(`field.${f}`)} · ${t('comesWithPlayback')}` : t(`field.${f}`),
+          group: t(`fieldGroup.${group}`),
+          disabled,
+        }
+      }),
+  )
   return (
-    <div className="grid gap-2">
-      <div className="grid gap-2 medium:grid-cols-[12rem_10rem_minmax(0,1fr)_auto] medium:items-start">
-        <Select
-          aria-label={t('condition.field', { name })}
-          value={c.field}
-          onValueChange={(field) => {
-            const next = fields.find((f) => f.field === field)
-            if (next) onChange({ ...newCondition(next, now), id: c.id })
-          }}
-        >
-          {Object.entries(FIELD_GROUPS).map(([group, members]) => {
-            const shown = members.filter((f) => known.has(f))
-            return shown.length ? (
-              <SelectGroup
-                key={group}
-                label={t(`fieldGroup.${group as keyof typeof FIELD_GROUPS}`)}
-              >
-                {shown.map((f) => {
-                  const disabled = fields.find((x) => x.field === f)?.disabled
-                  return (
-                    <SelectItem key={f} value={f} disabled={!!disabled}>
-                      {disabled
-                        ? `${t(`field.${f}`)} · ${t('comesWithPlayback')}`
-                        : t(`field.${f}`)}
-                    </SelectItem>
-                  )
-                })}
-              </SelectGroup>
-            ) : null
-          })}
-        </Select>
-        <Select
-          aria-label={t('condition.op', { name })}
-          value={c.op}
-          onValueChange={(op) =>
-            info && onChange({ ...c, op: op as RuleOp, value: carry(info, c, op as RuleOp, now) })
-          }
-          options={(info?.ops ?? [c.op]).map((op) => ({ value: op, label: t(`op.${op}`) }))}
-        />
-        {info ? (
-          <ValueControl
-            name={name}
-            info={info}
-            condition={c}
-            onChange={onChange}
-            invalid={!!error}
+    <View style={{ gap: s['2'] }}>
+      <View
+        style={{
+          flexDirection: side ? 'row' : 'column',
+          alignItems: side ? 'flex-start' : 'stretch',
+          gap: s['2'],
+        }}
+      >
+        <View style={side ? { width: COLUMNS.field } : undefined}>
+          <Select
+            aria-label={t('condition.field', { name })}
+            value={c.field as string}
+            onValueChange={(field) => {
+              const next = fields.find((f) => f.field === field)
+              if (next) onChange({ ...newCondition(next, now), id: c.id })
+            }}
+            options={options}
           />
-        ) : (
-          <span />
-        )}
-        <Button
-          variant="ghost"
-          iconOnly
-          icon="close"
-          aria-label={t('condition.remove', { name: name.toLowerCase() })}
-          onClick={() => onChange(null)}
-          className="justify-self-end"
-        />
-      </div>
-      {error && (
-        <p role="alert" className="text-badge-danger text-caption">
-          {error}
-        </p>
-      )}
-    </div>
+        </View>
+        <View style={side ? { width: COLUMNS.op } : undefined}>
+          <Select
+            aria-label={t('condition.op', { name })}
+            value={c.op as string}
+            onValueChange={(op) =>
+              info && onChange({ ...c, op: op as RuleOp, value: carry(info, c, op as RuleOp, now) })
+            }
+            options={(info?.ops ?? [c.op]).map((op) => ({
+              value: op as string,
+              label: t(`op.${op}`),
+            }))}
+          />
+        </View>
+        <View style={side ? { flex: 1, minWidth: 0 } : undefined}>
+          {info ? (
+            <ValueControl
+              name={name}
+              info={info}
+              condition={c}
+              onChange={onChange}
+              invalid={!!error}
+            />
+          ) : null}
+        </View>
+        <View style={{ alignSelf: 'flex-end' }}>
+          <Button
+            variant="ghost"
+            iconOnly
+            icon="close"
+            accessibilityLabel={t('condition.remove', { name: name.toLowerCase() })}
+            onPress={() => onChange(null)}
+          />
+        </View>
+      </View>
+      {error ? <FormError>{error}</FormError> : null}
+    </View>
   )
 }
 
@@ -441,6 +566,11 @@ function carry(info: RuleFieldInfo, c: RuleCondition, op: RuleOp, now: number): 
   }
   return c.value
 }
+
+/** A number as a field's text: empty while it isn't one. */
+const asText = (n: number) => (Number.isNaN(n) ? '' : String(n))
+/** The field's text as a number: not one (NaN) while it's empty or half typed. */
+const asNumber = (v: string) => (v.trim() === '' ? Number.NaN : Number(v))
 
 function ValueControl({
   name,
@@ -462,25 +592,23 @@ function ValueControl({
   const unit = UNITS[info.field]
   const number = (v: number, aria: string, onValue: (n: number) => void) => (
     <Input
-      type="number"
-      aria-label={aria}
-      aria-invalid={invalid || undefined}
-      value={Number.isNaN(v) ? '' : v}
-      step={info.field === 'rating' ? 0.5 : 1}
-      min={0}
-      max={info.field === 'rating' ? 5 : undefined}
-      onChange={(e) => onValue(e.target.value === '' ? Number.NaN : Number(e.target.value))}
-      end={unit ? <span className="text-caption">{t(`unit.${unit}`)}</span> : undefined}
+      end={unit ? t(`unit.${unit}`) : undefined}
+      inputMode="decimal"
+      keyboardType="decimal-pad"
+      accessibilityLabel={aria}
+      invalid={invalid}
+      value={asText(v)}
+      onChangeText={(x) => onValue(asNumber(x))}
     />
   )
 
   if (info.type === 'text')
     return (
       <Input
-        aria-label={label}
-        aria-invalid={invalid || undefined}
+        accessibilityLabel={label}
+        invalid={invalid}
         value={String(c.value)}
-        onChange={(e) => set(e.target.value)}
+        onChangeText={set}
         placeholder={t('textPlaceholder')}
       />
     )
@@ -488,33 +616,31 @@ function ValueControl({
     if (c.op === 'inLast')
       return (
         <Input
-          type="number"
-          aria-label={label}
-          min={1}
-          value={Number.isNaN(Number(c.value)) ? '' : Number(c.value)}
-          onChange={(e) => set(e.target.value === '' ? Number.NaN : Number(e.target.value))}
-          end={
-            <span className="text-caption">{info.field === 'year' ? t('years') : t('days')}</span>
-          }
+          end={info.field === 'year' ? t('years') : t('days')}
+          inputMode="numeric"
+          keyboardType="number-pad"
+          accessibilityLabel={label}
+          invalid={invalid}
+          value={asText(Number(c.value))}
+          onChangeText={(x) => set(asNumber(x))}
         />
       )
     if (info.type === 'date')
-      return (
-        <Input
-          type="date"
-          aria-label={label}
-          value={String(c.value)}
-          onChange={(e) => set(e.target.value)}
-        />
-      )
+      return <DateInput label={label} value={String(c.value)} onChange={set} invalid={invalid} />
     if (c.op === 'between') {
       const [lo, hi] = Array.isArray(c.value) ? (c.value as [number, number]) : [0, 0]
       return (
-        <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2">
-          {number(lo, t('condition.from', { name }), (n) => set([n, hi]))}
-          <span className="text-caption text-text-3">{t('and')}</span>
-          {number(hi, t('condition.to', { name }), (n) => set([lo, n]))}
-        </div>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: s['2'] }}>
+          <View style={{ flex: 1, minWidth: 0 }}>
+            {number(lo, t('condition.from', { name }), (n) => set([n, hi]))}
+          </View>
+          <Text variant="caption" color="text-3">
+            {t('and')}
+          </Text>
+          <View style={{ flex: 1, minWidth: 0 }}>
+            {number(hi, t('condition.to', { name }), (n) => set([lo, n]))}
+          </View>
+        </View>
       )
     }
     return number(Number(c.value), label, set)
@@ -539,56 +665,49 @@ function ValueControl({
       />
     )
   return (
-    <Choices
-      label={label}
-      info={info}
+    // several choices from a short list, its field naming what's chosen
+    <MultiSelect
+      aria-label={label}
+      placeholder={t('choose')}
       value={[c.value].flat().map(String)}
-      onChange={(v) => set(v as RuleValue)}
+      onValueChange={(v) => set(v as RuleValue)}
+      options={info.options ?? []}
     />
   )
 }
 
-/** Several choices from a short list: a menu of checkboxes, its button naming what's chosen. */
-function Choices({
+const DAY = /^\d{4}-\d{2}-\d{2}$/
+
+/**
+ * A day, typed as YYYY-MM-DD (the web's date input's value). React Native has no date field, so
+ * the text is kept as typed and the condition takes it once it's a day.
+ */
+function DateInput({
   label,
-  info,
   value,
   onChange,
+  invalid,
 }: {
   label: string
-  info: RuleFieldInfo
-  value: string[]
-  onChange: (v: string[]) => void
+  value: string
+  onChange: (v: string) => void
+  invalid: boolean
 }) {
-  const t = useT(messages)
-  const names = value.map((v) => info.options?.find((o) => o.value === v)?.label ?? v)
+  const [text, setText] = useState(value)
+  const bad = text !== value && !(DAY.test(text) && !Number.isNaN(Date.parse(text)))
   return (
-    <Menu>
-      <MenuTrigger asChild>
-        <Button
-          aria-label={`${label}: ${names.join(', ') || t('condition.none')}`}
-          iconEnd="chevron-down"
-          className="min-w-0 justify-between"
-        >
-          <span className="truncate">{names.length ? names.join(', ') : t('choose')}</span>
-        </Button>
-      </MenuTrigger>
-      <MenuContent align="start" className="max-h-80 overflow-y-auto">
-        {(info.options ?? []).map((o) => (
-          <MenuCheckboxItem
-            key={o.value}
-            checked={value.includes(o.value)}
-            // keep the menu open to choose several
-            onSelect={(e) => e.preventDefault()}
-            onCheckedChange={(on) =>
-              onChange(on ? [...value, o.value] : value.filter((v) => v !== o.value))
-            }
-          >
-            {o.label}
-          </MenuCheckboxItem>
-        ))}
-      </MenuContent>
-    </Menu>
+    <Input
+      accessibilityLabel={label}
+      inputMode="numeric"
+      placeholder="YYYY-MM-DD"
+      maxLength={10}
+      invalid={invalid || bad}
+      value={text}
+      onChangeText={(x) => {
+        setText(x)
+        if (DAY.test(x) && !Number.isNaN(Date.parse(x))) onChange(x)
+      }}
+    />
   )
 }
 
@@ -608,11 +727,11 @@ function PersonChip({
   )
   const name = known ?? person.data?.name ?? id
   return (
-    <li>
-      <Chip removable aria-label={t('removePerson', { name })} onClick={onRemove}>
+    <View role="listitem">
+      <Chip removable size="sm" accessibilityLabel={t('removePerson', { name })} onPress={onRemove}>
         {name}
       </Chip>
-    </li>
+    </View>
   )
 }
 
@@ -639,9 +758,13 @@ function PersonSearch({
   )
   const matches = (search.data ?? []).filter((p) => !value.includes(String(p.id))).slice(0, 6)
   return (
-    <div className="grid min-w-0 gap-2">
+    <View style={{ gap: s['2'], minWidth: 0 }}>
       {value.length > 0 && (
-        <ul aria-label={t('condition.chosen', { label })} className="flex flex-wrap gap-1.5">
+        <View
+          role="list"
+          aria-label={t('condition.chosen', { label })}
+          style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SIX }}
+        >
           {value.map((id) => (
             <PersonChip
               key={id}
@@ -650,45 +773,39 @@ function PersonSearch({
               onRemove={() => onChange(value.filter((x) => x !== id))}
             />
           ))}
-        </ul>
+        </View>
       )}
-      <Input
-        icon="search"
-        aria-label={label}
-        aria-invalid={invalid || undefined}
+      <SearchField
+        label={label}
+        invalid={invalid}
         value={query}
-        onChange={(e) => setQuery(e.target.value)}
+        onChangeText={setQuery}
         placeholder={
           field === 'person'
             ? t('searchPeople')
             : t('searchPeople.role', { role: t(`field.${field}`).toLowerCase() })
         }
       />
-      {q && search.status === 'success' && (
-        <ul aria-label={t('matches', { label })} aria-live="polite" className="grid gap-1">
+      {q !== '' && search.status === 'success' && (
+        <MatchList label={t('matches', { label })}>
           {matches.length === 0 ? (
-            <li className="px-1 text-caption text-text-3">{t('noPerson', { query: q })}</li>
+            <NoMatch>{t('noPerson', { query: q })}</NoMatch>
           ) : (
             matches.map((p) => (
-              <li key={p.id}>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setNames((n) => ({ ...n, [String(p.id)]: p.name }))
-                    onChange([...value, String(p.id)])
-                    setQuery('')
-                  }}
-                  className="grid w-full cursor-pointer grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-md px-2 py-1.5 text-start text-ui outline-none hover:bg-s2 focus-visible:ring-focus"
-                >
-                  <span className="truncate text-text">{p.name}</span>
-                  <span className="text-accent-text text-caption">{t('add')}</span>
-                </button>
-              </li>
+              <MatchItem
+                key={p.id}
+                name={p.name}
+                onPress={() => {
+                  setNames((n) => ({ ...n, [String(p.id)]: p.name }))
+                  onChange([...value, String(p.id)])
+                  setQuery('')
+                }}
+              />
             ))
           )}
-        </ul>
+        </MatchList>
       )}
-    </div>
+    </View>
   )
 }
 

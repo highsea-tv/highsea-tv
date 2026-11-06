@@ -8,8 +8,14 @@
 // it from the page's ScrollView (`onPanResponderTerminationRequest`). Rows are taken as one height,
 // which a settings list's rows are. VoiceOver moves a row with the handle's actions, Move up and
 // Move down, and hears where it landed (AccessibilityInfo.announceForAccessibility).
+// With a keyboard on the web the handle is a tab stop and works as the web renderer's does
+// (web/components/sortable-list.tsx, after dnd-kit's keyboard sensor): Space or Enter picks the
+// row up, Up and Down move it, Space or Enter drops it, and Escape puts it back where it was.
+// react-native-web forwards `onKeyDown` and `focusable` to the element
+// (https://necolas.github.io/react-native-web/docs/view/), and focus goes back to the handle after
+// each move, as moving a node in the document drops it.
 import { type ReactNode, useEffect, useRef, useState } from 'react'
-import { AccessibilityInfo, Animated, PanResponder, StyleSheet, View } from 'react-native'
+import { AccessibilityInfo, Animated, PanResponder, Platform, StyleSheet, View } from 'react-native'
 import { Icon } from './icon.tsx'
 import { tokens, useMotionReduced, useTheme } from './theme.tsx'
 
@@ -23,7 +29,17 @@ export type SortableListMessages = {
   moveDown: (name: string) => string
   /** Said once a row lands: "Staff picks moved to 3 of 8." */
   moved: (name: string, index: number, count: number) => string
+  /** The keyboard's: said as Space picks a row up ("Staff picks picked up, 3 of 8."). */
+  pickedUp?: (name: string, index: number, count: number) => string
+  /** The keyboard's: said as Space drops it. */
+  dropped?: (name: string, index: number, count: number) => string
+  /** The keyboard's: said as Escape puts it back. */
+  cancelled?: (name: string) => string
 }
+
+const web = Platform.OS === 'web'
+/** The handle's element on the web, which can take focus. */
+type Focusable = { focus?: () => void }
 
 export type SortableListProps<T> = {
   items: readonly T[]
@@ -55,6 +71,19 @@ export function SortableList<T>({
   children,
 }: SortableListProps<T>) {
   const [drag, setDrag] = useState<{ from: number; to: number; step: number } | null>(null)
+  // the row the keyboard holds, and the order to go back to on Escape
+  const [held, setHeld] = useState<{ id: string; origin: T[] } | null>(null)
+  const handles = useRef(new Map<string, Focusable>())
+  const refocus = useRef<string | null>(null)
+  // biome-ignore lint/correctness/useExhaustiveDependencies: after every draw a move asked for
+  useEffect(() => {
+    if (!refocus.current) return
+    handles.current.get(refocus.current)?.focus?.()
+    refocus.current = null
+  })
+  const say = (words: string | undefined) => {
+    if (words) AccessibilityInfo.announceForAccessibility(words)
+  }
   const move = (from: number, to: number) => {
     const item = items[from]
     if (item === undefined || to === from || to < 0 || to >= items.length) return
@@ -64,8 +93,47 @@ export function SortableList<T>({
     onChange(next)
     AccessibilityInfo.announceForAccessibility(messages.moved(label(item), to + 1, items.length))
   }
+  /** A key on row `i`'s handle; true when it was the list's. */
+  const onKey = (i: number, key: string): boolean => {
+    const item = items[i]
+    if (item === undefined || disabled) return false
+    const rowId = id(item)
+    const name = label(item)
+    const mine = held?.id === rowId
+    if (key === ' ' || key === 'Enter') {
+      if (mine) {
+        setHeld(null)
+        say(messages.dropped?.(name, i + 1, items.length))
+      } else {
+        setHeld({ id: rowId, origin: [...items] })
+        say(messages.pickedUp?.(name, i + 1, items.length))
+      }
+      return true
+    }
+    if (!mine || !held) return false
+    if (key === 'ArrowUp' || key === 'ArrowDown') {
+      const to = i + (key === 'ArrowUp' ? -1 : 1)
+      if (to >= 0 && to < items.length) {
+        refocus.current = rowId
+        move(i, to)
+      }
+      return true
+    }
+    if (key === 'Escape') {
+      refocus.current = rowId
+      setHeld(null)
+      onChange([...held.origin])
+      say(messages.cancelled?.(name))
+      return true
+    }
+    return false
+  }
   return (
-    <View accessibilityLabel={accessibilityLabel} style={{ gap: look === 'line' ? 0 : GAP }}>
+    <View
+      role="group"
+      accessibilityLabel={accessibilityLabel}
+      style={{ gap: look === 'line' ? 0 : GAP }}
+    >
       {items.map((item, i) => {
         // the rows between where the dragged one started and where it is now step aside
         const shift =
@@ -83,7 +151,16 @@ export function SortableList<T>({
             count={items.length}
             name={label(item)}
             shift={shift}
-            lifted={drag?.from === i}
+            lifted={drag?.from === i || held?.id === id(item)}
+            onKey={(key) => onKey(i, key)}
+            onBlur={() => {
+              // a move blurs the handle as its node moves; leaving the handle drops the row
+              if (!refocus.current && held?.id === id(item)) setHeld(null)
+            }}
+            handleRef={(el) => {
+              if (el) handles.current.set(id(item), el)
+              else handles.current.delete(id(item))
+            }}
             disabled={disabled}
             look={look}
             messages={messages}
@@ -114,6 +191,9 @@ function SortableRow({
   onDrag,
   onDrop,
   onMove,
+  onKey,
+  onBlur,
+  handleRef,
   children,
 }: {
   index: number
@@ -127,6 +207,9 @@ function SortableRow({
   onDrag: (to: number, step: number) => void
   onDrop: (to: number) => void
   onMove: (by: -1 | 1) => void
+  onKey: (key: string) => boolean
+  onBlur: () => void
+  handleRef: (el: Focusable | null) => void
   children: (handle: ReactNode) => ReactNode
 }) {
   const theme = useTheme()
@@ -181,6 +264,16 @@ function SortableRow({
   const handle = (
     <View
       {...(disabled ? {} : responder.panHandlers)}
+      {...((web
+        ? {
+            ref: handleRef,
+            focusable: !disabled,
+            onBlur,
+            onKeyDown: (e: { key: string; preventDefault: () => void }) => {
+              if (onKey(e.key)) e.preventDefault()
+            },
+          }
+        : {}) as object)}
       accessible
       accessibilityRole="adjustable"
       accessibilityLabel={messages.move(name)}

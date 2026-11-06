@@ -21,17 +21,29 @@ import {
   ConfirmDialog,
   Field,
   Input,
+  Press,
+  SearchField,
   SegmentedControl,
   Select,
   SortableList,
+  Text,
   toast,
-} from '@highsea-tv/ui'
-import { useMemo, useState } from 'react'
-import { useRuleOptions } from './curation.tsx'
+  tokens,
+  useTheme,
+} from '@highsea-tv/ui/native'
+import { type ReactNode, useMemo, useState } from 'react'
+import { View } from 'react-native'
+import { Thumb, useRuleOptions, useSortMessages } from './curation.tsx'
 import { ClientPreview } from './curation-preview.tsx'
 import {
   AudienceField,
   audienceError,
+  ComposerActions,
+  ComposerColumns,
+  FieldGroup,
+  GroupError,
+  Hint,
+  Pair,
   ScheduleField,
   useCurationT,
   useKept,
@@ -41,6 +53,9 @@ import { Loadable } from './loadable.tsx'
 import { useRouter } from './navigation.tsx'
 import { AdminPage } from './shell.tsx'
 import { useNow } from './time.ts'
+
+const sp = tokens.space
+const ui = tokens.adminText.ui
 
 const LAYOUTS: FeaturedLayout[] = ['hero', 'row', 'spotlight']
 const WINDOWS = ['7d', '30d', '90d'] as const
@@ -149,117 +164,132 @@ function Composer({ initial }: { initial: FeaturedSection | null }) {
   }
 
   return (
-    <div className="grid grid-cols-[minmax(0,1fr)] gap-6 expanded:grid-cols-[minmax(min(22rem,50%),min(28rem,50%))_minmax(0,1fr)] expanded:items-start">
-      <form
-        aria-label={t('section.form')}
-        className="grid gap-6"
-        onSubmit={(e) => {
-          e.preventDefault()
-          submit()
-        }}
-      >
-        <div className="grid gap-4">
-          <Field label={t('field.title')} error={show(errors.title)}>
-            <Input
-              value={draft.title}
-              maxLength={60}
-              onChange={(e) => set({ title: e.target.value })}
-              placeholder={t('field.sectionPlaceholder')}
-            />
-          </Field>
-          <Field label={t('field.after')} hint={t('field.afterHint')}>
-            <Input
-              value={draft.tagline ?? ''}
-              maxLength={60}
-              onChange={(e) => set({ tagline: e.target.value || null })}
-              placeholder={t('field.afterPlaceholder')}
-            />
-          </Field>
-          <div className="grid gap-2">
-            <span className="font-medium text-text text-ui">{t('layout')}</span>
-            <SegmentedControl
-              aria-label={t('layout')}
-              size="sm"
-              value={draft.layout}
-              onValueChange={(v) => set({ layout: v as FeaturedLayout })}
-              options={LAYOUTS.map((l) => ({ value: l, label: t(`layout.${l}`) }))}
-              className="justify-self-start"
-            />
-            <p className="text-caption text-text-3">{t(`layoutHint.${draft.layout}`)}</p>
-          </div>
-        </div>
+    <ComposerColumns
+      label={t('section.form')}
+      form={
+        <>
+          <View style={{ gap: sp['4'] }}>
+            <Field label={t('field.title')} error={show(errors.title)}>
+              <Input
+                value={draft.title}
+                maxLength={60}
+                onChangeText={(title) => set({ title })}
+                onSubmitEditing={submit}
+                placeholder={t('field.sectionPlaceholder')}
+              />
+            </Field>
+            <Field label={t('field.after')} hint={t('field.afterHint')}>
+              <Input
+                value={draft.tagline ?? ''}
+                maxLength={60}
+                onChangeText={(v) => set({ tagline: v || null })}
+                onSubmitEditing={submit}
+                placeholder={t('field.afterPlaceholder')}
+              />
+            </Field>
+            <View style={{ gap: sp['2'] }}>
+              <Text size={ui.size} leading={ui.leading} weight={500} aria-hidden>
+                {t('layout')}
+              </Text>
+              <SegmentedControl
+                aria-label={t('layout')}
+                size="sm"
+                value={draft.layout}
+                onValueChange={(v) => set({ layout: v as FeaturedLayout })}
+                options={LAYOUTS.map((l) => ({ value: l, label: t(`layout.${l}`) }))}
+              />
+              <Hint>{t(`layoutHint.${draft.layout}`)}</Hint>
+            </View>
+          </View>
 
-        <Source draft={draft} set={set} error={show(errors.source)} resolved={resolved} />
+          <Source draft={draft} set={set} error={show(errors.source)} resolved={resolved} />
 
-        {draft.layout === 'hero' &&
-          resolved.status === 'success' &&
-          resolved.data.items.length > 0 && (
-            <Taglines draft={draft} set={set} items={resolved.data.items} />
-          )}
+          {draft.layout === 'hero' &&
+            resolved.status === 'success' &&
+            resolved.data.items.length > 0 && (
+              <Taglines draft={draft} set={set} items={resolved.data.items} />
+            )}
 
-        <AudienceField
-          value={draft.audience}
-          onChange={(audience) => set({ audience })}
-          error={show(errors.audience)}
-        />
-        <ScheduleField
-          value={draft.schedule}
-          onChange={(schedule) => set({ schedule })}
-          now={now}
-        />
-
-        <div className="flex flex-wrap gap-2 border-line border-t pt-4">
-          <Button type="submit" variant="primary" loading={save.pending}>
-            {initial ? t('saveChanges') : t('addToHome')}
-          </Button>
-          <Button type="button" variant="ghost" asChild>
-            <a href="/curation/featured">{t('cancel')}</a>
-          </Button>
-          {initial && (
-            <Button
-              type="button"
-              variant="danger-ghost"
-              icon="delete"
-              className="ms-auto"
-              onClick={() => setConfirm(true)}
-            >
-              {t('delete')}
-            </Button>
-          )}
-        </div>
-        {initial && (
-          <ConfirmDialog
-            open={confirm}
-            onOpenChange={setConfirm}
-            title={t('deleteTitle', { title: initial.title })}
-            description={t('deleteSectionBody')}
-            confirmLabel={t('delete')}
-            destructive
-            onConfirm={() =>
-              remove
-                .run(initial.id)
-                .then(() => {
-                  toast({ title: t('deleted', { title: initial.title }) })
-                  router.push('/curation/featured')
-                })
-                .catch((e: Error) => toast.error(t('failed'), { description: e.message }))
-            }
+          <AudienceField
+            value={draft.audience}
+            onChange={(audience) => set({ audience })}
+            error={show(errors.audience)}
           />
-        )}
-      </form>
-      <div className="min-w-0 expanded:sticky expanded:top-4">
+          <ScheduleField
+            value={draft.schedule}
+            onChange={(schedule) => set({ schedule })}
+            now={now}
+          />
+
+          <ComposerActions>
+            <Button variant="primary" loading={save.pending} onPress={submit}>
+              {initial ? t('saveChanges') : t('addToHome')}
+            </Button>
+            <Button variant="ghost" href="/curation/featured">
+              {t('cancel')}
+            </Button>
+            {initial && (
+              <View style={{ marginStart: 'auto' }}>
+                <Button variant="danger-ghost" icon="delete" onPress={() => setConfirm(true)}>
+                  {t('delete')}
+                </Button>
+              </View>
+            )}
+          </ComposerActions>
+          {initial && (
+            <ConfirmDialog
+              open={confirm}
+              onClose={() => setConfirm(false)}
+              title={t('deleteTitle', { title: initial.title })}
+              description={t('deleteSectionBody')}
+              confirmLabel={t('delete')}
+              destructive
+              onConfirm={() =>
+                remove
+                  .run(initial.id)
+                  .then(() => {
+                    toast({ title: t('deleted', { title: initial.title }) })
+                    router.push('/curation/featured')
+                  })
+                  .catch((e: Error) => toast.error(t('failed'), { description: e.message }))
+              }
+            />
+          )}
+        </>
+      }
+      preview={
         <ClientPreview
           draft={preview}
           what={t('thisSection')}
           note={t('noAnnouncements')}
           reveal={initial?.id ?? 'draft'}
         />
-      </div>
-    </div>
+      }
+    />
   )
 }
 
 // ---------------------------------------------------------------- source
+
+/** A well round the rule's picks (s2, a line round it). */
+function Well({ children, live }: { children: ReactNode; live?: boolean }) {
+  const theme = useTheme()
+  return (
+    <View
+      aria-live={live ? 'polite' : undefined}
+      style={{
+        gap: sp['2'],
+        padding: sp['3'],
+        borderRadius: tokens.radius.md,
+        borderWidth: 1,
+        borderColor: theme.colors.line,
+        backgroundColor: theme.colors.s2,
+      }}
+    >
+      {children}
+    </View>
+  )
+}
 
 function Source({
   draft,
@@ -276,9 +306,57 @@ function Source({
   const options = useRuleOptions()
   const s = draft.source
   const picks = resolved.status === 'success' ? resolved.data : null
+  const value =
+    s.kind === 'rule' && s.rule === 'recently-added' ? (
+      <Field label={t('addedIn')}>
+        <Select
+          value={s.value}
+          onValueChange={(value) => set({ source: { ...s, value } })}
+          options={WINDOWS.map((w) => ({
+            value: w,
+            label: t('days', { count: w.replace('d', '') }),
+          }))}
+        />
+      </Field>
+    ) : s.kind === 'rule' && s.rule === 'genre' ? (
+      <Field label={t('genre')} hint={options.data?.genres.length ? undefined : t('noGenres')}>
+        <Select
+          value={s.value}
+          onValueChange={(value) => set({ source: { ...s, value } })}
+          options={(options.data?.genres ?? (s.value ? [s.value] : [])).map((g) => ({
+            value: g,
+            label: g,
+          }))}
+        />
+      </Field>
+    ) : s.kind === 'rule' && s.rule === 'collection' ? (
+      <Field
+        label={t('collection')}
+        hint={
+          options.data?.collections.length || options.data?.smart.length
+            ? t('collectionHint')
+            : t('noCollections')
+        }
+      >
+        <Select
+          value={s.value}
+          onValueChange={(value) => set({ source: { ...s, value } })}
+          options={[
+            // yours first, then TMDB's (checkpoint 8d)
+            ...(options.data?.smart ?? []).map((c) => ({
+              value: c.id,
+              label: t('collectionYours', { name: c.name }),
+            })),
+            ...(options.data?.collections ?? []).map((c) => ({
+              value: String(c.id),
+              label: c.name,
+            })),
+          ]}
+        />
+      </Field>
+    ) : null
   return (
-    <fieldset className="grid gap-3">
-      <legend className="mb-1.5 font-medium text-text text-ui">{t('titles')}</legend>
+    <FieldGroup label={t('titles')} gap={sp['3']}>
       <SegmentedControl
         aria-label={t('whereFrom')}
         size="sm"
@@ -296,7 +374,6 @@ function Source({
           { value: 'manual', label: t('pickThem') },
           { value: 'rule', label: t('useRule') },
         ]}
-        className="justify-self-start"
       />
       {s.kind === 'manual' ? (
         <Picker
@@ -305,85 +382,31 @@ function Source({
           onChange={(itemIds) => set({ source: { kind: 'manual', itemIds } })}
         />
       ) : (
-        <div className="grid gap-3 medium:grid-cols-2">
-          <Field label={t('rule')}>
-            <Select
-              value={s.rule}
-              onValueChange={(r) =>
-                set({
-                  source: {
-                    kind: 'rule',
-                    rule: r as FeaturedRule,
-                    value: ruleDefault(r as FeaturedRule, options.data),
-                  },
-                })
-              }
-              options={FEATURED_RULES.map((r) => ({ value: r, label: t(`rule.${r}`) }))}
-            />
-          </Field>
-          {s.rule === 'recently-added' && (
-            <Field label={t('addedIn')}>
+        <Pair
+          first={
+            <Field label={t('rule')}>
               <Select
-                value={s.value}
-                onValueChange={(value) => set({ source: { ...s, value } })}
-                options={WINDOWS.map((w) => ({
-                  value: w,
-                  label: t('days', { count: w.replace('d', '') }),
-                }))}
+                value={s.rule}
+                onValueChange={(r) =>
+                  set({
+                    source: {
+                      kind: 'rule',
+                      rule: r as FeaturedRule,
+                      value: ruleDefault(r as FeaturedRule, options.data),
+                    },
+                  })
+                }
+                options={FEATURED_RULES.map((r) => ({ value: r, label: t(`rule.${r}`) }))}
               />
             </Field>
-          )}
-          {s.rule === 'genre' && (
-            <Field
-              label={t('genre')}
-              hint={options.data?.genres.length ? undefined : t('noGenres')}
-            >
-              <Select
-                value={s.value}
-                onValueChange={(value) => set({ source: { ...s, value } })}
-                options={(options.data?.genres ?? (s.value ? [s.value] : [])).map((g) => ({
-                  value: g,
-                  label: g,
-                }))}
-              />
-            </Field>
-          )}
-          {s.rule === 'collection' && (
-            <Field
-              label={t('collection')}
-              hint={
-                options.data?.collections.length || options.data?.smart.length
-                  ? t('collectionHint')
-                  : t('noCollections')
-              }
-            >
-              <Select
-                value={s.value}
-                onValueChange={(value) => set({ source: { ...s, value } })}
-                options={[
-                  // yours first, then TMDB's (checkpoint 8d)
-                  ...(options.data?.smart ?? []).map((c) => ({
-                    value: c.id,
-                    label: t('collectionYours', { name: c.name }),
-                  })),
-                  ...(options.data?.collections ?? []).map((c) => ({
-                    value: String(c.id),
-                    label: c.name,
-                  })),
-                ]}
-              />
-            </Field>
-          )}
-        </div>
+          }
+          second={value}
+        />
       )}
-      {error && (
-        <p role="alert" className="text-badge-danger text-caption">
-          {error}
-        </p>
-      )}
+      <GroupError>{error}</GroupError>
       {s.kind === 'rule' && (
-        <div aria-live="polite" className="grid gap-2 rounded-md border border-line bg-s2 p-3">
-          <p className="text-caption text-text-2">
+        <Well live>
+          <Text variant="caption" color="text-2">
             {resolved.status === 'error'
               ? resolved.error.message
               : picks
@@ -391,37 +414,34 @@ function Source({
                   ? t('picks.none')
                   : t('picks.some', { count: picks.total })
                 : t('picks.checking')}
-          </p>
+          </Text>
           {picks && picks.items.length > 0 && (
-            <ul className="flex gap-1.5 overflow-hidden">
+            <View
+              role="list"
+              style={{ flexDirection: 'row', gap: sp['1'] + sp['0.5'], overflow: 'hidden' }}
+            >
               {picks.items.slice(0, 8).map((m) => (
-                <li key={m.id} className="w-10 shrink-0">
-                  <PosterThumb title={m.title} src={m.art.poster} />
-                </li>
+                <View key={m.id} role="listitem">
+                  <Thumb title={m.title} src={m.art.poster} width={40} fill="s3" />
+                </View>
               ))}
-            </ul>
+            </View>
           )}
-        </div>
+        </Well>
       )}
-    </fieldset>
+    </FieldGroup>
   )
 }
 
-function PosterThumb({
-  title,
-  src,
-  alt = title,
-}: {
-  title: string
-  src: string | null
-  alt?: string
-}) {
-  if (src)
-    return <img src={src} alt={alt} className="aspect-poster w-full rounded-[4px] object-cover" />
-  return alt ? (
-    <span role="img" aria-label={alt} className="block aspect-poster w-full rounded-[4px] bg-s3" />
-  ) : (
-    <span aria-hidden className="block aspect-poster w-full rounded-[4px] bg-s3" />
+/** A title and its year, the year quieter, on one line. */
+function TitleYear({ title, year }: { title: string; year: number | null }) {
+  return (
+    <Text size={ui.size} leading={ui.leading} numberOfLines={1} style={{ flex: 1, minWidth: 0 }}>
+      {title}{' '}
+      <Text size={ui.size} color="text-3">
+        {year ?? ''}
+      </Text>
+    </Text>
   )
 }
 
@@ -437,6 +457,7 @@ function Picker({
   onChange: (ids: number[]) => void
 }) {
   const t = useCurationT()
+  const sortMessages = useSortMessages()
   const [query, setQuery] = useState('')
   const q = useSettled(query.trim(), 200)
   const search = useQuery(`curation:search:${q}`, (c) =>
@@ -453,56 +474,54 @@ function Picker({
     .filter((m) => !ids.includes(m.id) && m.versions.some((v) => v.fileId))
     .slice(0, 6)
   return (
-    <div className="grid gap-3">
+    <View style={{ gap: sp['3'] }}>
       {picked.length > 0 && (
         <SortableList
-          aria-label={t('picked')}
+          accessibilityLabel={t('picked')}
+          messages={sortMessages}
           items={picked}
           id={(m) => String(m.id)}
           label={(m) => m.title}
           onChange={(next) => onChange(next.map((m) => m.id))}
-          className="gap-1.5"
-          itemClassName="grid grid-cols-[auto_2rem_minmax(0,1fr)_auto] items-center gap-2.5 rounded-md border border-line bg-s2 p-1.5"
         >
           {(m, handle) => (
             <>
               {handle}
-              <div className="w-8">
-                <PosterThumb title={m.title} src={m.art.poster} alt="" />
-              </div>
-              <span className="truncate text-text text-ui">
-                {m.title} <span className="text-text-3">{m.year}</span>
-              </span>
+              <Thumb title={m.title} src={m.art.poster} width={32} label="" fill="s3" />
+              <TitleYear title={m.title} year={m.year} />
               <Button
                 size="sm"
                 variant="ghost"
                 iconOnly
                 icon="close"
-                aria-label={t('remove', { title: m.title })}
-                onClick={() => onChange(ids.filter((x) => x !== m.id))}
+                accessibilityLabel={t('remove', { title: m.title })}
+                onPress={() => onChange(ids.filter((x) => x !== m.id))}
               />
             </>
           )}
         </SortableList>
       )}
       <Field label={t('addTitles')} hint={t('addTitlesHint')}>
-        <Input
-          icon="search"
+        <SearchField
+          label={t('addTitles')}
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChangeText={setQuery}
           placeholder={t('searchLibrary')}
         />
       </Field>
-      {q && search.status === 'success' && (
-        <ul aria-label={t('matching')} aria-live="polite" className="grid gap-1">
+      {q !== '' && search.status === 'success' && (
+        <View role="list" aria-label={t('matching')} aria-live="polite" style={{ gap: sp['1'] }}>
           {matches.length === 0 ? (
-            <li className="px-1 text-caption text-text-3">{t('noMatch', { query: q })}</li>
+            <View role="listitem" style={{ paddingHorizontal: sp['1'] }}>
+              <Hint>{t('noMatch', { query: q })}</Hint>
+            </View>
           ) : (
             matches.map((m) => (
-              <li key={m.id}>
-                <button
-                  type="button"
-                  onClick={() => {
+              <View key={m.id} role="listitem">
+                <Match
+                  title={m.title}
+                  year={m.year}
+                  onPress={() => {
                     setAdded((a) => [
                       ...a,
                       {
@@ -529,19 +548,46 @@ function Picker({
                     onChange([...ids, m.id])
                     setQuery('')
                   }}
-                  className="grid w-full cursor-pointer grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-md px-2 py-1.5 text-start text-ui outline-none hover:bg-s2 focus-visible:ring-focus"
-                >
-                  <span className="truncate text-text">
-                    {m.title} <span className="text-text-3">{m.year}</span>
-                  </span>
-                  <span className="text-accent-text text-caption">{t('add')}</span>
-                </button>
-              </li>
+                />
+              </View>
             ))
           )}
-        </ul>
+        </View>
       )}
-    </div>
+    </View>
+  )
+}
+
+/** A search result: the title and year, and Add at its end, s2 under a pointer. */
+function Match({
+  title,
+  year,
+  onPress,
+}: {
+  title: string
+  year: number | null
+  onPress: () => void
+}) {
+  const theme = useTheme()
+  const t = useCurationT()
+  return (
+    <Press
+      onPress={onPress}
+      style={({ hovered }) => ({
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: sp['2'],
+        paddingHorizontal: sp['2'],
+        paddingVertical: sp['1'] + sp['0.5'],
+        borderRadius: tokens.radius.md,
+        backgroundColor: hovered ? theme.colors.s2 : 'transparent',
+      })}
+    >
+      <TitleYear title={title} year={year} />
+      <Text variant="caption" color="accent-text">
+        {t('add')}
+      </Text>
+    </Press>
   )
 }
 
@@ -569,19 +615,18 @@ function Taglines({
     })
   }
   return (
-    <fieldset className="grid gap-3">
-      <legend className="mb-1.5 font-medium text-text text-ui">{t('taglines')}</legend>
-      <p className="text-caption text-text-3">{t('taglinesHint')}</p>
+    <FieldGroup label={t('taglines')} gap={sp['3']}>
+      <Hint>{t('taglinesHint')}</Hint>
       {items.slice(0, 6).map((m) => (
         <Field key={m.id} label={m.title}>
           <Input
             value={value(m.id)}
             maxLength={120}
             placeholder={m.synopsis}
-            onChange={(e) => change(m.id, e.target.value)}
+            onChangeText={(v) => change(m.id, v)}
           />
         </Field>
       ))}
-    </fieldset>
+    </FieldGroup>
   )
 }

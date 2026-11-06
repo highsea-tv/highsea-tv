@@ -25,7 +25,8 @@ const { act, cleanup, render, within } = await import('@testing-library/react')
 const { default: userEvent } = await import('@testing-library/user-event')
 const { createClient } = await import('@highsea-tv/sdk')
 const { ClientProvider } = await import('@highsea-tv/sdk/react')
-const { TooltipProvider } = await import('@highsea-tv/ui')
+const { ThemeProvider } = await import('@highsea-tv/ui/native')
+const { shown } = await import('./modal.ts')
 const { NowPlayingPage } = await import('../src/now-playing.tsx')
 
 const session = (over: Partial<StreamSession>): StreamSession => ({
@@ -120,11 +121,11 @@ async function open() {
   await act(async () => {
     render(
       <ClientProvider client={client}>
-        <TooltipProvider>
+        <ThemeProvider>
           <Routed<NowPlayingTab> base="/now-playing">
             {(tab) => <NowPlayingPage tab={tab} />}
           </Routed>
-        </TooltipProvider>
+        </ThemeProvider>
       </ClientProvider>,
     )
   })
@@ -210,6 +211,7 @@ describe('Now playing', () => {
     state.live = { sessions: [session({})], totalMbps: 9.4, remoteMbps: 0, transcodes: 0 }
     const { page, user } = await open()
     await user.click(page.getByRole('button', { name: 'Stop' }))
+    shown()
     const dialog = page.getByRole('dialog', { name: 'Stop Sam’s stream?' })
     await user.type(within(dialog).getByLabelText(/Message/), 'Restarting soon.')
     await user.click(within(dialog).getByRole('button', { name: 'Stop stream' }))

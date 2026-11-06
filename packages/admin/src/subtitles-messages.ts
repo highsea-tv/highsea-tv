@@ -104,6 +104,14 @@ export const subtitles = defineMessages({
   'profile.saved': '{name} saved',
   'profile.deleted': '{name} deleted',
   'profile.notDeleted': '{name} wasn’t deleted',
+  'profile.move': 'Move {name}',
+  'profile.moveUp': 'Move {name} up',
+  'profile.moveDown': 'Move {name} down',
+  'profile.moved': '{name} moved to {index} of {count}.',
+  'profile.pickedUp':
+    '{name} picked up, {index} of {count}. Up and Down move it. Space drops it, Escape cancels.',
+  'profile.dropped': '{name} dropped at {index} of {count}.',
+  'profile.cancelled': 'Move cancelled. {name} is back where it was.',
 
   'scoring.what': 'the subtitle settings',
   'scoring.minScore': 'Minimum score',

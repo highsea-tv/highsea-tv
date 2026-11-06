@@ -3,10 +3,11 @@
 // in it that land where focus needs them, a grid of tiles, words where a grid would be, and the
 // ambient backdrop. None of it knows an app's data, so every app on the TV's rule shares it. In a
 // browser, the engine pair (./engine.web.tsx) lands Kept parts and follows focus the same way.
-import { Image } from 'expo-image'
+
 import { createContext, type ReactNode, useContext, useState } from 'react'
 import { StyleSheet, useWindowDimensions, View, type ViewProps } from 'react-native'
 import { alpha } from '../alpha.ts'
+import { Image } from '../image.tsx'
 import { Text } from '../text.tsx'
 import { tokens, useTheme } from '../theme.tsx'
 import { FocusGuide, keptProps, TvScroll, type TvScrollProps } from './engine'

@@ -4,9 +4,10 @@
 // stage 6). Both shapes are the same height, the control's height and its inset either side, so a
 // list mixing films and songs keeps its rows even. The thumbnail is decorative: the title names the
 // row. Artwork is decoded at display size by expo-image (https://docs.expo.dev/versions/latest/sdk/image/).
-import { Image } from 'expo-image'
+
 import type { ReactNode } from 'react'
 import { View } from 'react-native'
+import { Image } from './image.tsx'
 import { Text } from './text.tsx'
 import { tokens, useControl, useTheme } from './theme.tsx'
 

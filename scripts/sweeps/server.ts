@@ -444,8 +444,9 @@ try {
         name: 'collections:edit:composer',
         path: `/collections/${decade.id}`,
         act: async (p) => {
-          await p.getByRole('combobox', { name: 'Condition 1: field' }).click()
-          await p.getByRole('option', { name: 'Composer' }).click()
+          // on a pointer the library's Select is a menu button (select.tsx), its choices radio items
+          await p.getByRole('button', { name: 'Condition 1: field' }).click()
+          await p.getByRole('menuitemradio', { name: 'Composer' }).click()
         },
       },
       {
@@ -459,7 +460,7 @@ try {
         path: '/collections',
         act: async (p) => {
           await p.getByRole('button', { name: 'Delete Blender picks' }).click()
-          await p.getByRole('alertdialog').getByRole('button', { name: 'Delete' }).click()
+          await p.getByRole('dialog').getByRole('button', { name: 'Delete' }).click()
           await p.getByText('Couldn’t delete the collection').first().waitFor()
         },
       },

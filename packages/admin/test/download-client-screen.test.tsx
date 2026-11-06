@@ -36,6 +36,7 @@ const { default: userEvent } = await import('@testing-library/user-event')
 const { createClient } = await import('@highsea-tv/sdk')
 const { ClientProvider } = await import('@highsea-tv/sdk/react')
 const { TooltipProvider } = await import('@highsea-tv/ui')
+const { ThemeProvider } = await import('@highsea-tv/ui/native')
 const { DownloadClient } = await import('../src/download-client.tsx')
 const { hoursText, minutesOf, ratioOf } = await import('../src/download-client-seeding.ts')
 
@@ -143,9 +144,11 @@ async function open() {
   await act(async () => {
     render(
       <ClientProvider client={client}>
-        <TooltipProvider>
-          <DownloadClient />
-        </TooltipProvider>
+        <ThemeProvider>
+          <TooltipProvider>
+            <DownloadClient />
+          </TooltipProvider>
+        </ThemeProvider>
       </ClientProvider>,
     )
   })

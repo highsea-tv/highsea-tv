@@ -54,6 +54,7 @@ export async function drawWithReactNativeWeb(): Promise<void> {
     default: none,
     Circle: none,
     Defs: none,
+    G: none,
     LinearGradient: none,
     Mask: none,
     Path: none,
@@ -73,7 +74,10 @@ export async function drawWithReactNativeWeb(): Promise<void> {
     ['dom.ts', 'dom.web.ts'],
     ['announce.ts', 'announce.web.ts'],
     ['embed.tsx', 'embed.web.tsx'],
+    ['page-frame.tsx', 'page-frame.web.tsx'],
+    ['date-time.tsx', 'date-time.web.tsx'],
     ['scrollbar.tsx', 'scrollbar.web.tsx'],
+    ['widget-editor.tsx', 'widget-editor.web.tsx'],
   ] as const) {
     const half = await import(join(native, webFile))
     mock.module(join(native, file), () => half)

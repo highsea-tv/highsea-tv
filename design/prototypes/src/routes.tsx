@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The top-level routes, one tree per platform. Paths mirror the products: `#/admin/movies/1`
+// The top-level routes, one tree per platform. Paths mirror the products: `#/admin/movies/10000`
 // is the server's `/movies/[id]`; the clients' `#/web`, `#/mobile` and `#/tv` are apps/client's
 // (one-client-platform-b.md › B3), whose mock export the chrome's frames hold.
 import { Redirect, Route, Switch } from 'wouter'
@@ -19,15 +19,15 @@ export const screenRoutes: Record<'admin' | 'web' | 'mobile' | 'tv', string[]> =
     '/admin/discover',
     '/admin/discover/shows',
     '/admin/movies',
-    '/admin/movies/1',
-    '/admin/movies/1/cast',
-    '/admin/movies/1/files',
-    '/admin/movies/1/history',
-    '/admin/movies/1/search',
-    '/admin/movies/1/subtitles',
-    '/admin/movies/1/nowhere',
+    '/admin/movies/10000',
+    '/admin/movies/10000/cast',
+    '/admin/movies/10000/files',
+    '/admin/movies/10000/history',
+    '/admin/movies/10000/search',
+    '/admin/movies/10000/subtitles',
+    '/admin/movies/10000/nowhere',
     '/admin/movies/nowhere',
-    '/admin/movies/107',
+    '/admin/movies/1003005',
     '/admin/shows',
     '/admin/shows/the-lantern-keepers',
     '/admin/shows/the-lantern-keepers/files',
@@ -39,10 +39,9 @@ export const screenRoutes: Record<'admin' | 'web' | 'mobile' | 'tv', string[]> =
     '/admin/collections/sc-2010s',
     '/admin/collections/sc-staff',
     '/admin/collections/nowhere',
-    '/admin/people/fritz-lang',
-    '/admin/people/jan-morgenstern',
-    '/admin/people/mara-ellison',
-    '/admin/people/nobody',
+    '/admin/people/98979075',
+    '/admin/people/25211212',
+    '/admin/people/999999999',
     '/admin/activity',
     '/admin/activity/history',
     '/admin/activity/blocklist',

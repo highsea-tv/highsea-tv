@@ -93,6 +93,10 @@ export const collections = defineMessages({
   noTitle: 'No film matches “{query}”.',
   add: 'Add',
   removeFrom: 'Remove {title} from {label}',
+  'order.move': 'Move {title}',
+  'order.moveUp': 'Move {title} up',
+  'order.moveDown': 'Move {title} down',
+  'order.moved': '{title} moved to {index} of {count}.',
 
   // ------------------------------------------------------------ rules
   match: 'Match',

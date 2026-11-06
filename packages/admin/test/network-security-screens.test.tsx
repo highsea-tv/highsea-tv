@@ -39,6 +39,7 @@ const { default: userEvent } = await import('@testing-library/user-event')
 const { createClient } = await import('@highsea-tv/sdk')
 const { ClientProvider } = await import('@highsea-tv/sdk/react')
 const { TooltipProvider } = await import('@highsea-tv/ui')
+const { ThemeProvider } = await import('@highsea-tv/ui/native')
 const { Network } = await import('../src/network.tsx')
 const { Security } = await import('../src/security.tsx')
 
@@ -145,7 +146,9 @@ async function open(screen: ReactNode) {
   await act(async () => {
     render(
       <ClientProvider client={client}>
-        <TooltipProvider>{screen}</TooltipProvider>
+        <ThemeProvider>
+          <TooltipProvider>{screen}</TooltipProvider>
+        </ThemeProvider>
       </ClientProvider>,
     )
   })

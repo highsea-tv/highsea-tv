@@ -37,7 +37,8 @@ const { act, cleanup, render, within } = await import('@testing-library/react')
 const { default: userEvent } = await import('@testing-library/user-event')
 const { createClient } = await import('@highsea-tv/sdk')
 const { ClientProvider } = await import('@highsea-tv/sdk/react')
-const { TooltipProvider } = await import('@highsea-tv/ui')
+const { ThemeProvider } = await import('@highsea-tv/ui/native')
+const { shown } = await import('./modal.ts')
 const { RULE_FIELDS, SmartCollectionInput } = await import('@highsea-tv/api-contract')
 const { Collections } = await import('../src/collections.tsx')
 const { CollectionEditor, handoff } = await import('../src/collections-editor.tsx')
@@ -199,7 +200,7 @@ async function open(ui: ReactNode) {
   await act(async () => {
     render(
       <ClientProvider client={client}>
-        <TooltipProvider>{ui}</TooltipProvider>
+        <ThemeProvider>{ui}</ThemeProvider>
       </ClientProvider>,
     )
   })
@@ -235,7 +236,9 @@ describe('Collections', () => {
   test('a collection a section draws on isn’t deleted', async () => {
     const { user, page } = await open(<Collections />)
     await user.click(page.getByRole('button', { name: 'Delete Staff picks' }))
-    await user.click(within(page.getByRole('alertdialog')).getByRole('button', { name: 'Delete' }))
+    await settle()
+    shown()
+    await user.click(within(page.getByRole('dialog')).getByRole('button', { name: 'Delete' }))
     await settle()
     expect(requested('DELETE', '/api/v1/curation/collections/sc-2')).toHaveLength(1)
     expect(page.getByRole('link', { name: 'Staff picks' })).toBeTruthy()
@@ -253,7 +256,7 @@ describe('the editor', () => {
 
     await user.type(form.getByLabelText('Name'), 'The 2010s')
     await user.click(form.getByRole('button', { name: 'Add a condition' }))
-    expect(form.getByRole('combobox', { name: 'Condition 1: field' }).textContent).toBe('Year')
+    expect(form.getByRole('button', { name: 'Condition 1: field' }).textContent).toBe('Year')
     await user.click(form.getByRole('button', { name: 'Save collection' }))
     await settle()
     const [post] = requested('POST', '/api/v1/curation/collections')
@@ -285,9 +288,8 @@ describe('the editor', () => {
     await settle()
     // it starts from what the rules picked, every film; take them out
     await user.click(form.getByRole('radio', { name: 'Pick them' }))
-    const picked = within(form.getByRole('list', { name: 'Picked films' }))
     for (const title of ['Sintel', 'Tears of Steel'])
-      await user.click(picked.getByRole('button', { name: new RegExp(`^Remove ${title}`) }))
+      await user.click(form.getByRole('button', { name: `Remove ${title} from picked films` }))
     await debounce()
     await settle()
     const result = within(page.getByRole('region', { name: 'What it holds now' }))
@@ -319,8 +321,8 @@ describe('the editor', () => {
   test('a composer is found by name and kept as a TMDB id', async () => {
     const { user, page } = await open(<CollectionEditor id="sc-1" />)
     const form = within(page.getByRole('form', { name: 'Collection' }))
-    await user.click(form.getByRole('combobox', { name: 'Condition 1: field' }))
-    await user.click(page.getByRole('option', { name: 'Composer' }))
+    await user.click(form.getByRole('button', { name: 'Condition 1: field' }))
+    await user.click(page.getByRole('menuitemradio', { name: 'Composer' }))
     await user.type(form.getByLabelText('Condition 1: value'), 'Jan')
     await debounce()
     await settle()
@@ -339,17 +341,17 @@ describe('the editor', () => {
 
   test('a codec is named in the admin’s words, or as the file says when it isn’t known', async () => {
     const { user, page } = await open(<CollectionEditor id="sc-1" />)
-    await user.click(page.getByRole('combobox', { name: 'Condition 1: field' }))
-    await user.click(page.getByRole('option', { name: 'Video codec' }))
-    expect(page.getByRole('combobox', { name: 'Condition 1: value' }).textContent).toBe('HEVC')
-    await user.click(page.getByRole('combobox', { name: 'Condition 1: value' }))
-    expect(page.getByRole('option', { name: 'theora' })).toBeTruthy()
+    await user.click(page.getByRole('button', { name: 'Condition 1: field' }))
+    await user.click(page.getByRole('menuitemradio', { name: 'Video codec' }))
+    expect(page.getByRole('button', { name: 'Condition 1: value' }).textContent).toBe('HEVC')
+    await user.click(page.getByRole('button', { name: 'Condition 1: value' }))
+    expect(page.getByRole('menuitemradio', { name: 'theora' })).toBeTruthy()
   })
 
   test('watch state shows, but can’t be chosen yet', async () => {
     const { user, page } = await open(<CollectionEditor id="sc-1" />)
-    await user.click(page.getByRole('combobox', { name: 'Condition 1: field' }))
-    const watched = page.getByRole('option', { name: 'Watched · comes with playback' })
+    await user.click(page.getByRole('button', { name: 'Condition 1: field' }))
+    const watched = page.getByRole('menuitemradio', { name: 'Watched · comes with playback' })
     expect(watched.getAttribute('aria-disabled')).toBe('true')
   })
 
@@ -366,9 +368,9 @@ describe('the editor', () => {
     }
     const { page } = await open(<CollectionEditor id="new" />)
     const form = within(page.getByRole('form', { name: 'Collection' }))
-    expect(form.getByRole('combobox', { name: 'Condition 1: field' }).textContent).toBe('Title')
+    expect(form.getByRole('button', { name: 'Condition 1: field' }).textContent).toBe('Title')
     expect((form.getByLabelText('Condition 1: value') as HTMLInputElement).value).toBe('Dead')
-    expect(form.getByRole('combobox', { name: 'Sort by' }).textContent).toBe('Year')
+    expect(form.getByRole('button', { name: 'Sort by' }).textContent).toBe('Year')
     expect(handoff.draft).toBeNull()
   })
 
@@ -376,9 +378,12 @@ describe('the editor', () => {
     const { user, page } = await open(<CollectionEditor id="sc-1" />)
     const form = within(page.getByRole('form', { name: 'Collection' }))
     await user.click(form.getByRole('radio', { name: 'Pick them' }))
-    const picked = within(form.getByRole('list', { name: 'Picked films' }))
-    expect(picked.getByText('Sintel')).toBeTruthy()
-    expect(picked.getByText('Tears of Steel')).toBeTruthy()
-    expect(form.getByRole('combobox', { name: 'Sort by' }).textContent).toBe('In your order')
+    // each picked row, in the order the rules had them, can be moved and taken out
+    expect(form.getByLabelText('Move Sintel')).toBeTruthy()
+    expect(form.getByRole('button', { name: 'Remove Sintel from picked films' })).toBeTruthy()
+    expect(
+      form.getByRole('button', { name: 'Remove Tears of Steel from picked films' }),
+    ).toBeTruthy()
+    expect(form.getByRole('button', { name: 'Sort by' }).textContent).toBe('In your order')
   })
 })

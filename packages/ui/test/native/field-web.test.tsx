@@ -33,7 +33,13 @@ mock.module('react-native-reanimated', () => ({
   withTiming: <T,>(value: T) => value,
 }))
 const none = () => null
-mock.module('react-native-svg', () => ({ default: none, Path: none, Circle: none, Rect: none }))
+mock.module('react-native-svg', () => ({
+  default: none,
+  G: none,
+  Path: none,
+  Circle: none,
+  Rect: none,
+}))
 mock.module('expo-haptics', () => ({ impactAsync: async () => {}, ImpactFeedbackStyle: {} }))
 mock.module(join(import.meta.dir, '../../src/native/icons.ts'), () => ({
   icons: new Proxy({}, { get: () => none }),

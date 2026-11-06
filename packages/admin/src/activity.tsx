@@ -7,6 +7,7 @@
 // - history comes a page at a time, with Show more under it, and failed downloads are an event;
 // - history and the blocklist rows carry the movie's title; a blocklist entry whose movie has
 //   left the library shows the release alone.
+// Drawn with the library's native renderer since D2 (one-client-platform-d.md).
 import type { BlocklistEntry, HistoryEvent, QueueItem } from '@highsea-tv/api-contract'
 import { bytes, duration, rate } from '@highsea-tv/core/format'
 import { useLocale, useT } from '@highsea-tv/i18n/react'
@@ -18,11 +19,9 @@ import {
   ConfirmDialog,
   EmptyState,
   Icon,
-  Menu,
-  MenuContent,
-  MenuItem,
-  MenuTrigger,
-  Progress,
+  type IconName,
+  type MenuOption,
+  ProgressBar,
   RowActions,
   Table,
   TableBody,
@@ -33,18 +32,20 @@ import {
   TableRow,
   TableToolbar,
   Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
+  Text,
   TitleCell,
+  TitleLink,
   toast,
-} from '@highsea-tv/ui'
-import { type ComponentProps, useRef, useState } from 'react'
+  tokens,
+} from '@highsea-tv/ui/native'
+import { useRef, useState } from 'react'
+import { View } from 'react-native'
 import { activity as messages } from './activity-messages.ts'
 import { type QueueFilter, queueFilters, torrentTone } from './downloads-status.ts'
 import { Loadable } from './loadable.tsx'
 import { moviePath } from './media-links.ts'
 import { AdminPage } from './shell.tsx'
+import { Muted, NoneShown, RowMenu, ToolbarFigure } from './table-parts.tsx'
 import { useTabAddress } from './tabs.ts'
 import { useRelative } from './time.ts'
 
@@ -52,7 +53,10 @@ export type ActivityTab = 'queue' | 'history' | 'blocklist'
 type Tab = ActivityTab
 type Filter = QueueFilter
 
-const historyIcon: Record<HistoryEvent['type'], ComponentProps<typeof Icon>['name']> = {
+const s = tokens.space
+const ui = tokens.adminText.ui
+
+const historyIcon: Record<HistoryEvent['type'], IconName> = {
   grabbed: 'download',
   imported: 'check',
   'import-failed': 'error',
@@ -91,36 +95,35 @@ export function Activity({ tab = 'queue' }: { tab?: Tab }) {
   const setTab = useTabAddress<Tab>('/activity', 'queue')
   const queue = useQuery('queue', loadQueue, QUEUE_LIVE)
   const blocklist = useQuery('blocklist', loadBlocklist, ['history.updated'])
+  const options = [
+    { value: 'queue' as const, label: t('tab.queue'), count: queue.data?.length || undefined },
+    { value: 'history' as const, label: t('tab.history') },
+    {
+      value: 'blocklist' as const,
+      label: t('tab.blocklist'),
+      count: blocklist.data?.length || undefined,
+    },
+  ]
   return (
     <AdminPage
       title={t('title')}
       description={t('description')}
       actions={
-        <Button icon="import" asChild>
-          <a href="/activity/import">{t('manualImport')}</a>
+        <Button icon="import" href="/activity/import">
+          {t('manualImport')}
         </Button>
       }
     >
-      <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)} variant="line">
-        <TabsList aria-label={t('sections')}>
-          <TabsTrigger value="queue" count={queue.data?.length || undefined}>
-            {t('tab.queue')}
-          </TabsTrigger>
-          <TabsTrigger value="history">{t('tab.history')}</TabsTrigger>
-          <TabsTrigger value="blocklist" count={blocklist.data?.length || undefined}>
-            {t('tab.blocklist')}
-          </TabsTrigger>
-        </TabsList>
-        <TabsContent value="queue" className="pt-5">
-          <Queue />
-        </TabsContent>
-        <TabsContent value="history" className="pt-5">
-          <ActivityHistory />
-        </TabsContent>
-        <TabsContent value="blocklist" className="pt-5">
-          <Blocklist />
-        </TabsContent>
-      </Tabs>
+      <Tabs<Tab>
+        variant="line"
+        aria-label={t('sections')}
+        value={tab}
+        onValueChange={setTab}
+        options={options}
+      />
+      <View role="tabpanel" aria-label={t(`tab.${tab}`)} style={{ paddingTop: s['5'] }}>
+        {tab === 'queue' ? <Queue /> : tab === 'history' ? <ActivityHistory /> : <Blocklist />}
+      </View>
     </AdminPage>
   )
 }
@@ -156,221 +159,213 @@ function Queue() {
           )
         const counts = Object.fromEntries(
           Object.entries(queueFilters).map(([k, f]) => [k, xs.filter((q) => f(q.state)).length]),
-        )
+        ) as Record<Filter, number>
         const shown = xs.filter((q) => queueFilters[filter](q.state))
         return (
           <TableFrame>
-            <Tabs value={filter} onValueChange={(v) => setFilter(v as Filter)}>
-              <TableToolbar>
-                <TabsList aria-label={t('queue.filter')} className="max-w-full overflow-x-auto">
-                  <TabsTrigger value="all" count={counts.all}>
-                    {t('filter.all')}
-                  </TabsTrigger>
-                  <TabsTrigger value="downloading" count={counts.downloading}>
-                    {t('filter.downloading')}
-                  </TabsTrigger>
-                  <TabsTrigger value="seeding" count={counts.seeding}>
-                    {t('filter.seeding')}
-                  </TabsTrigger>
-                  <TabsTrigger value="issues" count={counts.issues}>
-                    {t('filter.issues')}
-                  </TabsTrigger>
-                </TabsList>
-                <span className="ms-auto font-mono text-figure text-text-3">
-                  {rate(xs.reduce((s, q) => s + q.downRate, 0))} ↓
-                </span>
-              </TableToolbar>
-              <TabsContent value={filter}>
-                {shown.length === 0 ? (
-                  <p className="px-3.5 py-8 text-center text-caption text-text-3">
-                    {t('queue.none')}
-                  </p>
-                ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>{t('col.movie')}</TableHead>
-                        <TableHead>{t('col.quality')}</TableHead>
-                        <TableHead numeric>{t('col.size')}</TableHead>
-                        <TableHead>{t('col.progress')}</TableHead>
-                        <TableHead numeric>{t('col.down')}</TableHead>
-                        <TableHead numeric>{t('col.eta')}</TableHead>
-                        <TableHead>{t('col.status')}</TableHead>
-                        <TableHead>
-                          <span className="sr-only">{t('col.actions')}</span>
-                        </TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {shown.map((q) => {
-                        const s = torrentTone[q.state]
-                        const issue = queueFilters.issues(q.state)
-                        const title = `${q.title}${q.year ? ` (${q.year})` : ''}`
-                        return (
-                          <TableRow key={q.id}>
+            <TableToolbar>
+              <Tabs<Filter>
+                aria-label={t('queue.filter')}
+                value={filter}
+                onValueChange={setFilter}
+                options={(['all', 'downloading', 'seeding', 'issues'] as const).map((k) => ({
+                  value: k,
+                  label: t(`filter.${k}`),
+                  count: counts[k],
+                }))}
+              />
+              <ToolbarFigure>{`${rate(xs.reduce((n, q) => n + q.downRate, 0))} ↓`}</ToolbarFigure>
+            </TableToolbar>
+            <View role="tabpanel" aria-label={t(`filter.${filter}`)}>
+              {shown.length === 0 ? (
+                <NoneShown>{t('queue.none')}</NoneShown>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>{t('col.movie')}</TableHead>
+                      <TableHead>{t('col.quality')}</TableHead>
+                      <TableHead numeric>{t('col.size')}</TableHead>
+                      <TableHead>{t('col.progress')}</TableHead>
+                      <TableHead numeric>{t('col.down')}</TableHead>
+                      <TableHead numeric>{t('col.eta')}</TableHead>
+                      <TableHead>{t('col.status')}</TableHead>
+                      <TableHead hidden>{t('col.actions')}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {shown.map((q) => {
+                      const tone = torrentTone[q.state]
+                      const issue = queueFilters.issues(q.state)
+                      const title = `${q.title}${q.year ? ` (${q.year})` : ''}`
+                      const more: MenuOption[] = [
+                        ...(q.state === 'import-blocked'
+                          ? [
+                              {
+                                label: t('forceImport'),
+                                icon: 'check' as const,
+                                onSelect: () =>
+                                  force
+                                    .run(q.id)
+                                    .then(
+                                      () =>
+                                        toast.success(t('done.forced'), { description: q.title }),
+                                      fail(t('fail.import')),
+                                    ),
+                              },
+                            ]
+                          : []),
+                        {
+                          label: t('blocklistAgain'),
+                          icon: 'lock',
+                          onSelect: () => alternative.run(q.id).catch(fail(t('fail.search'))),
+                        },
+                        { label: t('remove'), icon: 'delete', onSelect: () => setRemoving(q) },
+                      ]
+                      return (
+                        <TableRow key={q.id}>
+                          <TableCell tall>
                             <TitleCell
                               title={
                                 q.movieId ? (
-                                  <a href={moviePath(q.movieId)} className="hover:underline">
-                                    {title}
-                                  </a>
+                                  <TitleLink href={moviePath(q.movieId)}>{title}</TitleLink>
                                 ) : (
                                   title
                                 )
                               }
                               detail={q.release}
                             />
-                            <TableCell className="text-text-2">{q.quality ?? '—'}</TableCell>
-                            <TableCell numeric>{bytes(q.size)}</TableCell>
-                            <TableCell className="w-40">
-                              <Progress
+                          </TableCell>
+                          <TableCell>
+                            <Text size={ui.size} leading={ui.leading} color="text-2">
+                              {q.quality ?? '—'}
+                            </Text>
+                          </TableCell>
+                          <TableCell numeric>{bytes(q.size)}</TableCell>
+                          <TableCell>
+                            <View style={{ width: PROGRESS_WIDTH }}>
+                              <ProgressBar
+                                look="panel"
                                 value={q.progress * 100}
-                                tone={s.bar}
+                                tone={tone.bar}
                                 showValue
-                                aria-label={t('progressOf', { title: q.title })}
+                                label={t('progressOf', { title: q.title })}
                               />
-                            </TableCell>
-                            <TableCell numeric>{q.downRate ? rate(q.downRate) : '—'}</TableCell>
-                            <TableCell numeric>
-                              {q.state === 'downloading' && q.eta ? duration(q.eta, locale) : '—'}
-                            </TableCell>
-                            <TableCell className={issue ? 'max-w-72 whitespace-normal' : undefined}>
-                              <Badge tone={s.tone}>{t(`state.${q.state}`)}</Badge>
-                              {issue && q.stateReason && (
-                                <p className="mt-1 text-caption text-text-3">{q.stateReason}</p>
+                            </View>
+                          </TableCell>
+                          <TableCell numeric>{q.downRate ? rate(q.downRate) : '—'}</TableCell>
+                          <TableCell numeric>
+                            {q.state === 'downloading' && q.eta ? duration(q.eta, locale) : '—'}
+                          </TableCell>
+                          <TableCell maxWidth={issue ? REASON_WIDTH : undefined}>
+                            <View style={{ gap: s['1'], alignItems: 'flex-start', minWidth: 0 }}>
+                              <Badge tone={tone.tone}>{t(`state.${q.state}`)}</Badge>
+                              {issue && q.stateReason ? (
+                                <Text variant="caption" color="text-3">
+                                  {q.stateReason}
+                                </Text>
+                              ) : null}
+                            </View>
+                          </TableCell>
+                          <TableCell align="end">
+                            <View
+                              style={{ flexDirection: 'row', alignItems: 'center', gap: s['1'] }}
+                            >
+                              {q.state === 'import-blocked' && (
+                                <Button
+                                  size="sm"
+                                  onPress={() =>
+                                    alternative
+                                      .run(q.id)
+                                      .then(
+                                        () =>
+                                          toast({ title: t('done.another'), description: q.title }),
+                                        fail(t('fail.search')),
+                                      )
+                                  }
+                                >
+                                  {t('findAnother')}
+                                </Button>
                               )}
-                            </TableCell>
-                            <TableCell className="text-end">
-                              <div className="flex items-center justify-end gap-1">
-                                {q.state === 'import-blocked' && (
+                              {q.state === 'stalled' && (
+                                <Button
+                                  size="sm"
+                                  onPress={() =>
+                                    alternative.run(q.id).then(
+                                      () =>
+                                        toast({
+                                          title: t('done.replace'),
+                                          description: t('done.replaceBody', {
+                                            release: q.release,
+                                          }),
+                                        }),
+                                      fail(t('fail.search')),
+                                    )
+                                  }
+                                >
+                                  {t('replace')}
+                                </Button>
+                              )}
+                              <RowActions>
+                                {q.state === 'paused' ? (
                                   <Button
                                     size="sm"
-                                    onClick={() =>
-                                      alternative.run(q.id).then(
-                                        () =>
-                                          toast({
-                                            title: t('done.another'),
-                                            description: q.title,
-                                          }),
-                                        fail(t('fail.search')),
-                                      )
-                                    }
-                                  >
-                                    {t('findAnother')}
-                                  </Button>
-                                )}
-                                {q.state === 'stalled' && (
+                                    variant="ghost"
+                                    iconOnly
+                                    icon="play"
+                                    accessibilityLabel={t('resume', { title: q.title })}
+                                    onPress={() => resume.run(q.id).catch(fail(t('fail.resume')))}
+                                  />
+                                ) : q.state === 'downloading' ||
+                                  q.state === 'queued' ||
+                                  q.state === 'stalled' ? (
                                   <Button
                                     size="sm"
-                                    onClick={() =>
-                                      alternative.run(q.id).then(
-                                        () =>
-                                          toast({
-                                            title: t('done.replace'),
-                                            description: t('done.replaceBody', {
-                                              release: q.release,
-                                            }),
-                                          }),
-                                        fail(t('fail.search')),
-                                      )
-                                    }
-                                  >
-                                    {t('replace')}
-                                  </Button>
-                                )}
-                                <RowActions>
-                                  {q.state === 'paused' ? (
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      iconOnly
-                                      icon="play"
-                                      aria-label={t('resume', { title: q.title })}
-                                      onClick={() => resume.run(q.id).catch(fail(t('fail.resume')))}
-                                    />
-                                  ) : q.state === 'downloading' ||
-                                    q.state === 'queued' ||
-                                    q.state === 'stalled' ? (
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      iconOnly
-                                      icon="pause"
-                                      aria-label={t('pause', { title: q.title })}
-                                      onClick={() => pause.run(q.id).catch(fail(t('fail.pause')))}
-                                    />
-                                  ) : null}
-                                </RowActions>
-                                <Menu>
-                                  <MenuTrigger asChild>
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      iconOnly
-                                      icon="more"
-                                      aria-label={t('more', { title: q.title })}
-                                    />
-                                  </MenuTrigger>
-                                  <MenuContent>
-                                    {q.state === 'import-blocked' && (
-                                      <MenuItem
-                                        icon="check"
-                                        onSelect={() =>
-                                          force.run(q.id).then(
-                                            () =>
-                                              toast.success(t('done.forced'), {
-                                                description: q.title,
-                                              }),
-                                            fail(t('fail.import')),
-                                          )
-                                        }
-                                      >
-                                        {t('forceImport')}
-                                      </MenuItem>
-                                    )}
-                                    <MenuItem
-                                      icon="lock"
-                                      onSelect={() =>
-                                        alternative.run(q.id).catch(fail(t('fail.search')))
-                                      }
-                                    >
-                                      {t('blocklistAgain')}
-                                    </MenuItem>
-                                    <MenuItem icon="delete" danger onSelect={() => setRemoving(q)}>
-                                      {t('remove')}
-                                    </MenuItem>
-                                  </MenuContent>
-                                </Menu>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        )
-                      })}
-                    </TableBody>
-                  </Table>
-                )}
-                <ConfirmDialog
-                  open={!!removing}
-                  onOpenChange={(o) => !o && setRemoving(null)}
-                  title={t('remove.title', { title: removing?.title ?? t('remove.this') })}
-                  description={t('remove.body')}
-                  confirmLabel={t('remove.confirm')}
-                  destructive
-                  onConfirm={() =>
-                    removing &&
-                    remove
-                      .run(removing.id)
-                      .then(() => toast({ title: t('done.removed') }), fail(t('fail.remove')))
-                  }
-                />
-              </TabsContent>
-            </Tabs>
+                                    variant="ghost"
+                                    iconOnly
+                                    icon="pause"
+                                    accessibilityLabel={t('pause', { title: q.title })}
+                                    onPress={() => pause.run(q.id).catch(fail(t('fail.pause')))}
+                                  />
+                                ) : null}
+                              </RowActions>
+                              <RowMenu label={t('more', { title: q.title })} items={more} />
+                            </View>
+                          </TableCell>
+                        </TableRow>
+                      )
+                    })}
+                  </TableBody>
+                </Table>
+              )}
+            </View>
+            <ConfirmDialog
+              open={!!removing}
+              onClose={() => setRemoving(null)}
+              title={t('remove.title', { title: removing?.title ?? t('remove.this') })}
+              description={t('remove.body')}
+              confirmLabel={t('remove.confirm')}
+              destructive
+              onConfirm={() =>
+                removing &&
+                remove
+                  .run(removing.id)
+                  .then(() => toast({ title: t('done.removed') }), fail(t('fail.remove')))
+              }
+            />
           </TableFrame>
         )
       }}
     </Loadable>
   )
 }
+
+/** A progress column's width (the web's w-40). */
+const PROGRESS_WIDTH = 160
+/** A cell that wraps its reason (the web's max-w-72). */
+const REASON_WIDTH = 288
+/** The blocklist's reason (the web's max-w-80). */
+const BLOCK_REASON_WIDTH = 320
 
 // ---------------------------------------------------------------- history
 
@@ -399,20 +394,18 @@ function ActivityHistory() {
             {t('history.emptyBody')}
           </EmptyState>
         ) : (
-          <div className="grid gap-4">
+          <View style={{ gap: s['4'] }}>
             <TableFrame>
               <HistoryTable events={items} showTitle />
             </TableFrame>
             {more && (
-              <Button
-                className="justify-self-center"
-                loading={Boolean(kept)}
-                onClick={() => setPages(pages + 1)}
-              >
-                {t('history.more')}
-              </Button>
+              <View style={{ alignItems: 'center' }}>
+                <Button loading={Boolean(kept)} onPress={() => setPages(pages + 1)}>
+                  {t('history.more')}
+                </Button>
+              </View>
             )}
-          </div>
+          </View>
         )
       }
     </Loadable>
@@ -436,25 +429,27 @@ function HistoryTable({ events, showTitle }: { events: HistoryEvent[]; showTitle
       </TableHeader>
       <TableBody>
         {events.map((e) => (
-          <TableRow key={e.id} title={e.message ?? undefined}>
+          <TableRow key={e.id}>
             <TableCell>
-              <span className="flex items-center gap-2 text-text">
-                <Icon name={historyIcon[e.type]} size={14} className="text-text-3" />
+              <Icon name={historyIcon[e.type]} size={14} color="text-3" />
+              <Text size={ui.size} leading={ui.leading} numberOfLines={1}>
                 {t(`event.${e.type}`)}
-              </span>
+              </Text>
             </TableCell>
             {showTitle && (
               <TableCell>
-                <a href={moviePath(e.movieId)} className="text-text hover:underline">
-                  {e.title}
-                </a>
+                <TitleLink href={moviePath(e.movieId)}>{e.title}</TitleLink>
               </TableCell>
             )}
-            <TitleCell
-              title={e.message ?? e.sourceTitle ?? '—'}
-              detail={e.message ? e.sourceTitle : undefined}
-            />
-            <TableCell className="text-text-2">{e.indexer ?? '—'}</TableCell>
+            <TableCell tall={Boolean(e.message && e.sourceTitle)}>
+              <TitleCell
+                title={e.message ?? e.sourceTitle ?? '—'}
+                detail={e.message ? (e.sourceTitle ?? undefined) : undefined}
+              />
+            </TableCell>
+            <TableCell>
+              <Muted>{e.indexer ?? '—'}</Muted>
+            </TableCell>
             <TableCell numeric>{relative(e.date)}</TableCell>
           </TableRow>
         ))}
@@ -470,14 +465,12 @@ function Blocklist() {
   const { relative } = useRelative()
   const list = useQuery('blocklist', loadBlocklist, ['history.updated'])
   const remove = useAction((c, id: string) => c.blocklist.remove({ params: { id } }))
-  const release = (b: BlocklistEntry) => {
-    if (b.movieId === null || b.title === null) return b.sourceTitle
-    return (
-      <a href={moviePath(b.movieId)} className="hover:underline">
-        {b.title}
-      </a>
+  const release = (b: BlocklistEntry) =>
+    b.movieId === null || b.title === null ? (
+      b.sourceTitle
+    ) : (
+      <TitleLink href={moviePath(b.movieId)}>{b.title}</TitleLink>
     )
-  }
   return (
     <Loadable query={list} what={t('blocklist.what')}>
       {(xs) =>
@@ -494,28 +487,33 @@ function Blocklist() {
                   <TableHead>{t('col.indexer')}</TableHead>
                   <TableHead>{t('col.reason')}</TableHead>
                   <TableHead numeric>{t('col.when')}</TableHead>
-                  <TableHead>
-                    <span className="sr-only">{t('col.actions')}</span>
-                  </TableHead>
+                  <TableHead hidden>{t('col.actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {xs.map((b) => (
                   <TableRow key={b.id}>
-                    <TitleCell
-                      title={release(b)}
-                      detail={b.movieId === null ? undefined : b.sourceTitle}
-                    />
-                    <TableCell className="text-text-2">{b.indexer ?? '—'}</TableCell>
-                    <TableCell className="max-w-80 whitespace-normal text-text-2">
-                      {b.reason}
+                    <TableCell tall={b.movieId !== null}>
+                      <TitleCell
+                        title={release(b)}
+                        detail={b.movieId === null ? undefined : b.sourceTitle}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Muted>{b.indexer ?? '—'}</Muted>
+                    </TableCell>
+                    <TableCell maxWidth={BLOCK_REASON_WIDTH}>
+                      <Text size={ui.size} leading={ui.leading} color="text-2">
+                        {b.reason}
+                      </Text>
                     </TableCell>
                     <TableCell numeric>{relative(b.date)}</TableCell>
-                    <TableCell className="text-end">
+                    <TableCell align="end">
                       <Button
                         size="sm"
                         variant="ghost"
-                        onClick={() =>
+                        accessibilityLabel={t('unblockOf', { release: b.sourceTitle })}
+                        onPress={() =>
                           remove.run(b.id).then(
                             () =>
                               toast({
@@ -526,7 +524,6 @@ function Blocklist() {
                               toast.error(t('fail.unblock'), { description: e.message }),
                           )
                         }
-                        aria-label={t('unblockOf', { release: b.sourceTitle })}
                       >
                         {t('unblock')}
                       </Button>

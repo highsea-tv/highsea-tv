@@ -5,6 +5,7 @@
 import './dom.ts'
 import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test'
 import type { ReactNode } from 'react'
+import { shown } from './modal.ts'
 
 mock.module('../src/navigation.tsx', () => ({
   useRouter: () => ({ push: () => {} }),
@@ -26,6 +27,7 @@ const { default: userEvent } = await import('@testing-library/user-event')
 const { createClient } = await import('@highsea-tv/sdk')
 const { ClientProvider } = await import('@highsea-tv/sdk/react')
 const { UIProvider } = await import('@highsea-tv/ui')
+const { ThemeProvider, Toaster } = await import('@highsea-tv/ui/native')
 const { MoviesLibrary } = await import('../src/library.tsx')
 
 const json = (body: unknown, status = 200) =>
@@ -110,19 +112,25 @@ afterEach(() => {
   localStorage.clear()
 })
 
-const settle = () =>
-  act(async () => {
+/** Lets the fetches answer, then ends any dialog's fade (modal.ts). */
+const settle = async () => {
+  await act(async () => {
     for (let i = 0; i < 6; i++) await new Promise((r) => setTimeout(r, 0))
   })
+  shown()
+}
 
 async function open() {
   const client = createClient({ fetch: api as never })
   await act(async () => {
     render(
       <ClientProvider client={client}>
-        <UIProvider>
-          <MoviesLibrary />
-        </UIProvider>
+        <ThemeProvider>
+          <UIProvider>
+            <MoviesLibrary />
+          </UIProvider>
+          <Toaster label="Notifications" />
+        </ThemeProvider>
       </ClientProvider>,
     )
   })
@@ -156,8 +164,10 @@ describe('A5’s bulk bar', () => {
     const bar = within(page.getByRole('toolbar', { name: /./ }))
     await user.click(bar.getByRole('button', { name: 'Remove' }))
     await settle()
-    const confirm = page.getByRole('alertdialog')
-    await user.click(within(confirm).getByLabelText('Don’t add them again from lists'))
+    const confirm = page.getByRole('dialog', { name: /Remove/ })
+    await user.click(
+      within(confirm).getByRole('checkbox', { name: 'Don’t add them again from lists' }),
+    )
     await user.click(within(confirm).getByRole('button', { name: 'Remove' }))
     await settle()
     const sent = requests.filter((r) => r.method === 'POST' && r.path === '/api/v1/movies/bulk')

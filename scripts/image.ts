@@ -30,8 +30,9 @@
 //
 // The checks CI and the release run on the built image (.github/workflows/ci.yml, release.yml):
 //
-//   bun scripts/image.ts size <image> <budget in MB>
-//     Lists the image's largest folders, and fails above the budget (the plan's size check).
+//   bun scripts/image.ts size <image>
+//     Reports the image's size and its largest folders. It has no budget to fail: the owner removed
+//     the size gate on 2026-11-05 (one-client-platform-d.md, D2's answers), so CI reports the size.
 //   bun scripts/image.ts hardware <image>
 //     Fails unless the image's ffmpeg lists the hardware encoders and filters highsea uses, and, on
 //     amd64, the drivers are there: Intel's and Mesa's VAAPI drivers and Mesa's Vulkan ICDs
@@ -69,6 +70,7 @@ type Manifest = {
   peerDependenciesMeta?: Record<string, { optional?: boolean }>
   libc?: string[]
   patchedDependencies?: Record<string, string>
+  overrides?: Record<string, string>
 }
 
 const SERVER = '@highsea-tv/server'
@@ -139,6 +141,13 @@ export function unrequested(root: string, needed: string[]): string[] {
   for (const dir of needed)
     for (const d of runtimeDeps(read(join(root, dir, 'package.json')))) asked.add(d)
   for (const m of installed) for (const d of runtimeDeps(m)) asked.add(d)
+  // the root's overrides may install another package under a name (`react-native` as
+  // `npm:react-native-tvos@…`), which asks for the package it names
+  // (https://bun.com/docs/install/overrides, https://docs.npmjs.com/cli/v11/configuring-npm/package-json#overrides)
+  for (const [name, spec] of Object.entries(read(join(root, 'package.json')).overrides ?? {})) {
+    const alias = /^npm:(@?[^@]+)@/.exec(spec)?.[1]
+    if (alias && asked.has(name)) asked.add(alias)
+  }
   return [...new Set(installed.map((m) => m.name))].filter((n) => !asked.has(n)).sort()
 }
 
@@ -323,7 +332,7 @@ function production(from: string, to: string) {
   console.log(`The production tree: ${needed.length} workspaces and the web app, in ${to}`)
 }
 
-function size(image: string, budgetMb: number) {
+function size(image: string) {
   const du = spawnSync(
     'docker',
     [
@@ -349,13 +358,7 @@ function size(image: string, budgetMb: number) {
     const [kb, path] = line.split('\t')
     console.log(`${String(Math.round(Number(kb) / 1000)).padStart(7)} MB  ${path}`)
   }
-  console.log(`\n${image}: ${mb} MB, budget ${budgetMb} MB`)
-  if (mb > budgetMb) {
-    console.error(
-      `The image is ${mb - budgetMb} MB over its budget. Find what grew above, or raise the budget in ci.yml with the reason.`,
-    )
-    process.exit(1)
-  }
+  console.log(`\n${image}: ${mb} MB`)
 }
 
 /** What each architecture's image must have for hardware acceleration (ADR 0056). */
@@ -594,14 +597,14 @@ if (import.meta.main) {
   const [command, a, b] = process.argv.slice(2)
   const self = relative(process.cwd(), import.meta.path)
   if (command === 'production' && a && b) production(a, b)
-  else if (command === 'size' && a && Number(b) > 0) size(a, Number(b))
+  else if (command === 'size' && a) size(a)
   else if (command === 'hardware' && a) hardware(a)
   else if (command === 'user' && a) user(a)
   else if (command === 'attestations' && a) attestations(attestationProblems(a))
   else if (command === 'published' && a) attestations(publishedProblems(a))
   else {
     console.error(
-      `Usage: bun ${self} production <from> <to>\n       bun ${self} size <image> <budget in MB>\n       bun ${self} hardware <image>\n       bun ${self} user <image>\n       bun ${self} attestations <OCI layout folder>\n       bun ${self} published <name@digest>`,
+      `Usage: bun ${self} production <from> <to>\n       bun ${self} size <image>\n       bun ${self} hardware <image>\n       bun ${self} user <image>\n       bun ${self} attestations <OCI layout folder>\n       bun ${self} published <name@digest>`,
     )
     process.exit(1)
   }

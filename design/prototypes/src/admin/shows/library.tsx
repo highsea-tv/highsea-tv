@@ -45,7 +45,6 @@ import { useLocation } from 'wouter'
 import { useAction, useQuery } from '../../mock/hooks.tsx'
 import { Loadable, PosterSkeletons } from '../loadable.tsx'
 import { showHref } from '../media/links.ts'
-import { useStored } from '../movies/library.tsx'
 import { AdminPage } from '../shell.tsx'
 
 /** Monitored, aired episodes without a file (downloading ones included, as Sonarr counts them). */
@@ -107,6 +106,26 @@ function artStatus(s: AdminShow): { label: string; tone: BadgeTone } | null {
   const n = missing(s)
   if (n > 0) return { label: `${n} missing`, tone: 'warning' }
   return null
+}
+
+/** A choice kept in the browser between visits (the view), as Movies kept it before D2. */
+function useStored<T extends string>(key: string, initial: T): [T, (v: T) => void] {
+  const [value, setValue] = useState<T>(() => {
+    try {
+      return (localStorage.getItem(`highsea-proto:${key}`) as T | null) ?? initial
+    } catch {
+      return initial
+    }
+  })
+  return [
+    value,
+    (v) => {
+      setValue(v)
+      try {
+        localStorage.setItem(`highsea-proto:${key}`, v)
+      } catch {}
+    },
+  ]
 }
 
 export function ShowsLibrary() {

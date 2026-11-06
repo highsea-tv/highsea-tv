@@ -17,6 +17,8 @@
     "test/native/font-scale.test.tsx",
     "test/native/parts.test.tsx",
     "test/native/field-web.test.tsx",
-    "test/native/smoothing-web.test.tsx"
+    "test/native/smoothing-web.test.tsx",
+    "test/native/admin-parts-web.test.tsx",
+    "test/native/menu-groups-web.test.tsx"
   ]
 }

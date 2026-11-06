@@ -85,6 +85,14 @@ export const curation = defineMessages({
   'featured.add': 'Add a section',
   'featured.order': 'In home-screen order. Continue watching always comes right after the hero.',
   'featured.titles': '{title}: titles',
+  'sort.move': 'Move {name}',
+  'sort.moveUp': 'Move {name} up',
+  'sort.moveDown': 'Move {name} down',
+  'sort.moved': '{name} moved to position {index} of {count}.',
+  'sort.pickedUp':
+    '{name} picked up, position {index} of {count}. Up and Down move it. Space drops it, Escape cancels.',
+  'sort.dropped': '{name} dropped at position {index} of {count}.',
+  'sort.cancelled': 'Move cancelled. {name} is back where it was.',
   'featured.count': '{count, plural, one {# title} other {# titles}}',
   deleteSectionBody: 'It leaves every home screen. The titles in it stay in the library.',
 

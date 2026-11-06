@@ -36,7 +36,8 @@ const { act, cleanup, render, within } = await import('@testing-library/react')
 const { default: userEvent } = await import('@testing-library/user-event')
 const { createClient } = await import('@highsea-tv/sdk')
 const { ClientProvider } = await import('@highsea-tv/sdk/react')
-const { TooltipProvider } = await import('@highsea-tv/ui')
+const { ThemeProvider } = await import('@highsea-tv/ui/native')
+const { shown } = await import('./modal.ts')
 const { Downloads } = await import('../src/downloads.tsx')
 
 // ---------------------------------------------------------------- the fake API
@@ -166,19 +167,34 @@ beforeEach(() => {
 })
 afterEach(() => cleanup())
 
-const settle = () =>
-  act(async () => {
+// a dialog or sheet that has just opened is ended in, so it's in the accessibility tree
+const settle = async () => {
+  await act(async () => {
     for (let i = 0; i < 6; i++) await new Promise((r) => setTimeout(r, 0))
   })
+  shown()
+}
+
+/** The file the picker would hand back: the button makes a file input and clicks it. */
+function picking(file: File) {
+  const click = HTMLInputElement.prototype.click
+  HTMLInputElement.prototype.click = function (this: HTMLInputElement) {
+    Object.defineProperty(this, 'files', { value: [file] })
+    this.dispatchEvent(new Event('change'))
+  }
+  return () => {
+    HTMLInputElement.prototype.click = click
+  }
+}
 
 async function open() {
   const client = createClient({ fetch: api as never })
   await act(async () => {
     render(
       <ClientProvider client={client}>
-        <TooltipProvider>
+        <ThemeProvider>
           <Downloads />
-        </TooltipProvider>
+        </ThemeProvider>
       </ClientProvider>,
     )
   })
@@ -281,10 +297,13 @@ describe('A8 Downloads', () => {
     const file = new File([new Uint8Array([100, 56, 58, 101])], 'sintel.torrent', {
       type: 'application/x-bittorrent',
     })
-    await user.upload(dialog.getByLabelText('Or a .torrent file') as HTMLInputElement, file)
+    const restore = picking(file)
+    await user.click(dialog.getByRole('button', { name: 'Choose a .torrent file' }))
+    restore()
     await settle()
+    expect(dialog.getByText(/^sintel\.torrent · /)).toBeTruthy()
     expect(
-      (dialog.getByLabelText('Magnet link or .torrent URL') as HTMLInputElement).disabled,
+      (dialog.getByLabelText('Magnet link or .torrent URL') as HTMLInputElement).readOnly,
     ).toBe(true)
     await user.click(dialog.getByRole('button', { name: 'Add' }))
     await settle()
@@ -300,12 +319,13 @@ describe('A8 Downloads', () => {
     await user.click(page.getAllByRole('button', { name: 'Add torrent' })[0] as HTMLElement)
     await settle()
     const dialog = within(page.getByRole('dialog'))
-    await user.click(dialog.getByRole('combobox', { name: 'Category' }))
-    expect((await page.findAllByRole('option')).map((o) => o.textContent)).toEqual([
-      'Manual',
-      'Books',
-    ])
-    await user.click(page.getByRole('option', { name: 'Books' }))
+    await user.click(dialog.getByRole('button', { name: 'Category' }))
+    await settle()
+    expect(
+      page.getAllByRole('menuitemradio').map((o) => o.getAttribute('aria-label') ?? o.textContent),
+    ).toEqual(['Manual', 'Books'])
+    await user.click(page.getByRole('menuitemradio', { name: 'Books' }))
+    await settle()
     const magnet = `magnet:?xt=urn:btih:${'cd'.repeat(20)}&dn=Something`
     await user.click(dialog.getByLabelText('Magnet link or .torrent URL'))
     await user.paste(magnet)
@@ -320,8 +340,9 @@ describe('A8 Downloads', () => {
 
   test('the category filter shows one category’s torrents', async () => {
     const { user, page } = await open()
-    await user.click(page.getByRole('combobox', { name: 'Category' }))
-    await user.click(await page.findByRole('option', { name: 'Manual' }))
+    await user.click(page.getByRole('button', { name: 'Category' }))
+    await settle()
+    await user.click(page.getByRole('menuitemradio', { name: 'Manual' }))
     await settle()
     expect(page.queryByRole('row', { name: /Sintel\.2010/ })).toBeNull()
     expect(page.getByRole('row', { name: /Something\.Else/ })).toBeTruthy()
@@ -360,8 +381,9 @@ describe('A8 Downloads', () => {
 
     await user.click(sheet.getByRole('tab', { name: /Files/ }))
     await settle()
-    await user.click(sheet.getByRole('combobox', { name: 'Priority for Sample.mkv' }))
-    await user.click(await page.findByRole('option', { name: 'Don’t download' }))
+    await user.click(sheet.getByRole('button', { name: 'Priority for Sample.mkv' }))
+    await settle()
+    await user.click(page.getByRole('menuitemradio', { name: 'Don’t download' }))
     await settle()
     expect(sent('PATCH', '/api/v1/torrents/tr_1/files')[0]?.body).toEqual({
       path: 'Sintel/Sample.mkv',
@@ -375,8 +397,9 @@ describe('A8 Downloads', () => {
 
     await user.click(sheet.getByRole('tab', { name: /Seeding/ }))
     await settle()
-    expect(sheet.getByText('1.5').tagName).toBe('STRONG')
-    expect(sheet.getByText('ever').tagName).toBe('STRONG')
+    // the values are bold, nested in the sentence
+    for (const v of ['1.5', 'ever'])
+      expect(sheet.getByText(v).parentElement?.textContent).toMatch(/^Seeds until/)
     expect(sheet.getByText(/It never stops before/)).toBeTruthy()
   })
 
@@ -408,7 +431,8 @@ describe('A8 Downloads', () => {
     await settle()
     const sheet = within(page.getByRole('dialog'))
     await user.click(sheet.getByRole('button', { name: 'More for Sintel (2010)' }))
-    await user.click(await page.findByRole('menuitem', { name: 'Import into the library' }))
+    await settle()
+    await user.click(page.getByRole('menuitem', { name: 'Import into the library' }))
     expect(pushed).toEqual(['/activity/import?path=%2Fdata%2Fdownloads%2Fbooks%2FSintel%20(2010)'])
   })
 
@@ -418,7 +442,8 @@ describe('A8 Downloads', () => {
     await settle()
     let sheet = within(page.getByRole('dialog'))
     await user.click(sheet.getByRole('button', { name: 'More for Something.Else' }))
-    const item = await page.findByRole('menuitem', {
+    await settle()
+    const item = page.getByRole('menuitem', {
       name: 'Import into the library when it finishes',
     })
     expect(item.getAttribute('aria-disabled')).toBe('true')
@@ -437,7 +462,7 @@ describe('A8 Downloads', () => {
     await settle()
     await user.click(within(page.getByRole('dialog')).getByRole('button', { name: 'Remove' }))
     await settle()
-    const confirm = within(page.getByRole('alertdialog'))
+    const confirm = within(page.getByRole('dialog', { name: 'Remove this torrent?' }))
     await user.click(confirm.getByLabelText('Also delete the downloaded data'))
     await user.click(confirm.getByRole('button', { name: 'Remove' }))
     await settle()

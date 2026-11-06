@@ -27,6 +27,7 @@ const { default: userEvent } = await import('@testing-library/user-event')
 const { createClient } = await import('@highsea-tv/sdk')
 const { ClientProvider } = await import('@highsea-tv/sdk/react')
 const { TooltipProvider } = await import('@highsea-tv/ui')
+const { ThemeProvider } = await import('@highsea-tv/ui/native')
 const { Connections } = await import('../src/connections.tsx')
 
 const json = (body: unknown, status = 200) =>
@@ -139,9 +140,11 @@ async function open() {
   await act(async () => {
     render(
       <ClientProvider client={client}>
-        <TooltipProvider>
-          <Connections />
-        </TooltipProvider>
+        <ThemeProvider>
+          <TooltipProvider>
+            <Connections />
+          </TooltipProvider>
+        </ThemeProvider>
       </ClientProvider>,
     )
   })

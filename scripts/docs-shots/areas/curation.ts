@@ -101,8 +101,8 @@ export default {
       height: 1500,
       act: async (p) => {
         await previewOn('Mobile')(p)
-        await p.getByRole('combobox', { name: 'Preview as' }).click()
-        await p.getByRole('option', { name: /^Theo/ }).click()
+        await p.getByRole('button', { name: 'Preview as' }).click()
+        await p.getByRole('menuitemradio', { name: /^Theo/ }).click()
       },
       crop: preview,
     },

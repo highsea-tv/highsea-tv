@@ -14,6 +14,8 @@
 // - Edit also has the seeding rule (checkpoint 6a; checkpoint 5's answer 5): a ratio, a time and a
 //   minimum seed time for hit-and-run rules, in hours; an empty field uses Download client's;
 // - Local badges, a line for indexers that need attention, and a dash for stats with no queries.
+// Since D2 (one-client-platform-d.md) it's drawn with the library's native renderer, on the web
+// through react-native-web, with the same parts, words and behaviour as the web renderer's.
 import type {
   CatalogIndexer,
   CatalogStatus,
@@ -25,20 +27,17 @@ import { percent } from '@highsea-tv/core/format'
 import { useLocale, useT } from '@highsea-tv/i18n/react'
 import { ApiError } from '@highsea-tv/sdk'
 import { useAction, useQuery } from '@highsea-tv/sdk/react'
+import { breakpoints } from '@highsea-tv/tokens'
 import {
   Badge,
   type BadgeTone,
   Button,
   Checkbox,
   Dialog,
-  DialogContent,
   EmptyState,
   Field,
   Input,
-  Menu,
-  MenuContent,
-  MenuItem,
-  MenuTrigger,
+  SearchField,
   SegmentedControl,
   Select,
   Switch,
@@ -50,17 +49,20 @@ import {
   TableHeader,
   TableRow,
   Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
+  Text,
   TitleCell,
   toast,
-} from '@highsea-tv/ui'
-import { useState } from 'react'
+  tokens,
+  useTheme,
+  useWindowAtLeast,
+} from '@highsea-tv/ui/native'
+import { type ReactNode, useState } from 'react'
+import { View } from 'react-native'
 import { hoursText, minutesOf, ratioOf, ratioText } from './download-client-seeding.ts'
 import { indexers as messages } from './indexers-messages.ts'
 import { Loadable } from './loadable.tsx'
 import { AdminPage } from './shell.tsx'
+import { RowMenu } from './table-parts.tsx'
 import { useTabAddress } from './tabs.ts'
 import { TagPicker } from './tag-picker.tsx'
 import { tagsMessages } from './tags-messages.ts'
@@ -106,12 +108,55 @@ function useLanguageName() {
 export const isOneClick = (d: CatalogIndexer) =>
   d.privacy === 'public' && d.settings.every((f) => !f.required || f.default !== undefined)
 
+const sp = tokens.space
+const ui = tokens.adminText.ui
+
+/** A caption-sized note in a colour (the web's `text-caption text-…`). */
+function Note({
+  children,
+  color = 'text-3',
+}: {
+  children: ReactNode
+  color?: 'text-2' | 'text-3' | 'warning'
+}) {
+  return (
+    <Text variant="caption" color={color}>
+      {children}
+    </Text>
+  )
+}
+
+/** A failed save's words, in a box on `s2` (the web's `rounded-md border bg-s2 p-3`). */
+function Failure({ children }: { children: string }) {
+  const theme = useTheme()
+  return (
+    <View
+      role="alert"
+      style={{
+        padding: sp['3'],
+        borderRadius: tokens.radius.md,
+        borderWidth: 1,
+        borderColor: theme.colors.line,
+        backgroundColor: theme.colors.s2,
+      }}
+    >
+      <Text variant="caption" color="danger">
+        {children}
+      </Text>
+    </View>
+  )
+}
+
 export function Indexers({ tab = 'installed' }: { tab?: Tab }) {
   const t = useT(messages)
   const setTab = useTabAddress<Tab>('/indexers', 'installed')
   const installed = useQuery('indexers', (c) => c.indexers.list(), LIVE)
   const status = useQuery('catalog:status', (c) => c.catalog.status(), ['catalog.updated'])
   const [notes, setNotes] = useState(false)
+  const tabs: { value: Tab; label: string; count?: number }[] = [
+    { value: 'installed', label: t('tab.installed'), count: installed.data?.length || undefined },
+    { value: 'catalog', label: t('tab.catalog') },
+  ]
 
   return (
     <AdminPage
@@ -127,33 +172,35 @@ export function Indexers({ tab = 'installed' }: { tab?: Tab }) {
             ) : (
               t('noCatalog')
             )}{' '}
-            <button type="button" onClick={() => setNotes(true)} className="underline">
-              {t('whatChanged')}
-            </button>
+            <InlineButton onPress={() => setNotes(true)}>{t('whatChanged')}</InlineButton>
           </>
         ) : undefined
       }
       actions={
-        <Button variant="primary" icon="add" onClick={() => setTab('catalog')}>
+        <Button variant="primary" icon="add" onPress={() => setTab('catalog')}>
           {t('add')}
         </Button>
       }
     >
-      <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)} variant="line">
-        <TabsList aria-label={t('sections')}>
-          <TabsTrigger value="installed" count={installed.data?.length || undefined}>
-            {t('tab.installed')}
-          </TabsTrigger>
-          <TabsTrigger value="catalog">{t('tab.catalog')}</TabsTrigger>
-        </TabsList>
-        <TabsContent value="installed" className="pt-5">
-          <Installed onBrowse={() => setTab('catalog')} />
-        </TabsContent>
-        <TabsContent value="catalog" className="pt-5">
-          <Catalog />
-        </TabsContent>
-      </Tabs>
-      {status.data && <WhatChanged status={status.data} open={notes} onOpenChange={setNotes} />}
+      <View>
+        <Tabs
+          variant="line"
+          aria-label={t('sections')}
+          options={tabs}
+          value={tab}
+          onValueChange={setTab}
+        />
+        <View
+          role="tabpanel"
+          aria-label={tabs.find((x) => x.value === tab)?.label}
+          style={{ paddingTop: sp['5'] }}
+        >
+          {tab === 'installed' ? <Installed onBrowse={() => setTab('catalog')} /> : <Catalog />}
+        </View>
+      </View>
+      {status.data && (
+        <WhatChanged status={status.data} open={notes} onClose={() => setNotes(false)} />
+      )}
     </AdminPage>
   )
 }
@@ -165,9 +212,38 @@ function Mono({ text, value }: { text: string; value: string }) {
   return (
     <>
       {text.slice(0, at)}
-      <span className="font-mono">{value}</span>
+      <Text variant="caption" mono color="text-3">
+        {value}
+      </Text>
       {text.slice(at + value.length)}
     </>
+  )
+}
+
+/**
+ * A button inside a line of text (the prototype’s underlined button in the page’s description): a
+ * nested Text with its own press (https://reactnative.dev/docs/text#nested-text), which
+ * react-native-web draws with the button role, a tab stop; Enter and Space press it, as a
+ * button's keys do (https://www.w3.org/WAI/ARIA/apg/patterns/button/).
+ */
+function InlineButton({ children, onPress }: { children: string; onPress: () => void }) {
+  return (
+    <Text
+      variant="caption"
+      color="text-3"
+      role="button"
+      onPress={onPress}
+      {...({
+        onKeyDown: (e: { key: string; preventDefault: () => void }) => {
+          if (e.key !== 'Enter' && e.key !== ' ') return
+          e.preventDefault()
+          onPress()
+        },
+      } as object)}
+      style={{ textDecorationLine: 'underline' }}
+    >
+      {children}
+    </Text>
   )
 }
 
@@ -176,31 +252,38 @@ function Mono({ text, value }: { text: string; value: string }) {
 function WhatChanged({
   status,
   open,
-  onOpenChange,
+  onClose,
 }: {
   status: CatalogStatus
   open: boolean
-  onOpenChange: (o: boolean) => void
+  onClose: () => void
 }) {
   const t = useT(messages)
+  const theme = useTheme()
   const install = useAction((c) => c.catalog.install())
   const available = status.available
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent title={t('changes.title')} size="md">
-        <div className="grid gap-4">
-          {available && (
-            <div className="grid gap-2 rounded-md border border-line bg-s2 p-3">
-              <p className="text-body text-text">
-                {t('changes.available', { version: available.version })}
-              </p>
-              <ChangeList changes={available.changes} />
+    <Dialog open={open} onClose={onClose} closable title={t('changes.title')} size="md">
+      <View style={{ gap: sp['4'] }}>
+        {available && (
+          <View
+            style={{
+              gap: sp['2'],
+              padding: sp['3'],
+              borderRadius: tokens.radius.md,
+              borderWidth: 1,
+              borderColor: theme.colors.line,
+              backgroundColor: theme.colors.s2,
+            }}
+          >
+            <Text>{t('changes.available', { version: available.version })}</Text>
+            <ChangeList changes={available.changes} />
+            <View style={{ alignItems: 'flex-start' }}>
               <Button
                 size="sm"
                 variant="primary"
                 loading={install.pending}
-                className="justify-self-start"
-                onClick={() =>
+                onPress={() =>
                   install.run().then(
                     (s) => toast.success(t('changes.installed', { version: s.version ?? '' })),
                     (e: Error) =>
@@ -210,37 +293,52 @@ function WhatChanged({
               >
                 {t('changes.install', { version: available.version })}
               </Button>
-            </div>
-          )}
-          {status.changes.length === 0 && !available ? (
-            <p className="text-body text-text-2">{t('changes.none')}</p>
-          ) : (
-            <ChangeList changes={status.changes} />
-          )}
-        </div>
-      </DialogContent>
+            </View>
+          </View>
+        )}
+        {status.changes.length === 0 && !available ? (
+          <Text color="text-2">{t('changes.none')}</Text>
+        ) : (
+          <ChangeList changes={status.changes} />
+        )}
+      </View>
     </Dialog>
   )
 }
 
+/** The web's list-disc's indent: the bullet in it, the note after. */
+const BULLET = 20
+
 function ChangeList({ changes }: { changes: CatalogStatus['changes'] }) {
   return (
-    <ol className="grid gap-4">
+    <View role="list" style={{ gap: sp['4'] }}>
       {changes.map((c) => (
-        <li key={c.version} className="grid gap-1">
-          <h3 className="font-mono font-semibold text-text text-ui">{c.version}</h3>
-          <ul className="grid list-disc gap-0.5 ps-5 text-body text-text-2">
+        <View key={c.version} role="listitem" style={{ gap: sp['1'] }}>
+          <Text size={ui.size} leading={ui.leading} mono weight={600} role="heading" aria-level={3}>
+            {c.version}
+          </Text>
+          <View role="list" style={{ gap: sp['0.5'] }}>
             {c.notes.map((n) => (
-              <li key={n}>{n}</li>
+              <View key={n} role="listitem" style={{ flexDirection: 'row' }}>
+                <Text color="text-2" aria-hidden style={{ width: BULLET, textAlign: 'center' }}>
+                  •
+                </Text>
+                <Text color="text-2" style={{ flex: 1, minWidth: 0 }}>
+                  {n}
+                </Text>
+              </View>
             ))}
-          </ul>
-        </li>
+          </View>
+        </View>
       ))}
-    </ol>
+    </View>
   )
 }
 
 // ---------------------------------------------------------------- installed
+
+/** The health column's widest (the web's max-w-72). */
+const HEALTH_WIDTH = 288
 
 function Installed({ onBrowse }: { onBrowse: () => void }) {
   const t = useT(messages)
@@ -274,7 +372,7 @@ function Installed({ onBrowse }: { onBrowse: () => void }) {
             icon="indexer"
             title={t('installed.none')}
             action={
-              <Button variant="primary" icon="catalog" onClick={onBrowse}>
+              <Button variant="primary" icon="catalog" onPress={onBrowse}>
                 {t('installed.browse')}
               </Button>
             }
@@ -294,47 +392,42 @@ function Installed({ onBrowse }: { onBrowse: () => void }) {
                     <TableHead numeric>{t('col.response')}</TableHead>
                     <TableHead numeric>{t('col.success')}</TableHead>
                     <TableHead>{t('col.enabled')}</TableHead>
-                    <TableHead>
-                      <span className="sr-only">{t('col.actions')}</span>
-                    </TableHead>
+                    <TableHead hidden>{t('col.actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {xs.map((ix) => {
                     const health: Health = ix.enabled ? ix.health : 'disabled'
+                    const detail = t('detail', {
+                      privacy: ix.privacy ? t(`privacy.${ix.privacy}`) : '',
+                      priority: ix.priority,
+                    })
                     return (
                       <TableRow key={ix.id}>
-                        <TitleCell
-                          title={
-                            ix.local ? (
-                              <span className="inline-flex items-center gap-2">
-                                {ix.name}
-                                <Badge tone="info">{t('local')}</Badge>
-                              </span>
-                            ) : (
-                              ix.name
-                            )
-                          }
-                          detail={t('detail', {
-                            privacy: ix.privacy ? t(`privacy.${ix.privacy}`) : '',
-                            priority: ix.priority,
-                          })}
-                        />
-                        <TableCell className="max-w-72 whitespace-normal">
-                          <Badge tone={healthTone[health]}>{t(`health.${health}`)}</Badge>
-                          {health !== 'healthy' && health !== 'disabled' && (
-                            <p className="mt-1 text-caption text-text-3">
-                              {ix.lastError ?? t('notAnswering')}
-                              {ix.backoffUntil
-                                ? ` ${t('tryingAgain', { when: relative(ix.backoffUntil) })}`
-                                : ''}
-                            </p>
+                        <TableCell tall>
+                          {ix.local ? (
+                            <LocalTitle name={ix.name} detail={detail} />
+                          ) : (
+                            <TitleCell title={ix.name} detail={detail} />
                           )}
-                          {ix.needsAttention && (
-                            <p className="mt-1 text-caption text-warning">
-                              {ix.missing ? t('definitionGone') : t('needsSetting')}
-                            </p>
-                          )}
+                        </TableCell>
+                        <TableCell maxWidth={HEALTH_WIDTH}>
+                          <View style={{ alignItems: 'flex-start', gap: sp['1'], minWidth: 0 }}>
+                            <Badge tone={healthTone[health]}>{t(`health.${health}`)}</Badge>
+                            {health !== 'healthy' && health !== 'disabled' && (
+                              <Note>
+                                {ix.lastError ?? t('notAnswering')}
+                                {ix.backoffUntil
+                                  ? ` ${t('tryingAgain', { when: relative(ix.backoffUntil) })}`
+                                  : ''}
+                              </Note>
+                            )}
+                            {ix.needsAttention && (
+                              <Note color="warning">
+                                {ix.missing ? t('definitionGone') : t('needsSetting')}
+                              </Note>
+                            )}
+                          </View>
                         </TableCell>
                         <TableCell numeric>{ix.stats.queries24h}</TableCell>
                         <TableCell numeric>{ix.stats.grabs24h}</TableCell>
@@ -350,6 +443,8 @@ function Installed({ onBrowse }: { onBrowse: () => void }) {
                         </TableCell>
                         <TableCell>
                           <Switch
+                            label={t('enabledLabel', { name: ix.name })}
+                            hideLabel
                             checked={ix.enabled}
                             onCheckedChange={(on) =>
                               toggle.run(ix.id, on).catch((e: Error) =>
@@ -358,15 +453,14 @@ function Installed({ onBrowse }: { onBrowse: () => void }) {
                                 }),
                               )
                             }
-                            aria-label={t('enabledLabel', { name: ix.name })}
                           />
                         </TableCell>
-                        <TableCell className="text-end">
-                          <span className="inline-flex gap-1">
+                        <TableCell align="end">
+                          <View style={{ flexDirection: 'row', gap: sp['1'] }}>
                             {ix.health === 'backoff' && (
                               <Button
                                 size="sm"
-                                onClick={() =>
+                                onPress={() =>
                                   retry
                                     .run(ix.id)
                                     .then(() =>
@@ -377,41 +471,27 @@ function Installed({ onBrowse }: { onBrowse: () => void }) {
                                 {t('retry')}
                               </Button>
                             )}
-                            <Menu>
-                              <MenuTrigger asChild>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  iconOnly
-                                  icon="more"
-                                  aria-label={t('more', { name: ix.name })}
-                                />
-                              </MenuTrigger>
-                              <MenuContent>
-                                <MenuItem icon="edit" onSelect={() => setEditing(ix)}>
-                                  {t('edit')}
-                                </MenuItem>
-                                <MenuItem icon="network" onSelect={() => runTest(ix)}>
-                                  {t('test')}
-                                </MenuItem>
-                                <MenuItem
-                                  icon="delete"
-                                  danger
-                                  onSelect={() =>
+                            <RowMenu
+                              label={t('more', { name: ix.name })}
+                              items={[
+                                { label: t('edit'), icon: 'edit', onSelect: () => setEditing(ix) },
+                                { label: t('test'), icon: 'network', onSelect: () => runTest(ix) },
+                                {
+                                  label: t('remove'),
+                                  icon: 'delete',
+                                  closes: 'gone',
+                                  onSelect: () =>
                                     remove.run(ix.id).then(
                                       () => toast({ title: t('removed', { name: ix.name }) }),
                                       (e: Error) =>
                                         toast.error(t('removeFailed', { name: ix.name }), {
                                           description: e.message,
                                         }),
-                                    )
-                                  }
-                                >
-                                  {t('remove')}
-                                </MenuItem>
-                              </MenuContent>
-                            </Menu>
-                          </span>
+                                    ),
+                                },
+                              ]}
+                            />
+                          </View>
                         </TableCell>
                       </TableRow>
                     )
@@ -419,14 +499,15 @@ function Installed({ onBrowse }: { onBrowse: () => void }) {
                 </TableBody>
               </Table>
             </TableFrame>
-            <SettingsDialog
-              mode="edit"
-              indexer={editing}
-              definition={
-                editing ? (catalog.data?.find((d) => d.id === editing.definitionId) ?? null) : null
-              }
-              onOpenChange={(o) => !o && setEditing(null)}
-            />
+            {editing && (
+              <SettingsForm
+                key={editing.id}
+                mode="edit"
+                indexer={editing}
+                definition={catalog.data?.find((d) => d.id === editing.definitionId) ?? null}
+                onClose={() => setEditing(null)}
+              />
+            )}
           </>
         )
       }
@@ -434,11 +515,47 @@ function Installed({ onBrowse }: { onBrowse: () => void }) {
   )
 }
 
+/** A title cell with the Local badge after the name, laid out as TitleCell lays out its text. */
+function LocalTitle({ name, detail }: { name: string; detail: string }) {
+  const t = useT(messages)
+  return (
+    <View style={{ flex: 1, minWidth: 0 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: sp['2'], minWidth: 0 }}>
+        <Text numberOfLines={1} style={{ flexShrink: 1 }}>
+          {name}
+        </Text>
+        <Badge tone="info">{t('local')}</Badge>
+      </View>
+      <Text variant="caption" mono color="text-3" numberOfLines={1}>
+        {detail}
+      </Text>
+    </View>
+  )
+}
+
 // ---------------------------------------------------------------- catalog
+
+/** The search field's width in a regular window (the web's w-64), and the language's (w-44). */
+const SEARCH_WIDTH = 256
+const LANGUAGE_WIDTH = 176
+
+/** `items` in rows of `per`, the last filled out so every card keeps its column's width. */
+function rowsOf<T>(items: readonly T[], per: number): (T | null)[][] {
+  const rows: (T | null)[][] = []
+  for (let i = 0; i < items.length; i += per) {
+    const row: (T | null)[] = items.slice(i, i + per)
+    while (row.length < per) row.push(null)
+    rows.push(row)
+  }
+  return rows
+}
 
 function Catalog() {
   const t = useT(messages)
   const languageName = useLanguageName()
+  const medium = useWindowAtLeast(breakpoints.medium)
+  const expanded = useWindowAtLeast(breakpoints.expanded)
+  const per = expanded ? 3 : medium ? 2 : 1
   const catalog = useQuery('catalog:indexers', (c) => c.catalog.indexers(), [
     'catalog.updated',
     'indexers.updated',
@@ -477,17 +594,18 @@ function Catalog() {
             (!q || d.name.toLowerCase().includes(q) || d.description.toLowerCase().includes(q)),
         )
         return (
-          <div className="grid grid-cols-[minmax(0,1fr)] gap-4">
-            <div className="flex flex-wrap items-center gap-2">
-              <Input
-                type="search"
-                icon="search"
-                value={text}
-                onChange={(e) => setText(e.target.value)}
-                placeholder={t('catalog.search')}
-                aria-label={t('catalog.search')}
-                className="w-full medium:w-64"
-              />
+          <View style={{ gap: sp['4'], minWidth: 0 }}>
+            <View
+              style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: sp['2'] }}
+            >
+              <View style={{ width: medium ? SEARCH_WIDTH : '100%' }}>
+                <SearchField
+                  label={t('catalog.search')}
+                  placeholder={t('catalog.search')}
+                  value={text}
+                  onChangeText={setText}
+                />
+              </View>
               <SegmentedControl
                 aria-label={t('catalog.privacy')}
                 value={privacy}
@@ -499,83 +617,138 @@ function Catalog() {
                   { value: 'private', label: t('privacy.private') },
                 ]}
               />
-              <Select
-                value={language}
-                onValueChange={setLanguage}
-                aria-label={t('catalog.language')}
-                options={[
-                  { value: 'all', label: t('catalog.everyLanguage') },
-                  ...languages.map((l) => ({ value: l, label: languageName(l) })),
-                ]}
-                className="w-44"
-              />
-            </div>
+              <View style={{ width: LANGUAGE_WIDTH }}>
+                <Select
+                  value={language}
+                  onValueChange={setLanguage}
+                  aria-label={t('catalog.language')}
+                  options={[
+                    { value: 'all', label: t('catalog.everyLanguage') },
+                    ...languages.map((l) => ({ value: l, label: languageName(l) })),
+                  ]}
+                />
+              </View>
+            </View>
             {shown.length === 0 ? (
-              <EmptyState size="sm" icon="search" title={t('catalog.nothing')}>
+              <EmptyState icon="search" title={t('catalog.nothing')}>
                 {t('catalog.nothingBody')}
               </EmptyState>
             ) : (
-              <ul className="grid grid-cols-[minmax(0,1fr)] gap-3 medium:grid-cols-2 expanded:grid-cols-3">
-                {shown.map((d) => (
-                  <li
-                    key={d.id}
-                    className="grid content-between gap-3 rounded-lg border border-line bg-s1 p-4"
+              <View role="list" style={{ gap: sp['3'] }}>
+                {rowsOf(shown, per).map((row) => (
+                  <View
+                    key={row.map((d) => d?.id ?? '').join(' ')}
+                    style={{ flexDirection: 'row', gap: sp['3'] }}
                   >
-                    <div className="grid gap-1.5">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="font-semibold text-text text-ui">{d.name}</h3>
-                        <Badge tone={privacyTone[d.privacy]}>{t(`privacy.${d.privacy}`)}</Badge>
-                        {d.local && <Badge tone="info">{t('local')}</Badge>}
-                      </div>
-                      <p className="text-caption text-text-2">{d.description}</p>
-                      <p className="font-mono text-figure text-text-3">
-                        {t('catalog.meta', {
-                          language: languageName(d.language),
-                          version: d.version,
-                          license: d.license,
-                        })}
-                      </p>
-                    </div>
-                    {d.installed > 0 ? (
-                      <Badge tone="neutral" className="justify-self-start">
-                        {t('catalog.installed')}
-                      </Badge>
-                    ) : isOneClick(d) ? (
-                      <Button
-                        size="sm"
-                        icon="add"
-                        loading={adding === d.id}
-                        onClick={() => oneClick(d)}
-                        aria-label={t('catalog.addLabel', { name: d.name })}
-                        className="justify-self-start"
-                      >
-                        {t('catalog.add')}
-                      </Button>
-                    ) : (
-                      <Button
-                        size="sm"
-                        icon="settings"
-                        onClick={() => setSetting(d)}
-                        aria-label={t('catalog.setUpLabel', { name: d.name })}
-                        className="justify-self-start"
-                      >
-                        {t('catalog.setUp')}
-                      </Button>
+                    {row.map((d, i) =>
+                      d ? (
+                        <CatalogCard
+                          key={d.id}
+                          d={d}
+                          adding={adding === d.id}
+                          onAdd={() => oneClick(d)}
+                          onSetUp={() => setSetting(d)}
+                        />
+                      ) : (
+                        // biome-ignore lint/suspicious/noArrayIndexKey: the row's empty places, in order
+                        <View key={i} style={{ flex: 1, flexBasis: 0 }} />
+                      ),
                     )}
-                  </li>
+                  </View>
                 ))}
-              </ul>
+              </View>
             )}
-            <SettingsDialog
-              mode="add"
-              indexer={null}
-              definition={setting}
-              onOpenChange={(o) => !o && setSetting(null)}
-            />
-          </div>
+            {setting && (
+              <SettingsForm
+                key={setting.id}
+                mode="add"
+                indexer={null}
+                definition={setting}
+                onClose={() => setSetting(null)}
+              />
+            )}
+          </View>
         )
       }}
     </Loadable>
+  )
+}
+
+function CatalogCard({
+  d,
+  adding,
+  onAdd,
+  onSetUp,
+}: {
+  d: CatalogIndexer
+  adding: boolean
+  onAdd: () => void
+  onSetUp: () => void
+}) {
+  const t = useT(messages)
+  const theme = useTheme()
+  const languageName = useLanguageName()
+  const figure = tokens.adminText.figure
+  return (
+    <View
+      role="listitem"
+      style={{
+        flex: 1,
+        flexBasis: 0,
+        minWidth: 0,
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
+        gap: sp['3'],
+        padding: sp['4'],
+        borderRadius: tokens.radius.lg,
+        borderWidth: 1,
+        borderColor: theme.colors.line,
+        backgroundColor: theme.colors.s1,
+      }}
+    >
+      <View style={{ alignSelf: 'stretch', gap: sp['1'] + sp['0.5'] }}>
+        <View
+          style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: sp['2'] }}
+        >
+          <Text size={ui.size} leading={ui.leading} weight={600} role="heading" aria-level={3}>
+            {d.name}
+          </Text>
+          <Badge tone={privacyTone[d.privacy]}>{t(`privacy.${d.privacy}`)}</Badge>
+          {d.local && <Badge tone="info">{t('local')}</Badge>}
+        </View>
+        <Note color="text-2">{d.description}</Note>
+        <Text size={figure.size} leading={figure.leading} mono color="text-3">
+          {t('catalog.meta', {
+            language: languageName(d.language),
+            version: d.version,
+            license: d.license,
+          })}
+        </Text>
+      </View>
+      {d.installed > 0 ? (
+        <Badge tone="neutral">{t('catalog.installed')}</Badge>
+      ) : isOneClick(d) ? (
+        <Button
+          size="sm"
+          icon="add"
+          loading={adding}
+          onPress={onAdd}
+          accessibilityLabel={t('catalog.addLabel', { name: d.name })}
+        >
+          {t('catalog.add')}
+        </Button>
+      ) : (
+        <Button
+          size="sm"
+          icon="settings"
+          hasPopup="dialog"
+          onPress={onSetUp}
+          accessibilityLabel={t('catalog.setUpLabel', { name: d.name })}
+        >
+          {t('catalog.setUp')}
+        </Button>
+      )}
+    </View>
   )
 }
 
@@ -629,37 +802,11 @@ function seedingOf(text: ReturnType<typeof seedingText>): Indexer['seeding'] | u
   return { ratio, minutes, minMinutes }
 }
 
-/** Set up (add) or Edit: the definition's fields, plus the name, priority and seeding rule when
- * editing. */
-function SettingsDialog({
-  mode,
-  indexer,
-  definition: d,
-  onOpenChange,
-}: {
-  mode: 'add' | 'edit'
-  indexer: Indexer | null
-  definition: CatalogIndexer | null
-  onOpenChange: (o: boolean) => void
-}) {
-  const open = mode === 'edit' ? !!indexer : !!d
-  // remounted per indexer or definition, so the form starts from its values
-  const key = mode === 'edit' ? (indexer?.id ?? '') : (d?.id ?? '')
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      {open && (
-        <SettingsForm
-          key={key}
-          mode={mode}
-          indexer={indexer}
-          definition={d}
-          onClose={() => onOpenChange(false)}
-        />
-      )}
-    </Dialog>
-  )
-}
+/** The priority field's width (the web's w-28). */
+const PRIORITY_WIDTH = 112
 
+/** Set up (add) or Edit: the definition's fields, plus the name, priority and seeding rule when
+ * editing. Drawn per indexer or definition, so the form starts from its values. */
 function SettingsForm({
   mode,
   indexer,
@@ -673,6 +820,7 @@ function SettingsForm({
 }) {
   const t = useT(messages)
   const tt = useT(tagsMessages)
+  const wide = useWindowAtLeast(breakpoints.medium)
   const fields = d?.settings ?? []
   const [initial] = useState(() => initialValues(fields, indexer))
   const [values, setValues] = useState<Record<string, Value>>(initial)
@@ -743,104 +891,111 @@ function SettingsForm({
     mode === 'add'
       ? t('form.setUpTitle', { name: d?.name ?? '' })
       : t('form.editTitle', { name: indexer?.name ?? '' })
+  /** Enter in a field submits, as the web's form does. */
+  const typed = { onSubmitEditing: submit, autoComplete: 'off', autoCorrect: false } as const
+  const seedField = { flex: wide ? 1 : undefined, minWidth: 0 } as const
 
   return (
-    <DialogContent
+    <Dialog
+      open
+      onClose={onClose}
+      closable
       size="md"
       title={title}
       description={t('form.description')}
       footer={
         <>
-          <Button variant="ghost" onClick={onClose}>
+          <Button variant="ghost" onPress={onClose}>
             {t('form.cancel')}
           </Button>
-          <Button variant="primary" loading={save.pending} onClick={submit}>
+          <Button variant="primary" loading={save.pending} onPress={submit}>
             {mode === 'add' ? t('form.testAndSave') : t('form.save')}
           </Button>
         </>
       }
     >
-      <form
-        className="grid gap-4"
-        onSubmit={(e) => {
-          e.preventDefault()
-          submit()
-        }}
-      >
+      <View style={{ gap: sp['4'] }}>
         {mode === 'edit' && (
           <>
             <Field
               label={t('form.name')}
               error={touched && !nameOk ? t('form.nameRequired') : undefined}
             >
-              <Input value={name} onChange={(e) => setName(e.target.value)} maxLength={60} />
+              <Input value={name} onChangeText={setName} maxLength={60} {...typed} />
             </Field>
             <Field
               label={t('form.priority')}
               hint={t('form.priorityHint')}
               error={touched && !priorityOk ? t('form.priorityInvalid') : undefined}
             >
-              <Input
-                type="number"
-                inputMode="numeric"
-                min={1}
-                max={50}
-                value={priority}
-                onChange={(e) => setPriority(e.target.value)}
-                className="w-28"
-              />
+              <View style={{ width: PRIORITY_WIDTH }}>
+                <Input
+                  inputMode="numeric"
+                  keyboardType="number-pad"
+                  value={priority}
+                  onChangeText={setPriority}
+                  {...typed}
+                />
+              </View>
             </Field>
             <Field label={tt('label')} hint={tt('hint.indexer')}>
               <TagPicker value={tags} onChange={setTags} />
             </Field>
-            <fieldset className="grid gap-3">
-              <legend className="mb-1 font-medium text-text text-ui">{t('form.seeding')}</legend>
-              <p className="text-caption text-text-3">{t('form.seedingHint')}</p>
-              <div className="grid gap-4 medium:grid-cols-3">
-                <Field
-                  label={t('form.seedRatio')}
-                  error={touched && !seedOk.ratio ? t('form.seedRatioInvalid') : undefined}
-                >
-                  <Input
-                    type="number"
-                    inputMode="decimal"
-                    min={0}
-                    max={100}
-                    step="0.1"
-                    value={seeding.ratio}
-                    placeholder={t('form.seedDefault')}
-                    onChange={(e) => setSeeding({ ...seeding, ratio: e.target.value })}
-                  />
-                </Field>
-                <Field
-                  label={t('form.seedHours')}
-                  error={touched && !seedOk.hours ? t('form.seedHoursInvalid') : undefined}
-                >
-                  <Input
-                    type="number"
-                    inputMode="decimal"
-                    min={0}
-                    value={seeding.hours}
-                    placeholder={t('form.seedDefault')}
-                    onChange={(e) => setSeeding({ ...seeding, hours: e.target.value })}
-                  />
-                </Field>
-                <Field
-                  label={t('form.seedMinHours')}
-                  hint={t('form.seedMinHoursHint')}
-                  error={touched && !seedOk.minHours ? t('form.seedHoursInvalid') : undefined}
-                >
-                  <Input
-                    type="number"
-                    inputMode="decimal"
-                    min={0}
-                    value={seeding.minHours}
-                    placeholder={t('form.seedNone')}
-                    onChange={(e) => setSeeding({ ...seeding, minHours: e.target.value })}
-                  />
-                </Field>
-              </div>
-            </fieldset>
+            <View role="group" aria-label={t('form.seeding')} style={{ gap: sp['3'] }}>
+              {/* the legend: the group is named by it, so it's read once, as the group's name */}
+              <Text size={ui.size} leading={ui.leading} weight={500} aria-hidden>
+                {t('form.seeding')}
+              </Text>
+              <Note>{t('form.seedingHint')}</Note>
+              <View style={{ flexDirection: wide ? 'row' : 'column', gap: sp['4'] }}>
+                <View style={seedField}>
+                  <Field
+                    label={t('form.seedRatio')}
+                    error={touched && !seedOk.ratio ? t('form.seedRatioInvalid') : undefined}
+                  >
+                    <Input
+                      inputMode="decimal"
+                      keyboardType="decimal-pad"
+                      value={seeding.ratio}
+                      placeholder={t('form.seedDefault')}
+                      onChangeText={(v) => setSeeding({ ...seeding, ratio: v })}
+                      {...typed}
+                    />
+                  </Field>
+                </View>
+                <View style={seedField}>
+                  <Field
+                    label={t('form.seedHours')}
+                    error={touched && !seedOk.hours ? t('form.seedHoursInvalid') : undefined}
+                  >
+                    <Input
+                      inputMode="decimal"
+                      keyboardType="decimal-pad"
+                      value={seeding.hours}
+                      placeholder={t('form.seedDefault')}
+                      onChangeText={(v) => setSeeding({ ...seeding, hours: v })}
+                      {...typed}
+                    />
+                  </Field>
+                </View>
+                <View style={seedField}>
+                  <Field
+                    label={t('form.seedMinHours')}
+                    hint={t('form.seedMinHoursHint')}
+                    error={touched && !seedOk.minHours ? t('form.seedHoursInvalid') : undefined}
+                  >
+                    <Input
+                      inputMode="decimal"
+                      keyboardType="decimal-pad"
+                      value={seeding.minHours}
+                      placeholder={t('form.seedNone')}
+                      onChangeText={(v) => setSeeding({ ...seeding, minHours: v })}
+                      {...typed}
+                    />
+                  </Field>
+                </View>
+              </View>
+            </View>
           </>
         )}
         {fields.map((f) => {
@@ -850,12 +1005,13 @@ function SettingsForm({
           const hint = secret && isSet(f) ? t('form.secretKept') : (f.help ?? undefined)
           if (f.type === 'checkbox')
             return (
-              <Field key={f.key} label={f.label} hint={f.help ?? undefined} inline>
-                <Checkbox
-                  checked={values[f.key] === true}
-                  onCheckedChange={(on) => set(f.key, on === true)}
-                />
-              </Field>
+              <Checkbox
+                key={f.key}
+                label={f.label}
+                hint={f.help ?? undefined}
+                checked={values[f.key] === true}
+                onCheckedChange={(on) => set(f.key, on)}
+              />
             )
           if (f.type === 'select')
             return (
@@ -875,32 +1031,22 @@ function SettingsForm({
           return (
             <Field key={f.key} label={f.label} hint={hint} error={error}>
               <Input
-                type={
-                  secret
-                    ? 'password'
-                    : f.type === 'number'
-                      ? 'number'
-                      : f.type === 'url'
-                        ? 'url'
-                        : 'text'
+                secureTextEntry={secret}
+                inputMode={f.type === 'number' ? 'numeric' : f.type === 'url' ? 'url' : 'text'}
+                keyboardType={
+                  f.type === 'number' ? 'number-pad' : f.type === 'url' ? 'url' : 'default'
                 }
-                value={String(values[f.key] ?? '')}
-                onChange={(e) => set(f.key, e.target.value)}
-                autoComplete="off"
+                autoCapitalize="none"
                 spellCheck={false}
+                value={String(values[f.key] ?? '')}
+                onChangeText={(v) => set(f.key, v)}
+                {...typed}
               />
             </Field>
           )
         })}
-        {failure && (
-          <p
-            role="alert"
-            className="rounded-md border border-line bg-s2 p-3 text-caption text-danger"
-          >
-            {failure}
-          </p>
-        )}
-      </form>
-    </DialogContent>
+        {failure && <Failure>{failure}</Failure>}
+      </View>
+    </Dialog>
   )
 }
