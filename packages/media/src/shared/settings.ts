@@ -11,18 +11,10 @@ import { checkFormat } from './naming.ts'
 
 export const MEDIA_MANAGEMENT_KEY = 'mediaManagement'
 
-/**
- * What Radarr's "Colon Replacement" offers (FileNameBuilder.cs, `ColonReplacementFormat`); `smart`
- * is its default: "Movie: Title" becomes "Movie - Title" and "12:30" becomes "12-30".
- */
-export const COLON_REPLACEMENTS = [
-  'delete',
-  'dash',
-  'space-dash',
-  'space-dash-space',
-  'smart',
-] as const
-export type ColonReplacement = (typeof COLON_REPLACEMENTS)[number]
+// the colon replacements live with the naming function (./naming.ts), which needs nothing else
+import { COLON_REPLACEMENTS, type ColonReplacement } from './naming.ts'
+
+export { COLON_REPLACEMENTS, type ColonReplacement }
 
 /** Three octal digits (`755`), as Radarr's "chmod Folder" takes them. */
 const OCTAL = /^[0-7]{3}$/

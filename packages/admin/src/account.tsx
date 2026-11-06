@@ -4,29 +4,35 @@
 // password, two-step verification and passkeys. The prototype has no screen for these (the
 // client's Profile lists them as "not in the prototype"); this follows the shell's sheet and the
 // settings groups' look. Every change re-asks for the password (OWASP Authentication Cheat Sheet:
-// re-authenticate before sensitive changes).
+// re-authenticate before sensitive changes). Drawn with the library's native renderer since D3
+// (one-client-platform-d.md): a form's submit is its button and Enter in its fields
+// (`onSubmitEditing`).
 import type { Passkey, User } from '@highsea-tv/api-contract'
 import { useT } from '@highsea-tv/i18n/react'
 import { useAction, useQuery } from '@highsea-tv/sdk/react'
+import { breakpoints } from '@highsea-tv/tokens'
 import {
   Badge,
   Button,
   ConfirmDialog,
   Dialog,
-  DialogContent,
   Field,
   Input,
   Sheet,
-  SheetContent,
   Skeleton,
+  Text,
   toast,
-} from '@highsea-tv/ui'
+  tokens,
+  useTheme,
+  useWindowAtLeast,
+} from '@highsea-tv/ui/native'
 import {
   browserSupportsWebAuthn,
   type PublicKeyCredentialCreationOptionsJSON,
   startRegistration,
 } from '@simplewebauthn/browser'
 import { type ReactNode, useEffect, useState } from 'react'
+import { View } from 'react-native'
 import { account } from './account-messages.ts'
 import { useSignOut } from './shell.tsx'
 import { useRelative } from './time.ts'
@@ -34,15 +40,42 @@ import { CodeInput, ConfirmPassword, Enrol, RecoveryCodes } from './two-factor.t
 
 const fail = (title: string) => (e: Error) => toast.error(title, { description: e.message })
 
+const s = tokens.space
+const ui = tokens.adminText.ui
+/** A row of buttons (the web's `flex flex-wrap gap-2`). */
+const BUTTONS = { flexDirection: 'row', flexWrap: 'wrap', gap: s['2'] } as const
+
+/** A part of the sheet: the settings groups' card, 16 in, with its title. */
 function Section({ title, children }: { title: string; children: ReactNode }) {
+  const theme = useTheme()
   return (
-    <section
+    <View
+      role="region"
       aria-label={title}
-      className="grid grid-cols-[minmax(0,1fr)] gap-3 rounded-lg border border-line bg-s1 p-4"
+      style={{
+        gap: s['3'],
+        padding: s['4'],
+        minWidth: 0,
+        borderWidth: 1,
+        borderColor: theme.colors.line,
+        borderRadius: tokens.radius.lg,
+        backgroundColor: theme.colors.s1,
+      }}
     >
-      <h2 className="font-semibold text-text text-title">{title}</h2>
+      <Text variant="title" weight={600} role="heading" aria-level={2}>
+        {title}
+      </Text>
       {children}
-    </section>
+    </View>
+  )
+}
+
+/** A line of running words in a section (the web's text-caption text-2 or text-3). */
+function Line({ children, quiet }: { children: ReactNode; quiet?: boolean }) {
+  return (
+    <Text variant="caption" color={quiet ? 'text-3' : 'text-2'}>
+      {children}
+    </Text>
   )
 }
 
@@ -57,28 +90,32 @@ export function AccountSheet({
   const session = useQuery('session', (c) => c.auth.session(), ['users.updated'])
   const signOut = useSignOut()
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" title={t('title')} description={t('description')}>
-        {session.status !== 'success' ? (
-          <div aria-busy className="grid gap-3">
-            <Skeleton className="h-32" />
-            <Skeleton className="h-32" />
-          </div>
-        ) : (
-          <div className="grid gap-4">
-            <Profile key={session.data.user.id} user={session.data.user} />
-            {session.data.user.hasPassword && <Password />}
-            <TwoFactor hasPassword={session.data.user.hasPassword} />
-            <Passkeys />
-            <Section title={t('signOut.title')}>
-              <p className="text-caption text-text-2">{t('signOut.body')}</p>
-              <Button icon="sign-out" className="justify-self-start" onClick={signOut}>
-                {t('signOut.action')}
-              </Button>
-            </Section>
-          </div>
-        )}
-      </SheetContent>
+    <Sheet
+      open={open}
+      onClose={() => onOpenChange(false)}
+      side="right"
+      title={t('title')}
+      description={t('description')}
+    >
+      {session.status !== 'success' ? (
+        <View aria-busy style={{ gap: s['3'] }}>
+          <Skeleton height={128} />
+          <Skeleton height={128} />
+        </View>
+      ) : (
+        <View style={{ gap: s['4'] }}>
+          <Profile key={session.data.user.id} user={session.data.user} />
+          {session.data.user.hasPassword && <Password />}
+          <TwoFactor hasPassword={session.data.user.hasPassword} />
+          <Passkeys />
+          <Section title={t('signOut.title')}>
+            <Line>{t('signOut.body')}</Line>
+            <Button icon="sign-out" onPress={signOut}>
+              {t('signOut.action')}
+            </Button>
+          </Section>
+        </View>
+      )}
     </Sheet>
   )
 }
@@ -96,21 +133,22 @@ function Profile({ user }: { user: User }) {
   return (
     <Section title={t('profile.title')}>
       <Field label={t('profile.name')}>
-        <Input value={name} autoComplete="name" onChange={(e) => setName(e.target.value)} />
+        <Input value={name} autoComplete="name" onChangeText={setName} />
       </Field>
       <Field label={t('profile.email')} hint={t('profile.emailHint')}>
         <Input
-          type="email"
+          inputMode="email"
+          keyboardType="email-address"
+          autoCapitalize="none"
           value={email}
           autoComplete="email"
-          onChange={(e) => setEmail(e.target.value)}
+          onChangeText={setEmail}
         />
       </Field>
       <Button
-        className="justify-self-start"
         disabled={!dirty || !name.trim()}
         loading={save.pending}
-        onClick={() => save.run().then(() => toast.success(t('profile.saved')), fail(t('failed')))}
+        onPress={() => save.run().then(() => toast.success(t('profile.saved')), fail(t('failed')))}
       >
         {t('profile.save')}
       </Button>
@@ -128,61 +166,58 @@ function Password() {
   const change = useAction((c) => c.me.changePassword({ body: { current, password: next } }))
   const short = tried && next.length < 10 ? t('password.short') : undefined
   const mismatch = tried && !short && confirm !== next ? t('password.mismatch') : undefined
+  const submit = () => {
+    // the button is off until both are typed; Enter in a field is held to the same
+    if (!current || !next) return
+    setTried(true)
+    setError(undefined)
+    if (next.length < 10 || confirm !== next) return
+    change.run().then(
+      () => {
+        toast.success(t('password.changed'), { description: t('password.changedBody') })
+        setCurrent('')
+        setNext('')
+        setConfirm('')
+        setTried(false)
+      },
+      (e: Error & { status?: number }) =>
+        e.status === 401 ? setError(e.message) : fail(t('failed'))(e),
+    )
+  }
   return (
     <Section title={t('password.title')}>
-      <form
-        className="grid gap-3"
-        onSubmit={(e) => {
-          e.preventDefault()
-          setTried(true)
-          setError(undefined)
-          if (next.length < 10 || confirm !== next) return
-          change.run().then(
-            () => {
-              toast.success(t('password.changed'), { description: t('password.changedBody') })
-              setCurrent('')
-              setNext('')
-              setConfirm('')
-              setTried(false)
-            },
-            (e: Error & { status?: number }) =>
-              e.status === 401 ? setError(e.message) : fail(t('failed'))(e),
-          )
-        }}
-      >
+      <View style={{ gap: s['3'] }}>
         <Field label={t('password.current')} error={error}>
           <Input
-            type="password"
+            secureTextEntry
             value={current}
             autoComplete="current-password"
-            onChange={(e) => setCurrent(e.target.value)}
+            onChangeText={setCurrent}
+            onSubmitEditing={submit}
           />
         </Field>
         <Field label={t('password.new')} hint={t('password.newHint')} error={short}>
           <Input
-            type="password"
+            secureTextEntry
             value={next}
             autoComplete="new-password"
-            onChange={(e) => setNext(e.target.value)}
+            onChangeText={setNext}
+            onSubmitEditing={submit}
           />
         </Field>
         <Field label={t('password.confirm')} error={mismatch}>
           <Input
-            type="password"
+            secureTextEntry
             value={confirm}
             autoComplete="new-password"
-            onChange={(e) => setConfirm(e.target.value)}
+            onChangeText={setConfirm}
+            onSubmitEditing={submit}
           />
         </Field>
-        <Button
-          type="submit"
-          className="justify-self-start"
-          disabled={!current || !next}
-          loading={change.pending}
-        >
+        <Button disabled={!current || !next} loading={change.pending} onPress={submit}>
           {t('password.change')}
         </Button>
-      </form>
+      </View>
     </Section>
   )
 }
@@ -250,77 +285,70 @@ function TwoFactor({ hasPassword }: { hasPassword: boolean }) {
   return (
     <Section title={t('twoFactor.title')}>
       {status.status !== 'success' ? (
-        <Skeleton className="h-10" />
+        <Skeleton height={40} />
       ) : step.kind === 'codes' ? (
         <RecoveryCodes codes={step.codes} onDone={reset} />
       ) : step.kind === 'enrol' ? (
-        <form
-          className="grid gap-3"
-          onSubmit={(e) => {
-            e.preventDefault()
-            verify(code)
-          }}
-        >
+        <View style={{ gap: s['3'] }}>
           <Enrol secret={step.secret} uri={step.uri} />
           <Field label={t('twoFactor.code')} error={error}>
             <CodeInput value={code} onChange={setCode} onComplete={verify} />
           </Field>
-          <div className="flex gap-2">
+          <View style={BUTTONS}>
             <Button
-              type="submit"
               variant="primary"
               disabled={code.length < 6}
               loading={enable.pending}
+              onPress={() => verify(code)}
             >
               {t('twoFactor.verify')}
             </Button>
-            <Button variant="ghost" onClick={reset}>
+            <Button variant="ghost" onPress={reset}>
               {t('twoFactor.cancel')}
             </Button>
-          </div>
-        </form>
+          </View>
+        </View>
       ) : step.kind === 'password' ? (
-        <form
-          className="grid gap-3"
-          onSubmit={(e) => {
-            e.preventDefault()
-            confirm(step.purpose)
-          }}
-        >
-          <ConfirmPassword value={password} onChange={setPassword} error={error} />
-          <div className="flex gap-2">
+        <View style={{ gap: s['3'] }}>
+          <ConfirmPassword
+            value={password}
+            onChange={setPassword}
+            onSubmit={() => password && confirm(step.purpose)}
+            error={error}
+          />
+          <View style={BUTTONS}>
             <Button
-              type="submit"
               variant={step.purpose === 'off' ? 'danger' : 'primary'}
               disabled={!password}
               loading={start.pending || off.pending || codes.pending}
+              onPress={() => confirm(step.purpose)}
             >
               {step.purpose === 'off' ? t('twoFactor.turnOff') : t('twoFactor.continue')}
             </Button>
-            <Button variant="ghost" onClick={reset}>
+            <Button variant="ghost" onPress={reset}>
               {t('twoFactor.cancel')}
             </Button>
-          </div>
-        </form>
+          </View>
+        </View>
       ) : (
         <>
-          <p className="text-caption text-text-2">
+          <Line>
             {status.data.enabled
               ? t('twoFactor.on', { left: status.data.recoveryCodesLeft })
               : t('twoFactor.off')}
-            {status.data.required && <> {t('twoFactor.required')}</>}
-          </p>
+            {status.data.required ? ` ${t('twoFactor.required')}` : null}
+          </Line>
           {hasPassword && (
-            <div className="flex flex-wrap gap-2">
+            <View style={BUTTONS}>
               {status.data.enabled ? (
                 <>
-                  <Button onClick={() => setStep({ kind: 'password', purpose: 'codes' })}>
+                  <Button onPress={() => setStep({ kind: 'password', purpose: 'codes' })}>
                     {t('twoFactor.newCodes')}
                   </Button>
                   {!status.data.required && (
                     <Button
                       variant="ghost"
-                      onClick={() => setStep({ kind: 'password', purpose: 'off' })}
+                      onPress={() => setStep({ kind: 'password', purpose: 'off' })}
                     >
                       {t('twoFactor.turnOff')}
                     </Button>
@@ -329,12 +357,12 @@ function TwoFactor({ hasPassword }: { hasPassword: boolean }) {
               ) : (
                 <Button
                   icon="shield"
-                  onClick={() => setStep({ kind: 'password', purpose: 'setup' })}
+                  onPress={() => setStep({ kind: 'password', purpose: 'setup' })}
                 >
                   {t('twoFactor.setUp')}
                 </Button>
               )}
-            </div>
+            </View>
           )}
         </>
       )}
@@ -346,6 +374,8 @@ function TwoFactor({ hasPassword }: { hasPassword: boolean }) {
 
 function Passkeys() {
   const t = useT(account)
+  const theme = useTheme()
+  const beside = useWindowAtLeast(breakpoints.medium)
   const { relative, seen } = useRelative()
   const info = useQuery('public-info', (c) => c.system.publicInfo(), ['settings.updated'])
   const list = useQuery('passkeys', (c) => c.me.passkeys(), ['users.updated'])
@@ -367,67 +397,86 @@ function Passkeys() {
   return (
     <Section title={t('passkeys.title')}>
       {list.status !== 'success' ? (
-        <Skeleton className="h-10" />
+        <Skeleton height={40} />
       ) : (
         <>
           {list.data.length === 0 ? (
-            <p className="text-caption text-text-2">{t('passkeys.none')}</p>
+            <Line>{t('passkeys.none')}</Line>
           ) : (
-            <ul aria-label={t('passkeys.title')} className="grid gap-2">
+            <View role="list" aria-label={t('passkeys.title')} style={{ gap: s['2'] }}>
               {list.data.map((p) => (
-                <li
+                <View
                   key={p.id}
-                  className="grid gap-2 rounded-md border border-line bg-s2 p-3 medium:grid-cols-[minmax(0,1fr)_auto] medium:items-center"
+                  role="listitem"
+                  style={{
+                    flexDirection: beside ? 'row' : 'column',
+                    alignItems: beside ? 'center' : 'stretch',
+                    gap: s['2'],
+                    padding: s['3'],
+                    borderWidth: 1,
+                    borderColor: theme.colors.line,
+                    borderRadius: tokens.radius.md,
+                    backgroundColor: theme.colors.s2,
+                  }}
                 >
-                  <div className="grid gap-0.5">
-                    <p className="flex flex-wrap items-center gap-2">
-                      <span className="font-medium text-text text-ui">{p.name}</span>
+                  <View style={{ flex: beside ? 1 : undefined, minWidth: 0, gap: s['0.5'] }}>
+                    <View
+                      style={{
+                        flexDirection: 'row',
+                        flexWrap: 'wrap',
+                        alignItems: 'center',
+                        gap: s['2'],
+                      }}
+                    >
+                      <Text size={ui.size} leading={ui.leading} weight={500}>
+                        {p.name}
+                      </Text>
                       <Badge tone="neutral">
                         {p.deviceType === 'multiDevice'
                           ? t('passkeys.synced')
                           : t('passkeys.thisDevice')}
                       </Badge>
-                    </p>
-                    <p className="text-caption text-text-3">
-                      {t('passkeys.made', { when: relative(p.createdAt) })} ·{' '}
-                      {p.lastUsed
-                        ? t('passkeys.used', { when: seen(p.lastUsed) })
-                        : t('passkeys.neverUsed')}
-                    </p>
-                  </div>
-                  <span className="flex gap-1">
+                    </View>
+                    <Line quiet>
+                      {`${t('passkeys.made', { when: relative(p.createdAt) })} · ${
+                        p.lastUsed
+                          ? t('passkeys.used', { when: seen(p.lastUsed) })
+                          : t('passkeys.neverUsed')
+                      }`}
+                    </Line>
+                  </View>
+                  <View style={{ flexDirection: 'row', gap: s['1'] }}>
                     <Button
                       size="sm"
                       variant="ghost"
-                      aria-label={t('passkeys.renameLabel', { name: p.name })}
-                      onClick={() => setRenaming(p)}
+                      accessibilityLabel={t('passkeys.renameLabel', { name: p.name })}
+                      onPress={() => setRenaming(p)}
                     >
                       {t('passkeys.rename')}
                     </Button>
                     <Button
                       size="sm"
                       variant="ghost"
-                      aria-label={t('passkeys.removeLabel', { name: p.name })}
-                      onClick={() => setRemoving(p)}
+                      accessibilityLabel={t('passkeys.removeLabel', { name: p.name })}
+                      onPress={() => setRemoving(p)}
                     >
                       {t('passkeys.remove')}
                     </Button>
-                  </span>
-                </li>
+                  </View>
+                </View>
               ))}
-            </ul>
+            </View>
           )}
           {offered === false ? (
-            <p className="text-caption text-text-3">{t('passkeys.unavailable')}</p>
+            <Line quiet>{t('passkeys.unavailable')}</Line>
           ) : supported === false ? (
-            <p className="text-caption text-text-3">{t('passkeys.unsupported')}</p>
+            <Line quiet>{t('passkeys.unsupported')}</Line>
           ) : (
             <Button
               icon="key"
-              className="justify-self-start"
               disabled={!supported || !offered}
               loading={add.pending}
-              onClick={() =>
+              onPress={() =>
                 add.run().then(
                   () => toast.success(t('passkeys.added')),
                   (e: Error) =>
@@ -446,7 +495,7 @@ function Passkeys() {
       {renaming && <RenamePasskey passkey={renaming} onClose={() => setRenaming(null)} />}
       <ConfirmDialog
         open={!!removing}
-        onOpenChange={(o) => !o && setRemoving(null)}
+        onClose={() => setRemoving(null)}
         title={t('passkeys.removeTitle', { name: removing?.name ?? '' })}
         description={t('passkeys.removeBody')}
         confirmLabel={t('passkeys.remove')}
@@ -467,31 +516,29 @@ function RenamePasskey({ passkey, onClose }: { passkey: Passkey; onClose: () => 
   const rename = useAction((c) =>
     c.me.renamePasskey({ params: { id: passkey.id }, body: { name: name.trim() } }),
   )
+  const save = () => {
+    if (name.trim()) rename.run().then(onClose, fail(t('failed')))
+  }
   return (
-    <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent
-        size="sm"
-        title={t('passkeys.renameLabel', { name: passkey.name })}
-        footer={
-          <>
-            <Button variant="ghost" onClick={onClose}>
-              {t('twoFactor.cancel')}
-            </Button>
-            <Button
-              variant="primary"
-              disabled={!name.trim()}
-              loading={rename.pending}
-              onClick={() => rename.run().then(onClose, fail(t('failed')))}
-            >
-              {t('profile.save')}
-            </Button>
-          </>
-        }
-      >
-        <Field label={t('passkeys.name')}>
-          <Input value={name} maxLength={60} onChange={(e) => setName(e.target.value)} />
-        </Field>
-      </DialogContent>
+    <Dialog
+      open
+      onClose={onClose}
+      size="sm"
+      title={t('passkeys.renameLabel', { name: passkey.name })}
+      footer={
+        <>
+          <Button variant="ghost" onPress={onClose}>
+            {t('twoFactor.cancel')}
+          </Button>
+          <Button variant="primary" disabled={!name.trim()} loading={rename.pending} onPress={save}>
+            {t('profile.save')}
+          </Button>
+        </>
+      }
+    >
+      <Field label={t('passkeys.name')}>
+        <Input value={name} maxLength={60} onChangeText={setName} onSubmitEditing={save} />
+      </Field>
     </Dialog>
   )
 }

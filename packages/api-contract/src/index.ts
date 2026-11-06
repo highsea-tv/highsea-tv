@@ -25,6 +25,8 @@ export * from './playback.ts'
 export * from './playback-settings.ts'
 export * from './profiles.ts'
 export * from './quality.ts'
+export * from './series.ts'
+export * from './series-settings.ts'
 export * from './sessions.ts'
 export * from './settings.ts'
 export * from './setup.ts'
@@ -64,6 +66,8 @@ import { playback } from './playback.ts'
 import { playbackSettings, playbackStatusRoutes } from './playback-settings.ts'
 import { profiles } from './profiles.ts'
 import { quality } from './quality.ts'
+import { series } from './series.ts'
+import { seriesSettings } from './series-settings.ts'
 import { sessions } from './sessions.ts'
 import { settings } from './settings.ts'
 import { setup } from './setup.ts'
@@ -122,4 +126,7 @@ export const routes = {
   music,
   playlists,
   profiles,
+  // drafted with D3 (one-client-platform-d.md, answer 5): the admin's shows, as `shows` above
+  // with Shows' settings (series-settings.ts): episode naming, episode sizes, profiles' use
+  series: { ...series, ...seriesSettings },
 } as const

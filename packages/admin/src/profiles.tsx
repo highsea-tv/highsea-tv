@@ -5,16 +5,18 @@
 // Since checkpoint 8c, Edit, New profile, New format and Edit sizes open the editors
 // (quality-editors.tsx), and a preset someone changed reads as theirs. The catalog's profile
 // presets stay inert, with a tooltip: the catalog has none to add yet.
-import type { QualitySize } from '@highsea-tv/api-contract'
+// Drawn with the library's native renderer since D3 (one-client-platform-d.md), on the web through
+// react-native-web, with the same parts, words and behaviour as the web renderer's.
+import type { ProfileUsage, QualityProfile, QualitySize } from '@highsea-tv/api-contract'
 import { bytes } from '@highsea-tv/core/format'
 import { useLocale, useT } from '@highsea-tv/i18n/react'
 import { describeFormat } from '@highsea-tv/quality/browser'
 import { useQuery } from '@highsea-tv/sdk/react'
+import { breakpoints } from '@highsea-tv/tokens'
 import {
   Badge,
   Button,
-  type ButtonProps,
-  cn,
+  SegmentedControl,
   Table,
   TableBody,
   TableCell,
@@ -22,22 +24,50 @@ import {
   TableHead,
   TableHeader,
   TableRow,
+  Text,
+  TitleLink,
   Tooltip,
-} from '@highsea-tv/ui'
+  tokens,
+  useWindowAtLeast,
+} from '@highsea-tv/ui/native'
+import { useState } from 'react'
+import { View, type ViewStyle } from 'react-native'
 import { filmBytes } from './library-figures.ts'
 import { Loadable } from './loadable.tsx'
 import { profiles as messages, sizes as sizeMessages } from './profiles-messages.ts'
+import { useServes } from './serves.tsx'
 import { AreaPage, Group } from './settings.tsx'
+import { Card, Cards, Line, Note } from './settings-card.tsx'
 
-/** A preset the catalog doesn't have yet: focusable, so its tooltip is reachable. */
-function Later({ children, className, ...props }: Omit<ButtonProps, 'onClick' | 'disabled'>) {
+const s = tokens.space
+const figure = tokens.adminText.figure
+
+/** Read, never seen (the web's `sr-only`): the cutoff's badge says which it is only in words. */
+const READ_ONLY_TEXT = {
+  position: 'absolute',
+  width: 1,
+  height: 1,
+  margin: -1,
+  overflow: 'hidden',
+  clip: 'rect(0 0 0 0)',
+  whiteSpace: 'nowrap',
+} as object
+
+/**
+ * A preset the catalog doesn't have yet: shown but inert, its wrapper taking focus so the tooltip
+ * is reachable by keyboard (WAI-ARIA APG, "Focusability of disabled controls"), as Library's
+ * Search is while no indexer is on.
+ */
+function Later({ label, children }: { label: string; children: string }) {
   const t = useT(messages)
   return (
-    <Tooltip content={t('later')}>
-      <Button {...props} aria-disabled className={cn('cursor-not-allowed opacity-60', className)}>
-        {children}
-      </Button>
-    </Tooltip>
+    <View style={{ alignSelf: 'flex-start' }}>
+      <Tooltip content={t('later')} focusable>
+        <Button size="sm" icon="add" accessibilityLabel={label} disabled>
+          {children}
+        </Button>
+      </Tooltip>
+    </View>
   )
 }
 
@@ -50,6 +80,8 @@ const presets = [
 export function Profiles() {
   const t = useT(messages)
   const locale = useLocale()
+  const medium = useWindowAtLeast(breakpoints.medium)
+  const shows = useServes('shows')
   const profiles = useQuery('settings:profiles', (c) => c.quality.profiles(), ['settings.updated'])
   const formats = useQuery('settings:formats', (c) => c.quality.customFormats(), [
     'settings.updated',
@@ -58,8 +90,8 @@ export function Profiles() {
     <AreaPage
       id="profiles"
       actions={
-        <Button icon="add" asChild>
-          <a href="/settings/profiles/new">{t('newProfile')}</a>
+        <Button icon="add" href="/settings/profiles/new">
+          {t('newProfile')}
         </Button>
       }
     >
@@ -67,55 +99,11 @@ export function Profiles() {
         <Loadable query={profiles} what={t('profiles.what')}>
           {(ps) =>
             ps.length === 0 ? (
-              <p className="text-caption text-text-3">{t('profiles.none')}</p>
+              <Note>{t('profiles.none')}</Note>
+            ) : shows ? (
+              <UsedProfileCards profiles={ps} />
             ) : (
-              <ul className="grid gap-2">
-                {ps.map((p) => (
-                  <li
-                    key={p.id}
-                    className="grid gap-2 rounded-md border border-line bg-s2 p-3 medium:grid-cols-[minmax(0,1fr)_auto] medium:items-center"
-                  >
-                    <div className="grid gap-1">
-                      <p className="font-semibold text-text text-ui">{p.name}</p>
-                      <p className="flex flex-wrap gap-1">
-                        {p.items
-                          .filter((q) => q.allowed)
-                          .map((q) => (
-                            <Badge key={q.name} tone={q.name === p.cutoff ? 'accent' : 'neutral'}>
-                              {q.name === p.cutoff ? (
-                                <>
-                                  <span aria-hidden>{q.name}</span>
-                                  <span className="sr-only">
-                                    {t('profiles.cutoff', { name: q.name })}
-                                  </span>
-                                </>
-                              ) : (
-                                q.name
-                              )}
-                            </Badge>
-                          ))}
-                      </p>
-                      <p className="text-caption text-text-3">
-                        {p.upgradeAllowed
-                          ? t('profiles.upgrades', { cutoff: p.cutoff })
-                          : t('profiles.noUpgrades')}{' '}
-                        · {t('profiles.scores', { count: p.formats.length })}
-                        {p.waitMinutes > 0 && (
-                          <> · {t('profiles.wait', { minutes: p.waitMinutes })}</>
-                        )}
-                      </p>
-                    </div>
-                    <Button size="sm" icon="edit" asChild>
-                      <a
-                        href={`/settings/profiles/${p.id}`}
-                        aria-label={t('editLabel', { name: p.name })}
-                      >
-                        {t('edit')}
-                      </a>
-                    </Button>
-                  </li>
-                ))}
-              </ul>
+              <ProfileCards profiles={ps} />
             )
           }
         </Loadable>
@@ -124,10 +112,10 @@ export function Profiles() {
         <Loadable query={formats} what={t('formats.what')}>
           {(fs) =>
             fs.length === 0 ? (
-              <p className="text-caption text-text-3">{t('formats.none')}</p>
+              <Note>{t('formats.none')}</Note>
             ) : (
               <TableFrame>
-                <Table aria-label={t('formats.title')}>
+                <Table label={t('formats.title')}>
                   <TableHeader>
                     <TableRow>
                       <TableHead>{t('formats.format')}</TableHead>
@@ -138,16 +126,23 @@ export function Profiles() {
                   <TableBody>
                     {fs.map((f) => (
                       <TableRow key={f.id}>
-                        <TableCell className="text-text">
-                          <a
-                            href={`/settings/profiles/formats/${f.id}`}
-                            className="rounded-sm outline-none hover:underline focus-visible:ring-focus"
-                          >
+                        <TableCell>
+                          <TitleLink href={`/settings/profiles/formats/${f.id}`}>
                             {f.name}
-                          </a>
+                          </TitleLink>
                         </TableCell>
-                        <TableCell className="whitespace-normal break-words font-mono text-figure text-text-2">
-                          {describeFormat(f, locale).join(' · ')}
+                        <TableCell>
+                          <Text
+                            size={figure.size}
+                            leading={figure.leading}
+                            mono
+                            color="text-2"
+                            style={
+                              { flexShrink: 1, minWidth: 0, overflowWrap: 'break-word' } as object
+                            }
+                          >
+                            {describeFormat(f, locale).join(' · ')}
+                          </Text>
                         </TableCell>
                         <TableCell>
                           {f.source === 'preset' && !f.edited ? (
@@ -164,35 +159,122 @@ export function Profiles() {
             )
           }
         </Loadable>
-        <Button size="sm" variant="secondary" icon="add" className="justify-self-start" asChild>
-          <a href="/settings/profiles/formats/new">{t('newFormat')}</a>
-        </Button>
+        <View style={{ alignSelf: 'flex-start' }}>
+          <Button size="sm" variant="secondary" icon="add" href="/settings/profiles/formats/new">
+            {t('newFormat')}
+          </Button>
+        </View>
       </Group>
       <Group title={t('presets.title')} description={t('presets.description')}>
-        <ul className="grid gap-2 medium:grid-cols-3">
+        <View
+          role="list"
+          style={
+            {
+              display: 'grid',
+              gridTemplateColumns: medium ? 'repeat(3, minmax(0, 1fr))' : 'minmax(0, 1fr)',
+              gap: s['2'],
+            } as unknown as ViewStyle
+          }
+        >
           {presets.map((p) => (
-            <li
-              key={p.name}
-              className="grid content-between gap-3 rounded-md border border-line bg-s2 p-3"
-            >
-              <div className="grid gap-1">
-                <p className="font-semibold text-text text-ui">{t(p.name)}</p>
-                <p className="text-caption text-text-3">{t(p.detail)}</p>
-              </div>
-              <Later
-                size="sm"
-                icon="add"
-                className="justify-self-start"
-                aria-label={t('addLabel', { name: t(p.name) })}
-              >
-                {t('add')}
-              </Later>
-            </li>
+            <Card key={p.name} style={{ justifyContent: 'space-between' }}>
+              <View style={{ gap: s['1'] }}>
+                <Line weight={600}>{t(p.name)}</Line>
+                <Note>{t(p.detail)}</Note>
+              </View>
+              <Later label={t('addLabel', { name: t(p.name) })}>{t('add')}</Later>
+            </Card>
           ))}
-        </ul>
+        </View>
       </Group>
     </AreaPage>
   )
+}
+
+/**
+ * Each profile's card. With `usage` (when the server serves shows, D3's answer 5), each says how
+ * many movies and shows use it, as the prototype's stage 6 drew.
+ */
+function ProfileCards({
+  profiles: ps,
+  usage,
+}: {
+  profiles: QualityProfile[]
+  usage?: ProfileUsage[]
+}) {
+  const t = useT(messages)
+  const medium = useWindowAtLeast(breakpoints.medium)
+  return (
+    <Cards>
+      {ps.map((p) => (
+        <Card
+          key={p.id}
+          gap={s['2']}
+          style={medium ? { flexDirection: 'row', alignItems: 'center', gap: s['2'] } : undefined}
+        >
+          <View style={{ flex: medium ? 1 : undefined, minWidth: 0, gap: s['1'] }}>
+            <Line weight={600}>{p.name}</Line>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: s['1'] }}>
+              {p.items
+                .filter((q) => q.allowed)
+                .map((q) =>
+                  q.name === p.cutoff ? (
+                    <View key={q.name}>
+                      <View aria-hidden>
+                        <Badge tone="accent">{q.name}</Badge>
+                      </View>
+                      <Text style={READ_ONLY_TEXT}>{t('profiles.cutoff', { name: q.name })}</Text>
+                    </View>
+                  ) : (
+                    <Badge key={q.name} tone="neutral">
+                      {q.name}
+                    </Badge>
+                  ),
+                )}
+            </View>
+            <Note>
+              {p.upgradeAllowed
+                ? t('profiles.upgrades', { cutoff: p.cutoff })
+                : t('profiles.noUpgrades')}{' '}
+              · {t('profiles.scores', { count: p.formats.length })}
+              {p.waitMinutes > 0 ? ` · ${t('profiles.wait', { minutes: p.waitMinutes })}` : null}
+            </Note>
+            {usage ? (
+              <Note>
+                {(() => {
+                  const u = usage.find((x) => x.profileId === p.id)
+                  return !u || u.movies + u.shows === 0
+                    ? t('profiles.unused')
+                    : t('profiles.usedBy', { movies: u.movies, shows: u.shows })
+                })()}
+              </Note>
+            ) : null}
+          </View>
+          <View style={{ alignSelf: medium ? 'center' : 'flex-start' }}>
+            <Button
+              size="sm"
+              icon="edit"
+              href={`/settings/profiles/${p.id}`}
+              accessibilityLabel={t('editLabel', { name: p.name })}
+            >
+              {t('edit')}
+            </Button>
+          </View>
+        </Card>
+      ))}
+    </Cards>
+  )
+}
+
+/** The cards with each profile's use, read from Shows' drafted route (series-settings.ts). */
+function UsedProfileCards({ profiles: ps }: { profiles: QualityProfile[] }) {
+  const usage = useQuery('settings:profile-usage', (c) => c.series.profileUsage(), [
+    'settings.updated',
+    'movies.updated',
+    'shows.updated',
+  ])
+  // the cards draw at once; the use joins them when it answers, as the prototype's did
+  return <ProfileCards profiles={ps} usage={usage.data} />
 }
 
 // ---------------------------------------------------------------- quality sizes
@@ -201,68 +283,117 @@ export function Profiles() {
 const perMinute = (n: number, locale: string) =>
   new Intl.NumberFormat(locale, { maximumFractionDigits: 1 }).format(n)
 
+/**
+ * The size table. When the server serves shows (D3's answer 5), a switch above it chooses movies'
+ * table, per minute of the film as Radarr's, or episodes', per minute of the episode as Sonarr's,
+ * as the prototype's stage 6 drew; episodes' come from Shows' drafted route (series-settings.ts).
+ */
 export function QualitySizes() {
+  const t = useT(sizeMessages)
+  const shows = useServes('shows')
+  const [kind, setKind] = useState<SizeKind>('movies')
+  return (
+    <AreaPage
+      id="quality"
+      actions={
+        <Button icon="edit" href="/settings/quality/sizes">
+          {t('edit')}
+        </Button>
+      }
+    >
+      {shows ? (
+        <View style={{ alignSelf: 'flex-start' }}>
+          <SegmentedControl
+            aria-label={t('kind')}
+            size="sm"
+            value={kind}
+            onValueChange={(k) => setKind(k as SizeKind)}
+            options={[
+              { value: 'movies', label: t('kind.movies') },
+              { value: 'shows', label: t('kind.shows') },
+            ]}
+          />
+        </View>
+      ) : null}
+      {shows && kind === 'shows' ? <EpisodeSizes /> : <MovieSizes />}
+    </AreaPage>
+  )
+}
+
+type SizeKind = 'movies' | 'shows'
+
+function MovieSizes() {
   const t = useT(sizeMessages)
   const data = useQuery('settings:quality-sizes', (c) => c.settings.qualitySizes(), [
     'settings.updated',
   ])
   return (
-    <AreaPage
-      id="quality"
-      actions={
-        <Button icon="edit" asChild>
-          <a href="/settings/quality/sizes">{t('edit')}</a>
-        </Button>
-      }
-    >
-      <Group title={t('title')} description={t('description')}>
-        <Loadable query={data} what={t('what')}>
-          {(rows) =>
-            rows.length === 0 ? (
-              <p className="text-caption text-text-3">{t('none')}</p>
-            ) : (
-              <SizesTable rows={rows} />
-            )
-          }
-        </Loadable>
-        <p className="text-caption text-text-3">{t('note')}</p>
-      </Group>
-    </AreaPage>
+    <Group title={t('title')} description={t('description')}>
+      <Loadable query={data} what={t('what')}>
+        {(rows) => (rows.length === 0 ? <Note>{t('none')}</Note> : <SizesTable rows={rows} />)}
+      </Loadable>
+      <Note>{t('note')}</Note>
+    </Group>
   )
 }
 
-function SizesTable({ rows }: { rows: QualitySize[] }) {
+/** Episodes' sizes, a 45-minute episode beside each, as the prototype's. */
+function EpisodeSizes() {
+  const t = useT(sizeMessages)
+  const data = useQuery('settings:episode-sizes', (c) => c.series.qualitySizes(), [
+    'settings.updated',
+  ])
+  return (
+    <Group title={t('episodes.title')} description={t('episodes.description')}>
+      <Loadable query={data} what={t('what')}>
+        {(rows) =>
+          rows.length === 0 ? (
+            <Note>{t('none')}</Note>
+          ) : (
+            <SizesTable rows={rows} minutes={EPISODE_MINUTES} />
+          )
+        }
+      </Loadable>
+    </Group>
+  )
+}
+
+/** The episode the table's last column sizes, as the prototype's. */
+const EPISODE_MINUTES = 45
+
+/** The table; `minutes` makes its last column an episode of that length rather than a 2-hour film. */
+function SizesTable({ rows, minutes }: { rows: QualitySize[]; minutes?: number }) {
+  const label = minutes ? 'episodes.title' : 'title'
+  const size = (perMinute: number) => bytes(filmBytes(perMinute, minutes))
   const t = useT(sizeMessages)
   const locale = useLocale()
   return (
     <TableFrame>
-      <Table aria-label={t('title')}>
+      <Table label={t(label)}>
         <TableHeader>
           <TableRow>
             <TableHead>{t('quality')}</TableHead>
             <TableHead numeric>{t('min')}</TableHead>
             <TableHead numeric>{t('preferred')}</TableHead>
             <TableHead numeric>{t('max')}</TableHead>
-            <TableHead numeric>{t('film')}</TableHead>
+            <TableHead numeric>{minutes ? t('episode', { minutes }) : t('film')}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {rows.map((q) => (
             <TableRow key={q.quality}>
-              <TableCell className="text-text">{q.quality}</TableCell>
-              <TableCell numeric className="font-mono text-text-2">
-                {perMinute(q.min, locale)}
-              </TableCell>
-              <TableCell numeric className="font-mono text-text-2">
+              <TableCell>{q.quality}</TableCell>
+              <TableCell numeric>{perMinute(q.min, locale)}</TableCell>
+              <TableCell numeric>
                 {q.preferred === null ? t('noPreference') : perMinute(q.preferred, locale)}
               </TableCell>
-              <TableCell numeric className="font-mono text-text-2">
+              <TableCell numeric>
                 {q.max === null ? t('noLimit') : perMinute(q.max, locale)}
               </TableCell>
-              <TableCell numeric className="text-text-2">
+              <TableCell numeric>
                 {q.max === null
-                  ? t('filmFrom', { min: bytes(filmBytes(q.min)) })
-                  : t('filmRange', { min: bytes(filmBytes(q.min)), max: bytes(filmBytes(q.max)) })}
+                  ? t('filmFrom', { min: size(q.min) })
+                  : t('filmRange', { min: size(q.min), max: size(q.max) })}
               </TableCell>
             </TableRow>
           ))}

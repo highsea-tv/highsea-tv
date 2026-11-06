@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Applies the toolbar's theme, reduced motion and text size to the screen's document, without
-// changing ui-web or the OS: attributes on <html>, the custom theme's CSS, and a matchMedia shim
-// so hooks that read `prefers-reduced-motion` (spatial navigation, carousels) see the toggle.
+// changing the OS: attributes on <html>, the custom theme's CSS, and a matchMedia shim
+// so hooks that read `prefers-reduced-motion` (the library's motion) see the toggle.
 import { createTheme, themeCss } from '@highsea-tv/tokens'
 import type { ProtoState } from '../proto/state.ts'
 

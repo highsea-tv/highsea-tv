@@ -49,8 +49,8 @@ test-results/
 # graft's local graph cache — regenerable, not committed (run `graft build`).
 /graft/
 
-# local browser-automation output
-.playwright-mcp/
+# local browser-automation output: the tool's logs, and screenshots saved at the root
+/*.png
 next-env.d.ts
 
 # fumadocs-mdx output (apps/docs)

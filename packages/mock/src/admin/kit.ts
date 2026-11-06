@@ -2,8 +2,9 @@
 // What the admin's answers (one-client-platform-d.md › D2) take from the transport: the mock's
 // times moved to the wall clock, as every other answer gives them, the event bus, and the
 // refusals in the server's ErrorBody (packages/core's AppError).
-import type { CatalogStatus } from '@highsea-tv/api-contract'
+import type { CatalogStatus, routes } from '@highsea-tv/api-contract'
 import { AppError, type ErrorCode } from '@highsea-tv/core/errors'
+import type { Output } from '@highsea-tv/sdk'
 import type { Answers, Ctx } from '../transport.ts'
 import type { User } from '../types.ts'
 
@@ -20,6 +21,14 @@ export type AdminKit = {
   userOf: (u: User) => UserOut
   /** The catalog's status, as the transport's catalog.status gives it (System › About's). */
   catalogOf: (ctx: Ctx) => CatalogStatus
+  /** The server as `system.server` gives it (setup's Finish, D3). */
+  serverOf: (ctx: Ctx) => unknown
+  /** Signs this browser in as a person, as signing in does, and gives the session (setup's Finish). */
+  signInAs: (ctx: Ctx, userId: string) => unknown
+  /** Everyone's signed-in devices on this server, as me.devices maps the caller's (D3's Users). */
+  devicesOf: (ctx: Ctx) => Output<(typeof routes)['devices']['list']>
+  /** The appearance as `appearance.get` gives it, the toolbar's theme and sounds included (D3's Appearance). */
+  appearanceOf: () => unknown
 }
 
 /** The contract's person, as the transport's mapper makes it. */

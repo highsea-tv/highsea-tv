@@ -2,6 +2,7 @@
 // highsea's public documentation, served at docs.highsea.tv (phase-3-checkpoint-9.md › Docs).
 // Exported as static files, so Vercel serves files and nothing runs per request
 // (https://fumadocs.dev/docs/deploying/static, https://nextjs.org/docs/app/guides/static-exports).
+import { libraryWebpack } from '@highsea-tv/ui/next/webpack'
 import { createMDX } from 'fumadocs-mdx/next'
 import type { NextConfig } from 'next'
 
@@ -13,6 +14,9 @@ const config: NextConfig = {
   transpilePackages: ['@highsea-tv/brand', '@highsea-tv/tokens', '@highsea-tv/ui'],
   // static export has no image optimizer (https://nextjs.org/docs/app/guides/static-exports#image-optimization)
   images: { unoptimized: true },
+  // the site title is the library's native Lockup, drawn through react-native-web on webpack, as the
+  // admin's server draws its screens (@highsea-tv/ui/next/webpack says why)
+  webpack: libraryWebpack,
   poweredByHeader: false,
   devIndicators: false,
   reactStrictMode: true,

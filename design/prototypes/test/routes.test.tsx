@@ -43,7 +43,7 @@ for (const [platform, routes] of Object.entries(screenRoutes) as [Platform, stri
           test(`${path} · ${data}${role === 'owner' ? '' : ` · ${role}`}`, async () => {
             // a route may carry the toolbar's state after `?`, as `/web/downloads?app=desktop`
             const [route = path, query = ''] = path.split('?')
-            const { hook } = memoryLocation({ path: route })
+            const { hook, history } = memoryLocation({ path: route, record: true })
             const state = stateFromParams(new URLSearchParams(query), {
               ...defaultState,
               data,
@@ -57,6 +57,12 @@ for (const [platform, routes] of Object.entries(screenRoutes) as [Platform, stri
               ).container
             })
             await settle()
+            // a user is sent from the admin to the web app, as the server's admin layout sends
+            // them (sign-in and setup are drawn signed out, so they stay)
+            if (platform === 'admin' && role === 'user' && !/^\/admin\/(login|setup)/.test(route)) {
+              expect(history.at(-1)).toBe('/web')
+              return
+            }
             expect(container?.childElementCount).toBeGreaterThan(0)
             collect()
             // an acknowledge-required announcement opens over the clients' home: behind a modal

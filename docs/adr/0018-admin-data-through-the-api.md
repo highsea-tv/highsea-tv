@@ -27,3 +27,7 @@ The admin's screens are now written once, in `@highsea-tv/admin` (`packages/admi
 ## 2026-11-05: the library and the work shared (one client platform, part D2)
 
 Unchanged in substance. D2's screens are shared the same way: `@highsea-tv/mock`'s transport answers their routes in the contract's shapes (`packages/mock/src/admin/`), so the prototype's screens and the server's make the same calls.
+
+## 2026-11-05: every admin screen shared (one client platform, part D3)
+
+Unchanged in substance. D3's Settings areas, System's tabs, setup, sign-in, two-factor, the account sheet and Shows' drafted admin are shared the same way, and the prototype has no admin screen of its own left (`design/prototypes/src/admin/` holds only `admin-app.tsx` and `shared.tsx`). `@highsea-tv/mock`'s transport answers their routes in the contract's shapes; what it can't serve (files to download, uploads, passkeys and the invite and link pages) answers 501, as the server's drafted routes do.

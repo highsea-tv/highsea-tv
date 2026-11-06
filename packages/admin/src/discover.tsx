@@ -31,6 +31,7 @@ import { View } from 'react-native'
 import { AddMovieDialog, isNoMetadataKey, METADATA_SETTINGS } from './add-dialog.tsx'
 import { useAddressParam } from './address.ts'
 import { discover as messages } from './discover-messages.ts'
+import { FindKind, FindRow, SEARCH } from './discover-shows.tsx'
 import { Loadable, PosterSkeletons } from './loadable.tsx'
 import { moviePath } from './media-links.ts'
 import { GridItem, InLibraryLink, PosterGrid } from './media-sections.tsx'
@@ -196,16 +197,20 @@ export function Discover() {
 
   return (
     <AdminPage title={t('title')} description={t('description')}>
-      <View style={{ maxWidth: SEARCH_WIDTH }}>
-        <SearchField
-          label={t('search')}
-          value={query}
-          onChangeText={setQuery}
-          placeholder={t('placeholder')}
-          spellCheck={false}
-          autoCorrect={false}
-        />
-      </View>
+      {/* Movies or Shows beside the search, only when the server serves shows (D3, answer 5) */}
+      <FindRow>
+        <FindKind value="movies" />
+        <View style={SEARCH}>
+          <SearchField
+            label={t('search')}
+            value={query}
+            onChangeText={setQuery}
+            placeholder={t('placeholder')}
+            spellCheck={false}
+            autoCorrect={false}
+          />
+        </View>
+      </FindRow>
       {deferred ? (
         <>
           <Text variant="title" role="heading" aria-level={2}>
@@ -229,6 +234,3 @@ export function Discover() {
     </AdminPage>
   )
 }
-
-/** The search field's measure (the web's max-w-xl, 576). */
-const SEARCH_WIDTH = 576

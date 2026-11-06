@@ -4,71 +4,104 @@
 // laid out as the root folders above it are: each tag with what carries it, Rename and Remove, and
 // a field to add one. Changes are immediate actions, as folders are; removing asks first and says
 // what the tag comes off. A refused label (`exists`) shows the server's sentence under its field.
+// Drawn with the library's native renderer since D3 (one-client-platform-d.md), on the web through
+// react-native-web, with the same parts, words and behaviour as the web renderer's.
 import type { Tag } from '@highsea-tv/api-contract'
 import { useT } from '@highsea-tv/i18n/react'
 import { useAction } from '@highsea-tv/sdk/react'
-import { Button, ConfirmDialog, Dialog, DialogContent, Field, Input, toast } from '@highsea-tv/ui'
-import { type FormEvent, useState } from 'react'
+import { breakpoints } from '@highsea-tv/tokens'
+import {
+  Button,
+  ConfirmDialog,
+  Dialog,
+  Field,
+  Input,
+  toast,
+  tokens,
+  useTheme,
+  useWindowAtLeast,
+} from '@highsea-tv/ui/native'
+import { useState } from 'react'
+import { View } from 'react-native'
 import { Loadable } from './loadable.tsx'
 import { Group } from './settings.tsx'
+import { Card, Cards, Line, Note, WRAP_ANYWHERE } from './settings-card.tsx'
 import { useTags } from './tag-picker.tsx'
 import { tagsMessages as messages } from './tags-messages.ts'
 
+const s = tokens.space
+
 export function TagSettings() {
   const t = useT(messages)
+  const theme = useTheme()
+  const medium = useWindowAtLeast(breakpoints.medium)
   const tags = useTags()
   const [renaming, setRenaming] = useState<Tag | null>(null)
   const [removing, setRemoving] = useState<Tag | null>(null)
   const remove = useAction((c, id: string) => c.tags.remove({ params: { id } }))
   return (
-    <div id="tags" className="scroll-mt-20">
+    // the page's #tags anchor (the web's `scroll-mt-20`: the sticky top bar's 80 above it)
+    <View nativeID="tags" style={{ scrollMarginTop: s['16'] + s['4'] } as object}>
       <Group title={t('title')} description={t('description')}>
         <Loadable query={tags} what={t('what')}>
           {(all) =>
             all.length === 0 ? (
-              <p className="rounded-md border border-line bg-s2 p-4 text-center text-caption text-text-3">
-                {t('list.none')}
-              </p>
+              <View
+                style={{
+                  padding: s['4'],
+                  borderWidth: 1,
+                  borderColor: theme.colors.line,
+                  borderRadius: tokens.radius.md,
+                  backgroundColor: theme.colors.s2,
+                }}
+              >
+                <Note style={{ textAlign: 'center' }}>{t('list.none')}</Note>
+              </View>
             ) : (
-              <ul aria-label={t('title')} className="grid gap-2">
+              <Cards label={t('title')}>
                 {all.map((tag) => (
-                  <li
+                  <Card
                     key={tag.id}
-                    className="grid gap-2 rounded-md border border-line bg-s2 p-3 medium:grid-cols-[minmax(0,1fr)_auto] medium:items-center"
+                    gap={s['2']}
+                    style={
+                      medium
+                        ? { flexDirection: 'row', alignItems: 'center', gap: s['2'] }
+                        : undefined
+                    }
                   >
-                    <div className="grid min-w-0 gap-1">
-                      <p className="min-w-0 font-medium text-text text-ui [overflow-wrap:anywhere]">
+                    <View style={{ flex: medium ? 1 : undefined, minWidth: 0, gap: s['1'] }}>
+                      <Line weight={500} style={WRAP_ANYWHERE}>
                         {tag.label}
-                      </p>
-                      <p className="text-caption text-text-3">
+                      </Line>
+                      <Note>
                         {t('usage', {
                           movies: tag.usage.movies,
                           others: tag.usage.indexers + tag.usage.lists + tag.usage.connections,
                         })}
-                      </p>
-                    </div>
-                    <div className="flex flex-wrap gap-2 justify-self-start medium:justify-self-end">
+                      </Note>
+                    </View>
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: s['2'] }}>
                       <Button
                         size="sm"
                         variant="ghost"
                         icon="edit"
-                        aria-label={t('renameLabel', { label: tag.label })}
-                        onClick={() => setRenaming(tag)}
+                        accessibilityLabel={t('renameLabel', { label: tag.label })}
+                        onPress={() => setRenaming(tag)}
                       >
                         {t('rename')}
                       </Button>
                       <Button
                         size="sm"
                         variant="danger"
-                        aria-label={t('removeLabel', { label: tag.label })}
-                        onClick={() => setRemoving(tag)}
+                        accessibilityLabel={t('removeLabel', { label: tag.label })}
+                        onPress={() => setRemoving(tag)}
                       >
                         {t('remove')}
                       </Button>
-                    </div>
-                  </li>
+                    </View>
+                  </Card>
                 ))}
-              </ul>
+              </Cards>
             )
           }
         </Loadable>
@@ -77,7 +110,7 @@ export function TagSettings() {
       <RenameDialog tag={renaming} onClose={() => setRenaming(null)} onSaved={tags.refetch} />
       <ConfirmDialog
         open={!!removing}
-        onOpenChange={(o) => !o && setRemoving(null)}
+        onClose={() => setRemoving(null)}
         title={t('remove.title', { label: removing?.label ?? '' })}
         description={t('remove.body')}
         confirmLabel={t('remove.confirm')}
@@ -95,7 +128,7 @@ export function TagSettings() {
             )
         }}
       />
-    </div>
+    </View>
   )
 }
 
@@ -104,8 +137,7 @@ function AddTag({ onAdded }: { onAdded: () => void }) {
   const [label, setLabel] = useState('')
   const [error, setError] = useState<string | null>(null)
   const add = useAction((c, l: string) => c.tags.add({ body: { label: l } }))
-  const submit = async (e: FormEvent) => {
-    e.preventDefault()
+  const submit = async () => {
     const l = label.trim()
     if (!l) return setError(t('add.missing'))
     try {
@@ -119,26 +151,26 @@ function AddTag({ onAdded }: { onAdded: () => void }) {
     onAdded()
   }
   return (
-    <form onSubmit={submit} noValidate className="grid gap-2">
-      <Field label={t('add.label')} error={error ?? undefined}>
-        <div className="flex flex-wrap gap-2">
+    <Field label={t('add.label')} error={error ?? undefined}>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: s['2'] }}>
+        <View style={{ flexGrow: 1, flexShrink: 1, flexBasis: s['12'] * 4, minWidth: 0 }}>
           <Input
             value={label}
             maxLength={40}
             placeholder={t('add.placeholder')}
             autoCapitalize="none"
-            className="min-w-0 flex-1 basis-48"
-            onChange={(e) => {
+            onChangeText={(v) => {
               setError(null)
-              setLabel(e.target.value)
+              setLabel(v)
             }}
+            onSubmitEditing={submit}
           />
-          <Button type="submit" icon="add" loading={add.pending}>
-            {t('add.submit')}
-          </Button>
-        </div>
-      </Field>
-    </form>
+        </View>
+        <Button icon="add" loading={add.pending} onPress={submit}>
+          {t('add.submit')}
+        </Button>
+      </View>
+    </Field>
   )
 }
 
@@ -167,8 +199,7 @@ function RenameDialog({
     rename.reset()
     onClose()
   }
-  const submit = async (e?: FormEvent) => {
-    e?.preventDefault()
+  const submit = async () => {
     if (!tag) return
     const l = label.trim()
     if (!l) return
@@ -182,32 +213,30 @@ function RenameDialog({
     close()
   }
   return (
-    <Dialog open={!!tag} onOpenChange={(o) => !o && close()}>
-      <DialogContent
-        size="sm"
-        title={t('rename.title', { label: tag?.label ?? '' })}
-        footer={
-          <>
-            <Button variant="ghost" onClick={close}>
-              {t('rename.cancel')}
-            </Button>
-            <Button
-              variant="primary"
-              onClick={() => submit()}
-              loading={rename.pending}
-              disabled={!label.trim()}
-            >
-              {t('rename.save')}
-            </Button>
-          </>
-        }
-      >
-        <form onSubmit={submit} noValidate>
-          <Field label={t('rename.field')} error={rename.error?.message}>
-            <Input value={label} maxLength={40} onChange={(e) => setLabel(e.target.value)} />
-          </Field>
-        </form>
-      </DialogContent>
+    <Dialog
+      open={!!tag}
+      onClose={close}
+      size="sm"
+      title={t('rename.title', { label: tag?.label ?? '' })}
+      footer={
+        <>
+          <Button variant="ghost" onPress={close}>
+            {t('rename.cancel')}
+          </Button>
+          <Button
+            variant="primary"
+            onPress={submit}
+            loading={rename.pending}
+            disabled={!label.trim()}
+          >
+            {t('rename.save')}
+          </Button>
+        </>
+      }
+    >
+      <Field label={t('rename.field')} error={rename.error?.message}>
+        <Input value={label} maxLength={40} onChangeText={setLabel} onSubmitEditing={submit} />
+      </Field>
     </Dialog>
   )
 }

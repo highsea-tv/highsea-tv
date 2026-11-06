@@ -65,6 +65,8 @@ export type ButtonProps = ButtonCommon<IconName> &
      * renderer's Button `asChild` round an `<a>`); elsewhere `onPress` is the way.
      */
     href?: string
+    /** How a browser follows `href`: saved (`download`), or in a new tab (`external`). */
+    follow?: 'download' | 'external'
     /** The page or step it stands for is the one shown (`aria-current`): Manual import's modes. */
     current?: 'page'
     /** tvOS's preferred focus when the screen appears (react-native-tvos). */
@@ -91,6 +93,7 @@ export function Button({
   hasPopup,
   current,
   href,
+  follow,
   onPress,
   onLongPress,
   onFocus,
@@ -123,6 +126,7 @@ export function Button({
       hasPopup={hasPopup}
       current={current}
       href={href}
+      follow={follow}
       radius={m.radius}
       slop={square ? { height: m.height, width: m.height } : { height: m.height }}
       style={(state) => {

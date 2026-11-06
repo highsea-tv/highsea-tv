@@ -4,13 +4,26 @@
 // schedule, time, how many to keep and folder, with the weekday a weekly schedule needs. The server
 // checks the folder on Save; its refusal shows on the field. A backup holds the database, never
 // secret.key, so a group says so and what a restore on another machine needs (the owner's answer
-// 13). Making and restoring backups is System › Backups.
+// 13). Making and restoring backups is System › Backups. Drawn with the library's native renderer
+// since D3 (one-client-platform-d.md).
 import { BACKUP_SCHEDULES, type BackupSettings, OPERATIONS_TOPICS } from '@highsea-tv/api-contract'
 import { useLocale, useT } from '@highsea-tv/i18n/react'
 import type { ApiError } from '@highsea-tv/sdk'
 import { useAction, useQuery } from '@highsea-tv/sdk/react'
-import { Field, Input, Select, toast } from '@highsea-tv/ui'
-import { useState } from 'react'
+import { breakpoints } from '@highsea-tv/tokens'
+import {
+  DateTimeInput,
+  Field,
+  Input,
+  Select,
+  Text,
+  TextLink,
+  toast,
+  tokens,
+  useWindowAtLeast,
+} from '@highsea-tv/ui/native'
+import { Children, type ReactNode, useState } from 'react'
+import { View } from 'react-native'
 import { backups as messages } from './backups-messages.ts'
 import { Loadable } from './loadable.tsx'
 import { AreaPage, Group, SaveBar } from './settings.tsx'
@@ -37,20 +50,52 @@ export function BackupsSettings() {
         )}
       </Loadable>
       <Group title={t('secret.title')}>
-        <p className="text-body text-text-2">{t('secret.body')}</p>
+        <Text color="text-2">{t('secret.body')}</Text>
       </Group>
-      <p className="text-caption text-text-3">
-        {t('elsewhereBefore')}{' '}
-        <a href="/system/backups" className="text-text underline underline-offset-2">
-          {t('elsewhereLink')}
-        </a>
-        .
-      </p>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'baseline' }}>
+        <Text variant="caption" color="text-3">
+          {`${t('elsewhereBefore')} `}
+        </Text>
+        <TextLink href="/system/backups">{t('elsewhereLink')}</TextLink>
+        <Text variant="caption" color="text-3">
+          .
+        </Text>
+      </View>
     </AreaPage>
   )
 }
 
 type Draft = Omit<BackupSettings, 'keep'> & { keep: string }
+
+const sp = tokens.space
+
+/**
+ * The schedule's fields, in two columns from medium widths and four from expanded (the web's
+ * `grid gap-4 medium:grid-cols-2 expanded:grid-cols-4`): a short row keeps its empty places.
+ */
+function FieldRows({ children }: { children: ReactNode }) {
+  const medium = useWindowAtLeast(breakpoints.medium)
+  const expanded = useWindowAtLeast(breakpoints.expanded)
+  const per = expanded ? 4 : medium ? 2 : 1
+  const cells = Children.toArray(children)
+  const rows: ReactNode[][] = []
+  for (let i = 0; i < cells.length; i += per) rows.push(cells.slice(i, i + per))
+  return (
+    <View style={{ gap: sp['4'] }}>
+      {rows.map((row, i) => (
+        // biome-ignore lint/suspicious/noArrayIndexKey: a row is its place in the grid
+        <View key={i} style={{ flexDirection: 'row', alignItems: 'flex-start', gap: sp['4'] }}>
+          {Array.from({ length: per }, (_, j) => (
+            // biome-ignore lint/suspicious/noArrayIndexKey: a column is its place in the row
+            <View key={j} style={{ flex: 1, minWidth: 0 }}>
+              {row[j] ?? null}
+            </View>
+          ))}
+        </View>
+      ))}
+    </View>
+  )
+}
 
 const keepOf = (text: string) => {
   const n = Number(text.trim())
@@ -99,7 +144,7 @@ function Form({
   return (
     <>
       <Group title={t('schedule.title')} description={t('schedule.description')}>
-        <div className="grid gap-4 medium:grid-cols-2 expanded:grid-cols-4">
+        <FieldRows>
           <Field label={t('schedule')}>
             <Select
               value={v.schedule}
@@ -107,7 +152,7 @@ function Form({
               options={BACKUP_SCHEDULES.map((s) => ({ value: s, label: t(`schedule.${s}`) }))}
             />
           </Field>
-          {v.schedule === 'weekly' && (
+          {v.schedule === 'weekly' ? (
             <Field label={t('weekday')}>
               <Select
                 value={String(v.weekday)}
@@ -119,17 +164,18 @@ function Form({
                 }))}
               />
             </Field>
-          )}
+          ) : null}
           <Field
             label={t('time')}
             hint={zone ? t('timeHint', { zone: zone.replaceAll('_', ' ') }) : undefined}
             error={show(!timeOk(v.time), t('timeInvalid'))}
+            disabled={v.schedule === 'off'}
           >
-            <Input
-              type="time"
+            <DateTimeInput
+              mode="time"
               value={v.time}
               disabled={v.schedule === 'off'}
-              onChange={(e) => set({ time: e.target.value })}
+              onChange={(time) => set({ time })}
             />
           </Field>
           <Field
@@ -138,32 +184,34 @@ function Form({
             error={show(keep === undefined, t('keepInvalid'))}
           >
             <Input
-              type="number"
+              keyboardType="number-pad"
               inputMode="numeric"
-              min={1}
-              max={365}
               value={v.keep}
-              onChange={(e) => set({ keep: e.target.value })}
+              onChangeText={(keep) => set({ keep })}
             />
           </Field>
-        </div>
-        {v.schedule === 'off' && (
-          <p className="text-badge-warning text-caption">{t('offWarning')}</p>
-        )}
+        </FieldRows>
+        {v.schedule === 'off' ? (
+          <Text variant="caption" color="badge-warning">
+            {t('offWarning')}
+          </Text>
+        ) : null}
         <Field
           label={t('folder')}
           hint={t('folderHint')}
           error={show(!pathOk(v.folder), t('folderInvalid')) ?? folderError ?? undefined}
         >
           <Input
+            mono
             value={v.folder}
             autoComplete="off"
+            autoCorrect={false}
+            autoCapitalize="none"
             spellCheck={false}
-            onChange={(e) => {
+            onChangeText={(folder) => {
               setFolderError(null)
-              set({ folder: e.target.value })
+              set({ folder })
             }}
-            className="font-mono"
           />
         </Field>
       </Group>

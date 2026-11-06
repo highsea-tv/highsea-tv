@@ -27,7 +27,7 @@ const { act, cleanup, render, within } = await import('@testing-library/react')
 const { default: userEvent } = await import('@testing-library/user-event')
 const { createClient } = await import('@highsea-tv/sdk')
 const { ClientProvider } = await import('@highsea-tv/sdk/react')
-const { TooltipProvider } = await import('@highsea-tv/ui')
+const { shown } = await import('./modal.ts')
 const { ThemeProvider } = await import('@highsea-tv/ui/native')
 const { Migration } = await import('../src/migration.tsx')
 const { seesArea, areaGroupsFor } = await import('../src/settings-areas.ts')
@@ -161,9 +161,7 @@ async function open() {
     render(
       <ClientProvider client={client}>
         <ThemeProvider>
-          <TooltipProvider>
-            <Migration />
-          </TooltipProvider>
+          <Migration />
         </ThemeProvider>
       </ClientProvider>,
     )
@@ -229,10 +227,10 @@ describe('Settings › Migration', () => {
     const roots = within(radarr.getByRole('region', { name: 'Root folders' }))
     expect(roots.getByText('Can’t use')).toBeTruthy()
     // each Radarr profile starts on its nearest
-    const hd = radarr.getByRole('combobox', { name: 'highsea’s profile for HD-1080p' })
+    const hd = radarr.getByRole('button', { name: 'highsea’s profile for HD-1080p' })
     expect(hd.textContent).toContain('HD 1080p')
     expect(
-      radarr.getByRole('combobox', { name: 'highsea’s profile for Ultra-HD' }).textContent,
+      radarr.getByRole('button', { name: 'highsea’s profile for Ultra-HD' }).textContent,
     ).toContain('Ultra HD')
 
     // what can't come across, and the way to Indexers
@@ -267,11 +265,12 @@ describe('Settings › Migration', () => {
       skipped: 0,
       failures: [{ name: 'Tears of Steel (2012)', message: 'Add a path mapping for /srv/4k.' }],
     } as never
-    const { page } = await open()
+    const { user, page } = await open()
     const radarr = within(page.getByRole('region', { name: 'Radarr' }))
     const progress = within(radarr.getByRole('region', { name: 'Import progress' }))
     expect(progress.getByText('Imported 2 items, skipped 0 already here.')).toBeTruthy()
-    expect(progress.getByText('1 couldn’t come across')).toBeTruthy()
+    // the failures are a disclosure, closed until asked for
+    await user.click(progress.getByRole('button', { name: '1 couldn’t come across' }))
     expect(progress.getByText('Tears of Steel (2012)')).toBeTruthy()
   })
 
@@ -281,7 +280,8 @@ describe('Settings › Migration', () => {
     const qbt = within(page.getByRole('region', { name: 'qBittorrent' }))
     expect(qbt.getByText(/4 torrents wait paused\. Stop qBittorrent/)).toBeTruthy()
     await user.click(qbt.getByRole('button', { name: 'Resume torrents' }))
-    const dialog = within(page.getByRole('alertdialog'))
+    shown()
+    const dialog = within(page.getByRole('dialog'))
     expect(dialog.getByText('Is qBittorrent stopped?')).toBeTruthy()
     expect(requested('POST', '/api/v1/importers/qbittorrent/resume')).toHaveLength(0)
     await user.click(dialog.getByRole('button', { name: 'qBittorrent is stopped, resume' }))

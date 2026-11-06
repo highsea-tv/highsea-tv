@@ -11,8 +11,8 @@
 //    workspace dependencies come along, so this doesn't assume it: step 2 checks the result.
 // 2. Fails if the installed tree holds a package nothing in it asks for: a dependency, optional
 //    dependency or peer of a production workspace or of an installed package. That's what a
-//    dev-only package would be. (`tailwindcss` is a peer of ui-web, and `typescript` an optional
-//    peer of cosmiconfig, so both are asked for.) It fails, too, if a workspace the server needs
+//    dev-only package would be. (`typescript` is an optional peer of cosmiconfig, so it's asked
+//    for.) It fails, too, if a workspace the server needs
 //    got no install.
 // 3. Removes the packages built for another C library. npm's `libc` field says which one a package
 //    needs, and npm skips a package whose `libc` isn't the system's

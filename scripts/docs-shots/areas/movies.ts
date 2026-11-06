@@ -44,7 +44,7 @@ export default {
     {
       name: 'film-versions',
       path: '/movies/45745',
-      crop: (p) => p.locator('section[aria-labelledby="in-the-library"]'),
+      crop: (p) => p.getByRole('region', { name: 'In the library', exact: true }),
     },
     { name: 'film-search', path: '/movies/45745/search', crop: panel },
     { name: 'film-files', path: '/movies/45745/files', crop: panel },
@@ -83,7 +83,7 @@ export default {
       act: (p) => p.getByRole('button', { name: /^Add \d+ missing$/ }).scrollIntoViewIfNeeded(),
       crop: (p) =>
         p
-          .locator('section')
+          .getByRole('group')
           .filter({ has: p.getByRole('button', { name: /^Add \d+ missing$/ }) })
           .last(),
     },

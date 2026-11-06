@@ -39,7 +39,6 @@ const { act, cleanup, fireEvent, render, within } = await import('@testing-libra
 const { default: userEvent } = await import('@testing-library/user-event')
 const { createClient } = await import('@highsea-tv/sdk')
 const { ClientProvider } = await import('@highsea-tv/sdk/react')
-const { TooltipProvider } = await import('@highsea-tv/ui')
 const { ThemeProvider } = await import('@highsea-tv/ui/native')
 const { defaultQualitySizes } = await import('@highsea-tv/quality/browser')
 const { FormatEditor, ProfileEditor, SizeEditor } = await import('../src/quality-editors.tsx')
@@ -83,6 +82,11 @@ type Request = { method: string; path: string; body: unknown }
 let requests: Request[] = []
 let profiles = [profile()]
 let formats = [x265()]
+/** Public info's `sources`: `shows` draws the shows' parts (D3's answer 5). */
+let sources: string[] = []
+let episodeSizes = [
+  { quality: 'WEBDL-1080p', min: 15, preferred: null as number | null, max: null as number | null },
+]
 let sizes = [
   { quality: 'Bluray-1080p', min: 50.4, preferred: 95, max: 400 },
   {
@@ -126,6 +130,13 @@ async function api(url: string, init: RequestInit = {}): Promise<Response> {
     case 'PUT /api/v1/settings/qualitySizes':
       sizes = body
       return json(sizes)
+    case 'GET /api/v1/system/info/public':
+      return json({ name: 'highsea', version: '0.4.0', sources })
+    case 'GET /api/v1/settings/episodeSizes':
+      return json(episodeSizes)
+    case 'PUT /api/v1/settings/episodeSizes':
+      episodeSizes = body
+      return json(episodeSizes)
   }
   return failure('not-found', `No fake for ${method} ${path}`, 404)
 }
@@ -135,6 +146,8 @@ beforeEach(() => {
   navigated.length = 0
   profiles = [profile()]
   formats = [x265()]
+  sources = []
+  episodeSizes = [{ quality: 'WEBDL-1080p', min: 15, preferred: null, max: null }]
   sizes = [
     { quality: 'Bluray-1080p', min: 50.4, preferred: 95, max: 400 },
     { quality: 'Remux-2160p', min: 204.4, preferred: null, max: null },
@@ -152,9 +165,7 @@ async function open(ui: ReactNode) {
   await act(async () => {
     render(
       <ClientProvider client={client}>
-        <ThemeProvider>
-          <TooltipProvider>{ui}</TooltipProvider>
-        </ThemeProvider>
+        <ThemeProvider>{ui}</ThemeProvider>
       </ClientProvider>,
     )
   })
@@ -299,10 +310,47 @@ describe('Settings › Quality › Edit sizes', () => {
     await user.click(button('Reset to TRaSH’s sizes'))
     await settle()
     expect(saveBar()).toBeTruthy()
-    expect(document.querySelectorAll('tr')).toHaveLength(defaultQualitySizes().length + 1)
+    expect(document.querySelectorAll('[role="row"]')).toHaveLength(defaultQualitySizes().length + 1)
     expect(sent('PUT', '/api/v1/settings/qualitySizes')).toEqual([])
     await user.click(button('Discard'))
     await settle()
-    expect(document.querySelectorAll('tr')).toHaveLength(3)
+    expect(document.querySelectorAll('[role="row"]')).toHaveLength(3)
+  })
+
+  test('without shows there’s no switch, and episodes’ sizes aren’t asked for', async () => {
+    await open(<SizeEditor />)
+    expect(document.querySelector('[aria-label="Sizes for"]')).toBeNull()
+    expect(sent('GET', '/api/v1/settings/episodeSizes')).toEqual([])
+  })
+
+  test('with shows, both drafts are kept while switching, and Save sends both', async () => {
+    sources = ['shows']
+    const { page, user } = await open(<SizeEditor />)
+    expect(document.querySelector('[aria-label="Sizes for"]')).toBeTruthy()
+    fireEvent.change(page.getByLabelText('Bluray-1080p: minimum MB per minute'), {
+      target: { value: '60' },
+    })
+    await user.click(page.getByRole('radio', { name: 'Shows' }))
+    await settle()
+    expect(page.getByText('A 45-minute episode')).toBeTruthy()
+    fireEvent.change(page.getByLabelText('WEBDL-1080p: minimum MB per minute'), {
+      target: { value: '20' },
+    })
+    await user.click(page.getByRole('radio', { name: 'Movies' }))
+    await settle()
+    expect(
+      (page.getByLabelText('Bluray-1080p: minimum MB per minute') as HTMLInputElement).value,
+    ).toBe('60')
+    await user.click(button('Save'))
+    await settle()
+    expect(sent('PUT', '/api/v1/settings/qualitySizes')).toEqual([
+      [
+        { quality: 'Bluray-1080p', min: 60, preferred: 95, max: 400 },
+        { quality: 'Remux-2160p', min: 204.4, preferred: null, max: null },
+      ],
+    ])
+    expect(sent('PUT', '/api/v1/settings/episodeSizes')).toEqual([
+      [{ quality: 'WEBDL-1080p', min: 20, preferred: null, max: null }],
+    ])
   })
 })

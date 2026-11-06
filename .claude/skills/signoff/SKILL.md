@@ -1,6 +1,6 @@
 ---
 name: signoff
-description: Record the owner's sign-off of a highsea checkpoint or part in the plan, CLAUDE.md and the roadmap, then commit the whole working tree in the house style and push if asked. Also the house rules for any commit. Use when the owner approves or signs off work and asks to commit, push or move on.
+description: Record the owner's sign-off of a highsea checkpoint or part in the plan, docs/status.md and the roadmap, then commit the whole working tree in the house style and push if asked. Also the house rules for any commit. Use when the owner approves or signs off work and asks to commit, push or move on.
 argument-hint: "[checkpoint or part] [push]"
 disable-model-invocation: true
 ---
@@ -14,7 +14,7 @@ Run this only on the owner's word. "Approved", "signed off" and "looks good, com
 Use today's date, written out (`2026-10-23`), never a relative date.
 
 - **The plan:** in Progress, change the part's entry from "built and waiting for the owner's review" to `signed off by the owner on YYYY-MM-DD`. Note anything the owner approved or changed at review, such as a locked design-system change they allowed or a decision from "Needs your decision".
-- **`CLAUDE.md`'s "Where things stand":** the part is signed off on that date. When the last part of a checkpoint is signed off, the checkpoint is signed off. When the last checkpoint of a phase is signed off, the phase is (and the next phase may start).
+- **`docs/status.md`:** the part is signed off on that date. When the last part of a checkpoint is signed off, the checkpoint is signed off. When the last checkpoint of a phase is signed off, the phase is (and the next phase may start). Keep CLAUDE.md's "Now" to a few lines saying what is next.
 - **`docs/roadmap.md`:** only when a phase or a whole checkpoint is signed off, or the scope changed.
 - If the owner's review leaves items for later, list them where the plan keeps them ("what it leaves for later").
 

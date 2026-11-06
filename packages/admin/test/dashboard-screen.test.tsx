@@ -45,7 +45,6 @@ const { act, cleanup, render, within } = await import('@testing-library/react')
 const { default: userEvent } = await import('@testing-library/user-event')
 const { createClient } = await import('@highsea-tv/sdk')
 const { ClientProvider } = await import('@highsea-tv/sdk/react')
-const { TooltipProvider } = await import('@highsea-tv/ui')
 const { ThemeProvider, toast } = await import('@highsea-tv/ui/native')
 const { Dashboard } = await import('../src/dashboard.tsx')
 const { shown } = await import('./modal.ts')
@@ -136,11 +135,9 @@ async function open(role: Shell['role'] = 'owner') {
     render(
       <ClientProvider client={client}>
         <ThemeProvider>
-          <TooltipProvider>
-            <Shell role={role}>
-              <Dashboard />
-            </Shell>
-          </TooltipProvider>
+          <Shell role={role}>
+            <Dashboard />
+          </Shell>
         </ThemeProvider>
       </ClientProvider>,
     )

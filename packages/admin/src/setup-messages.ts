@@ -21,6 +21,11 @@ export const setup = defineMessages({
   'step.owner': 'Owner account',
   'step.folders': 'Media folders',
   'step.review': 'Review',
+  // the stepper's words, which the web renderer's Stepper held as defaults until D3
+  'steps.label': 'Setup steps',
+  'steps.of': 'Step {current} of {total}',
+  'steps.progress': 'Setup progress',
+  'steps.done': ', done',
   'owner.title': 'Create the owner account',
   'owner.detail':
     'The owner can do everything, including inviting people and giving them roles. Keep this password somewhere safe.',

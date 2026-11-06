@@ -34,8 +34,8 @@ const { act, cleanup, render, within } = await import('@testing-library/react')
 const { default: userEvent } = await import('@testing-library/user-event')
 const { createClient } = await import('@highsea-tv/sdk')
 const { ClientProvider } = await import('@highsea-tv/sdk/react')
-const { TooltipProvider } = await import('@highsea-tv/ui')
 const { ThemeProvider } = await import('@highsea-tv/ui/native')
+const { shown } = await import('./modal.ts')
 const { Users } = await import('../src/users.tsx')
 
 const person = (over: Record<string, unknown>) => ({
@@ -108,9 +108,7 @@ async function invite(email: string) {
     render(
       <ClientProvider client={client}>
         <ThemeProvider>
-          <TooltipProvider>
-            <Users />
-          </TooltipProvider>
+          <Users />
         </ThemeProvider>
       </ClientProvider>,
     )
@@ -119,6 +117,7 @@ async function invite(email: string) {
   const user = userEvent.setup()
   const page = within(document.body)
   await user.click(page.getByRole('button', { name: 'Invite someone' }))
+  shown()
   const dialog = within(page.getByRole('dialog'))
   await user.type(dialog.getByLabelText('Name'), 'Mara')
   await user.type(dialog.getByLabelText('Email'), email)

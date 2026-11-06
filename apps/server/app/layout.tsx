@@ -3,11 +3,11 @@
 // every page reads and writes through (ADR 0018).
 
 import { polyfillAnimationFrame } from '@highsea-tv/ui/next/server'
+import { StyleRegistry } from '@highsea-tv/ui/next/style-registry'
 import type { Metadata, Viewport } from 'next'
 import { connection } from 'next/server'
 import type { ReactNode } from 'react'
 import { Providers } from '../src/admin/providers.tsx'
-import { StyleRegistry } from '../src/admin/style-registry.tsx'
 import './globals.css'
 
 // the library's server render needs a frame scheduler (@highsea-tv/ui/next/server says why); here
@@ -28,7 +28,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   await connection()
   return (
     <html lang="en" data-theme="default">
-      <body className="bg-bg text-text">
+      <body>
         <StyleRegistry>
           <Providers>{children}</Providers>
         </StyleRegistry>

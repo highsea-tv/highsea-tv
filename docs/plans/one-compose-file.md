@@ -1,0 +1,98 @@
+# One compose file
+
+A follow-up to [install-simplicity.md](install-simplicity.md), asked for by the owner on 2026-11-06: the repository's root holds six compose files, which goes against making highsea's install as small as it can be. Scoped on 2026-11-06, during part D3 of the one client platform, and approved with the owner's answers of 2026-11-06 (every recommendation). It's built after D3's sign-off and before part E.
+
+## Read first
+
+1. `CLAUDE.md` and [install-simplicity.md](install-simplicity.md): its parts A to C made the compose file need no edits, and wrote `install.sh` at `get.highsea.tv`.
+2. [ADR 0057](../adr/0057-installing-without-configuration.md) (installing without configuration), [ADR 0042](../adr/0042-vpn-connections.md) (the VPN modes), [ADR 0020](../adr/0020-discovery-port.md) (discovery, host networking and mDNS).
+3. The six files at the root: `compose.yaml`, `compose.bridge.yaml`, `compose.connects.yaml`, `compose.gluetun.yaml`, `compose.dev.yaml` and `compose.e2e.yaml`.
+4. Where people meet them: `apps/docs/public/install.sh`, `apps/docs/content/install/docker.mdx`, `apps/docs/content/settings/vpn/connects.mdx` and `container.mdx`, and Settings › VPN (`packages/admin/src/vpn.tsx`, `packages/vpn/src/compose.ts`, `docs/product/vpn.md`).
+
+## Goal
+
+The root holds one compose file, `compose.yaml`: the one `get.highsea.tv`'s installer writes and the Docker guide shows. Every other setup is written for the owner at the point they need it, by the installer or by Settings, and never chosen as a different file at install time. The files for building and testing highsea live beside what uses them, not at the root. Each piece of compose text is defined in one place.
+
+## Out of scope
+
+- **The NAS and store templates** in `templates/` (Unraid's XML; TrueNAS's, Synology's, Umbrel's and CasaOS's files). Each store needs its own format, so they stay; their tests keep them in step with `compose.yaml`.
+- **Changing what highsea's container needs.** Host networking, `/data`, the graphics lines and `/run/dbus` stay as ADR 0057 has them.
+- **Docker Desktop's host networking.** Docker documents it from Desktop 4.34, but as an opt-in setting that needs a Docker account, works at layer 4 only, and reaches the container from the computer itself rather than from the network ([Host network driver › Docker Desktop](https://docs.docker.com/engine/network/drivers/host/#docker-desktop)). Published ports stay the way on a Mac or Windows.
+
+## Where things stand
+
+The six files, what each is for, and where its text is repeated today:
+
+| File | For | Repeated in |
+| --- | --- | --- |
+| `compose.yaml` | The install on Linux, with host networking | `install.sh`'s `compose_file` (held to it by `apps/docs/test/install.test.ts`), and `docker.mdx`'s Linux tab, shorter and checked by nothing |
+| `compose.bridge.yaml` | Docker Desktop, and boxes without host networking | `docker.mdx`'s macOS and Windows tab. Synology has its own template and package |
+| `compose.connects.yaml` | highsea's own WireGuard tunnel (NET_ADMIN, its own network, published ports) | `connects.mdx`'s block, and in part Settings › VPN's capability lines (`CAPABILITY_LINES` in `packages/admin/src/vpn.tsx`), which add only `cap_add` |
+| `compose.gluetun.yaml` | highsea behind a gluetun container | Settings › VPN › Compose for your provider (`composeFor` in `packages/vpn/src/compose.ts`), which writes the block for the owner's provider, and `container.mdx` |
+| `compose.dev.yaml` | The image built from this checkout | Used by people building highsea: docs/architecture.md's commands and the `checks` skill |
+| `compose.e2e.yaml` | The end-to-end run in CI | Used by `scripts/e2e/run.ts` and `.github/workflows/e2e.yml` |
+
+So four files are for owners, and three of those copy text the guides, the installer or the admin already give. Two are for building highsea. The guides' code blocks are where owners actually copy from. The repository's files are mostly listed as the guides' sources.
+
+Choosing highsea connects means changing the compose file: adding `NET_ADMIN`, and moving off host networking so the tunnel's interface and rule stay out of the host's network (ADR 0042). Settings › VPN gives the capability line, but not the network change. highsea can already tell whether it's on host networking: setup reads the interfaces Docker makes on the host (`packages/runtime/src/setup.ts`).
+
+## The parts
+
+Two gated parts, each reviewed:
+
+- **A, the files.** The three owner variants removed, the two build files moved, the guides and the installer drawing on one `compose.yaml`. Nothing an owner sees in highsea changes.
+- **B, Settings › VPN writes highsea connects' lines.** The highsea connects mode gets a Compose block like the container mode's, prototyped first (it changes a locked screen), with highsea saying when it's on host networking. `compose.connects.yaml`'s last copy goes here.
+
+## Progress
+
+## A. The files (A)
+
+- **Removed:** `compose.bridge.yaml`, `compose.gluetun.yaml` and `compose.connects.yaml` (answer 1). Part B gives highsea connects' lines from Settings; until B lands, `connects.mdx` holds them.
+- **Moved:** `compose.dev.yaml` to `docker/compose.dev.yaml`, beside `docker/entrypoint.sh`, with its build context `..` ([Compose file › build › context](https://docs.docker.com/reference/compose-file/build/#context)); `compose.e2e.yaml` to `scripts/e2e/compose.yaml`, beside `run.ts` and the fixtures service. `.dockerignore` stays at the root, since the context is the root. docs/architecture.md's commands, the `checks` skill, `e2e.yml`'s paths and `run.ts` follow.
+- **`compose.yaml`'s header** stops naming the other files. It says what it is and points to the Docker guide for a Mac or Windows and to Settings › VPN for a VPN.
+- **The guides draw on the one file.** `docker.mdx`'s Linux tab includes `compose.yaml` itself, through Fumadocs MDX's `<include>`, which draws a file as a code block ([Include](https://www.fumadocs.dev/docs/mdx/include)), so the guide can't drift. The macOS and Windows tab keeps its published-ports block as the one place that setup is written. The guides' source lists and the README follow.
+- **Tests:** `install.test.ts` already holds the installer to `compose.yaml`. A new check in `apps/docs/test/content.test.ts` fails when a guide names a compose file the repository doesn't have.
+
+## B. Settings › VPN writes highsea connects' lines (B)
+
+- **The prototype first:** highsea connects gains **Compose for highsea connects**, as the container mode has Compose for your provider: the lines highsea's service needs (`cap_add: [NET_ADMIN]`, the published ports in place of `network_mode: host`, and the TUN device, commented, for kernels before 5.6), with Copy. When highsea finds it's on host networking, the mode's status says so and opens those lines. Approved before it's built, with its spec in `docs/product/vpn.md`.
+- **One writer:** `composeFor` in `packages/vpn/src/compose.ts` gains the highsea connects block, so the admin's `CAPABILITY_LINES`, the guide's block and the repository's file are replaced by one function. `connects.mdx` describes the screen rather than copying the lines, with its screenshots retaken.
+- **What highsea knows:** the host-networking check moves from setup into a shared helper, so the VPN status and setup read the same answer.
+
+## ADRs
+
+- **No new ADR.** This carries out ADR 0057 for the remaining files.
+- **Dated sections:** 0057 (one compose file at the root, and the variants written where they're needed); 0042 (highsea connects' compose lines from Settings, and the host-networking warning, part B); 0020 (the Docker Desktop setup in the guide rather than a file).
+
+## Risks
+
+- **Links in the wild.** The guides are the only public place that names these files, and they change in the same commit. Anyone who copied a raw GitHub link to `compose.bridge.yaml` gets a 404. The release notes say where each setup went.
+- **`<include>` outside the docs' folder.** Vercel builds `apps/docs` as the project's root. Including `../../compose.yaml` needs Vercel's "include files outside the root directory" setting, which is on by default for monorepos ([Monorepos](https://vercel.com/docs/monorepos)). The plan checks it in a preview before merging. If it doesn't hold, a build step copies the file in, and the guide includes the copy.
+- **Moving the e2e file** changes the paths CI watches. `actionlint` runs, and the e2e job runs on the branch before it's merged.
+
+## Open questions for the owner
+
+1. **The three variants for owners.**
+   **Recommended:** remove all three. The Docker guide keeps the Mac and Windows setup, Settings › VPN's container mode already writes the gluetun block, and part B has it write highsea connects' lines. The root keeps one file.
+   Or: keep `compose.connects.yaml` and `compose.gluetun.yaml` in an `examples/` folder, out of the root. Less work, and nothing changes in the admin, but they stay as second copies of what Settings writes.
+   Or: keep all three at the root, and only move the two build files. The smallest change, but four install files stay.
+2. **The Docker guide's Linux block.**
+   **Recommended:** include `compose.yaml` with Fumadocs' `<include>`, comments and all, so the guide shows the file exactly.
+   Or: keep the guide's short block, with a test that the services' keys match `compose.yaml`'s. The guide stays shorter, with a second copy held in step.
+3. **Where the build files go.**
+   **Recommended:** `docker/compose.dev.yaml` and `scripts/e2e/compose.yaml`, beside what uses them.
+   Or: one `dev/` folder for both. One place to look, but away from the scripts that run them.
+4. **When.**
+   **Recommended:** after D3's sign-off and before part E of the one client platform: part A first, then B's prototype, then B. It's small, and it lands in the next release with its notes.
+   Or: after part E, with the other work after part D. Nothing waits on it.
+
+## The owner's changes
+
+## The owner's answers
+
+On 2026-11-06 the owner took every recommendation for questions 1 to 4:
+
+1. The three owner variants are removed from the root: the Docker guide keeps the Mac and Windows setup, and Settings › VPN writes both VPN modes' lines (part B).
+2. The Docker guide's Linux tab includes `compose.yaml` itself, through Fumadocs' `<include>`.
+3. The build files move beside what uses them: `docker/compose.dev.yaml` and `scripts/e2e/compose.yaml`.
+4. It's built after D3's sign-off and before part E: part A, then B's prototype, then B.

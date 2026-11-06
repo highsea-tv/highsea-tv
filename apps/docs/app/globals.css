@@ -13,9 +13,6 @@
 @import "@highsea-tv/tokens/tokens.css";
 @import "@highsea-tv/brand/fonts.css";
 
-/* the lockup comes from ui-web, outside this app, so Tailwind is told to read it */
-@source "../../../packages/ui/src/web/components/brand.tsx";
-
 /* design system v1.0 has dark themes only, so the site is always in highsea's default theme */
 :root,
 .dark {
@@ -68,15 +65,6 @@ body {
   --tw-prose-code: var(--color-text);
   font-size: var(--text-body);
   line-height: var(--text-body--line-height);
-}
-
-/* the two highsea utilities the lockup uses, which Tailwind's default theme doesn't have */
-.tracking-wordmark {
-  letter-spacing: var(--tracking-wordmark);
-}
-
-.text-text-3 {
-  color: var(--color-text-3);
 }
 
 /*

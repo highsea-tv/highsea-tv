@@ -18,6 +18,7 @@ import { EPOCH } from '../clock.ts'
 import type { PlayingItem, StreamSession, WatchRecord } from '../sessions.ts'
 import { allowed, normalize, type WidgetPlacement, type WidgetRole } from '../widgets.ts'
 import { type AdminKit, type Answers, type Ctx, refuse } from './kit.ts'
+import { rootFolderOf } from './quality.ts'
 
 type Routes = typeof routes
 type Layout = Output<Routes['dashboard']['layout']>
@@ -247,18 +248,7 @@ export function dashboardAnswers({ wall, wallMs, userOf }: AdminKit): Answers {
     rootFolders: {
       // the movies' folders, as the server lists them; the mock's seeded filesystem has every
       // folder under /data on one disk, `data`, and the rest unreadable
-      list: (_, ctx) =>
-        ctx.api.rootFolders.list('movies').map((f) => ({
-          id: f.id,
-          path: f.path,
-          free: f.free,
-          total: f.total,
-          device: f.accessible && f.path.startsWith('/data/') ? 'data' : null,
-          accessible: f.accessible,
-          movies: f.titles,
-          languageProfileId: f.languageProfileId,
-          waiting: f.waiting,
-        })),
+      list: (_, ctx) => ctx.api.rootFolders.list('movies').map(rootFolderOf),
     },
 
     quality: {

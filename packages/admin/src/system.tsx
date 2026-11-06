@@ -30,11 +30,19 @@ import {
   type BadgeTone,
   Button,
   ConfirmDialog,
+  Details,
   EmptyState,
+  Figure,
+  GetTheAppsDialog,
   Icon,
   type IconName,
-  Input,
+  Panel,
+  Press,
+  ProgressBar,
+  SearchField,
   Select,
+  Skeleton,
+  Stat,
   Table,
   TableBody,
   TableCell,
@@ -44,26 +52,15 @@ import {
   TableRow,
   TableToolbar,
   Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-  toast,
-} from '@highsea-tv/ui'
-import {
-  Details,
-  Figure,
-  Button as NativeButton,
-  Skeleton as NativeSkeleton,
-  Panel,
-  ProgressBar,
-  Stat,
   Text,
   TextLink,
+  toast,
   tokens,
+  useTheme,
   useWindowAtLeast,
 } from '@highsea-tv/ui/native'
 import { type ReactNode, useEffect, useState } from 'react'
-import { View } from 'react-native'
+import { ActivityIndicator, ScrollView, View } from 'react-native'
 import { TmdbNotice } from './attribution.tsx'
 import { Loadable } from './loadable.tsx'
 import { Group } from './settings.tsx'
@@ -88,6 +85,12 @@ export type SystemTab = (typeof SYSTEM_TABS)[number]
 /** Dates in the admin's language; English reads day-month, as the prototype does. */
 const dateLocale = (locale: string) => (locale === 'en' ? 'en-GB' : locale)
 
+const sp = tokens.space
+const ui = tokens.adminText.ui
+const figure = tokens.adminText.figure
+/** Health's and Events' measure (the web's max-w-200). */
+const MEASURE = 800
+
 export function System({ tab: asked = 'status' }: { tab?: SystemTab }) {
   const t = useT(messages)
   const setTab = useTabAddress<SystemTab>('/system', 'status')
@@ -96,47 +99,51 @@ export function System({ tab: asked = 'status' }: { tab?: SystemTab }) {
   const tab = shown.includes(asked) ? asked : 'status'
   const health = useQuery('system:health', (c) => c.system.healthChecks(), HEALTH_TOPICS)
   const problems = (health.data ?? []).filter((h) => h.level === 'warning' || h.level === 'error')
+  const tabs = shown.map((id) => ({
+    value: id,
+    label: t(`tab.${id}`),
+    count: id === 'health' ? problems.length || undefined : undefined,
+  }))
   return (
     <AdminPage title={t('title')} description={t('description')}>
-      <Tabs value={tab} onValueChange={(v) => setTab(v as SystemTab)} variant="line">
-        <TabsList aria-label={t('sections')}>
-          {shown.map((id) => (
-            <TabsTrigger
-              key={id}
-              value={id}
-              count={id === 'health' ? problems.length || undefined : undefined}
-            >
-              {t(`tab.${id}`)}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-        <TabsContent value="status" className="pt-5">
-          <Status />
-        </TabsContent>
-        <TabsContent value="health" className="pt-5">
-          <div className="grid max-w-200 grid-cols-[minmax(0,1fr)] gap-3">
-            <p className="text-caption text-text-3">{t('health.description')}</p>
-            <Health />
-          </div>
-        </TabsContent>
-        <TabsContent value="tasks" className="pt-5">
-          <Tasks />
-        </TabsContent>
-        <TabsContent value="logs" className="pt-5">
-          <Logs />
-        </TabsContent>
-        <TabsContent value="events" className="pt-5">
-          <Events />
-        </TabsContent>
-        {owner && (
-          <TabsContent value="backups" className="pt-5">
+      <View>
+        {/* the tabs scroll sideways rather than wrap in a narrow window (the web's overflow-x-auto) */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          <Tabs
+            variant="line"
+            aria-label={t('sections')}
+            options={tabs}
+            value={tab}
+            onValueChange={setTab}
+          />
+        </ScrollView>
+        <View
+          role="tabpanel"
+          aria-label={tabs.find((x) => x.value === tab)?.label}
+          style={{ paddingTop: sp['5'] }}
+        >
+          {tab === 'status' ? (
+            <Status />
+          ) : tab === 'health' ? (
+            <View style={{ maxWidth: MEASURE, gap: sp['3'] }}>
+              <Text variant="caption" color="text-3">
+                {t('health.description')}
+              </Text>
+              <Health />
+            </View>
+          ) : tab === 'tasks' ? (
+            <Tasks />
+          ) : tab === 'logs' ? (
+            <Logs />
+          ) : tab === 'events' ? (
+            <Events />
+          ) : tab === 'backups' ? (
             <Backups />
-          </TabsContent>
-        )}
-        <TabsContent value="updates" className="pt-5">
-          <Updates />
-        </TabsContent>
-      </Tabs>
+          ) : (
+            <Updates />
+          )}
+        </View>
+      </View>
     </AdminPage>
   )
 }
@@ -151,6 +158,8 @@ function Status() {
   const locale = useLocale()
   const now = useNow()
   const side = useWindowAtLeast(breakpoints.expanded)
+  const [apps, setApps] = useState(false)
+  const info = useQuery('public-info', (c) => c.system.publicInfo(), ['server.updated'])
   const status = useQuery('system:status', (c) => c.system.status(), STATUS_TOPICS, {
     interval: STATUS_EVERY,
   })
@@ -200,7 +209,26 @@ function Status() {
                       },
                     ]}
                   />
-                  <TextLink href="/settings/network">{t('status.network')}</TextLink>
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      flexWrap: 'wrap',
+                      alignItems: 'center',
+                      columnGap: sp['4'],
+                      rowGap: sp['1'],
+                    }}
+                  >
+                    <TextLink href="/settings/network">{t('status.network')}</TextLink>
+                    {/* the desktop app, with the address apps use (desktop-app.md › Get the apps) */}
+                    <TextLink onPress={() => setApps(true)}>{t('status.getApps')}</TextLink>
+                  </View>
+                  <GetTheAppsDialog
+                    open={apps}
+                    onOpenChange={setApps}
+                    server={info.data?.name ?? 'highsea'}
+                    address={s.addresses.public ?? s.addresses.local[0] ?? ''}
+                    onSay={(title, ok) => (ok ? toast({ title }) : toast.error(title))}
+                  />
                 </Panel>
               </View>
             </View>
@@ -389,7 +417,7 @@ function Catalog() {
   const now = useNow()
   const status = useQuery('catalog-status', (c) => c.catalog.status(), [INDEXER_TOPICS.catalog])
   const check = useAction((c) => c.catalog.check())
-  if (status.status === 'loading') return <NativeSkeleton width={160} height={20} />
+  if (status.status === 'loading') return <Skeleton width={160} height={20} />
   if (status.status === 'error')
     return (
       <Text variant="caption" color="text-3">
@@ -435,9 +463,9 @@ function Catalog() {
             : t('catalog.checkFailed', { ago, message: s.lastCheck.message ?? '' })}
         </Text>
       )}
-      <NativeButton size="sm" icon="refresh" loading={check.pending} onPress={onCheck}>
+      <Button size="sm" icon="refresh" loading={check.pending} onPress={onCheck}>
         {t('catalog.check')}
-      </NativeButton>
+      </Button>
     </View>
   )
 }
@@ -462,9 +490,17 @@ const HEALTH_TOPICS = [
 /** What Status shows that an event announces: the server, the catalog's version. */
 const STATUS_TOPICS = ['server.updated', INDEXER_TOPICS.catalog]
 
+/** A list of rows in a box, each but the first with the line above it (the web's divide-y). */
+const divided = (i: number, line: string) =>
+  i > 0 ? { borderTopWidth: 1, borderTopColor: line } : null
+
+/** Text that breaks anywhere rather than overflow (the web's overflow-wrap: anywhere). */
+const ANYWHERE = { overflowWrap: 'anywhere' } as object
+
 /** The prototype's Health list: each check with its level, where it comes from and since when. */
 function Health() {
   const t = useT(messages)
+  const theme = useTheme()
   const { relative } = useRelative()
   const health = useQuery('system:health', (c) => c.system.healthChecks(), HEALTH_TOPICS)
   return (
@@ -475,26 +511,51 @@ function Health() {
             {t('health.noneBody')}
           </EmptyState>
         ) : (
-          <ul aria-label={t('health.label')} className="grid gap-2">
+          <View role="list" aria-label={t('health.label')} style={{ gap: sp['2'] }}>
             {checks.map((c) => {
               const l = levels[c.level]
               return (
-                <li key={c.id} className="flex gap-3 rounded-lg border border-line bg-s1 p-4">
-                  <Icon name={l.icon} size={18} className="mt-0.5 shrink-0 text-text-2" />
-                  <div className="grid min-w-0 gap-1">
-                    <p className="flex flex-wrap items-center gap-2">
+                <View
+                  key={c.id}
+                  role="listitem"
+                  style={{
+                    flexDirection: 'row',
+                    gap: sp['3'],
+                    padding: sp['4'],
+                    borderWidth: 1,
+                    borderColor: theme.colors.line,
+                    borderRadius: tokens.radius.lg,
+                    backgroundColor: theme.colors.s1,
+                  }}
+                >
+                  <View style={{ marginTop: sp['0.5'] }}>
+                    <Icon name={l.icon} size={18} color="text-2" />
+                  </View>
+                  <View style={{ flex: 1, minWidth: 0, gap: sp['1'] }}>
+                    <View
+                      style={{
+                        flexDirection: 'row',
+                        flexWrap: 'wrap',
+                        alignItems: 'center',
+                        gap: sp['2'],
+                      }}
+                    >
                       <Badge tone={l.tone}>{t(`health.${c.level}`)}</Badge>
-                      <span className="font-semibold text-text text-ui">{c.source}</span>
-                      <span className="text-caption text-text-3">
+                      <Text size={ui.size} leading={ui.leading} weight={600}>
+                        {c.source}
+                      </Text>
+                      <Text variant="caption" color="text-3">
                         {t('health.since', { ago: relative(c.since) })}
-                      </span>
-                    </p>
-                    <p className="text-body text-text-2 [overflow-wrap:anywhere]">{c.message}</p>
-                  </div>
-                </li>
+                      </Text>
+                    </View>
+                    <Text color="text-2" style={ANYWHERE}>
+                      {c.message}
+                    </Text>
+                  </View>
+                </View>
               )
             })}
-          </ul>
+          </View>
         )
       }
     </Loadable>
@@ -513,6 +574,18 @@ const taskName = (t: T, id: string) => {
   const key = `task.${id}`
   return key in messages ? t(key as keyof typeof messages & `task.${string}`) : id
 }
+
+/** A cell's words in `text-2`, as the web's `text-text-2` cells. */
+function Muted({ children }: { children: string }) {
+  return (
+    <Text size={ui.size} leading={ui.leading} color="text-2" numberOfLines={1}>
+      {children}
+    </Text>
+  )
+}
+
+/** The state column's width (the web's w-44). */
+const STATE_WIDTH = 176
 
 /** The prototype's Tasks table: every schedule, its state, interval, last and next run, Run now. */
 function Tasks() {
@@ -540,17 +613,15 @@ function Tasks() {
           </EmptyState>
         ) : (
           <TableFrame>
-            <Table aria-label={t('tasks.label')}>
+            <Table label={t('tasks.label')}>
               <TableHeader>
                 <TableRow>
                   <TableHead>{t('tasks.task')}</TableHead>
-                  <TableHead>{t('tasks.state')}</TableHead>
+                  <TableHead width={STATE_WIDTH}>{t('tasks.state')}</TableHead>
                   <TableHead>{t('tasks.every')}</TableHead>
                   <TableHead>{t('tasks.lastRun')}</TableHead>
                   <TableHead>{t('tasks.nextRun')}</TableHead>
-                  <TableHead>
-                    <span className="sr-only">{t('tasks.actions')}</span>
-                  </TableHead>
+                  <TableHead hidden>{t('tasks.actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -558,31 +629,33 @@ function Tasks() {
                   const name = taskName(t, task.id)
                   return (
                     <TableRow key={task.id}>
-                      <TableCell className="text-text">{name}</TableCell>
-                      <TableCell className="w-44">
-                        <div className="grid justify-items-start gap-1">
+                      <TableCell>{name}</TableCell>
+                      <TableCell maxWidth={STATE_WIDTH}>
+                        <View style={{ gap: sp['1'], alignItems: 'flex-start', minWidth: 0 }}>
                           <Badge tone={taskStates[task.state]}>{t(`state.${task.state}`)}</Badge>
-                          {task.state === 'failed' && task.lastError && (
-                            <span className="text-caption text-text-3">{task.lastError}</span>
-                          )}
-                        </div>
+                          {task.state === 'failed' && task.lastError ? (
+                            <Text variant="caption" color="text-3">
+                              {task.lastError}
+                            </Text>
+                          ) : null}
+                        </View>
                       </TableCell>
-                      <TableCell className="text-text-2">
-                        {duration(task.interval, locale)}
+                      <TableCell>
+                        <Muted>{duration(task.interval, locale)}</Muted>
                       </TableCell>
-                      <TableCell className="text-text-2">
-                        {task.lastRun ? relative(task.lastRun) : t('tasks.never')}
+                      <TableCell>
+                        <Muted>{task.lastRun ? relative(task.lastRun) : t('tasks.never')}</Muted>
                       </TableCell>
-                      <TableCell className="text-text-2">
-                        {task.nextRun ? relative(task.nextRun) : t('tasks.off')}
+                      <TableCell>
+                        <Muted>{task.nextRun ? relative(task.nextRun) : t('tasks.off')}</Muted>
                       </TableCell>
-                      <TableCell className="text-end">
+                      <TableCell align="end">
                         <Button
                           size="sm"
                           icon="play"
                           disabled={task.state === 'running' || task.state === 'queued'}
-                          aria-label={t('tasks.runLabel', { name })}
-                          onClick={() => onRun(task)}
+                          accessibilityLabel={t('tasks.runLabel', { name })}
+                          onPress={() => onRun(task)}
                         >
                           {t('tasks.run')}
                         </Button>
@@ -612,10 +685,44 @@ const logTone: Record<LogEntry['level'], BadgeTone> = {
 const LOG_LIMIT = 1000
 /** Lines shown at once: the search narrows them. */
 const LOG_SHOWN = 200
+/** The toolbar's level menu and search (the web's w-52 and w-64). */
+const LEVEL_WIDTH = 208
+const SEARCH_WIDTH = 256
+/** A line's columns from a medium window up: time, level, source (the web's 10rem 4.5rem 7rem). */
+const LOG_COLUMNS = [160, 72, 112] as const
+/** A row's padding (the web's px-3.5 py-2). */
+const ROW_PAD = { paddingHorizontal: sp['3'] + sp['0.5'], paddingVertical: sp['2'] } as const
 
 /** A line's text for the search: its source, message and fields. */
 const logText = (e: LogEntry) =>
   `${e.source} ${e.message} ${e.fields ? JSON.stringify(e.fields) : ''}`.toLowerCase()
+
+/** The log's figures: mono 12 (the web's font-mono text-figure). */
+function Mono({
+  children,
+  color = 'text',
+  title,
+  truncate,
+}: {
+  children: string
+  color?: 'text' | 'text-2' | 'text-3'
+  title?: string
+  truncate?: boolean
+}) {
+  return (
+    <Text
+      size={figure.size}
+      leading={figure.leading}
+      mono
+      color={color}
+      numberOfLines={truncate ? 1 : undefined}
+      {...(title ? ({ title } as object) : null)}
+      style={truncate ? undefined : ANYWHERE}
+    >
+      {children}
+    </Text>
+  )
+}
 
 /**
  * The prototype's log, from the lines the server keeps in memory: the level is asked of the server,
@@ -623,7 +730,9 @@ const logText = (e: LogEntry) =>
  */
 function Logs() {
   const t = useT(messages)
+  const theme = useTheme()
   const locale = useLocale()
+  const columns = useWindowAtLeast(breakpoints.medium)
   const [level, setLevel] = useState<LogEntry['level']>('info')
   const [q, setQ] = useState('')
   const logs = useQuery(
@@ -640,30 +749,37 @@ function Logs() {
   })
   const needle = q.trim().toLowerCase()
   return (
-    <div className="grid gap-6">
+    <View style={{ gap: sp['6'] }}>
       <TableFrame>
         <TableToolbar>
-          <Select
-            aria-label={t('logs.show')}
-            value={level}
-            onValueChange={(v) => setLevel(v as LogEntry['level'])}
-            options={LOG_LEVELS.map((l) => ({ value: l, label: t(`logs.${l}`) }))}
-            className="w-52"
-          />
-          <Input
-            icon="search"
-            type="search"
-            aria-label={t('logs.search')}
-            placeholder={t('logs.search')}
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            className="w-64"
-          />
-          <Button size="sm" icon="download" className="ms-auto" asChild>
-            <a href={`${API_PREFIX}/system/logs/download`} download>
+          <View style={{ width: LEVEL_WIDTH }}>
+            <Select
+              aria-label={t('logs.show')}
+              value={level}
+              onValueChange={(v) => setLevel(v as LogEntry['level'])}
+              options={LOG_LEVELS.map((l) => ({ value: l, label: t(`logs.${l}`) }))}
+            />
+          </View>
+          <View style={{ width: SEARCH_WIDTH, maxWidth: '100%' }}>
+            <SearchField
+              label={t('logs.search')}
+              role="searchbox"
+              placeholder={t('logs.search')}
+              clearLabel={t('logs.clear')}
+              value={q}
+              onChangeText={setQ}
+            />
+          </View>
+          <View style={{ marginStart: 'auto' }}>
+            <Button
+              size="sm"
+              icon="download"
+              href={`${API_PREFIX}/system/logs/download`}
+              follow="download"
+            >
               {t('logs.download')}
-            </a>
-          </Button>
+            </Button>
+          </View>
         </TableToolbar>
         <Loadable query={logs} what={t('logs.what')}>
           {(l) => {
@@ -672,48 +788,75 @@ function Logs() {
             return (
               <>
                 {shown.length === 0 ? (
-                  <p className="px-3.5 py-8 text-center text-caption text-text-3">
-                    {t('logs.nothing')}
-                  </p>
-                ) : (
-                  <ol
-                    aria-label={t('logs.label')}
-                    className="grid divide-y divide-line font-mono text-figure"
+                  <View
+                    style={{
+                      paddingHorizontal: ROW_PAD.paddingHorizontal,
+                      paddingVertical: sp['8'],
+                    }}
                   >
+                    <Text variant="caption" color="text-3" align="center">
+                      {t('logs.nothing')}
+                    </Text>
+                  </View>
+                ) : (
+                  <View role="list" aria-label={t('logs.label')}>
                     {shown.slice(0, LOG_SHOWN).map((e, i) => (
-                      <li
+                      <View
                         // biome-ignore lint/suspicious/noArrayIndexKey: log lines can repeat exactly
                         key={i}
-                        className="grid gap-1 px-3.5 py-2 medium:grid-cols-[10rem_4.5rem_7rem_minmax(0,1fr)] medium:gap-3"
+                        role="listitem"
+                        style={[
+                          ROW_PAD,
+                          {
+                            flexDirection: columns ? 'row' : 'column',
+                            alignItems: columns ? 'flex-start' : 'stretch',
+                            gap: columns ? sp['3'] : sp['1'],
+                          },
+                          divided(i, theme.colors.line),
+                        ]}
                       >
-                        <span className="text-text-3">{clock.format(new Date(e.at))}</span>
-                        <span>
+                        <View style={columns ? { width: LOG_COLUMNS[0] } : undefined}>
+                          <Mono color="text-3">{clock.format(new Date(e.at))}</Mono>
+                        </View>
+                        <View
+                          style={[
+                            { alignItems: 'flex-start' },
+                            columns ? { width: LOG_COLUMNS[1] } : null,
+                          ]}
+                        >
                           <Badge tone={logTone[e.level]}>{e.level}</Badge>
-                        </span>
-                        <span className="truncate text-text-2" title={e.source}>
-                          {e.source}
-                        </span>
-                        <span className="break-words text-text">{e.message}</span>
-                      </li>
+                        </View>
+                        <View style={columns ? { width: LOG_COLUMNS[2], minWidth: 0 } : undefined}>
+                          <Mono color="text-2" title={e.source} truncate>
+                            {e.source}
+                          </Mono>
+                        </View>
+                        <View style={{ flex: columns ? 1 : undefined, minWidth: 0 }}>
+                          <Mono>{e.message}</Mono>
+                        </View>
+                      </View>
                     ))}
-                  </ol>
+                  </View>
                 )}
-                <p className="border-line border-t px-3.5 py-2 text-caption text-text-3">
-                  {t('logs.kept', { days: String(l.files.length), size: bytes(size) })}
-                </p>
+                <View style={[ROW_PAD, { borderTopWidth: 1, borderTopColor: theme.colors.line }]}>
+                  <Text variant="caption" color="text-3">
+                    {t('logs.kept', { days: String(l.files.length), size: bytes(size) })}
+                  </Text>
+                </View>
               </>
             )
           }}
         </Loadable>
       </TableFrame>
       <Crashes />
-    </div>
+    </View>
   )
 }
 
 /** Crash reports, each to download and attach to an issue; whether they're written is General's. */
 function Crashes() {
   const t = useT(messages)
+  const theme = useTheme()
   const locale = useLocale()
   const crashes = useQuery('system:crashes', (c) => c.system.crashes(), [OPERATIONS_TOPICS.logs])
   const general = useQuery('settings:general', (c) => c.settings.general(), [
@@ -727,50 +870,68 @@ function Crashes() {
   })
   return (
     <Group title={t('crashes.title')} description={t('crashes.description')}>
-      {general.data && !general.data.crashReports && (
-        <p className="text-caption text-text-2">
-          <a
-            href="/settings/general"
-            className="rounded-sm underline underline-offset-2 outline-none hover:text-text focus-visible:ring-focus"
-          >
-            {t('crashes.off')}
-          </a>
-        </p>
-      )}
+      {general.data && !general.data.crashReports ? (
+        <TextLink href="/settings/general">{t('crashes.off')}</TextLink>
+      ) : null}
       <Loadable query={crashes} what={t('crashes.what')}>
         {(cs: CrashReport[]) =>
           cs.length === 0 ? (
-            <p className="text-caption text-text-3">{t('crashes.none')}</p>
+            <Text variant="caption" color="text-3">
+              {t('crashes.none')}
+            </Text>
           ) : (
-            <ul aria-label={t('crashes.label')} className="grid gap-2">
+            <View role="list" aria-label={t('crashes.label')} style={{ gap: sp['2'] }}>
               {cs.map((c) => {
                 const at = when.format(new Date(c.at))
                 return (
-                  <li
+                  <View
                     key={c.id}
-                    className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 rounded-md border border-line px-3 py-2"
+                    role="listitem"
+                    style={{
+                      flexDirection: 'row',
+                      flexWrap: 'wrap',
+                      alignItems: 'center',
+                      columnGap: sp['3'],
+                      rowGap: sp['1'],
+                      minWidth: 0,
+                      paddingHorizontal: sp['3'],
+                      paddingVertical: sp['2'],
+                      borderWidth: 1,
+                      borderColor: theme.colors.line,
+                      borderRadius: tokens.radius.md,
+                    }}
                   >
-                    <span className="grid min-w-0 flex-1">
-                      <span className="truncate text-text text-ui" title={c.message}>
-                        {c.message}
-                      </span>
-                      <span className="text-caption text-text-3">
-                        {at} · <span className="font-mono">{c.origin}</span> · {bytes(c.size)}
-                      </span>
-                    </span>
-                    <Button size="sm" variant="ghost" icon="download" asChild>
-                      <a
-                        href={`${API_PREFIX}/system/crashes/${encodeURIComponent(c.id)}`}
-                        download
-                        aria-label={t('crashes.downloadLabel', { at })}
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                      <Text
+                        size={ui.size}
+                        leading={ui.leading}
+                        numberOfLines={1}
+                        {...({ title: c.message } as object)}
                       >
-                        {t('crashes.download')}
-                      </a>
+                        {c.message}
+                      </Text>
+                      <Text variant="caption" color="text-3">
+                        {`${at} · `}
+                        <Text variant="caption" color="text-3" mono>
+                          {c.origin}
+                        </Text>
+                        {` · ${bytes(c.size)}`}
+                      </Text>
+                    </View>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      icon="download"
+                      href={`${API_PREFIX}/system/crashes/${encodeURIComponent(c.id)}`}
+                      follow="download"
+                      accessibilityLabel={t('crashes.downloadLabel', { at })}
+                    >
+                      {t('crashes.download')}
                     </Button>
-                  </li>
+                  </View>
                 )
               })}
-            </ul>
+            </View>
           )
         }
       </Loadable>
@@ -782,10 +943,13 @@ function Crashes() {
 
 /** Events kept on screen. */
 const EVENTS_SHOWN = 40
+/** An event's time column (the web's w-20). */
+const EVENT_TIME = 80
 
 /** The live event stream every app listens to, as it arrives. */
 function Events() {
   const t = useT(messages)
+  const theme = useTheme()
   const locale = useLocale()
   const client = useClient()
   const [seen, setSeen] = useState<{ id: number; at: number; topic: string; ids?: string[] }[]>([])
@@ -803,40 +967,54 @@ function Events() {
     minute: '2-digit',
     second: '2-digit',
   })
+  const box = {
+    borderWidth: 1,
+    borderColor: theme.colors.line,
+    borderRadius: tokens.radius.lg,
+    backgroundColor: theme.colors.s1,
+  } as const
   return (
-    <div className="grid max-w-200 grid-cols-[minmax(0,1fr)] gap-3">
-      <p className="text-caption text-text-3">{t('events.intro')}</p>
+    <View style={{ maxWidth: MEASURE, gap: sp['3'] }}>
+      <Text variant="caption" color="text-3">
+        {t('events.intro')}
+      </Text>
       {seen.length === 0 ? (
-        <p
-          aria-live="polite"
-          className="rounded-lg border border-line bg-s1 p-6 text-center text-caption text-text-3"
-        >
-          {t('events.listening')}
-        </p>
+        <View aria-live="polite" style={[box, { padding: sp['6'] }]}>
+          <Text variant="caption" color="text-3" align="center">
+            {t('events.listening')}
+          </Text>
+        </View>
       ) : (
-        <ol
-          aria-label={t('events.label')}
-          aria-live="polite"
-          className="grid divide-y divide-line rounded-lg border border-line bg-s1 font-mono text-figure"
-        >
+        <View role="list" aria-label={t('events.label')} aria-live="polite" style={box}>
           {seen.map((e, i) => (
-            <li
+            <View
               // biome-ignore lint/suspicious/noArrayIndexKey: a reset can repeat an id; the order is the identity
               key={i}
-              className="flex min-w-0 flex-wrap gap-x-3 px-3.5 py-2"
+              role="listitem"
+              style={[
+                ROW_PAD,
+                { flexDirection: 'row', flexWrap: 'wrap', columnGap: sp['3'], minWidth: 0 },
+                divided(i, theme.colors.line),
+              ]}
             >
-              <span className="w-20 shrink-0 text-text-3">{clock.format(new Date(e.at))}</span>
-              <span className="min-w-0 text-text [overflow-wrap:anywhere]">{e.topic}</span>
-              {e.ids && e.ids.length > 0 && (
-                <span className="min-w-0 truncate text-text-3" title={e.ids.join(', ')}>
-                  {e.ids.join(', ')}
-                </span>
-              )}
-            </li>
+              <View style={{ width: EVENT_TIME, flexShrink: 0 }}>
+                <Mono color="text-3">{clock.format(new Date(e.at))}</Mono>
+              </View>
+              <View style={{ minWidth: 0, flexShrink: 1 }}>
+                <Mono>{e.topic}</Mono>
+              </View>
+              {e.ids && e.ids.length > 0 ? (
+                <View style={{ minWidth: 0, flexShrink: 1 }}>
+                  <Mono color="text-3" title={e.ids.join(', ')} truncate>
+                    {e.ids.join(', ')}
+                  </Mono>
+                </View>
+              ) : null}
+            </View>
           ))}
-        </ol>
+        </View>
       )}
-    </div>
+    </View>
   )
 }
 
@@ -870,26 +1048,34 @@ function Backups() {
   return (
     <Loadable query={backups} what={t('backups.what')}>
       {(list) => (
-        <div className="grid gap-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="me-auto grid gap-0.5 text-caption text-text-3">
-              <p>{t('backups.intro')}</p>
-              <p>
-                {list.nextRun
-                  ? t('backups.next', { when: relative(list.nextRun) })
-                  : t('backups.off')}{' '}
-                <a
-                  href="/settings/backups"
-                  className="rounded-sm text-text-2 underline underline-offset-2 outline-none hover:text-text focus-visible:ring-focus"
-                >
-                  {t('backups.schedule')}
-                </a>
-              </p>
-            </div>
+        <View style={{ gap: sp['3'] }}>
+          <View
+            style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: sp['2'] }}
+          >
+            <View style={{ marginEnd: 'auto', gap: sp['0.5'], flexShrink: 1 }}>
+              <Text variant="caption" color="text-3">
+                {t('backups.intro')}
+              </Text>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  flexWrap: 'wrap',
+                  alignItems: 'baseline',
+                  columnGap: sp['1'],
+                }}
+              >
+                <Text variant="caption" color="text-3">
+                  {list.nextRun
+                    ? t('backups.next', { when: relative(list.nextRun) })
+                    : t('backups.off')}
+                </Text>
+                <TextLink href="/settings/backups">{t('backups.schedule')}</TextLink>
+              </View>
+            </View>
             <Button
               icon="backup"
               loading={make.pending}
-              onClick={() =>
+              onPress={() =>
                 make.run().then(
                   () => {
                     toast.success(t('backups.made'), { description: t('backups.madeBody') })
@@ -901,23 +1087,21 @@ function Backups() {
             >
               {t('backups.now')}
             </Button>
-          </div>
+          </View>
           {list.backups.length === 0 ? (
             <EmptyState icon="backup" title={t('backups.none')}>
               {t('backups.noneBody')}
             </EmptyState>
           ) : (
             <TableFrame>
-              <Table aria-label={t('backups.label')}>
+              <Table label={t('backups.label')}>
                 <TableHeader>
                   <TableRow>
                     <TableHead>{t('backups.made.column')}</TableHead>
                     <TableHead>{t('backups.kind')}</TableHead>
                     <TableHead>{t('backups.version')}</TableHead>
                     <TableHead numeric>{t('backups.size')}</TableHead>
-                    <TableHead>
-                      <span className="sr-only">{t('backups.actions')}</span>
-                    </TableHead>
+                    <TableHead hidden>{t('backups.actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -925,35 +1109,42 @@ function Backups() {
                     const d = date(b)
                     return (
                       <TableRow key={b.id}>
-                        <TableCell className="text-text">
-                          <div className="grid gap-0.5">
-                            <span>{d}</span>
-                            {b.problem && (
-                              <span className="text-badge-warning text-caption">{b.problem}</span>
-                            )}
-                          </div>
+                        <TableCell>
+                          <View style={{ gap: sp['0.5'] }}>
+                            <Text size={ui.size} leading={ui.leading} numberOfLines={1}>
+                              {d}
+                            </Text>
+                            {b.problem ? (
+                              <Text variant="caption" color="badge-warning">
+                                {b.problem}
+                              </Text>
+                            ) : null}
+                          </View>
                         </TableCell>
-                        <TableCell className="text-text-2">{t(`backups.kind.${b.kind}`)}</TableCell>
-                        <TableCell className="font-mono text-figure text-text-2">
-                          {b.version ?? '–'}
+                        <TableCell>
+                          <Muted>{t(`backups.kind.${b.kind}`)}</Muted>
+                        </TableCell>
+                        <TableCell>
+                          <Mono color="text-2">{b.version ?? '–'}</Mono>
                         </TableCell>
                         <TableCell numeric>{bytes(b.size)}</TableCell>
-                        <TableCell className="text-end">
-                          <span className="flex justify-end gap-1">
-                            <Button size="sm" variant="ghost" icon="download" asChild>
-                              <a
-                                href={`${API_PREFIX}/system/backups/${encodeURIComponent(b.id)}/download`}
-                                download
-                                aria-label={t('backups.downloadLabel', { date: d })}
-                              >
-                                {t('backups.download')}
-                              </a>
+                        <TableCell align="end">
+                          <View style={{ flexDirection: 'row', gap: sp['1'] }}>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              icon="download"
+                              href={`${API_PREFIX}/system/backups/${encodeURIComponent(b.id)}/download`}
+                              follow="download"
+                              accessibilityLabel={t('backups.downloadLabel', { date: d })}
+                            >
+                              {t('backups.download')}
                             </Button>
                             <Button
                               size="sm"
                               disabled={b.problem !== null}
-                              aria-label={t('backups.restoreLabel', { date: d })}
-                              onClick={() => setRestoring(b)}
+                              accessibilityLabel={t('backups.restoreLabel', { date: d })}
+                              onPress={() => setRestoring(b)}
                             >
                               {t('backups.restore')}
                             </Button>
@@ -962,10 +1153,10 @@ function Backups() {
                               variant="ghost"
                               icon="delete"
                               iconOnly
-                              aria-label={t('backups.deleteLabel', { date: d })}
-                              onClick={() => setDeleting(b)}
+                              accessibilityLabel={t('backups.deleteLabel', { date: d })}
+                              onPress={() => setDeleting(b)}
                             />
-                          </span>
+                          </View>
                         </TableCell>
                       </TableRow>
                     )
@@ -976,7 +1167,7 @@ function Backups() {
           )}
           <ConfirmDialog
             open={!!restoring}
-            onOpenChange={(o) => !o && setRestoring(null)}
+            onClose={() => setRestoring(null)}
             title={t('backups.restoreTitle', { date: date(restoring) })}
             description={t('backups.restoreBody', { name })}
             confirmLabel={t('backups.restoreConfirm')}
@@ -993,7 +1184,7 @@ function Backups() {
           />
           <ConfirmDialog
             open={!!deleting}
-            onOpenChange={(o) => !o && setDeleting(null)}
+            onClose={() => setDeleting(null)}
             title={t('backups.deleteTitle', { date: date(deleting) })}
             description={t('backups.deleteBody')}
             confirmLabel={t('backups.deleteConfirm')}
@@ -1011,7 +1202,7 @@ function Backups() {
                 )
             }}
           />
-        </div>
+        </View>
       )}
     </Loadable>
   )
@@ -1021,6 +1212,8 @@ function Backups() {
 const RESTART_POLL = 1500
 /** A restart too quick to be seen down still counts once this has passed. */
 const RESTART_GRACE = 20_000
+/** Restarting's and Updates' measure (the web's max-w-160). */
+const NARROW = 640
 
 /**
  * After a restore: the server exits and comes back on the backup. Asks `/api/health` until the
@@ -1029,6 +1222,7 @@ const RESTART_GRACE = 20_000
  */
 function Restarting({ name }: { name: string }) {
   const t = useT(messages)
+  const theme = useTheme()
   const client = useClient()
   useEffect(() => {
     const started = Date.now()
@@ -1056,18 +1250,32 @@ function Restarting({ name }: { name: string }) {
     }
   }, [client])
   return (
-    <section
+    <View
+      role="region"
       aria-live="polite"
       aria-label={t('restarting.title')}
-      className="grid max-w-160 gap-3 rounded-lg border border-line bg-s1 p-5"
+      style={{
+        maxWidth: NARROW,
+        gap: sp['3'],
+        padding: sp['5'],
+        borderWidth: 1,
+        borderColor: theme.colors.line,
+        borderRadius: tokens.radius.lg,
+        backgroundColor: theme.colors.s1,
+      }}
     >
-      <h2 className="flex items-center gap-2 font-semibold text-text text-title">
-        <Icon name="loading" size={18} className="motion-safe:animate-spin" />
-        {t('restarting.title')}
-      </h2>
-      <p className="text-body text-text-2">{t('restarting.body', { name })}</p>
-      <p className="text-caption text-text-3">{t('restarting.waiting')}</p>
-    </section>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: sp['2'] }}>
+        {/* the web's spinning loading icon: the platform's own activity indicator, as Button's */}
+        <ActivityIndicator aria-hidden size="small" color={theme.colors.text} />
+        <Text variant="title" accessibilityRole="header" aria-level={2}>
+          {t('restarting.title')}
+        </Text>
+      </View>
+      <Text color="text-2">{t('restarting.body', { name })}</Text>
+      <Text variant="caption" color="text-3">
+        {t('restarting.waiting')}
+      </Text>
+    </View>
   )
 }
 
@@ -1076,6 +1284,7 @@ function Restarting({ name }: { name: string }) {
 /** This version and the newest on the channel, from the signed catalog; Docker pulls the update. */
 function Updates() {
   const t = useT(messages)
+  const theme = useTheme()
   const locale = useLocale()
   const { relative } = useRelative()
   const updates = useQuery('system:updates', (c) => c.system.updates(), [
@@ -1089,55 +1298,71 @@ function Updates() {
   return (
     <Loadable query={updates} what={t('updates.what')}>
       {(u) => (
-        <section
+        <View
+          role="region"
           aria-label={t('updates.label')}
-          className="grid max-w-160 gap-4 rounded-lg border border-line bg-s1 p-5"
+          style={{
+            maxWidth: NARROW,
+            gap: sp['4'],
+            padding: sp['5'],
+            borderWidth: 1,
+            borderColor: theme.colors.line,
+            borderRadius: tokens.radius.lg,
+            backgroundColor: theme.colors.s1,
+          }}
         >
-          <div className="flex flex-wrap items-center gap-3">
+          <View
+            style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: sp['3'] }}
+          >
             <Badge tone={u.available ? 'accent' : 'neutral'}>{t(`updates.${u.channel}`)}</Badge>
-            <p className="text-text text-ui">
+            <Text size={ui.size} leading={ui.leading} style={{ flexShrink: 1 }}>
               {u.available && u.latest
                 ? t('updates.available', { latest: u.latest.version, current: u.current })
                 : u.latest
                   ? t('updates.current', { current: u.current })
                   : t('updates.unknown', { current: u.current })}
-            </p>
-          </div>
-          {u.available && u.latest && (
-            <div className="grid gap-2">
-              <p className="text-caption text-text-3">
+            </Text>
+          </View>
+          {u.available && u.latest ? (
+            <View style={{ gap: sp['2'] }}>
+              <Text variant="caption" color="text-3">
                 {t('updates.released', { date: day.format(new Date(u.latest.date)) })}
-              </p>
-              {u.latest.notes.length > 0 && (
-                <ul
-                  aria-label={t('updates.notes')}
-                  className="grid list-disc gap-1 ps-5 text-body text-text-2"
-                >
+              </Text>
+              {u.latest.notes.length > 0 ? (
+                <View role="list" aria-label={t('updates.notes')} style={{ gap: sp['1'] }}>
                   {u.latest.notes.map((n) => (
-                    <li key={n}>{n}</li>
+                    <View
+                      key={n}
+                      role="listitem"
+                      style={{ flexDirection: 'row', gap: sp['2'], paddingStart: sp['2'] }}
+                    >
+                      {/* the web's list-disc marker */}
+                      <Text color="text-2" aria-hidden>
+                        •
+                      </Text>
+                      <Text color="text-2" style={{ flex: 1, minWidth: 0 }}>
+                        {n}
+                      </Text>
+                    </View>
                   ))}
-                </ul>
-              )}
-              {u.latest.url && (
-                <a
-                  href={u.latest.url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex items-center gap-1.5 justify-self-start rounded-sm text-accent-text text-ui outline-none hover:underline focus-visible:ring-focus"
-                >
-                  {t('updates.notes')}
-                  <Icon name="external" size={14} />
-                </a>
-              )}
-            </div>
-          )}
-          <p className="text-caption text-text-3">{t('updates.docker')}</p>
-          <div className="flex flex-wrap items-center gap-2">
+                </View>
+              ) : null}
+              {u.latest.url ? (
+                <NotesLink href={u.latest.url}>{t('updates.notes')}</NotesLink>
+              ) : null}
+            </View>
+          ) : null}
+          <Text variant="caption" color="text-3">
+            {t('updates.docker')}
+          </Text>
+          <View
+            style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: sp['2'] }}
+          >
             <Button
               size="sm"
               icon="refresh"
               loading={check.pending}
-              onClick={() =>
+              onPress={() =>
                 check.run().then(
                   () => updates.refetch(),
                   (e: Error) => toast.error(t('updates.checkFailed'), { description: e.message }),
@@ -1146,17 +1371,42 @@ function Updates() {
             >
               {t('updates.check')}
             </Button>
-            <Button size="sm" variant="ghost" asChild>
-              <a href="/settings/general">{t('updates.settings')}</a>
+            <Button size="sm" variant="ghost" href="/settings/general">
+              {t('updates.settings')}
             </Button>
-            <span className="ms-auto text-caption text-text-3">
+            <Text variant="caption" color="text-3" style={{ marginStart: 'auto' }}>
               {u.checkedAt
                 ? t('updates.checked', { ago: relative(u.checkedAt) })
                 : t('updates.never')}
-            </span>
-          </div>
-        </section>
+            </Text>
+          </View>
+        </View>
       )}
     </Loadable>
+  )
+}
+
+/** The release's notes on GitHub, in a new tab, in the accent with the external icon (the web's). */
+function NotesLink({ href, children }: { href: string; children: string }) {
+  return (
+    <Press
+      role="link"
+      {...({ href, hrefAttrs: { target: '_blank', rel: 'noreferrer' } } as object)}
+      style={{ alignSelf: 'flex-start', borderRadius: tokens.radius.sm }}
+    >
+      {({ hovered }) => (
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: sp['1'] + sp['0.5'] }}>
+          <Text
+            size={ui.size}
+            leading={ui.leading}
+            color="accent-text"
+            style={hovered ? { textDecorationLine: 'underline' } : undefined}
+          >
+            {children}
+          </Text>
+          <Icon name="external" size={14} color="accent-text" />
+        </View>
+      )}
+    </Press>
   )
 }

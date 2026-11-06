@@ -123,6 +123,8 @@ type InputOwn = Pick<FieldCommon, 'size' | 'disabled'> & {
    * label should say the unit as well, since it isn't read with the value.
    */
   end?: string
+  /** An icon inside the field's start, before what's typed (a folder field's), as the web's Input `icon`. */
+  icon?: IconName
 }
 
 export type InputProps = ComponentProps<typeof TextInput> & InputOwn
@@ -151,6 +153,10 @@ function useInput({
     common: {
       accessibilityLabel: field?.label,
       editable: !off,
+      // read-only alone reads as a field that can't be changed but still counts; an off field is
+      // inactive, as the web's `disabled` said (WCAG 1.4.3 exempts inactive controls' contrast,
+      // https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum)
+      'aria-disabled': off || undefined,
       placeholderTextColor: theme.colors[tokens.controls.looks.placeholder.label],
       selectionColor: theme.colors.accent,
       keyboardAppearance: 'dark' as const,
@@ -186,10 +192,11 @@ export function Input(props: InputProps) {
     onFocus: _f,
     onBlur: _b,
     end,
+    icon,
     ...rest
   } = props
   const { theme, m, focused, off, bad, common, text } = useInput(props)
-  if (end)
+  if (end || icon)
     return (
       <View
         // measured by the sweeps' row check as its box, not the input inside it
@@ -200,11 +207,13 @@ export function Input(props: InputProps) {
             flexDirection: 'row',
             alignItems: 'center',
             gap: m.gap,
-            paddingEnd: m.fieldPad,
+            paddingStart: icon ? m.fieldPad : 0,
+            paddingEnd: end ? m.fieldPad : 0,
             opacity: off ? tokens.controls.disabledOpacity : 1,
           },
         ]}
       >
+        {icon ? <Icon name={icon} size={m.icon / theme.u} color="text-3" /> : null}
         <TextInput
           {...common}
           style={[
@@ -213,7 +222,8 @@ export function Input(props: InputProps) {
               flex: 1,
               minWidth: 0,
               alignSelf: 'stretch',
-              paddingStart: m.fieldPad,
+              paddingStart: icon ? 0 : m.fieldPad,
+              paddingEnd: end ? 0 : m.fieldPad,
               // the box's edge is inside its height, so the input inside it is that much shorter
               paddingVertical: m.inset - EDGE,
             },
@@ -221,15 +231,17 @@ export function Input(props: InputProps) {
           ]}
           {...rest}
         />
-        <Text
-          aria-hidden
-          size={m.text}
-          color="text-3"
-          numberOfLines={1}
-          maxFontSizeMultiplier={MAX_FONT_MULTIPLIER}
-        >
-          {end}
-        </Text>
+        {end ? (
+          <Text
+            aria-hidden
+            size={m.text}
+            color="text-3"
+            numberOfLines={1}
+            maxFontSizeMultiplier={MAX_FONT_MULTIPLIER}
+          >
+            {end}
+          </Text>
+        ) : null}
       </View>
     )
   return (

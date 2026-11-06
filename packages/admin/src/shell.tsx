@@ -3,39 +3,42 @@
 // A1, the admin shell (admin.md), ported from the prototype: the sidebar (in a regular window, and
 // a menu sheet in a compact one, by the form-factor rule: one-client-platform-d.md › D1), the ⌘K
 // palette, toasts and the status bar. The sidebar, the page's top row and the status bar are the
-// library's native parts, drawn through react-native-web; the palette, the sheet and the pages
-// below are the web renderer's until D2 and D3 move them. Pages
-// render inside through `AdminPage`. Announcement banners sit above the page (checkpoint 8c). What
+// library's native parts, drawn through react-native-web, and since D3 the palette (the library's
+// CommandPalette) and the compact menu's sheet are too, so the shell draws nothing of the web
+// renderer's. Pages render inside through `AdminPage`. Announcement banners sit above the page (checkpoint 8c). What
 // later checkpoints bring is left out until then: the queue's sidebar count, the palette's
 // download actions and import toasts.
 
 import { bytes } from '@highsea-tv/core/format'
 import { useT } from '@highsea-tv/i18n/react'
 import { useAction, useQuery } from '@highsea-tv/sdk/react'
+import { breakpoints } from '@highsea-tv/tokens'
 import {
   Button,
   type CommandGroup,
   CommandPalette,
-  Sheet,
-  SheetContent,
-  toast,
-  useCommandPaletteShortcut,
-} from '@highsea-tv/ui'
-import {
   Lockup,
-  Button as NativeButton,
   NavGroups,
   NavItem,
   PageHeader,
+  ScrollSourceProvider,
   SearchTrigger,
   ServerCard,
+  Sheet,
   Sidebar,
   StatusBar,
   StatusItem,
   Toaster,
+  toast,
+  tokens,
+  useCommandPaletteShortcut,
   useFormFactor,
+  useScrollSource,
+  useTheme,
+  useWindowAtLeast,
 } from '@highsea-tv/ui/native'
 import {
+  type ComponentRef,
   createContext,
   Fragment,
   type MouseEvent,
@@ -48,12 +51,14 @@ import {
   useRef,
   useState,
 } from 'react'
+import { ScrollView, View } from 'react-native'
 import { AccountSheet } from './account.tsx'
 import { AnnouncementBanners } from './announcement-banners.tsx'
 import { moviePath } from './media-links.ts'
 import { shell as messages } from './messages.ts'
-import { type Page, pageAt, pageGroups, type Role } from './nav.ts'
+import { type Page, pageAt, type Role } from './nav.ts'
 import { usePathname, useRouter } from './navigation.tsx'
+import { usePageGroups } from './serves.tsx'
 import { areaGroupsFor } from './settings-areas.ts'
 import { settings as settingsMessages } from './settings-messages.ts'
 import { system as systemMessages } from './system-messages.ts'
@@ -109,7 +114,7 @@ export function AdminPage({ title, description, actions, children }: AdminPagePr
         description={description}
         start={
           compact ? (
-            <NativeButton
+            <Button
               variant="ghost"
               iconOnly
               icon="menu"
@@ -133,6 +138,8 @@ function Navigation({ inSheet, onNavigate }: { inSheet?: boolean; onNavigate?: (
   const shell = useShell()
   const path = usePathname()
   const current = pageAt(path)
+  // Shows only when the server serves them (serves.tsx, D3's answer 5)
+  const pageGroups = usePageGroups()
   const server = useQuery('server', (c) => c.system.server(), ['server.updated'])
   const health = useQuery('health', (c) => c.system.healthChecks(), ['server.updated'])
   // the library's size, not its movies: one row is enough for the total
@@ -212,6 +219,7 @@ function usePaletteGroups(shell: Shell, search: string): CommandGroup[] {
   const t = useT(messages)
   const router = useRouter()
   const signOut = useSignOut()
+  const pageGroups = usePageGroups()
   const query = useDeferredValue(search.trim())
   const found = useQuery(
     `palette-movies:${query}`,
@@ -324,7 +332,7 @@ function usePaletteGroups(shell: Shell, search: string): CommandGroup[] {
         })),
     }
     return [go, actions, movies, onTmdb, settings].filter((g) => g.items.length)
-  }, [router, shell, signOut, t, ts, titles, elsewhere, query])
+  }, [router, shell, signOut, t, ts, titles, elsewhere, query, pageGroups])
 }
 
 // ---------------------------------------------------------------- status bar
@@ -408,6 +416,9 @@ function AdminStatusBar() {
 /** The web client (apps/client's web export), where everyone watches; Users are sent there (ADR 0032). */
 const WEB_APP = '/web/'
 
+// react-native-web draws the browser's focus ring on a focusable View; main is focused only by the skip link
+const NO_OUTLINE = { outlineStyle: 'none' } as object
+
 function useClientLinks() {
   const router = useRouter()
   return useCallback(
@@ -445,7 +456,14 @@ export function AdminShell({ role: initialRole, children }: { role: Role; childr
   const [account, setAccount] = useState(false)
   const [customizing, setCustomizing] = useState(false)
   const path = usePathname()
-  const main = useRef<HTMLElement>(null)
+  const main = useRef<ComponentRef<typeof View>>(null)
+  const scroller = useRef<ComponentRef<typeof ScrollView>>(null)
+  // the page's scroller is a scroll source, so a long table virtualizes in it (the library's
+  // Virtual); it keeps the browser's own scrollbar
+  const page = useScrollSource(false, { ref: scroller })
+  const [skipFocused, setSkipFocused] = useState(false)
+  const { colors } = useTheme()
+  const medium = useWindowAtLeast(breakpoints.medium)
   const togglePalette = useCallback(() => setPalette((o) => !o), [])
   useCommandPaletteShortcut(togglePalette)
   const onClick = useClientLinks()
@@ -466,7 +484,7 @@ export function AdminShell({ role: initialRole, children }: { role: Role; childr
   // leaving the dashboard ends customize mode, and each page starts at the top
   useEffect(() => {
     if (path !== '/') setCustomizing(false)
-    main.current?.parentElement?.scrollTo({ top: 0 })
+    scroller.current?.scrollTo({ y: 0, animated: false })
   }, [path])
 
   const shell = useMemo<Shell>(
@@ -484,35 +502,67 @@ export function AdminShell({ role: initialRole, children }: { role: Role; childr
 
   return (
     <ShellContext.Provider value={shell}>
-      {/* biome-ignore lint/a11y/noStaticElementInteractions: delegates link clicks, not a control */}
-      {/* biome-ignore lint/a11y/useKeyWithClickEvents: links keep their own keyboard behaviour */}
-      <div className="flex h-screen bg-bg text-text" onClick={onClick}>
-        {/* fixed above the screen until focused: in the row, even sr-only, it pushed the sidebar along */}
-        <Button
-          onClick={() => main.current?.focus()}
-          className="fixed start-3 top-3 z-50 -translate-y-20 focus:translate-y-0"
+      {/* react-native-web forwards onClick to the element: it delegates link clicks, not a control */}
+      <View
+        style={{
+          flexDirection: 'row',
+          height: '100vh' as unknown as number,
+          backgroundColor: colors.bg,
+        }}
+        {...({ onClick } as object)}
+      >
+        {/* above the screen until focused: in the row, even hidden, it pushed the sidebar along */}
+        <View
+          style={{
+            position: 'absolute',
+            top: tokens.space['3'],
+            start: tokens.space['3'],
+            zIndex: 50,
+            transform: [{ translateY: skipFocused ? 0 : -80 }],
+          }}
         >
-          {t('skip')}
-        </Button>
+          <Button
+            onPress={() => main.current?.focus()}
+            onFocus={() => setSkipFocused(true)}
+            onBlur={() => setSkipFocused(false)}
+          >
+            {t('skip')}
+          </Button>
+        </View>
         {compact ? null : <Navigation />}
-        <div className="flex min-w-0 flex-1 flex-col">
-          <div className="relative min-h-0 flex-1 overflow-y-auto">
-            {/* grid-cols-1: a wide table scrolls inside its frame, not the page */}
-            <main
-              ref={main}
-              tabIndex={-1}
-              className="grid grid-cols-1 content-start gap-5 p-4 outline-none medium:px-6.5 medium:py-5.5 [&>*]:min-w-0"
-            >
-              <AnnouncementBanners />
-              {children}
-            </main>
-          </div>
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <ScrollView {...page.props} style={{ flex: 1, minHeight: 0 }}>
+            <ScrollSourceProvider value={page.source}>
+              {/* a wide table scrolls inside its frame, not the page */}
+              <View
+                ref={main}
+                role="main"
+                tabIndex={-1}
+                style={[
+                  NO_OUTLINE,
+                  {
+                    gap: tokens.space['5'],
+                    paddingHorizontal: medium ? 26 : tokens.space['4'],
+                    paddingVertical: medium ? 22 : tokens.space['4'],
+                  },
+                ]}
+              >
+                <AnnouncementBanners />
+                {children}
+              </View>
+            </ScrollSourceProvider>
+          </ScrollView>
           <AdminStatusBar />
-        </div>
-        <Sheet open={menu} onOpenChange={setMenu}>
-          <SheetContent side="left" title={t('menu')} hideTitle className="p-4">
-            <Navigation inSheet onNavigate={() => setMenu(false)} />
-          </SheetContent>
+        </View>
+        <Sheet
+          open={menu}
+          onClose={() => setMenu(false)}
+          side="left"
+          title={t('menu')}
+          hideTitle
+          padding={tokens.space['4']}
+        >
+          <Navigation inSheet onNavigate={() => setMenu(false)} />
         </Sheet>
         <CommandPalette
           open={palette}
@@ -525,9 +575,9 @@ export function AdminShell({ role: initialRole, children }: { role: Role; childr
           placeholder={t('palette.placeholder')}
         />
         <AccountSheet open={account} onOpenChange={setAccount} />
-        {/* the native renderer's toasts, which D2's screens raise (the web renderer's still mount in UIProvider until D3) */}
+        {/* the admin's toasts: the one stack every screen raises them in */}
         <Toaster label={t('notifications')} />
-      </div>
+      </View>
     </ShellContext.Provider>
   )
 }

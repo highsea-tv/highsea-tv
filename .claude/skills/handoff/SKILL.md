@@ -13,7 +13,7 @@ Start your message with `Written for: …`, naming the reader (a fresh agent, wh
 ## What the prompt contains
 
 1. **What and where:** one or two sentences naming the work, its plan file, and the date and state of its approval ("approved with the owner's answers of 2026-10-22").
-2. **Read these first, in order:** `CLAUDE.md` (and which lines of "Where things stand"), the standing rules in the phase plan, the checkpoint plan (naming the sections that matter), then the ADRs and specs it touches.
+2. **Read these first, in order:** `CLAUDE.md`, the lines of `docs/status.md` for this work, the standing rules in the phase plan, the checkpoint plan (naming the sections that matter), then the ADRs and specs it touches.
 3. **What's already done:** with the commit hash (`git log -1 --format=%h`), so it isn't redone.
 4. **What to build:** the plan's list for this part, in short, plus any dry-run or no-publish limits.
 5. **Rules that are easy to break here.** Choose the ones this work is likely to break, from:
@@ -28,7 +28,7 @@ Start your message with `Written for: …`, naming the reader (a fresh agent, wh
    - commit only when asked, never push, no attribution lines;
    - copy is plain and calm, with no exclamation marks;
    - never infer pronouns from a name, and use they/them for the owner.
-6. **When it's done:** which checks to run (`/checks full`), what to record (the plan's Progress, `CLAUDE.md`, ADRs), and what to report at the gate (`/checkpoint-report`). Then "Stop and ask for review. Don't start <the next part>."
+6. **When it's done:** which checks to run (`/checks full`), what to record (the plan's Progress, `docs/status.md`, ADRs), and what to report at the gate (`/checkpoint-report`). Then "Stop and ask for review. Don't start <the next part>."
 
 ## Never
 

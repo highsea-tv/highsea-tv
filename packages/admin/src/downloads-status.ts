@@ -4,7 +4,7 @@
 // the Queue widget. Every state also has a label in each screen's catalog, so color is never the
 // only signal.
 import type { TorrentState } from '@highsea-tv/api-contract'
-import type { BadgeTone, ProgressTone } from '@highsea-tv/ui'
+import type { BadgeTone, ProgressBarTone as ProgressTone } from '@highsea-tv/ui'
 
 export const torrentTone: Record<TorrentState, { tone: BadgeTone; bar: ProgressTone }> = {
   queued: { tone: 'neutral', bar: 'neutral' },

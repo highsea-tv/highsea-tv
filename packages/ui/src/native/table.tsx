@@ -10,19 +10,26 @@
 // and carry ARIA's table roles (https://www.w3.org/TR/wai-aria-1.2/#table), which
 // react-native-web writes as `role` (https://necolas.github.io/react-native-web/docs/accessibility/).
 // Elsewhere (a phone or TV never draws the admin) they fall back to flex rows.
+// A body of more than VIRTUAL_FROM rows draws only those near the screen, in the page's own
+// scroller (the library's Virtual, TanStack Virtual's core: ./virtual.tsx), with a spacer row
+// before and after them; a shorter one draws every row, so the page's find and the server's HTML
+// have them all.
 import {
   Children,
+  type ComponentRef,
   createContext,
   isValidElement,
   type ReactNode,
+  type Ref,
   useContext,
   useMemo,
   useState,
   useSyncExternalStore,
 } from 'react'
-import { Platform, View, type ViewStyle } from 'react-native'
+import { type LayoutChangeEvent, Platform, View, type ViewStyle } from 'react-native'
 import { Text } from './text.tsx'
 import { tokens, useTheme } from './theme.tsx'
+import { useScrollSourceOrNull, Virtual } from './virtual.tsx'
 
 const s = tokens.space
 const web = Platform.OS === 'web'
@@ -33,6 +40,17 @@ const css = (display: string, extra?: object) =>
 type RowState = { active: boolean; last: boolean }
 const RowContext = createContext<RowState>({ active: false, last: false })
 const LastContext = createContext(false)
+/** A virtual body's measure for the row it holds. */
+const MeasureContext = createContext<((e: LayoutChangeEvent) => void) | undefined>(undefined)
+
+/**
+ * Bodies longer than this draw only the rows near the screen. The admin's tables page on the
+ * server, 50 or 60 rows at a time (Wanted, Subtitles, the library, Activity's history), so a first
+ * page draws in full and a body is virtual from its first Show more.
+ */
+export const VIRTUAL_FROM = 60
+/** Rows drawn past each end of the screen. */
+const OVERSCAN = 10
 
 /** The card a table sits in: `s1`, a `line` border, corners `lg`. */
 export function TableFrame({ children, label }: { children: ReactNode; label?: string }) {
@@ -135,16 +153,37 @@ export function TableHeader({ children }: { children: ReactNode }) {
   )
 }
 
+/** A virtual body's room before and after its drawn rows: a row with no cells. */
+const spacerRow = (size: number, ref?: Ref<ComponentRef<typeof View>>) => (
+  <View ref={ref} aria-hidden style={[css('table-row'), { height: size }]} />
+)
+
 /** The rows. The last row has no line under it: the frame's border closes the table. */
 export function TableBody({ children }: { children: ReactNode }) {
   const rows = Children.toArray(children).filter(isValidElement)
+  const virtual = useScrollSourceOrNull() !== null && rows.length > VIRTUAL_FROM
   return (
     <View role="rowgroup" style={css('table-row-group')}>
-      {rows.map((row, i) => (
-        <LastContext.Provider key={row.key ?? i} value={i === rows.length - 1}>
-          {row}
-        </LastContext.Provider>
-      ))}
+      {virtual ? (
+        <Virtual
+          count={rows.length}
+          estimateSize={() => tokens.density.rowSingle}
+          getKey={(i) => rows[i]?.key ?? i}
+          overscan={OVERSCAN}
+          spacer={spacerRow}
+          render={(i, onLayout) => (
+            <MeasureContext.Provider value={onLayout}>
+              <LastContext.Provider value={i === rows.length - 1}>{rows[i]}</LastContext.Provider>
+            </MeasureContext.Provider>
+          )}
+        />
+      ) : (
+        rows.map((row, i) => (
+          <LastContext.Provider key={row.key ?? i} value={i === rows.length - 1}>
+            {row}
+          </LastContext.Provider>
+        ))
+      )}
     </View>
   )
 }
@@ -161,6 +200,7 @@ export type TableRowProps = {
 export function TableRow({ children, selected, testID }: TableRowProps) {
   const theme = useTheme()
   const last = useContext(LastContext)
+  const measure = useContext(MeasureContext)
   const [hovered, setHovered] = useState(false)
   const [focused, setFocused] = useState(false)
   const active = hovered || focused
@@ -180,6 +220,7 @@ export function TableRow({ children, selected, testID }: TableRowProps) {
       <View
         role="row"
         testID={testID}
+        onLayout={measure}
         aria-selected={selected || undefined}
         {...events}
         style={[

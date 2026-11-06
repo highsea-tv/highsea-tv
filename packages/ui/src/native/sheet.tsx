@@ -117,6 +117,8 @@ export type SheetProps = {
   description?: ReactNode
   /** A pointer's side sheet: the title is read but not shown (a menu sheet). */
   hideTitle?: boolean
+  /** A pointer's side sheet: its padding, 24 unless given (the admin's menu sheet's 16, the web's p-4). */
+  padding?: number
 }
 
 export function Sheet(props: SheetProps) {
@@ -236,6 +238,7 @@ function SideSheet({
   footer,
   side,
   width,
+  padding = tokens.space['6'],
 }: SheetProps & { side: 'right' | 'left' }) {
   const theme = useTheme()
   const t = useT(uiMessages)
@@ -276,9 +279,7 @@ function SideSheet({
             overflow: 'hidden',
           }}
         >
-          <ScrollView
-            contentContainerStyle={{ padding: tokens.space['6'], gap: tokens.space['5'] }}
-          >
+          <ScrollView contentContainerStyle={{ padding, gap: tokens.space['5'] }}>
             {hideTitle ? (
               <HiddenTitle id={titleId}>{title}</HiddenTitle>
             ) : (
@@ -421,6 +422,7 @@ export function Dialog({
           style={{
             width: pointer ? '100%' : undefined,
             maxWidth: pointer ? DIALOG_WIDTH[size] : undefined,
+            maxHeight: '100%',
             gap: tokens.space['4'],
             padding: tokens.space['5'],
             borderRadius: tokens.radius.lg,
@@ -467,7 +469,17 @@ export function Dialog({
               {description}
             </Text>
           ) : null}
-          {children}
+          {/* a body taller than the window scrolls between the title and the footer, which stay
+              in view, as the web's dialogs did; menus open in their own Modal, so nothing is clipped */}
+          {children ? (
+            <ScrollView
+              style={{ flexShrink: 1 }}
+              keyboardShouldPersistTaps="handled"
+              contentContainerStyle={{ gap: tokens.space['4'] }}
+            >
+              {children}
+            </ScrollView>
+          ) : null}
           {footer && pointer ? (
             <View
               style={{

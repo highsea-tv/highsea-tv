@@ -6,7 +6,8 @@
 // last check's result and Edit, Check now and Remove. Add a list is "Not in the prototype"; it is a
 // dialog like A9's Edit (the plan's "What real data may force"), one form whose fields follow the
 // kind. Trakt's account (its device flow) and the exclusions are groups below, also new.
-// Changes save at once through `importLists.*`, as Download client's categories do.
+// Changes save at once through `importLists.*`, as Download client's categories do. Drawn with the
+// library's native renderer since D3 (one-client-platform-d.md), its rows in settings-card.tsx's cards.
 import {
   IMPORT_LIST_KINDS,
   type ImportList,
@@ -24,25 +25,31 @@ import {
 import type { T as Translate } from '@highsea-tv/i18n'
 import { useT } from '@highsea-tv/i18n/react'
 import { useAction, useQuery } from '@highsea-tv/sdk/react'
+import { breakpoints } from '@highsea-tv/tokens'
 import {
   Badge,
   Button,
   ConfirmDialog,
   Dialog,
-  DialogContent,
   EmptyState,
   Field,
   Input,
   SegmentedControl,
   Select,
   Switch,
+  Text,
   toast,
-} from '@highsea-tv/ui'
+  tokens,
+  useTheme,
+  useWindowAtLeast,
+} from '@highsea-tv/ui/native'
 import { useEffect, useState } from 'react'
+import { Linking, Platform, View } from 'react-native'
 import { lists as messages } from './lists-messages.ts'
 import { Loadable } from './loadable.tsx'
 import { AVAILABILITY } from './movie-data.ts'
 import { AreaPage, Group } from './settings.tsx'
+import { Card, Cards, Cell, FormGrid, Line, Note, WRAP_ANYWHERE } from './settings-card.tsx'
 import { TagPicker } from './tag-picker.tsx'
 import { tagsMessages } from './tags-messages.ts'
 import { useRelative } from './time.ts'
@@ -50,6 +57,9 @@ import { useRelative } from './time.ts'
 type T = Translate<typeof messages>
 type Kind = (typeof IMPORT_LIST_KINDS)[number]
 
+const s = tokens.space
+/** The Trakt code's tracking: Tailwind's `tracking-widest`, 0.1em of the title's 20. */
+const CODE_TRACKING = 2
 const TOPICS = [LIST_TOPICS.lists]
 const OPTION_TOPICS = ['settings.updated', 'subtitles.updated']
 
@@ -119,7 +129,7 @@ export function ImportLists() {
                 {t('noneBody')}
               </EmptyState>
             ) : (
-              <ul aria-label={t('title')} className="grid grid-cols-[minmax(0,1fr)] gap-2">
+              <Cards label={t('title')}>
                 {ls.map((l) => (
                   <Row
                     key={l.id}
@@ -130,36 +140,29 @@ export function ImportLists() {
                     onChanged={lists.refetch}
                   />
                 ))}
-              </ul>
+              </Cards>
             )
           }
         </Loadable>
-        <Button
-          icon="add"
-          className="justify-self-start"
-          disabled={!options.data}
-          onClick={() => setEditing('new')}
-        >
+        <Button icon="add" disabled={!options.data} onPress={() => setEditing('new')}>
           {t('add')}
         </Button>
       </Group>
       <Trakt status={trakt.data} reload={trakt.refetch} />
       <Exclusions />
-      <Dialog open={editing !== null} onOpenChange={(o) => !o && setEditing(null)}>
-        {editing !== null && options.data && (
-          <ListForm
-            key={editing === 'new' ? 'new' : editing.id}
-            list={editing === 'new' ? null : editing}
-            options={options.data}
-            trakt={trakt.data}
-            onClose={() => setEditing(null)}
-            onSaved={lists.refetch}
-          />
-        )}
-      </Dialog>
+      {editing !== null && options.data && (
+        <ListForm
+          key={editing === 'new' ? 'new' : editing.id}
+          list={editing === 'new' ? null : editing}
+          options={options.data}
+          trakt={trakt.data}
+          onClose={() => setEditing(null)}
+          onSaved={lists.refetch}
+        />
+      )}
       <ConfirmDialog
         open={!!removing}
-        onOpenChange={(o) => !o && setRemoving(null)}
+        onClose={() => setRemoving(null)}
         title={t('removeTitle', { name: removing?.name ?? '' })}
         description={t('removeBody')}
         confirmLabel={t('removeConfirm')}
@@ -181,6 +184,9 @@ export function ImportLists() {
   )
 }
 
+/** The row's profile select, from medium widths: at most 14rem, or 40% of the row. */
+const PROFILE_WIDTH = 224
+
 function Row({
   list: l,
   profiles,
@@ -196,6 +202,7 @@ function Row({
 }) {
   const t = useT(messages)
   const { relative } = useRelative()
+  const medium = useWindowAtLeast(breakpoints.medium)
   const update = useAction((c, body: ImportListInput) =>
     c.importLists.update({ params: { id: l.id }, body }),
   )
@@ -206,56 +213,64 @@ function Row({
       .then(onChanged, (e: Error) => toast.error(t('saveFailed'), { description: e.message }))
   const r = l.lastResult
   return (
-    <li className="grid grid-cols-[minmax(0,1fr)] gap-3 rounded-md border border-line bg-s2 p-3">
-      <div className="grid grid-cols-[minmax(0,1fr)] gap-3 medium:grid-cols-[auto_minmax(0,1fr)_min(14rem,40%)] medium:items-center">
-        <Switch
-          aria-label={t('enabled', { name: l.name })}
-          checked={l.enabled}
-          disabled={update.pending}
-          onCheckedChange={(enabled) => change({ enabled })}
-        />
-        <div className="grid min-w-0 gap-0.5">
-          <p className="text-text text-ui [overflow-wrap:anywhere]">{l.name}</p>
-          <p className="text-caption text-text-3">
+    <Card>
+      <View
+        style={{
+          flexDirection: medium ? 'row' : 'column',
+          alignItems: medium ? 'center' : 'stretch',
+          gap: s['3'],
+        }}
+      >
+        <View style={{ alignSelf: medium ? 'center' : 'flex-start' }}>
+          <Switch
+            label={t('enabled', { name: l.name })}
+            hideLabel
+            checked={l.enabled}
+            disabled={update.pending}
+            onCheckedChange={(enabled) => change({ enabled })}
+          />
+        </View>
+        <View style={{ flex: medium ? 1 : undefined, minWidth: 0, gap: s['0.5'] }}>
+          <Line style={WRAP_ANYWHERE}>{l.name}</Line>
+          <Note>
             {kindLabel(t, l.settings)} · {t('items', { count: l.items })} ·{' '}
             {l.searchOnAdd ? t('searches') : t('noSearch')}
-          </p>
-        </div>
-        <Select
-          aria-label={t('profile', { name: l.name })}
-          value={l.qualityProfileId}
-          disabled={update.pending}
-          onValueChange={(qualityProfileId) => change({ qualityProfileId })}
-          options={profiles.map((p) => ({ value: p.id, label: p.name }))}
-        />
-      </div>
-      <div className="grid gap-1 text-caption text-text-3">
-        <p>
+          </Note>
+        </View>
+        <View style={medium ? { width: PROFILE_WIDTH, maxWidth: '40%' } : undefined}>
+          <Select
+            aria-label={t('profile', { name: l.name })}
+            value={l.qualityProfileId}
+            disabled={update.pending}
+            onValueChange={(qualityProfileId) => change({ qualityProfileId })}
+            options={profiles.map((p) => ({ value: p.id, label: p.name }))}
+          />
+        </View>
+      </View>
+      <View style={{ gap: s['1'] }}>
+        <Note>
           {l.lastSync ? t('checked', { ago: relative(l.lastSync) }) : t('never')}
-          {r && !r.error && (
-            <>
-              {' · '}
-              {t('result', { found: r.found, added: r.added, skipped: r.skipped })}
-            </>
-          )}
-        </p>
+          {r && !r.error
+            ? ` · ${t('result', { found: r.found, added: r.added, skipped: r.skipped })}`
+            : null}
+        </Note>
         {r?.error && (
-          <p className="flex flex-wrap items-center gap-2">
+          <View
+            style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: s['2'] }}
+          >
             <Badge tone="warning">{t('failed', { message: r.error })}</Badge>
-          </p>
+          </View>
         )}
         {r && r.unresolved.length > 0 && (
-          <p className="[overflow-wrap:anywhere]">
-            {t('unresolved', { titles: r.unresolved.join(', ') })}
-          </p>
+          <Note style={WRAP_ANYWHERE}>{t('unresolved', { titles: r.unresolved.join(', ') })}</Note>
         )}
-      </div>
-      <div className="flex flex-wrap gap-2">
+      </View>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: s['2'] }}>
         <Button
           size="sm"
           icon="edit"
-          aria-label={t('editLabel', { name: l.name })}
-          onClick={onEdit}
+          accessibilityLabel={t('editLabel', { name: l.name })}
+          onPress={onEdit}
         >
           {t('edit')}
         </Button>
@@ -263,8 +278,8 @@ function Row({
           size="sm"
           icon="refresh"
           loading={sync.pending}
-          aria-label={t('syncLabel', { name: l.name })}
-          onClick={() =>
+          accessibilityLabel={t('syncLabel', { name: l.name })}
+          onPress={() =>
             sync.run().then(
               () => toast({ title: t('syncing', { name: l.name }), description: t('syncingBody') }),
               (e: Error) => toast.error(t('actionFailed'), { description: e.message }),
@@ -276,13 +291,13 @@ function Row({
         <Button
           size="sm"
           variant="danger"
-          aria-label={t('removeLabel', { name: l.name })}
-          onClick={onRemove}
+          accessibilityLabel={t('removeLabel', { name: l.name })}
+          onPress={onRemove}
         >
           {t('remove')}
         </Button>
-      </div>
-    </li>
+      </View>
+    </Card>
   )
 }
 
@@ -418,234 +433,225 @@ function ListForm({
   const sourceError =
     err('list', missing.list) ?? (failure?.field === 'settings' ? failure.message : undefined)
 
+  /** Enter in a field saves, as the web's form submitted. */
+  const typed = { onSubmitEditing: submit, autoComplete: 'off', autoCorrect: false } as const
+  const code = { ...typed, spellCheck: false, autoCapitalize: 'none', mono: true } as const
+
   return (
-    <DialogContent
+    <Dialog
+      open
+      onClose={onClose}
       size="md"
       title={list ? t('form.editTitle', { name: list.name }) : t('form.addTitle')}
       description={t('form.description')}
       footer={
         <>
-          <Button variant="ghost" onClick={onClose}>
+          <Button variant="ghost" onPress={onClose}>
             {t('form.cancel')}
           </Button>
-          <Button variant="primary" loading={save.pending} disabled={blocked} onClick={submit}>
+          <Button variant="primary" loading={save.pending} disabled={blocked} onPress={submit}>
             {t('form.save')}
           </Button>
         </>
       }
     >
-      <form
-        noValidate
-        className="grid gap-4 medium:grid-cols-2"
-        onSubmit={(e) => {
-          e.preventDefault()
-          submit()
-        }}
-      >
-        <Field label={t('form.kind')} className="medium:col-span-2">
-          <SegmentedControl
-            aria-label={t('form.kind')}
-            value={d.kind}
-            onValueChange={(kind) => set({ kind: kind as Kind })}
-            options={IMPORT_LIST_KINDS.map((k) => ({ value: k, label: t(`kind.${k}`) }))}
-          />
-        </Field>
+      <FormGrid>
+        <Cell>
+          <Field label={t('form.kind')}>
+            <SegmentedControl
+              aria-label={t('form.kind')}
+              value={d.kind}
+              onValueChange={(kind) => set({ kind: kind as Kind })}
+              options={IMPORT_LIST_KINDS.map((k) => ({ value: k, label: t(`kind.${k}`) }))}
+            />
+          </Field>
+        </Cell>
         {d.kind === 'tmdb' && (
           <>
-            <Field
-              label={t('form.source')}
-              hint={d.tmdbSource === 'list' ? undefined : t('form.tmdbChartHint')}
-              className="medium:col-span-2"
-            >
-              <Select
-                value={d.tmdbSource}
-                onValueChange={(v) => set({ tmdbSource: v as Draft['tmdbSource'] })}
-                options={TMDB_LIST_SOURCES.map((s) => ({ value: s, label: t(`source.${s}`) }))}
-              />
-            </Field>
-            {d.tmdbSource === 'list' && (
+            <Cell>
               <Field
-                label={t('form.tmdbList')}
-                hint={t('form.tmdbListHint')}
-                error={sourceError}
-                className="medium:col-span-2"
+                label={t('form.source')}
+                hint={d.tmdbSource === 'list' ? undefined : t('form.tmdbChartHint')}
               >
-                <Input
-                  value={d.list}
-                  spellCheck={false}
-                  autoCapitalize="none"
-                  className="font-mono"
-                  onChange={(e) => set({ list: e.target.value })}
+                <Select
+                  value={d.tmdbSource}
+                  onValueChange={(v) => set({ tmdbSource: v as Draft['tmdbSource'] })}
+                  options={TMDB_LIST_SOURCES.map((s) => ({ value: s, label: t(`source.${s}`) }))}
                 />
               </Field>
+            </Cell>
+            {d.tmdbSource === 'list' && (
+              <Cell>
+                <Field label={t('form.tmdbList')} hint={t('form.tmdbListHint')} error={sourceError}>
+                  <Input value={d.list} onChangeText={(list) => set({ list })} {...code} />
+                </Field>
+              </Cell>
             )}
           </>
         )}
         {d.kind === 'trakt' && (
           <>
-            <Field
-              label={t('form.source')}
-              hint={
-                traktOff
-                  ? undefined
-                  : d.traktSource === 'watchlist'
-                    ? t('form.traktWatchlist')
-                    : d.traktSource === 'list'
-                      ? undefined
-                      : t('form.traktChartHint')
-              }
-              error={
-                traktOff
-                  ? t('form.traktUnavailable')
-                  : needsAccount
-                    ? t('form.traktNeedsAccount')
-                    : undefined
-              }
-              className="medium:col-span-2"
-            >
-              <Select
-                value={d.traktSource}
-                onValueChange={(v) => set({ traktSource: v as Draft['traktSource'] })}
-                options={TRAKT_LIST_SOURCES.map((s) => ({ value: s, label: t(`source.${s}`) }))}
-              />
-            </Field>
-            {d.traktSource === 'list' && (
+            <Cell>
               <Field
-                label={t('form.traktList')}
-                hint={t('form.traktListHint')}
-                error={sourceError}
-                className="medium:col-span-2"
+                label={t('form.source')}
+                hint={
+                  traktOff
+                    ? undefined
+                    : d.traktSource === 'watchlist'
+                      ? t('form.traktWatchlist')
+                      : d.traktSource === 'list'
+                        ? undefined
+                        : t('form.traktChartHint')
+                }
+                error={
+                  traktOff
+                    ? t('form.traktUnavailable')
+                    : needsAccount
+                      ? t('form.traktNeedsAccount')
+                      : undefined
+                }
               >
-                <Input
-                  value={d.list}
-                  spellCheck={false}
-                  autoCapitalize="none"
-                  className="font-mono"
-                  onChange={(e) => set({ list: e.target.value })}
+                <Select
+                  value={d.traktSource}
+                  onValueChange={(v) => set({ traktSource: v as Draft['traktSource'] })}
+                  options={TRAKT_LIST_SOURCES.map((s) => ({ value: s, label: t(`source.${s}`) }))}
                 />
               </Field>
+            </Cell>
+            {d.traktSource === 'list' && (
+              <Cell>
+                <Field
+                  label={t('form.traktList')}
+                  hint={t('form.traktListHint')}
+                  error={sourceError}
+                >
+                  <Input value={d.list} onChangeText={(list) => set({ list })} {...code} />
+                </Field>
+              </Cell>
             )}
           </>
         )}
         {d.kind === 'generic' && (
-          <Field
-            label={t('form.url')}
-            hint={t('form.urlHint')}
-            error={err('url', missing.url)}
-            className="medium:col-span-2"
+          <Cell>
+            <Field label={t('form.url')} hint={t('form.urlHint')} error={err('url', missing.url)}>
+              <Input
+                inputMode="url"
+                keyboardType="url"
+                value={d.url}
+                onChangeText={(url) => set({ url })}
+                {...code}
+              />
+            </Field>
+          </Cell>
+        )}
+        <Cell>
+          <View
+            style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: s['3'] }}
           >
+            <Button
+              size="sm"
+              icon="check"
+              loading={test.pending}
+              disabled={!sourceOk}
+              onPress={onTest}
+            >
+              {t('form.test')}
+            </Button>
+            {tested && (
+              <Note role="status" color={tested.ok ? 'text-2' : 'danger'}>
+                {tested.message}
+              </Note>
+            )}
+          </View>
+        </Cell>
+        <Cell>
+          <Field label={t('form.name')} error={err('name', missing.name)}>
             <Input
-              type="url"
-              value={d.url}
-              spellCheck={false}
-              autoCapitalize="none"
-              className="font-mono"
-              onChange={(e) => set({ url: e.target.value })}
+              value={d.rest.name}
+              maxLength={100}
+              onChangeText={(name) => setRest({ name })}
+              {...typed}
             />
           </Field>
-        )}
-        <div className="flex flex-wrap items-center gap-3 medium:col-span-2">
-          <Button
-            size="sm"
-            icon="check"
-            loading={test.pending}
-            disabled={!sourceOk}
-            onClick={onTest}
+        </Cell>
+        <Cell>
+          <Field
+            label={t('form.rootFolder')}
+            error={
+              o.folders.length === 0
+                ? t('form.noFolders')
+                : (err('rootFolder', missing.folder) ?? undefined)
+            }
           >
-            {t('form.test')}
-          </Button>
-          {tested && (
-            <p
-              role="status"
-              className={tested.ok ? 'text-caption text-text-2' : 'text-caption text-danger'}
-            >
-              {tested.message}
-            </p>
-          )}
-        </div>
-        <Field
-          label={t('form.name')}
-          error={err('name', missing.name)}
-          className="medium:col-span-2"
-        >
-          <Input
-            value={d.rest.name}
-            maxLength={100}
-            onChange={(e) => setRest({ name: e.target.value })}
-          />
-        </Field>
-        <Field
-          label={t('form.rootFolder')}
-          error={
-            o.folders.length === 0
-              ? t('form.noFolders')
-              : (err('rootFolder', missing.folder) ?? undefined)
-          }
-          className="medium:col-span-2"
-        >
-          <Select
-            value={d.rest.rootFolder || undefined}
-            disabled={o.folders.length === 0}
-            onValueChange={(rootFolder) => setRest({ rootFolder })}
-            options={o.folders.map((f) => ({ value: f, label: f }))}
-            className="font-mono"
-          />
-        </Field>
-        <Field label={t('form.qualityProfile')} error={err('qualityProfileId', false)}>
-          <Select
-            value={d.rest.qualityProfileId || undefined}
-            onValueChange={(qualityProfileId) => setRest({ qualityProfileId })}
-            options={o.quality.map((p) => ({ value: p.id, label: p.name }))}
-          />
-        </Field>
-        <Field label={t('form.languageProfile')} error={err('languageProfileId', false)}>
-          <Select
-            value={d.rest.languageProfileId ?? 'none'}
-            onValueChange={(v) => setRest({ languageProfileId: v === 'none' ? null : v })}
-            options={[
-              { value: 'none', label: t('form.languageNone') },
-              ...o.language.map((p) => ({ value: p.id, label: p.name })),
-            ]}
-          />
-        </Field>
-        <Field label={tt('label')} hint={tt('hint.list')} className="medium:col-span-2">
-          <TagPicker value={d.rest.tags ?? []} onChange={(tags) => setRest({ tags })} />
-        </Field>
-        <Field label={t('form.availability')} className="medium:col-span-2">
-          <Select
-            value={d.rest.minimumAvailability}
-            onValueChange={(v) => setRest({ minimumAvailability: v as MinimumAvailability })}
-            options={AVAILABILITY.map((value) => ({
-              value,
-              label: t(`availability.${value}`),
-            }))}
-          />
-        </Field>
-        <Field
-          inline
-          label={t('form.monitored')}
-          hint={t('form.monitoredHint')}
-          className="medium:col-span-2"
-        >
+            <Select
+              value={d.rest.rootFolder || undefined}
+              disabled={o.folders.length === 0}
+              onValueChange={(rootFolder) => setRest({ rootFolder })}
+              options={o.folders.map((f) => ({ value: f, label: f, mono: true }))}
+            />
+          </Field>
+        </Cell>
+        <Cell half>
+          <Field label={t('form.qualityProfile')} error={err('qualityProfileId', false)}>
+            <Select
+              value={d.rest.qualityProfileId || undefined}
+              onValueChange={(qualityProfileId) => setRest({ qualityProfileId })}
+              options={o.quality.map((p) => ({ value: p.id, label: p.name }))}
+            />
+          </Field>
+        </Cell>
+        <Cell half>
+          <Field label={t('form.languageProfile')} error={err('languageProfileId', false)}>
+            <Select
+              value={d.rest.languageProfileId ?? 'none'}
+              onValueChange={(v) => setRest({ languageProfileId: v === 'none' ? null : v })}
+              options={[
+                { value: 'none', label: t('form.languageNone') },
+                ...o.language.map((p) => ({ value: p.id, label: p.name })),
+              ]}
+            />
+          </Field>
+        </Cell>
+        <Cell>
+          <Field label={tt('label')} hint={tt('hint.list')}>
+            <TagPicker value={d.rest.tags ?? []} onChange={(tags) => setRest({ tags })} />
+          </Field>
+        </Cell>
+        <Cell>
+          <Field label={t('form.availability')}>
+            <Select
+              value={d.rest.minimumAvailability}
+              onValueChange={(v) => setRest({ minimumAvailability: v as MinimumAvailability })}
+              options={AVAILABILITY.map((value) => ({
+                value,
+                label: t(`availability.${value}`),
+              }))}
+            />
+          </Field>
+        </Cell>
+        <Cell>
           <Switch
+            label={t('form.monitored')}
+            hint={t('form.monitoredHint')}
             checked={d.rest.monitored}
             onCheckedChange={(monitored) => setRest({ monitored })}
           />
-        </Field>
-        <Field
-          inline
-          label={t('form.searchOnAdd')}
-          hint={t('form.searchOnAddHint')}
-          className="medium:col-span-2"
-        >
+        </Cell>
+        <Cell>
           <Switch
+            label={t('form.searchOnAdd')}
+            hint={t('form.searchOnAddHint')}
             checked={d.rest.searchOnAdd}
             onCheckedChange={(searchOnAdd) => setRest({ searchOnAdd })}
           />
-        </Field>
-        <Field inline label={t('form.enabled')} className="medium:col-span-2">
-          <Switch checked={d.rest.enabled} onCheckedChange={(enabled) => setRest({ enabled })} />
-        </Field>
+        </Cell>
+        <Cell>
+          <Switch
+            label={t('form.enabled')}
+            checked={d.rest.enabled}
+            onCheckedChange={(enabled) => setRest({ enabled })}
+          />
+        </Cell>
         {failure &&
           ![
             'name',
@@ -656,17 +662,14 @@ function ListForm({
             'qualityProfileId',
             'languageProfileId',
           ].includes(failure.field ?? '') && (
-            <p
-              role="alert"
-              className="rounded-md border border-line bg-s2 p-3 text-caption text-danger medium:col-span-2"
-            >
-              {failure.message}
-            </p>
+            <Cell>
+              <Card role="alert">
+                <Note color="danger">{failure.message}</Note>
+              </Card>
+            </Cell>
           )}
-        {/* lets Enter submit */}
-        <button type="submit" hidden />
-      </form>
-    </DialogContent>
+      </FormGrid>
+    </Dialog>
   )
 }
 
@@ -676,6 +679,7 @@ type Connecting = { code: TraktDeviceCode } | { ended: 'expired' | 'denied' } | 
 
 function Trakt({ status, reload }: { status: TraktStatus | undefined; reload: () => void }) {
   const t = useT(messages)
+  const { colors } = useTheme()
   const [connecting, setConnecting] = useState<Connecting>(null)
   const [confirm, setConfirm] = useState(false)
   const connect = useAction((c) => c.importLists.traktConnect())
@@ -725,26 +729,43 @@ function Trakt({ status, reload }: { status: TraktStatus | undefined; reload: ()
   return (
     <Group title={t('trakt.title')} description={t('trakt.description')}>
       {!status ? null : !status.available ? (
-        <p className="text-caption text-text-3">{t('trakt.unavailable')}</p>
+        <Note>{t('trakt.unavailable')}</Note>
       ) : status.account ? (
-        <div className="flex flex-wrap items-center gap-3">
-          <p className="me-auto text-text-2 text-ui">
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: s['3'] }}>
+          <Line color="text-2" style={{ marginEnd: 'auto' }}>
             {t('trakt.connected', { account: status.account })}
-          </p>
-          <Button size="sm" variant="danger" onClick={() => setConfirm(true)}>
+          </Line>
+          <Button size="sm" variant="danger" onPress={() => setConfirm(true)}>
             {t('trakt.disconnect')}
           </Button>
-        </div>
+        </View>
       ) : code ? (
-        <div className="grid gap-3">
-          <p className="text-text-2 text-ui">
+        <View style={{ gap: s['3'], alignItems: 'flex-start' }}>
+          <Line color="text-2">
             <TraktCodeLine t={t} url={code.verificationUrl} />
-          </p>
-          <p className="justify-self-start rounded-md border border-line bg-s2 px-4 py-2 font-mono text-text text-title tracking-widest">
-            <span className="sr-only">{t('trakt.codeLabel')}: </span>
-            {code.userCode}
-          </p>
-          <p role="status" className="text-caption text-text-3">
+          </Line>
+          <View
+            aria-label={`${t('trakt.codeLabel')}: ${code.userCode}`}
+            style={{
+              paddingHorizontal: s['4'],
+              paddingVertical: s['2'],
+              borderWidth: 1,
+              borderColor: colors.line,
+              borderRadius: tokens.radius.md,
+              backgroundColor: colors.s2,
+            }}
+          >
+            <Text
+              mono
+              variant="title"
+              color="text"
+              aria-hidden
+              style={{ letterSpacing: CODE_TRACKING }}
+            >
+              {code.userCode}
+            </Text>
+          </View>
+          <Note role="status">
             {t('trakt.waiting')}{' '}
             {t('trakt.expires', {
               at: new Date(code.expiresAt).toLocaleTimeString(undefined, {
@@ -752,34 +773,31 @@ function Trakt({ status, reload }: { status: TraktStatus | undefined; reload: ()
                 minute: '2-digit',
               }),
             })}
-          </p>
-          <Button
-            size="sm"
-            variant="ghost"
-            className="justify-self-start"
-            onClick={() => setConnecting(null)}
-          >
+          </Note>
+          <Button size="sm" variant="ghost" onPress={() => setConnecting(null)}>
             {t('trakt.cancel')}
           </Button>
-        </div>
+        </View>
       ) : (
-        <div className="grid gap-3">
+        <View style={{ gap: s['3'] }}>
           {connecting && 'ended' in connecting && (
-            <p role="status" className="text-caption text-text-2">
+            <Note role="status" color="text-2">
               {t(connecting.ended === 'expired' ? 'trakt.expired' : 'trakt.denied')}
-            </p>
+            </Note>
           )}
-          <div className="flex flex-wrap items-center gap-3">
-            <p className="me-auto text-caption text-text-3">{t('trakt.none')}</p>
-            <Button size="sm" loading={connect.pending} onClick={start}>
+          <View
+            style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: s['3'] }}
+          >
+            <Note style={{ marginEnd: 'auto' }}>{t('trakt.none')}</Note>
+            <Button size="sm" loading={connect.pending} onPress={start}>
               {t('trakt.connect')}
             </Button>
-          </div>
-        </div>
+          </View>
+        </View>
       )}
       <ConfirmDialog
         open={confirm}
-        onOpenChange={setConfirm}
+        onClose={() => setConfirm(false)}
         title={t('trakt.disconnectTitle', { account: status?.account ?? '' })}
         description={t('trakt.disconnectBody')}
         confirmLabel={t('trakt.disconnect')}
@@ -798,20 +816,28 @@ function Trakt({ status, reload }: { status: TraktStatus | undefined; reload: ()
   )
 }
 
-/** "Go to trakt.tv/activate and enter this code", with the address as a link. */
+/**
+ * "Go to trakt.tv/activate and enter this code", with the address as a link inside the sentence:
+ * a nested Text with react-native-web's `href` and `hrefAttrs`, which it draws as an `<a>`
+ * (https://necolas.github.io/react-native-web/docs/text/), opening in a new tab as before.
+ */
 function TraktCodeLine({ t, url }: { t: T; url: string }) {
   const [before, after] = t('trakt.code', { url: '\u0000' }).split('\u0000')
+  const ui = tokens.adminText.ui
   return (
     <>
       {before}
-      <a
-        href={url}
-        target="_blank"
-        rel="noreferrer"
-        className="text-text underline underline-offset-2"
+      <Text
+        size={ui.size}
+        leading={ui.leading}
+        color="text"
+        role="link"
+        style={{ textDecorationLine: 'underline' }}
+        onPress={Platform.OS === 'web' ? undefined : () => Linking.openURL(url)}
+        {...({ href: url, hrefAttrs: { target: '_blank', rel: 'noreferrer' } } as object)}
       >
         {url.replace(/^https?:\/\//, '')}
-      </a>
+      </Text>
       {after}
     </>
   )
@@ -833,24 +859,22 @@ function Exclusions() {
       <Loadable query={exclusions} what={t('exclusions.what')}>
         {(xs) =>
           xs.length === 0 ? (
-            <p className="text-caption text-text-3">{t('exclusions.none')}</p>
+            <Note>{t('exclusions.none')}</Note>
           ) : (
-            <ul aria-label={t('exclusions.title')} className="grid gap-2">
+            <Cards label={t('exclusions.title')}>
               {xs.map((e) => (
-                <li
+                <Card
                   key={e.tmdbId}
-                  className="flex flex-wrap items-center gap-3 rounded-md border border-line bg-s2 p-3"
+                  style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center' }}
                 >
-                  <div className="me-auto grid min-w-0 gap-0.5">
-                    <p className="text-text text-ui [overflow-wrap:anywhere]">{name(e)}</p>
-                    <p className="text-caption text-text-3">
-                      {t('exclusions.added', { ago: relative(e.createdAt) })}
-                    </p>
-                  </div>
+                  <View style={{ marginEnd: 'auto', minWidth: 0, flexShrink: 1, gap: s['0.5'] }}>
+                    <Line style={WRAP_ANYWHERE}>{name(e)}</Line>
+                    <Note>{t('exclusions.added', { ago: relative(e.createdAt) })}</Note>
+                  </View>
                   <Button
                     size="sm"
-                    aria-label={t('exclusions.removeLabel', { title: name(e) })}
-                    onClick={() =>
+                    accessibilityLabel={t('exclusions.removeLabel', { title: name(e) })}
+                    onPress={() =>
                       remove.run(e.tmdbId).then(
                         () => {
                           toast({ title: t('exclusions.removed', { title: name(e) }) })
@@ -863,9 +887,9 @@ function Exclusions() {
                   >
                     {t('exclusions.remove')}
                   </Button>
-                </li>
+                </Card>
               ))}
-            </ul>
+            </Cards>
           )
         }
       </Loadable>

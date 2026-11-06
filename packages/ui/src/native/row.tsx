@@ -15,13 +15,16 @@
 //   (posters 10.5u, wide tiles 17u), so where they land is worked out, not measured; the row is a
 //   focus guide with `autoFocus`, so coming back to it lands on the item left
 //   (react-native-tvos's TVFocusGuideView). In a browser the engine pair does the same.
+// Only the touch form is virtual: a pointer's and the TV's rows draw every item, since their keys
+// and focus move along the drawn items, and a shelf is short.
 // Each form is a group named by its title (https://www.w3.org/TR/wai-aria-1.2/#group), not a list:
 // a list may hold only its items, and the row holds its heading and arrows too.
 import { breakpoints, formFactorLayouts, web } from '@highsea-tv/tokens'
 import { type ComponentRef, type ReactNode, type Ref, useEffect, useRef, useState } from 'react'
-import { FlatList, ScrollView, useWindowDimensions, View } from 'react-native'
+import { ScrollView, useWindowDimensions, View } from 'react-native'
 import { moveInRow, roveRow } from './dom'
 import { RowArrow } from './row-arrow.tsx'
+import { ScrollView as LibraryScrollView } from './scroll-view.tsx'
 import { SectionHeading } from './section-heading.tsx'
 import { PosterSkeleton, Skeleton } from './skeleton.tsx'
 import { tokens, useMotionReduced, useTheme } from './theme.tsx'
@@ -29,8 +32,11 @@ import { FocusGuide, TvScroll } from './tv/engine'
 import { StopScope, type ViewHandle } from './tv/focusable.tsx'
 import { KEEP, keptAt } from './tv/model.ts'
 import { WIDE_WIDTH } from './tv/tiles.tsx'
+import { Virtual } from './virtual.tsx'
 
 const { gutter: phoneGutter, posterGap } = tokens.mobile
+/** A touch row's item before it's measured, when the row gives no width: about a poster's. */
+const TOUCH_ESTIMATE = 120
 
 /** A pointer row's items' gap, as the web prototype's `gap-3`. */
 const POINTER_GAP = tokens.space['3']
@@ -151,18 +157,32 @@ function TouchForm<T>({
           inset={phoneGutter}
         />
       )}
-      <FlatList
+      {/* the library's virtual list, as the grids' (./virtual.tsx): a long row draws the items
+          near the screen */}
+      <LibraryScrollView
         horizontal
-        data={items}
-        keyExtractor={(item) => String(keyOf(item))}
-        renderItem={({ item, index }) => <>{render(item, { index, onFocus: noFocus })}</>}
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: phoneGutter, gap: itemGap }}
-        initialNumToRender={6}
+        contentContainerStyle={{ paddingHorizontal: phoneGutter }}
         {...(itemWidth
           ? { snapToInterval: itemWidth + itemGap, decelerationRate: 'fast' as const }
           : {})}
-      />
+      >
+        <Virtual
+          count={items.length}
+          estimateSize={() => itemWidth ?? TOUCH_ESTIMATE}
+          getKey={(i) => {
+            const item = items[i]
+            return item === undefined ? i : String(keyOf(item))
+          }}
+          gap={itemGap}
+          render={(index, onLayout) => {
+            const item = items[index]
+            return item === undefined ? null : (
+              <View onLayout={onLayout}>{render(item, { index, onFocus: noFocus })}</View>
+            )
+          }}
+        />
+      </LibraryScrollView>
     </View>
   )
 }

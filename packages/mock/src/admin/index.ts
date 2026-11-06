@@ -5,9 +5,16 @@
 // subtitles and indexers. The transport merges them under the routes it answers itself.
 import { curationAnswers } from './curation.ts'
 import { dashboardAnswers } from './dashboard.ts'
+import { flowsAnswers } from './flows.ts'
+import { integrationsAnswers } from './integrations.ts'
 import type { AdminKit, Answers } from './kit.ts'
 import { moviesAnswers } from './movies.ts'
+import { peopleAnswers } from './people.ts'
+import { qualityAnswers } from './quality.ts'
+import { settingsGeneralAnswers } from './settings-general.ts'
+import { showsAnswers } from './shows.ts'
 import { subtitlesAnswers } from './subtitles.ts'
+import { systemAnswers } from './system.ts'
 import { workAnswers } from './work.ts'
 
 export type { AdminKit } from './kit.ts'
@@ -20,6 +27,13 @@ export function adminAnswers(kit: AdminKit): Answers {
     curationAnswers(kit),
     workAnswers(kit),
     subtitlesAnswers(kit),
+    qualityAnswers(kit),
+    showsAnswers(kit),
+    integrationsAnswers(kit),
+    peopleAnswers(kit),
+    flowsAnswers(kit),
+    settingsGeneralAnswers(kit),
+    systemAnswers(kit),
   ] as Record<string, Record<string, unknown>>[])
     for (const [group, routes] of Object.entries(area)) out[group] = { ...out[group], ...routes }
   return out as Answers

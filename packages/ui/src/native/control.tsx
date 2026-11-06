@@ -67,6 +67,12 @@ export type ControlPressProps = {
    * `onPress` is the way.
    */
   href?: string
+  /**
+   * How the browser follows `href`: `download` saves what it leads to (the admin's logs and
+   * backups), `external` opens it in a new tab without the referrer (react-native-web's
+   * `hrefAttrs`, https://necolas.github.io/react-native-web/docs/view/#hrefattrs).
+   */
+  follow?: 'download' | 'external'
   /** The drawn height, and the width when it's fixed, for touch's hit area. */
   slop?: { height: number; width?: number }
   /** The corner the TV's ring follows. */
@@ -94,6 +100,14 @@ export function lookAt<L extends ControlLook>(
   return state.hovered && look.hover ? { ...look, ...look.hover } : look
 }
 
+/** react-native-web's `hrefAttrs` for how a link is followed. */
+const hrefAttrsOf = (follow: ControlPressProps['follow']) =>
+  follow === 'download'
+    ? { download: true }
+    : follow === 'external'
+      ? { target: '_blank', rel: 'noreferrer' }
+      : undefined
+
 /** A control's press target, by the platform's rule. */
 export function ControlPress({
   onPress,
@@ -110,6 +124,7 @@ export function ControlPress({
   hasPopup,
   current,
   href,
+  follow,
   slop,
   radius,
   lift = 'button',
@@ -159,7 +174,7 @@ export function ControlPress({
       state={state}
       hasPopup={hasPopup}
       current={current}
-      {...(href && WEB ? ({ href } as object) : null)}
+      {...(href && WEB ? ({ href, hrefAttrs: hrefAttrsOf(follow) } as object) : null)}
       slop={slop}
       haptic={haptic}
       testID={testID}

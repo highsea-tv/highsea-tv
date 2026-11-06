@@ -3,8 +3,10 @@
 // on the phone and with a pointer, a film's poster and a collection's tile (each @highsea-tv/ui's
 // Poster, worded by @highsea-tv/client/films), a TV page's title and its empty words, and the
 // page's loading mark. Search and a film's page can draw the same grid and tiles.
-// - The grid is a FlatList, so a library of thousands draws only the rows on screen
-//   (https://reactnative.dev/docs/flatlist, `numColumns`). A phone's compact width is three a row,
+// - The grid draws only the rows near the screen, so a library of thousands stays light: its rows
+//   are the library's `Virtual` list (TanStack Virtual's core, ADR 0061's 2026-11-06 section) in
+//   the page's own ScrollView, three rows drawn past each end so the TV's focus always has
+//   somewhere to go. A phone's compact width is three a row,
 //   8 apart and 16 between rows (the prototype's mobile `grid-cols-3 gap-x-2 gap-y-4`); everything
 //   else fills the width with posters of at least 9rem, 16 apart and 24 between rows (the web
 //   prototype's `repeat(auto-fill,minmax(9rem,1fr))`), so an iPad and a narrow browser draw a
@@ -34,11 +36,12 @@ import {
   useFormFactor,
   useMotionReduced,
   useTheme,
+  Virtual,
+  type VirtualList,
 } from '@highsea-tv/ui'
 import type { ViewHandle } from '@highsea-tv/ui/tv'
 import { type Href, router } from 'expo-router'
 import {
-  type ComponentProps,
   type ReactElement,
   type ReactNode,
   type Ref,
@@ -50,7 +53,6 @@ import {
 } from 'react'
 import {
   Animated,
-  FlatList,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
   type RefreshControlProps,
@@ -198,7 +200,7 @@ export function LibraryGridList<T>({
   ref,
 }: LibraryGridListProps<T>) {
   const klass = useWidthClass(widthClass)
-  const list = useRef<FlatList<readonly T[]>>(null)
+  const list = useRef<VirtualList>(null)
   // the width it's laid out at, less its insets; until then the window's, so the first frame is
   // near enough
   const window = useWindowDimensions().width
@@ -212,35 +214,18 @@ export function LibraryGridList<T>({
     for (let i = 0; i < items.length; i += columns) out.push(items.slice(i, i + columns))
     return out
   }, [items, columns])
-  // between rows: one component for the list's life, so it isn't remade each render
-  const Separator = useMemo(() => {
-    const height = gap.row
-    return function RowGap() {
-      return <View style={{ height }} />
-    }
-  }, [gap.row])
-  // the fallback's second try, cleared if the page goes first
-  const retry = useRef<ReturnType<typeof setTimeout> | null>(null)
-  useEffect(() => () => clearTimeout(retry.current ?? undefined), [])
+  // a row before it's measured: a poster (2:3) and its two lines under it
+  const cell = Math.max(0, (span - (lead?.room ?? 0) - (columns - 1) * gap.column) / columns)
+  const estimate = Math.round(cell * 1.5 + ROW_WORDS)
   // biome-ignore lint/correctness/useExhaustiveDependencies: the handle reads this render's rows
   useImperativeHandle(ref, () => ({
     toItem: (index, { animated, offset }) => {
       const row = Math.floor(index / columns)
-      if (row < rows.length)
-        list.current?.scrollToIndex({ index: row, animated, viewOffset: offset })
+      if (row < rows.length) list.current?.scrollToIndex(row, { animated, offset })
     },
   }))
   return (
-    <FlatList<readonly T[]>
-      ref={list}
-      // the library's ScrollView, so the web draws its own scrollbar over the page
-      // (the cast: the library's react-native-tvos types are another copy's than the app's)
-      renderScrollComponent={(props) => (
-        <ScrollView {...(props as ComponentProps<typeof ScrollView>)} />
-      )}
-      data={rows}
-      // a row by its first item, which no other row holds
-      keyExtractor={(row, r) => (row[0] === undefined ? String(r) : keyOf(row[0]))}
+    <ScrollView
       onLayout={(e) => setLaid(e.nativeEvent.layout.width)}
       onScroll={onScroll}
       scrollEventThrottle={16}
@@ -250,57 +235,62 @@ export function LibraryGridList<T>({
         paddingEnd: inset + insetEnd,
         paddingBottom: bottom,
       }}
-      ListHeaderComponent={
-        header ? (
-          <View onLayout={(e) => onGridTop?.(e.nativeEvent.layout.height)}>{header}</View>
-        ) : undefined
-      }
-      ListEmptyComponent={empty}
-      ItemSeparatorComponent={Separator}
-      renderItem={({ item: row, index: r }) => (
-        <View style={{ flexDirection: 'row' }}>
-          {lead ? <Animated.View style={{ width: lead.width }} /> : null}
-          <View
-            role="list"
-            // the first row names the grid; the rest are its continuation
-            accessibilityLabel={r === 0 ? label : undefined}
-            style={{ flex: 1, flexDirection: 'row', columnGap: gap.column }}
-          >
-            {Array.from({ length: columns }, (_, c) => {
-              const item = row[c]
-              // a short last row keeps the columns' width with empty places
-              return item === undefined ? (
-                <View key={`empty-${String(c)}`} aria-hidden style={{ flex: 1 }} />
-              ) : (
-                <View
-                  key={keyOf(item)}
-                  role="listitem"
-                  {...placeOf(r * columns + c, items.length)}
-                  style={{ flex: 1, minWidth: 0 }}
-                >
-                  {render(item, r * columns + c)}
-                </View>
-              )
-            })}
-          </View>
-        </View>
-      )}
-      // a row the jump hasn't measured yet: go near it by the rows' average, then exactly
-      // (https://reactnative.dev/docs/flatlist#onscrolltoindexfailed)
-      onScrollToIndexFailed={(info) => {
-        list.current?.scrollToOffset({
-          offset: info.averageItemLength * info.index,
-          animated: false,
-        })
-        clearTimeout(retry.current ?? undefined)
-        retry.current = setTimeout(
-          () => list.current?.scrollToIndex({ index: info.index, animated: false }),
-          0,
-        )
-      }}
-    />
+    >
+      {header ? (
+        <View onLayout={(e) => onGridTop?.(e.nativeEvent.layout.height)}>{header}</View>
+      ) : null}
+      {rows.length === 0 ? empty : null}
+      <Virtual
+        ref={list}
+        count={rows.length}
+        estimateSize={() => estimate}
+        // a row by its first item, which no other row holds
+        getKey={(r) => {
+          const first = rows[r]?.[0]
+          return first === undefined ? String(r) : keyOf(first)
+        }}
+        gap={gap.row}
+        overscan={OVERSCAN_ROWS}
+        render={(r, onLayout) => {
+          const row = rows[r] ?? []
+          return (
+            <View onLayout={onLayout} style={{ flexDirection: 'row' }}>
+              {lead ? <Animated.View style={{ width: lead.width }} /> : null}
+              <View
+                role="list"
+                // the first row names the grid; the rest are its continuation
+                accessibilityLabel={r === 0 ? label : undefined}
+                style={{ flex: 1, flexDirection: 'row', columnGap: gap.column }}
+              >
+                {Array.from({ length: columns }, (_, c) => {
+                  const item = row[c]
+                  // a short last row keeps the columns' width with empty places
+                  return item === undefined ? (
+                    <View key={`empty-${String(c)}`} aria-hidden style={{ flex: 1 }} />
+                  ) : (
+                    <View
+                      key={keyOf(item)}
+                      role="listitem"
+                      {...placeOf(r * columns + c, items.length)}
+                      style={{ flex: 1, minWidth: 0 }}
+                    >
+                      {render(item, r * columns + c)}
+                    </View>
+                  )
+                })}
+              </View>
+            </View>
+          )
+        }}
+      />
+    </ScrollView>
   )
 }
+
+/** The room a poster's title and year take under it, for a row's estimate before it's measured. */
+const ROW_WORDS = 48
+/** Rows drawn past each end of the screen: the TV's focus moves onto them before they show. */
+const OVERSCAN_ROWS = 3
 
 /**
  * A value that springs to `target` with spring.quick (columns opening and closing, as the

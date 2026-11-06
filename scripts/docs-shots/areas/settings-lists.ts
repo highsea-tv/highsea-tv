@@ -41,7 +41,7 @@ export default {
       height: 1400,
       act: async (p) => {
         await add('Trakt')(p)
-        await p.getByRole('dialog').getByRole('combobox', { name: 'List' }).click()
+        await p.getByRole('dialog').getByRole('button', { name: 'List', exact: true }).click()
       },
       // the open menu hides the dialog from the accessibility tree
       crop: (p) => p.locator('[role="dialog"]'),
@@ -61,7 +61,7 @@ export default {
         await p.getByRole('menuitem', { name: 'Remove from library' }).click()
         await p.getByText('Don’t add it again from lists').click()
       },
-      crop: (p) => p.getByRole('alertdialog'),
+      crop: (p) => p.getByRole('dialog'),
     },
   ],
 } satisfies Area

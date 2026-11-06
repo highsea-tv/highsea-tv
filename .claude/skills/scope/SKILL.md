@@ -10,7 +10,7 @@ Write the plan the owner reviews before any work starts. **Build nothing**: no c
 
 ## Before writing
 
-1. Read `CLAUDE.md` ("Where things stand"), `docs/roadmap.md` and the plan this work belongs to (for Phase 3, `docs/plans/phase-3-server.md`: its standing rules, exit criteria and checkpoint list).
+1. Read `docs/status.md` (the entry for this work), `docs/roadmap.md` and the plan this work belongs to (for Phase 3, `docs/plans/phase-3-server.md`: its standing rules, exit criteria and checkpoint list).
 2. Read the most recent checkpoint plan end to end (`ls -t docs/plans/`) and copy its shape. Read its "what it leaves for later" and Progress sections: open items often belong in the new scope.
 3. Read the specs in `docs/product/` and the prototypes in `design/prototypes/src/` that the work covers. They're locked; the plan builds to them.
 4. Read the ADRs the work touches (`docs/adr/README.md` is the index).
@@ -35,7 +35,7 @@ Write the plan the owner reviews before any work starts. **Build nothing**: no c
 
 ## Then
 
-- Add a line for the scope to `CLAUDE.md`'s "Where things stand", and to the roadmap if this is a new phase or follow-up.
+- Add a line for the scope to `docs/status.md` (and, if it is the next work, CLAUDE.md's "Now"), and to the roadmap if this is a new phase or follow-up.
 - Write in the house voice (`docs/brand/brief.md` § 6): plain, specific, no exclamation marks. Avoid "we'll" and use the owner's terms.
 - Report briefly: what's in scope, how it's split into parts, and how many open questions there are. Offer to go through them with `/questions`.
 - Commit only if the owner asks (then `/signoff`'s commit rules apply). Don't start the work.

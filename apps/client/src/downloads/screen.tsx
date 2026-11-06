@@ -30,7 +30,7 @@ import { Redirect } from 'expo-router'
 import { useState } from 'react'
 import { RefreshControl, useWindowDimensions, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { GetTheAppsDialog } from '../account/get-the-apps.tsx'
+import { ServerAppsDialog } from '../account/get-the-apps.tsx'
 import { KeptIn } from '../desktop/kept-in.tsx'
 import { TouchHeader } from '../kit.tsx'
 import { OfflineList } from './list.tsx'
@@ -184,7 +184,7 @@ function BrowserDownloads() {
         >
           {t('browserBody')}
         </EmptyState>
-        <GetTheAppsDialog open={apps} onOpenChange={setApps} />
+        <ServerAppsDialog open={apps} onOpenChange={setApps} />
       </View>
     </View>
   )

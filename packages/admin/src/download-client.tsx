@@ -1,6 +1,4 @@
 'use client'
-import type { DownloadClientSettings } from '@highsea-tv/api-contract'
-import { useT } from '@highsea-tv/i18n/react'
 // SPDX-License-Identifier: AGPL-3.0-only
 // Settings › Download client (settings.md), ported from the signed-off prototype's DownloadClient
 // (design/prototypes/src/admin/settings/reference.tsx): the VPN in one line with the way to
@@ -14,16 +12,22 @@ import { useT } from '@highsea-tv/i18n/react'
 //   there.
 // 6b adds two groups no prototype screen has (judgement calls in phase-3-checkpoint-6.md): the
 // watch folder, saved with the rest, and the categories, which save at once (download-categories).
+// Since D3 (one-client-platform-d.md) it's drawn with the library's native renderer, on the web
+// through react-native-web, with the same parts, words and behaviour as the web renderer's.
+import type { DownloadClientSettings } from '@highsea-tv/api-contract'
+import { useT } from '@highsea-tv/i18n/react'
 import type { ApiError } from '@highsea-tv/sdk'
 import { useAction, useQuery } from '@highsea-tv/sdk/react'
-import { Button, Field, Input, Select, Switch, toast } from '@highsea-tv/ui'
+import { Button, Field, Input, Select, Switch, Text, toast } from '@highsea-tv/ui/native'
 import { useState } from 'react'
 import { CATEGORY_TOPICS, Categories } from './download-categories.tsx'
 import { watchFolder as watchMessages } from './download-categories-messages.ts'
 import { downloadClient as messages } from './download-client-messages.ts'
 import { hoursText, minutesOf, ratioOf, ratioText } from './download-client-seeding.ts'
 import { Loadable } from './loadable.tsx'
+import { InlineLink } from './media-sections.tsx'
 import { AreaPage, Group, SaveBar } from './settings.tsx'
+import { Columns } from './settings-columns.tsx'
 import { VpnSummary } from './vpn.tsx'
 
 type Draft = {
@@ -75,8 +79,8 @@ export function DownloadClient() {
       <Group title={t('vpn.title')}>
         <VpnSummary
           action={
-            <Button size="sm" variant="secondary" asChild>
-              <a href="/settings/vpn">{t('vpn.settings')}</a>
+            <Button size="sm" variant="secondary" href="/settings/vpn">
+              {t('vpn.settings')}
             </Button>
           }
         />
@@ -86,13 +90,9 @@ export function DownloadClient() {
         {(s) => <Form key={JSON.stringify(s)} loaded={s} reload={data.refetch} />}
       </Loadable>
       <Categories />
-      <p className="text-caption text-text-3">
-        {t('elsewhere.before')}{' '}
-        <a href="/downloads" className="text-text underline underline-offset-2">
-          {t('elsewhere.link')}
-        </a>
-        .
-      </p>
+      <Text variant="caption" color="text-3">
+        {t('elsewhere.before')} <InlineLink href="/downloads">{t('elsewhere.link')}</InlineLink>.
+      </Text>
     </AreaPage>
   )
 }
@@ -161,16 +161,14 @@ function Form({ loaded, reload }: { loaded: DownloadClientSettings; reload: () =
   return (
     <>
       <Group title={t('connections.title')}>
-        <div className="grid items-start gap-4 medium:grid-cols-3">
+        <Columns shares={[1, 1, 1]}>
           <Field label={t('port')} error={show(port === undefined, t('portInvalid'))}>
             <Input
-              type="number"
               inputMode="numeric"
-              min={1024}
-              max={65535}
+              keyboardType="number-pad"
+              mono
               value={v.port}
-              onChange={(e) => set({ port: e.target.value })}
-              className="font-mono"
+              onChangeText={(port) => set({ port })}
             />
           </Field>
           <Field label={t('encryption')}>
@@ -189,21 +187,25 @@ function Form({ loaded, reload }: { loaded: DownloadClientSettings; reload: () =
             error={show(maxActive === undefined, t('maxActiveInvalid'))}
           >
             <Input
-              type="number"
               inputMode="numeric"
-              min={1}
-              max={20}
+              keyboardType="number-pad"
               value={v.maxActive}
-              onChange={(e) => set({ maxActive: e.target.value })}
+              onChangeText={(maxActive) => set({ maxActive })}
             />
           </Field>
-        </div>
-        <Field inline label={t('upnp')} hint={t('upnpHint')}>
-          <Switch checked={v.upnp} onCheckedChange={(upnp) => set({ upnp })} />
-        </Field>
-        <Field inline label={t('utp')} hint={t('utpHint')}>
-          <Switch checked={v.utp} onCheckedChange={(utp) => set({ utp })} />
-        </Field>
+        </Columns>
+        <Switch
+          label={t('upnp')}
+          hint={t('upnpHint')}
+          checked={v.upnp}
+          onCheckedChange={(upnp) => set({ upnp })}
+        />
+        <Switch
+          label={t('utp')}
+          hint={t('utpHint')}
+          checked={v.utp}
+          onCheckedChange={(utp) => set({ utp })}
+        />
         <Field
           label={t('blocklist')}
           hint={t('blocklistHint')}
@@ -214,26 +216,23 @@ function Form({ loaded, reload }: { loaded: DownloadClientSettings; reload: () =
             placeholder={t('blocklistPlaceholder')}
             spellCheck={false}
             autoComplete="off"
-            onChange={(e) => set({ blocklistUrl: e.target.value })}
-            className="font-mono"
+            mono
+            onChangeText={(blocklistUrl) => set({ blocklistUrl })}
           />
         </Field>
       </Group>
       <Group title={t('seeding.title')} description={t('seeding.description')}>
-        <div className="grid items-start gap-4 medium:grid-cols-3">
+        <Columns shares={[1, 1, 1]}>
           <Field
             label={t('seedRatio')}
             hint={t('seedRatioHint')}
             error={show(seedRatio === undefined, t('seedRatioInvalid'))}
           >
             <Input
-              type="number"
               inputMode="decimal"
-              min={0}
-              max={100}
-              step="0.1"
+              keyboardType="decimal-pad"
               value={v.seedRatio}
-              onChange={(e) => set({ seedRatio: e.target.value })}
+              onChangeText={(seedRatio) => set({ seedRatio })}
             />
           </Field>
           <Field
@@ -242,17 +241,18 @@ function Form({ loaded, reload }: { loaded: DownloadClientSettings; reload: () =
             error={show(seedMinutes === undefined, t('seedHoursInvalid'))}
           >
             <Input
-              type="number"
               inputMode="decimal"
-              min={0}
+              keyboardType="decimal-pad"
               value={v.seedHours}
-              onChange={(e) => set({ seedHours: e.target.value })}
+              onChangeText={(seedHours) => set({ seedHours })}
             />
           </Field>
-        </div>
+          {/* the third of the row stays empty, as the web's three columns left it */}
+          {null}
+        </Columns>
       </Group>
       <Group title={tw('title')} description={tw('description')}>
-        <div className="grid items-start gap-4 medium:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+        <Columns shares={[2, 1]}>
           <Field label={tw('folder')} hint={tw('folderHint')} error={watchError ?? undefined}>
             <Input
               value={v.watchFolder}
@@ -260,10 +260,10 @@ function Form({ loaded, reload }: { loaded: DownloadClientSettings; reload: () =
               placeholder={tw('folderPlaceholder')}
               spellCheck={false}
               autoCapitalize="none"
-              className="font-mono"
-              onChange={(e) => {
+              mono
+              onChangeText={(watchFolder) => {
                 setWatchError(null)
-                set({ watchFolder: e.target.value })
+                set({ watchFolder })
               }}
             />
           </Field>
@@ -276,7 +276,7 @@ function Form({ loaded, reload }: { loaded: DownloadClientSettings; reload: () =
                 .map((c) => ({ value: c.name, label: c.name }))}
             />
           </Field>
-        </div>
+        </Columns>
       </Group>
       <SaveBar
         dirty={dirty}

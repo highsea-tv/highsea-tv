@@ -29,7 +29,6 @@ const { act, cleanup, render, within } = await import('@testing-library/react')
 const { default: userEvent } = await import('@testing-library/user-event')
 const { createClient } = await import('@highsea-tv/sdk')
 const { ClientProvider } = await import('@highsea-tv/sdk/react')
-const { TooltipProvider } = await import('@highsea-tv/ui')
 const { ThemeProvider, toast } = await import('@highsea-tv/ui/native')
 const { Curation } = await import('../src/curation.tsx')
 const { AnnouncementEditor } = await import('../src/curation-announcement.tsx')
@@ -180,9 +179,7 @@ async function open(ui: ReactNode) {
   await act(async () => {
     render(
       <ClientProvider client={client}>
-        <ThemeProvider>
-          <TooltipProvider>{ui}</TooltipProvider>
-        </ThemeProvider>
+        <ThemeProvider>{ui}</ThemeProvider>
       </ClientProvider>,
     )
   })

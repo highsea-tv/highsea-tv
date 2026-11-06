@@ -1,47 +1,115 @@
 'use client'
 // SPDX-License-Identifier: AGPL-3.0-only
 // Settings (A12; docs/product/settings.md), ported from the prototype: an index of every area in
-// five groups, and each area's page with the areas beside it from expanded widths.
+// five groups, and each area's page with the areas beside it from expanded widths. Drawn with the
+// library's native renderer since D3 (one-client-platform-d.md): a group is the library's Panel in
+// its `group` look, and links are Presses with `href`, which react-native-web writes as `<a>`
+// (https://necolas.github.io/react-native-web/docs/view/#href).
 import { useT } from '@highsea-tv/i18n/react'
-import { Button, cn, Icon } from '@highsea-tv/ui'
+import { blur, breakpoints } from '@highsea-tv/tokens'
+import {
+  alpha,
+  Button,
+  Icon,
+  Panel,
+  Press,
+  Text,
+  tokens,
+  useTheme,
+  useWindowAtLeast,
+} from '@highsea-tv/ui/native'
 import type { ReactNode } from 'react'
+import { Platform, View, type ViewStyle } from 'react-native'
 import { type Area, type AreaId, areaGroupsFor } from './settings-areas.ts'
 import { settings as messages } from './settings-messages.ts'
 import { AdminPage, useShell } from './shell.tsx'
 
+const s = tokens.space
+const ui = tokens.adminText.ui
 const areaHref = (a: Area) => a.href ?? `/settings/${a.id}`
+/** react-native-web's link prop, which React Native's types don't name. */
+const linkTo = (href: string) => ({ href }) as object
+
+/** A small label over a list: the mono, uppercase label style in text-3. */
+function GroupLabel({ id, children }: { id?: string; children: string }) {
+  return (
+    <Text
+      nativeID={id}
+      variant="label"
+      mono
+      color="text-3"
+      role={id ? 'heading' : undefined}
+      aria-level={id ? 2 : undefined}
+      style={{ textTransform: 'uppercase' }}
+    >
+      {children}
+    </Text>
+  )
+}
 
 /** `/settings`: every area, grouped, as cards that say what's inside. */
 export function SettingsIndex() {
   const t = useT(messages)
+  const theme = useTheme()
   const groups = areaGroupsFor(useShell().role)
+  const medium = useWindowAtLeast(breakpoints.medium)
+  const wide = useWindowAtLeast(breakpoints.wide)
+  const columns = wide ? 3 : medium ? 2 : 1
   return (
     <AdminPage title={t('title')} description={t('description')}>
-      <div className="grid gap-8">
+      <View style={{ gap: s['8'] }}>
         {groups.map((g) => (
-          <section key={g.id} aria-labelledby={`settings-${g.id}`} className="grid gap-3">
-            <h2 id={`settings-${g.id}`} className="font-mono text-label text-text-3 uppercase">
-              {t(`group.${g.id}`)}
-            </h2>
-            <ul className="grid gap-3 medium:grid-cols-2 wide:grid-cols-3">
+          <View
+            key={g.id}
+            role="region"
+            aria-labelledby={`settings-${g.id}`}
+            style={{ gap: s['3'] }}
+          >
+            <GroupLabel id={`settings-${g.id}`}>{t(`group.${g.id}`)}</GroupLabel>
+            <View
+              role="list"
+              style={
+                {
+                  display: 'grid',
+                  gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
+                  gap: s['3'],
+                } as unknown as ViewStyle
+              }
+            >
               {g.areas.map((a) => (
-                <li key={a.id}>
-                  <a
-                    href={areaHref(a)}
-                    className="grid h-full grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1 rounded-lg border border-line bg-s1 p-4 outline-none transition-tint hover:bg-s2 focus-visible:ring-focus"
+                <View key={a.id} role="listitem">
+                  <Press
+                    role="link"
+                    {...linkTo(areaHref(a))}
+                    style={({ hovered }) => ({
+                      height: '100%',
+                      flexDirection: 'row',
+                      gap: s['3'],
+                      padding: s['4'],
+                      borderWidth: 1,
+                      borderColor: theme.colors.line,
+                      borderRadius: tokens.radius.lg,
+                      backgroundColor: hovered ? theme.colors.s2 : theme.colors.s1,
+                    })}
                   >
-                    <Icon name={a.icon} size={18} className="row-span-2 mt-0.5 text-accent-text" />
-                    <span className="font-semibold text-text text-ui">{t(`area.${a.id}`)}</span>
-                    <span className="text-caption text-text-3">
-                      {t(`area.${a.id}.description`)}
-                    </span>
-                  </a>
-                </li>
+                    <View style={{ paddingTop: s['0.5'] }}>
+                      <Icon name={a.icon} size={18} color="accent-text" />
+                    </View>
+                    <View style={{ flex: 1, minWidth: 0, gap: s['1'] }}>
+                      <Text size={ui.size} leading={ui.leading} weight={600}>
+                        {t(`area.${a.id}`)}
+                      </Text>
+                      <Text variant="caption" color="text-3">
+                        {t(`area.${a.id}.description`)}
+                      </Text>
+                    </View>
+                  </Press>
+                </View>
               ))}
-            </ul>
-          </section>
+            </View>
+          </View>
         ))}
-      </div>
+      </View>
     </AdminPage>
   )
 }
@@ -49,29 +117,55 @@ export function SettingsIndex() {
 /** The areas beside an area's page, from expanded widths. */
 function AreaNav({ current }: { current: AreaId }) {
   const t = useT(messages)
+  const theme = useTheme()
   const groups = areaGroupsFor(useShell().role)
   return (
-    <nav aria-label={t('nav')} className="hidden content-start gap-5 expanded:grid">
+    <View role="navigation" aria-label={t('nav')} style={{ gap: s['5'] }}>
       {groups.map((g) => (
-        <div key={g.id} className="grid gap-1">
-          <p className="px-2.5 font-mono text-label text-text-3 uppercase">{t(`group.${g.id}`)}</p>
-          <ul className="grid gap-0.5">
-            {g.areas.map((a) => (
-              <li key={a.id}>
-                <a
-                  href={areaHref(a)}
-                  aria-current={a.id === current ? 'page' : undefined}
-                  className="flex items-center gap-2 rounded-sm px-2.5 py-1.5 text-text-2 text-ui outline-none hover:bg-text/6 hover:text-text focus-visible:ring-focus aria-[current=page]:bg-text/6 aria-[current=page]:text-text"
-                >
-                  {t(`area.${a.id}`)}
-                  {a.href && <Icon name="external" size={12} className="text-text-3" />}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </div>
+        <View key={g.id} style={{ gap: s['1'] }}>
+          <View style={{ paddingHorizontal: s['2'] + s['0.5'] }}>
+            <GroupLabel>{t(`group.${g.id}`)}</GroupLabel>
+          </View>
+          <View role="list" style={{ gap: s['0.5'] }}>
+            {g.areas.map((a) => {
+              const active = a.id === current
+              return (
+                <View key={a.id} role="listitem">
+                  <Press
+                    role="link"
+                    aria-current={active ? 'page' : undefined}
+                    {...linkTo(areaHref(a))}
+                    style={({ hovered }) => ({
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: s['2'],
+                      paddingHorizontal: s['2'] + s['0.5'],
+                      paddingVertical: 6,
+                      borderRadius: tokens.radius.sm,
+                      backgroundColor:
+                        active || hovered ? alpha(theme.colors.text, 0.06) : 'transparent',
+                    })}
+                  >
+                    {({ hovered }) => (
+                      <>
+                        <Text
+                          size={ui.size}
+                          leading={ui.leading}
+                          color={active || hovered ? 'text' : 'text-2'}
+                        >
+                          {t(`area.${a.id}`)}
+                        </Text>
+                        {a.href ? <Icon name="external" size={12} color="text-3" /> : null}
+                      </>
+                    )}
+                  </Press>
+                </View>
+              )
+            })}
+          </View>
+        </View>
       ))}
-    </nav>
+    </View>
   )
 }
 
@@ -86,53 +180,69 @@ export function AreaPage({
   children: ReactNode
 }) {
   const t = useT(messages)
+  const expanded = useWindowAtLeast(breakpoints.expanded)
   return (
     <AdminPage title={t(`area.${id}`)} description={t(`area.${id}.description`)} actions={actions}>
-      <div className="grid grid-cols-[minmax(0,1fr)] gap-6 expanded:grid-cols-[13rem_minmax(0,1fr)]">
-        <AreaNav current={id} />
-        <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] content-start gap-6">
-          <a
-            href="/settings"
-            className="flex items-center gap-1 justify-self-start rounded-sm text-text-2 text-ui outline-none hover:text-text focus-visible:ring-focus expanded:hidden"
-          >
-            <Icon name="chevron-left" size={16} />
-            {t('all')}
-          </a>
+      <View style={{ flexDirection: 'row', gap: s['6'], alignItems: 'flex-start' }}>
+        {expanded ? (
+          <View style={{ width: 208, flexShrink: 0 }}>
+            <AreaNav current={id} />
+          </View>
+        ) : null}
+        <View style={{ flex: 1, minWidth: 0, gap: s['6'] }}>
+          {expanded ? null : (
+            <Press
+              role="link"
+              {...linkTo('/settings')}
+              style={{
+                alignSelf: 'flex-start',
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: s['1'],
+                borderRadius: tokens.radius.sm,
+              }}
+            >
+              {({ hovered }) => (
+                <>
+                  <Icon name="chevron-left" size={16} color={hovered ? 'text' : 'text-2'} />
+                  <Text size={ui.size} leading={ui.leading} color={hovered ? 'text' : 'text-2'}>
+                    {t('all')}
+                  </Text>
+                </>
+              )}
+            </Press>
+          )}
           {children}
-        </div>
-      </div>
+        </View>
+      </View>
     </AdminPage>
   )
 }
 
-/** A titled block of settings. */
+/** A titled block of settings: the library's Panel in its group look. */
 export function Group({
   title,
   description,
   children,
-  className,
 }: {
   title: string
   description?: ReactNode
   children: ReactNode
-  className?: string
 }) {
   return (
-    <section
-      aria-label={title}
-      className={cn(
-        'grid grid-cols-[minmax(0,1fr)] gap-4 rounded-lg border border-line bg-s1 p-4 medium:p-5',
-        className,
-      )}
-    >
-      <div className="grid gap-0.5">
-        <h2 className="font-semibold text-text text-title">{title}</h2>
-        {description && <p className="text-caption text-text-3">{description}</p>}
-      </div>
+    <Panel look="group" title={title} description={description}>
       {children}
-    </section>
+    </Panel>
   )
 }
+
+/** Only the web draws a blur behind the bar (react-native-web's backdropFilter). */
+const BLURS = Platform.OS === 'web'
+const BAR_BLUR = {
+  backdropFilter: `blur(${blur.bar.radius}px) saturate(${blur.bar.saturate})`,
+} as object
+/** Held to the window's bottom while the page scrolls under it (CSS's sticky, on the web). */
+const STICKY = { position: 'sticky', bottom: tokens.space['3'], zIndex: 10 } as unknown as ViewStyle
 
 /** The save bar: sticks to the bottom while there are unsaved changes. */
 export function SaveBar({
@@ -147,19 +257,44 @@ export function SaveBar({
   onDiscard: () => void
 }) {
   const t = useT(messages)
+  const theme = useTheme()
   if (!dirty) return null
   return (
-    <section
+    <View
+      role="region"
       aria-label={t('unsaved.label')}
-      className="glass-bar sticky bottom-3 z-10 flex flex-wrap items-center gap-2 rounded-lg border border-line-strong px-4 py-3 shadow-3"
+      style={[
+        STICKY,
+        {
+          flexDirection: 'row',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          gap: s['2'],
+          paddingHorizontal: s['4'],
+          paddingVertical: s['3'],
+          borderWidth: 1,
+          borderColor: theme.colors['line-strong'],
+          borderRadius: tokens.radius.lg,
+          backgroundColor: alpha(theme.colors.bg, BLURS ? blur.bar.opacity : blur.fallbackOpacity),
+          boxShadow: tokens.elevation[3].boxShadow,
+        } as ViewStyle,
+        BLURS ? (BAR_BLUR as ViewStyle) : null,
+      ]}
     >
-      <span className="me-auto text-text-2 text-ui">{t('unsaved.body')}</span>
-      <Button variant="ghost" onClick={onDiscard} disabled={saving}>
+      <Text
+        size={ui.size}
+        leading={ui.leading}
+        color="text-2"
+        style={{ flexGrow: 1, flexShrink: 1, minWidth: 0 }}
+      >
+        {t('unsaved.body')}
+      </Text>
+      <Button variant="ghost" onPress={onDiscard} disabled={saving}>
         {t('discard')}
       </Button>
-      <Button variant="primary" onClick={onSave} loading={saving}>
+      <Button variant="primary" onPress={onSave} loading={saving}>
         {t('save')}
       </Button>
-    </section>
+    </View>
   )
 }

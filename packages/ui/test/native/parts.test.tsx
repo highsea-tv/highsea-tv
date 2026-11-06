@@ -25,13 +25,16 @@ for (const spec of ['react', 'react-dom', 'react/jsx-runtime', 'react-dom/client
 }
 const React = await import('react')
 const web = await import(rnw)
-/** The props each FlatList was last drawn with: touch's snapping is the phone's, which the web ignores. */
+/**
+ * The props each sideways ScrollView was drawn with: touch's snapping is the phone's, which the
+ * web ignores.
+ */
 const lists: Record<string, unknown>[] = []
-const SpiedList = (props: Record<string, unknown>) => {
-  lists.push(props)
-  return React.createElement(web.FlatList, props)
+const SpiedScrollView = (props: Record<string, unknown>) => {
+  if (props.horizontal) lists.push(props)
+  return React.createElement(web.ScrollView, props)
 }
-mock.module('react-native', () => ({ ...web, FlatList: SpiedList }))
+mock.module('react-native', () => ({ ...web, ScrollView: SpiedScrollView }))
 /** A layout animation's builder, which the web's View never reads. */
 const builder: Record<string, unknown> = {}
 for (const k of ['springify', 'stiffness', 'damping', 'mass', 'duration'])

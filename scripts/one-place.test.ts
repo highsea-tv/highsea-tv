@@ -34,31 +34,29 @@ const run = async (files: Record<string, string>) => lines((await check(repo(fil
 
 const component = (name: string) => `export function ${name}() {\n  return null\n}\n`
 
-/** A Button in each renderer, and an Icon both re-export from one drawing. */
+/** A Button drawn per platform, in a pair of platform files, and an Icon drawn once. */
 const RENDERERS = {
-  'packages/ui/src/web/index.ts':
-    "export * from './button.tsx'\nexport { Icon } from '../shared/icon.tsx'\n",
-  'packages/ui/src/web/button.tsx': component('Button'),
   'packages/ui/src/native/index.ts':
-    "export { Button } from './button.tsx'\nexport { Icon } from '../shared/icon.tsx'\n",
-  'packages/ui/src/native/button.tsx': 'export const Button = () => null\n',
+    "export { Button } from './button'\nexport { Icon } from '../shared/icon.tsx'\n",
+  'packages/ui/src/native/button.tsx': component('Button'),
+  'packages/ui/src/native/button.web.tsx': 'export const Button = () => null\n',
   'packages/ui/src/shared/icon.tsx': component('Icon'),
 }
 
 describe('renderers', () => {
-  test('a component both renderers draw fails unless parity.ts gives the reason', async () => {
+  test('a component drawn twice fails unless parity.ts gives the reason', async () => {
     expect(await run({ ...RENDERERS, ...parity('export const BOTH = {}\n') })).toEqual([
-      "renderers packages/ui/src/web/button.tsx:1 Button is drawn twice, also at packages/ui/src/native/button.tsx:1; parity.ts's BOTH doesn't list it",
+      "renderers packages/ui/src/native/button.tsx:1 Button is drawn twice, also at packages/ui/src/native/button.web.tsx:1; parity.ts's BOTH doesn't list it",
     ])
     expect(
       await run({ ...RENDERERS, ...parity("export const BOTH = ['Button'] as const\n") }),
     ).toEqual([
-      "renderers packages/ui/src/web/button.tsx:1 Button is drawn twice, also at packages/ui/src/native/button.tsx:1; parity.ts's BOTH lists it without a reason",
+      "renderers packages/ui/src/native/button.tsx:1 Button is drawn twice, also at packages/ui/src/native/button.web.tsx:1; parity.ts's BOTH lists it without a reason",
     ])
     const listed = await check(
       repo({
         ...RENDERERS,
-        ...parity("export const BOTH = {\n  Button: 'the admin draws it until part D',\n}\n"),
+        ...parity("export const BOTH = {\n  Button: 'the browser’s own on the web',\n}\n"),
       }),
     )
     expect(listed.findings).toEqual([])
@@ -87,13 +85,14 @@ describe('renderers', () => {
       '',
     ].join('\n')
     expect(await run({ ...RENDERERS, ...parity(both) })).toEqual([
-      "renderers packages/ui/src/web/button.tsx:1 Button is drawn twice, also at packages/ui/src/native/button.tsx:1; parity.ts's BOTH gives no reason for it (it spreads ...CONTROLS, which can't carry reasons)",
+      "renderers packages/ui/src/native/button.tsx:1 Button is drawn twice, also at packages/ui/src/native/button.web.tsx:1; parity.ts's BOTH gives no reason for it (it spreads ...CONTROLS, which can't carry reasons)",
       "exceptions packages/ui/src/shared/parity.ts:2 parity.ts's BOTH lists Icon, which is drawn once",
     ])
   })
 
   test('parity.ts listing a component drawn once fails', async () => {
-    const both = "export const BOTH = {\n  Button: 'until part D',\n  Icon: 'drawn once now',\n}\n"
+    const both =
+      "export const BOTH = {\n  Button: 'the browser’s own on the web',\n  Icon: 'drawn once now',\n}\n"
     expect(await run({ ...RENDERERS, ...parity(both) })).toEqual([
       "exceptions packages/ui/src/shared/parity.ts:3 parity.ts's BOTH lists Icon, which is drawn once",
     ])
@@ -129,6 +128,27 @@ describe('screens', () => {
       'exceptions scripts/one-place-exceptions.json:3 design/prototypes/src/web/** has 2 client files, listed as 1',
       'screens design/prototypes/src/web/home.tsx:1 a client file outside apps/client',
       'screens design/prototypes/src/web/search.tsx:1 a client file outside apps/client',
+    ])
+  })
+
+  test("the admin's hosts draw nothing of their own (D3)", async () => {
+    const files = {
+      'apps/server/app/page.tsx': [
+        "import { Dashboard } from '@highsea-tv/admin/dashboard.tsx'",
+        "import { ThemeProvider, type TextProps } from '@highsea-tv/ui/native'",
+        'export default () => <ThemeProvider><Dashboard /></ThemeProvider>',
+        '',
+      ].join('\n'),
+      'design/prototypes/src/admin/shared.tsx': [
+        "import { View } from 'react-native'",
+        "import { Button, ThemeProvider } from '@highsea-tv/ui/native'",
+        'export const Host = () => <ThemeProvider><View /><Button /></ThemeProvider>',
+        '',
+      ].join('\n'),
+    }
+    expect(await run(files)).toEqual([
+      "screens design/prototypes/src/admin/shared.tsx:1 the admin's host draws react-native, which belongs in @highsea-tv/admin",
+      "screens design/prototypes/src/admin/shared.tsx:2 the admin's host draws Button, which belongs in @highsea-tv/admin",
     ])
   })
 

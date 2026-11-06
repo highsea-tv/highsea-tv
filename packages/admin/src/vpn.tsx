@@ -7,7 +7,8 @@
 // say whether one is set, and the draft holds a new one until Save. Built-in mode (highsea
 // connects) is 6b's, so its card is shown as the prototype has it but can't be picked yet. The
 // interfaces, providers and compose block come from the server, not the prototype's tables, and
-// the prototype's "Drop the tunnel" button, which only drove the mock, is left out.
+// the prototype's "Drop the tunnel" button, which only drove the mock, is left out. Drawn with the
+// library's native renderer since D3 (one-client-platform-d.md).
 import type {
   VpnCheck,
   VpnInterface,
@@ -19,27 +20,94 @@ import type {
 import type { T as Translate } from '@highsea-tv/i18n'
 import { useT } from '@highsea-tv/i18n/react'
 import { useAction, useQuery } from '@highsea-tv/sdk/react'
+import type { ColorRole } from '@highsea-tv/tokens'
+import { breakpoints } from '@highsea-tv/tokens'
 import {
   Badge,
   type BadgeTone,
   Button,
-  cn,
+  Disclosure,
   Field,
   Icon,
   type IconName,
   Input,
-  Radio,
-  RadioGroup,
+  Press,
+  RadioMark,
   Select,
   Switch,
+  Text,
   Textarea,
   toast,
-} from '@highsea-tv/ui'
-import { type ReactNode, useState } from 'react'
+  tokens,
+  useMotionReduced,
+  useTheme,
+  useWindowAtLeast,
+} from '@highsea-tv/ui/native'
+import { type ReactNode, useEffect, useRef, useState } from 'react'
+import { Animated, Easing, ScrollView, View, type ViewStyle } from 'react-native'
 import { Loadable } from './loadable.tsx'
+import { pickFile } from './pick-file.ts'
 import { AreaPage, Group, SaveBar } from './settings.tsx'
 import { useRelative } from './time.ts'
 import { vpn as messages } from './vpn-messages.ts'
+
+const s = tokens.space
+const ui = tokens.adminText.ui
+
+/** Columns from medium widths (the web's `medium:grid-cols-N`), one below. */
+function Columns({ count = 2, children }: { count?: number; children: ReactNode }) {
+  const medium = useWindowAtLeast(breakpoints.medium)
+  return (
+    <View
+      style={
+        {
+          display: 'grid',
+          gridTemplateColumns: medium ? `repeat(${count}, minmax(0, 1fr))` : 'minmax(0, 1fr)',
+          gap: s['4'],
+        } as unknown as ViewStyle
+      }
+    >
+      {children}
+    </View>
+  )
+}
+
+/** A section under a line, as the web's `border-t pt-4`. */
+function Section({ children }: { children: ReactNode }) {
+  const theme = useTheme()
+  return (
+    <View
+      style={{ gap: s['4'], borderTopWidth: 1, borderColor: theme.colors.line, paddingTop: s['4'] }}
+    >
+      {children}
+    </View>
+  )
+}
+
+/**
+ * The icon turning while the tunnel connects, held still when motion is reduced (the web's
+ * `animate-spin motion-reduce:animate-none`), through React Native's Animated
+ * (https://reactnative.dev/docs/animated#loop).
+ */
+function Spinning({ children }: { children: ReactNode }) {
+  const reduced = useMotionReduced()
+  const turn = useRef(new Animated.Value(0)).current
+  useEffect(() => {
+    if (reduced) return
+    const loop = Animated.loop(
+      Animated.timing(turn, {
+        toValue: 1,
+        duration: 1000,
+        easing: Easing.linear,
+        useNativeDriver: false,
+      }),
+    )
+    loop.start()
+    return () => loop.stop()
+  }, [reduced, turn])
+  const rotate = turn.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] })
+  return <Animated.View style={{ transform: [{ rotate }] }}>{children}</Animated.View>
+}
 
 type T = Translate<typeof messages>
 
@@ -142,27 +210,28 @@ function Form({
 const stateLine = (
   v: VpnStatus,
   t: T,
-): { icon: IconName; tone: string; title: string; line: string } => {
+): { icon: IconName; tone: ColorRole; spin?: boolean; title: string; line: string } => {
   const provider = v.provider ?? ''
   switch (v.state) {
     case 'off':
       return {
         icon: 'warning',
-        tone: 'text-warning',
+        tone: 'warning',
         title: t('state.off'),
         line: t('state.off.line'),
       }
     case 'connecting':
       return {
         icon: 'loading',
-        tone: 'text-text-2 animate-spin motion-reduce:animate-none',
+        tone: 'text-2',
+        spin: true,
         title: t('state.connecting', { provider }),
         line: t('state.connecting.line'),
       }
     case 'connected':
       return {
         icon: 'shield',
-        tone: 'text-success',
+        tone: 'success',
         title:
           v.mode === 'interface'
             ? t('state.bound', { provider })
@@ -176,79 +245,129 @@ const stateLine = (
     case 'down':
       return {
         icon: 'error',
-        tone: 'text-danger',
+        tone: 'danger',
         title: t('state.down', { provider }),
         line: t('state.down.line'),
       }
     case 'failed':
       return {
         icon: 'error',
-        tone: 'text-danger',
+        tone: 'danger',
         title: v.needsCapability ? t('state.capability') : t('state.failed'),
         line: v.message ?? '',
       }
   }
 }
 
-const marks: Record<VpnCheck['result'], { icon: IconName; tone: string }> = {
-  pass: { icon: 'success', tone: 'text-success' },
-  warn: { icon: 'warning', tone: 'text-warning' },
-  fail: { icon: 'error', tone: 'text-danger' },
-  info: { icon: 'info', tone: 'text-text-3' },
-  pending: { icon: 'clock', tone: 'text-text-3' },
+const marks: Record<VpnCheck['result'], { icon: IconName; tone: ColorRole }> = {
+  pass: { icon: 'success', tone: 'success' },
+  warn: { icon: 'warning', tone: 'warning' },
+  fail: { icon: 'error', tone: 'danger' },
+  info: { icon: 'info', tone: 'text-3' },
+  pending: { icon: 'clock', tone: 'text-3' },
 }
 
 function StatusGroup({ status: v }: { status: VpnStatus }) {
   const t = useT(messages)
+  const theme = useTheme()
+  const medium = useWindowAtLeast(breakpoints.medium)
   const { now, relative } = useRelative()
   const check = useAction((c) => c.vpn.check())
   const reconnect = useAction((c) => c.vpn.reconnect())
   const head = stateLine(v, t)
   const checkedJustNow = v.checkedAt !== null && now - Date.parse(v.checkedAt) < 60_000
+  const icon = <Icon name={head.icon} size={20} color={head.tone} />
   return (
     <Group title={t('status.title')}>
-      <div role="status" className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-0.5">
-        <Icon name={head.icon} size={20} className={cn('row-span-2 mt-0.5', head.tone)} />
-        <p className="font-semibold text-text text-ui">{head.title}</p>
-        <p className="text-caption text-text-2">{head.line}</p>
-      </div>
+      <View role="status" style={{ flexDirection: 'row', gap: s['3'] }}>
+        <View style={{ paddingTop: s['0.5'] }}>
+          {head.spin ? <Spinning>{icon}</Spinning> : icon}
+        </View>
+        <View style={{ flex: 1, minWidth: 0, gap: s['0.5'] }}>
+          <Text size={ui.size} leading={ui.leading} weight={600}>
+            {head.title}
+          </Text>
+          <Text variant="caption" color="text-2">
+            {head.line}
+          </Text>
+        </View>
+      </View>
       {v.needsCapability && <CapabilityHelp />}
       {v.checks.length > 0 && (
-        <ul
+        <View
+          role="list"
           aria-label={t('checks')}
-          className="grid divide-y divide-line rounded-md border border-line"
+          style={{
+            borderWidth: 1,
+            borderColor: theme.colors.line,
+            borderRadius: tokens.radius.md,
+            overflow: 'hidden',
+          }}
         >
-          {v.checks.map((c) => {
+          {v.checks.map((c, i) => {
             const m = marks[c.result]
-            return (
-              <li
-                key={c.id}
-                className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 px-3 py-2.5 medium:grid-cols-[auto_8rem_minmax(0,1fr)]"
+            const detail = (
+              <Text
+                variant={medium ? undefined : 'caption'}
+                size={medium ? ui.size : undefined}
+                leading={medium ? ui.leading : undefined}
+                color="text-2"
               >
-                <Icon
-                  name={m.icon}
-                  size={16}
-                  aria-label={t(`mark.${c.result}`)}
-                  className={cn('mt-0.5', m.tone)}
-                />
-                <span className="font-medium text-text text-ui">{c.label}</span>
-                <span className="col-start-2 text-caption text-text-2 medium:col-start-3 medium:text-ui">
-                  <span className="text-text">{c.title}</span>
-                  {c.detail ? <> · {c.detail}</> : c.title.endsWith('.') ? '' : '.'}
-                </span>
-              </li>
+                <Text size={medium ? ui.size : undefined} color="text">
+                  {c.title}
+                </Text>
+                {c.detail ? ` · ${c.detail}` : c.title.endsWith('.') ? '' : '.'}
+              </Text>
+            )
+            return (
+              <View
+                key={c.id}
+                role="listitem"
+                style={{
+                  flexDirection: 'row',
+                  gap: s['3'],
+                  paddingHorizontal: s['3'],
+                  paddingVertical: s['2'] + s['0.5'],
+                  borderTopWidth: i ? 1 : 0,
+                  borderColor: theme.colors.line,
+                }}
+              >
+                <View style={{ paddingTop: s['0.5'] }}>
+                  <Icon name={m.icon} size={16} color={m.tone} label={t(`mark.${c.result}`)} />
+                </View>
+                {medium ? (
+                  <>
+                    <Text
+                      size={ui.size}
+                      leading={ui.leading}
+                      weight={500}
+                      style={{ width: 128, flexShrink: 0 }}
+                    >
+                      {c.label}
+                    </Text>
+                    <View style={{ flex: 1, minWidth: 0 }}>{detail}</View>
+                  </>
+                ) : (
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <Text size={ui.size} leading={ui.leading} weight={500}>
+                      {c.label}
+                    </Text>
+                    {detail}
+                  </View>
+                )}
+              </View>
             )
           })}
-        </ul>
+        </View>
       )}
       {v.state !== 'off' && (
-        <div className="flex flex-wrap items-center gap-2">
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: s['2'] }}>
           <Button
             size="sm"
             icon="refresh"
             loading={check.pending}
             disabled={v.state !== 'connected'}
-            onClick={() =>
+            onPress={() =>
               check.run().then(
                 () => toast.success(t('checkedNow')),
                 (e: Error) => toast.error(t('checkError'), { description: e.message }),
@@ -262,7 +381,7 @@ function StatusGroup({ status: v }: { status: VpnStatus }) {
             variant="ghost"
             loading={reconnect.pending}
             disabled={v.state === 'connecting' || v.needsCapability}
-            onClick={() =>
+            onPress={() =>
               reconnect
                 .run()
                 .catch((e: Error) => toast.error(t('reconnectError'), { description: e.message }))
@@ -271,33 +390,52 @@ function StatusGroup({ status: v }: { status: VpnStatus }) {
             {t('reconnect')}
           </Button>
           {v.checkedAt && v.state === 'connected' && (
-            <span className="text-caption text-text-3">
+            <Text variant="caption" color="text-3">
               {checkedJustNow ? t('checkedNow') : t('checkedAgo', { ago: relative(v.checkedAt) })}
-            </span>
+            </Text>
           )}
-        </div>
+        </View>
       )}
     </Group>
   )
 }
 
+/** react-native-web's `tabIndex`, which React Native's types don't name. */
+const FOCUSABLE = { tabIndex: 0 } as object
+
 export function CopyBlock({ label, text }: { label: string; text: string }) {
   const t = useT(messages)
+  const theme = useTheme()
   return (
-    <figure aria-label={label} className="grid gap-2">
-      <pre
-        // biome-ignore lint/a11y/noNoninteractiveTabindex: it scrolls sideways when the lines are longer than the panel, and a scrolling region must take focus to scroll by keyboard (axe’s scrollable-region-focusable)
-        tabIndex={0}
-        className="overflow-x-auto rounded-md border border-line bg-s2 p-3 font-mono text-figure text-text-2"
+    <View role="figure" aria-label={label} style={{ gap: s['2'] }}>
+      <ScrollView
+        horizontal
+        // it scrolls sideways when the lines are longer than the panel, and a scrolling region
+        // must take focus to scroll by keyboard (axe's scrollable-region-focusable)
+        {...FOCUSABLE}
+        style={{
+          borderWidth: 1,
+          borderColor: theme.colors.line,
+          borderRadius: tokens.radius.md,
+          backgroundColor: theme.colors.s2,
+        }}
+        contentContainerStyle={{ padding: s['3'] }}
       >
-        {text}
-      </pre>
+        <Text
+          mono
+          size={tokens.adminText.figure.size}
+          leading={tokens.adminText.figure.leading}
+          color="text-2"
+          style={{ whiteSpace: 'pre' } as object}
+        >
+          {text}
+        </Text>
+      </ScrollView>
       <Button
         size="sm"
         variant="secondary"
         icon="copy"
-        className="justify-self-start"
-        onClick={() =>
+        onPress={() =>
           (navigator.clipboard?.writeText(text) ?? Promise.reject(new Error('no clipboard'))).then(
             () => toast.success(t('copied')),
             () => toast.error(t('copyError'), { description: t('copyErrorDetail') }),
@@ -306,17 +444,19 @@ export function CopyBlock({ label, text }: { label: string; text: string }) {
       >
         {t('copy')}
       </Button>
-    </figure>
+    </View>
   )
 }
 
 function CapabilityHelp() {
   const t = useT(messages)
   return (
-    <div className="grid gap-2">
-      <p className="text-caption text-text-2">{t('capabilityHelp')}</p>
+    <View style={{ gap: s['2'] }}>
+      <Text variant="caption" color="text-2">
+        {t('capabilityHelp')}
+      </Text>
       <CopyBlock label={t('composeLines')} text={CAPABILITY_LINES} />
-    </div>
+    </View>
   )
 }
 
@@ -332,36 +472,72 @@ function ConnectionGroup({
   errors: Record<string, string>
 }) {
   const t = useT(messages)
+  const theme = useTheme()
+  const medium = useWindowAtLeast(breakpoints.medium)
   return (
     <Group title={t('connection.title')} description={t('connection.description')}>
-      <RadioGroup
+      <View
+        accessibilityRole="radiogroup"
         aria-label={t('mode.legend')}
-        value={v.mode}
-        onValueChange={(mode) => set({ mode: mode as VpnSettings['mode'] })}
-        className="medium:grid-cols-2"
+        style={
+          {
+            display: 'grid',
+            gridTemplateColumns: medium ? 'repeat(2, minmax(0, 1fr))' : 'minmax(0, 1fr)',
+            gap: s['2'],
+          } as unknown as ViewStyle
+        }
       >
-        {MODES.map((m) => (
-          // biome-ignore lint/a11y/noLabelWithoutControl: the control is its child, the library’s Radio, a button with the radio role and so a labelable element
-          <label
-            key={m}
-            className={cn(
-              'grid cursor-pointer grid-cols-[auto_minmax(0,1fr)] gap-x-2.5 gap-y-0.5 rounded-md border p-3 transition-tint has-[:focus-visible]:ring-focus',
-              v.mode === m ? 'border-accent bg-accent-soft' : 'border-line hover:bg-s2',
-            )}
-          >
-            <Radio value={m} className="mt-1" />
-            <span className="font-semibold text-text text-ui">
-              {t(`mode.${m}`)}
-              {m === 'builtin' && (
-                <Badge tone="accent" className="ms-2 align-middle">
-                  {t('recommended')}
-                </Badge>
-              )}
-            </span>
-            <span className="col-start-2 text-caption text-text-3">{t(`mode.${m}.line`)}</span>
-          </label>
-        ))}
-      </RadioGroup>
+        {MODES.map((m) => {
+          const chosen = v.mode === m
+          return (
+            <Press
+              key={m}
+              // the card is the radio, its mark inside (a radio's children are presentational)
+              accessibilityRole="radio"
+              accessibilityState={{ checked: chosen }}
+              accessibilityLabel={t(`mode.${m}`)}
+              accessibilityHint={t(`mode.${m}.line`)}
+              onPress={() => set({ mode: m })}
+              style={({ hovered }) => ({
+                height: '100%',
+                flexDirection: 'row',
+                gap: s['2'] + s['0.5'],
+                padding: s['3'],
+                borderWidth: 1,
+                borderRadius: tokens.radius.md,
+                borderColor: chosen ? theme.colors.accent : theme.colors.line,
+                backgroundColor: chosen
+                  ? theme.colors['accent-soft']
+                  : hovered
+                    ? theme.colors.s2
+                    : 'transparent',
+              })}
+            >
+              <View style={{ paddingTop: s['0.5'] }}>
+                <RadioMark checked={chosen} />
+              </View>
+              <View style={{ flex: 1, minWidth: 0, gap: s['0.5'] }}>
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    flexWrap: 'wrap',
+                    alignItems: 'center',
+                    gap: s['2'],
+                  }}
+                >
+                  <Text size={ui.size} leading={ui.leading} weight={600}>
+                    {t(`mode.${m}`)}
+                  </Text>
+                  {m === 'builtin' && <Badge tone="accent">{t('recommended')}</Badge>}
+                </View>
+                <Text variant="caption" color="text-3">
+                  {t(`mode.${m}.line`)}
+                </Text>
+              </View>
+            </Press>
+          )
+        })}
+      </View>
       {v.mode === 'builtin' && <BuiltIn v={v} set={set} />}
       {v.mode === 'container' && <Container v={v} set={set} errors={errors} />}
       {v.mode === 'interface' && <InterfacePicker v={v} set={set} error={errors.interface} />}
@@ -374,7 +550,7 @@ function InterfacePicker({ v, set, error }: { v: Draft; set: Set; error?: string
   const interfaces = useQuery('vpn:interfaces', (c) => c.vpn.interfaces())
   const label = (i: VpnInterface) => (i.ipv4 ? `${i.name} · ${i.ipv4}` : i.name)
   return (
-    <div className="grid grid-cols-[minmax(0,1fr)] gap-4 medium:grid-cols-2">
+    <Columns>
       <Loadable query={interfaces} what={t('interface').toLowerCase()} skeleton={null}>
         {(list) => {
           const options = list.map((i) => ({ value: i.name, label: label(i) }))
@@ -388,6 +564,7 @@ function InterfacePicker({ v, set, error }: { v: Draft; set: Set; error?: string
               error={error}
             >
               <Select
+                aria-label={t('interface')}
                 value={v.interface || undefined}
                 placeholder={t('interfaceChoose')}
                 disabled={!options.length}
@@ -398,17 +575,28 @@ function InterfacePicker({ v, set, error }: { v: Draft; set: Set; error?: string
           )
         }}
       </Loadable>
-    </div>
+    </Columns>
   )
 }
 
 function Steps({ provider }: { provider: VpnProvider }) {
   return (
-    <ol className="grid list-decimal grid-cols-[minmax(0,1fr)] gap-1 ps-5 text-caption text-text-2 marker:text-text-3 [overflow-wrap:anywhere]">
-      {provider.steps.map((step) => (
-        <li key={step}>{step}</li>
+    <View role="list" style={{ gap: s['1'] }}>
+      {provider.steps.map((step, i) => (
+        <View key={step} role="listitem" style={{ flexDirection: 'row', gap: s['2'] }}>
+          <Text variant="caption" color="text-3" aria-hidden style={{ minWidth: s['3'] }}>
+            {`${i + 1}.`}
+          </Text>
+          <Text
+            variant="caption"
+            color="text-2"
+            style={[{ flex: 1, minWidth: 0 }, { overflowWrap: 'anywhere' } as object]}
+          >
+            {step}
+          </Text>
+        </View>
       ))}
-    </ol>
+    </View>
   )
 }
 
@@ -423,10 +611,11 @@ function BuiltIn({ v, set }: { v: Draft; set: Set }) {
         const provider = list.find((p) => p.id === v.provider) ?? list[0]
         if (!provider) return null
         return (
-          <div className="grid grid-cols-[minmax(0,1fr)] gap-4 border-line border-t pt-4">
-            <div className="grid grid-cols-[minmax(0,1fr)] gap-4 medium:grid-cols-2">
+          <Section>
+            <Columns>
               <Field label={t('provider')}>
                 <Select
+                  aria-label={t('provider')}
                   value={provider.id}
                   onValueChange={(id) =>
                     set({ provider: id, config: undefined, configName: null, staticPort: null })
@@ -434,104 +623,123 @@ function BuiltIn({ v, set }: { v: Draft; set: Set }) {
                   options={list.map((p) => ({ value: p.id, label: p.name }))}
                 />
               </Field>
-            </div>
+            </Columns>
             <Steps provider={provider} />
             {provider.connect === 'account' ? (
-              <div className="grid gap-4 medium:grid-cols-3">
+              <Columns count={3}>
                 <Field label={t('username')}>
                   <Input
+                    mono
                     value={v.piaUsername}
                     autoComplete="off"
                     placeholder="p1234567"
-                    onChange={(e) => set({ piaUsername: e.target.value })}
-                    className="font-mono"
+                    onChangeText={(piaUsername) => set({ piaUsername })}
                   />
                 </Field>
                 <Field label={t('password')} hint={v.piaPasswordSet ? t('secretSet') : undefined}>
                   <Input
-                    type="password"
+                    secureTextEntry
                     autoComplete="off"
                     value={v.piaPassword ?? ''}
                     placeholder={v.piaPasswordSet ? '••••••••' : ''}
-                    onChange={(e) => set({ piaPassword: e.target.value })}
+                    onChangeText={(piaPassword) => set({ piaPassword })}
                   />
                 </Field>
                 <Field label={t('region')} hint={t('regionHint')}>
                   <Select
+                    aria-label={t('region')}
                     value={v.piaRegion || undefined}
                     onValueChange={(piaRegion) => set({ piaRegion })}
                     options={(provider.regions ?? []).map((r) => ({ value: r, label: r }))}
                   />
                 </Field>
-              </div>
+              </Columns>
             ) : (
-              <div className="grid gap-2">
-                <p className="font-medium text-text text-ui">{t('config')}</p>
-                <div className="flex flex-wrap items-center gap-2">
-                  <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-line bg-s2 px-3 py-1.5 text-text text-ui hover:bg-s3 has-[:focus-visible]:ring-focus">
-                    <Icon name="upload" size={16} />
+              <View style={{ gap: s['2'] }}>
+                <Text size={ui.size} leading={ui.leading} weight={500}>
+                  {t('config')}
+                </Text>
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    flexWrap: 'wrap',
+                    alignItems: 'center',
+                    gap: s['2'],
+                  }}
+                >
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    icon="upload"
+                    onPress={() =>
+                      pickFile('.conf,text/plain', (file) =>
+                        file.text().then((config) => set({ config, configName: file.name })),
+                      )
+                    }
+                  >
                     {v.configName || v.config !== undefined
                       ? t('configReplace')
                       : t('configUpload')}
-                    <input
-                      type="file"
-                      accept=".conf,text/plain"
-                      className="sr-only"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0]
-                        if (file)
-                          file.text().then((config) => set({ config, configName: file.name }))
-                      }}
-                    />
-                  </label>
-                  <Button size="sm" variant="ghost" onClick={() => setPasting((p) => !p)}>
+                  </Button>
+                  <Button size="sm" variant="ghost" onPress={() => setPasting((p) => !p)}>
                     {pasting ? t('configHide') : t('configPaste')}
                   </Button>
                   {v.configName && (
-                    <span className="flex min-w-0 items-center gap-1.5 text-caption text-text-2">
-                      <Icon name="check" size={14} className="text-success" />
-                      <span className="truncate font-mono">{v.configName}</span>
+                    <View
+                      style={{
+                        flexDirection: 'row',
+                        minWidth: 0,
+                        flexShrink: 1,
+                        alignItems: 'center',
+                        gap: s['1'] + s['0.5'],
+                      }}
+                    >
+                      <Icon name="check" size={14} color="success" />
+                      <Text variant="caption" color="text-2" mono numberOfLines={1}>
+                        {v.configName}
+                      </Text>
                       {v.config === undefined && (
-                        <span className="text-text-3">{t('configKept')}</span>
+                        <Text variant="caption" color="text-3">
+                          {t('configKept')}
+                        </Text>
                       )}
-                    </span>
+                    </View>
                   )}
-                </div>
+                </View>
                 {pasting && (
                   <Field label={t('configPasteLabel')}>
                     <Textarea
-                      rows={6}
+                      mono
+                      numberOfLines={6}
                       spellCheck={false}
                       placeholder={
                         '[Interface]\nPrivateKey = …\nAddress = 10.2.0.2/32\n\n[Peer]\n…'
                       }
                       value={v.config ?? ''}
-                      onChange={(e) =>
-                        set({ config: e.target.value, configName: v.configName ?? 'pasted.conf' })
+                      onChangeText={(config) =>
+                        set({ config, configName: v.configName ?? 'pasted.conf' })
                       }
-                      className="font-mono"
                     />
                   </Field>
                 )}
                 {provider.portForwarding === 'static' && (
-                  <div className="grid gap-4 medium:grid-cols-3">
+                  <Columns count={3}>
                     <Field label={t('staticPort')} hint={t('staticPortHint')}>
                       <Input
-                        type="number"
-                        min={1024}
-                        max={65535}
-                        value={v.staticPort ?? ''}
-                        onChange={(e) =>
-                          set({ staticPort: e.target.value ? Number(e.target.value) : null })
+                        mono
+                        inputMode="numeric"
+                        keyboardType="number-pad"
+                        value={v.staticPort == null ? '' : String(v.staticPort)}
+                        onChangeText={(port) =>
+                          set({ staticPort: port.trim() ? Number(port) : null })
                         }
-                        className="font-mono"
                       />
                     </Field>
-                  </div>
+                  </Columns>
                 )}
-              </div>
+              </View>
             )}
-          </div>
+          </Section>
         )
       }}
     </Loadable>
@@ -540,21 +748,22 @@ function BuiltIn({ v, set }: { v: Draft; set: Set }) {
 
 function Container({ v, set, errors }: { v: Draft; set: Set; errors: Record<string, string> }) {
   const t = useT(messages)
+  const theme = useTheme()
   const urlError = !CONTAINER_URL.test(v.containerUrl)
   return (
-    <div className="grid grid-cols-[minmax(0,1fr)] gap-4 border-line border-t pt-4">
-      <div className="grid grid-cols-[minmax(0,1fr)] gap-4 medium:grid-cols-2">
+    <Section>
+      <Columns>
         <Field
           label={t('controlServer')}
           hint={t('controlServerHint')}
           error={urlError ? t('controlServerInvalid') : errors.containerUrl}
         >
           <Input
+            mono
             value={v.containerUrl}
             spellCheck={false}
             autoCapitalize="none"
-            onChange={(e) => set({ containerUrl: e.target.value })}
-            className="font-mono"
+            onChangeText={(containerUrl) => set({ containerUrl })}
           />
         </Field>
         <Field
@@ -563,29 +772,33 @@ function Container({ v, set, errors }: { v: Draft; set: Set; errors: Record<stri
           error={errors.containerKey}
         >
           <Input
-            type="password"
+            secureTextEntry
             autoComplete="off"
             value={v.containerKey ?? ''}
             placeholder={v.containerKeySet ? '••••••••' : ''}
-            onChange={(e) => set({ containerKey: e.target.value })}
+            onChangeText={(containerKey) => set({ containerKey })}
           />
         </Field>
-      </div>
-      <details className="group grid gap-3 rounded-md border border-line p-3">
-        <summary className="flex cursor-pointer list-none items-center gap-2 font-medium text-text text-ui outline-none focus-visible:ring-focus">
-          <Icon
-            name="chevron-right"
-            size={16}
-            className="transition-transform group-open:rotate-90 motion-reduce:transition-none"
-          />
-          {t('compose')}
-        </summary>
-        <div className="mt-3 grid gap-3">
-          <p className="text-caption text-text-2">{t('composeBody')}</p>
-          <Compose />
-        </div>
-      </details>
-    </div>
+      </Columns>
+      <View
+        style={{
+          borderWidth: 1,
+          borderColor: theme.colors.line,
+          borderRadius: tokens.radius.md,
+          paddingHorizontal: s['3'],
+          paddingVertical: s['1'],
+        }}
+      >
+        <Disclosure title={t('compose')}>
+          <View style={{ gap: s['3'], paddingBottom: s['2'] }}>
+            <Text variant="caption" color="text-2">
+              {t('composeBody')}
+            </Text>
+            <Compose />
+          </View>
+        </Disclosure>
+      </View>
+    </Section>
   )
 }
 
@@ -599,15 +812,16 @@ function Compose() {
     <Loadable query={providers} what={t('provider').toLowerCase()} skeleton={null}>
       {(list) => (
         <>
-          <div className="grid grid-cols-[minmax(0,1fr)] gap-4 medium:grid-cols-2">
+          <Columns>
             <Field label={t('provider')}>
               <Select
+                aria-label={t('provider')}
                 value={id ?? undefined}
                 onValueChange={setChosen}
                 options={list.map((p) => ({ value: p.id, label: p.name }))}
               />
             </Field>
-          </div>
+          </Columns>
           {id && <ComposeBlock provider={id} />}
         </>
       )}
@@ -619,7 +833,11 @@ function ComposeBlock({ provider }: { provider: string }) {
   const t = useT(messages)
   const block = useQuery(`vpn:compose:${provider}`, (c) => c.vpn.compose({ body: { provider } }))
   if (block.status === 'error')
-    return <p className="text-caption text-danger">{t('composeError')}</p>
+    return (
+      <Text variant="caption" color="danger">
+        {t('composeError')}
+      </Text>
+    )
   if (block.status === 'loading') return null
   return <CopyBlock label={t('composeBlock')} text={block.data.yaml} />
 }
@@ -635,8 +853,7 @@ function BehaviourGroup({ v, set }: { v: Draft; set: Set }) {
     v.mode === 'container' || (v.mode === 'builtin' && provider?.portForwarding !== 'none')
   return (
     <Group title={t('behaviour.title')}>
-      <Field
-        inline
+      <Switch
         label={t('stopWhenDown')}
         hint={
           v.mode === 'builtin'
@@ -645,23 +862,23 @@ function BehaviourGroup({ v, set }: { v: Draft; set: Set }) {
               ? t('stopWhenDown.container')
               : t('stopWhenDown.interface')
         }
-      >
-        <Switch checked disabled aria-readonly />
-      </Field>
+        checked
+        disabled
+      />
       {forwards && (
-        <Field inline label={t('useForwardedPort')} hint={t('useForwardedPortHint')}>
-          <Switch
-            checked={v.useForwardedPort}
-            onCheckedChange={(useForwardedPort) => set({ useForwardedPort })}
-          />
-        </Field>
-      )}
-      <Field inline label={t('indexersThroughVpn')} hint={t('indexersThroughVpnHint')}>
         <Switch
-          checked={v.indexersThroughVpn}
-          onCheckedChange={(indexersThroughVpn) => set({ indexersThroughVpn })}
+          label={t('useForwardedPort')}
+          hint={t('useForwardedPortHint')}
+          checked={v.useForwardedPort}
+          onCheckedChange={(useForwardedPort) => set({ useForwardedPort })}
         />
-      </Field>
+      )}
+      <Switch
+        label={t('indexersThroughVpn')}
+        hint={t('indexersThroughVpnHint')}
+        checked={v.indexersThroughVpn}
+        onCheckedChange={(indexersThroughVpn) => set({ indexersThroughVpn })}
+      />
     </Group>
   )
 }
@@ -679,14 +896,29 @@ const toneOf: Record<VpnStatus['state'], BadgeTone> = {
 /** Download client's VPN line: the status in one line, and the way to the VPN area. */
 export function VpnSummary({ action }: { action: ReactNode }) {
   const t = useT(messages)
+  const theme = useTheme()
   const status = useQuery('vpn:status', (c) => c.vpn.status(), STATUS_TOPICS)
   if (status.status !== 'success') return null
   const head = stateLine(status.data, t)
   return (
-    <div className="flex flex-wrap items-center gap-2 rounded-md border border-line bg-s2 p-3">
+    <View
+      style={{
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        alignItems: 'center',
+        gap: s['2'],
+        padding: s['3'],
+        borderWidth: 1,
+        borderColor: theme.colors.line,
+        borderRadius: tokens.radius.md,
+        backgroundColor: theme.colors.s2,
+      }}
+    >
       <Badge tone={toneOf[status.data.state]}>{head.title}</Badge>
-      <span className="min-w-0 flex-1 basis-48 text-caption text-text-3">{head.line}</span>
+      <Text variant="caption" color="text-3" style={{ minWidth: 0, flexGrow: 1, flexBasis: 192 }}>
+        {head.line}
+      </Text>
       {action}
-    </div>
+    </View>
   )
 }

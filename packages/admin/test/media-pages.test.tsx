@@ -48,7 +48,6 @@ const { act, cleanup, render, within } = await import('@testing-library/react')
 const { default: userEvent } = await import('@testing-library/user-event')
 const { createClient } = await import('@highsea-tv/sdk')
 const { ClientProvider } = await import('@highsea-tv/sdk/react')
-const { UIProvider } = await import('@highsea-tv/ui')
 const { ThemeProvider, Toaster } = await import('@highsea-tv/ui/native')
 const { MovieDetail } = await import('../src/movie-detail.tsx')
 const { PersonPage } = await import('../src/person.tsx')
@@ -584,7 +583,7 @@ async function open(ui: ReactNode) {
     render(
       <ClientProvider client={client}>
         <ThemeProvider>
-          <UIProvider>{ui}</UIProvider>
+          {ui}
           <Toaster label="Notifications" />
         </ThemeProvider>
       </ClientProvider>,

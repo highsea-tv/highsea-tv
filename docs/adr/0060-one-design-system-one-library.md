@@ -152,3 +152,20 @@ D2's screens ([ADR 0061](0061-one-client-platform.md)'s section of today) brough
   - `Tabs` and `SegmentedControl` scroll sideways on the web when there are too many to fit, with the scrollbar hidden, as the web renderer's did.
   - `Toaster` and `Sheet` give `useSyncExternalStore` a server snapshot that's always the same value ([React › useSyncExternalStore](https://react.dev/reference/react/useSyncExternalStore#adding-support-for-server-rendering)).
 - **Measures without tokens** (the borders, the table's head height, the editor's handles) are counted in `scripts/one-place-exceptions.json` until part E gives them tokens, which need the owner's approval.
+
+## 2026-11-05: the web renderer removed, and what D3 added (one client platform, part D3)
+
+With the admin's last screens on the native renderer ([ADR 0061](0061-one-client-platform.md)'s section of today), nothing imports the web renderer, so it's gone: `packages/ui/src/web`, its `styles.css`, the `./web` and `./styles.css` exports, and the dependencies only it used (Radix, cmdk, motion, lucide-react, clsx, tailwind-merge, and Tailwind as a peer). The root export is the native renderer on every target, without the `react-native` condition. `parity.ts` no longer lists two drawings per component: it lists only the pairs of platform files (`name.web.tsx` beside `name.tsx`), eight of them, each with its reason, and `one-place` and `test/parity.test.ts` hold the pairs to it.
+
+D3's screens brought these into the library:
+
+- **New:** `CommandPalette`, with `useCommandPaletteShortcut` (⌘K or Ctrl K) and `rankCommands`: a field that's a combobox over a listbox, its groups and options, ↑ and ↓ looping, Home, End and Enter, as WAI-ARIA's [combobox pattern](https://www.w3.org/WAI/ARIA/apg/patterns/combobox/) has it. The ranking is cmdk's (its command-score, ported with its MIT notice in `command-score.ts`), so the admin's palette finds the same commands in the same order. `Stepper`: "Step x of y" over a progress bar when compact, a list with `aria-current="step"` from the expanded width ([WAI-ARIA 1.2 › aria-current](https://www.w3.org/TR/wai-aria-1.2/#aria-current)). `GetTheApps` and `GetTheAppsDialog`, which the client and the admin's Status both draw.
+- **Pairs of platform files:** `ColorWell` (the browser's `<input type="color">` in the field's look on the web, [MDN](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input/color); the colour named elsewhere) and `createSoundPlayer` (the sound pack through Web Audio on the web, [MDN › Web Audio API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API); silent elsewhere until the apps' sounds come).
+- **Changed:** `Button` and `ControlPress` take `follow: 'download' | 'external'`, written as the link's `download` or `target` and `rel` through react-native-web's `hrefAttrs`; `TextLink`'s `href` is optional, a button without it; `DateTimeInput` takes `mode: 'time'`; `Sheet` takes `padding` for a pointer's side sheet; `Input` takes a leading `icon`; and a `Dialog`'s body scrolls between its title and its footer when it's taller than the window, as Radix's dialog content did.
+- **Measures without tokens** in the palette and the Stepper (the palette's card and rows, the Stepper's discs) are counted in `scripts/one-place-exceptions.json` until part E, as D2's are.
+
+The Next.js hosts' wiring moved into the library too (`@highsea-tv/ui/next/webpack` and `/next/style-registry`, ADR 0003's section of today), since the server and the guides both draw it.
+
+## 2026-11-06: `Virtual`, the library's one virtualizer (part D3)
+
+The library gains `Virtual` and `useScrollSource` (`src/native/virtual.tsx`), on TanStack Virtual's core, and every library `ScrollView` reports itself as a scroll source to what it holds. `TableBody` virtualizes past 60 rows inside one, and the phone's `Row` is virtual; ADR 0061's section of today has the decision and the docs it rests on. One drawing still serves every target: the spacers are plain aria-hidden views, and a table's are rows in CSS table layout.

@@ -11,6 +11,8 @@
 // 11) and Diagnostics (the log level, crash reports, and /metrics, without the anonymous usage
 // counts). Region, Metadata, Updates and Diagnostics share one draft and the page's one Save bar,
 // which saves each part that changed. An admin sees them all, read-only.
+// Since D3 (one-client-platform-d.md) it's drawn with the library's native renderer, on the web
+// through react-native-web, with the same parts, words and behaviour as the web renderer's.
 import {
   CATALOG_CHANNELS,
   type CatalogSettings,
@@ -25,21 +27,28 @@ import {
 } from '@highsea-tv/api-contract'
 import { useLocale, useT } from '@highsea-tv/i18n/react'
 import { useAction, useQuery } from '@highsea-tv/sdk/react'
+import { breakpoints } from '@highsea-tv/tokens'
 import {
   Badge,
   Button,
   ConfirmDialog,
   Field,
-  Icon,
   Input,
   SegmentedControl,
   Select,
   Switch,
+  Text,
+  Tooltip,
   toast,
-} from '@highsea-tv/ui'
+  tokens,
+  useTheme,
+  useWindowAtLeast,
+} from '@highsea-tv/ui/native'
 import { useState } from 'react'
+import { View } from 'react-native'
 import { general as messages } from './general-messages.ts'
 import { Loadable } from './loadable.tsx'
+import { InlineLink } from './media-sections.tsx'
 import {
   errorReason,
   keyRejected,
@@ -49,7 +58,12 @@ import {
   tmdbBusy,
 } from './metadata-locale.ts'
 import { AreaPage, Group, SaveBar } from './settings.tsx'
+import { Line, Note } from './settings-card.tsx'
+import { Columns, ExternalLink } from './settings-columns.tsx'
 import { useShell } from './shell.tsx'
+
+const s = tokens.space
+const figure = tokens.adminText.figure
 
 export function General() {
   const t = useT(messages)
@@ -148,7 +162,7 @@ function Drafted({ loaded, reload }: { loaded: Loaded; reload: () => void }) {
 
   return (
     <>
-      {!owner && <p className="text-caption text-text-3">{t('ownerOnly')}</p>}
+      {!owner && <Note>{t('ownerOnly')}</Note>}
       <Region value={general} set={(p) => setGeneral({ ...general, ...p })} owner={owner} />
       <Metadata
         loaded={loaded.metadata}
@@ -218,7 +232,7 @@ function Region({ value, set, owner }: Part) {
   }
   return (
     <Group title={t('region.title')} description={t('region.description')}>
-      <div className="grid items-start gap-4 medium:grid-cols-2">
+      <Columns shares={[1, 1]}>
         <Field label={t('region.language')} hint={t('region.languageHint')}>
           <Select
             value={value.language}
@@ -241,7 +255,7 @@ function Region({ value, set, owner }: Part) {
             }))}
           />
         </Field>
-      </div>
+      </Columns>
     </Group>
   )
 }
@@ -273,9 +287,11 @@ function Metadata({
   return (
     <>
       <Group title={t('metadata.title')} description={t('metadata.description')}>
-        <div className="grid gap-2">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="font-medium text-text text-ui">{t('key.label')}</span>
+        <View style={{ gap: s['2'] }}>
+          <View
+            style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: s['2'] }}
+          >
+            <Line weight={500}>{t('key.label')}</Line>
             {loaded.key.set ? (
               <Badge tone="success">{t('key.set')}</Badge>
             ) : loaded.key.builtIn ? (
@@ -284,67 +300,69 @@ function Metadata({
               <Badge tone="warning">{t('key.notSet')}</Badge>
             )}
             {loaded.key.set && (
-              <span
-                className="font-mono text-figure text-text-2"
-                title={t('key.masked', { last4: loaded.key.last4 ?? '' })}
-              >
-                {maskedKey(loaded.key.last4)}
-              </span>
+              <Tooltip content={t('key.masked', { last4: loaded.key.last4 ?? '' })}>
+                <Text
+                  mono
+                  size={figure.size}
+                  leading={figure.leading}
+                  color="text-2"
+                  aria-label={t('key.masked', { last4: loaded.key.last4 ?? '' })}
+                >
+                  {maskedKey(loaded.key.last4)}
+                </Text>
+              </Tooltip>
             )}
             {loaded.key.set && owner && draft.key === null && (
-              <span className="ms-auto flex flex-wrap gap-2">
-                <Button size="sm" onClick={() => setDraft({ ...draft, key: '' })}>
+              <View
+                style={{ marginStart: 'auto', flexDirection: 'row', flexWrap: 'wrap', gap: s['2'] }}
+              >
+                <Button size="sm" onPress={() => setDraft({ ...draft, key: '' })}>
                   {t('key.replace')}
                 </Button>
-                <Button size="sm" variant="danger" onClick={() => setRemoving(true)}>
+                <Button size="sm" variant="danger" onPress={() => setRemoving(true)}>
                   {t('key.remove')}
                 </Button>
-              </span>
+              </View>
             )}
-          </div>
+          </View>
           {!loaded.key.set && (
-            <p className="text-caption text-text-3">
-              {t(loaded.key.builtIn ? 'key.builtInBody' : 'key.notSetBody')}
-            </p>
+            <Note>{t(loaded.key.builtIn ? 'key.builtInBody' : 'key.notSetBody')}</Note>
           )}
-        </div>
+        </View>
         {entering && owner && (
-          <div className="grid gap-2">
+          <View style={{ gap: s['2'] }}>
             <Field label={t('key.new')} hint={t('key.hint')} error={keyError ?? undefined}>
               <Input
-                type="password"
+                secureTextEntry
                 value={draft.key ?? ''}
                 autoComplete="off"
                 autoCapitalize="none"
                 spellCheck={false}
-                className="font-mono"
-                onChange={(e) => setDraft({ ...draft, key: e.target.value })}
+                mono
+                onChangeText={(key) => setDraft({ ...draft, key })}
               />
             </Field>
-            <div className="flex flex-wrap items-center gap-3">
-              <a
-                href={TMDB_KEY_PAGE}
-                target="_blank"
-                rel="noreferrer"
-                className="flex items-center gap-1.5 rounded-sm text-accent-text text-ui outline-none hover:underline focus-visible:ring-focus"
-              >
+            <View
+              style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: s['3'] }}
+            >
+              <ExternalLink href={TMDB_KEY_PAGE} look="accent">
                 {t('key.open')}
-                <Icon name="external" size={14} />
-              </a>
+              </ExternalLink>
               {loaded.key.set && (
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="ms-auto"
-                  onClick={() => setDraft({ ...draft, key: null })}
-                >
-                  {t('key.cancel')}
-                </Button>
+                <View style={{ marginStart: 'auto' }}>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onPress={() => setDraft({ ...draft, key: null })}
+                  >
+                    {t('key.cancel')}
+                  </Button>
+                </View>
               )}
-            </div>
-          </div>
+            </View>
+          </View>
         )}
-        <div className="grid gap-4 medium:grid-cols-2">
+        <Columns shares={[1, 1]}>
           <Field label={t('language')} hint={t('languageHint')}>
             <Select
               value={draft.language}
@@ -361,11 +379,11 @@ function Metadata({
               options={metadataOptions('region', draft.region, locale)}
             />
           </Field>
-        </div>
+        </Columns>
       </Group>
       <ConfirmDialog
         open={removing}
-        onOpenChange={setRemoving}
+        onClose={() => setRemoving(false)}
         title={t('key.removeTitle')}
         description={t(loaded.key.builtIn ? 'key.removeBodyBuiltIn' : 'key.removeBody')}
         confirmLabel={t('key.removeConfirm')}
@@ -393,13 +411,16 @@ function Catalog() {
   if (role !== 'owner')
     return (
       <Group title={t('catalog.title')} description={t('catalog.description')}>
-        <p className="text-caption text-text-3">{t('catalog.ownerOnly')}</p>
+        <Note>{t('catalog.ownerOnly')}</Note>
       </Group>
     )
   return <CatalogSettingsGroup />
 }
 
 const blankExtra = { url: '', keyId: '', publicKey: '' }
+const sp = tokens.space
+/** The key id's column from medium widths, as the web's `12rem`. */
+const KEY_ID_WIDTH = 192
 
 function CatalogSettingsGroup() {
   const t = useT(messages)
@@ -408,6 +429,8 @@ function CatalogSettingsGroup() {
   const [extra, setExtra] = useState(blankExtra)
   const [extraError, setExtraError] = useState<string | null>(null)
   const [removing, setRemoving] = useState<string | null>(null)
+  const theme = useTheme()
+  const medium = useWindowAtLeast(breakpoints.medium)
 
   const change = (patch: CatalogSettingsPatch) =>
     save.run(patch).then(
@@ -424,137 +447,180 @@ function CatalogSettingsGroup() {
   return (
     <Group title={t('catalog.title')} description={t('catalog.description')}>
       <Loadable query={data} what={t('catalog.what')}>
-        {(s: CatalogSettings) => (
-          <>
-            <div className="grid gap-4 medium:grid-cols-2">
-              <Field label={t('catalog.channel')} hint={t('catalog.channelHint')}>
-                <Select
-                  value={s.channel}
-                  disabled={save.pending}
-                  onValueChange={(channel) =>
-                    change({ channel: channel as CatalogSettings['channel'] }).catch(() => {})
-                  }
-                  options={CATALOG_CHANNELS.map((c) => ({
-                    value: c,
-                    label: t(`catalog.${c}`),
-                  }))}
-                />
-              </Field>
-            </div>
-            <Field inline label={t('catalog.auto')} hint={t('catalog.autoHint')}>
+        {(s: CatalogSettings) => {
+          const add = () => {
+            const next = {
+              url: extra.url.trim(),
+              keyId: extra.keyId.trim(),
+              publicKey: extra.publicKey.trim(),
+            }
+            if (!next.url || !next.keyId || !next.publicKey)
+              return setExtraError(t('catalog.extraMissing'))
+            setExtraError(null)
+            save.run({ extras: [...s.extras, next] }).then(
+              () => {
+                toast.success(t('catalog.added'))
+                setExtra(blankExtra)
+                data.refetch()
+              },
+              (err: Error) => setExtraError(err.message),
+            )
+          }
+          return (
+            <>
+              <Columns shares={[1, 1]}>
+                <Field label={t('catalog.channel')} hint={t('catalog.channelHint')}>
+                  <Select
+                    value={s.channel}
+                    disabled={save.pending}
+                    onValueChange={(channel) =>
+                      change({ channel: channel as CatalogSettings['channel'] }).catch(() => {})
+                    }
+                    options={CATALOG_CHANNELS.map((c) => ({
+                      value: c,
+                      label: t(`catalog.${c}`),
+                    }))}
+                  />
+                </Field>
+              </Columns>
               <Switch
+                label={t('catalog.auto')}
+                hint={t('catalog.autoHint')}
                 checked={s.autoUpdate}
                 disabled={save.pending}
                 onCheckedChange={(autoUpdate) => change({ autoUpdate }).catch(() => {})}
               />
-            </Field>
-            <div className="grid gap-2">
-              <span className="font-medium text-text text-ui">{t('catalog.extras')}</span>
-              {s.extras.length === 0 ? (
-                <p className="text-caption text-text-3">{t('catalog.noExtras')}</p>
-              ) : (
-                <ul className="grid gap-2">
-                  {s.extras.map((x) => (
-                    <li
-                      key={x.url}
-                      className="flex min-w-0 items-center gap-3 rounded-md border border-line bg-s1 px-3 py-2"
-                    >
-                      <span className="grid min-w-0 flex-1">
-                        <span className="truncate font-mono text-figure text-text" title={x.url}>
-                          {x.url}
-                        </span>
-                        <span className="text-caption text-text-3">
-                          {t('catalog.keyId', { keyId: x.keyId })}
-                        </span>
-                      </span>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => setRemoving(x.url)}
-                        aria-label={t('catalog.removeLabel', { url: x.url })}
+              <View style={{ gap: sp['2'] }}>
+                <Line weight={500}>{t('catalog.extras')}</Line>
+                {s.extras.length === 0 ? (
+                  <Note>{t('catalog.noExtras')}</Note>
+                ) : (
+                  <View role="list" style={{ gap: sp['2'] }}>
+                    {s.extras.map((x) => (
+                      <View
+                        key={x.url}
+                        role="listitem"
+                        style={{
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          gap: sp['3'],
+                          minWidth: 0,
+                          paddingHorizontal: sp['3'],
+                          paddingVertical: sp['2'],
+                          borderWidth: 1,
+                          borderColor: theme.colors.line,
+                          borderRadius: tokens.radius.md,
+                          backgroundColor: theme.colors.s1,
+                        }}
                       >
-                        {t('catalog.remove')}
-                      </Button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-            <form
-              className="grid gap-3 rounded-md border border-line p-3"
-              onSubmit={(e) => {
-                e.preventDefault()
-                const next = {
-                  url: extra.url.trim(),
-                  keyId: extra.keyId.trim(),
-                  publicKey: extra.publicKey.trim(),
-                }
-                if (!next.url || !next.keyId || !next.publicKey)
-                  return setExtraError(t('catalog.extraMissing'))
-                setExtraError(null)
-                save.run({ extras: [...s.extras, next] }).then(
-                  () => {
-                    toast.success(t('catalog.added'))
-                    setExtra(blankExtra)
-                    data.refetch()
-                  },
-                  (err: Error) => setExtraError(err.message),
-                )
-              }}
-            >
-              <span className="font-medium text-text text-ui">{t('catalog.add')}</span>
-              <Field label={t('catalog.url')} hint={t('catalog.urlHint')}>
-                <Input
-                  value={extra.url}
-                  type="url"
-                  autoComplete="off"
-                  spellCheck={false}
-                  className="font-mono"
-                  onChange={(e) => setExtra({ ...extra, url: e.target.value })}
-                />
-              </Field>
-              <div className="grid gap-3 medium:grid-cols-[12rem_minmax(0,1fr)]">
-                <Field label={t('catalog.keyIdLabel')}>
+                        <View style={{ flex: 1, minWidth: 0 }}>
+                          <Tooltip content={x.url}>
+                            <Text
+                              mono
+                              size={figure.size}
+                              leading={figure.leading}
+                              numberOfLines={1}
+                            >
+                              {x.url}
+                            </Text>
+                          </Tooltip>
+                          <Note>{t('catalog.keyId', { keyId: x.keyId })}</Note>
+                        </View>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onPress={() => setRemoving(x.url)}
+                          accessibilityLabel={t('catalog.removeLabel', { url: x.url })}
+                        >
+                          {t('catalog.remove')}
+                        </Button>
+                      </View>
+                    ))}
+                  </View>
+                )}
+              </View>
+              <View
+                style={{
+                  gap: sp['3'],
+                  padding: sp['3'],
+                  borderWidth: 1,
+                  borderColor: theme.colors.line,
+                  borderRadius: tokens.radius.md,
+                }}
+              >
+                <Line weight={500}>{t('catalog.add')}</Line>
+                <Field label={t('catalog.url')} hint={t('catalog.urlHint')}>
                   <Input
-                    value={extra.keyId}
+                    value={extra.url}
+                    keyboardType="url"
+                    inputMode="url"
                     autoComplete="off"
+                    autoCapitalize="none"
                     spellCheck={false}
-                    className="font-mono"
-                    onChange={(e) => setExtra({ ...extra, keyId: e.target.value })}
+                    mono
+                    onSubmitEditing={add}
+                    onChangeText={(url) => setExtra({ ...extra, url })}
                   />
                 </Field>
-                <Field
-                  label={t('catalog.publicKey')}
-                  hint={t('catalog.publicKeyHint')}
-                  error={extraError ?? undefined}
+                <View
+                  style={{
+                    flexDirection: medium ? 'row' : 'column',
+                    alignItems: 'flex-start',
+                    gap: sp['3'],
+                  }}
                 >
-                  <Input
-                    value={extra.publicKey}
-                    autoComplete="off"
-                    spellCheck={false}
-                    className="font-mono"
-                    onChange={(e) => setExtra({ ...extra, publicKey: e.target.value })}
-                  />
-                </Field>
-              </div>
-              <Button type="submit" size="sm" className="justify-self-start" loading={save.pending}>
-                {t('catalog.addButton')}
-              </Button>
-            </form>
-            <ConfirmDialog
-              open={removing !== null}
-              onOpenChange={(o) => !o && setRemoving(null)}
-              title={t('catalog.removeTitle')}
-              description={t('catalog.removeBody')}
-              confirmLabel={t('catalog.removeConfirm')}
-              cancelLabel={t('catalog.keep')}
-              destructive
-              onConfirm={() =>
-                change({ extras: s.extras.filter((x) => x.url !== removing) }).catch(() => {})
-              }
-            />
-          </>
-        )}
+                  <View style={medium ? { width: KEY_ID_WIDTH } : { alignSelf: 'stretch' }}>
+                    <Field label={t('catalog.keyIdLabel')}>
+                      <Input
+                        value={extra.keyId}
+                        autoComplete="off"
+                        autoCapitalize="none"
+                        spellCheck={false}
+                        mono
+                        onSubmitEditing={add}
+                        onChangeText={(keyId) => setExtra({ ...extra, keyId })}
+                      />
+                    </Field>
+                  </View>
+                  <View style={medium ? { flex: 1, minWidth: 0 } : { alignSelf: 'stretch' }}>
+                    <Field
+                      label={t('catalog.publicKey')}
+                      hint={t('catalog.publicKeyHint')}
+                      error={extraError ?? undefined}
+                    >
+                      <Input
+                        value={extra.publicKey}
+                        autoComplete="off"
+                        autoCapitalize="none"
+                        spellCheck={false}
+                        mono
+                        onSubmitEditing={add}
+                        onChangeText={(publicKey) => setExtra({ ...extra, publicKey })}
+                      />
+                    </Field>
+                  </View>
+                </View>
+                <View style={{ alignSelf: 'flex-start' }}>
+                  <Button size="sm" loading={save.pending} onPress={add}>
+                    {t('catalog.addButton')}
+                  </Button>
+                </View>
+              </View>
+              <ConfirmDialog
+                open={removing !== null}
+                onClose={() => setRemoving(null)}
+                title={t('catalog.removeTitle')}
+                description={t('catalog.removeBody')}
+                confirmLabel={t('catalog.removeConfirm')}
+                cancelLabel={t('catalog.keep')}
+                destructive
+                onConfirm={() =>
+                  change({ extras: s.extras.filter((x) => x.url !== removing) }).catch(() => {})
+                }
+              />
+            </>
+          )
+        }}
       </Loadable>
     </Group>
   )
@@ -566,33 +632,35 @@ function Updates({ value, set, owner }: Part) {
   const t = useT(messages)
   return (
     <Group title={t('updates.title')} description={t('updates.description')}>
-      <div className="grid gap-1.5">
+      <View style={{ gap: s['1'] + s['0.5'] }}>
         {owner ? (
-          <SegmentedControl
-            aria-label={t('updates.channel')}
-            size="sm"
-            value={value.updateChannel}
-            onValueChange={(c) => set({ updateChannel: c as GeneralSettings['updateChannel'] })}
-            options={[
-              { value: 'stable', label: t('updates.stable') },
-              { value: 'beta', label: t('updates.beta') },
-            ]}
-            className="justify-self-start"
-          />
+          <View style={{ alignSelf: 'flex-start' }}>
+            <SegmentedControl
+              aria-label={t('updates.channel')}
+              size="sm"
+              value={value.updateChannel}
+              onValueChange={(c) => set({ updateChannel: c as GeneralSettings['updateChannel'] })}
+              options={[
+                { value: 'stable', label: t('updates.stable') },
+                { value: 'beta', label: t('updates.beta') },
+              ]}
+            />
+          </View>
         ) : (
           // the control has no disabled state: an admin reads the channel
-          <p className="text-text text-ui">
-            {t('updates.channelIs', { channel: t(`updates.${value.updateChannel}`) })}
-          </p>
+          <Line>{t('updates.channelIs', { channel: t(`updates.${value.updateChannel}`) })}</Line>
         )}
-        <p className="text-caption text-text-3">{t('updates.channelHint')}</p>
-      </div>
-      <p className="text-caption text-text-3">{t('updates.docker')}</p>
+        <Note>{t('updates.channelHint')}</Note>
+      </View>
+      <Note>{t('updates.docker')}</Note>
     </Group>
   )
 }
 
 // ---------------------------------------------------------------- diagnostics
+
+/** The log level's select from medium widths, as the web's `max-w-72`. */
+const LOG_LEVEL_WIDTH = 288
 
 function Diagnostics({
   value,
@@ -602,31 +670,33 @@ function Diagnostics({
   owner,
 }: Part & { metrics: MetricsSettings; setMetrics: (m: MetricsSettings) => void }) {
   const t = useT(messages)
+  const medium = useWindowAtLeast(breakpoints.medium)
   return (
     <Group title={t('diagnostics.title')} description={t('diagnostics.description')}>
       <Field label={t('diagnostics.logLevel')} hint={t('diagnostics.logLevelHint')}>
-        <Select
-          value={value.logLevel}
-          disabled={!owner}
-          onValueChange={(l) => set({ logLevel: l as GeneralSettings['logLevel'] })}
-          options={LOG_LEVELS.map((l) => ({ value: l, label: t(`diagnostics.level.${l}`) }))}
-          className="medium:max-w-72"
-        />
+        <View style={medium ? { maxWidth: LOG_LEVEL_WIDTH } : undefined}>
+          <Select
+            value={value.logLevel}
+            disabled={!owner}
+            onValueChange={(l) => set({ logLevel: l as GeneralSettings['logLevel'] })}
+            options={LOG_LEVELS.map((l) => ({ value: l, label: t(`diagnostics.level.${l}`) }))}
+          />
+        </View>
       </Field>
-      <Field inline label={t('diagnostics.crashes')} hint={t('diagnostics.crashesHint')}>
-        <Switch
-          checked={value.crashReports}
-          disabled={!owner}
-          onCheckedChange={(crashReports) => set({ crashReports })}
-        />
-      </Field>
-      <Field inline label={t('diagnostics.metrics')} hint={t('diagnostics.metricsHint')}>
-        <Switch
-          checked={metrics.enabled}
-          disabled={!owner}
-          onCheckedChange={(enabled) => setMetrics({ enabled })}
-        />
-      </Field>
+      <Switch
+        label={t('diagnostics.crashes')}
+        hint={t('diagnostics.crashesHint')}
+        checked={value.crashReports}
+        disabled={!owner}
+        onCheckedChange={(crashReports) => set({ crashReports })}
+      />
+      <Switch
+        label={t('diagnostics.metrics')}
+        hint={t('diagnostics.metricsHint')}
+        checked={metrics.enabled}
+        disabled={!owner}
+        onCheckedChange={(enabled) => setMetrics({ enabled })}
+      />
       {metrics.enabled && <MetricsAddress />}
     </Group>
   )
@@ -638,19 +708,16 @@ function MetricsAddress() {
   const info = useQuery('public-info', (c) => c.system.publicInfo(), ['server.updated'])
   const base = info.data?.publicUrl ?? info.data?.localAddresses[0] ?? ''
   return (
-    <div className="grid gap-1">
-      <span className="truncate font-mono text-figure text-text" title={`${base}/metrics`}>
-        {base}/metrics
-      </span>
-      <p className="text-caption text-text-3">
+    <View style={{ gap: s['1'] }}>
+      <Tooltip content={`${base}/metrics`}>
+        <Text mono size={figure.size} leading={figure.leading} numberOfLines={1}>
+          {`${base}/metrics`}
+        </Text>
+      </Tooltip>
+      <Note>
         {t('diagnostics.metricsKey')}{' '}
-        <a
-          href="/settings/users"
-          className="rounded-sm text-text-2 underline underline-offset-2 outline-none hover:text-text focus-visible:ring-focus"
-        >
-          {t('diagnostics.keys')}
-        </a>
-      </p>
-    </div>
+        <InlineLink href="/settings/users">{t('diagnostics.keys')}</InlineLink>
+      </Note>
+    </View>
   )
 }

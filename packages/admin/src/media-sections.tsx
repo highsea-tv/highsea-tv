@@ -101,7 +101,7 @@ const grid = (style: Record<string, unknown>) =>
  * A link inside running text, in `text` and underlined (the web's `textLink`): a nested Text with
  * an address, which react-native-web draws as an `<a>` (https://necolas.github.io/react-native-web/docs/text/).
  */
-function InlineLink({
+export function InlineLink({
   href,
   children,
   external,

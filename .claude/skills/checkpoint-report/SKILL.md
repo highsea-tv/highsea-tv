@@ -1,6 +1,6 @@
 ---
 name: checkpoint-report
-description: Finish a highsea checkpoint or gated part, run the full checks, record progress in the plan and CLAUDE.md, and report at the gate for the owner's review. Use when a checkpoint's or part's work is done and it's time to stop at the gate.
+description: Finish a highsea checkpoint or gated part, run the full checks, record progress in the plan and docs/status.md, and report at the gate for the owner's review. Use when a checkpoint's or part's work is done and it's time to stop at the gate.
 argument-hint: "[checkpoint or part, e.g. 9b]"
 ---
 
@@ -23,7 +23,7 @@ Use `/checks full`, under Node 26.11. Fix what fails, and find the documented ca
 ## 3. Record it
 
 - **The plan's Progress section:** a dated entry (`- **YYYY-MM-DD, 9b, built and waiting for the owner's review:**`), with what was built, its numbers and checks, judgement calls in short, and what was found and fixed along the way.
-- **`CLAUDE.md`'s "Where things stand":** the part's line says "built and waiting for the owner's review", in one or two sentences with links.
+- **`docs/status.md`:** the part's line says "built and waiting for the owner's review", in one or two sentences with links.
 - Commit nothing unless the owner has asked.
 
 ## 4. Report

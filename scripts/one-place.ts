@@ -2,13 +2,16 @@
 // One place for everything (one-client-platform.md › Checks that fail on drift): fails when a
 // component, a screen or a page part is defined in more than one place, or when a colour, size or
 // corner is written outside the tokens, so nothing is ever changed in two places.
-// - renderers: a component exported by both of @highsea-tv/ui's renderers (src/web and
-//   src/native), or drawn per platform in platform files (`x.web.tsx` beside `x.tsx`), is drawn
-//   twice. It passes only if parity.ts's BOTH gives its reason: that's the one list of renderer
-//   exceptions, never repeated here.
+// - renderers: a component drawn per platform in the library's platform files (`x.web.tsx` beside
+//   `x.tsx`) is drawn twice. It passes only if parity.ts's BOTH gives its reason: that's the one
+//   list of renderer exceptions, never repeated here. Since D3 of one-client-platform-d.md the
+//   native renderer is the library's only one.
 // - screens: client screens live in apps/client/src/app, one file per destination. A client file
 //   anywhere else passes only as a listed exception, and a destination that has moved into
-//   apps/client leaves no copy in the prototypes (the `moved` list, which nothing excuses).
+//   apps/client leaves no copy in the prototypes (the `moved` list, which nothing excuses). The
+//   admin's screens live once in @highsea-tv/admin (packages/admin/src); its hosts, the server's
+//   Next.js routes and the prototype's admin folder, draw nothing of their own: no react-native,
+//   and from the library only its providers (one-client-platform.md, the admin's exception).
 // - parts: a component exported under the same name by more than one module of the client code and
 //   the library (apps/client/src, ui's native renderer, @highsea-tv/client and @highsea-tv/native).
 // - values: in the one drawing (apps/client/src and ui's native renderer), a literal colour, or a
@@ -21,7 +24,7 @@
 // excuses, so a new one still fails. One that matches nothing fails too, so the list can't rot.
 // `bun run one-place` prints what fails by rule and exits 1 if anything does.
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
-import { join, posix } from 'node:path'
+import { join } from 'node:path'
 import { parse as babel } from '@babel/parser'
 
 export const ROOT = join(import.meta.dir, '..')
@@ -36,9 +39,6 @@ export type Finding = {
   what: string
 }
 
-/** @highsea-tv/ui's renderers, by their entry points. */
-const WEB = ['packages/ui/src/web/index.ts']
-const NATIVE = ['packages/ui/src/native/index.ts', 'packages/ui/src/native/tv/index.ts']
 const LIBRARY = 'packages/ui/src/native'
 /** Where the client's screens live, one file per destination (Expo Router's routes). */
 const SCREENS = 'apps/client/src/app'
@@ -48,11 +48,11 @@ const OTHER_SCREENS = [
   'design/prototypes/src/mobile',
   'design/prototypes/src/tv',
   'design/prototypes/src/client',
-  // the admin, a Next.js host
-  'apps/server/app',
-  'packages/admin/src',
-  'design/prototypes/src/admin',
 ]
+/** The admin's hosts (D3): they route to @highsea-tv/admin's screens and draw nothing themselves. */
+const ADMIN_HOSTS = ['apps/server/app', 'design/prototypes/src/admin']
+/** What a host may take from the library: its providers, never a drawing. */
+const HOST_PARTS = new Set(['ThemeProvider'])
 /** The prototypes' client folders, where a destination that has moved must leave no copy. */
 const PROTOTYPES = [
   'design/prototypes/src/web',
@@ -342,60 +342,6 @@ function analyse({ file, program }: Source): Module {
 }
 
 type Graph = Map<string, Module>
-
-/** The parsed file a relative specifier names. Packages are someone else's drawing. */
-function target(graph: Graph, from: string, spec: string): string | undefined {
-  if (!spec.startsWith('.')) return undefined
-  const path = posix.join(posix.dirname(from), spec)
-  const stem = path.replace(/\.js$/, '')
-  return [path, `${stem}.ts`, `${stem}.tsx`, `${stem}/index.ts`, `${stem}/index.tsx`].find((f) =>
-    graph.has(f),
-  )
-}
-
-/** Where the component a module exports under `name` is declared, through its re-exports. */
-function origin(
-  graph: Graph,
-  file: string,
-  name: string,
-  seen = new Set<string>(),
-): Def | undefined {
-  const mod = graph.get(file)
-  if (!mod || seen.has(`${file}#${name}`)) return undefined
-  seen.add(`${file}#${name}`)
-  const entry = mod.exports.get(name)
-  if (entry && 'local' in entry) {
-    const own = mod.components.get(entry.local)
-    if (own) return own
-    const imported = mod.imports.get(entry.local)
-    const from = imported && target(graph, file, imported.from)
-    return from && imported ? origin(graph, from, imported.name, seen) : undefined
-  }
-  if (entry) {
-    const from = target(graph, file, entry.from)
-    return from ? origin(graph, from, entry.name, seen) : undefined
-  }
-  for (const spec of mod.stars) {
-    const from = target(graph, file, spec)
-    const found = from && origin(graph, from, name, seen)
-    if (found) return found
-  }
-  return undefined
-}
-
-/** Every name a module exports, through `export *`. */
-function exportedNames(graph: Graph, file: string, seen = new Set<string>()): Set<string> {
-  const names = new Set<string>()
-  const mod = graph.get(file)
-  if (!mod || seen.has(file)) return names
-  seen.add(file)
-  for (const name of mod.exports.keys()) names.add(name)
-  for (const spec of mod.stars) {
-    const from = target(graph, file, spec)
-    if (from) for (const name of exportedNames(graph, from, seen)) names.add(name)
-  }
-  return names
-}
 
 /** The components a module declares and exports, by their exported name. */
 function ownComponents(mod: Module | undefined): Map<string, Def> {
@@ -1064,7 +1010,6 @@ export async function check(root = ROOT) {
   const prototypeFiles = PROTOTYPES.flatMap((dir) => sources(root, dir))
   const trees = new Map<string, Source>()
   for (const file of new Set([
-    ...sources(root, 'packages/ui/src/web'),
     ...sources(root, 'packages/ui/src/shared'),
     ...library,
     ...partFiles,
@@ -1078,21 +1023,7 @@ export async function check(root = ROOT) {
   const graph: Graph = new Map([...trees].map(([file, source]) => [file, analyse(source)]))
 
   // renderers: what both draw, and what's drawn per platform
-  const components = (indexes: string[]) => {
-    const out = new Map<string, Def>()
-    for (const index of indexes)
-      for (const name of exportedNames(graph, index)) {
-        const def = isComponentName(name) && !out.has(name) && origin(graph, index, name)
-        if (def) out.set(name, def)
-      }
-    return out
-  }
-  const native = components(NATIVE)
   const twice = new Map<string, Def[]>()
-  for (const [name, def] of components(WEB)) {
-    const other = native.get(name)
-    if (other && other.file !== def.file) twice.set(name, [def, other])
-  }
   for (const group of platformFiles(library))
     for (const file of group)
       for (const [name, def] of ownComponents(graph.get(file)))
@@ -1141,6 +1072,33 @@ export async function check(root = ROOT) {
         line: 1,
         what: 'a client file outside apps/client',
       })
+  for (const file of ADMIN_HOSTS.flatMap((dir) => sources(root, dir))) {
+    const parsed = parse(root, file)
+    if (!('program' in parsed)) {
+      findings.push(parsed)
+      continue
+    }
+    for (const node of all(parsed.program, 'body')) {
+      if (node.type !== 'ImportDeclaration' || node.importKind === 'type') continue
+      const from = keyOf(get(node, 'source'))
+      const drawn =
+        from === 'react-native'
+          ? ['react-native']
+          : from === '@highsea-tv/ui' || from === '@highsea-tv/ui/native'
+            ? all(node, 'specifiers')
+                .filter((sp) => sp.type === 'ImportSpecifier' && sp.importKind !== 'type')
+                .map((sp) => keyOf(get(sp, 'imported')) ?? '')
+                .filter((name) => !HOST_PARTS.has(name))
+            : []
+      if (drawn.length)
+        excuse('screens', {
+          rule: 'screens',
+          file,
+          line: lineOf(node),
+          what: `the admin's host draws ${drawn.join(', ')}, which belongs in @highsea-tv/admin`,
+        })
+    }
+  }
   for (const [plain, ...others] of platformFiles(sources(root, SCREENS)))
     for (const file of others)
       excuse('screens', {

@@ -35,10 +35,10 @@ const { act, cleanup, render, within } = await import('@testing-library/react')
 const { default: userEvent } = await import('@testing-library/user-event')
 const { createClient } = await import('@highsea-tv/sdk')
 const { ClientProvider } = await import('@highsea-tv/sdk/react')
-const { TooltipProvider } = await import('@highsea-tv/ui')
 const { ThemeProvider } = await import('@highsea-tv/ui/native')
 const { DownloadClient } = await import('../src/download-client.tsx')
 const { hoursText, minutesOf, ratioOf } = await import('../src/download-client-seeding.ts')
+const { shown } = await import('./modal.ts')
 
 // ---------------------------------------------------------------- the fake API
 
@@ -134,10 +134,13 @@ beforeEach(() => {
 })
 afterEach(() => cleanup())
 
-const settle = () =>
-  act(async () => {
+// a dialog or a select's menu that has just opened is ended in, so it's in the accessibility tree
+const settle = async () => {
+  await act(async () => {
     for (let i = 0; i < 6; i++) await new Promise((r) => setTimeout(r, 0))
   })
+  shown()
+}
 
 async function open() {
   const client = createClient({ fetch: api as never })
@@ -145,9 +148,7 @@ async function open() {
     render(
       <ClientProvider client={client}>
         <ThemeProvider>
-          <TooltipProvider>
-            <DownloadClient />
-          </TooltipProvider>
+          <DownloadClient />
         </ThemeProvider>
       </ClientProvider>,
     )
@@ -236,13 +237,13 @@ describe('Settings › Download client', () => {
     const { user, page } = await open()
     const watch = within(page.getByRole('region', { name: 'Watch folder' }))
     await user.type(watch.getByLabelText('Folder'), '/data/watch')
-    await user.click(watch.getByRole('combobox'))
-    expect((await page.findAllByRole('option')).map((o) => o.textContent)).toEqual([
-      'manual',
-      'books',
-      'linux',
-    ])
-    await user.click(page.getByRole('option', { name: 'linux' }))
+    await user.click(watch.getByRole('button', { name: 'Category' }))
+    await settle()
+    expect(
+      page.getAllByRole('menuitemradio').map((o) => o.getAttribute('aria-label') ?? o.textContent),
+    ).toEqual(['manual', 'books', 'linux'])
+    await user.click(page.getByRole('menuitemradio', { name: 'linux' }))
+    await settle()
     await user.click(page.getByRole('button', { name: 'Save' }))
     await settle()
     expect(requested('PUT', '/api/v1/settings/downloadClient')[0]?.body).toMatchObject({
@@ -255,9 +256,9 @@ describe('Settings › Download client', () => {
     const { user, page } = await open()
     const group = within(page.getByRole('region', { name: 'Categories' }))
     expect(group.queryByRole('button', { name: 'Remove movies' })).toBeNull()
-    expect(
-      (group.getByRole('button', { name: 'Remove books' }) as HTMLButtonElement).disabled,
-    ).toBe(true)
+    expect(group.getByRole('button', { name: 'Remove books' }).getAttribute('aria-disabled')).toBe(
+      'true',
+    )
     expect(group.getByText('A torrent uses it. Remove it from Downloads first.')).toBeTruthy()
 
     await user.type(group.getByLabelText('Name'), 'movies')
@@ -278,7 +279,7 @@ describe('Settings › Download client', () => {
     await user.click(group.getByRole('button', { name: 'Remove linux' }))
     await settle()
     await user.click(
-      within(page.getByRole('alertdialog')).getByRole('button', { name: 'Remove the category' }),
+      within(page.getByRole('dialog')).getByRole('button', { name: 'Remove the category' }),
     )
     await settle()
     expect(requested('DELETE', '/api/v1/torrents/categories/linux')).toHaveLength(1)

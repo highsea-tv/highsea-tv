@@ -1656,7 +1656,25 @@ export function createMockFetch(options: TransportOptions = {}): MockTransport {
   // the contract's shapes, one file per area in ./admin; a route answered above wins
   const all: Answers = mergeAnswers(
     answers,
-    adminAnswers({ wall, wallMs, emit: (topic) => bus.emit({ topic }), userOf, catalogOf }),
+    adminAnswers({
+      wall,
+      wallMs,
+      emit: (topic) => bus.emit({ topic }),
+      userOf,
+      catalogOf,
+      serverOf: (ctx) => serverOf(ctx.host),
+      signInAs: (ctx, id) => {
+        becomes(id)
+        return signedIn(ctx.host, ctx.away, undefined, 'password').session
+      },
+      // everyone's signed-in devices, as me.devices lists the caller's (Settings › Users)
+      devicesOf: ({ host, api }) =>
+        api.devices
+          .list()
+          .filter((d) => (known.get(d.id)?.host ?? host.id) === host.id && !revoked.has(d.id))
+          .map(deviceOf),
+      appearanceOf,
+    }),
   )
 
   // ---------------------------------------------------------------- events

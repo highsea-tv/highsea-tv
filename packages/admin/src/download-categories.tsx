@@ -1,21 +1,41 @@
 'use client'
-import type { TorrentCategory } from '@highsea-tv/api-contract'
-import { useT } from '@highsea-tv/i18n/react'
 // SPDX-License-Identifier: AGPL-3.0-only
 // Settings › Download client's Categories group (checkpoint 6b, answer 5): new layout, since no
 // prototype screen manages categories. It follows Media management's root folders: a list, each
 // with its folder and how many torrents use it, Remove asked first and disabled while torrents use
 // it, and a form below to add one or change a folder. Changes save at once, through
 // `downloads.saveCategory` and `removeCategory`, not the page's save bar.
+// Since D3 (one-client-platform-d.md) it's drawn with the library's native renderer, on the web
+// through react-native-web, with the same parts, words and behaviour as the web renderer's.
+import type { TorrentCategory } from '@highsea-tv/api-contract'
+import { useT } from '@highsea-tv/i18n/react'
 import type { ApiError } from '@highsea-tv/sdk'
 import { useAction, useQuery } from '@highsea-tv/sdk/react'
-import { Badge, Button, ConfirmDialog, Field, Icon, Input, toast } from '@highsea-tv/ui'
-import { type FormEvent, useState } from 'react'
+import { breakpoints } from '@highsea-tv/tokens'
+import {
+  Badge,
+  Button,
+  ConfirmDialog,
+  Field,
+  Icon,
+  Input,
+  Text,
+  toast,
+  tokens,
+  useWindowAtLeast,
+} from '@highsea-tv/ui/native'
+import { useState } from 'react'
+import { View } from 'react-native'
 import { categories as messages } from './download-categories-messages.ts'
 import { Loadable } from './loadable.tsx'
 import { Group } from './settings.tsx'
+import { Card, Cards, WRAP_ANYWHERE } from './settings-card.tsx'
+import { Columns } from './settings-columns.tsx'
 
 export const CATEGORY_TOPICS = ['torrents.updated']
+
+const s = tokens.space
+const ui = tokens.adminText.ui
 
 export function Categories() {
   const t = useT(messages)
@@ -26,17 +46,17 @@ export function Categories() {
     <Group title={t('title')} description={t('description')}>
       <Loadable query={list} what={t('what')}>
         {(cs) => (
-          <ul aria-label={t('title')} className="grid gap-2">
+          <Cards label={t('title')}>
             {cs.map((c) => (
               <Category key={c.name} category={c} onRemove={() => setRemoving(c)} />
             ))}
-          </ul>
+          </Cards>
         )}
       </Loadable>
       <AddCategory onSaved={list.refetch} />
       <ConfirmDialog
         open={!!removing}
-        onOpenChange={(o) => !o && setRemoving(null)}
+        onClose={() => setRemoving(null)}
         title={t('removeTitle', { name: removing?.name ?? '' })}
         description={t('removeBody')}
         confirmLabel={t('removeConfirm')}
@@ -60,41 +80,54 @@ export function Categories() {
 
 function Category({ category: c, onRemove }: { category: TorrentCategory; onRemove: () => void }) {
   const t = useT(messages)
+  const medium = useWindowAtLeast(breakpoints.medium)
   const inUse = c.torrents > 0
-  const id = `category-in-use-${c.name.replace(/\W/g, '-')}`
   return (
-    <li className="grid gap-2 rounded-md border border-line bg-s2 p-3 medium:grid-cols-[minmax(0,1fr)_auto] medium:items-center">
-      <div className="grid min-w-0 gap-1">
-        <p className="flex min-w-0 flex-wrap items-center gap-2">
-          <span className="font-medium text-text text-ui">{c.name}</span>
+    <Card
+      gap={s['2']}
+      style={{
+        flexDirection: medium ? 'row' : 'column',
+        alignItems: medium ? 'center' : 'stretch',
+      }}
+    >
+      <View style={{ flex: medium ? 1 : undefined, minWidth: 0, gap: s['1'] }}>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: s['2'] }}>
+          <Text size={ui.size} leading={ui.leading} weight={500}>
+            {c.name}
+          </Text>
           {c.fixed && <Badge tone="neutral">{t('builtIn')}</Badge>}
-        </p>
-        <p className="flex min-w-0 items-center gap-2">
-          <Icon name="folder" size={16} className="shrink-0 text-text-3" />
-          <span className="min-w-0 font-mono text-mono text-text-2 [overflow-wrap:anywhere]">
+        </View>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: s['2'], minWidth: 0 }}>
+          <Icon name="folder" size={16} color="text-3" />
+          <Text
+            variant="mono"
+            color="text-2"
+            style={[{ flexShrink: 1, minWidth: 0 }, WRAP_ANYWHERE]}
+          >
             {c.folder}
-          </span>
-        </p>
-        <p id={inUse && !c.fixed ? id : undefined} className="text-caption text-text-3">
+          </Text>
+        </View>
+        <Text variant="caption" color="text-3">
           {inUse && !c.fixed
             ? t('inUse', { count: c.torrents })
             : t('torrents', { count: c.torrents })}
-        </p>
-      </div>
+        </Text>
+      </View>
       {!c.fixed && (
-        <Button
-          size="sm"
-          variant="danger"
-          className="justify-self-start medium:justify-self-end"
-          aria-label={t('removeLabel', { name: c.name })}
-          aria-describedby={inUse ? id : undefined}
-          disabled={inUse}
-          onClick={onRemove}
-        >
-          {t('remove')}
-        </Button>
+        <View style={{ alignSelf: medium ? 'center' : 'flex-start' }}>
+          <Button
+            size="sm"
+            variant="danger"
+            accessibilityLabel={t('removeLabel', { name: c.name })}
+            accessibilityHint={inUse ? t('inUse', { count: c.torrents }) : undefined}
+            disabled={inUse}
+            onPress={onRemove}
+          >
+            {t('remove')}
+          </Button>
+        </View>
       )}
-    </li>
+    </Card>
   )
 }
 
@@ -107,8 +140,7 @@ function AddCategory({ onSaved }: { onSaved: () => void }) {
     c.downloads.saveCategory({ body }),
   )
 
-  const submit = async (e: FormEvent) => {
-    e.preventDefault()
+  const submit = async () => {
     const n = name.trim()
     if (!n) return setErrors({ name: t('missing') })
     try {
@@ -127,17 +159,18 @@ function AddCategory({ onSaved }: { onSaved: () => void }) {
   }
 
   return (
-    <form onSubmit={submit} noValidate className="grid gap-3">
-      <div className="grid items-start gap-4 medium:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
+    <View style={{ gap: s['3'] }}>
+      <Columns shares={[1, 2]}>
         <Field label={t('name')} hint={t('nameHint')} error={errors.name}>
           <Input
             value={name}
             maxLength={40}
             spellCheck={false}
             autoCapitalize="none"
-            onChange={(e) => {
+            onSubmitEditing={() => void submit()}
+            onChangeText={(v) => {
               setErrors({})
-              setName(e.target.value)
+              setName(v)
             }}
           />
         </Field>
@@ -145,22 +178,23 @@ function AddCategory({ onSaved }: { onSaved: () => void }) {
           <Input
             value={folder}
             icon="folder"
+            mono
             placeholder={t('folderPlaceholder')}
             spellCheck={false}
             autoCapitalize="none"
-            className="font-mono"
-            onChange={(e) => {
+            onSubmitEditing={() => void submit()}
+            onChangeText={(v) => {
               setErrors({})
-              setFolder(e.target.value)
+              setFolder(v)
             }}
           />
         </Field>
-      </div>
-      <div>
-        <Button type="submit" icon="add" loading={save.pending}>
+      </Columns>
+      <View style={{ alignSelf: 'flex-start' }}>
+        <Button icon="add" loading={save.pending} onPress={() => void submit()}>
           {t('save')}
         </Button>
-      </div>
-    </form>
+      </View>
+    </View>
   )
 }

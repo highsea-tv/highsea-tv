@@ -7,8 +7,8 @@ import type { Area } from '../shot.ts'
 const mode = (name: RegExp) => (p: Page) => p.getByRole('radio', { name }).click()
 const provider = (name: string) => async (p: Page) => {
   await mode(/highsea connects/)(p)
-  await p.getByRole('combobox', { name: 'Provider' }).click()
-  await p.getByRole('option', { name, exact: true }).click()
+  await p.getByRole('button', { name: 'Provider', exact: true }).click()
+  await p.getByRole('menuitemradio', { name, exact: true }).click()
 }
 // tall enough that the save bar sits below the form rather than over it
 const connection = (p: Page) => p.getByRole('region', { name: 'Connection' })

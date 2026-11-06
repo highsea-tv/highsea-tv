@@ -11,15 +11,25 @@ import type { FieldCommon } from '../shared/controls.ts'
 import { Input } from './field.tsx'
 
 export type DateTimeInputProps = Pick<FieldCommon, 'size' | 'disabled'> & {
-  /** `YYYY-MM-DDTHH:MM`, in local time. */
+  /** `YYYY-MM-DDTHH:MM` in local time; with `mode="time"`, `HH:MM` (HTML's time input's form). */
   value: string
+  /** A date and a time (by default), or a time of day alone (Settings › Backups' time). */
+  mode?: 'datetime' | 'time'
   onChange: (value: string) => void
   invalid?: boolean
 }
 
 const WHOLE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/
+const WHOLE_TIME = /^([01]\d|2[0-3]):[0-5]\d$/
 
-export function DateTimeInput({ value, onChange, size, disabled, invalid }: DateTimeInputProps) {
+export function DateTimeInput({
+  value,
+  onChange,
+  size,
+  disabled,
+  invalid,
+  mode = 'datetime',
+}: DateTimeInputProps) {
   const [text, setText] = useState(value.replace('T', ' '))
   useEffect(() => setText(value.replace('T', ' ')), [value])
   return (
@@ -29,11 +39,12 @@ export function DateTimeInput({ value, onChange, size, disabled, invalid }: Date
       disabled={disabled}
       invalid={invalid}
       mono
-      placeholder="YYYY-MM-DD HH:MM"
+      placeholder={mode === 'time' ? 'HH:MM' : 'YYYY-MM-DD HH:MM'}
       onChangeText={(next) => {
         setText(next)
         const v = next.trim().replace(' ', 'T')
-        if (WHOLE.test(v) && !Number.isNaN(Date.parse(v))) onChange(v)
+        if (mode === 'time' ? WHOLE_TIME.test(v) : WHOLE.test(v) && !Number.isNaN(Date.parse(v)))
+          onChange(v)
       }}
     />
   )

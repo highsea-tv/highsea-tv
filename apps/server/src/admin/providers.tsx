@@ -2,15 +2,13 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // What every admin page sits in: the API client (same origin, so the session cookie goes with
 // every call; ADR 0018), Next's router and address for the admin's screens
-// (@highsea-tv/admin/navigation.tsx), and the design system's providers: the native renderer's
-// theme and the web renderer's, with its toasts. Nothing shows until the page has hydrated (the
-// owner's answer of 2026-11-05 to D1's report): the server's render is there for its styles,
+// (@highsea-tv/admin/navigation.tsx), and the native renderer's theme (the shell holds the
+// toasts). Nothing shows until the page has hydrated (the owner's answer of 2026-11-05 to D1's report): the server's render is there for its styles,
 // hidden, so a page appears once, laid out at the browser's own width, and with JavaScript off
 // the page is only its background.
 import { NavigationProvider } from '@highsea-tv/admin/navigation.tsx'
 import { createClient } from '@highsea-tv/sdk'
 import { ClientProvider } from '@highsea-tv/sdk/react'
-import { UIProvider } from '@highsea-tv/ui'
 import { ThemeProvider } from '@highsea-tv/ui/native'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { type ReactNode, useMemo, useSyncExternalStore } from 'react'
@@ -51,16 +49,14 @@ export function Providers({ children }: { children: ReactNode }) {
         {/* the library's native drawing, in highsea's default theme (the admin has no other) at
             the device's and window's form factor */}
         <ThemeProvider>
-          <UIProvider>
-            {/* hidden keeps the layout, so what hydrating measures is what then shows; contents
+          {/* hidden keeps the layout, so what hydrating measures is what then shows; contents
                 adds no box of its own (https://developer.mozilla.org/en-US/docs/Web/CSS/visibility) */}
-            <div
-              data-hydrated={hydrated || undefined}
-              style={{ display: 'contents', visibility: hydrated ? undefined : 'hidden' }}
-            >
-              {children}
-            </div>
-          </UIProvider>
+          <div
+            data-hydrated={hydrated || undefined}
+            style={{ display: 'contents', visibility: hydrated ? undefined : 'hidden' }}
+          >
+            {children}
+          </div>
         </ThemeProvider>
       </NavigationProvider>
     </ClientProvider>

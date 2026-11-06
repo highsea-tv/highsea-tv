@@ -18,10 +18,22 @@
 // languages, a select on its row that saves at once, as Remove does (the add dialog starts on it,
 // and lists, the library import and migration use it); and Tags, a group of their own below
 // (tag-settings.tsx).
+//
+// Drawn with the library's native renderer since D3 (one-client-platform-d.md), on the web through
+// react-native-web, with the same parts, words and behaviour as the web renderer's. A hint that
+// isn't only words (what Sintel's names would become, in mono) is drawn under the field's input,
+// as the library's Field draws a string hint, and gives way to an error as it does.
+//
+// Episode naming (the prototype's stage 6, Sonarr's formats) joins Naming when the server serves
+// shows (`useServes`, D3's answer 5): its own drafted route (series-settings.ts), drafted with the
+// rest, so one save bar saves both, as the prototype's does. A real server doesn't serve shows yet,
+// so its page is as before.
 import {
   COLON_REPLACEMENTS,
+  type EpisodeNaming,
   type LanguageProfile,
   type MediaManagementSettings,
+  MULTI_EPISODE_STYLES,
   type RootFolder,
 } from '@highsea-tv/api-contract'
 import { bytes } from '@highsea-tv/core/format'
@@ -34,6 +46,7 @@ import {
 } from '@highsea-tv/media/naming'
 import type { ApiError } from '@highsea-tv/sdk'
 import { useAction, useQuery } from '@highsea-tv/sdk/react'
+import { breakpoints } from '@highsea-tv/tokens'
 import {
   Badge,
   Button,
@@ -43,15 +56,31 @@ import {
   Input,
   Select,
   Switch,
+  Text,
   toast,
-} from '@highsea-tv/ui'
-import { type FormEvent, type ReactNode, useState } from 'react'
+  tokens,
+  useTheme,
+  useWindowAtLeast,
+} from '@highsea-tv/ui/native'
+import { type ReactNode, useState } from 'react'
+import { View, type ViewStyle } from 'react-native'
+import {
+  checkEpisodeNaming,
+  type MultiEpisodeStyle,
+  previewEpisodeFile,
+  previewSeasonFolder,
+  previewSeriesFolder,
+} from './episode-naming.ts'
 import { Loadable } from './loadable.tsx'
 import { media as messages } from './media-management-messages.ts'
 import { errorReason } from './metadata-locale.ts'
+import { useServes } from './serves.tsx'
 import { AreaPage, Group, SaveBar } from './settings.tsx'
+import { Card, Cards, Note, WRAP_ANYWHERE } from './settings-card.tsx'
 import { TagSettings } from './tag-settings.tsx'
 
+const s = tokens.space
+const ui = tokens.adminText.ui
 const TOPICS = ['settings.updated', 'movies.updated']
 
 /**
@@ -62,6 +91,27 @@ const TOKENS = ['Movie Title', 'Release Year', 'Quality Full', 'Movie CleanTitle
   .map((token) => `{${token}}`)
   .join(' ')
 
+/** Sonarr's tokens, the ones the episode previews know (episode-naming.ts). */
+const EPISODE_TOKENS = [
+  'Series Title',
+  'Series TitleYear',
+  'Series CleanTitle',
+  'season:00',
+  'episode:00',
+  'Episode Title',
+  'Air-Date',
+  'Quality Full',
+  'Release Group',
+]
+  .map((token) => `{${token}}`)
+  .join(' ')
+
+type Naming = typeof EpisodeNaming._output
+type NamingErrors = Partial<Record<keyof Naming, string>>
+
+/** Episode naming as loaded, when the server serves shows. */
+type Episodes = { loaded: Naming; reload: () => void }
+
 type Draft = Omit<MediaManagementSettings, 'recycleBinDays'> & { recycleBinDays: string }
 
 const draftOf = (s: MediaManagementSettings): Draft => ({
@@ -69,45 +119,86 @@ const draftOf = (s: MediaManagementSettings): Draft => ({
   recycleBinDays: String(s.recycleBinDays),
 })
 
+/** Two columns from medium widths, 16 apart (the web's `grid gap-4 medium:grid-cols-2`). */
+function Columns({ children }: { children: ReactNode }) {
+  const medium = useWindowAtLeast(breakpoints.medium)
+  return (
+    <View
+      style={
+        {
+          display: 'grid',
+          gridTemplateColumns: medium ? 'repeat(2, minmax(0, 1fr))' : 'minmax(0, 1fr)',
+          gap: s['4'],
+        } as unknown as ViewStyle
+      }
+    >
+      {children}
+    </View>
+  )
+}
+
+/** A name the import would give, in mono `text-2` inside a hint. */
+function Name({ children }: { children: ReactNode }) {
+  return (
+    <Text variant="caption" mono color="text-2">
+      {children}
+    </Text>
+  )
+}
+
 export function MediaManagement() {
   const t = useT(messages)
   const data = useQuery('settings:media-management', (c) => c.settings.mediaManagement(), [
     'settings.updated',
   ])
+  const shows = useServes('shows')
   const folders = <RootFolders />
+  const page = (episodes?: Episodes) =>
+    data.status === 'success' ? (
+      // a fresh draft whenever the saved settings change
+      <Form
+        key={JSON.stringify([data.data, episodes?.loaded])}
+        loaded={data.data}
+        reload={data.refetch}
+        folders={folders}
+        episodes={episodes}
+      />
+    ) : (
+      <>
+        <Loadable query={data} what={t('what')}>
+          {() => null}
+        </Loadable>
+        <Group title={t('importing.title')}>{folders}</Group>
+      </>
+    )
   return (
     <AreaPage id="media">
-      {data.status === 'success' ? (
-        // a fresh draft whenever the saved settings change
-        <Form
-          key={JSON.stringify(data.data)}
-          loaded={data.data}
-          reload={data.refetch}
-          folders={folders}
-        />
-      ) : (
-        <>
-          <Loadable query={data} what={t('what')}>
-            {() => null}
-          </Loadable>
-          <Group title={t('importing.title')}>{folders}</Group>
-        </>
-      )}
+      {shows ? <WithEpisodes>{page}</WithEpisodes> : page()}
       <TagSettings />
     </AreaPage>
   )
+}
+
+/** Reads episode naming; until it's loaded (or if it fails) the films' form is drawn without it. */
+function WithEpisodes({ children }: { children: (episodes?: Episodes) => ReactNode }) {
+  const q = useQuery('settings:episode-naming', (c) => c.series.naming(), ['settings.updated'])
+  return <>{children(q.status === 'success' ? { loaded: q.data, reload: q.refetch } : undefined)}</>
 }
 
 function Form({
   loaded,
   reload,
   folders,
+  episodes,
 }: {
   loaded: MediaManagementSettings
   reload: () => void
   folders: ReactNode
+  episodes?: Episodes
 }) {
   const t = useT(messages)
+  const theme = useTheme()
+  const medium = useWindowAtLeast(breakpoints.medium)
   const initial = draftOf(loaded)
   const [v, setDraft] = useState(initial)
   const [errors, setErrors] = useState<Partial<Record<keyof Draft, string>>>({})
@@ -118,9 +209,18 @@ function Form({
     setErrors({})
     setDraft((d) => ({ ...d, ...patch }))
   }
-  const dirty = JSON.stringify(v) !== JSON.stringify(initial)
+  const [ep, setEp] = useState(episodes?.loaded ?? null)
+  const [epErrors, setEpErrors] = useState<NamingErrors>({})
+  const saveEpisodes = useAction((c, body: Naming) => c.series.saveNaming({ body }))
+  const setEpisodes = (patch: Partial<Naming>) => {
+    setEpErrors({})
+    setEp((d) => (d ? { ...d, ...patch } : d))
+  }
+  const epDirty = JSON.stringify(ep) !== JSON.stringify(episodes?.loaded ?? null)
+  const dirty = JSON.stringify(v) !== JSON.stringify(initial) || epDirty
   // the import's own naming, so the preview and the files it names never disagree
   const naming = { colonReplacement: v.colonReplacement }
+  const file = buildFileName(v.fileFormat, PREVIEW_MOVIE, PREVIEW_FILE, naming)
 
   const submit = async () => {
     const days = v.recycleBinDays.trim()
@@ -130,7 +230,17 @@ function Form({
     if (!/^\d+$/.test(days) || recycleBinDays > 3650) problems.recycleBinDays = t('days.invalid')
     if (!v.folderFormat.trim()) problems.folderFormat = t('format.missing')
     if (!v.fileFormat.trim()) problems.fileFormat = t('format.missing')
-    if (Object.keys(problems).length) return setErrors(problems)
+    const epProblems: NamingErrors = {}
+    if (ep)
+      for (const [k, why] of Object.entries(checkEpisodeNaming(ep)))
+        epProblems[k as keyof Naming] =
+          why === 'blank'
+            ? t('format.missing')
+            : t('episodes.needsEpisode', {
+                token: why === 'needsEpisode' ? '{episode:00}' : '{Air-Date}',
+              })
+    setEpErrors(epProblems)
+    if (Object.keys(problems).length || Object.keys(epProblems).length) return setErrors(problems)
     try {
       await save.run({ ...v, chmod: v.chmod.trim(), recycleBinDays })
     } catch (e) {
@@ -138,67 +248,66 @@ function Form({
       if (reason && reason in v) setErrors({ [reason]: (e as Error).message })
       return toast.error(t('saveError'), { description: (e as Error).message })
     }
+    if (ep && epDirty)
+      try {
+        await saveEpisodes.run(ep)
+      } catch (e) {
+        const reason = errorReason(e)
+        if (reason && reason in ep) setEpErrors({ [reason]: (e as Error).message })
+        return toast.error(t('saveError'), { description: (e as Error).message })
+      }
     toast.success(t('saved'))
     reload()
+    if (epDirty) episodes?.reload()
   }
 
   return (
     <>
       <Group title={t('naming.title')} description={t('naming.description')}>
-        <Field inline label={t('rename')}>
-          <Switch checked={v.rename} onCheckedChange={(rename) => set({ rename })} />
-        </Field>
-        <Field
-          label={t('folder')}
-          hint={
-            <>
-              {t('becomes')}{' '}
-              <span className="font-mono text-text-2">
-                {buildFolderName(v.folderFormat, PREVIEW_MOVIE, naming)}
-              </span>
-            </>
-          }
-          error={errors.folderFormat}
-        >
+        <Switch
+          label={t('rename')}
+          checked={v.rename}
+          onCheckedChange={(rename) => set({ rename })}
+        />
+        <Field label={t('folder')} error={errors.folderFormat}>
           <Input
             value={v.folderFormat}
             disabled={!v.rename}
+            mono
             spellCheck={false}
-            onChange={(e) => set({ folderFormat: e.target.value })}
-            className="font-mono"
+            autoCapitalize="none"
+            onChangeText={(folderFormat) => set({ folderFormat })}
           />
+          {errors.folderFormat ? null : (
+            <Note>
+              {t('becomes')} <Name>{buildFolderName(v.folderFormat, PREVIEW_MOVIE, naming)}</Name>
+            </Note>
+          )}
         </Field>
-        <Field
-          label={t('file')}
-          hint={
-            <>
-              {t('becomes')}{' '}
-              <span className="font-mono text-text-2">
-                {buildFileName(v.fileFormat, PREVIEW_MOVIE, PREVIEW_FILE, naming)}.mkv
-              </span>
-              {' · '}
-              {/* a subtitle keeps the video's name, then its language: sidecarPath in
-                  @highsea-tv/subtitles/shared, which reads node:path, so it isn't imported here */}
-              <span className="font-mono text-text-2">
-                {buildFileName(v.fileFormat, PREVIEW_MOVIE, PREVIEW_FILE, naming)}.en.srt
-              </span>
-            </>
-          }
-          error={errors.fileFormat}
-        >
+        <Field label={t('file')} error={errors.fileFormat}>
           <Input
             value={v.fileFormat}
             disabled={!v.rename}
+            mono
             spellCheck={false}
-            onChange={(e) => set({ fileFormat: e.target.value })}
-            className="font-mono"
+            autoCapitalize="none"
+            onChangeText={(fileFormat) => set({ fileFormat })}
           />
+          {errors.fileFormat ? null : (
+            <Note>
+              {t('becomes')} <Name>{file}.mkv</Name>
+              {' · '}
+              {/* a subtitle keeps the video's name, then its language: sidecarPath in
+                  @highsea-tv/subtitles/shared, which reads node:path, so it isn't imported here */}
+              <Name>{file}.en.srt</Name>
+            </Note>
+          )}
         </Field>
-        <p className="text-caption text-text-3">
+        <Note>
           {t('tokens')} {TOKENS}
-        </p>
-        <div className="grid gap-4 medium:grid-cols-2">
-          <Field label={t('colon')} hint={t('colonHint')}>
+        </Note>
+        <Columns>
+          <Field label={t('colon')} hint={t('colonHint')} disabled={!v.rename}>
             <Select
               value={v.colonReplacement}
               disabled={!v.rename}
@@ -206,79 +315,185 @@ function Form({
               options={COLON_REPLACEMENTS.map((c) => ({ value: c, label: t(`colon.${c}`) }))}
             />
           </Field>
-        </div>
+        </Columns>
       </Group>
+      {ep ? <EpisodeNamingGroup v={ep} set={setEpisodes} errors={epErrors} /> : null}
       <Group title={t('importing.title')}>
-        <Field inline label={t('hardlinks')} hint={t('hardlinksHint')}>
-          <Switch checked={v.hardlinks} onCheckedChange={(hardlinks) => set({ hardlinks })} />
-        </Field>
-        <Field inline label={t('nfo')} hint={t('nfoHint')}>
-          <Switch checked={v.nfo} onCheckedChange={(nfo) => set({ nfo })} />
-        </Field>
-        <Field inline label={t('unmonitorDeleted')} hint={t('unmonitorDeletedHint')}>
-          <Switch
-            checked={v.unmonitorDeleted}
-            onCheckedChange={(unmonitorDeleted) => set({ unmonitorDeleted })}
-          />
-        </Field>
-        <Field inline label={t('permissions')} hint={t('permissionsHint')}>
-          <Switch checked={v.permissions} onCheckedChange={(permissions) => set({ permissions })} />
-        </Field>
-        <div className="grid gap-4 medium:grid-cols-2">
+        <Switch
+          label={t('hardlinks')}
+          hint={t('hardlinksHint')}
+          checked={v.hardlinks}
+          onCheckedChange={(hardlinks) => set({ hardlinks })}
+        />
+        <Switch
+          label={t('nfo')}
+          hint={t('nfoHint')}
+          checked={v.nfo}
+          onCheckedChange={(nfo) => set({ nfo })}
+        />
+        <Switch
+          label={t('unmonitorDeleted')}
+          hint={t('unmonitorDeletedHint')}
+          checked={v.unmonitorDeleted}
+          onCheckedChange={(unmonitorDeleted) => set({ unmonitorDeleted })}
+        />
+        <Switch
+          label={t('permissions')}
+          hint={t('permissionsHint')}
+          checked={v.permissions}
+          onCheckedChange={(permissions) => set({ permissions })}
+        />
+        <Columns>
           <Field label={t('chmod')} hint={t('chmodHint')} error={errors.chmod}>
             <Input
               value={v.chmod}
               disabled={!v.permissions}
+              mono
               inputMode="numeric"
+              keyboardType="number-pad"
               maxLength={3}
-              onChange={(e) => set({ chmod: e.target.value })}
-              className="font-mono"
+              onChangeText={(chmod) => set({ chmod })}
             />
           </Field>
           <Field label={t('recycleBin')} hint={t('recycleBinHint')} error={errors.recycleBin}>
             <Input
               value={v.recycleBin}
               placeholder="/data/.recycle"
+              mono
               spellCheck={false}
               autoCapitalize="none"
-              onChange={(e) => set({ recycleBin: e.target.value })}
-              className="font-mono"
+              onChangeText={(recycleBin) => set({ recycleBin })}
             />
           </Field>
-          <Field
-            label={t('days')}
-            hint={t('daysHint')}
-            error={errors.recycleBinDays}
-            className="medium:col-start-2"
-          >
-            <Input
-              type="number"
-              inputMode="numeric"
-              min={0}
-              max={3650}
-              value={v.recycleBinDays}
-              disabled={!v.recycleBin.trim()}
-              onChange={(e) => set({ recycleBinDays: e.target.value })}
-            />
-          </Field>
-        </div>
-        <div className="grid gap-4 border-line border-t pt-4">{folders}</div>
+          <View style={medium ? ({ gridColumnStart: 2 } as unknown as ViewStyle) : undefined}>
+            <Field label={t('days')} hint={t('daysHint')} error={errors.recycleBinDays}>
+              <Input
+                inputMode="numeric"
+                keyboardType="number-pad"
+                value={v.recycleBinDays}
+                disabled={!v.recycleBin.trim()}
+                onChangeText={(recycleBinDays) => set({ recycleBinDays })}
+              />
+            </Field>
+          </View>
+        </Columns>
+        <View
+          style={{
+            gap: s['4'],
+            paddingTop: s['4'],
+            borderTopWidth: 1,
+            borderTopColor: theme.colors.line,
+          }}
+        >
+          {folders}
+        </View>
       </Group>
       <SaveBar
         dirty={dirty}
-        saving={save.pending}
+        saving={save.pending || saveEpisodes.pending}
         onSave={submit}
         onDiscard={() => {
           setErrors({})
           setDraft(initial)
+          setEpErrors({})
+          setEp(episodes?.loaded ?? null)
         }}
       />
     </>
   )
 }
 
+// ---------------------------------------------------------------- episode naming
+
+function EpisodeNamingGroup({
+  v,
+  set,
+  errors,
+}: {
+  v: Naming
+  set: (patch: Partial<Naming>) => void
+  errors: NamingErrors
+}) {
+  const t = useT(messages)
+  const format = (key: keyof Naming, label: string, preview: ReactNode) => (
+    <Field label={label} error={errors[key]}>
+      <Input
+        value={v[key] as string}
+        disabled={!v.rename}
+        mono
+        spellCheck={false}
+        autoCapitalize="none"
+        onChangeText={(text) => set({ [key]: text })}
+      />
+      {errors[key] ? null : preview}
+    </Field>
+  )
+  const style = v.multiEpisodeStyle as MultiEpisodeStyle
+  return (
+    <Group title={t('episodes.title')} description={t('episodes.description')}>
+      <Switch
+        label={t('episodes.rename')}
+        checked={v.rename}
+        onCheckedChange={(rename) => set({ rename })}
+      />
+      {format(
+        'standardFormat',
+        t('episodes.standard'),
+        <View style={{ gap: s['0.5'] }}>
+          <Note style={WRAP_ANYWHERE}>
+            {t('becomes')} <Name>{previewEpisodeFile(v.standardFormat, style)}.mkv</Name>
+          </Note>
+          <Note style={WRAP_ANYWHERE}>
+            {t('episodes.multiPreview')}{' '}
+            <Name>{previewEpisodeFile(v.standardFormat, style, true)}.mkv</Name>
+          </Note>
+        </View>,
+      )}
+      {format(
+        'dailyFormat',
+        t('episodes.daily'),
+        <Note style={WRAP_ANYWHERE}>
+          {t('episodes.dailyHint')} <Name>{previewEpisodeFile(v.dailyFormat, style)}.mkv</Name>
+        </Note>,
+      )}
+      <Columns>
+        {format(
+          'seriesFolderFormat',
+          t('episodes.series'),
+          <Note style={WRAP_ANYWHERE}>
+            {t('becomes')} <Name>{previewSeriesFolder(v.seriesFolderFormat)}</Name>
+          </Note>,
+        )}
+        {format(
+          'seasonFolderFormat',
+          t('episodes.season'),
+          <Note style={WRAP_ANYWHERE}>
+            {t('becomes')} <Name>{previewSeasonFolder(v.seasonFolderFormat)}</Name>.{' '}
+            {t('episodes.specials')}
+          </Note>,
+        )}
+      </Columns>
+      <Field label={t('episodes.multi')} hint={t('episodes.multiHint')} disabled={!v.rename}>
+        <Select
+          value={v.multiEpisodeStyle}
+          disabled={!v.rename}
+          onValueChange={(m) => set({ multiEpisodeStyle: m as MultiEpisodeStyle })}
+          options={MULTI_EPISODE_STYLES.map((m) => ({
+            value: m,
+            label: t(`episodes.multi.${m}`),
+          }))}
+        />
+      </Field>
+      <Note>
+        {t('tokens')} {EPISODE_TOKENS}
+      </Note>
+    </Group>
+  )
+}
+
 function RootFolders() {
   const t = useT(messages)
+  const theme = useTheme()
   const folders = useQuery('settings:root-folders', (c) => c.rootFolders.list(), TOPICS)
   const languages = useQuery('language-profiles', (c) => c.subtitles.languageProfiles(), [
     'subtitles.updated',
@@ -286,19 +501,29 @@ function RootFolders() {
   const [removing, setRemoving] = useState<RootFolder | null>(null)
   const remove = useAction((c, id: string) => c.rootFolders.remove({ params: { id } }))
   return (
-    <div className="grid gap-4">
-      <div className="grid gap-0.5">
-        <h3 className="font-semibold text-text text-ui">{t('folders.title')}</h3>
-        <p className="text-caption text-text-3">{t('folders.description')}</p>
-      </div>
+    <View style={{ gap: s['4'] }}>
+      <View style={{ gap: s['0.5'] }}>
+        <Text size={ui.size} leading={ui.leading} weight={600} role="heading" aria-level={3}>
+          {t('folders.title')}
+        </Text>
+        <Note>{t('folders.description')}</Note>
+      </View>
       <Loadable query={folders} what={t('folders.what')}>
         {(fs) =>
           fs.length === 0 ? (
-            <p className="rounded-md border border-line bg-s2 p-4 text-center text-caption text-text-3">
-              {t('folders.none')}
-            </p>
+            <View
+              style={{
+                padding: s['4'],
+                borderWidth: 1,
+                borderColor: theme.colors.line,
+                borderRadius: tokens.radius.md,
+                backgroundColor: theme.colors.s2,
+              }}
+            >
+              <Note style={{ textAlign: 'center' }}>{t('folders.none')}</Note>
+            </View>
           ) : (
-            <ul aria-label={t('folders.title')} className="grid gap-2">
+            <Cards label={t('folders.title')}>
               {fs.map((f) => (
                 <Folder
                   key={f.id}
@@ -308,14 +533,14 @@ function RootFolders() {
                   onSaved={folders.refetch}
                 />
               ))}
-            </ul>
+            </Cards>
           )
         }
       </Loadable>
       <AddFolder onAdded={folders.refetch} />
       <ConfirmDialog
         open={!!removing}
-        onOpenChange={(o) => !o && setRemoving(null)}
+        onClose={() => setRemoving(null)}
         title={t('folders.removeTitle', { path: removing?.path ?? '' })}
         description={t('folders.removeBody')}
         confirmLabel={t('folders.removeConfirm')}
@@ -333,11 +558,13 @@ function RootFolders() {
             )
         }}
       />
-    </div>
+    </View>
   )
 }
 
 const NO_LANGUAGES = 'none'
+/** The languages select's width from medium widths (the web's `medium:w-56`). */
+const LANGUAGES_WIDTH = s['16'] * 3 + s['8']
 
 function Folder({
   folder: f,
@@ -351,6 +578,7 @@ function Folder({
   onSaved: () => void
 }) {
   const t = useT(messages)
+  const medium = useWindowAtLeast(breakpoints.medium)
   const inUse = f.movies > 0
   const save = useAction((c, languageProfileId: string | null) =>
     c.rootFolders.update({ params: { id: f.id }, body: { languageProfileId } }),
@@ -364,16 +592,24 @@ function Folder({
       (e: Error) => toast.error(t('folders.languagesFailed'), { description: e.message }),
     )
   return (
-    <li className="grid gap-2 rounded-md border border-line bg-s2 p-3 medium:grid-cols-[minmax(0,1fr)_auto] medium:items-center">
-      <div className="grid min-w-0 gap-1">
-        <p className="flex min-w-0 items-center gap-2">
-          <Icon name="folder" size={16} className="shrink-0 text-text-3" />
-          <span className="min-w-0 font-mono text-mono text-text [overflow-wrap:anywhere]">
+    <Card
+      gap={s['2']}
+      style={medium ? { flexDirection: 'row', alignItems: 'center', gap: s['2'] } : undefined}
+    >
+      <View style={{ flex: medium ? 1 : undefined, minWidth: 0, gap: s['1'] }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: s['2'], minWidth: 0 }}>
+          <Icon name="folder" size={16} color="text-3" />
+          <Text
+            size={ui.size}
+            leading={ui.leading}
+            mono
+            style={[{ flexShrink: 1, minWidth: 0 }, WRAP_ANYWHERE]}
+          >
             {f.path}
-          </span>
-          {!f.accessible && <Badge tone="warning">{t('folders.unreadable')}</Badge>}
-        </p>
-        <p className="text-caption text-text-3">
+          </Text>
+          {f.accessible ? null : <Badge tone="warning">{t('folders.unreadable')}</Badge>}
+        </View>
+        <Note>
           {[
             f.free !== null && f.total !== null
               ? t('folders.free', { free: bytes(f.free), total: bytes(f.total) })
@@ -384,48 +620,49 @@ function Folder({
           ]
             .filter(Boolean)
             .join(' · ')}
-        </p>
-        {inUse && (
-          <p id={`in-use-${f.id}`} className="text-caption text-text-3">
-            {t('folders.inUse', { count: f.movies })}
-          </p>
-        )}
-        <div className="flex flex-wrap items-center gap-2 text-caption text-text-3">
-          <span aria-hidden>{t('folders.languages')}</span>
-          <Select
-            aria-label={t('folders.languagesLabel', { path: f.path })}
-            value={f.languageProfileId ?? NO_LANGUAGES}
-            disabled={save.pending}
-            onValueChange={setLanguages}
-            options={[
-              { value: NO_LANGUAGES, label: t('folders.languagesNone') },
-              ...languages.map((p) => ({ value: p.id, label: p.name })),
-            ]}
-            className="w-full medium:w-56"
-          />
-        </div>
-      </div>
-      <div className="flex flex-wrap gap-2 justify-self-start medium:justify-self-end">
-        <Button size="sm" variant="ghost" icon="import" asChild>
-          <a
-            href={`/activity/import?mode=library&root=${encodeURIComponent(f.path)}`}
-            aria-label={t('folders.importExistingLabel', { path: f.path })}
-          >
-            {t('folders.importExisting')}
-          </a>
+        </Note>
+        {inUse ? <Note>{t('folders.inUse', { count: f.movies })}</Note> : null}
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: s['2'] }}>
+          <Text variant="caption" color="text-3" aria-hidden>
+            {t('folders.languages')}
+          </Text>
+          <View style={medium ? { width: LANGUAGES_WIDTH } : { width: '100%' }}>
+            <Select
+              aria-label={t('folders.languagesLabel', { path: f.path })}
+              value={f.languageProfileId ?? NO_LANGUAGES}
+              disabled={save.pending}
+              onValueChange={setLanguages}
+              options={[
+                { value: NO_LANGUAGES, label: t('folders.languagesNone') },
+                ...languages.map((p) => ({ value: p.id, label: p.name })),
+              ]}
+            />
+          </View>
+        </View>
+      </View>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: s['2'] }}>
+        <Button
+          size="sm"
+          variant="ghost"
+          icon="import"
+          href={`/activity/import?mode=library&root=${encodeURIComponent(f.path)}`}
+          accessibilityLabel={t('folders.importExistingLabel', { path: f.path })}
+        >
+          {t('folders.importExisting')}
         </Button>
         <Button
           size="sm"
           variant="danger"
-          aria-label={t('folders.removeLabel', { path: f.path })}
-          aria-describedby={inUse ? `in-use-${f.id}` : undefined}
+          accessibilityLabel={t('folders.removeLabel', { path: f.path })}
+          // the line above says why; React Native has no aria-describedby, so it's the hint
+          accessibilityHint={inUse ? t('folders.inUse', { count: f.movies }) : undefined}
           disabled={inUse}
-          onClick={onRemove}
+          onPress={onRemove}
         >
           {t('folders.remove')}
         </Button>
-      </div>
-    </li>
+      </View>
+    </Card>
   )
 }
 
@@ -435,8 +672,7 @@ function AddFolder({ onAdded }: { onAdded: () => void }) {
   const [error, setError] = useState<string | null>(null)
   const add = useAction((c, p: string) => c.rootFolders.add({ body: { path: p } }))
 
-  const submit = async (e: FormEvent) => {
-    e.preventDefault()
+  const submit = async () => {
     const p = path.trim()
     if (!p) return setError(t('add.missing'))
     if (!p.startsWith('/')) return setError(t('add.notAbsolute'))
@@ -463,26 +699,27 @@ function AddFolder({ onAdded }: { onAdded: () => void }) {
   }
 
   return (
-    <form onSubmit={submit} noValidate className="grid gap-2">
-      <Field label={t('add.label')} hint={t('add.hint')} error={error ?? undefined}>
-        <div className="flex flex-wrap gap-2">
+    <Field label={t('add.label')} hint={t('add.hint')} error={error ?? undefined}>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: s['2'] }}>
+        <View style={{ flexGrow: 1, flexShrink: 1, flexBasis: s['12'] * 4, minWidth: 0 }}>
           <Input
             value={path}
             icon="folder"
+            mono
             placeholder={t('add.placeholder')}
             spellCheck={false}
             autoCapitalize="none"
-            className="min-w-0 flex-1 basis-48 font-mono"
-            onChange={(e) => {
+            onChangeText={(v) => {
               setError(null)
-              setPath(e.target.value)
+              setPath(v)
             }}
+            onSubmitEditing={submit}
           />
-          <Button type="submit" icon="add" loading={add.pending}>
-            {t('add.submit')}
-          </Button>
-        </div>
-      </Field>
-    </form>
+        </View>
+        <Button icon="add" loading={add.pending} onPress={submit}>
+          {t('add.submit')}
+        </Button>
+      </View>
+    </Field>
   )
 }

@@ -15,6 +15,9 @@
 //   with an empty preferred size or maximum meaning no limit, as TRaSH's defaults leave them.
 // Each is a draft with the save bar, like every settings page; the server checks again, and a name
 // it refuses (`name-taken`) shows under the field.
+// Drawn with the library's native renderer since D3 (one-client-platform-d.md), on the web through
+// react-native-web, with the same parts, words and behaviour as the web renderer's. The qualities'
+// sortable list takes its words from curation's, the one other sortable list in the admin.
 import type {
   CustomFormat as ApiFormat,
   QualityProfile as ApiProfile,
@@ -31,6 +34,7 @@ import {
   type CustomFormat,
   completeItems,
   conditionHolds,
+  defaultEpisodeSizes,
   defaultQualitySizes,
   describeCondition,
   describeFormat,
@@ -52,6 +56,7 @@ import {
   validateFormat,
 } from '@highsea-tv/quality/browser'
 import { useAction, useQuery } from '@highsea-tv/sdk/react'
+import { breakpoints } from '@highsea-tv/tokens'
 import {
   Badge,
   Banner,
@@ -62,10 +67,9 @@ import {
   Field,
   Icon,
   Input,
-  Menu,
-  MenuContent,
-  MenuItem,
-  MenuTrigger,
+  type InputProps,
+  Press,
+  SegmentedControl,
   Select,
   SortableList,
   Switch,
@@ -76,30 +80,60 @@ import {
   TableHead,
   TableHeader,
   TableRow,
+  Text,
+  TitleLink,
   toast,
-} from '@highsea-tv/ui'
+  tokens,
+  useTheme,
+  useWindowAtLeast,
+} from '@highsea-tv/ui/native'
 import { type ReactNode, useMemo, useState } from 'react'
+import { View, type ViewStyle } from 'react-native'
+import { useSortMessages } from './curation.tsx'
 import { Loadable } from './loadable.tsx'
 import { errorReason } from './metadata-locale.ts'
 import { useRouter } from './navigation.tsx'
 import { editors as messages } from './quality-editors-messages.ts'
+import { useServes } from './serves.tsx'
 import { Group, SaveBar } from './settings.tsx'
+import { Note, WRAP_ANYWHERE } from './settings-card.tsx'
 import { AdminPage } from './shell.tsx'
+import { RowMenu } from './table-parts.tsx'
 
 const TOPICS = ['settings.updated']
+const s = tokens.space
+const ui = tokens.adminText.ui
+const figure = tokens.adminText.figure
+/** react-native-web's link prop, which React Native's types don't name. */
+const linkTo = (href: string) => ({ href }) as object
+/** CSS grid on the web, through react-native-web's style pass-through. */
+const grid = (style: object) => style as unknown as ViewStyle
 
 // ---------------------------------------------------------------- shared
 
 /** The way back to Settings › Profiles and formats (or Quality), above the editor. */
-function Back({ to, children }: { to: string; children: ReactNode }) {
+function Back({ to, children }: { to: string; children: string }) {
   return (
-    <a
-      href={to}
-      className="flex items-center gap-1 justify-self-start rounded-sm text-text-2 text-ui outline-none hover:text-text focus-visible:ring-focus"
+    <Press
+      role="link"
+      {...linkTo(to)}
+      style={{
+        alignSelf: 'flex-start',
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: s['1'],
+        borderRadius: tokens.radius.sm,
+      }}
     >
-      <Icon name="chevron-left" size={16} />
-      {children}
-    </a>
+      {({ hovered }) => (
+        <>
+          <Icon name="chevron-left" size={16} color={hovered ? 'text' : 'text-2'} />
+          <Text size={ui.size} leading={ui.leading} color={hovered ? 'text' : 'text-2'}>
+            {children}
+          </Text>
+        </>
+      )}
+    </Press>
   )
 }
 
@@ -109,11 +143,7 @@ function Missing() {
     <EmptyState
       icon="search"
       title={t('missing')}
-      action={
-        <Button asChild>
-          <a href="/settings/profiles">{t('back')}</a>
-        </Button>
-      }
+      action={<Button href="/settings/profiles">{t('back')}</Button>}
     >
       {t('missingBody')}
     </EmptyState>
@@ -124,6 +154,59 @@ function Missing() {
 const whole = (value: string, old: number) => {
   const n = Number(value)
   return value.trim() === '' || !Number.isFinite(n) ? old : Math.round(n)
+}
+
+/**
+ * A number's field: what's typed stays as typed while it's half done ("", "-", "1."), and the
+ * figure follows the value when it changes from outside (a Reset, a Discard), as a browser's
+ * number field keeps its text. `onText` gets each change.
+ */
+function NumberInput({
+  value,
+  onText,
+  ...props
+}: Omit<InputProps, 'value' | 'onChangeText'> & {
+  value: number | null
+  onText: (text: string) => void
+}) {
+  const shown = (v: number | null) => (v === null ? '' : String(v))
+  const [text, setText] = useState(shown(value))
+  const [seen, setSeen] = useState(value)
+  if (value !== seen) {
+    setSeen(value)
+    const typed = text.trim() === '' ? null : Number(text)
+    if (typed !== value) setText(shown(value))
+  }
+  return (
+    <Input
+      inputMode="decimal"
+      keyboardType="numbers-and-punctuation"
+      mono
+      {...props}
+      value={text}
+      onChangeText={(v) => {
+        setText(v)
+        onText(v)
+      }}
+    />
+  )
+}
+
+/** Fields side by side: `columns` from medium widths, one above another below (16 apart). */
+function Columns({ columns, children }: { columns: string; children: ReactNode }) {
+  const medium = useWindowAtLeast(breakpoints.medium)
+  return (
+    <View
+      style={grid({
+        display: 'grid',
+        gridTemplateColumns: medium ? columns : 'minmax(0, 1fr)',
+        alignItems: 'start',
+        gap: s['4'],
+      })}
+    >
+      {children}
+    </View>
+  )
 }
 
 const LANGUAGES = [
@@ -174,13 +257,46 @@ function EditorPage<T>({
 }) {
   return (
     <AdminPage title={title} description={description} actions={actions}>
-      <div className="grid min-w-0 max-w-240 content-start gap-6">
+      {/* the web's max-w-240: 960 */}
+      <View style={{ minWidth: 0, maxWidth: s['16'] * 15, gap: s['6'] }}>
         {back}
         <Loadable query={query} what={what}>
           {children}
         </Loadable>
-      </div>
+      </View>
     </AdminPage>
+  )
+}
+
+/** The page's Delete, asking first. */
+function DeleteButton({
+  title,
+  description,
+  confirmLabel,
+  onConfirm,
+}: {
+  title: string
+  description: string
+  confirmLabel: string
+  onConfirm: () => void
+}) {
+  const t = useT(messages)
+  const [open, setOpen] = useState(false)
+  return (
+    <>
+      <Button variant="danger" icon="delete" hasPopup="dialog" onPress={() => setOpen(true)}>
+        {t('delete')}
+      </Button>
+      <ConfirmDialog
+        open={open}
+        onClose={() => setOpen(false)}
+        title={title}
+        description={description}
+        confirmLabel={confirmLabel}
+        destructive
+        onConfirm={onConfirm}
+      />
+    </>
   )
 }
 
@@ -255,16 +371,10 @@ function DeleteProfile({ profile }: { profile: ApiProfile }) {
   const router = useRouter()
   const remove = useAction((c, id: string) => c.quality.removeProfile({ params: { id } }))
   return (
-    <ConfirmDialog
-      trigger={
-        <Button variant="danger" icon="delete">
-          {t('delete')}
-        </Button>
-      }
+    <DeleteButton
       title={t('profile.deleteTitle', { name: profile.name })}
       description={t('profile.deleteBody')}
       confirmLabel={t('profile.deleteConfirm')}
-      destructive
       onConfirm={() =>
         remove.run(profile.id).then(
           () => {
@@ -338,9 +448,9 @@ function ProfileForm({
   return (
     <>
       <Group title={t('profile.group')}>
-        <div className="grid items-start gap-4 medium:grid-cols-2">
+        <Columns columns="repeat(2, minmax(0, 1fr))">
           <Field label={t('profile.name')} error={touched || !isNew ? nameError : undefined}>
-            <Input value={p.name} onChange={(e) => set({ name: e.target.value })} />
+            <Input value={p.name} onChangeText={(name) => set({ name })} />
           </Field>
           <Field label={t('profile.language')} hint={t('profile.languageHint')}>
             <Select
@@ -354,26 +464,24 @@ function ProfileForm({
             />
           </Field>
           <Field label={t('profile.wait')} hint={t('profile.waitHint')} error={waitError}>
-            <Input
-              type="number"
-              min={0}
-              max={MAX_WAIT_MINUTES}
+            <NumberInput
               value={p.waitMinutes}
-              onChange={(e) => set({ waitMinutes: whole(e.target.value, p.waitMinutes) })}
-              className="font-mono"
+              inputMode="numeric"
+              keyboardType="number-pad"
+              onText={(v) => set({ waitMinutes: whole(v, p.waitMinutes) })}
             />
           </Field>
-        </div>
+        </Columns>
       </Group>
       <Qualities profile={p} set={set} />
       <Group title={t('profile.upgrades')} description={t('profile.upgradesDescription')}>
-        <Field inline label={t('profile.upgradeAllowed')} hint={t('profile.upgradeAllowedHint')}>
-          <Switch
-            checked={p.upgradeAllowed}
-            onCheckedChange={(upgradeAllowed) => set({ upgradeAllowed })}
-          />
-        </Field>
-        <div className="grid items-start gap-4 medium:grid-cols-2">
+        <Switch
+          label={t('profile.upgradeAllowed')}
+          hint={t('profile.upgradeAllowedHint')}
+          checked={p.upgradeAllowed}
+          onCheckedChange={(upgradeAllowed) => set({ upgradeAllowed })}
+        />
+        <Columns columns="repeat(2, minmax(0, 1fr))">
           <Field label={t('profile.cutoff')} hint={t('profile.cutoffHint')} error={cutoffError}>
             <Select
               value={p.cutoff}
@@ -383,49 +491,37 @@ function ProfileForm({
             />
           </Field>
           <Field label={t('profile.cutoffScore')} hint={t('profile.cutoffScoreHint')}>
-            <Input
-              type="number"
+            <NumberInput
               value={p.cutoffFormatScore}
               disabled={!p.upgradeAllowed}
-              onChange={(e) =>
-                set({ cutoffFormatScore: whole(e.target.value, p.cutoffFormatScore) })
-              }
-              className="font-mono"
+              onText={(v) => set({ cutoffFormatScore: whole(v, p.cutoffFormatScore) })}
             />
           </Field>
           <Field label={t('profile.minScore')} hint={t('profile.minScoreHint')}>
-            <Input
-              type="number"
+            <NumberInput
               value={p.minFormatScore}
-              onChange={(e) => set({ minFormatScore: whole(e.target.value, p.minFormatScore) })}
-              className="font-mono"
+              onText={(v) => set({ minFormatScore: whole(v, p.minFormatScore) })}
             />
           </Field>
           <Field label={t('profile.minUpgrade')} hint={t('profile.minUpgradeHint')}>
-            <Input
-              type="number"
-              min={1}
+            <NumberInput
               value={p.minUpgradeFormatScore}
               disabled={!p.upgradeAllowed}
-              onChange={(e) =>
-                set({
-                  minUpgradeFormatScore: Math.max(
-                    1,
-                    whole(e.target.value, p.minUpgradeFormatScore),
-                  ),
-                })
+              inputMode="numeric"
+              keyboardType="number-pad"
+              onText={(v) =>
+                set({ minUpgradeFormatScore: Math.max(1, whole(v, p.minUpgradeFormatScore)) })
               }
-              className="font-mono"
             />
           </Field>
-        </div>
+        </Columns>
       </Group>
       <FormatScores profile={p} formats={formats} set={set} />
-      {other.length > 0 && (
+      {other.length > 0 ? (
         <Banner tone="danger" title={t('profile.cantSave')}>
-          {other.map((i) => i.message).join('. ')}.
+          {`${other.map((i) => i.message).join('. ')}.`}
         </Banner>
-      )}
+      ) : null}
       <SaveBar
         dirty={dirty || isNew}
         saving={save.pending}
@@ -442,6 +538,8 @@ type Item = ApiProfile['items'][number]
 const isGroup = (i: Item) => i.qualities.length > 1
 /** Each item's first quality is unique across the profile, so it keys the row while a group is renamed. */
 const itemKey = (i: Item) => i.qualities[0] ?? i.name
+/** A group's name field at most 288 wide (the web's `max-w-72`). */
+const GROUP_NAME_WIDTH = s['16'] * 4 + s['8']
 
 function Qualities({
   profile: p,
@@ -451,6 +549,7 @@ function Qualities({
   set: (patch: Partial<ProfileDraft>) => void
 }) {
   const t = useT(messages)
+  const sortMessages = useSortMessages()
   const replaceAt = (at: number, next: Item[], cutoff = p.cutoff) =>
     set({ items: [...p.items.slice(0, at), ...next, ...p.items.slice(at + next.length)], cutoff })
 
@@ -478,85 +577,93 @@ function Qualities({
   return (
     <Group title={t('profile.qualities')} description={t('profile.qualitiesDescription')}>
       <SortableList
-        aria-label={t('profile.qualitiesLabel')}
+        accessibilityLabel={t('profile.qualitiesLabel')}
         items={p.items}
         id={itemKey}
         label={(i) => i.name}
         onChange={(items) => set({ items })}
-        className="grid gap-1.5"
-        itemClassName="rounded-md border border-line bg-s2"
+        messages={sortMessages}
       >
         {(it, handle) => {
           const at = p.items.indexOf(it)
           const group = isGroup(it)
           return (
-            <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5 px-2 py-1.5">
+            <View
+              style={{
+                flexDirection: 'row',
+                flexWrap: 'wrap',
+                alignItems: 'center',
+                columnGap: s['3'],
+                rowGap: s['1'] + s['0.5'],
+                minWidth: 0,
+              }}
+            >
               {handle}
               <Checkbox
-                aria-label={t('profile.download', { name: it.name })}
+                label={t('profile.download', { name: it.name })}
+                hideLabel
                 checked={it.allowed}
                 onCheckedChange={(v) => replaceAt(at, [{ ...it, allowed: v === true }])}
               />
-              <div className="grid min-w-0 flex-1 basis-24 gap-0.5">
+              <View style={{ flexGrow: 1, flexShrink: 1, flexBasis: s['12'] * 2, minWidth: 0 }}>
                 {group ? (
-                  <Input
-                    aria-label={t('profile.groupName', { qualities: it.qualities.join(', ') })}
-                    value={it.name}
-                    onChange={(e) =>
-                      replaceAt(
-                        at,
-                        [{ ...it, name: e.target.value }],
-                        p.cutoff === it.name ? e.target.value : p.cutoff,
-                      )
-                    }
-                    className="max-w-72"
-                  />
+                  <View style={{ maxWidth: GROUP_NAME_WIDTH }}>
+                    <Field
+                      label={t('profile.groupName', { qualities: it.qualities.join(', ') })}
+                      hideLabel
+                    >
+                      <Input
+                        value={it.name}
+                        onChangeText={(name) =>
+                          replaceAt(at, [{ ...it, name }], p.cutoff === it.name ? name : p.cutoff)
+                        }
+                      />
+                    </Field>
+                  </View>
                 ) : (
-                  <span className={it.allowed ? 'text-text text-ui' : 'text-text-3 text-ui'}>
+                  <Text size={ui.size} leading={ui.leading} color={it.allowed ? 'text' : 'text-3'}>
                     {it.name}
-                  </span>
+                  </Text>
                 )}
-                {group && (
-                  <span className="truncate text-caption text-text-3">
+                {group ? (
+                  <Note style={{ marginTop: s['0.5'] }}>
                     {t('profile.equal', { qualities: it.qualities.join(' · ') })}
-                  </span>
-                )}
-              </div>
-              {p.upgradeAllowed && p.cutoff === it.name && (
+                  </Note>
+                ) : null}
+              </View>
+              {p.upgradeAllowed && p.cutoff === it.name ? (
                 <Badge tone="accent">{t('profile.cutoffBadge')}</Badge>
-              )}
-              <Menu>
-                <MenuTrigger asChild>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    iconOnly
-                    icon="more"
-                    aria-label={t('profile.more', { name: it.name })}
-                  />
-                </MenuTrigger>
-                <MenuContent>
-                  <MenuItem
-                    icon="add"
-                    disabled={at === p.items.length - 1}
-                    onSelect={() => groupWithNext(at)}
-                  >
-                    {t('profile.groupWithNext')}
-                  </MenuItem>
-                  {group && (
-                    <MenuItem icon="remove" onSelect={() => ungroup(at)}>
-                      {t('profile.ungroup')}
-                    </MenuItem>
-                  )}
-                </MenuContent>
-              </Menu>
-            </div>
+              ) : null}
+              <RowMenu
+                label={t('profile.more', { name: it.name })}
+                items={[
+                  {
+                    label: t('profile.groupWithNext'),
+                    icon: 'add',
+                    disabled: at === p.items.length - 1,
+                    onSelect: () => groupWithNext(at),
+                  },
+                  ...(group
+                    ? [
+                        {
+                          label: t('profile.ungroup'),
+                          icon: 'remove' as const,
+                          onSelect: () => ungroup(at),
+                        },
+                      ]
+                    : []),
+                ]}
+              />
+            </View>
           )
         }}
       </SortableList>
     </Group>
   )
 }
+
+/** A score's field, 96 wide at the cell's end (the web's `ms-auto w-24 text-end`). */
+const SCORE_WIDTH = s['12'] * 2
 
 function FormatScores({
   profile: p,
@@ -579,10 +686,10 @@ function FormatScores({
   return (
     <Group title={t('profile.scores')} description={t('profile.scoresDescription')}>
       {formats.length === 0 ? (
-        <p className="text-caption text-text-3">{t('profile.noFormats')}</p>
+        <Note>{t('profile.noFormats')}</Note>
       ) : (
         <TableFrame>
-          <Table aria-label={t('profile.scores')}>
+          <Table label={t('profile.scores')}>
             <TableHeader>
               <TableRow>
                 <TableHead>{t('profile.format')}</TableHead>
@@ -593,22 +700,24 @@ function FormatScores({
             <TableBody>
               {formats.map((f) => (
                 <TableRow key={f.id}>
-                  <TableCell className="text-text">
-                    <a href={`/settings/profiles/formats/${f.id}`} className="hover:underline">
-                      {f.name}
-                    </a>
+                  <TableCell>
+                    <TitleLink href={`/settings/profiles/formats/${f.id}`}>{f.name}</TitleLink>
                   </TableCell>
-                  <TableCell className="whitespace-normal break-words font-mono text-figure text-text-2">
-                    {describeFormat(f as CustomFormat, locale).join(' · ')}
+                  <TableCell>
+                    <Description>
+                      {describeFormat(f as CustomFormat, locale).join(' · ')}
+                    </Description>
                   </TableCell>
                   <TableCell numeric>
-                    <Input
-                      type="number"
-                      aria-label={t('profile.scoreLabel', { name: f.name })}
-                      value={scoreOf(f.id)}
-                      onChange={(e) => setScore(f.id, whole(e.target.value, scoreOf(f.id)))}
-                      className="ms-auto w-24 text-end font-mono"
-                    />
+                    <View style={{ width: SCORE_WIDTH }}>
+                      <Field label={t('profile.scoreLabel', { name: f.name })} hideLabel size="sm">
+                        <NumberInput
+                          value={scoreOf(f.id)}
+                          style={{ textAlign: 'right' }}
+                          onText={(v) => setScore(f.id, whole(v, scoreOf(f.id)))}
+                        />
+                      </Field>
+                    </View>
                   </TableCell>
                 </TableRow>
               ))}
@@ -616,10 +725,33 @@ function FormatScores({
           </Table>
         </TableFrame>
       )}
-      <Button size="sm" variant="secondary" icon="add" className="justify-self-start" asChild>
-        <a href="/settings/profiles/formats/new">{t('profile.newFormat')}</a>
-      </Button>
+      <View style={{ alignSelf: 'flex-start' }}>
+        <Button size="sm" variant="secondary" icon="add" href="/settings/profiles/formats/new">
+          {t('profile.newFormat')}
+        </Button>
+      </View>
     </Group>
+  )
+}
+
+/** What a format or condition matches, in mono `figure` type, wrapping where it must. */
+function Description({
+  children,
+  color = 'text-2',
+}: {
+  children: string
+  color?: 'text-2' | 'text-3'
+}) {
+  return (
+    <Text
+      size={figure.size}
+      leading={figure.leading}
+      mono
+      color={color}
+      style={[{ flexShrink: 1, minWidth: 0 }, WRAP_ANYWHERE]}
+    >
+      {children}
+    </Text>
   )
 }
 
@@ -705,16 +837,10 @@ function DeleteFormat({ format }: { format: ApiFormat }) {
   const router = useRouter()
   const remove = useAction((c, id: string) => c.quality.removeFormat({ params: { id } }))
   return (
-    <ConfirmDialog
-      trigger={
-        <Button variant="danger" icon="delete">
-          {t('delete')}
-        </Button>
-      }
+    <DeleteButton
       title={t('format.deleteTitle', { name: format.name })}
       description={t('format.deleteBody')}
       confirmLabel={t('format.deleteConfirm')}
-      destructive
       onConfirm={() =>
         remove.run(format.id).then(
           () => {
@@ -738,6 +864,7 @@ function FormatForm({
   reload: () => void
 }) {
   const t = useT(messages)
+  const theme = useTheme()
   const locale = useLocale()
   const router = useRouter()
   const [f, setDraft] = useState(loaded)
@@ -790,27 +917,35 @@ function FormatForm({
     <>
       <Group title={t('format.group')}>
         <Field label={t('format.name')} error={touched || !isNew ? nameError : undefined}>
-          <Input value={f.name} onChange={(e) => set({ name: e.target.value })} />
+          <Input value={f.name} onChangeText={(name) => set({ name })} />
         </Field>
-        {format?.source === 'preset' && (
-          <p className="text-caption text-text-3">
-            {format.edited ? t('format.yours') : t('format.preset')}
-          </p>
-        )}
+        {format?.source === 'preset' ? (
+          <Note>{format.edited ? t('format.yours') : t('format.preset')}</Note>
+        ) : null}
       </Group>
       <Group title={t('format.conditions')} description={t('format.conditionsDescription')}>
-        {general && (
-          <p role="alert" className="text-badge-danger text-ui">
+        {general ? (
+          <Text size={ui.size} leading={ui.leading} color="badge-danger" role="alert">
             {general}
-          </p>
-        )}
-        <ol aria-label={t('format.conditions')} className="grid grid-cols-[minmax(0,1fr)] gap-2">
+          </Text>
+        ) : null}
+        {/* an ordered list, as the web's <ol>: conditions are numbered in their labels */}
+        <View role="list" aria-label={t('format.conditions')} style={{ gap: s['2'] }}>
           {f.conditions.map((c, at) => (
-            <li
+            <View
               // conditions have no ids; the list only grows at the end or loses one row
               // biome-ignore lint/suspicious/noArrayIndexKey: see above
               key={at}
-              className="grid grid-cols-[minmax(0,1fr)] gap-3 rounded-md border border-line bg-s2 p-3"
+              role="listitem"
+              style={{
+                gap: s['3'],
+                padding: s['3'],
+                borderWidth: 1,
+                borderColor: theme.colors.line,
+                borderRadius: tokens.radius.md,
+                backgroundColor: theme.colors.s2,
+                minWidth: 0,
+              }}
             >
               <ConditionRow
                 condition={c}
@@ -819,18 +954,19 @@ function FormatForm({
                 onChange={(next) => setAt(at, next)}
                 onRemove={() => set({ conditions: f.conditions.filter((_, i) => i !== at) })}
               />
-            </li>
+            </View>
           ))}
-        </ol>
-        <Button
-          size="sm"
-          variant="secondary"
-          icon="add"
-          className="justify-self-start"
-          onClick={() => set({ conditions: [...f.conditions, conditionOf('title')] })}
-        >
-          {t('format.add')}
-        </Button>
+        </View>
+        <View style={{ alignSelf: 'flex-start' }}>
+          <Button
+            size="sm"
+            variant="secondary"
+            icon="add"
+            onPress={() => set({ conditions: [...f.conditions, conditionOf('title')] })}
+          >
+            {t('format.add')}
+          </Button>
+        </View>
       </Group>
       <FormatTest format={asFormat(f)} />
       <SaveBar
@@ -861,7 +997,17 @@ function ConditionRow({
   const n = index + 1
   return (
     <>
-      <div className="grid grid-cols-[minmax(0,1fr)] gap-3 medium:grid-cols-[12rem_minmax(0,1fr)_auto] medium:items-end">
+      <View
+        style={grid({
+          display: 'grid',
+          gridTemplateColumns: useWindowAtLeast(breakpoints.medium)
+            ? // the web's 12rem: 192
+              `${s['12'] * 4}px minmax(0, 1fr) auto`
+            : 'minmax(0, 1fr)',
+          alignItems: 'end',
+          gap: s['3'],
+        })}
+      >
         <Field label={t('format.condition', { n })}>
           <Select
             value={c.kind}
@@ -874,27 +1020,35 @@ function ConditionRow({
           variant="ghost"
           iconOnly
           icon="delete"
-          aria-label={t('format.remove', { n })}
-          onClick={onRemove}
+          accessibilityLabel={t('format.remove', { n })}
+          onPress={onRemove}
         />
-      </div>
-      <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
-        <Field inline label={t('format.not')} hint={t('format.notHint')}>
-          <Checkbox
-            checked={c.negate}
-            onCheckedChange={(v) => onChange({ ...c, negate: v === true })}
-          />
-        </Field>
-        <Field inline label={t('format.required')} hint={t('format.requiredHint')}>
-          <Checkbox
-            checked={c.required}
-            onCheckedChange={(v) => onChange({ ...c, required: v === true })}
-          />
-        </Field>
-        <span className="ms-auto min-w-0 font-mono text-figure text-text-3 [overflow-wrap:anywhere]">
-          {error ? '' : describeCondition(c, locale)}
-        </span>
-      </div>
+      </View>
+      <View
+        style={{
+          flexDirection: 'row',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          columnGap: s['6'],
+          rowGap: s['2'],
+        }}
+      >
+        <Checkbox
+          label={t('format.not')}
+          hint={t('format.notHint')}
+          checked={c.negate}
+          onCheckedChange={(v) => onChange({ ...c, negate: v === true })}
+        />
+        <Checkbox
+          label={t('format.required')}
+          hint={t('format.requiredHint')}
+          checked={c.required}
+          onCheckedChange={(v) => onChange({ ...c, required: v === true })}
+        />
+        <View style={{ marginStart: 'auto', flexShrink: 1, minWidth: 0 }}>
+          <Description color="text-3">{error ? '' : describeCondition(c, locale)}</Description>
+        </View>
+      </View>
     </>
   )
 }
@@ -912,6 +1066,7 @@ function ConditionValue({
 }) {
   const t = useT(messages)
   const languageOptions = useLanguageOptions()
+  const medium = useWindowAtLeast(breakpoints.medium)
   switch (c.kind) {
     case 'title':
     case 'edition':
@@ -920,15 +1075,24 @@ function ConditionValue({
         <Field label={t('format.pattern')} hint={t('format.patternHint')} error={error}>
           <Input
             value={c.value}
-            onChange={(e) => onChange({ ...c, value: e.target.value })}
-            className="font-mono"
+            mono
+            spellCheck={false}
+            autoCapitalize="none"
+            onChangeText={(value) => onChange({ ...c, value })}
             placeholder={c.kind === 'releaseGroup' ? '^(FraMeSToR|BLURANiUM)$' : '\\b(dv|dovi)\\b'}
           />
         </Field>
       )
     case 'language':
       return (
-        <div className="grid gap-3 medium:grid-cols-[minmax(0,1fr)_auto] medium:items-end">
+        <View
+          style={grid({
+            display: 'grid',
+            gridTemplateColumns: medium ? 'minmax(0, 1fr) auto' : 'minmax(0, 1fr)',
+            alignItems: 'end',
+            gap: s['3'],
+          })}
+        >
           <Field label={t('kind.language')}>
             <Select
               value={c.value.language}
@@ -936,13 +1100,12 @@ function ConditionValue({
               options={[{ value: 'original', label: t('originalLanguage') }, ...languageOptions]}
             />
           </Field>
-          <Field inline label={t('format.anyOther')}>
-            <Checkbox
-              checked={c.value.except}
-              onCheckedChange={(v) => onChange({ ...c, value: { ...c.value, except: v === true } })}
-            />
-          </Field>
-        </div>
+          <Checkbox
+            label={t('format.anyOther')}
+            checked={c.value.except}
+            onCheckedChange={(v) => onChange({ ...c, value: { ...c.value, except: v === true } })}
+          />
+        </View>
       )
     case 'indexerFlag':
       return (
@@ -994,27 +1157,27 @@ function ConditionValue({
           ? t(key === 'min' ? 'format.fromGb' : 'format.toGb')
           : t(key === 'min' ? 'format.from' : 'format.to')
         return (
-          <Field label={label} error={key === 'max' ? error : undefined}>
-            <Input
-              type="number"
-              min={0}
-              aria-label={t('format.endLabel', { n: index, end: label })}
-              value={c.value[key]}
-              onChange={(e) => {
-                const v = Number(e.target.value)
-                if (e.target.value !== '' && Number.isFinite(v) && v >= 0)
-                  onChange({ ...c, value: { ...c.value, [key]: v } })
-              }}
-              className="font-mono"
-            />
-          </Field>
+          <View style={{ flex: 1, minWidth: 0 }}>
+            {/* the field reads its number with it ("Condition 2: to GB"), as the web's aria-label */}
+            <Field label={label} error={key === 'max' ? error : undefined}>
+              <NumberInput
+                value={c.value[key]}
+                accessibilityLabel={t('format.endLabel', { n: index, end: label })}
+                onText={(text) => {
+                  const v = Number(text)
+                  if (text !== '' && Number.isFinite(v) && v >= 0)
+                    onChange({ ...c, value: { ...c.value, [key]: v } })
+                }}
+              />
+            </Field>
+          </View>
         )
       }
       return (
-        <div className="grid grid-cols-2 gap-3">
+        <View style={{ flexDirection: 'row', gap: s['3'] }}>
           {end('min')}
           {end('max')}
-        </div>
+        </View>
       )
     }
   }
@@ -1036,27 +1199,41 @@ function FormatTest({ format }: { format: CustomFormat }) {
   const matched = input ? matchesFormat(format, input) : false
   return (
     <Group title={t('test.title')} description={t('test.description')}>
-      <div className="grid gap-4 medium:grid-cols-[minmax(0,1fr)_10rem]">
+      {/* the web's 10rem: 160 */}
+      <Columns columns={`minmax(0, 1fr) ${s['16'] * 2 + s['8']}px`}>
         <Field label={t('test.name')}>
-          <Input value={name} onChange={(e) => setName(e.target.value)} className="font-mono" />
+          <Input
+            value={name}
+            mono
+            spellCheck={false}
+            autoCapitalize="none"
+            onChangeText={setName}
+          />
         </Field>
         <Field label={t('test.size')} hint={t('test.sizeHint')}>
           <Input
-            type="number"
-            min={0}
             value={size}
-            onChange={(e) => setSize(e.target.value)}
-            className="font-mono"
+            mono
+            inputMode="decimal"
+            keyboardType="decimal-pad"
+            onChangeText={setSize}
           />
         </Field>
-      </div>
-      {release && input && (
-        <div className="grid grid-cols-[minmax(0,1fr)] gap-3" aria-live="polite">
-          <p className="flex flex-wrap items-center gap-2 text-ui [overflow-wrap:anywhere]">
+      </Columns>
+      {release && input ? (
+        <View style={{ gap: s['3'], minWidth: 0 }} aria-live="polite">
+          <View
+            style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: s['2'] }}
+          >
             <Badge tone={matched ? 'success' : 'neutral'}>
               {matched ? t('test.matches') : t('test.noMatch')}
             </Badge>
-            <span className="text-text-2">
+            <Text
+              size={ui.size}
+              leading={ui.leading}
+              color="text-2"
+              style={[{ flexShrink: 1, minWidth: 0 }, WRAP_ANYWHERE]}
+            >
               {t('test.readAs', { quality: qualityOf(release.quality) })}
               {release.releaseGroup ? t('test.group', { group: release.releaseGroup }) : ''}
               {release.edition ? t('test.edition', { edition: release.edition }) : ''}
@@ -1067,31 +1244,37 @@ function FormatTest({ format }: { format: CustomFormat }) {
                     ),
                   })
                 : ''}
-            </span>
-          </p>
-          <ul aria-label={t('test.each')} className="grid gap-1">
+            </Text>
+          </View>
+          <View role="list" aria-label={t('test.each')} style={{ gap: s['1'] }}>
             {format.conditions.map((c, i) => {
               const holds = conditionHolds(c, input)
               return (
-                <li
+                <View
                   // biome-ignore lint/suspicious/noArrayIndexKey: conditions have no ids
                   key={i}
-                  className="flex items-center gap-2 text-caption [overflow-wrap:anywhere]"
+                  role="listitem"
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: s['2'] }}
                 >
                   <Badge tone={holds ? 'success' : 'neutral'}>
                     {holds ? t('test.yes') : t('test.no')}
                   </Badge>
-                  <span className="min-w-0 font-mono text-text-2">
+                  <Text
+                    variant="caption"
+                    mono
+                    color="text-2"
+                    style={[{ flexShrink: 1, minWidth: 0 }, WRAP_ANYWHERE]}
+                  >
                     {c.kind === 'title' && c.value === ''
                       ? t('kind.title')
                       : describeCondition(c, locale)}
-                  </span>
-                </li>
+                  </Text>
+                </View>
               )
             })}
-          </ul>
-        </div>
-      )}
+          </View>
+        </View>
+      ) : null}
     </Group>
   )
 }
@@ -1101,23 +1284,42 @@ function FormatTest({ format }: { format: CustomFormat }) {
 /** A film's size from MiB per minute: Radarr's sizes are MiB (the Servarr wiki's "MB"). */
 const filmSize = (perMinute: number, minutes: number) => bytes(perMinute * MIB * minutes)
 
-/** `/settings/quality/sizes`: the size table, with each row checked and a film's size beside it. */
+/**
+ * `/settings/quality/sizes`: the size table, with each row checked and a film's size beside it.
+ * When the server serves shows (D3's answer 5), a switch chooses movies' table or episodes', as the
+ * prototype's stage 6 drew: both drafts are kept while switching, Save saves both, and Reset resets
+ * the one shown. Episodes' sizes come from Shows' drafted route (series-settings.ts).
+ */
 export function SizeEditor() {
   const t = useT(messages)
+  const shows = useServes('shows')
   const data = useQuery('settings:quality-sizes', (c) => c.settings.qualitySizes(), TOPICS)
-  const [reset, setReset] = useState<QualitySize[] | null>(null)
+  const [kind, setKind] = useState<SizeKind>('movies')
+  // what's changed and not saved, per kind; a kind not here shows what's saved
+  const [drafts, setDrafts] = useState<Drafts>({})
+  const shown = shows ? kind : 'movies'
   return (
     <EditorPage
       title={t('sizes.title')}
-      description={t('sizes.description')}
+      description={shows ? t('sizes.descriptionShows') : t('sizes.description')}
       actions={
         <Button
           variant="secondary"
           icon="replay"
           disabled={data.status !== 'success'}
-          onClick={() => {
-            setReset(defaultQualitySizes())
-            toast({ title: t('sizes.resetDone'), description: t('sizes.resetBody') })
+          onPress={() => {
+            setDrafts((d) => ({
+              ...d,
+              [shown]: shown === 'shows' ? defaultEpisodeSizes() : defaultQualitySizes(),
+            }))
+            toast({
+              title: !shows
+                ? t('sizes.resetDone')
+                : shown === 'shows'
+                  ? t('sizes.resetEpisodes')
+                  : t('sizes.resetMovies'),
+              description: t('sizes.resetBody'),
+            })
           }}
         >
           {t('sizes.reset')}
@@ -1127,52 +1329,102 @@ export function SizeEditor() {
       query={data}
       what={t('sizes.what')}
     >
-      {(rows) => (
-        <SizeTable
-          // a fresh draft when the saved sizes change, or on Reset
-          key={JSON.stringify([rows, reset])}
-          loaded={rows}
-          initial={reset ?? rows}
-          onSaved={() => {
-            setReset(null)
-            data.refetch()
-          }}
-          onDiscard={() => setReset(null)}
-        />
-      )}
+      {(movies) => {
+        const table = (episodes?: QualitySize[], refetch?: () => void) => (
+          <SizeTable
+            kind={shown}
+            onKind={episodes ? setKind : undefined}
+            loaded={{ movies, shows: episodes }}
+            drafts={drafts}
+            setDrafts={setDrafts}
+            onSaved={() => {
+              data.refetch()
+              refetch?.()
+            }}
+          />
+        )
+        return shows ? <WithEpisodeSizes>{table}</WithEpisodeSizes> : table()
+      }}
     </EditorPage>
   )
 }
 
-function SizeTable({
-  loaded,
-  initial,
-  onSaved,
-  onDiscard,
+type SizeKind = 'movies' | 'shows'
+type Drafts = Partial<Record<SizeKind, QualitySize[]>>
+
+/** Episodes' sizes, read only when the server serves shows. */
+function WithEpisodeSizes({
+  children,
 }: {
-  loaded: QualitySize[]
-  initial: QualitySize[]
-  onSaved: () => void
-  onDiscard: () => void
+  children: (rows: QualitySize[], refetch: () => void) => ReactNode
 }) {
   const t = useT(messages)
-  const [rows, setRows] = useState(initial)
-  const [minutes, setMinutes] = useState(120)
-  const save = useAction((c, body: QualitySize[]) => c.settings.saveQualitySizes({ body }))
-  const dirty = JSON.stringify(rows) !== JSON.stringify(loaded)
-  const errors = rows.map((r) => {
-    const c = qualitySizeSchema.safeParse(r)
-    return c.success ? null : (c.error.issues[0]?.message ?? t('sizes.rowInvalid'))
-  })
+  const data = useQuery('settings:episode-sizes', (c) => c.series.qualitySizes(), TOPICS)
+  return (
+    <Loadable query={data} what={t('sizes.what')}>
+      {(rows) => children(rows, () => data.refetch())}
+    </Loadable>
+  )
+}
+
+/** The minutes field at most 240 wide (the web's `max-w-60`). */
+const MINUTES_WIDTH = s['16'] * 3 + s['12']
+
+function SizeTable({
+  kind,
+  onKind,
+  loaded,
+  drafts,
+  setDrafts,
+  onSaved,
+}: {
+  kind: SizeKind
+  /** Given when there's an episodes' table to switch to. */
+  onKind?: (kind: SizeKind) => void
+  loaded: { movies: QualitySize[]; shows?: QualitySize[] }
+  drafts: Drafts
+  setDrafts: (next: (d: Drafts) => Drafts) => void
+  onSaved: () => void
+}) {
+  const t = useT(messages)
+  const [minuteFor, setMinuteFor] = useState<Record<SizeKind, number>>({ movies: 120, shows: 45 })
+  const minutes = minuteFor[kind]
+  const setMinutes = (m: number) => setMinuteFor((all) => ({ ...all, [kind]: m }))
+  const saveMovies = useAction((c, body: QualitySize[]) => c.settings.saveQualitySizes({ body }))
+  const saveEpisodes = useAction((c, body: QualitySize[]) => c.series.saveQualitySizes({ body }))
+  const saved = (k: SizeKind) => (k === 'shows' ? (loaded.shows ?? []) : loaded.movies)
+  const rowsOf = (k: SizeKind) => drafts[k] ?? saved(k)
+  const changed = (k: SizeKind) =>
+    drafts[k] !== undefined && JSON.stringify(drafts[k]) !== JSON.stringify(saved(k))
+  const kinds: SizeKind[] = loaded.shows ? ['movies', 'shows'] : ['movies']
+  const dirty = kinds.some(changed)
+  const rows = rowsOf(kind)
+  const setRows = (next: (all: QualitySize[]) => QualitySize[]) =>
+    setDrafts((d) => ({ ...d, [kind]: next(d[kind] ?? saved(kind)) }))
+  const check = (all: QualitySize[]) =>
+    all.map((r) => {
+      const c = qualitySizeSchema.safeParse(r)
+      return c.success ? null : (c.error.issues[0]?.message ?? t('sizes.rowInvalid'))
+    })
+  const errors = check(rows)
+  const episodes = kind === 'shows'
   const onSave = () => {
-    const at = errors.findIndex(Boolean)
-    if (at >= 0)
-      return toast.error(t('sizes.check'), {
-        description: `${rows[at]?.quality}: ${errors[at]}`,
-      })
-    save.run(rows).then(
+    const toSave = kinds.filter(changed)
+    for (const k of toSave) {
+      const all = rowsOf(k)
+      const found = check(all)
+      const at = found.findIndex(Boolean)
+      if (at >= 0) {
+        onKind?.(k)
+        return toast.error(t('sizes.check'), {
+          description: `${all[at]?.quality}: ${found[at]}`,
+        })
+      }
+    }
+    Promise.all(toSave.map((k) => (k === 'shows' ? saveEpisodes : saveMovies).run(rowsOf(k)))).then(
       () => {
         toast.success(t('sizes.saved'))
+        setDrafts(() => ({}))
         onSaved()
       },
       (e: Error) => toast.error(t('sizes.saveError'), { description: e.message }),
@@ -1180,70 +1432,96 @@ function SizeTable({
   }
   return (
     <>
-      <Group title={t('sizes.group')} description={t('sizes.groupDescription')}>
-        <Field label={t('sizes.minutes')} hint={t('sizes.minutesHint')} className="max-w-60">
-          <Input
-            type="number"
-            min={1}
-            max={600}
-            value={minutes}
-            onChange={(e) => setMinutes(Math.max(1, whole(e.target.value, minutes)))}
-            className="font-mono"
+      {onKind ? (
+        <View style={{ alignSelf: 'flex-start' }}>
+          <SegmentedControl
+            aria-label={t('sizes.kind')}
+            size="sm"
+            value={kind}
+            onValueChange={(k) => onKind(k as SizeKind)}
+            options={[
+              { value: 'movies', label: t('sizes.kind.movies') },
+              { value: 'shows', label: t('sizes.kind.shows') },
+            ]}
           />
-        </Field>
+        </View>
+      ) : null}
+      <Group
+        title={episodes ? t('sizes.episodes.group') : t('sizes.group')}
+        description={episodes ? t('sizes.episodes.groupDescription') : t('sizes.groupDescription')}
+      >
+        <View style={{ maxWidth: MINUTES_WIDTH }}>
+          <Field
+            label={episodes ? t('sizes.episodes.minutes') : t('sizes.minutes')}
+            hint={episodes ? t('sizes.episodes.minutesHint') : t('sizes.minutesHint')}
+          >
+            <NumberInput
+              value={minutes}
+              inputMode="numeric"
+              keyboardType="number-pad"
+              onText={(v) => setMinutes(Math.min(600, Math.max(1, whole(v, minutes))))}
+            />
+          </Field>
+        </View>
         <TableFrame>
-          <Table aria-label={t('sizes.group')}>
+          <Table label={episodes ? t('sizes.episodes.group') : t('sizes.group')}>
             <TableHeader>
               <TableRow>
                 <TableHead>{t('sizes.quality')}</TableHead>
                 <TableHead numeric>{t('sizes.min')}</TableHead>
                 <TableHead numeric>{t('sizes.preferred')}</TableHead>
                 <TableHead numeric>{t('sizes.max')}</TableHead>
-                <TableHead numeric>{t('sizes.film', { minutes })}</TableHead>
+                <TableHead numeric>
+                  {episodes ? t('sizes.episode', { minutes }) : t('sizes.film', { minutes })}
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {rows.map((q, i) => {
                 const cell = (key: 'min' | 'preferred' | 'max') => (
                   <TableCell numeric>
-                    <Input
-                      type="number"
-                      min={0}
-                      step="any"
-                      aria-label={t(`sizes.cell.${key}`, { quality: q.quality })}
-                      aria-invalid={errors[i] ? true : undefined}
-                      value={q[key] ?? ''}
-                      placeholder={key === 'min' ? '0' : t('sizes.noLimit')}
-                      onChange={(e) => {
-                        const v = e.target.value
-                        const n = Number(v)
-                        if (v !== '' && (!Number.isFinite(n) || n < 0)) return
-                        setRows(
-                          rows.map((r, j) =>
-                            j === i
-                              ? { ...r, [key]: v === '' ? (key === 'min' ? 0 : null) : n }
-                              : r,
-                          ),
-                        )
-                      }}
-                      className="ms-auto w-24 text-end font-mono"
-                    />
+                    <View style={{ width: SCORE_WIDTH }}>
+                      <NumberInput
+                        size="sm"
+                        accessibilityLabel={t(`sizes.cell.${key}`, { quality: q.quality })}
+                        invalid={errors[i] ? true : undefined}
+                        aria-invalid={errors[i] ? true : undefined}
+                        value={q[key]}
+                        placeholder={key === 'min' ? '0' : t('sizes.noLimit')}
+                        style={{ textAlign: 'right' }}
+                        onText={(v) => {
+                          const n = Number(v)
+                          if (v !== '' && (!Number.isFinite(n) || n < 0)) return
+                          setRows((all) =>
+                            all.map((r, j) =>
+                              j === i
+                                ? { ...r, [key]: v === '' ? (key === 'min' ? 0 : null) : n }
+                                : r,
+                            ),
+                          )
+                        }}
+                      />
+                    </View>
                   </TableCell>
                 )
                 return (
                   <TableRow key={q.quality}>
-                    <TableCell className="text-text">
-                      {q.quality}
-                      {errors[i] && (
-                        <span role="alert" className="block text-badge-danger text-caption">
-                          {errors[i]}
-                        </span>
-                      )}
+                    <TableCell>
+                      <View style={{ minWidth: 0 }}>
+                        <Text size={ui.size} leading={ui.leading}>
+                          {q.quality}
+                        </Text>
+                        {errors[i] ? (
+                          <Text variant="caption" color="badge-danger" role="alert">
+                            {errors[i]}
+                          </Text>
+                        ) : null}
+                      </View>
                     </TableCell>
                     {cell('min')}
                     {cell('preferred')}
                     {cell('max')}
-                    <TableCell numeric className="whitespace-nowrap text-text-2">
+                    <TableCell numeric>
                       {q.max === null
                         ? q.min === 0
                           ? t('sizes.any')
@@ -1262,12 +1540,9 @@ function SizeTable({
       </Group>
       <SaveBar
         dirty={dirty}
-        saving={save.pending}
+        saving={saveMovies.pending || saveEpisodes.pending}
         onSave={onSave}
-        onDiscard={() => {
-          setRows(loaded)
-          onDiscard()
-        }}
+        onDiscard={() => setDrafts(() => ({}))}
       />
     </>
   )

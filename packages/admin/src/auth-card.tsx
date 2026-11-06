@@ -1,49 +1,107 @@
+'use client'
 // SPDX-License-Identifier: AGPL-3.0-only
 // The centred card that sign-in, invite and reset links and device pairing sit in (the
-// prototype's login.tsx).
-import { Icon, Lockup } from '@highsea-tv/ui'
+// prototype's login.tsx). Drawn with the library's native renderer since D3
+// (one-client-platform-d.md). These pages stand outside the shell, so the card holds the toasts
+// they raise (the recovery codes' Copied).
+import { useT } from '@highsea-tv/i18n/react'
+import { Icon, Lockup, Text, Toaster, tokens, useTheme } from '@highsea-tv/ui/native'
 import type { ReactNode } from 'react'
+import { useWindowDimensions, View } from 'react-native'
+import { shell } from './messages.ts'
+
+const s = tokens.space
+/** The card's widest (the web's max-w-[24rem]). */
+const CARD_WIDTH = 384
 
 export function Card({ children }: { children: ReactNode }) {
+  const theme = useTheme()
+  const t = useT(shell)
+  const { height } = useWindowDimensions()
   return (
-    <main className="grid min-h-screen grid-cols-[minmax(0,1fr)] place-items-center bg-bg p-4 text-text">
-      <div className="grid w-full max-w-[24rem] gap-6">
-        <Lockup size={20} className="justify-self-center" />
-        <section className="grid gap-5 rounded-lg border border-line bg-s1 p-6 shadow-2">
-          {children}
-        </section>
-      </div>
-    </main>
-  )
-}
-
-export function Heading({ title, detail }: { title: string; detail?: ReactNode }) {
-  return (
-    <div className="grid gap-1">
-      <h1 className="text-title">{title}</h1>
-      {detail && <p className="text-caption text-text-2">{detail}</p>}
-    </div>
-  )
-}
-
-export function FormAlert({ children }: { children: ReactNode }) {
-  return (
-    <p
-      role="alert"
-      className="flex items-start gap-2 rounded-sm bg-badge-danger-bg px-3 py-2 text-badge-danger text-caption"
+    <View
+      role="main"
+      style={{
+        minHeight: height,
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: s['4'],
+        backgroundColor: theme.colors.bg,
+      }}
     >
-      <Icon name="alert" size={16} className="mt-px shrink-0" />
-      {children}
-    </p>
+      <View style={{ width: '100%', maxWidth: CARD_WIDTH, gap: s['6'] }}>
+        <View style={{ alignSelf: 'center' }}>
+          <Lockup size={20} />
+        </View>
+        <View
+          style={{
+            gap: s['5'],
+            padding: s['6'],
+            borderWidth: 1,
+            borderColor: theme.colors.line,
+            borderRadius: tokens.radius.lg,
+            backgroundColor: theme.colors.s1,
+            boxShadow: tokens.elevation[2].boxShadow,
+          }}
+        >
+          {children}
+        </View>
+      </View>
+      <Toaster label={t('notifications')} />
+    </View>
   )
 }
 
-export function Divider({ children }: { children: ReactNode }) {
+export function Heading({ title, detail }: { title: string; detail?: string }) {
   return (
-    <div className="flex items-center gap-3 text-caption text-text-3">
-      <span className="h-px flex-1 bg-line" />
-      {children}
-      <span className="h-px flex-1 bg-line" />
-    </div>
+    <View style={{ gap: s['1'] }}>
+      <Text variant="title" role="heading" aria-level={1}>
+        {title}
+      </Text>
+      {detail ? (
+        <Text variant="caption" color="text-2">
+          {detail}
+        </Text>
+      ) : null}
+    </View>
+  )
+}
+
+export function FormAlert({ children }: { children: string }) {
+  const theme = useTheme()
+  return (
+    <View
+      role="alert"
+      style={{
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        gap: s['2'],
+        paddingHorizontal: s['3'],
+        paddingVertical: s['2'],
+        borderRadius: tokens.radius.sm,
+        backgroundColor: theme.colors['badge-danger-bg'],
+      }}
+    >
+      <View style={{ marginTop: 1 }}>
+        <Icon name="alert" size={16} color="badge-danger" />
+      </View>
+      <Text variant="caption" color="badge-danger" style={{ flex: 1, minWidth: 0 }}>
+        {children}
+      </Text>
+    </View>
+  )
+}
+
+export function Divider({ children }: { children: string }) {
+  const theme = useTheme()
+  const line = { height: 1, flex: 1, backgroundColor: theme.colors.line }
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: s['3'] }}>
+      <View style={line} />
+      <Text variant="caption" color="text-3">
+        {children}
+      </Text>
+      <View style={line} />
+    </View>
   )
 }

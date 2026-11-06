@@ -1,6 +1,6 @@
 ---
 name: adr
-description: Write a new highsea ADR in docs/adr, or add a dated section to an existing one, and keep the index and CLAUDE.md's ADR list in step. Use when a decision shapes the architecture, when built work departs from an accepted ADR, or when a plan's ADRs section calls for one.
+description: Write a new highsea ADR in docs/adr, or add a dated section to an existing one, and keep the index and its list of which work added which in step. Use when a decision shapes the architecture, when built work departs from an accepted ADR, or when a plan's ADRs section calls for one.
 argument-hint: "[new <title> | amend <number> <what changed>]"
 ---
 
@@ -47,6 +47,6 @@ What changed, why, and what it means. Cite the documentation.
 ## Keep the lists in step
 
 - **`docs/adr/README.md`:** add a row `| [NNNN](NNNN-….md) | Decision in a phrase | Accepted |`, or change an existing row's status to `Accepted; amended YYYY-MM-DD` or `Accepted; amended by NNNN`.
-- **`CLAUDE.md`:** its paragraph after "Read the Phase 3 plan before doing anything" lists which ADRs came with which checkpoint, and which got dated sections. Add the new ones there.
+- **`docs/adr/README.md`'s "Which work added which ADRs":** lists which ADRs came with which checkpoint, and which got dated sections. Add the new ones there.
 - **The plan's "ADRs" section** and the checkpoint report both name them.
 - Where an ADR names the code it governs, add a one-line comment in that code pointing back (`// ADR 0049: …`), matching the code around it.

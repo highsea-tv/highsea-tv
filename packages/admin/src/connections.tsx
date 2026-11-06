@@ -9,6 +9,8 @@
 // and Browser join the prototype's kinds. This browser is a group of its own: turning on web push
 // (a service worker, `public/sw.js`, and PushManager.subscribe with the server's VAPID key) and
 // listing your browsers that get notifications. Changes save at once through `connections.*`.
+// Drawn with the library's native renderer since D3 (one-client-platform-d.md), on the web through
+// react-native-web, with the same parts, words and behaviour as the web renderer's.
 import {
   CONNECTION_KINDS,
   CONNECTIONS_TOPICS,
@@ -20,24 +22,38 @@ import {
 import type { T as Translate } from '@highsea-tv/i18n'
 import { useT } from '@highsea-tv/i18n/react'
 import { useAction, useClient, useQuery } from '@highsea-tv/sdk/react'
+import { breakpoints } from '@highsea-tv/tokens'
 import {
   Badge,
   Button,
   Checkbox,
   ConfirmDialog,
   Dialog,
-  DialogContent,
   EmptyState,
   Field,
   Input,
   Select,
   Switch,
+  Text,
   toast,
-} from '@highsea-tv/ui'
-import { useEffect, useState } from 'react'
+  tokens,
+  useWindowAtLeast,
+} from '@highsea-tv/ui/native'
+import { type ReactNode, useEffect, useState } from 'react'
+import { View, type ViewStyle } from 'react-native'
 import { connections as messages } from './connections-messages.ts'
 import { Loadable } from './loadable.tsx'
 import { AreaPage, Group } from './settings.tsx'
+import {
+  Card,
+  Cards,
+  Cell,
+  CheckGroup,
+  FormGrid,
+  Line,
+  Note,
+  WRAP_ANYWHERE,
+} from './settings-card.tsx'
 import { TagPicker } from './tag-picker.tsx'
 import { tagsMessages } from './tags-messages.ts'
 import { useRelative } from './time.ts'
@@ -194,6 +210,29 @@ const inputOf = (c: Connection): ConnectionInput => ({
 
 // ---------------------------------------------------------------- the page
 
+const s = tokens.space
+
+/** The kinds' grid: two columns, three from medium widths, five from wide. */
+function KindGrid({ children }: { children: ReactNode }) {
+  const medium = useWindowAtLeast(breakpoints.medium)
+  const wide = useWindowAtLeast(breakpoints.wide)
+  const columns = wide ? 5 : medium ? 3 : 2
+  return (
+    <View
+      role="list"
+      style={
+        {
+          display: 'grid',
+          gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
+          gap: s['2'],
+        } as unknown as ViewStyle
+      }
+    >
+      {children}
+    </View>
+  )
+}
+
 export function Connections() {
   const t = useT(messages)
   const list = useQuery('connections', (c) => c.connections.list(), TOPICS)
@@ -212,7 +251,7 @@ export function Connections() {
                 {t('noneBody')}
               </EmptyState>
             ) : (
-              <ul aria-label={t('title')} className="grid gap-2">
+              <Cards label={t('title')}>
                 {cs.map((c) => (
                   <Row
                     key={c.id}
@@ -222,37 +261,35 @@ export function Connections() {
                     onChanged={list.refetch}
                   />
                 ))}
-              </ul>
+              </Cards>
             )
           }
         </Loadable>
       </Group>
       <Group title={t('add')} description={t('addDescription')}>
-        <ul className="grid grid-cols-2 gap-2 medium:grid-cols-3 wide:grid-cols-5">
+        <KindGrid>
           {CONNECTION_KINDS.map((k) => (
-            <li key={k}>
-              <Button className="w-full" icon="add" onClick={() => setEditing(k)}>
+            <View key={k} role="listitem">
+              <Button block icon="add" onPress={() => setEditing(k)}>
                 {t(`kind.${k}`)}
               </Button>
-            </li>
+            </View>
           ))}
-        </ul>
+        </KindGrid>
       </Group>
       <ThisBrowser />
-      <Dialog open={editing !== null} onOpenChange={(o) => !o && setEditing(null)}>
-        {editing !== null && (
-          <ConnectionForm
-            key={typeof editing === 'string' ? editing : editing.id}
-            connection={typeof editing === 'string' ? null : editing}
-            kind={typeof editing === 'string' ? editing : editing.kind}
-            onClose={() => setEditing(null)}
-            onSaved={list.refetch}
-          />
-        )}
-      </Dialog>
+      {editing !== null && (
+        <ConnectionForm
+          key={typeof editing === 'string' ? editing : editing.id}
+          connection={typeof editing === 'string' ? null : editing}
+          kind={typeof editing === 'string' ? editing : editing.kind}
+          onClose={() => setEditing(null)}
+          onSaved={list.refetch}
+        />
+      )}
       <ConfirmDialog
         open={!!removing}
-        onOpenChange={(o) => !o && setRemoving(null)}
+        onClose={() => setRemoving(null)}
         title={t('removeTitle', { name: removing?.name ?? '' })}
         description={t('removeBody')}
         confirmLabel={t('removeConfirm')}
@@ -287,6 +324,7 @@ function Row({
 }) {
   const t = useT(messages)
   const { relative } = useRelative()
+  const medium = useWindowAtLeast(breakpoints.medium)
   const update = useAction((client, body: ConnectionInput) =>
     client.connections.update({ params: { id: c.id }, body }),
   )
@@ -304,74 +342,97 @@ function Row({
       (e: Error) => toast.error(t('testFailed'), { description: e.message }),
     )
   return (
-    <li className="grid gap-3 rounded-md border border-line bg-s2 p-3">
-      <div className="grid gap-3 medium:grid-cols-[auto_minmax(0,1fr)_auto] medium:items-center">
+    <Card>
+      <View
+        style={{
+          flexDirection: medium ? 'row' : 'column',
+          alignItems: medium ? 'center' : 'flex-start',
+          gap: s['3'],
+        }}
+      >
         <Switch
-          aria-label={t('enabled', { name: c.name })}
+          label={t('enabled', { name: c.name })}
+          hideLabel
           checked={c.enabled}
           disabled={update.pending}
           onCheckedChange={(enabled) => change({ enabled })}
         />
-        <div className="grid min-w-0 gap-1">
-          <p className="text-text text-ui [overflow-wrap:anywhere]">
-            {c.name} <span className="text-text-3">· {t(`kind.${c.kind}`)}</span>
-          </p>
-          <p className="flex flex-wrap gap-1">
+        <View
+          style={{ flex: medium ? 1 : undefined, alignSelf: 'stretch', minWidth: 0, gap: s['1'] }}
+        >
+          <Line style={WRAP_ANYWHERE}>
+            {c.name} <Text color="text-3">· {t(`kind.${c.kind}`)}</Text>
+          </Line>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: s['1'] }}>
             {c.events.length === 0 ? (
-              <span className="text-caption text-text-3">{t('noEvents')}</span>
+              <Note>{t('noEvents')}</Note>
             ) : (
               c.events.map((e) => <Badge key={e}>{t(`event.${e}`)}</Badge>)
             )}
-          </p>
-        </div>
+          </View>
+        </View>
         <Button
           size="sm"
           icon="notification"
           disabled={!c.enabled}
           loading={test.pending}
-          aria-label={t('testLabel', { name: c.name })}
-          onClick={onTest}
+          accessibilityLabel={t('testLabel', { name: c.name })}
+          onPress={onTest}
         >
           {t('test')}
         </Button>
-      </div>
-      <div className="grid gap-1 text-caption text-text-3">
-        <p>{c.lastSentAt ? t('sent', { ago: relative(c.lastSentAt) }) : t('never')}</p>
+      </View>
+      <View style={{ gap: s['1'] }}>
+        <Note>{c.lastSentAt ? t('sent', { ago: relative(c.lastSentAt) }) : t('never')}</Note>
         {c.lastError && (
-          <p className="flex flex-wrap items-center gap-2 [overflow-wrap:anywhere]">
+          <View
+            style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: s['2'] }}
+          >
             <Badge tone="warning">{t('lastError', { message: c.lastError })}</Badge>
-          </p>
+          </View>
         )}
-      </div>
-      <div className="flex flex-wrap items-center gap-2">
+      </View>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: s['2'] }}>
         <Button
           size="sm"
           icon="edit"
-          aria-label={t('editLabel', { name: c.name })}
-          onClick={onEdit}
+          accessibilityLabel={t('editLabel', { name: c.name })}
+          onPress={onEdit}
         >
           {t('edit')}
         </Button>
         <Button
           size="sm"
           variant="danger"
-          aria-label={t('removeLabel', { name: c.name })}
-          onClick={onRemove}
+          accessibilityLabel={t('removeLabel', { name: c.name })}
+          onPress={onRemove}
         >
           {t('remove')}
         </Button>
         {c.kind === 'email' && (
-          <Field inline label={t('serverMail')} className="ms-auto">
+          <View
+            style={{
+              marginStart: 'auto',
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: s['2'] + s['0.5'],
+            }}
+          >
             <Switch
-              aria-label={t('serverMailLabel', { name: c.name })}
+              label={t('serverMailLabel', { name: c.name })}
+              hideLabel
               checked={c.serverMail}
               disabled={update.pending}
               onCheckedChange={(serverMail) => change({ serverMail })}
             />
-          </Field>
+            {/* the switch's words; its name says whose mail it is */}
+            <Text size={tokens.adminText.ui.size} aria-hidden>
+              {t('serverMail')}
+            </Text>
+          </View>
         )}
-      </div>
-    </li>
+      </View>
+    </Card>
   )
 }
 
@@ -494,9 +555,12 @@ function ConnectionForm({
       .then(setTested, (e: Error) => setTested({ ok: false, message: e.message }))
   const known = new Set<string>([...specs.map((f) => f.key), 'name', 'events', 'serverMail'])
   const general = failure && (!failure.field || !known.has(failure.field)) ? failure.message : null
+  const serverMailError = err('serverMail')
 
   return (
-    <DialogContent
+    <Dialog
+      open
+      onClose={onClose}
       size="md"
       title={
         connection
@@ -506,107 +570,107 @@ function ConnectionForm({
       description={t('form.description')}
       footer={
         <>
-          <Button variant="ghost" onClick={onClose}>
+          <Button variant="ghost" onPress={onClose}>
             {t('form.cancel')}
           </Button>
-          <Button variant="primary" loading={save.pending} onClick={submit}>
+          <Button variant="primary" loading={save.pending} onPress={submit}>
             {t('form.save')}
           </Button>
         </>
       }
     >
-      <form
-        noValidate
-        className="grid gap-4 medium:grid-cols-2"
-        onSubmit={(e) => {
-          e.preventDefault()
-          submit()
-        }}
-      >
-        <Field
-          label={t('form.name')}
-          error={err('name', !name.trim())}
-          className="medium:col-span-2"
-        >
-          <Input value={name} maxLength={100} onChange={(e) => setName(e.target.value)} />
-        </Field>
-        {specs.map((f) => (
-          <SettingField
-            key={f.key}
-            spec={f}
-            value={values[f.key] ?? ''}
-            error={err(f.key, missing[f.key])}
-            onChange={(v) => setValue(f.key, v)}
-          />
-        ))}
-        {kind === 'browser' && <PeopleField value={people} onChange={setPeople} />}
-        <div className="flex flex-wrap items-center gap-3 medium:col-span-2">
-          <Button
-            size="sm"
-            icon="check"
-            loading={test.pending}
-            disabled={!settingsOk}
-            onClick={onTest}
-          >
-            {t('form.test')}
-          </Button>
-          {tested && (
-            <p
-              role="status"
-              className={
-                tested.ok
-                  ? 'text-caption text-text-2'
-                  : 'text-caption text-danger [overflow-wrap:anywhere]'
-              }
-            >
-              {tested.ok ? t('form.testOk') : tested.message}
-            </p>
-          )}
-        </div>
-        <fieldset className="grid gap-2 medium:col-span-2">
-          <legend className="mb-1 font-medium text-text text-ui">{t('form.events')}</legend>
-          <p className="text-caption text-text-3">{t('form.eventsHint')}</p>
-          <div className="grid gap-2 rounded-md border border-line bg-s2 p-3 medium:grid-cols-2">
-            {NOTIFICATION_EVENTS.map((e) => (
-              <Field key={e} inline label={t(`event.${e}`)}>
-                <Checkbox
-                  checked={events.includes(e)}
-                  onCheckedChange={(on) =>
-                    setEvents((old) =>
-                      on === true
-                        ? NOTIFICATION_EVENTS.filter((x) => x === e || old.includes(x))
-                        : old.filter((x) => x !== e),
-                    )
-                  }
-                />
-              </Field>
-            ))}
-          </div>
-        </fieldset>
-        {kind === 'email' && (
-          <Field
-            inline
-            label={t('form.serverMail')}
-            hint={t('form.serverMailHint')}
-            error={err('serverMail')}
-            className="medium:col-span-2"
-          >
-            <Switch checked={serverMail} onCheckedChange={setServerMail} />
+      <FormGrid>
+        <Cell>
+          <Field label={t('form.name')} error={err('name', !name.trim())}>
+            <Input value={name} maxLength={100} onChangeText={setName} onSubmitEditing={submit} />
           </Field>
+        </Cell>
+        {specs.map((f) => (
+          <Cell key={f.key} half={f.half}>
+            <SettingField
+              spec={f}
+              value={values[f.key] ?? ''}
+              error={err(f.key, missing[f.key])}
+              onChange={(v) => setValue(f.key, v)}
+              onSubmit={submit}
+            />
+          </Cell>
+        ))}
+        {kind === 'browser' && (
+          <Cell>
+            <PeopleField value={people} onChange={setPeople} />
+          </Cell>
         )}
-        <Field label={tt('label')} hint={tt('hint.connection')} className="medium:col-span-2">
-          <TagPicker value={tags} onChange={setTags} />
-        </Field>
-        <Field inline label={t('form.enabled')} className="medium:col-span-2">
-          <Switch checked={enabled} onCheckedChange={setEnabled} />
-        </Field>
+        <Cell>
+          <View
+            style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: s['3'] }}
+          >
+            <Button
+              size="sm"
+              icon="check"
+              loading={test.pending}
+              disabled={!settingsOk}
+              onPress={onTest}
+            >
+              {t('form.test')}
+            </Button>
+            {tested && (
+              <Note
+                role="status"
+                color={tested.ok ? 'text-2' : 'danger'}
+                style={tested.ok ? undefined : WRAP_ANYWHERE}
+              >
+                {tested.ok ? t('form.testOk') : tested.message}
+              </Note>
+            )}
+          </View>
+        </Cell>
+        <Cell>
+          <CheckGroup legend={t('form.events')} hint={t('form.eventsHint')}>
+            {NOTIFICATION_EVENTS.map((e) => (
+              <Checkbox
+                key={e}
+                label={t(`event.${e}`)}
+                checked={events.includes(e)}
+                onCheckedChange={(on) =>
+                  setEvents((old) =>
+                    on
+                      ? NOTIFICATION_EVENTS.filter((x) => x === e || old.includes(x))
+                      : old.filter((x) => x !== e),
+                  )
+                }
+              />
+            ))}
+          </CheckGroup>
+        </Cell>
+        {kind === 'email' && (
+          <Cell>
+            <Switch
+              label={t('form.serverMail')}
+              hint={serverMailError ? undefined : t('form.serverMailHint')}
+              checked={serverMail}
+              onCheckedChange={setServerMail}
+            />
+            {serverMailError ? <Note color="badge-danger">{serverMailError}</Note> : null}
+          </Cell>
+        )}
+        <Cell>
+          <Field label={tt('label')} hint={tt('hint.connection')}>
+            <TagPicker value={tags} onChange={setTags} />
+          </Field>
+        </Cell>
+        <Cell>
+          <Switch label={t('form.enabled')} checked={enabled} onCheckedChange={setEnabled} />
+        </Cell>
         {general && (
-          <p role="alert" className="text-caption text-danger medium:col-span-2">
-            {general}
-          </p>
+          <Cell>
+            <Note role="alert" color="danger">
+              {general}
+            </Note>
+          </Cell>
         )}
-      </form>
-    </DialogContent>
+      </FormGrid>
+    </Dialog>
   )
 }
 
@@ -615,25 +679,23 @@ function SettingField({
   value,
   error,
   onChange,
+  onSubmit,
 }: {
   spec: Spec
   value: string | boolean
   error: string | undefined
   onChange: (v: string | boolean) => void
+  /** Enter in a field saves, as the web's form submitted. */
+  onSubmit: () => void
 }) {
   const t = useT(messages)
   const label = t(`field.${f.key}`)
-  const span = f.half ? undefined : 'medium:col-span-2'
   if (f.type === 'switch')
-    return (
-      <Field inline label={label} className="medium:col-span-2">
-        <Switch checked={value === true} onCheckedChange={onChange} />
-      </Field>
-    )
+    return <Switch label={label} checked={value === true} onCheckedChange={onChange} />
   const hint = isMasked(value) ? t('form.secretHint') : f.hint ? t(f.hint) : undefined
   if (f.type === 'select')
     return (
-      <Field label={label} hint={hint} error={error} className={span}>
+      <Field label={label} hint={hint} error={error}>
         <Select
           value={String(value)}
           onValueChange={onChange}
@@ -645,26 +707,21 @@ function SettingField({
       </Field>
     )
   const mono = f.type !== 'text' || f.key === 'chatId' || f.key === 'roomId' || f.key === 'topic'
+  const url = f.type === 'url' || f.type === 'secret-url'
   return (
-    <Field label={label} hint={hint} error={error} className={span}>
+    <Field label={label} hint={hint} error={error}>
       <Input
-        type={
-          f.type === 'secret'
-            ? 'password'
-            : f.type === 'number'
-              ? 'number'
-              : f.type === 'url' || f.type === 'secret-url'
-                ? 'url'
-                : 'text'
-        }
+        secureTextEntry={f.type === 'secret'}
+        inputMode={f.type === 'number' ? 'numeric' : url ? 'url' : 'text'}
+        keyboardType={f.type === 'number' ? 'numbers-and-punctuation' : url ? 'url' : 'default'}
         value={String(value)}
-        min={f.min}
-        max={f.max}
         spellCheck={false}
+        autoCorrect={false}
         autoCapitalize="none"
         autoComplete={f.type === 'secret' ? 'new-password' : 'off'}
-        className={mono ? 'font-mono' : undefined}
-        onChange={(e) => onChange(e.target.value)}
+        mono={mono}
+        onChangeText={onChange}
+        onSubmitEditing={onSubmit}
       />
     </Field>
   )
@@ -675,24 +732,20 @@ function PeopleField({ value, onChange }: { value: string[]; onChange: (ids: str
   const t = useT(messages)
   const people = useQuery('settings:users', (c) => c.users.list(), ['users.updated'])
   return (
-    <fieldset className="grid gap-2 medium:col-span-2">
-      <legend className="mb-1 font-medium text-text text-ui">{t('form.people')}</legend>
-      <p className="text-caption text-text-3">{t('form.peopleHint')}</p>
-      <div className="grid gap-2 rounded-md border border-line bg-s2 p-3 medium:grid-cols-2">
-        {(people.data ?? [])
-          .filter((p) => !p.invited)
-          .map((p) => (
-            <Field key={p.id} inline label={p.displayName}>
-              <Checkbox
-                checked={value.includes(p.id)}
-                onCheckedChange={(on) =>
-                  onChange(on === true ? [...value, p.id] : value.filter((x) => x !== p.id))
-                }
-              />
-            </Field>
-          ))}
-      </div>
-    </fieldset>
+    <CheckGroup legend={t('form.people')} hint={t('form.peopleHint')}>
+      {(people.data ?? [])
+        .filter((p) => !p.invited)
+        .map((p) => (
+          <Checkbox
+            key={p.id}
+            label={p.displayName}
+            checked={value.includes(p.id)}
+            onCheckedChange={(on) =>
+              onChange(on ? [...value, p.id] : value.filter((x) => x !== p.id))
+            }
+          />
+        ))}
+    </CheckGroup>
   )
 }
 
@@ -741,6 +794,7 @@ function ThisBrowser() {
   const client = useClient()
   const mine = useQuery('push-subscriptions', (c) => c.pushSubscriptions.list(), TOPICS)
   const remove = useAction((c, id: string) => c.pushSubscriptions.remove({ params: { id } }))
+  const medium = useWindowAtLeast(breakpoints.medium)
   const [support, setSupport] = useState<Support>('checking')
   const [busy, setBusy] = useState(false)
   // only the browser knows; checked after hydration so the server's render matches
@@ -787,45 +841,40 @@ function ThisBrowser() {
   return (
     <Group title={t('push.title')} description={t('push.description')}>
       {support === 'unsupported' || support === 'insecure' ? (
-        <p className="text-caption text-text-3">
-          {support === 'insecure' ? t('push.insecure') : t('push.unsupported')}
-        </p>
+        <Note>{support === 'insecure' ? t('push.insecure') : t('push.unsupported')}</Note>
       ) : (
-        <Button
-          icon="notification"
-          className="justify-self-start"
-          loading={busy}
-          disabled={support !== 'ok'}
-          onClick={turnOn}
-        >
+        <Button icon="notification" loading={busy} disabled={support !== 'ok'} onPress={turnOn}>
           {t('push.turnOn')}
         </Button>
       )}
       <Loadable query={mine} what={t('push.yours')}>
         {(subs) =>
           subs.length === 0 ? (
-            <p className="text-caption text-text-3">{t('push.none')}</p>
+            <Note>{t('push.none')}</Note>
           ) : (
-            <ul aria-label={t('push.yours')} className="grid gap-2">
-              {subs.map((s) => (
-                <li
-                  key={s.id}
-                  className="grid gap-2 rounded-md border border-line bg-s2 p-3 medium:grid-cols-[minmax(0,1fr)_auto] medium:items-center"
+            <Cards label={t('push.yours')}>
+              {subs.map((sub) => (
+                <Card
+                  key={sub.id}
+                  gap={s['2']}
+                  style={
+                    medium ? { flexDirection: 'row', alignItems: 'center', gap: s['2'] } : undefined
+                  }
                 >
-                  <div className="grid min-w-0 gap-0.5">
-                    <p className="text-text text-ui [overflow-wrap:anywhere]">{s.label}</p>
-                    <p className="text-caption text-text-3 [overflow-wrap:anywhere]">
-                      {s.service} · {t('push.added', { ago: relative(s.createdAt) })}
-                    </p>
-                  </div>
+                  <View style={{ flex: medium ? 1 : undefined, minWidth: 0, gap: s['0.5'] }}>
+                    <Line style={WRAP_ANYWHERE}>{sub.label}</Line>
+                    <Note style={WRAP_ANYWHERE}>
+                      {sub.service} · {t('push.added', { ago: relative(sub.createdAt) })}
+                    </Note>
+                  </View>
                   <Button
                     size="sm"
                     variant="danger"
-                    aria-label={t('push.removeLabel', { name: s.label })}
-                    onClick={() =>
-                      remove.run(s.id).then(
+                    accessibilityLabel={t('push.removeLabel', { name: sub.label })}
+                    onPress={() =>
+                      remove.run(sub.id).then(
                         () => {
-                          toast({ title: t('push.removed', { name: s.label }) })
+                          toast({ title: t('push.removed', { name: sub.label }) })
                           mine.refetch()
                         },
                         (e: Error) => toast.error(t('actionFailed'), { description: e.message }),
@@ -834,9 +883,9 @@ function ThisBrowser() {
                   >
                     {t('remove')}
                   </Button>
-                </li>
+                </Card>
               ))}
-            </ul>
+            </Cards>
           )
         }
       </Loadable>

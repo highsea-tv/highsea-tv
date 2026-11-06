@@ -26,7 +26,6 @@ const { act, cleanup, render, within } = await import('@testing-library/react')
 const { default: userEvent } = await import('@testing-library/user-event')
 const { createClient } = await import('@highsea-tv/sdk')
 const { ClientProvider } = await import('@highsea-tv/sdk/react')
-const { UIProvider } = await import('@highsea-tv/ui')
 const { ThemeProvider, Toaster } = await import('@highsea-tv/ui/native')
 const { MoviesLibrary } = await import('../src/library.tsx')
 
@@ -126,9 +125,7 @@ async function open() {
     render(
       <ClientProvider client={client}>
         <ThemeProvider>
-          <UIProvider>
-            <MoviesLibrary />
-          </UIProvider>
+          <MoviesLibrary />
           <Toaster label="Notifications" />
         </ThemeProvider>
       </ClientProvider>,

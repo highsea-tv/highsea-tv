@@ -62,12 +62,12 @@ describe('by touch', () => {
     await signedIn()
     await acknowledge()
     await go('/library?view=music')
-    // the grid draws the first screens' worth, so an album early in the alphabet
-    const cover = screen.getAllByLabelText('Kindling, The Hollow Pines')[0]
+    // the grid draws the rows near the screen, so an album early in the alphabet
+    const cover = screen.getAllByLabelText('Field Notes, The Hollow Pines')[0]
     expect(cover).toBeTruthy()
     await fireEvent.press(cover as never)
     await flush()
-    expect(screen.getByRole('header', { name: 'Kindling' })).toBeTruthy()
+    expect(screen.getByRole('header', { name: 'Field Notes' })).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Play' })).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Shuffle' })).toBeTruthy()
     expect(text()).toMatch(/The Hollow Pines/)

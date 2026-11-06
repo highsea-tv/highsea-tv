@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// Builds src/shared/glyphs.ts from the custom glyph sources in design/assets/icons, which both
-// renderers draw (web/icons/icon.tsx through lucide-react, native/icons.ts through lucide-react-native).
+// Builds src/shared/glyphs.ts from the custom glyph sources in design/assets/icons, which the
+// renderer draws (native/icons.ts, through lucide-react-native).
 // `--check` fails when the generated file is stale.
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'

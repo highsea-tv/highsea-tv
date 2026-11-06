@@ -38,7 +38,6 @@ const { act, cleanup, render, within } = await import('@testing-library/react')
 const { default: userEvent } = await import('@testing-library/user-event')
 const { createClient } = await import('@highsea-tv/sdk')
 const { ClientProvider } = await import('@highsea-tv/sdk/react')
-const { TooltipProvider } = await import('@highsea-tv/ui')
 const { ThemeProvider } = await import('@highsea-tv/ui/native')
 const { Network } = await import('../src/network.tsx')
 const { Security } = await import('../src/security.tsx')
@@ -146,9 +145,7 @@ async function open(screen: ReactNode) {
   await act(async () => {
     render(
       <ClientProvider client={client}>
-        <ThemeProvider>
-          <TooltipProvider>{screen}</TooltipProvider>
-        </ThemeProvider>
+        <ThemeProvider>{screen}</ThemeProvider>
       </ClientProvider>,
     )
   })
@@ -244,7 +241,8 @@ describe('Settings › Network and remote access', () => {
     role = 'admin'
     const { page } = await open(<Network />)
     expect(page.getByText('Only the owner can change how the server is reached.')).toBeTruthy()
-    expect((page.getByLabelText('External URL') as HTMLInputElement).disabled).toBe(true)
+    // the native field's `disabled` is a read-only input at the disabled opacity
+    expect((page.getByLabelText('External URL') as HTMLInputElement).readOnly).toBe(true)
     expect(page.queryByRole('radio', { name: 'Built in' })).toBeNull()
     expect(page.getByText('TLS: Off (LAN only)')).toBeTruthy()
   })

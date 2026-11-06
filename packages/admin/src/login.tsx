@@ -4,22 +4,38 @@
 // 6-digit code when the account has two-step verification on, or a recovery code; or setting it up
 // when the server requires it. A passkey or the server's single sign-on provider skip the
 // password. The OIDC round trip is real: the browser goes to the provider and comes back through
-// /api/v1/auth/oidc/callback, which lands on the dashboard or back here with `?error=`.
+// /api/v1/auth/oidc/callback, which lands on the dashboard or back here with `?error=`. Drawn
+// with the library's native renderer since D3 (one-client-platform-d.md): a form's submit is the
+// primary button and Enter in its fields (`onSubmitEditing`), as a native screen has no <form>.
 import type { SignInResult } from '@highsea-tv/api-contract'
 import { useT } from '@highsea-tv/i18n/react'
 import { ApiError } from '@highsea-tv/sdk'
 import { useAction, useQuery } from '@highsea-tv/sdk/react'
-import { Button, EmptyState, Field, Icon, Input, Skeleton } from '@highsea-tv/ui'
+import {
+  Button,
+  EmptyState,
+  Field,
+  Input,
+  Skeleton,
+  Text,
+  tokens,
+  useControl,
+  useTheme,
+} from '@highsea-tv/ui/native'
 import {
   browserSupportsWebAuthn,
   type PublicKeyCredentialRequestOptionsJSON,
   startAuthentication,
 } from '@simplewebauthn/browser'
-import { type FormEvent, useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { ActivityIndicator, View } from 'react-native'
 import { Card, Divider, FormAlert, Heading } from './auth-card.tsx'
 import { login as messages } from './login-messages.ts'
+import { useLoad } from './navigation.tsx'
 import { safeNext } from './next-path.ts'
-import { CodeInput, Enrol, RecoveryCodes } from './two-factor.tsx'
+import { CodeInput, Enrol, type InputHandle, RecoveryCodes } from './two-factor.tsx'
+
+const s = tokens.space
 
 type Step =
   | { kind: 'form' }
@@ -40,11 +56,13 @@ const OIDC_ERRORS = [
 const reasonOf = (e: unknown) =>
   ((e as ApiError).details as { reason?: string } | undefined)?.reason
 
-/** A fresh load, so the server components see the new session cookie. */
-const go = (next: string) => window.location.assign(safeNext(next))
-
 export function Login({ next, oidcError }: { next?: string; oidcError?: string }) {
   const t = useT(messages)
+  const theme = useTheme()
+  const m = useControl()
+  const load = useLoad()
+  /** A fresh load, so the server components see the new session cookie. */
+  const go = (to: string) => load(safeNext(to))
   const info = useQuery('public-info', (c) => c.system.publicInfo())
   const [step, setStep] = useState<Step>({ kind: 'form' })
   const [username, setUsername] = useState('')
@@ -52,9 +70,9 @@ export function Login({ next, oidcError }: { next?: string; oidcError?: string }
   const [code, setCode] = useState('')
   const [error, setError] = useState<ApiError | null>(null)
   const [passkeys, setPasskeys] = useState(false)
-  const codeInput = useRef<HTMLInputElement>(null)
-  const usernameInput = useRef<HTMLInputElement>(null)
-  const passwordInput = useRef<HTMLInputElement>(null)
+  const codeInput = useRef<InputHandle>(null)
+  const usernameInput = useRef<InputHandle>(null)
+  const passwordInput = useRef<InputHandle>(null)
 
   const signIn = useAction((c) => c.auth.signIn({ body: { username, password } }))
   const verify = useAction((c, challenge: string, value: string) =>
@@ -89,8 +107,7 @@ export function Login({ next, oidcError }: { next?: string; oidcError?: string }
     else go(next ?? '/')
   }
 
-  const submit = async (e: FormEvent) => {
-    e.preventDefault()
+  const submit = async () => {
     setError(null)
     try {
       after(await signIn.run())
@@ -117,12 +134,12 @@ export function Login({ next, oidcError }: { next?: string; oidcError?: string }
   if (info.status === 'loading')
     return (
       <Card>
-        <div className="grid gap-4" aria-busy>
-          <Skeleton className="h-6 w-40" />
-          <Skeleton className="h-10" />
-          <Skeleton className="h-10" />
-          <Skeleton className="h-9" />
-        </div>
+        <View aria-busy style={{ gap: s['4'] }}>
+          <Skeleton width={160} height={24} />
+          <Skeleton height={40} />
+          <Skeleton height={40} />
+          <Skeleton height={36} />
+        </View>
       </Card>
     )
 
@@ -132,8 +149,9 @@ export function Login({ next, oidcError }: { next?: string; oidcError?: string }
         <EmptyState
           size="sm"
           tone="error"
+          icon="error"
           title={t('unreachable')}
-          action={<Button onClick={info.refetch}>{t('retry')}</Button>}
+          action={<Button onPress={info.refetch}>{t('retry')}</Button>}
         >
           {info.error.message}
         </EmptyState>
@@ -148,11 +166,13 @@ export function Login({ next, oidcError }: { next?: string; oidcError?: string }
     return (
       <Card>
         <Heading title={t('oidc', { provider: server.auth.oidc?.name ?? '' })} />
-        <p className="flex items-center gap-2 text-caption text-text-2" role="status">
-          <Icon name="loading" size={16} className="animate-spin" />
-          {t('oidcWait', { provider: server.auth.oidc?.name ?? '' })}
-        </p>
-        <Button variant="ghost" onClick={() => setStep({ kind: 'form' })}>
+        <View role="status" style={{ flexDirection: 'row', alignItems: 'center', gap: s['2'] }}>
+          <ActivityIndicator aria-hidden size={16} color={theme.colors['text-2']} />
+          <Text variant="caption" color="text-2" style={{ flex: 1, minWidth: 0 }}>
+            {t('oidcWait', { provider: server.auth.oidc?.name ?? '' })}
+          </Text>
+        </View>
+        <Button variant="ghost" block onPress={() => setStep({ kind: 'form' })}>
           {t('cancel')}
         </Button>
       </Card>
@@ -170,7 +190,8 @@ export function Login({ next, oidcError }: { next?: string; oidcError?: string }
     const otherAccount = (
       <Button
         variant="ghost"
-        onClick={() => {
+        block
+        onPress={() => {
           setStep({ kind: 'form' })
           setCode('')
           setError(null)
@@ -197,13 +218,7 @@ export function Login({ next, oidcError }: { next?: string; oidcError?: string }
                 : t('code.detail')
           }
         />
-        <form
-          className="grid gap-4"
-          onSubmit={(e) => {
-            e.preventDefault()
-            submitCode(code)
-          }}
-        >
+        <View style={{ gap: s['4'] }}>
           {step.kind === 'setup' && <Enrol secret={step.secret} uri={step.uri} />}
           {recovery ? (
             <Field label={t('recovery.label')} error={fieldError}>
@@ -213,8 +228,11 @@ export function Login({ next, oidcError }: { next?: string; oidcError?: string }
                 autoComplete="off"
                 autoCapitalize="characters"
                 spellCheck={false}
-                className="font-mono tracking-[0.15em]"
-                onChange={(e) => setCode(e.target.value.toUpperCase())}
+                mono
+                // the web's tracking-[0.15em]
+                style={{ letterSpacing: m.text * 0.15 }}
+                onChangeText={(v) => setCode(v.toUpperCase())}
+                onSubmitEditing={() => submitCode(code)}
               />
             </Field>
           ) : (
@@ -224,17 +242,19 @@ export function Login({ next, oidcError }: { next?: string; oidcError?: string }
           )}
           {alert && <FormAlert>{alert}</FormAlert>}
           <Button
-            type="submit"
             variant="primary"
+            block
             loading={verify.pending}
             disabled={recovery ? code.replace(/[^A-Z0-9]/g, '').length < 12 : code.length < 6}
+            onPress={() => submitCode(code)}
           >
             {t('code.verify')}
           </Button>
           {step.kind === 'code' && (
             <Button
               variant="ghost"
-              onClick={() => {
+              block
+              onPress={() => {
                 setStep({ ...step, recovery: !recovery })
                 setCode('')
                 setError(null)
@@ -244,7 +264,7 @@ export function Login({ next, oidcError }: { next?: string; oidcError?: string }
             </Button>
           )}
           {otherAccount}
-        </form>
+        </View>
       </Card>
     )
   }
@@ -259,40 +279,44 @@ export function Login({ next, oidcError }: { next?: string; oidcError?: string }
     <Card>
       <Heading title={t('title', { name: server.name })} />
       {oidcMessage && !error && <FormAlert>{oidcMessage}</FormAlert>}
-      <form className="grid gap-4" onSubmit={submit} noValidate>
+      <View style={{ gap: s['4'] }}>
         <Field label={t('username')}>
           <Input
             ref={usernameInput}
             value={username}
-            autoComplete="username webauthn"
+            // the browser offers its passkeys in the field (WebAuthn's conditional mediation)
+            autoComplete={'username webauthn' as 'username'}
             autoCapitalize="none"
             spellCheck={false}
-            onChange={(e) => setUsername(e.target.value)}
+            onChangeText={setUsername}
+            onSubmitEditing={submit}
           />
         </Field>
         <Field label={t('password')} error={fieldError}>
           <Input
             ref={passwordInput}
-            type="password"
+            secureTextEntry
             value={password}
             autoComplete="current-password"
-            onChange={(e) => setPassword(e.target.value)}
+            onChangeText={setPassword}
+            onSubmitEditing={submit}
           />
         </Field>
         {alert && <FormAlert>{alert}</FormAlert>}
-        <Button type="submit" variant="primary" loading={signIn.pending}>
+        <Button variant="primary" block loading={signIn.pending} onPress={submit}>
           {t('signIn')}
         </Button>
-      </form>
+      </View>
       {((passkeys && server.auth.passkeys) || server.auth.oidc) && (
         <>
           <Divider>{t('or')}</Divider>
-          <div className="grid gap-2">
+          <View style={{ gap: s['2'] }}>
             {passkeys && server.auth.passkeys && (
               <Button
                 icon="key"
+                block
                 loading={passkey.pending}
-                onClick={() =>
+                onPress={() =>
                   passkey.run().then(after, (e: Error) =>
                     setError(
                       // the person closed the browser's prompt (WebAuthn: NotAllowedError)
@@ -309,18 +333,21 @@ export function Login({ next, oidcError }: { next?: string; oidcError?: string }
             {server.auth.oidc && (
               <Button
                 icon="shield"
-                onClick={() => {
+                block
+                onPress={() => {
                   setStep({ kind: 'sso' })
-                  window.location.assign('/api/v1/auth/oidc/start')
+                  load('/api/v1/auth/oidc/start')
                 }}
               >
                 {t('oidc', { provider: server.auth.oidc.name })}
               </Button>
             )}
-          </div>
+          </View>
         </>
       )}
-      <p className="text-caption text-text-3">{t('footer')}</p>
+      <Text variant="caption" color="text-3">
+        {t('footer')}
+      </Text>
     </Card>
   )
 }

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The date and time field in a browser: HTML's `datetime-local` input, with the browser's own
+// The date and time field in a browser: HTML's `datetime-local` input (or `time`, for a time alone), with the browser's own
 // picker (https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/input/datetime-local),
 // which react-native-web's TextInput can't be (it sets the input's `type` from `keyboardType`
 // and `secureTextEntry` alone). Drawn in the field look as Input is (field.tsx's fieldBox), with
@@ -10,7 +10,14 @@ import { fieldBox, useField } from './field.tsx'
 import { family } from './fonts.ts'
 import { tokens, useControl, useTheme } from './theme.tsx'
 
-export const DateTimeInput: typeof Native = ({ value, onChange, size, disabled, invalid }) => {
+export const DateTimeInput: typeof Native = ({
+  value,
+  onChange,
+  size,
+  disabled,
+  invalid,
+  mode = 'datetime',
+}) => {
   const theme = useTheme()
   const field = useField()
   const m = useControl(size ?? field?.size)
@@ -19,7 +26,7 @@ export const DateTimeInput: typeof Native = ({ value, onChange, size, disabled, 
   const box = fieldBox(theme, m, focused, invalid ?? field?.invalid ?? false)
   return (
     <input
-      type="datetime-local"
+      type={mode === 'time' ? 'time' : 'datetime-local'}
       aria-label={field?.label}
       aria-invalid={invalid ?? field?.invalid ?? undefined}
       value={value}

@@ -91,4 +91,15 @@ describe('a field in a browser', () => {
     expect((screen.getByLabelText('Name') as HTMLElement).style.outlineStyle).toBe('none')
     expect((screen.getByLabelText('Notes') as HTMLElement).style.outlineStyle).toBe('none')
   })
+
+  test('a colour well is the browser’s colour input, named and passing on what’s picked', async () => {
+    const { ColorWell } = await import('../../src/native/color-well.web.tsx')
+    const picked: string[] = []
+    render(<ColorWell aria-label="Accent" value="#8fbfb7" onChange={(v) => picked.push(v)} />)
+    const input = screen.getByLabelText('Accent') as HTMLInputElement
+    expect(input.type).toBe('color')
+    expect(input.value).toBe('#8fbfb7')
+    testing.fireEvent.input(input, { target: { value: '#112233' } })
+    expect(picked).toEqual(['#112233'])
+  })
 })

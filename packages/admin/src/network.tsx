@@ -8,16 +8,31 @@
 // offered a certificate choice the API doesn't have. Discovery: the switch, with the server's own
 // name and discovery port in place of the prototype's, and the addresses it answers on. The
 // prototype's Check from outside is gone (the owner's call, 2026-10-21). Admins read the area;
-// only the owner saves it (the API refuses anyone else), so their fields are disabled.
+// only the owner saves it (the API refuses anyone else), so their fields are disabled. Drawn with the
+// library's native renderer since D3 (one-client-platform-d.md).
 import type { NetworkSettings, NetworkStatus } from '@highsea-tv/api-contract'
 import { useT } from '@highsea-tv/i18n/react'
 import { useAction, useQuery } from '@highsea-tv/sdk/react'
-import { Field, Input, SegmentedControl, Switch, toast } from '@highsea-tv/ui'
+import { breakpoints } from '@highsea-tv/tokens'
+import {
+  Field,
+  Input,
+  SegmentedControl,
+  Switch,
+  Text,
+  toast,
+  tokens,
+  useWindowAtLeast,
+} from '@highsea-tv/ui/native'
 import { useState } from 'react'
+import { View, type ViewStyle } from 'react-native'
 import { Loadable } from './loadable.tsx'
 import { network as messages } from './network-messages.ts'
 import { AreaPage, Group, SaveBar } from './settings.tsx'
 import { useShell } from './shell.tsx'
+
+const s = tokens.space
+const ui = tokens.adminText.ui
 
 const TLS_MODES = ['proxy', 'built-in', 'off'] as const
 
@@ -83,6 +98,7 @@ function Form({ loaded, reload }: { loaded: NetworkStatus; reload: () => void })
   }
   const dirty = JSON.stringify(v) !== JSON.stringify(initial)
   const name = info.data?.name ?? t('thisServer')
+  const medium = useWindowAtLeast(breakpoints.medium)
 
   const submit = async () => {
     const port = v.httpsPort.trim()
@@ -105,18 +121,23 @@ function Form({ loaded, reload }: { loaded: NetworkStatus; reload: () => void })
 
   return (
     <>
-      {!owner && <p className="text-caption text-text-3">{t('ownerOnly')}</p>}
+      {!owner && (
+        <Text variant="caption" color="text-3">
+          {t('ownerOnly')}
+        </Text>
+      )}
       <Group title={t('remote.title')} description={t('remote.description')}>
         <Field label={t('externalUrl')} error={errors.externalUrl}>
           <Input
+            mono
             value={v.externalUrl}
             disabled={!owner}
             placeholder="https://harbor.example.net"
             spellCheck={false}
             autoCapitalize="none"
             inputMode="url"
-            onChange={(e) => set({ externalUrl: e.target.value })}
-            className="font-mono"
+            keyboardType="url"
+            onChangeText={(externalUrl) => set({ externalUrl })}
           />
         </Field>
       </Group>
@@ -126,38 +147,49 @@ function Form({ loaded, reload }: { loaded: NetworkStatus; reload: () => void })
             aria-label={t('tls')}
             size="sm"
             value={v.tls}
-            onValueChange={(tls) => set({ tls: tls as Draft['tls'] })}
+            onValueChange={(tls) => set({ tls })}
             options={TLS_MODES.map((m) => ({ value: m, label: t(`tls.${m}`) }))}
-            className="justify-self-start"
           />
         ) : (
-          <p className="text-text text-ui">
+          <Text size={ui.size} leading={ui.leading}>
             {t('tls')}: {t(`tls.${v.tls}`)}
-          </p>
+          </Text>
         )}
         {v.tls === 'built-in' && (
           <>
-            <p className="text-caption text-text-3">{t('tls.builtInHint')}</p>
+            <Text variant="caption" color="text-3">
+              {t('tls.builtInHint')}
+            </Text>
             {loaded.tlsProblem && loaded.tls === 'built-in' && (
-              <p className="text-badge-warning text-caption">{loaded.tlsProblem}</p>
+              <Text variant="caption" color="badge-warning">
+                {loaded.tlsProblem}
+              </Text>
             )}
-            <div className="grid gap-4 medium:grid-cols-2">
+            <View
+              style={
+                {
+                  display: 'grid',
+                  gridTemplateColumns: medium ? 'repeat(2, minmax(0, 1fr))' : 'minmax(0, 1fr)',
+                  gap: s['4'],
+                } as unknown as ViewStyle
+              }
+            >
               <Field label={t('httpsPort')} error={errors.httpsPort}>
                 <Input
-                  type="number"
                   inputMode="numeric"
-                  min={1024}
-                  max={65535}
+                  keyboardType="number-pad"
                   value={v.httpsPort}
                   disabled={!owner}
-                  onChange={(e) => set({ httpsPort: e.target.value })}
+                  onChangeText={(httpsPort) => set({ httpsPort })}
                 />
               </Field>
-            </div>
+            </View>
           </>
         )}
         {v.tls === 'off' && (
-          <p className="text-badge-warning text-caption">{t('tls.offWarning')}</p>
+          <Text variant="caption" color="badge-warning">
+            {t('tls.offWarning')}
+          </Text>
         )}
         <Field
           label={t('trustedProxies')}
@@ -165,49 +197,55 @@ function Form({ loaded, reload }: { loaded: NetworkStatus; reload: () => void })
           error={errors.trustedProxies}
         >
           <Input
+            mono
             value={v.trustedProxies}
             disabled={!owner}
             placeholder="172.16.0.0/12"
             spellCheck={false}
             autoCapitalize="none"
-            onChange={(e) => set({ trustedProxies: e.target.value })}
-            className="font-mono"
+            onChangeText={(trustedProxies) => set({ trustedProxies })}
           />
         </Field>
-        <Field inline label={t('proxyHeaders')} hint={t('proxyHeadersHint')}>
-          <Switch
-            checked={v.proxyHeaders}
-            disabled={!owner}
-            onCheckedChange={(proxyHeaders) => set({ proxyHeaders })}
-          />
-        </Field>
+        <Switch
+          label={t('proxyHeaders')}
+          hint={t('proxyHeadersHint')}
+          checked={v.proxyHeaders}
+          disabled={!owner}
+          onCheckedChange={(proxyHeaders) => set({ proxyHeaders })}
+        />
       </Group>
       <Group title={t('discovery.title')}>
-        <Field
-          inline
+        <Switch
           label={t('discovery', { name })}
           hint={t('discoveryHint', { port: loaded.discoveryPort })}
-        >
-          <Switch
-            checked={v.discovery}
-            disabled={!owner}
-            onCheckedChange={(discovery) => set({ discovery })}
-          />
-        </Field>
-        <div className="grid gap-1">
-          <h3 className="font-semibold text-text text-ui">{t('addresses')}</h3>
+          checked={v.discovery}
+          disabled={!owner}
+          onCheckedChange={(discovery) => set({ discovery })}
+        />
+        <View style={{ gap: s['1'] }}>
+          <Text role="heading" aria-level={3} size={ui.size} leading={ui.leading} weight={600}>
+            {t('addresses')}
+          </Text>
           {loaded.localAddresses.length ? (
-            <ul aria-label={t('addresses')} className="grid gap-1">
+            <View role="list" aria-label={t('addresses')} style={{ gap: s['1'] }}>
               {loaded.localAddresses.map((a) => (
-                <li key={a} className="font-mono text-mono text-text-2 [overflow-wrap:anywhere]">
+                <Text
+                  key={a}
+                  role="listitem"
+                  variant="mono"
+                  color="text-2"
+                  style={{ overflowWrap: 'anywhere' } as object}
+                >
                   {a}
-                </li>
+                </Text>
               ))}
-            </ul>
+            </View>
           ) : (
-            <p className="text-caption text-text-3">{t('addresses.none')}</p>
+            <Text variant="caption" color="text-3">
+              {t('addresses.none')}
+            </Text>
           )}
-        </div>
+        </View>
       </Group>
       {owner && (
         <SaveBar

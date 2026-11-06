@@ -126,8 +126,62 @@ async function open(context: BrowserContext, v: Visit, width: number, variant?: 
 
 // A context per page: a signed-in page holds the event stream open, and Chromium allows six
 // HTTP/1.1 connections per host across a context (MDN, Server-sent events), so shared contexts stall.
-async function sweep(visits: Visit[], context: () => Promise<BrowserContext>) {
+// The library's drawing written by the server (one-client-platform-d.md › D1, every page since D3):
+// with JavaScript off (https://playwright.dev/docs/api/class-browser#browser-new-context-option-java-script-enabled)
+// each admin page's HTML carries react-native-web's sheet and the page inside the providers'
+// hidden wrapper, so nothing but the background shows until it hydrates (the owner's answer of
+// 2026-11-05). A page whose first drawing waits for the API (sign-in, setup, an invite) has only
+// its loading state in that wrapper, which is as hidden. A visit that needs a step first (`init`,
+// `act`) is reached only with JavaScript, so it's left out; `/web` is the client's static export,
+// which no server renders (apps/server/src/web/); each path once.
+const rendered = new Set<string>()
+// Known, and left open at D3 (one-client-platform-d.md's D3 entry): a page under the admin's layout
+// that calls notFound() (an unknown tab) is rendered by the browser, not the server: its HTML is
+// Next's empty error document (`<html id="__next_error__">`), so it has no sheet. With JavaScript on
+// it draws as it should, and only the background shows before hydrating, as on every page.
+const CLIENT_RENDERED_404 = new Set(['/subtitles/nowhere', '/wanted/nowhere'])
+async function serverRendered(
+  visits: Visit[],
+  context: (options?: BrowserContextOptions) => Promise<BrowserContext>,
+) {
+  const paths = [...new Set(visits.filter((v) => !v.init && !v.act).map((v) => v.path))].filter(
+    (path) => !rendered.has(path) && !path.startsWith('/web') && !CLIENT_RENDERED_404.has(path),
+  )
+  await pool(paths, 4, async (path) => {
+    rendered.add(path)
+    const ctx = await context({ javaScriptEnabled: false })
+    try {
+      const page = await ctx.newPage()
+      await page.setViewportSize({ width: 1440, height: heightFor(1440) })
+      await page.goto(`${BASE}${path}`)
+      const sheet = await page
+        .locator('style#react-native-stylesheet')
+        .first()
+        .evaluate((el) => el.textContent ?? '')
+        .catch(() => '')
+      const rules = sheet.match(/\.r-[\w-]+\{/g)?.length ?? 0
+      const wrapped = (await page.locator('div[style*="visibility:hidden"]').count()) > 0
+      const shown = await page
+        .getByRole('heading', { level: 1 })
+        .first()
+        .isVisible()
+        .catch(() => false)
+      if (rules < 50 || !wrapped || shown)
+        problems.push(
+          `no-js ${path}: ${rules} of react-native-web's rules, the page ${shown ? 'shown before hydrating' : wrapped ? 'hidden' : 'not in the hidden wrapper'}`,
+        )
+    } finally {
+      await ctx.close()
+    }
+  })
+}
+
+async function sweep(
+  visits: Visit[],
+  context: (options?: BrowserContextOptions) => Promise<BrowserContext>,
+) {
   if (only !== 'keyboard') {
+    await serverRendered(visits, context)
     const jobs = visits.flatMap((v) => WIDTHS.flatMap((w) => VARIANTS.map((q) => ({ v, w, q }))))
     await pool(jobs, 4, async ({ v, w, q }) => {
       try {
@@ -228,7 +282,7 @@ try {
         },
       },
     ],
-    () => context(),
+    context,
   )
 
   // finish setup and seed what the pages show
@@ -267,7 +321,7 @@ try {
       { name: 'link:dead', path: '/invite/nothing-here' },
       { name: 'nowhere', path: '/no/such/page/outside' },
     ],
-    () => context(),
+    context,
   )
 
   // signed in through the login page, once each; each page's context reuses the cookie
@@ -286,33 +340,6 @@ try {
   }
   const ownerContext = await signIn(OWNER.username, OWNER.password)
 
-  // the library's drawing written by the server (one-client-platform-d.md › D1): with JavaScript
-  // off (https://playwright.dev/docs/api/class-browser#browser-new-context-option-java-script-enabled)
-  // System › Status's HTML carries react-native-web's sheet and the page, hidden, so nothing but
-  // the background shows until the page hydrates (the owner's answer of 2026-11-05)
-  for (const width of WIDTHS) {
-    const ctx = await ownerContext({ javaScriptEnabled: false })
-    try {
-      const page = await ctx.newPage()
-      await page.setViewportSize({ width, height: heightFor(width) })
-      await page.goto(`${BASE}/system`)
-      const sheet = await page
-        .locator('style#react-native-stylesheet')
-        .first()
-        .evaluate((el) => el.textContent ?? '')
-        .catch(() => '')
-      const rules = sheet.match(/\.r-[\w-]+\{/g)?.length ?? 0
-      const heading = page.getByRole('heading', { name: 'System', level: 1, includeHidden: true })
-      const rendered = (await heading.count()) > 0
-      const shown = rendered && (await heading.first().isVisible())
-      if (rules < 50 || !rendered || shown)
-        problems.push(
-          `no-js /system ${width}: ${rules} of react-native-web's rules, the page ${rendered ? (shown ? 'shown before hydrating' : 'hidden') : 'not rendered'}`,
-        )
-    } finally {
-      await ctx.close()
-    }
-  }
   const tab = (name: string | RegExp) => (p: Page) => p.getByRole('tab', { name }).click()
   const customize = (p: Page) => p.getByRole('button', { name: 'Customize' }).click()
   await sweep(
@@ -731,7 +758,7 @@ try {
         },
       },
     ],
-    () => context(),
+    context,
   )
 
   // the web app as a user, with the seeded films, sections and collections

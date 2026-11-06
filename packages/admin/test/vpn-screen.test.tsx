@@ -36,7 +36,6 @@ const { act, cleanup, render, within } = await import('@testing-library/react')
 const { default: userEvent } = await import('@testing-library/user-event')
 const { createClient } = await import('@highsea-tv/sdk')
 const { ClientProvider } = await import('@highsea-tv/sdk/react')
-const { TooltipProvider } = await import('@highsea-tv/ui')
 const { ThemeProvider } = await import('@highsea-tv/ui/native')
 const { Vpn } = await import('../src/vpn.tsx')
 
@@ -179,9 +178,7 @@ async function open() {
     render(
       <ClientProvider client={client}>
         <ThemeProvider>
-          <TooltipProvider>
-            <Vpn />
-          </TooltipProvider>
+          <Vpn />
         </ThemeProvider>
       </ClientProvider>,
     )
@@ -201,9 +198,9 @@ describe('Settings › VPN', () => {
     const status = page.getByRole('status')
     expect(within(status).getByText('No VPN')).toBeTruthy()
     expect(page.queryByRole('button', { name: 'Check now' })).toBeNull()
-    // the library's Radio is Radix's <button role="radio">, so its state is aria-checked
-    const builtin = page.getByRole('radio', { name: /highsea connects/ }) as HTMLButtonElement
-    expect(builtin.disabled).toBe(false)
+    // each card is the radio (a Press with the radio role), so its state is aria-checked
+    const builtin = page.getByRole('radio', { name: /highsea connects/ })
+    expect(builtin.getAttribute('aria-disabled')).toBeNull()
     expect(page.queryByText(/Arrives in a later update/)).toBeNull()
     expect(page.getByRole('radio', { name: /^Off/ }).getAttribute('aria-checked')).toBe('true')
     // nothing to behave with while it's off
@@ -282,7 +279,9 @@ describe('Settings › VPN', () => {
 
   test('container: the compose block comes from the server, per provider', async () => {
     state.settings = settings({ mode: 'container' })
-    const { page } = await open()
+    const { user, page } = await open()
+    // the native Disclosure draws what's inside only once it's open
+    await user.click(page.getByRole('button', { name: 'Compose for your provider' }))
     await settle()
     const block = page.getByRole('figure', { name: 'Compose block' })
     expect(within(block).getByText(/for proton/)).toBeTruthy()

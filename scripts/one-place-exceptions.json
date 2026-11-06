@@ -39,27 +39,6 @@
   ],
   "exceptions": [
     {
-      "rule": "screens",
-      "path": "apps/server/app/**",
-      "count": 58,
-      "until": "D",
-      "reason": "The admin's Next.js pages and layouts, outside this rule until part D, which draws everything the admin shows with the library and leaves Next.js as its host."
-    },
-    {
-      "rule": "screens",
-      "path": "packages/admin/src/**",
-      "count": 62,
-      "until": "D",
-      "reason": "The admin's screens, outside this rule until part D draws them with the library. D2 added table-parts.tsx, the admin's shared table cells."
-    },
-    {
-      "rule": "screens",
-      "path": "design/prototypes/src/admin/**",
-      "count": 28,
-      "until": "D",
-      "reason": "The admin's prototype, outside this rule until part D draws it with the library, as the admin. Get the apps (system/get-the-apps.tsx) moved in from the clients' shared folder in B3, for System › Status and the command palette. D1 added shared.tsx, the host that draws @highsea-tv/admin's shared screens over the mock transport; it stays. D2 removed the copies of the library, the work and Curation; what's left is Shows, Settings, System's other tabs, setup and sign-in, which D3 moves."
-    },
-    {
       "rule": "values",
       "path": "packages/ui/src/native/badge.tsx",
       "count": 20,
@@ -278,6 +257,13 @@
     },
     {
       "rule": "values",
+      "path": "packages/ui/src/native/command-palette.tsx",
+      "count": 12,
+      "until": "E",
+      "reason": "The command palette's measures from the web renderer's (cmdk's, which D3 replaced): the 560 card, the 48 field, the 36 rows and their 13.5 type, the list's 360 height, and the 1.5 and 2.5 steps of the 4px base (6 and 10) that the space scale doesn't name; the scrim, black at 0.6, and the 1 border under the field, as Sheet's and Dialog's; and the visually hidden title (1 by 1 at -1, WAI's visually hidden pattern, as Sheet's) that names the dialog. A new token value needs the owner's approval; part E removes this entry once they have tokens."
+    },
+    {
+      "rule": "values",
       "path": "packages/ui/src/native/sheet.tsx",
       "count": 8,
       "until": "E",
@@ -443,6 +429,13 @@
       "count": 11,
       "until": "E",
       "reason": "WidgetFrame (D2) at the web renderer's measures: the frame's 1 border, the 24 head height, the 16 and 12 icons, and the 12 resize mark at 4 from the corner, drawn with 2 lines at a 5 corner. A new token value needs the owner's approval; part E removes this entry once they have tokens."
+    },
+    {
+      "rule": "values",
+      "path": "packages/ui/src/native/stepper.tsx",
+      "count": 5,
+      "until": "E",
+      "reason": "Stepper (D3, setup's steps) at the web renderer's measures: the 22 step disc with its 1 border and 11 mono number, the 12 check, and the 36 step row. The tokens have no border width or row height. A new token value needs the owner's approval; part E removes this entry once they have tokens."
     }
   ]
 }

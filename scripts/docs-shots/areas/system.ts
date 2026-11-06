@@ -34,7 +34,7 @@ export default {
           .getByRole('button', { name: /^Restore the backup from/ })
           .first()
           .click(),
-      crop: (p) => p.getByRole('alertdialog'),
+      crop: (p) => p.getByRole('dialog'),
     },
     {
       // the seed's catalog names no release, so the server's own answer is given a newer one: a patch

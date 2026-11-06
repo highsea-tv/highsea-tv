@@ -4,11 +4,8 @@
 import type { Page } from 'playwright-core'
 import type { Area } from '../shot.ts'
 
-/** The card a heading starts. */
-const card = (name: string) => (p: Page) =>
-  p
-    .getByRole('heading', { name, exact: true })
-    .locator('xpath=ancestor::*[contains(@class,"rounded")][1]')
+/** The card a heading starts: the library's Panel, a region named by its heading. */
+const card = (name: string) => (p: Page) => p.getByRole('region', { name, exact: true })
 
 export default {
   shots: [
@@ -32,7 +29,7 @@ export default {
       name: 'tag-remove',
       path: '/settings/media',
       act: (p) => p.getByRole('button', { name: 'Remove Kids' }).click(),
-      crop: (p) => p.getByRole('alertdialog'),
+      crop: (p) => p.getByRole('dialog'),
     },
   ],
 } satisfies Area

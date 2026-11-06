@@ -4,7 +4,10 @@
 // from the server. The name, mark and accent; the default theme, and custom themes built with the
 // theme engine's editor (contrast audited, shareable by code); and sound defaults per kind of app.
 // The identity, default theme, sounds and mark are one draft behind the save bar; themes save on
-// their own.
+// their own. Drawn with the library's native renderer since D3 (one-client-platform-d.md): the
+// themes' colours come from each theme resolved for React Native (`toNativeTheme`), and the
+// editor's sample is drawn inside a ThemeProvider of the theme being edited, where the web set
+// `data-theme` over CSS made by `themeCss`.
 import type {
   Appearance as AppearanceData,
   CustomTheme,
@@ -15,6 +18,7 @@ import { useLocale, useT } from '@highsea-tv/i18n/react'
 import { useAction, useQuery } from '@highsea-tv/sdk/react'
 import {
   type BuiltInThemeId,
+  breakpoints,
   builtInThemes,
   type ColorRole,
   createTheme,
@@ -27,27 +31,55 @@ import {
   SOUND_EVENTS,
   type SoundPack,
   type ThemeableRole,
-  themeCss,
 } from '@highsea-tv/tokens'
+import { type NativeTheme, nativeTokens, toNativeTheme } from '@highsea-tv/tokens/native'
 import {
   Badge,
   Button,
+  ColorWell,
+  createSoundPlayer,
   Field,
   Icon,
+  Image,
   Input,
   Mark,
-  Radio,
-  RadioGroup,
+  Press,
+  RadioMark,
   Select,
+  Slider,
   Switch,
+  Text,
+  ThemeProvider,
   toast,
-  useSoundPlayer,
-} from '@highsea-tv/ui'
+  tokens,
+  useTheme,
+  useWindowAtLeast,
+} from '@highsea-tv/ui/native'
 import { useEffect, useMemo, useState } from 'react'
+import { View, type ViewStyle } from 'react-native'
 import { appearance as messages } from './appearance-messages.ts'
 import { toBase64 } from './base64.ts'
 import { Loadable } from './loadable.tsx'
+import { pickFile } from './pick-file.ts'
 import { AreaPage, Group, SaveBar } from './settings.tsx'
+import { Line, Note, WRAP_ANYWHERE } from './settings-card.tsx'
+import { Columns } from './settings-columns.tsx'
+
+const s = tokens.space
+const ui = tokens.adminText.ui
+const figure = tokens.adminText.figure
+/** The preview's column beside the identity's fields from expanded widths (the web's 16rem). */
+const PREVIEW_WIDTH = 256
+/** The editor's fields' column beside its sample from expanded widths (the web's 20rem). */
+const EDITOR_FIELDS_WIDTH = 320
+/** The hex value's field beside the colour well (the web's w-32). */
+const HEX_WIDTH = 128
+/** The code's field before Load wraps below it (the web's basis-48). */
+const CODE_BASIS = 192
+/** The preview's mark, and the sample's. */
+const PREVIEW_MARK = 28
+const SAMPLE_MARK = 22
+const [POSTER_W, POSTER_H] = tokens.aspect.poster
 
 const hex = (c: string) => formatHex(parseColor(c)).slice(0, 7)
 
@@ -58,7 +90,7 @@ const MARK_TYPES = ['image/svg+xml', 'image/png']
 /** The mark in the draft: as saved, a new file, or back to the highsea mark. */
 type MarkDraft =
   | { kind: 'keep' }
-  | { kind: 'upload'; data: string; preview: string }
+  | { kind: 'upload'; data: string; preview: string; file: string }
   | { kind: 'remove' }
 
 /** The contrast audit's checks, named by the role they measure. */
@@ -141,6 +173,37 @@ function Form({ loaded }: { loaded: AppearanceData }) {
 
 // ---------------------------------------------------------------- identity
 
+/** A colour well and its hex value side by side (the accent's, the editor's). */
+function ColorPair({
+  well,
+  value,
+  onWell,
+  onValue,
+  wellLabel,
+  valueLabel,
+  fill,
+}: {
+  well: string
+  value: string
+  onWell: (v: string) => void
+  onValue: (v: string) => void
+  wellLabel: string
+  valueLabel: string
+  /** The value's field fills the row (the editor), or keeps the web's w-32 (the identity). */
+  fill?: boolean
+}) {
+  return (
+    <>
+      <ColorWell aria-label={wellLabel} value={well} onChange={onWell} />
+      <View style={fill ? { flex: 1, minWidth: 0 } : { width: HEX_WIDTH }}>
+        <Input aria-label={valueLabel} mono value={value} onChangeText={onValue} />
+      </View>
+    </>
+  )
+}
+
+const row: ViewStyle = { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: s['2'] }
+
 function Identity({
   draft,
   set,
@@ -156,12 +219,9 @@ function Identity({
   current: string | null
 }) {
   const t = useT(messages)
+  const { colors } = useTheme()
+  const beside = useWindowAtLeast(breakpoints.expanded)
   const [markError, setMarkError] = useState<string | null>(null)
-  // a fresh input after Discard or Save, so the chosen file's name doesn't linger
-  const [inputKey, setInputKey] = useState(0)
-  useEffect(() => {
-    if (mark.kind === 'keep') setInputKey((k) => k + 1)
-  }, [mark.kind])
   useEffect(
     () => (mark.kind === 'upload' ? () => URL.revokeObjectURL(mark.preview) : undefined),
     [mark],
@@ -176,74 +236,79 @@ function Identity({
   }, [draft.accent])
   const shown = mark.kind === 'upload' ? mark.preview : mark.kind === 'remove' ? null : current
 
-  const choose = async (file: File | undefined) => {
-    if (!file) return
+  const choose = async (file: File) => {
     if (!MARK_TYPES.includes(file.type)) return setMarkError(t('identity.markType'))
     if (file.size > MARK_MAX_BYTES) return setMarkError(t('identity.markTooBig'))
     setMarkError(null)
-    setMark({ kind: 'upload', data: await toBase64(file), preview: URL.createObjectURL(file) })
+    setMark({
+      kind: 'upload',
+      data: await toBase64(file),
+      preview: URL.createObjectURL(file),
+      file: file.name,
+    })
   }
 
   return (
     <Group title={t('identity.title')} description={t('identity.description')}>
-      <div className="grid grid-cols-[minmax(0,1fr)] gap-4 expanded:grid-cols-[minmax(0,1fr)_16rem]">
-        <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] content-start gap-4">
+      <View
+        style={{
+          flexDirection: beside ? 'row' : 'column',
+          alignItems: beside ? 'flex-start' : 'stretch',
+          gap: s['4'],
+        }}
+      >
+        <View style={{ flex: beside ? 1 : undefined, minWidth: 0, gap: s['4'] }}>
           <Field
             label={t('identity.name')}
             error={!draft.name.trim() ? t('identity.nameRequired') : undefined}
           >
-            <Input
-              value={draft.name}
-              maxLength={40}
-              onChange={(e) => set({ name: e.target.value })}
-            />
+            <Input value={draft.name} maxLength={40} onChangeText={(name) => set({ name })} />
           </Field>
           <Field
             label={t('identity.mark')}
             hint={t('identity.markHint')}
             error={markError ?? undefined}
           >
-            <div className="flex flex-wrap items-center gap-2">
-              <input
-                key={inputKey}
-                type="file"
-                accept={MARK_TYPES.join(',')}
-                aria-label={t('identity.markUpload')}
-                onChange={(e) => choose(e.target.files?.[0])}
-                className="min-w-0 max-w-full text-caption text-text-2 file:me-3 file:cursor-pointer file:rounded-md file:border file:border-line-strong file:bg-s2 file:px-3 file:py-1.5 file:text-text file:text-ui"
-              />
-              {shown && (
+            <View style={row}>
+              <Button
+                size="sm"
+                icon="upload"
+                onPress={() => pickFile(MARK_TYPES.join(','), (f) => void choose(f))}
+              >
+                {t('identity.markUpload')}
+              </Button>
+              {mark.kind === 'upload' ? (
+                <Text size={ui.size} leading={ui.leading} color="text-2" style={WRAP_ANYWHERE}>
+                  {mark.file}
+                </Text>
+              ) : null}
+              {shown ? (
                 <Button
                   size="sm"
                   variant="ghost"
-                  onClick={() => setMark(current ? { kind: 'remove' } : { kind: 'keep' })}
+                  onPress={() => setMark(current ? { kind: 'remove' } : { kind: 'keep' })}
                 >
                   {t('identity.markDefault')}
                 </Button>
-              )}
-            </div>
+              ) : null}
+            </View>
           </Field>
-          <div className="grid gap-2">
-            <Field inline label={t('identity.useAccent')} hint={t('identity.useAccentHint')}>
-              <Switch
-                checked={draft.accent !== null}
-                onCheckedChange={(on) => set({ accent: on ? '#8fbfb7' : null })}
-              />
-            </Field>
-            {draft.accent !== null && (
-              <div className="flex flex-wrap items-center gap-2">
-                <input
-                  type="color"
-                  aria-label={t('identity.accentColor')}
-                  value={hex(audit === undefined ? '#8fbfb7' : draft.accent)}
-                  onChange={(e) => set({ accent: e.target.value })}
-                  className="h-(--control-h) w-12 cursor-pointer rounded-(--control-radius) border border-control-edge bg-s1 p-1 text-(length:--control-text)"
-                />
-                <Input
-                  aria-label={t('identity.accentValue')}
+          <View style={{ gap: s['2'] }}>
+            <Switch
+              label={t('identity.useAccent')}
+              hint={t('identity.useAccentHint')}
+              checked={draft.accent !== null}
+              onCheckedChange={(on) => set({ accent: on ? '#8fbfb7' : null })}
+            />
+            {draft.accent !== null ? (
+              <View style={row}>
+                <ColorPair
+                  well={hex(audit ? draft.accent : '#8fbfb7')}
                   value={draft.accent}
-                  onChange={(e) => set({ accent: e.target.value })}
-                  className="w-32 font-mono"
+                  onWell={(accent) => set({ accent })}
+                  onValue={(accent) => set({ accent })}
+                  wellLabel={t('identity.accentColor')}
+                  valueLabel={t('identity.accentValue')}
                 />
                 {audit === undefined ? (
                   <Badge tone="danger">{t('notAColor')}</Badge>
@@ -252,27 +317,52 @@ function Identity({
                 ) : (
                   <Badge tone="warning">{t('accent.adjusted')}</Badge>
                 )}
-              </div>
-            )}
-          </div>
-        </div>
-        <figure className="grid grid-cols-[minmax(0,1fr)] content-start gap-2">
-          <figcaption className="font-mono text-label text-text-3 uppercase">
+              </View>
+            ) : null}
+          </View>
+        </View>
+        <View
+          role="figure"
+          aria-label={t('identity.preview')}
+          style={{ width: beside ? PREVIEW_WIDTH : undefined, gap: s['2'] }}
+        >
+          <Text variant="label" color="text-3" aria-hidden>
             {t('identity.preview')}
-          </figcaption>
-          <div className="flex items-center gap-2.5 rounded-md border border-line bg-bg p-3">
+          </Text>
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: s['2'] + s['0.5'],
+              padding: s['3'],
+              borderRadius: tokens.radius.md,
+              borderWidth: 1,
+              borderColor: colors.line,
+              backgroundColor: colors.bg,
+            }}
+          >
             {shown ? (
-              <img src={shown} alt="" className="size-7 rounded-sm object-contain" />
+              <Image
+                source={{ uri: shown }}
+                contentFit="contain"
+                style={{
+                  width: PREVIEW_MARK,
+                  height: PREVIEW_MARK,
+                  borderRadius: tokens.radius.sm,
+                }}
+              />
             ) : (
-              <Mark size={28} />
+              <Mark size={PREVIEW_MARK} />
             )}
-            <span className="truncate font-semibold text-text text-ui">
-              {draft.name || t('identity.placeholder')}
-            </span>
-            <Icon name="chevron-down" size={14} className="text-text-3" />
-          </div>
-        </figure>
-      </div>
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text size={ui.size} leading={ui.leading} weight={600} numberOfLines={1}>
+                {draft.name || t('identity.placeholder')}
+              </Text>
+            </View>
+            <Icon name="chevron-down" size={14} color="text-3" />
+          </View>
+        </View>
+      </View>
     </Group>
   )
 }
@@ -281,17 +371,37 @@ function Identity({
 
 const builtIns = Object.values(builtInThemes).map((t) => ({ id: t.id, name: t.name }))
 
-function swatches(id: string) {
+/** A custom theme resolved for React Native, or nothing when its colours don't parse. */
+function resolve(th: CustomTheme): NativeTheme | null {
+  try {
+    return toNativeTheme(createTheme({ ...th, id: th.id }).theme)
+  } catch {
+    return null
+  }
+}
+
+/** Four dots of a theme's colours, each ringed in the page's strong line. */
+function Swatches({ theme }: { theme: NativeTheme | null }) {
+  const { colors } = useTheme()
+  if (!theme) return null
   return (
-    <span className="flex flex-wrap justify-end gap-1" data-theme={id}>
+    <View
+      style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-end', gap: s['1'] }}
+    >
       {(['bg', 's2', 'text-2', 'accent'] as const).map((r) => (
-        <span
+        <View
           key={r}
-          className="size-4 rounded-full ring-1 ring-line-strong"
-          style={{ background: `var(--color-${r})` }}
+          style={{
+            width: s['4'],
+            height: s['4'],
+            borderRadius: tokens.radius.pill,
+            borderWidth: 1,
+            borderColor: colors['line-strong'],
+            backgroundColor: theme.colors[r],
+          }}
         />
       ))}
-    </span>
+    </View>
   )
 }
 
@@ -305,73 +415,101 @@ function Themes({
   onChange: (id: string) => void
 }) {
   const t = useT(messages)
+  const { colors } = useTheme()
+  const medium = useWindowAtLeast(breakpoints.medium)
+  const wide = useWindowAtLeast(breakpoints.wide)
   const [editing, setEditing] = useState<CustomTheme | null>(null)
   const remove = useAction((c, id: string) => c.appearance.deleteTheme({ params: { id } }))
-  const css = useMemo(
-    () =>
-      themes
-        .map((th) => {
-          try {
-            return themeCss(createTheme({ ...th, id: th.id }).theme, `[data-theme="${th.id}"]`)
-          } catch {
-            return ''
-          }
-        })
-        .join('\n'),
+  const all = useMemo(
+    () => [
+      ...builtIns.map((th) => ({
+        ...th,
+        custom: false,
+        theme: (nativeTokens.themes as Record<string, NativeTheme>)[th.id] ?? null,
+      })),
+      ...themes.map((th) => ({ id: th.id, name: th.name, custom: true, theme: resolve(th) })),
+    ],
     [themes],
   )
-  const all = [
-    ...builtIns.map((th) => ({ ...th, custom: false })),
-    ...themes.map((th) => ({ id: th.id, name: th.name, custom: true })),
-  ]
+  const columns = wide ? 3 : medium ? 2 : 1
   return (
     <Group title={t('themes.title')} description={t('themes.description')}>
-      <style>{css}</style>
-      <RadioGroup
+      <View
+        accessibilityRole="radiogroup"
         aria-label={t('themes.legend')}
-        value={value}
-        onValueChange={onChange}
-        className="grid-cols-[minmax(0,1fr)]"
+        style={
+          {
+            display: 'grid',
+            gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
+            gap: s['2'],
+          } as unknown as ViewStyle
+        }
       >
-        <div className="grid grid-cols-[minmax(0,1fr)] gap-2 medium:grid-cols-2 wide:grid-cols-3">
-          {all.map((th) => (
-            // biome-ignore lint/a11y/noLabelWithoutControl: the control is its child, the library’s Radio, a button with the radio role and so a labelable element
-            <label
+        {all.map((th) => {
+          const chosen = value === th.id
+          const detail = chosen
+            ? t('themes.default')
+            : th.custom
+              ? t('themes.custom')
+              : t('themes.builtIn')
+          return (
+            <Press
               key={th.id}
-              className="grid cursor-pointer grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-md border border-line bg-s2 p-3 has-[[aria-checked=true]]:border-accent has-focus-visible:ring-focus"
+              // the card is the radio, its mark inside (a radio's children are presentational)
+              accessibilityRole="radio"
+              accessibilityState={{ checked: chosen }}
+              accessibilityLabel={th.name}
+              onPress={() => onChange(th.id)}
+              style={{
+                height: '100%',
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: s['3'],
+                padding: s['3'],
+                borderWidth: 1,
+                borderRadius: tokens.radius.md,
+                borderColor: chosen ? colors.accent : colors.line,
+                backgroundColor: colors.s2,
+              }}
             >
-              <Radio value={th.id} />
-              <span className="grid min-w-0">
-                <span className="truncate text-text text-ui">{th.name}</span>
-                <span className="text-caption text-text-3">
-                  {value === th.id
-                    ? t('themes.default')
-                    : th.custom
-                      ? t('themes.custom')
-                      : t('themes.builtIn')}
-                </span>
-              </span>
-              {swatches(th.id)}
-            </label>
-          ))}
-        </div>
-      </RadioGroup>
-      {themes.length > 0 && (
-        <ul aria-label={t('themes.list')} className="grid gap-2">
+              <RadioMark checked={chosen} />
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text size={ui.size} leading={ui.leading} numberOfLines={1}>
+                  {th.name}
+                </Text>
+                <Text variant="caption" color="text-3">
+                  {detail}
+                </Text>
+              </View>
+              <Swatches theme={th.theme} />
+            </Press>
+          )
+        })}
+      </View>
+      {themes.length > 0 ? (
+        <View role="list" aria-label={t('themes.list')} style={{ gap: s['2'] }}>
           {themes.map((th) => (
-            <li
+            <View
               key={th.id}
-              className="flex flex-wrap items-center gap-2 border-line border-t pt-2 text-ui"
+              role="listitem"
+              style={{
+                ...row,
+                borderTopWidth: 1,
+                borderColor: colors.line,
+                paddingTop: s['2'],
+              }}
             >
-              <span className="me-auto text-text">{th.name}</span>
-              <Button size="sm" icon="edit" onClick={() => setEditing(th)}>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Line>{th.name}</Line>
+              </View>
+              <Button size="sm" icon="edit" onPress={() => setEditing(th)}>
                 {t('themes.edit')}
               </Button>
               <Button
                 size="sm"
                 icon="copy"
                 variant="ghost"
-                onClick={() => {
+                onPress={() => {
                   navigator.clipboard?.writeText(encodeTheme(th)).catch(() => {})
                   toast({
                     title: t('themes.copied'),
@@ -385,8 +523,8 @@ function Themes({
                 size="sm"
                 icon="delete"
                 variant="ghost"
-                aria-label={t('themes.delete', { theme: th.name })}
-                onClick={() =>
+                accessibilityLabel={t('themes.delete', { theme: th.name })}
+                onPress={() =>
                   remove
                     .run(th.id)
                     .then(() => {
@@ -401,10 +539,10 @@ function Themes({
                     )
                 }
               />
-            </li>
+            </View>
           ))}
-        </ul>
-      )}
+        </View>
+      ) : null}
       {editing ? (
         <ThemeEditor
           key={editing.id}
@@ -413,20 +551,21 @@ function Themes({
           onDone={() => setEditing(null)}
         />
       ) : (
-        <Button
-          icon="add"
-          className="justify-self-start"
-          onClick={() =>
-            setEditing({
-              id: `theme-${Date.now().toString(36)}`,
-              name: '',
-              base: 'default',
-              accent: '#d6cfc2',
-            })
-          }
-        >
-          {t('themes.new')}
-        </Button>
+        <View style={{ flexDirection: 'row' }}>
+          <Button
+            icon="add"
+            onPress={() =>
+              setEditing({
+                id: `theme-${Date.now().toString(36)}`,
+                name: '',
+                base: 'default',
+                accent: '#d6cfc2',
+              })
+            }
+          >
+            {t('themes.new')}
+          </Button>
+        </View>
       )}
     </Group>
   )
@@ -443,6 +582,8 @@ function ThemeEditor({
   onDone: () => void
 }) {
   const t = useT(messages)
+  const { colors } = useTheme()
+  const beside = useWindowAtLeast(breakpoints.expanded)
   const [input, setInput] = useState(theme)
   const [code, setCode] = useState('')
   const [codeError, setCodeError] = useState<string | null>(null)
@@ -456,6 +597,7 @@ function ThemeEditor({
       return null
     }
   }, [input])
+  const sample = useMemo(() => (build ? toNativeTheme(build.theme) : null), [build])
   const failing = build?.audit.results.filter((r) => !r.pass) ?? []
   const fix = (role: ThemeableRole) => {
     const v = nearestPassing({ ...input, colors: input.colors }, role)
@@ -463,18 +605,42 @@ function ThemeEditor({
   }
   const nameError = !input.name.trim() ? t('editor.nameRequired') : undefined
   const checkLabel = (fg: ColorRole) => t(`check.${fg}` as CheckKey)
+  const load = () => {
+    try {
+      const th = decodeTheme(code)
+      setInput({
+        ...input,
+        name: th.name ?? input.name,
+        base: th.base ?? input.base,
+        accent: th.accent ?? input.accent,
+        colors: th.colors,
+      })
+      setCodeError(null)
+    } catch {
+      setCodeError(t('editor.codeError'))
+    }
+  }
   return (
-    <section
+    <View
+      role="region"
       aria-label={isNew ? t('themes.new') : t('editor.editing', { theme: theme.name })}
-      className="grid grid-cols-[minmax(0,1fr)] gap-4 rounded-md border border-line-strong bg-s2 p-4 expanded:grid-cols-[minmax(0,20rem)_minmax(0,1fr)]"
+      style={{
+        flexDirection: beside ? 'row' : 'column',
+        alignItems: beside ? 'flex-start' : 'stretch',
+        gap: s['4'],
+        padding: s['4'],
+        borderRadius: tokens.radius.md,
+        borderWidth: 1,
+        borderColor: colors['line-strong'],
+        backgroundColor: colors.s2,
+      }}
     >
-      {build && <style>{themeCss(build.theme, '[data-theme="editor"]')}</style>}
-      <div className="grid grid-cols-[minmax(0,1fr)] content-start gap-4">
+      <View style={{ width: beside ? EDITOR_FIELDS_WIDTH : undefined, minWidth: 0, gap: s['4'] }}>
         <Field label={t('editor.name')} error={nameError}>
           <Input
             value={input.name}
             maxLength={40}
-            onChange={(e) => setInput({ ...input, name: e.target.value })}
+            onChangeText={(name) => setInput({ ...input, name })}
           />
         </Field>
         <Field label={t('editor.base')}>
@@ -485,48 +651,45 @@ function ThemeEditor({
           />
         </Field>
         <Field label={t('editor.accent')} hint={t('editor.accentHint')}>
-          <div className="flex gap-2">
-            <input
-              type="color"
-              aria-label={t('editor.accentColor')}
-              value={hex(build ? input.accent : '#d6cfc2')}
-              onChange={(e) => setInput({ ...input, accent: e.target.value, colors: undefined })}
-              className="h-(--control-h) w-12 cursor-pointer rounded-(--control-radius) border border-control-edge bg-s1 p-1 text-(length:--control-text)"
-            />
-            <Input
-              aria-label={t('editor.accentValue')}
+          <View style={{ flexDirection: 'row', gap: s['2'] }}>
+            <ColorPair
+              fill
+              well={hex(build ? input.accent : '#d6cfc2')}
               value={input.accent}
-              onChange={(e) => setInput({ ...input, accent: e.target.value })}
-              className="font-mono"
+              onWell={(accent) => setInput({ ...input, accent, colors: undefined })}
+              onValue={(accent) => setInput({ ...input, accent })}
+              wellLabel={t('editor.accentColor')}
+              valueLabel={t('editor.accentValue')}
             />
-          </div>
+          </View>
         </Field>
         <Field label={t('editor.quiet')} hint={t('editor.quietHint')}>
-          <div className="flex gap-2">
-            <input
-              type="color"
+          <View style={{ flexDirection: 'row', gap: s['2'] }}>
+            <ColorWell
               aria-label={t('editor.quietColor')}
               value={hex(build?.theme.colors['text-3'] ?? '#a2a2a7')}
-              onChange={(e) =>
-                setInput({ ...input, colors: { ...input.colors, 'text-3': e.target.value } })
-              }
-              className="h-(--control-h) w-12 cursor-pointer rounded-(--control-radius) border border-control-edge bg-s1 p-1 text-(length:--control-text)"
+              onChange={(v) => setInput({ ...input, colors: { ...input.colors, 'text-3': v } })}
             />
             <Button
               variant="ghost"
               disabled={!input.colors}
-              onClick={() => setInput({ ...input, colors: undefined })}
+              onPress={() => setInput({ ...input, colors: undefined })}
             >
               {t('editor.reset')}
             </Button>
-          </div>
+          </View>
         </Field>
-        <div
-          className="grid grid-cols-[minmax(0,1fr)] gap-2 rounded-md bg-s1 p-3"
+        <View
           aria-live="polite"
+          style={{
+            gap: s['2'],
+            padding: s['3'],
+            borderRadius: tokens.radius.md,
+            backgroundColor: colors.s1,
+          }}
         >
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <span className="font-medium text-text text-ui">{t('editor.contrast')}</span>
+          <View style={{ ...row, justifyContent: 'space-between' }}>
+            <Line weight={500}>{t('editor.contrast')}</Line>
             {build ? (
               <Badge tone={build.audit.pass ? 'success' : 'danger'}>
                 {build.audit.pass
@@ -536,63 +699,44 @@ function ThemeEditor({
             ) : (
               <Badge tone="danger">{t('notAColor')}</Badge>
             )}
-          </div>
+          </View>
           {failing.map((r) => (
-            <div key={r.fg} className="flex flex-wrap items-center justify-between gap-2 text-ui">
-              <span>
+            <View key={r.fg} style={{ ...row, justifyContent: 'space-between' }}>
+              <Text size={ui.size} leading={ui.leading}>
                 {checkLabel(r.fg)}{' '}
-                <span className="font-mono text-figure text-text-3">
+                <Text mono size={figure.size} leading={figure.leading} color="text-3">
                   Lc {Math.round(r.lc)} / {r.min}
-                </span>
-              </span>
-              {r.fg !== 'on-danger' && !r.fg.startsWith('badge') && (
-                <Button size="sm" variant="ghost" onClick={() => fix(r.fg as ThemeableRole)}>
+                </Text>
+              </Text>
+              {r.fg !== 'on-danger' && !r.fg.startsWith('badge') ? (
+                <Button size="sm" variant="ghost" onPress={() => fix(r.fg as ThemeableRole)}>
                   {t('editor.fix')}
                 </Button>
-              )}
-            </div>
+              ) : null}
+            </View>
           ))}
-          {build && !build.audit.pass && (
-            <p className="text-caption text-text-3">{t('editor.failNote')}</p>
-          )}
-        </div>
-        <div className="grid gap-2">
-          <Field label={t('editor.code')} error={codeError ?? undefined}>
-            <div className="flex flex-wrap gap-2">
+          {build && !build.audit.pass ? <Note>{t('editor.failNote')}</Note> : null}
+        </View>
+        <Field label={t('editor.code')} error={codeError ?? undefined}>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: s['2'] }}>
+            <View style={{ flexGrow: 1, flexBasis: CODE_BASIS, minWidth: 0 }}>
               <Input
                 placeholder="hs1.…"
+                mono
                 value={code}
-                onChange={(e) => setCode(e.target.value)}
-                className="min-w-0 flex-1 basis-48 font-mono"
+                onChangeText={setCode}
+                onSubmitEditing={load}
               />
-              <Button
-                onClick={() => {
-                  try {
-                    const th = decodeTheme(code)
-                    setInput({
-                      ...input,
-                      name: th.name ?? input.name,
-                      base: th.base ?? input.base,
-                      accent: th.accent ?? input.accent,
-                      colors: th.colors,
-                    })
-                    setCodeError(null)
-                  } catch {
-                    setCodeError(t('editor.codeError'))
-                  }
-                }}
-              >
-                {t('editor.load')}
-              </Button>
-            </div>
-          </Field>
-        </div>
-        <div className="flex flex-wrap gap-2">
+            </View>
+            <Button onPress={load}>{t('editor.load')}</Button>
+          </View>
+        </Field>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: s['2'] }}>
           <Button
             variant="primary"
             disabled={!build?.audit.pass || !!nameError}
             loading={save.pending}
-            onClick={() =>
+            onPress={() =>
               save
                 .run(input)
                 .then(() => {
@@ -606,56 +750,86 @@ function ThemeEditor({
           >
             {isNew ? t('editor.add') : t('editor.save')}
           </Button>
-          <Button variant="ghost" onClick={onDone}>
+          <Button variant="ghost" onPress={onDone}>
             {t('editor.cancel')}
           </Button>
-        </div>
-      </div>
-      <ThemeSample />
-    </section>
+        </View>
+      </View>
+      <View style={{ flex: beside ? 1 : undefined, minWidth: 0 }}>
+        {sample ? (
+          <ThemeProvider theme={sample}>
+            <ThemeSample />
+          </ThemeProvider>
+        ) : (
+          <ThemeSample />
+        )}
+      </View>
+    </View>
   )
 }
 
 /** The product in miniature, in the theme being edited, with the design system's sample titles. */
 function ThemeSample() {
   const t = useT(messages)
+  const { colors } = useTheme()
   const [lead] = titles
   return (
-    <div data-theme="editor" className="rounded-md">
-      <div className="grid grid-cols-[minmax(0,1fr)] gap-4 rounded-md bg-bg p-4 text-text">
-        <div className="flex flex-wrap items-center gap-2">
-          <Mark size={22} />
-          <span className="font-semibold text-ui">Harbor</span>
-          <span className="flex-1" />
-          <Badge tone="accent">{t('sample.badge')}</Badge>
-        </div>
-        <div className="grid grid-cols-[repeat(4,minmax(0,1fr))] gap-2">
-          {titles.slice(0, 4).map((m) => (
-            <img
-              key={m.id}
-              src={art(m).poster}
-              alt=""
-              className="aspect-poster w-full rounded-poster object-cover"
+    <View
+      style={{
+        gap: s['4'],
+        padding: s['4'],
+        borderRadius: tokens.radius.md,
+        backgroundColor: colors.bg,
+      }}
+    >
+      <View style={row}>
+        <Mark size={SAMPLE_MARK} />
+        <Text size={ui.size} leading={ui.leading} weight={600}>
+          Harbor
+        </Text>
+        <View style={{ flex: 1 }} />
+        <Badge tone="accent">{t('sample.badge')}</Badge>
+      </View>
+      <View style={{ flexDirection: 'row', gap: s['2'] }}>
+        {titles.slice(0, 4).map((m) => (
+          <View key={m.id} style={{ flex: 1, minWidth: 0 }}>
+            <Image
+              source={{ uri: art(m).poster }}
+              contentFit="cover"
+              style={{
+                width: '100%',
+                aspectRatio: POSTER_W / POSTER_H,
+                borderRadius: tokens.radius.poster,
+              }}
             />
-          ))}
-        </div>
-        {lead && (
-          <div className="grid grid-cols-[minmax(0,1fr)] gap-1 [overflow-wrap:anywhere]">
-            <p className="font-semibold text-title">{lead.title}</p>
-            <p className="text-caption text-text-3">
-              {lead.year} · {lead.runtime} · {lead.genre}
-            </p>
-            <p className="text-body text-text-2">{lead.synopsis}</p>
-          </div>
-        )}
-        <div className="flex flex-wrap gap-2">
-          <Button variant="primary" icon="play" tabIndex={-1}>
-            {t('sample.play')}
-          </Button>
-          <Button tabIndex={-1}>{t('sample.details')}</Button>
-        </div>
-      </div>
-    </div>
+          </View>
+        ))}
+      </View>
+      {lead ? (
+        <View style={{ gap: s['1'] }}>
+          <Text variant="title" weight={600} style={WRAP_ANYWHERE}>
+            {lead.title}
+          </Text>
+          <Text variant="caption" color="text-3" style={WRAP_ANYWHERE}>
+            {lead.year} · {lead.runtime} · {lead.genre}
+          </Text>
+          <Text variant="body" color="text-2" style={WRAP_ANYWHERE}>
+            {lead.synopsis}
+          </Text>
+        </View>
+      ) : null}
+      {/* a picture of the product: its buttons are never reached by the keyboard */}
+      <View
+        aria-hidden
+        style={{ flexDirection: 'row', flexWrap: 'wrap', gap: s['2'] }}
+        {...({ inert: true } as object)}
+      >
+        <Button variant="primary" icon="play">
+          {t('sample.play')}
+        </Button>
+        <Button>{t('sample.details')}</Button>
+      </View>
+    </View>
   )
 }
 
@@ -672,12 +846,14 @@ function Sounds({
 }) {
   const t = useT(messages)
   const locale = useLocale()
-  const player = useSoundPlayer()
+  // the page's own player for Listen, which plays even with sound off (the web renderer's came
+  // from its SoundProvider; the native renderer has none, and the admin needs only previews)
+  const [player] = useState(() => createSoundPlayer({ enabled: false }))
+  useEffect(() => () => player.dispose(), [player])
   const { run: recipe } = useAction((c, id: string) => c.appearance.soundPack({ params: { id } }))
-  useEffect(() => player?.setVolume(value.volume), [player, value.volume])
+  useEffect(() => player.setVolume(value.volume), [player, value.volume])
   // Listen plays the chosen pack: the built-in one is in the design system, others come from here
   useEffect(() => {
-    if (!player) return
     if (value.pack === defaultSoundPack.id) {
       player.setPack(defaultSoundPack)
       return
@@ -688,29 +864,29 @@ function Sounds({
   }, [player, recipe, value.pack])
   const percent = new Intl.NumberFormat(locale, { style: 'percent' }).format(value.volume)
   const toggle = (key: 'tv' | 'phone' | 'web') => (
-    <Field inline label={t(`sounds.${key}`)} hint={t(`sounds.${key}Hint`)}>
-      <Switch checked={value[key]} onCheckedChange={(on) => onChange({ ...value, [key]: on })} />
-    </Field>
+    <Switch
+      label={t(`sounds.${key}`)}
+      hint={t(`sounds.${key}Hint`)}
+      checked={value[key]}
+      onCheckedChange={(on) => onChange({ ...value, [key]: on })}
+    />
   )
   return (
     <Group title={t('sounds.title')} description={t('sounds.description')}>
-      <div className="grid gap-3">
+      <View style={{ gap: s['3'] }}>
         {toggle('tv')}
         {toggle('phone')}
         {toggle('web')}
-      </div>
-      <div className="grid gap-4 medium:grid-cols-2">
+      </View>
+      <Columns shares={[1, 1]}>
         <Field label={t('sounds.volume')} hint={percent}>
-          <input
-            type="range"
-            aria-label={t('sounds.volume')}
-            aria-valuetext={percent}
-            min={0}
-            max={1}
+          <Slider
+            label={t('sounds.volume')}
+            valueText={percent}
             step={0.05}
+            thumb={s['4']}
             value={value.volume}
-            onChange={(e) => onChange({ ...value, volume: Number(e.target.value) })}
-            className="h-(--control-h) w-full cursor-pointer accent-accent-fill"
+            onChange={(volume) => onChange({ ...value, volume: Math.round(volume * 20) / 20 })}
           />
         </Field>
         <Field label={t('sounds.pack')} hint={t('sounds.packHint')}>
@@ -720,17 +896,17 @@ function Sounds({
             options={packs.map((p) => ({ value: p.id, label: p.name }))}
           />
         </Field>
-      </div>
-      <div className="grid gap-2">
-        <span className="font-medium text-text text-ui">{t('sounds.listen')}</span>
-        <div className="flex flex-wrap gap-1.5">
+      </Columns>
+      <View style={{ gap: s['2'] }}>
+        <Line weight={500}>{t('sounds.listen')}</Line>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: s['1'] + s['0.5'] }}>
           {SOUND_EVENTS.map((e) => (
-            <Button key={e} size="sm" icon="sound" onClick={() => player?.play(e, { force: true })}>
+            <Button key={e} size="sm" icon="sound" onPress={() => player.play(e, { force: true })}>
               {t(`sound.${e}`)}
             </Button>
           ))}
-        </div>
-      </div>
+        </View>
+      </View>
     </Group>
   )
 }

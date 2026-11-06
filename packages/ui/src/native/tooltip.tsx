@@ -77,7 +77,7 @@ export function Tooltip({ content, disabled, focusable, children }: TooltipProps
         {children}
       </View>
     ) : (
-      <>{children}</>
+      children
     )
   }
   const caption = tokens.text.web.caption

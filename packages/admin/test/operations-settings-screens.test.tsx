@@ -28,7 +28,6 @@ const { act, cleanup, render, within } = await import('@testing-library/react')
 const { default: userEvent } = await import('@testing-library/user-event')
 const { createClient } = await import('@highsea-tv/sdk')
 const { ClientProvider } = await import('@highsea-tv/sdk/react')
-const { TooltipProvider } = await import('@highsea-tv/ui')
 const { ThemeProvider } = await import('@highsea-tv/ui/native')
 const { General } = await import('../src/general.tsx')
 const { BackupsSettings } = await import('../src/backups.tsx')
@@ -122,9 +121,7 @@ async function open(ui: ReactNode) {
   await act(async () => {
     render(
       <ClientProvider client={client}>
-        <ThemeProvider>
-          <TooltipProvider>{ui}</TooltipProvider>
-        </ThemeProvider>
+        <ThemeProvider>{ui}</ThemeProvider>
       </ClientProvider>,
     )
   })
@@ -171,8 +168,8 @@ describe('Settings › General (8b)', () => {
     expect(page.getByText('Only the owner can change these settings.')).toBeTruthy()
     expect(page.getByText('Stable channel')).toBeTruthy()
     expect(page.queryByRole('radio', { name: 'Beta' })).toBeNull()
-    const crash = page.getByRole('switch', { name: 'Write crash reports' }) as HTMLButtonElement
-    expect(crash.disabled).toBe(true)
+    const crash = page.getByRole('switch', { name: 'Write crash reports' })
+    expect(crash.getAttribute('aria-disabled')).toBe('true')
   })
 })
 
@@ -187,7 +184,8 @@ describe('Settings › Backups', () => {
     await user.type(folder, '/readonly')
     await user.click(page.getByRole('button', { name: 'Save' }))
     await settle()
-    expect(page.getByText('highsea can’t write to /readonly.', { selector: '[id]' })).toBeTruthy()
+    // on the field (no Toaster is drawn here, so the toast's copy isn't on the page)
+    expect(page.getByText('highsea can’t write to /readonly.')).toBeTruthy()
 
     await user.clear(folder)
     await user.type(folder, 'relative')

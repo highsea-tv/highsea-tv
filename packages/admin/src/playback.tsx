@@ -5,6 +5,8 @@
 // check, which runs in the background on the server (ADR 0056); `playback.updated` says when it's
 // done. The server checks the cache's folder on Save; its refusal shows on the field. The cache's use comes from the status, which `playback.updated` refreshes as
 // it grows, on Save and on Clear.
+// Since D3 (one-client-platform-d.md) it's drawn with the library's native renderer, on the web
+// through react-native-web, with the same parts, words and behaviour as the web renderer's.
 import {
   type AccelerationPath,
   ENCODER_PRESETS,
@@ -19,23 +21,33 @@ import { bytes } from '@highsea-tv/core/format'
 import { useT } from '@highsea-tv/i18n/react'
 import type { ApiError } from '@highsea-tv/sdk'
 import { useAction, useQuery } from '@highsea-tv/sdk/react'
+import type { ColorRole } from '@highsea-tv/tokens'
+import { breakpoints } from '@highsea-tv/tokens'
 import {
   Badge,
   Button,
-  cn,
   Field,
   Icon,
   type IconName,
   Input,
+  ProgressBar,
   SegmentedControl,
   Select,
   Switch,
+  Text,
   toast,
-} from '@highsea-tv/ui'
+  tokens,
+  useMotionReduced,
+  useTheme,
+  useWindowAtLeast,
+} from '@highsea-tv/ui/native'
 import { useState } from 'react'
+import { ActivityIndicator, View } from 'react-native'
 import { Loadable } from './loadable.tsx'
 import { playback as messages } from './playback-messages.ts'
 import { AreaPage, Group, SaveBar } from './settings.tsx'
+import { Line, Note, WRAP_ANYWHERE } from './settings-card.tsx'
+import { Columns, ExternalLink } from './settings-columns.tsx'
 import { useNow } from './time.ts'
 import { CopyBlock } from './vpn.tsx'
 
@@ -121,31 +133,30 @@ function Form({
       {status && <HardwareGroup v={v} set={set} status={status} />}
 
       <Group title={t('transcoding.title')} description={t('transcoding.description')}>
-        <div className="grid items-start gap-4 medium:grid-cols-2">
+        <Columns shares={[1, 1]}>
           <Field
             label={t('maxTranscodes')}
             hint={t('maxTranscodesHint')}
             error={show(max === undefined, t('maxTranscodesInvalid'))}
           >
             <Input
-              type="number"
               inputMode="numeric"
-              min={1}
-              max={8}
+              keyboardType="number-pad"
               value={v.maxTranscodes}
-              onChange={(e) => set({ maxTranscodes: e.target.value })}
+              onChangeText={(maxTranscodes) => set({ maxTranscodes })}
             />
           </Field>
           <Field label={t('encoder')} hint={t(`encoder.${v.preset}.hint`)}>
-            <SegmentedControl
-              aria-label={t('encoder')}
-              value={v.preset}
-              onValueChange={(preset) => set({ preset: preset as EncoderPreset })}
-              options={ENCODER_PRESETS.map((p) => ({ value: p, label: t(`encoder.${p}`) }))}
-              className="justify-self-start"
-            />
+            <View style={{ alignSelf: 'flex-start' }}>
+              <SegmentedControl
+                aria-label={t('encoder')}
+                value={v.preset}
+                onValueChange={(preset) => set({ preset: preset as EncoderPreset })}
+                options={ENCODER_PRESETS.map((p) => ({ value: p, label: t(`encoder.${p}`) }))}
+              />
+            </View>
           </Field>
-        </div>
+        </Columns>
       </Group>
 
       <Group title={t('remote.title')} description={t('remote.description')}>
@@ -167,7 +178,7 @@ function Form({
 
       <Group title={t('cache.title')} description={t('cache.description')}>
         {status && <CacheUse cache={status.cache} />}
-        <div className="grid items-start gap-4 medium:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+        <Columns shares={[2, 1]}>
           <Field
             label={t('folder')}
             hint={t('folderHint')}
@@ -177,24 +188,22 @@ function Form({
               value={v.cachePath}
               autoComplete="off"
               spellCheck={false}
-              onChange={(e) => {
+              mono
+              onChangeText={(cachePath) => {
                 setFolderError(null)
-                set({ cachePath: e.target.value })
+                set({ cachePath })
               }}
-              className="font-mono"
             />
           </Field>
           <Field label={t('limit')} error={show(limit === undefined, t('limitInvalid'))}>
             <Input
-              type="number"
               inputMode="numeric"
-              min={2}
-              max={2000}
+              keyboardType="number-pad"
               value={v.cacheLimitGb}
-              onChange={(e) => set({ cacheLimitGb: e.target.value })}
+              onChangeText={(cacheLimitGb) => set({ cacheLimitGb })}
             />
           </Field>
-        </div>
+        </Columns>
         <ClearCache disabled={!status || status.cache.transcodeBytes === 0} />
       </Group>
 
@@ -212,29 +221,46 @@ function Form({
   )
 }
 
+const s = tokens.space
+const ui = tokens.adminText.ui
+/** Figures that line up as they change (CSS's `tabular-nums`). */
+const TABULAR = { fontVariant: ['tabular-nums'] } as const
+
 function CacheUse({ cache: c }: { cache: PlaybackStatus['cache'] }) {
   const t = useT(messages)
   const share = c.limitBytes > 0 ? Math.min(1, c.transcodeBytes / c.limitBytes) : 0
   return (
-    <div className="grid gap-2">
-      <div className="flex flex-wrap items-baseline justify-between gap-x-3">
-        <p className="text-text text-ui">
-          <span className="font-semibold tabular-nums">{bytes(c.transcodeBytes)}</span>
-          <span className="text-text-2">{t('cache.of', { limit: bytes(c.limitBytes) })}</span>
-        </p>
+    <View style={{ gap: s['2'] }}>
+      <View
+        style={{
+          flexDirection: 'row',
+          flexWrap: 'wrap',
+          alignItems: 'baseline',
+          justifyContent: 'space-between',
+          columnGap: s['3'],
+        }}
+      >
+        <Line>
+          <Text size={ui.size} weight={600} style={TABULAR}>
+            {bytes(c.transcodeBytes)}
+          </Text>
+          <Text size={ui.size} color="text-2">
+            {t('cache.of', { limit: bytes(c.limitBytes) })}
+          </Text>
+        </Line>
         {c.over && <Badge tone="warning">{t('cache.over')}</Badge>}
-      </div>
-      <div aria-hidden className="h-1.5 overflow-hidden rounded-full bg-s3">
-        <div
-          className={cn('h-full rounded-full', c.over ? 'bg-warning' : 'bg-accent')}
-          style={{ width: `${share * 100}%` }}
+      </View>
+      <View aria-hidden>
+        <ProgressBar
+          look="panel"
+          value={share * 100}
+          tone={c.over ? 'warning' : 'accent'}
+          label={t('cache.title')}
         />
-      </div>
-      {c.over && <p className="text-caption text-text-2">{t('cache.overBody')}</p>}
-      <p className="text-caption text-text-3">
-        {t('cache.trickplay', { size: bytes(c.trickplayBytes) })}
-      </p>
-    </div>
+      </View>
+      {c.over && <Note color="text-2">{t('cache.overBody')}</Note>}
+      <Note>{t('cache.trickplay', { size: bytes(c.trickplayBytes) })}</Note>
+    </View>
   )
 }
 
@@ -242,14 +268,14 @@ function ClearCache({ disabled }: { disabled: boolean }) {
   const t = useT(messages)
   const clear = useAction((c) => c.playback.clearCache())
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: s['2'] }}>
       <Button
         size="sm"
         variant="secondary"
         icon="delete"
         loading={clear.pending}
         disabled={disabled}
-        onClick={() =>
+        onPress={() =>
           clear
             .run()
             .then(() => toast.success(t('cleared')))
@@ -258,8 +284,8 @@ function ClearCache({ disabled }: { disabled: boolean }) {
       >
         {t('clear')}
       </Button>
-      <span className="text-caption text-text-3">{t('clearHint')}</span>
-    </div>
+      <Note>{t('clearHint')}</Note>
+    </View>
   )
 }
 
@@ -278,18 +304,13 @@ const ago = (t: Messages, iso: string, now: number) => {
   return d === 1 ? t('ago.yesterday') : t('ago.days', { n: d })
 }
 
-const pathMark = (p: PathStatus): { icon: IconName; tone: string; mark: string } => {
-  if (p.checking)
-    return {
-      icon: 'loading',
-      tone: 'text-text-2 animate-spin motion-reduce:animate-none',
-      mark: 'mark.checking',
-    }
-  if (p.unavailable) return { icon: 'remove', tone: 'text-text-3', mark: 'mark.unavailable' }
-  if (!p.check) return { icon: 'info', tone: 'text-text-2', mark: 'mark.unchecked' }
+const pathMark = (p: PathStatus): { icon: IconName; tone: ColorRole; mark: string } => {
+  if (p.checking) return { icon: 'loading', tone: 'text-2', mark: 'mark.checking' }
+  if (p.unavailable) return { icon: 'remove', tone: 'text-3', mark: 'mark.unavailable' }
+  if (!p.check) return { icon: 'info', tone: 'text-2', mark: 'mark.unchecked' }
   return p.check.result === 'pass'
-    ? { icon: 'success', tone: 'text-success', mark: 'mark.passed' }
-    : { icon: 'error', tone: 'text-danger', mark: 'mark.failed' }
+    ? { icon: 'success', tone: 'success', mark: 'mark.passed' }
+    : { icon: 'error', tone: 'danger', mark: 'mark.failed' }
 }
 
 function HardwareGroup({
@@ -304,6 +325,9 @@ function HardwareGroup({
   const t = useT(messages)
   const check = useAction((c, path: AccelerationPath) => c.playback.check({ params: { path } }))
   const now = useNow()
+  const theme = useTheme()
+  const reduced = useMotionReduced()
+  const medium = useWindowAtLeast(breakpoints.medium)
   const label = (id: AccelerationPath) => t(`path.${id}`)
   const found = status.paths.some((p) => !p.unavailable)
   const inUse = status.inUse
@@ -313,108 +337,154 @@ function HardwareGroup({
   const using = inUse ? status.paths.find((p) => p.id === inUse) : null
   return (
     <Group title={t('hardware.title')} description={t('hardware.description')}>
-      <div role="status" className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-0.5">
-        <Icon
-          name={inUse ? 'speed' : 'warning'}
-          size={20}
-          className={cn('row-span-2 mt-0.5', inUse ? 'text-success' : 'text-warning')}
-        />
-        <p className="font-semibold text-text text-ui">
-          {inUse
-            ? t('hardware.using', { path: label(inUse) })
-            : choice === 'off'
-              ? t('hardware.processor')
-              : t('hardware.processorForNow')}
-        </p>
-        <p className="text-caption text-text-2">
-          {inUse
-            ? t('hardware.usingBody', { name: using?.name ?? using?.device ?? label(inUse) })
-            : choice === 'off'
-              ? t('hardware.offBody')
-              : chosen && !chosen.unavailable
-                ? t('hardware.chosenBody', { path: label(chosen.id) })
-                : found
-                  ? t('hardware.foundBody')
-                  : t('hardware.noneBody')}
-        </p>
-      </div>
+      <View role="status" style={{ flexDirection: 'row', columnGap: s['3'] }}>
+        <View style={{ paddingTop: s['0.5'] }}>
+          <Icon
+            name={inUse ? 'speed' : 'warning'}
+            size={20}
+            color={inUse ? 'success' : 'warning'}
+          />
+        </View>
+        <View style={{ flex: 1, minWidth: 0, gap: s['0.5'] }}>
+          <Line weight={600}>
+            {inUse
+              ? t('hardware.using', { path: label(inUse) })
+              : choice === 'off'
+                ? t('hardware.processor')
+                : t('hardware.processorForNow')}
+          </Line>
+          <Note color="text-2">
+            {inUse
+              ? t('hardware.usingBody', { name: using?.name ?? using?.device ?? label(inUse) })
+              : choice === 'off'
+                ? t('hardware.offBody')
+                : chosen && !chosen.unavailable
+                  ? t('hardware.chosenBody', { path: label(chosen.id) })
+                  : found
+                    ? t('hardware.foundBody')
+                    : t('hardware.noneBody')}
+          </Note>
+        </View>
+      </View>
 
-      <ul
+      <View
+        role="list"
         aria-label={t('hardware.found')}
-        className="grid divide-y divide-line rounded-md border border-line"
+        style={{
+          borderWidth: 1,
+          borderColor: theme.colors.line,
+          borderRadius: tokens.radius.md,
+        }}
       >
-        {status.paths.map((p) => {
+        {status.paths.map((p, i) => {
           const m = pathMark(p)
+          const action = !p.unavailable && (
+            <View style={{ alignSelf: 'flex-start' }}>
+              <Button
+                size="sm"
+                variant="secondary"
+                loading={p.checking}
+                disabled={status.paths.some((x) => x.checking)}
+                onPress={() =>
+                  check
+                    .run(p.id)
+                    .catch((e: Error) => toast.error(t('checkError'), { description: e.message }))
+                }
+              >
+                {p.check ? t('checkAgain') : t('check')}
+              </Button>
+            </View>
+          )
           return (
-            <li
+            <View
               key={p.id}
-              className="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-x-3 gap-y-1 px-3 py-2.5 medium:grid-cols-[auto_minmax(0,1fr)_auto]"
+              role="listitem"
+              style={{
+                flexDirection: 'row',
+                alignItems: 'flex-start',
+                columnGap: s['3'],
+                paddingHorizontal: s['3'],
+                paddingVertical: s['2'] + s['0.5'],
+                borderTopWidth: i === 0 ? 0 : 1,
+                borderColor: theme.colors.line,
+              }}
             >
-              <Icon
-                name={m.icon}
-                size={16}
+              {/* the mark is named as one image, whether it's an icon or the spinner */}
+              <View
+                role="img"
                 aria-label={t(m.mark as 'mark.passed')}
-                className={cn('mt-0.5', m.tone)}
-              />
-              <div className="grid min-w-0 gap-0.5">
-                <p className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                  <span className="font-medium text-text text-ui">{label(p.id)}</span>
-                  {inUse === p.id && <Badge tone="success">{t('inUse')}</Badge>}
-                </p>
-                <p className="text-caption text-text-2 [overflow-wrap:anywhere]">
-                  {p.unavailable ? (
-                    p.unavailable
-                  ) : (
-                    <>
-                      {p.name && <span className="text-text">{p.name}</span>}
-                      {p.name && p.device && ' · '}
-                      {p.device && <span className="font-mono">{p.device}</span>}
-                    </>
-                  )}
-                </p>
+                style={{ paddingTop: s['0.5'] }}
+              >
                 {p.checking ? (
-                  <p className="text-caption text-text-3">{t('checkingLine')}</p>
-                ) : p.check && !p.unavailable ? (
-                  <p
-                    className={cn(
-                      'text-caption',
-                      p.check.result === 'pass' ? 'text-text-3' : 'text-badge-danger',
-                    )}
+                  <ActivityIndicator
+                    aria-hidden
+                    size={16}
+                    color={theme.colors[m.tone]}
+                    animating={!reduced}
+                  />
+                ) : (
+                  <Icon name={m.icon} size={16} color={m.tone} />
+                )}
+              </View>
+              <View style={{ flex: 1, minWidth: 0, gap: s['1'] }}>
+                <View style={{ gap: s['0.5'] }}>
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      flexWrap: 'wrap',
+                      alignItems: 'center',
+                      columnGap: s['2'],
+                      rowGap: s['1'],
+                    }}
                   >
-                    {p.check.result === 'pass'
-                      ? t('passedLine', {
-                          fps: p.check.fps ?? 0,
-                          ago: ago(t, p.check.at, now),
-                          detail: p.check.detail,
-                        })
-                      : t('failedLine', { ago: ago(t, p.check.at, now), detail: p.check.detail })}
-                  </p>
-                ) : !p.unavailable ? (
-                  <p className="text-caption text-text-3">
-                    {t('uncheckedLine', { line: t(`path.${p.id}.line`) })}
-                  </p>
-                ) : null}
-              </div>
-              {!p.unavailable && (
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  className="col-start-2 justify-self-start medium:col-start-3"
-                  loading={p.checking}
-                  disabled={status.paths.some((x) => x.checking)}
-                  onClick={() =>
-                    check
-                      .run(p.id)
-                      .catch((e: Error) => toast.error(t('checkError'), { description: e.message }))
-                  }
-                >
-                  {p.check ? t('checkAgain') : t('check')}
-                </Button>
-              )}
-            </li>
+                    <Line weight={500}>{label(p.id)}</Line>
+                    {inUse === p.id && <Badge tone="success">{t('inUse')}</Badge>}
+                  </View>
+                  <Note color="text-2" style={WRAP_ANYWHERE}>
+                    {p.unavailable ? (
+                      p.unavailable
+                    ) : (
+                      <>
+                        {p.name && (
+                          <Text variant="caption" color="text">
+                            {p.name}
+                          </Text>
+                        )}
+                        {p.name && p.device && ' · '}
+                        {p.device && (
+                          <Text variant="caption" color="text-2" mono>
+                            {p.device}
+                          </Text>
+                        )}
+                      </>
+                    )}
+                  </Note>
+                  {p.checking ? (
+                    <Note>{t('checkingLine')}</Note>
+                  ) : p.check && !p.unavailable ? (
+                    <Note color={p.check.result === 'pass' ? 'text-3' : 'badge-danger'}>
+                      {p.check.result === 'pass'
+                        ? t('passedLine', {
+                            fps: p.check.fps ?? 0,
+                            ago: ago(t, p.check.at, now),
+                            detail: p.check.detail,
+                          })
+                        : t('failedLine', {
+                            ago: ago(t, p.check.at, now),
+                            detail: p.check.detail,
+                          })}
+                    </Note>
+                  ) : !p.unavailable ? (
+                    <Note>{t('uncheckedLine', { line: t(`path.${p.id}.line`) })}</Note>
+                  ) : null}
+                </View>
+                {medium ? null : action}
+              </View>
+              {medium ? action : null}
+            </View>
           )
         })}
-      </ul>
+      </View>
 
       {!found && <PassThroughHelp />}
 
@@ -432,9 +502,12 @@ function HardwareGroup({
           ]}
         />
       </Field>
-      <Field inline label={t('toneMapping')} hint={t('toneMappingHint')}>
-        <Switch checked={v.toneMapping} onCheckedChange={(toneMapping) => set({ toneMapping })} />
-      </Field>
+      <Switch
+        label={t('toneMapping')}
+        hint={t('toneMappingHint')}
+        checked={v.toneMapping}
+        onCheckedChange={(toneMapping) => set({ toneMapping })}
+      />
     </Group>
   )
 }
@@ -448,19 +521,13 @@ const NVIDIA_LINES =
 function PassThroughHelp() {
   const t = useT(messages)
   return (
-    <div className="grid gap-2">
-      <p className="text-caption text-text-2">{t('passThrough')}</p>
+    <View style={{ gap: s['2'] }}>
+      <Note color="text-2">{t('passThrough')}</Note>
       <CopyBlock label={t('passThrough.intel')} text={DRI_LINES} />
       <CopyBlock label={t('passThrough.nvidia')} text={NVIDIA_LINES} />
-      <a
-        href="https://docs.highsea.tv/install/hardware-acceleration/"
-        target="_blank"
-        rel="noreferrer"
-        className="flex items-center gap-1 justify-self-start text-text text-ui underline underline-offset-2"
-      >
+      <ExternalLink href="https://docs.highsea.tv/install/hardware-acceleration/">
         {t('passThrough.guide')}
-        <Icon name="external" size={12} className="text-text-3" />
-      </a>
-    </div>
+      </ExternalLink>
+    </View>
   )
 }

@@ -70,7 +70,7 @@ import {
 } from 'react'
 import { type StyleProp, StyleSheet, View, type ViewStyle } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { GetTheAppsDialog } from '../../account/get-the-apps.tsx'
+import { ServerAppsDialog } from '../../account/get-the-apps.tsx'
 import { profileMessages } from '../../account/messages.ts'
 import { PersonHead } from '../../account/person.tsx'
 import { useSignOut } from '../../account/sign-out.tsx'
@@ -1025,7 +1025,7 @@ function AboutSection() {
         <Soon>{t('licences')}</Soon>
         <Soon>{t('diagnostics')}</Soon>
       </View>
-      {browser ? <GetTheAppsDialog open={apps} onOpenChange={setApps} /> : null}
+      {browser ? <ServerAppsDialog open={apps} onOpenChange={setApps} /> : null}
     </View>
   )
 }

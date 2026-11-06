@@ -77,7 +77,7 @@ export default {
           .waitFor({ state: 'detached' })
           .catch(() => {})
       },
-      crop: (p) => p.locator('main table'),
+      crop: (p) => p.locator('main').getByRole('table'),
     },
   ],
 } satisfies Area

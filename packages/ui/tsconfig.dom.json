@@ -19,6 +19,11 @@
     "test/native/field-web.test.tsx",
     "test/native/smoothing-web.test.tsx",
     "test/native/admin-parts-web.test.tsx",
-    "test/native/menu-groups-web.test.tsx"
+    "test/native/menu-groups-web.test.tsx",
+    "test/native/sound-web.test.ts",
+    "test/native/command-palette-web.test.tsx",
+    "test/native/get-the-apps-web.test.tsx",
+    "test/native/stepper-web.test.tsx",
+    "test/native/virtual-web.test.tsx"
   ]
 }

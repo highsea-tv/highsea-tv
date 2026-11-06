@@ -6,7 +6,7 @@
 // root folders and tags, Import lists with Trakt and the exclusions, Connections with each kind's
 // settings, and the browsers that get notifications. Lists, connections, tags and root folders
 // save at once through their own calls (lists.ts, connections.ts, library-settings.ts).
-import { defaultQualitySizes, type QualitySize } from '@highsea-tv/quality'
+import { defaultEpisodeSizes, defaultQualitySizes, type QualitySize } from '@highsea-tv/quality'
 import { EPOCH, iso } from './clock.ts'
 import { defaultPlaybackSettings, type PlaybackSettings } from './playback.ts'
 import type { ImportList, ISODate, ServerEvent } from './types.ts'
@@ -282,32 +282,8 @@ export type SettingsDeps = {
   fail: (status: number, code: string, message: string, details?: Record<string, string>) => Error
 }
 
-/**
- * Episodes' sizes: the TRaSH Guides' documented "Sonarr Quality Definitions"
- * (https://trash-guides.info/Sonarr/Sonarr-Quality-Settings-File-Size/, data in
- * docs/json/sonarr/quality-size/series.json), MiB per minute of the episode. As for movies, TRaSH's
- * preferred and maximum (995 and 1000, Sonarr's ceiling) are no limit here; its two Remux rows are
- * the vocabulary's `Remux-1080p` and `Remux-2160p`, and qualities it doesn't list have no minimum.
- */
-const TRASH_EPISODE_MIN: Partial<Record<QualitySize['quality'], number>> = {
-  'HDTV-720p': 10,
-  'WEBRip-720p': 10,
-  'WEBDL-720p': 10,
-  'Bluray-720p': 17.1,
-  'HDTV-1080p': 15,
-  'WEBRip-1080p': 15,
-  'WEBDL-1080p': 15,
-  'Bluray-1080p': 50.4,
-  'Remux-1080p': 69.1,
-  'HDTV-2160p': 25,
-  'WEBRip-2160p': 25,
-  'WEBDL-2160p': 25,
-  'Bluray-2160p': 94.6,
-  'Remux-2160p': 187.4,
-}
-
-export const defaultEpisodeSizes = (): QualitySize[] =>
-  defaultQualitySizes().map((row) => ({ ...row, min: TRASH_EPISODE_MIN[row.quality] ?? 0 }))
+/** Episodes' sizes, TRaSH's for Sonarr: one place, in @highsea-tv/quality. */
+export { defaultEpisodeSizes }
 
 const MIN = 60_000
 const HOUR = 60 * MIN

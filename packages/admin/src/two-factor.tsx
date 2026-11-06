@@ -1,11 +1,30 @@
 'use client'
 // SPDX-License-Identifier: AGPL-3.0-only
 // Pieces of two-step verification that sign-in and "Your account" share: the code field, the
-// authenticator's QR code with its key, and the recovery codes shown once.
+// authenticator's QR code with its key, and the recovery codes shown once. Drawn with the
+// library's native renderer since D3 (one-client-platform-d.md).
 import { useT } from '@highsea-tv/i18n/react'
-import { Button, Field, Input, QrCode, toast } from '@highsea-tv/ui'
-import type { Ref } from 'react'
+import {
+  Button,
+  Field,
+  Input,
+  QrCode,
+  Text,
+  toast,
+  tokens,
+  useControl,
+  useTheme,
+} from '@highsea-tv/ui/native'
+import type { ComponentRef, Ref } from 'react'
+import { type TextInput, View } from 'react-native'
 import { account } from './account-messages.ts'
+
+const s = tokens.space
+const figure = tokens.adminText.figure
+/** The QR code's side (the web's w-44). */
+const QR = 176
+
+export type InputHandle = ComponentRef<typeof TextInput>
 
 /** Six digits; submits itself at the sixth (login.md: "The code submits itself at six digits"). */
 export function CodeInput({
@@ -17,19 +36,22 @@ export function CodeInput({
   value: string
   onChange: (value: string) => void
   onComplete?: (value: string) => void
-  ref?: Ref<HTMLInputElement>
+  ref?: Ref<InputHandle>
 }) {
+  const m = useControl()
   return (
     <Input
       ref={ref}
       value={value}
       inputMode="numeric"
       autoComplete="one-time-code"
-      pattern="[0-9]{6}"
+      textContentType="oneTimeCode"
       maxLength={6}
-      className="font-mono tracking-[0.3em]"
-      onChange={(e) => {
-        const next = e.target.value.replace(/\D/g, '').slice(0, 6)
+      mono
+      // the web's tracking-[0.3em]
+      style={{ letterSpacing: m.text * 0.3 }}
+      onChangeText={(text) => {
+        const next = text.replace(/\D/g, '').slice(0, 6)
         onChange(next)
         if (next.length === 6) onComplete?.(next)
       }}
@@ -41,50 +63,77 @@ export function CodeInput({
 export function Enrol({ secret, uri }: { secret: string; uri: string }) {
   const t = useT(account)
   return (
-    <div className="grid gap-3">
-      <p className="text-caption text-text-2">{t('twoFactor.scan')}</p>
-      <QrCode value={uri} aria-label={t('twoFactor.qr')} className="w-44 justify-self-center" />
-      <p className="text-caption text-text-3">
-        {t('twoFactor.manual')}{' '}
-        <code className="break-all font-mono text-figure text-text">
+    <View style={{ gap: s['3'] }}>
+      <Text variant="caption" color="text-2">
+        {t('twoFactor.scan')}
+      </Text>
+      <View style={{ alignSelf: 'center' }}>
+        <QrCode value={uri} label={t('twoFactor.qr')} size={QR} />
+      </View>
+      <Text variant="caption" color="text-3">
+        {`${t('twoFactor.manual')} `}
+        <Text
+          mono
+          size={figure.size}
+          leading={figure.leading}
+          style={{ wordBreak: 'break-all' } as object}
+        >
           {secret.replace(/(.{4})/g, '$1 ').trim()}
-        </code>
-      </p>
-    </div>
+        </Text>
+      </Text>
+    </View>
   )
 }
 
 export function RecoveryCodes({ codes, onDone }: { codes: string[]; onDone: () => void }) {
   const t = useT(account)
+  const theme = useTheme()
   return (
-    <div className="grid gap-3">
-      <div className="grid gap-1">
-        <h2 className="font-semibold text-text text-title">{t('twoFactor.codesTitle')}</h2>
-        <p className="text-caption text-text-2">{t('twoFactor.codesBody')}</p>
-      </div>
-      <ul
+    <View style={{ gap: s['3'] }}>
+      <View style={{ gap: s['1'] }}>
+        <Text variant="title" weight={600} role="heading" aria-level={2}>
+          {t('twoFactor.codesTitle')}
+        </Text>
+        <Text variant="caption" color="text-2">
+          {t('twoFactor.codesBody')}
+        </Text>
+      </View>
+      <View
+        role="list"
         aria-label={t('twoFactor.codesTitle')}
-        className="grid grid-cols-2 gap-x-4 gap-y-1 rounded-md bg-s2 p-3 font-mono text-figure text-text"
+        style={{
+          flexDirection: 'row',
+          flexWrap: 'wrap',
+          rowGap: s['1'],
+          padding: s['3'],
+          borderRadius: tokens.radius.md,
+          backgroundColor: theme.colors.s2,
+        }}
       >
         {codes.map((c) => (
-          <li key={c}>{c}</li>
+          // two columns, 16 apart (the web's grid-cols-2 gap-x-4)
+          <View key={c} role="listitem" style={{ width: '50%', paddingEnd: s['4'] }}>
+            <Text mono size={figure.size} leading={figure.leading}>
+              {c}
+            </Text>
+          </View>
         ))}
-      </ul>
-      <div className="flex flex-wrap gap-2">
+      </View>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: s['2'] }}>
         <Button
           icon="copy"
-          onClick={() => {
+          onPress={() => {
             navigator.clipboard?.writeText(codes.join('\n')).catch(() => {})
             toast({ title: t('twoFactor.copied') })
           }}
         >
           {t('twoFactor.copy')}
         </Button>
-        <Button variant="primary" onClick={onDone}>
+        <Button variant="primary" onPress={onDone}>
           {t('twoFactor.saved')}
         </Button>
-      </div>
-    </div>
+      </View>
+    </View>
   )
 }
 
@@ -92,20 +141,24 @@ export function RecoveryCodes({ codes, onDone }: { codes: string[]; onDone: () =
 export function ConfirmPassword({
   value,
   onChange,
+  onSubmit,
   error,
 }: {
   value: string
   onChange: (v: string) => void
+  /** Enter in the field: the form's submit, which a native screen has no <form> for. */
+  onSubmit?: () => void
   error?: string
 }) {
   const t = useT(account)
   return (
     <Field label={t('twoFactor.password')} hint={t('twoFactor.confirmPassword')} error={error}>
       <Input
-        type="password"
+        secureTextEntry
         value={value}
         autoComplete="current-password"
-        onChange={(e) => onChange(e.target.value)}
+        onChangeText={onChange}
+        onSubmitEditing={onSubmit}
       />
     </Field>
   )

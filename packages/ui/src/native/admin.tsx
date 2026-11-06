@@ -635,7 +635,8 @@ export function Stat({ value, unit, caption }: StatProps) {
 }
 
 export type TextLinkProps = {
-  href: string
+  /** Where it leads. Without it, it's a button drawn as a link, for `onPress` (Status's Get the apps). */
+  href?: string
   children: string
   onPress?: () => void
   /** The caption style (by default) or the admin's ui type. */
@@ -646,7 +647,7 @@ export type TextLinkProps = {
 export function TextLink({ href, children, onPress, look = 'caption' }: TextLinkProps) {
   return (
     <Press
-      role="link"
+      role={href ? 'link' : 'button'}
       onPress={onPress}
       {...linkTo(href)}
       style={{ alignSelf: 'flex-start', borderRadius: tokens.radius.sm }}

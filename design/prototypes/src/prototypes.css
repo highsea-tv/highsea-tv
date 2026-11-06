@@ -1,15 +1,21 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-@import "@highsea-tv/ui/styles.css";
+/*
+ * The prototype's own chrome (the frame, toolbar and launcher, and the email preview) keeps
+ * Tailwind on the tokens' theme; every screen inside the frame is the library's native drawing,
+ * since D3 of one-client-platform-d.md removed the web renderer, whose stylesheet this was.
+ */
+@import "tailwindcss";
+@import "@highsea-tv/tokens/tailwind.css";
+@import "@highsea-tv/brand/fonts.css";
 /* the library's native text names each weight's face, as the server's admin loads them (D1) */
 @import "@highsea-tv/brand/native-fonts.css";
 
 @source "./";
-@source "../../../packages/admin/src";
 
 /*
  * The toolbar's Reduced motion toggle, without touching the OS setting: the same overrides
- * tokens.css and ui-web apply under `prefers-reduced-motion: reduce`. Motion components get
- * `MotionConfig reducedMotion="always"` and hooks a matchMedia shim (src/screen/environment.ts).
+ * tokens.css applies under `prefers-reduced-motion: reduce`. The library's motion reads a
+ * matchMedia shim (src/screen/environment.ts).
  */
 :root[data-reduced-motion] {
   --duration-spring: 1ms;
@@ -89,4 +95,38 @@ html[data-chrome] body {
     animation: none;
     scale: 1 0.6;
   }
+}
+
+/* What the chrome took from the web renderer's stylesheet: the document's base and two utilities. */
+@layer base {
+  html {
+    font-family: var(--font-sans);
+    background: var(--color-bg);
+    color: var(--color-text);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* the one focus ring: 2px `focus`, 2px offset (accessibility.md#operable) */
+  :focus-visible {
+    outline: var(--focus-ring-width) solid var(--color-focus);
+    outline-offset: var(--focus-ring-offset);
+  }
+
+  ::selection {
+    background: var(--color-accent-soft);
+    color: var(--color-text);
+  }
+}
+
+@utility ring-focus {
+  outline: var(--focus-ring-width) solid var(--color-focus);
+  outline-offset: var(--focus-ring-offset);
+}
+
+@utility transition-tint {
+  transition-property: background-color, border-color, color, box-shadow, opacity, width;
+  transition-duration: var(--duration-color);
+  transition-timing-function: var(--ease-out);
 }
