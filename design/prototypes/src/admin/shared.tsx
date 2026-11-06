@@ -56,7 +56,7 @@ import { userFor } from '@highsea-tv/mock/mock'
 import { browserStorage, createMockFetch, type MockTransport } from '@highsea-tv/mock/transport'
 import { createClient, type HighseaClient } from '@highsea-tv/sdk'
 import { ClientProvider } from '@highsea-tv/sdk/react'
-import { ThemeProvider } from '@highsea-tv/ui/native'
+import { DenseFields, ThemeProvider } from '@highsea-tv/ui/native'
 import {
   type MouseEvent,
   type ReactNode,
@@ -196,10 +196,17 @@ function Host({
     <ClientProvider client={client}>
       <NavigationProvider value={navigation}>
         <ThemeProvider>
-          <div style={{ display: 'contents' }} onClickCapture={follow}>
-            {/* a user never reaches the shell: drawn signed in, they're sent away above */}
-            {shell && role !== 'user' ? <AdminShell role={role}>{children}</AdminShell> : children}
-          </div>
+          {/* the admin's dense form labels, as the server's providers have them */}
+          <DenseFields>
+            <div style={{ display: 'contents' }} onClickCapture={follow}>
+              {/* a user never reaches the shell: drawn signed in, they're sent away above */}
+              {shell && role !== 'user' ? (
+                <AdminShell role={role}>{children}</AdminShell>
+              ) : (
+                children
+              )}
+            </div>
+          </DenseFields>
         </ThemeProvider>
       </NavigationProvider>
     </ClientProvider>

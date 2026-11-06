@@ -241,10 +241,10 @@ function CacheUse({ cache: c }: { cache: PlaybackStatus['cache'] }) {
         }}
       >
         <Line>
-          <Text size={ui.size} weight={600} style={TABULAR}>
+          <Text size={ui.size} leading={ui.leading} weight={600} style={TABULAR}>
             {bytes(c.transcodeBytes)}
           </Text>
-          <Text size={ui.size} color="text-2">
+          <Text size={ui.size} leading={ui.leading} color="text-2">
             {t('cache.of', { limit: bytes(c.limitBytes) })}
           </Text>
         </Line>

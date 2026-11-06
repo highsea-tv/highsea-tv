@@ -8,6 +8,7 @@ import { Platform, View, type ViewStyle } from 'react-native'
 import type { SegmentedCommon } from '../shared/controls.ts'
 import { ControlPress, ControlText, lookAt, useControllable } from './control.tsx'
 import { Icon, type IconName } from './icon.tsx'
+import { OWN_SIZE } from './own-size.ts'
 import { Text } from './text.tsx'
 import { tokens, useControl, useTheme } from './theme.tsx'
 
@@ -61,7 +62,7 @@ function Segments<V extends string>({
       accessibilityLabel={label}
       style={{
         flexDirection: 'row',
-        alignSelf: block ? 'stretch' : 'flex-start',
+        ...(block ? { alignSelf: 'stretch' as const } : OWN_SIZE),
         minHeight: m.height,
         padding: m.inset,
         gap: m.inset,

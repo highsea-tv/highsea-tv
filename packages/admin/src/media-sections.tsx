@@ -828,6 +828,7 @@ function About({ meta: m }: { meta: MovieMetadata }) {
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: tokens.space['1'] }}>
           <Text
             size={ui.size}
+            leading={ui.leading}
             color="text"
             style={{
               textDecorationLine: 'underline',
@@ -842,7 +843,7 @@ function About({ meta: m }: { meta: MovieMetadata }) {
     </Press>
   )
   const figure = (n: number) => (
-    <Text size={ui.size} color="text" mono>
+    <Text size={ui.size} leading={ui.leading} color="text" mono>
       {usd.format(n)}
     </Text>
   )
@@ -1009,7 +1010,7 @@ export function CastAndCrew({ meta }: { meta: MetadataQuery }) {
                           >
                             <CrewPhoto src={c.photo} />
                             <View style={{ flex: 1, minWidth: 0 }}>
-                              <Text size={ui.size} numberOfLines={1}>
+                              <Text size={ui.size} leading={ui.leading} numberOfLines={1}>
                                 <InlineLink href={personPath(c.personId)}>{c.name}</InlineLink>
                               </Text>
                               <Text variant="caption" color="text-3">

@@ -15,6 +15,7 @@ import { alpha } from './alpha.ts'
 import { Icon } from './icon.tsx'
 import type { IconName } from './icons.ts'
 import { Image } from './image.tsx'
+import { OWN_SIZE } from './own-size.ts'
 import { Press } from './press.tsx'
 import { Text } from './text.tsx'
 import { tokens, useControl, useTheme } from './theme.tsx'
@@ -245,7 +246,7 @@ export function ServerCard({ name, detail, status, statusLabel }: ServerCardProp
       <View style={{ flex: 1, minWidth: 0 }}>
         <Text size={ui.size} leading={ui.leading} weight={500} numberOfLines={1}>
           {name}
-          <Text size={ui.size} style={HIDDEN_TEXT}>
+          <Text size={ui.size} leading={ui.leading} style={HIDDEN_TEXT}>
             {`: ${statusLabel ?? STATUS_WORD[status]}`}
           </Text>
         </Text>
@@ -620,7 +621,7 @@ export function Stat({ value, unit, caption }: StatProps) {
       >
         {value}
         {unit ? (
-          <Text size={ui.size} color="text-2" style={{ letterSpacing: 0 }}>
+          <Text size={ui.size} leading={ui.leading} color="text-2" style={{ letterSpacing: 0 }}>
             {` ${unit}`}
           </Text>
         ) : null}
@@ -650,12 +651,13 @@ export function TextLink({ href, children, onPress, look = 'caption' }: TextLink
       role={href ? 'link' : 'button'}
       onPress={onPress}
       {...linkTo(href)}
-      style={{ alignSelf: 'flex-start', borderRadius: tokens.radius.sm }}
+      style={{ ...OWN_SIZE, borderRadius: tokens.radius.sm }}
     >
       {({ hovered }) => (
         <Text
           variant={look === 'caption' ? 'caption' : undefined}
           size={look === 'ui' ? ui.size : undefined}
+          leading={look === 'ui' ? ui.leading : undefined}
           color={hovered ? 'text' : 'text-2'}
           style={{ textDecorationLine: 'underline' }}
         >
@@ -718,7 +720,9 @@ export function Details({
             flexDirection: stacked ? 'column' : 'row',
             columnGap: s['4'],
             rowGap: s['1'],
-            alignItems: stacked ? 'stretch' : 'flex-start',
+            // each value on its term's first baseline, whatever its type or a badge's padding
+            // (https://reactnative.dev/docs/layout-props#alignitems: `baseline`)
+            alignItems: stacked ? 'stretch' : 'baseline',
           }}
         >
           <View

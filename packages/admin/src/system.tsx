@@ -809,7 +809,9 @@ function Logs() {
                           ROW_PAD,
                           {
                             flexDirection: columns ? 'row' : 'column',
-                            alignItems: columns ? 'flex-start' : 'stretch',
+                            // the level's badge on the line's baseline, not its padded top
+                            // (https://reactnative.dev/docs/layout-props#alignitems)
+                            alignItems: columns ? 'baseline' : 'stretch',
                             gap: columns ? sp['3'] : sp['1'],
                           },
                           divided(i, theme.colors.line),

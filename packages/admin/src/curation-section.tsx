@@ -438,7 +438,7 @@ function TitleYear({ title, year }: { title: string; year: number | null }) {
   return (
     <Text size={ui.size} leading={ui.leading} numberOfLines={1} style={{ flex: 1, minWidth: 0 }}>
       {title}{' '}
-      <Text size={ui.size} color="text-3">
+      <Text size={ui.size} leading={ui.leading} color="text-3">
         {year ?? ''}
       </Text>
     </Text>

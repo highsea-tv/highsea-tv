@@ -9,6 +9,7 @@ import { View } from 'react-native'
 import { GLASS } from './glass.ts'
 import { Icon } from './icon.tsx'
 import type { IconName } from './icons.ts'
+import { OWN_SIZE } from './own-size.ts'
 import { Text } from './text.tsx'
 import { tokens, useTheme } from './theme.tsx'
 
@@ -61,7 +62,7 @@ export function Badge({
       style={{
         flexDirection: 'row',
         alignItems: 'center',
-        alignSelf: 'flex-start',
+        ...OWN_SIZE,
         gap: tv ? TV_BADGE.gap * u : 6,
         paddingHorizontal: tv ? TV_BADGE.padX * u : tokens.space['2'],
         paddingVertical: tv ? TV_BADGE.padY * u : tokens.space['0.5'],
@@ -141,7 +142,7 @@ export function Certification({ children }: { children: string }) {
     // tree read alike (QualityTag's way)
     <View
       style={{
-        alignSelf: 'flex-start',
+        ...OWN_SIZE,
         borderWidth: 1,
         borderColor: theme.colors['text-3'],
         borderRadius: tv ? tokens.tv.radius.pill * u : tokens.radius.sm,

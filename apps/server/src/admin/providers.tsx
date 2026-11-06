@@ -9,7 +9,7 @@
 import { NavigationProvider } from '@highsea-tv/admin/navigation.tsx'
 import { createClient } from '@highsea-tv/sdk'
 import { ClientProvider } from '@highsea-tv/sdk/react'
-import { ThemeProvider } from '@highsea-tv/ui/native'
+import { DenseFields, ThemeProvider } from '@highsea-tv/ui/native'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { type ReactNode, useMemo, useSyncExternalStore } from 'react'
 
@@ -49,14 +49,17 @@ export function Providers({ children }: { children: ReactNode }) {
         {/* the library's native drawing, in highsea's default theme (the admin has no other) at
             the device's and window's form factor */}
         <ThemeProvider>
-          {/* hidden keeps the layout, so what hydrating measures is what then shows; contents
+          {/* the admin's dense form labels (DenseFields) */}
+          <DenseFields>
+            {/* hidden keeps the layout, so what hydrating measures is what then shows; contents
                 adds no box of its own (https://developer.mozilla.org/en-US/docs/Web/CSS/visibility) */}
-          <div
-            data-hydrated={hydrated || undefined}
-            style={{ display: 'contents', visibility: hydrated ? undefined : 'hidden' }}
-          >
-            {children}
-          </div>
+            <div
+              data-hydrated={hydrated || undefined}
+              style={{ display: 'contents', visibility: hydrated ? undefined : 'hidden' }}
+            >
+              {children}
+            </div>
+          </DenseFields>
         </ThemeProvider>
       </NavigationProvider>
     </ClientProvider>
