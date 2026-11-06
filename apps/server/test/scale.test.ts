@@ -61,6 +61,10 @@ const client = () => (runtime.db as unknown as { $client: BunDatabase }).$client
 const pad = (i: number) => String(i).padStart(6, '0')
 const dayOf = (ms: number) => new Date(ms).toISOString().slice(0, 10)
 
+// Booting the runtime and seeding 100,000 movies takes under 6 s on an idle machine and more on a
+// busy CI one, past bun:test's default 5,000 ms (https://bun.com/docs/test/runtime-behavior#test-timeouts), so the
+// setup alone gets room through beforeAll's timeout (https://bun.com/reference/bun/test/beforeAll);
+// the budgets the tests measure stay as they are.
 beforeAll(async () => {
   runtime = await bootRuntime({ fetch: createReplayFetch(), lists: { fetch: lists.fetch } })
   app = createApi(runtime)
