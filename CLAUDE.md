@@ -12,7 +12,7 @@ highsea is a self-hosted replacement for the *ARR suite (Radarr, Sonarr, Prowlar
 
 ## Now
 
-Phase 4, the one client platform ([plan](docs/plans/one-client-platform.md)): part D (the admin on the library) is signed off (2026-11-06). Work lands on `next`, with CI by branch ([its plan](docs/plans/next-branch.md)). Next: the [one compose file](docs/plans/one-compose-file.md) follow-up (part A signed off; then B, its prototype first), then part E. Keep this section to a few lines; the history goes in docs/status.md.
+Phase 4, the one client platform ([plan](docs/plans/one-client-platform.md)): part D (the admin on the library) is signed off (2026-11-06). Work lands on `next`, with CI by branch ([its plan](docs/plans/next-branch.md)). Next: the [one compose file](docs/plans/one-compose-file.md) follow-up (part A signed off, B's prototype approved, B built and waiting for review), then part E. Keep this section to a few lines; the history goes in docs/status.md.
 
 ## Rules from the owner
 

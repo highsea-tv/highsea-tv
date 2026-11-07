@@ -50,7 +50,7 @@ export const vpn = defineMessages({
   reconnect: 'Reconnect',
   reconnectError: 'Couldn’t reconnect',
   checkedAgo: 'Checked {ago}',
-  // proposed for one-compose-file.md's part B: the status points to the mode's compose lines
+  // one-compose-file.md's part B, approved 2026-11-07: the status points to the mode's compose lines
   capabilityHelp: 'Compose for highsea connects, under Connection, has the lines to add.',
   composeLines: 'Compose lines',
   copy: 'Copy',

@@ -8,9 +8,12 @@ description: highsea's own WireGuard tunnel to your VPN provider, what its conta
   Sources:
   - In highsea: packages/admin/src/vpn.tsx and vpn-messages.ts (the screen and its words),
     packages/vpn/src (settings.ts for refusals, the WireGuard reader and the tunnel),
-    catalog/vpn-providers (each provider's steps and port forwarding). This page is where
-    highsea connects' compose lines are written, until Settings › VPN writes them
-    (one-compose-file.md, part B).
+    catalog/vpn-providers (each provider's steps and port forwarding). The compose lines are
+    written in one place, composeFor({ mode: 'builtin' }) in packages/vpn/src/compose.ts, which
+    the screen shows; this page describes the screen rather than copying them. The
+    host-networking check: packages/runtime/src/container-network.ts.
+  - Docker's host and bridge networks: https://docs.docker.com/engine/network/drivers/host/ and
+    https://docs.docker.com/engine/network/drivers/bridge/
   - WireGuard and wg-quick's configuration format: https://www.wireguard.com/ and
     https://git.zx2c4.com/wireguard-tools/about/src/man/wg-quick.8
   - Docker's capabilities and devices: https://docs.docker.com/reference/compose-file/services/#cap_add
@@ -36,24 +39,18 @@ highsea brings up a WireGuard tunnel inside its own container and binds every to
 - **Its own network**, not host networking. With host networking, highsea's interface and routes would land in the host's network beside everything else.
 - **The TUN device**, only on older kernels without WireGuard built in (Linux before 5.6, which some NAS systems still run).
 
-Add these lines to highsea's service in your compose file, and take out `network_mode: host`:
+Settings › VPN writes the lines for you. Under the provider's fields, open **Compose for highsea connects** and choose **Copy**. The lines give highsea's service the capability, publish its ports in place of `network_mode: host`, and hold the TUN device as a comment, for a kernel that needs it. Paste them into highsea's service in your compose file, take out `network_mode: host`, then recreate the container.
 
-```yaml title="compose.yaml"
-services:
-  highsea:
-    image: ghcr.io/highsea-tv/highsea:latest
-    cap_add: [NET_ADMIN]
-    # devices: [/dev/net/tun:/dev/net/tun]   # only on a kernel without WireGuard
-    ports:
-      - "3000:3000"
-      - "6881:6881/tcp"
-      - "6881:6881/udp"
-      - "7368:7368/udp"
-```
+![Settings › VPN with highsea connects chosen and Compose for highsea connects open: the lines for highsea's service, with cap_add NET_ADMIN, the published ports and the TUN device as a comment, and a Copy button](/images/admin/settings-vpn/connects-compose.png)
 
 Because the container doesn't use host networking, apps on your network find the server through the UDP broadcast on port 7368 rather than mDNS. See [Discovery](/settings/network/#discovery).
 
-If highsea starts without the capability, the status says **highsea can't run the tunnel yet** and shows the compose lines to add, with a **Copy** button. Add them, then recreate the container.
+The status at the top of the page says when the container isn't set up for the tunnel yet:
+
+- **highsea is on host networking** means highsea's container still shares the host's network. highsea won't start the tunnel there, and **Reconnect** stays off. Put the lines from **Compose for highsea connects** in place of `network_mode: host`, then recreate the container.
+- **highsea can't run the tunnel yet** means the container lacks the NET_ADMIN capability. The same lines add it.
+
+In either case **Compose for highsea connects** opens by itself. When the tunnel can run, it stays folded until you open it.
 
 ## Pick your provider
 
