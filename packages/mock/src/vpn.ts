@@ -172,7 +172,7 @@ export type VpnStatus = {
   /** Failed for want of NET_ADMIN: the page shows the compose lines to add. */
   needsCapability: boolean
   /** On host networking, where highsea connects can't keep the tunnel in its own network. */
-  hostNetwork?: boolean
+  hostNetwork: boolean
   exitIp: string | null
   country: string | null
   forwardedPort: number | null

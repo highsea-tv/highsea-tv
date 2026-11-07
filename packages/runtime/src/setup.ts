@@ -6,12 +6,17 @@
 // detected first (install-simplicity.md B): the host's name, the folders under /data, the address
 // apps use.
 import { existsSync, mkdirSync, readdirSync, realpathSync, statSync } from 'node:fs'
-import { hostname, type NetworkInterfaceInfo, networkInterfaces } from 'node:os'
+import { hostname, networkInterfaces } from 'node:os'
 import { dirname, join, resolve, sep } from 'node:path'
 import { AppError, type Clock, type EventBus } from '@highsea-tv/core'
 import { type Db, readSetting, writeSetting } from '@highsea-tv/db'
 import { defaultNetworkSettings, type NetworkSettings, PRIVATE_RANGES } from '@highsea-tv/network'
 import type { Config } from './config.ts'
+import {
+  type ContainerNetworkInput,
+  DOCKER_INTERFACE,
+  detectContainerNetwork,
+} from './container-network.ts'
 
 export const SETUP_KEY = 'setup'
 export const FOLDERS_KEY = 'folders'
@@ -122,28 +127,21 @@ export function detectFolders(config: Config): MediaFolders | null {
   return { movies, downloads: downloads ?? join(root, 'downloads') }
 }
 
-/** Interfaces Docker makes on the host: seen only with host networking. */
-const DOCKER_INTERFACE = /^(docker\d+|br-[0-9a-f]+|veth)/
-
 /**
  * The address apps on the network use (ADR 0020's 4.3c section), as `host:port`.
  * `HIGHSEA_PUBLISHED_URL` wins, as Jellyfin's `JELLYFIN_PublishedServerUrl` does. Otherwise the
  * host's own address, when highsea can see it: outside a container, or inside one with host
- * networking, where Docker's own interfaces show. In a bridge network the container sees only its
- * own address, which nothing outside can reach, so it's null and setup offers the one the browser
- * used.
+ * networking (`detectContainerNetwork`, which Settings › VPN reads too). In a bridge network the
+ * container sees only its own address, which nothing outside can reach, so it's null and setup
+ * offers the one the browser used.
  */
 export function detectAddress(
   config: Config,
-  {
-    interfaces = networkInterfaces(),
-    inContainer = existsSync('/.dockerenv'),
-  }: { interfaces?: NodeJS.Dict<NetworkInterfaceInfo[]>; inContainer?: boolean } = {},
+  { interfaces = networkInterfaces(), inContainer }: ContainerNetworkInput = {},
 ): string | null {
   if (config.publishedUrl) return new URL(config.publishedUrl).host
-  const names = Object.keys(interfaces)
-  if (inContainer && !names.some((n) => DOCKER_INTERFACE.test(n))) return null
-  const lan = names
+  if (detectContainerNetwork({ interfaces, inContainer }) === 'bridge') return null
+  const lan = Object.keys(interfaces)
     .filter((n) => !DOCKER_INTERFACE.test(n))
     .flatMap((n) => interfaces[n] ?? [])
     .filter((a) => a.family === 'IPv4' && !a.internal && !a.address.startsWith('169.254.'))

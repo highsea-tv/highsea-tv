@@ -114,6 +114,7 @@ import {
 import { type BrowseListing, browse } from './browse.ts'
 import { createCollectionLibrary } from './collection-library.ts'
 import type { Config } from './config.ts'
+import { type ContainerNetwork, detectContainerNetwork } from './container-network.ts'
 import { createCurationLibrary } from './curation-library.ts'
 import { scheduleFileFacts } from './file-facts.ts'
 import { createHardware, type Host } from './hardware.ts'
@@ -398,6 +399,11 @@ export type BootOptions = {
   }
   /** Each indexer's time to answer; tests shorten it. */
   indexerTimeoutMs?: number
+  /**
+   * The container's network (`detectContainerNetwork`), read once at boot: it changes only when
+   * the container is recreated. Tests pass one to play host networking or a bridge.
+   */
+  containerNetwork?: ContainerNetwork
   /**
    * The torrent engine's listening port and DHT. By default Settings › Download client's port and
    * the DHT on; an in-memory runtime (tests) takes any free port and no DHT. `offline` never hands
@@ -1065,6 +1071,8 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
   ipBlocklist.defineJobs()
   const stopIpBlocklist = ipBlocklist.start()
 
+  const containerNetwork =
+    options.containerNetwork !== undefined ? options.containerNetwork : detectContainerNetwork()
   const vpn = createVpn({
     db,
     sealer,
@@ -1073,6 +1081,7 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
     events,
     fetch: outside,
     providers: () => vpnProviders.providers(),
+    hostNetwork: () => containerNetwork === 'host',
     // an in-memory runtime (tests, the sweeps) never changes the host's network
     ...(options.memory
       ? {

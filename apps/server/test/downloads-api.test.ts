@@ -15,6 +15,17 @@ import { addMember, bootRuntime, cleanup, clientFor, failure, withOwner } from '
 afterEach(cleanup)
 
 const SINTEL = 45745
+/** A WireGuard configuration with made-up keys, as a provider's download has it. */
+const WG_CONFIG = `[Interface]
+PrivateKey = ${Buffer.alloc(32, 1).toString('base64')}
+Address = 10.2.0.2/32
+DNS = 10.2.0.1
+
+[Peer]
+PublicKey = ${Buffer.alloc(32, 2).toString('base64')}
+AllowedIPs = 0.0.0.0/0
+Endpoint = 185.159.157.4:51820
+`
 const torznab = { baseUrl: `${FAKE_ORIGIN}/torznab`, apiKey: FAKE_CREDENTIALS.torznabKey }
 
 async function started() {
@@ -251,6 +262,31 @@ describe('settings', () => {
     expect((await ownerApi.vpn.providers()).length).toBeGreaterThan(0)
     const vpn = await ownerApi.vpn.settings()
     expect(vpn.mode).toBe('off')
+  })
+})
+
+describe('the VPN on host networking', () => {
+  test('the status says which network highsea is on, and highsea connects won’t start on the host’s', async () => {
+    const off = await bootRuntime()
+    const { token } = await withOwner(off)
+    expect(await clientFor(createApi(off), { token }).vpn.status()).toMatchObject({
+      state: 'off',
+      hostNetwork: false,
+    })
+    await cleanup()
+
+    const runtime = await bootRuntime({ containerNetwork: 'host' })
+    const owner = await withOwner(runtime)
+    const api = clientFor(createApi(runtime), { token: owner.token })
+    expect(await api.vpn.status()).toMatchObject({ state: 'off', hostNetwork: true })
+    await api.vpn.save({ body: { mode: 'builtin', provider: 'proton', config: WG_CONFIG } })
+    await runtime.vpn.settled()
+    expect(await api.vpn.status()).toMatchObject({
+      mode: 'builtin',
+      state: 'failed',
+      hostNetwork: true,
+      message: expect.stringMatching(/^On host networking/),
+    })
   })
 })
 

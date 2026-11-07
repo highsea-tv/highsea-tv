@@ -16,9 +16,13 @@ Written for highsea 0.1.0.
 
 The status at the top of **Settings › VPN**, and the checks beneath it, say what's wrong. Each heading below is a message you may see there.
 
+## highsea is on host networking
+
+highsea connects won't start the tunnel while highsea's container shares the host's network, since the tunnel's interface and routes would land there. Copy the lines from **Compose for highsea connects**, put them in place of `network_mode: host` in highsea's service, and recreate the container. See [What it needs](/settings/vpn/connects/#what-it-needs).
+
 ## highsea can't run the tunnel yet
 
-highsea's container is missing the NET_ADMIN capability. Add `cap_add: [NET_ADMIN]` to its service and recreate the container. See [What it needs](/settings/vpn/connects/#what-it-needs).
+highsea's container is missing the NET_ADMIN capability. Copy the lines from **Compose for highsea connects**, which add `cap_add: [NET_ADMIN]`, into highsea's service and recreate the container. See [What it needs](/settings/vpn/connects/#what-it-needs).
 
 ## The kernel has no WireGuard, and /dev/net/tun isn't there
 

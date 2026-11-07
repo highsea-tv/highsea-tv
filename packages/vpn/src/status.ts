@@ -73,6 +73,7 @@ export function buildStatus(
   listeningPort: number,
   peersIn: number,
   now: number,
+  hostNetwork = false,
 ): VpnStatus {
   const name =
     s.mode === 'builtin'
@@ -86,6 +87,7 @@ export function buildStatus(
     state: 'off',
     message: null,
     needsCapability: false,
+    hostNetwork,
     exitIp: null,
     country: null,
     forwardedPort: null,
