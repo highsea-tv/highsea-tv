@@ -138,6 +138,11 @@ export const defaultVpnSettings = (kind: 'populated' | 'empty'): VpnSettings => 
 export type VpnRuntime = {
   /** Whether highsea's container was given NET_ADMIN (the empty server's wasn't). */
   capability: boolean
+  /**
+   * Whether highsea's container is on host networking: the empty server is compose.yaml as the
+   * installer writes it, the populated one has highsea connects' lines (one-compose-file.md, B).
+   */
+  hostNetwork: boolean
   phase: 'connected' | 'connecting' | 'down' | 'failed'
   /** Why the last connection failed, in the spec's copy. */
   failure: string | null
@@ -166,6 +171,8 @@ export type VpnStatus = {
   message: string | null
   /** Failed for want of NET_ADMIN: the page shows the compose lines to add. */
   needsCapability: boolean
+  /** On host networking, where highsea connects can't keep the tunnel in its own network. */
+  hostNetwork?: boolean
   exitIp: string | null
   country: string | null
   forwardedPort: number | null
@@ -218,6 +225,7 @@ export function vpnStatus(
     state: 'off',
     message: null,
     needsCapability: false,
+    hostNetwork: rt.hostNetwork,
     exitIp: null,
     country: null,
     forwardedPort: null,
@@ -225,6 +233,15 @@ export function vpnStatus(
     checkedAt: s.mode === 'off' ? null : new Date(rt.checkedAt).toISOString(),
   }
   if (s.mode === 'off') return base
+  // the network first: highsea connects' lines change both, and the network is what's unsafe
+  if (s.mode === 'builtin' && rt.hostNetwork)
+    return {
+      ...base,
+      state: 'failed',
+      needsCapability: !rt.capability,
+      message:
+        'On host networking, the tunnel’s interface and routes would land in the host’s network beside everything else, so highsea won’t start it. Put the lines from Compose for highsea connects in place of network_mode: host, then recreate the container.',
+    }
   if (s.mode === 'builtin' && !rt.capability)
     return {
       ...base,

@@ -43,6 +43,7 @@ import {
   useTheme,
   useWindowAtLeast,
 } from '@highsea-tv/ui/native'
+import { composeFor } from '@highsea-tv/vpn/compose'
 import { type ReactNode, useEffect, useRef, useState } from 'react'
 import { Animated, Easing, ScrollView, View, type ViewStyle } from 'react-native'
 import { Loadable } from './loadable.tsx'
@@ -119,8 +120,11 @@ const MODES = ['builtin', 'container', 'interface', 'off'] as const
 
 const CONTAINER_URL = /^https?:\/\/[^\s/]+/
 
-/** The lines highsea's own compose service needs for the tunnel (vpn.md, the capability). */
-const CAPABILITY_LINES = `services:\n  highsea:\n    cap_add:\n      - NET_ADMIN\n    # devices:\n    #   - /dev/net/tun:/dev/net/tun`
+/**
+ * Compose for highsea connects: the lines highsea's own service needs for the tunnel, from the
+ * one writer the guide uses too (`@highsea-tv/vpn/compose`; proposed in one-compose-file.md's B).
+ */
+const CONNECTS_LINES = composeFor({ mode: 'builtin' })
 
 const STATUS_TOPICS = ['vpn.updated']
 const SETTINGS_TOPICS = ['vpn.updated', 'settings.updated']
@@ -190,7 +194,7 @@ function Form({
   return (
     <>
       {status && <StatusGroup status={status} />}
-      <ConnectionGroup v={draft} set={set} errors={errors} />
+      <ConnectionGroup v={draft} set={set} errors={errors} status={status} />
       {draft.mode !== 'off' && <BehaviourGroup v={draft} set={set} />}
       <SaveBar
         dirty={dirty}
@@ -253,7 +257,11 @@ const stateLine = (
       return {
         icon: 'error',
         tone: 'danger',
-        title: v.needsCapability ? t('state.capability') : t('state.failed'),
+        title: v.hostNetwork
+          ? t('state.hostNetwork')
+          : v.needsCapability
+            ? t('state.capability')
+            : t('state.failed'),
         line: v.message ?? '',
       }
   }
@@ -292,7 +300,12 @@ function StatusGroup({ status: v }: { status: VpnStatus }) {
           </Text>
         </View>
       </View>
-      {v.needsCapability && <CapabilityHelp />}
+      {/* the host-networking line already names the lines; the capability's doesn't */}
+      {v.needsCapability && !v.hostNetwork && (
+        <Text variant="caption" color="text-2">
+          {t('capabilityHelp')}
+        </Text>
+      )}
       {v.checks.length > 0 && (
         <View
           role="list"
@@ -380,7 +393,11 @@ function StatusGroup({ status: v }: { status: VpnStatus }) {
             size="sm"
             variant="ghost"
             loading={reconnect.pending}
-            disabled={v.state === 'connecting' || v.needsCapability}
+            disabled={
+              v.state === 'connecting' ||
+              v.needsCapability ||
+              (v.mode === 'builtin' && v.hostNetwork === true)
+            }
             onPress={() =>
               reconnect
                 .run()
@@ -448,28 +465,18 @@ export function CopyBlock({ label, text }: { label: string; text: string }) {
   )
 }
 
-function CapabilityHelp() {
-  const t = useT(messages)
-  return (
-    <View style={{ gap: s['2'] }}>
-      <Text variant="caption" color="text-2">
-        {t('capabilityHelp')}
-      </Text>
-      <CopyBlock label={t('composeLines')} text={CAPABILITY_LINES} />
-    </View>
-  )
-}
-
 // ---------------------------------------------------------------- connection
 
 function ConnectionGroup({
   v,
   set,
   errors,
+  status,
 }: {
   v: Draft
   set: Set
   errors: Record<string, string>
+  status: VpnStatus | undefined
 }) {
   const t = useT(messages)
   const theme = useTheme()
@@ -538,7 +545,14 @@ function ConnectionGroup({
           )
         })}
       </View>
-      {v.mode === 'builtin' && <BuiltIn v={v} set={set} />}
+      {v.mode === 'builtin' && (
+        <BuiltIn
+          v={v}
+          set={set}
+          // the lines open by themselves when highsea can't run the tunnel as it's set up now
+          linesNeeded={status?.hostNetwork === true || status?.needsCapability === true}
+        />
+      )}
       {v.mode === 'container' && <Container v={v} set={set} errors={errors} />}
       {v.mode === 'interface' && <InterfacePicker v={v} set={set} error={errors.interface} />}
     </Group>
@@ -601,7 +615,7 @@ function Steps({ provider }: { provider: VpnProvider }) {
 }
 
 /** Shown only when the stored mode is built-in, which the page can't pick until 6b. */
-function BuiltIn({ v, set }: { v: Draft; set: Set }) {
+function BuiltIn({ v, set, linesNeeded }: { v: Draft; set: Set; linesNeeded: boolean }) {
   const t = useT(messages)
   const providers = useQuery('vpn:providers', (c) => c.vpn.providers())
   const [pasting, setPasting] = useState(false)
@@ -739,6 +753,7 @@ function BuiltIn({ v, set }: { v: Draft; set: Set }) {
                 )}
               </View>
             )}
+            <ConnectsCompose linesNeeded={linesNeeded} />
           </Section>
         )
       }}
@@ -746,9 +761,65 @@ function BuiltIn({ v, set }: { v: Draft; set: Set }) {
   )
 }
 
+/** Compose for highsea connects, open by itself when highsea needs the lines (vpn.md, proposed). */
+function ConnectsCompose({ linesNeeded }: { linesNeeded: boolean }) {
+  const t = useT(messages)
+  const [open, setOpen] = useState(linesNeeded)
+  // the status comes after the settings, so the lines open when it says they're needed
+  useEffect(() => {
+    if (linesNeeded) setOpen(true)
+  }, [linesNeeded])
+  return (
+    <ComposePanel
+      title={t('compose.builtin')}
+      body={t('compose.builtin.body')}
+      open={open}
+      onOpenChange={setOpen}
+    >
+      <CopyBlock label={t('composeLines')} text={CONNECTS_LINES} />
+    </ComposePanel>
+  )
+}
+
+/** A mode's compose lines, folded under a line in a bordered panel, as the container mode has them. */
+function ComposePanel({
+  title,
+  body,
+  open,
+  onOpenChange,
+  children,
+}: {
+  title: string
+  body: string
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+  children: ReactNode
+}) {
+  const theme = useTheme()
+  return (
+    <View
+      style={{
+        borderWidth: 1,
+        borderColor: theme.colors.line,
+        borderRadius: tokens.radius.md,
+        paddingHorizontal: s['3'],
+        paddingVertical: s['1'],
+      }}
+    >
+      <Disclosure title={title} open={open} onOpenChange={onOpenChange}>
+        <View style={{ gap: s['3'], paddingBottom: s['2'] }}>
+          <Text variant="caption" color="text-2">
+            {body}
+          </Text>
+          {children}
+        </View>
+      </Disclosure>
+    </View>
+  )
+}
+
 function Container({ v, set, errors }: { v: Draft; set: Set; errors: Record<string, string> }) {
   const t = useT(messages)
-  const theme = useTheme()
   const urlError = !CONTAINER_URL.test(v.containerUrl)
   return (
     <Section>
@@ -780,24 +851,9 @@ function Container({ v, set, errors }: { v: Draft; set: Set; errors: Record<stri
           />
         </Field>
       </Columns>
-      <View
-        style={{
-          borderWidth: 1,
-          borderColor: theme.colors.line,
-          borderRadius: tokens.radius.md,
-          paddingHorizontal: s['3'],
-          paddingVertical: s['1'],
-        }}
-      >
-        <Disclosure title={t('compose')}>
-          <View style={{ gap: s['3'], paddingBottom: s['2'] }}>
-            <Text variant="caption" color="text-2">
-              {t('composeBody')}
-            </Text>
-            <Compose />
-          </View>
-        </Disclosure>
-      </View>
+      <ComposePanel title={t('compose')} body={t('composeBody')}>
+        <Compose />
+      </ComposePanel>
     </Section>
   )
 }

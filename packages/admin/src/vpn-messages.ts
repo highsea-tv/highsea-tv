@@ -36,6 +36,7 @@ export const vpn = defineMessages({
   'state.down.line':
     'Torrents are stopped until the tunnel is back. Nothing leaks onto your own connection.',
   'state.capability': 'highsea can’t run the tunnel yet',
+  'state.hostNetwork': 'highsea is on host networking',
   'state.failed': 'Couldn’t connect',
   checks: 'Checks',
   'mark.pass': 'Passed',
@@ -49,8 +50,8 @@ export const vpn = defineMessages({
   reconnect: 'Reconnect',
   reconnectError: 'Couldn’t reconnect',
   checkedAgo: 'Checked {ago}',
-  capabilityHelp:
-    'The capability reaches only highsea’s own container, not the host. On an older NAS kernel without WireGuard, uncomment the device as well.',
+  // proposed for one-compose-file.md's part B: the status points to the mode's compose lines
+  capabilityHelp: 'Compose for highsea connects, under Connection, has the lines to add.',
   composeLines: 'Compose lines',
   copy: 'Copy',
   copied: 'Copied',
@@ -88,6 +89,9 @@ export const vpn = defineMessages({
     'A gluetun service for your compose file, with highsea joined to its network. Fill in what your provider gives you; highsea never gets the Docker socket.',
   composeBlock: 'Compose block',
   composeError: 'Couldn’t make the compose block.',
+  'compose.builtin': 'Compose for highsea connects',
+  'compose.builtin.body':
+    'The lines highsea’s service needs for the tunnel. Add them to highsea in your compose file, take out network_mode: host, then recreate the container. The capability reaches only highsea’s own container, not the host. Apps on your network still find the server by its broadcast on port 7368.',
 
   'behaviour.title': 'Behaviour',
   stopWhenDown: 'Stop torrents when the VPN is down',

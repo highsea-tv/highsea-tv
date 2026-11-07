@@ -11135,6 +11135,9 @@
           "needsCapability": {
             "type": "boolean"
           },
+          "hostNetwork": {
+            "type": "boolean"
+          },
           "exitIp": {
             "type": [
               "string",
