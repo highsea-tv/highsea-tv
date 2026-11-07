@@ -10,7 +10,9 @@ description: Run highsea with Docker Compose on Linux, macOS or Windows.
   - Installing Docker Engine on Linux: https://docs.docker.com/engine/install/
   - Docker Desktop: https://docs.docker.com/desktop/
   - Host networking, and where Docker Desktop supports it: https://docs.docker.com/engine/network/drivers/host/
-  - The compose files are compose.yaml and compose.bridge.yaml at the repository's root.
+  - The Linux file is compose.yaml at the repository's root, drawn in whole with Fumadocs MDX's
+    include (https://www.fumadocs.dev/docs/mdx/include), so this page can't drift from it. The
+    macOS and Windows file is written only here (ADR 0020, ADR 0057).
   - The user highsea runs as: docker/entrypoint.sh (ADR 0057).
   - Bind mounts make a missing source folder: https://docs.docker.com/engine/storage/bind-mounts/
   - Setup and its copy: packages/admin/src/setup.tsx and setup-messages.ts; what it finds by
@@ -55,28 +57,9 @@ Make a folder for highsea and save this as `compose.yaml` inside it.
 
 Host networking lets highsea's apps find the server on your network by themselves, and lets the torrent engine take incoming connections. Where the machine runs avahi, as most desktop Linux does, the `/run/dbus` line lets highsea announce itself through it rather than alongside it.
 
-```yaml title="compose.yaml"
-services:
-  highsea:
-    image: ghcr.io/highsea-tv/highsea:latest
-    container_name: highsea
-    network_mode: host
-    volumes:
-      - ./config:/config
-      - /srv/data:/data
-      - /dev/dri:/dev/dri
-      - /run/dbus:/run/dbus:ro
-    device_cgroup_rules:
-      - "c 226:128 rw"
-      - "c 226:129 rw"
-      - "c 226:130 rw"
-      - "c 226:131 rw"
-      - "c 226:132 rw"
-      - "c 226:133 rw"
-      - "c 226:134 rw"
-      - "c 226:135 rw"
-    restart: unless-stopped
-```
+This is highsea's `compose.yaml` as it is in the repository, comments and all.
+
+<include meta='title="compose.yaml"'>../../../../compose.yaml</include>
 
 </Tab>
 <Tab value="macOS and Windows">
@@ -102,7 +85,7 @@ services:
 </Tab>
 </Tabs>
 
-The one line to look at is the data folder, `/srv/data` or `./data`: change it if your downloads and films are somewhere else.
+The one line to look at is the data folder, `./data`: change it to where your downloads and films are, such as `/srv/data` in the layout above.
 
 On Linux, the `/dev/dri` line and the rules under it give highsea your Intel or AMD graphics, for [hardware acceleration](/install/hardware-acceleration/). They let highsea open the graphics chip's render nodes and nothing else, and on a computer without graphics the container starts all the same. Docker Desktop has no graphics to give, so the macOS and Windows file leaves them out.
 
