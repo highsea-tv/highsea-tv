@@ -68,6 +68,12 @@ export type VpnStatus = {
   message: string | null
   /** Failed for want of NET_ADMIN: the page shows the compose lines to add. */
   needsCapability: boolean
+  /**
+   * highsea's container shares the host's network (ADR 0042's 2026-11-07 section). highsea
+   * connects won't start there, since the tunnel's interface and routes would land in the host's
+   * network; the other modes don't mind. False outside a container and on a bridge.
+   */
+  hostNetwork: boolean
   exitIp: string | null
   country: string | null
   forwardedPort: number | null

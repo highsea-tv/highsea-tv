@@ -61,10 +61,11 @@ export const VpnStatus = z
     needsCapability: z.boolean(),
     /**
      * highsea's container is on host networking, where highsea connects' interface and rule would
-     * land in the host's network (ADR 0042): the page says so and opens Compose for highsea
-     * connects. A draft for one-compose-file.md's part B, optional until the server reports it.
+     * land in the host's network (ADR 0042's 2026-11-07 section): in that mode the page says so
+     * and opens Compose for highsea connects. Every server knows its answer, so it's always
+     * there: false outside a container, where there's no compose file to change, and on a bridge.
      */
-    hostNetwork: z.boolean().optional(),
+    hostNetwork: z.boolean(),
     exitIp: z.string().nullable(),
     country: z.string().nullable(),
     forwardedPort: z.number().int().nullable(),
