@@ -1198,6 +1198,7 @@ function seedBySlug(kind: 'populated' | 'empty', now: number): ServerState {
     settings: defaultSettings(kind),
     vpn: {
       capability: kind === 'populated',
+      hostNetwork: kind === 'empty',
       phase: 'connected',
       failure: null,
       until: 0,

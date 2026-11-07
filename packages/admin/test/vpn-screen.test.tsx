@@ -2,8 +2,8 @@
 // Settings › VPN (checkpoint 6a), rendered against a fake of the API: the status with its checks,
 // Check now and Reconnect; the four modes, with built-in shown but not yet pickable; the container
 // mode's address check, its write-only key and the server's refusal under the field it names; the
-// interfaces and the compose block from the server; and the capability help when the tunnel can't
-// run. The shell and Next's router are stood in for.
+// interfaces and the compose block from the server; and highsea connects' compose lines, opened
+// when the tunnel can't run for want of NET_ADMIN or on host networking. The shell and Next's router are stood in for.
 import './dom.ts'
 import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test'
 import type { ReactNode } from 'react'
@@ -297,22 +297,57 @@ describe('Settings › VPN', () => {
     expect(page.getByText('Send indexer searches through the VPN too')).toBeTruthy()
   })
 
-  test('without NET_ADMIN, the compose lines to add', async () => {
-    state.settings = settings({ mode: 'interface', interface: 'wg0' })
+  test('without NET_ADMIN, highsea connects’ compose lines open', async () => {
+    state.settings = settings({ mode: 'builtin', configName: 'nl.conf' })
     state.status = {
       ...off,
-      mode: 'interface',
-      provider: 'wg0',
+      mode: 'builtin',
+      provider: 'Proton VPN',
       state: 'failed',
       needsCapability: true,
+      hostNetwork: false,
       message: 'highsea needs the NET_ADMIN capability.',
     }
     const { page } = await open()
     expect(page.getByText('highsea can’t run the tunnel yet')).toBeTruthy()
+    expect(page.getByText(/Compose for highsea connects, under Connection/)).toBeTruthy()
     const lines = page.getByRole('figure', { name: 'Compose lines' })
-    expect(within(lines).getByText(/NET_ADMIN/)).toBeTruthy()
+    expect(within(lines).getByText(/cap_add: \[NET_ADMIN\]/)).toBeTruthy()
+    expect(within(lines).getByText(/"7368:7368\/udp"/)).toBeTruthy()
     expect((page.getByRole('button', { name: 'Reconnect' }) as HTMLButtonElement).disabled).toBe(
       true,
     )
+  })
+
+  test('on host networking, the status says so and the lines open', async () => {
+    state.settings = settings({ mode: 'builtin', configName: 'nl.conf' })
+    state.status = {
+      ...off,
+      mode: 'builtin',
+      provider: 'Proton VPN',
+      state: 'failed',
+      needsCapability: false,
+      hostNetwork: true,
+      message: 'On host networking, the tunnel would land in the host’s network.',
+    }
+    const { page } = await open()
+    const status = within(page.getByRole('status'))
+    expect(status.getByText('highsea is on host networking')).toBeTruthy()
+    expect(status.getByText(/would land in the host’s network/)).toBeTruthy()
+    expect(page.getByRole('button', { name: /Compose for highsea connects/ })).toBeTruthy()
+    expect(page.getByRole('figure', { name: 'Compose lines' })).toBeTruthy()
+    expect((page.getByRole('button', { name: 'Reconnect' }) as HTMLButtonElement).disabled).toBe(
+      true,
+    )
+  })
+
+  test('connected through highsea connects, the lines stay folded until opened', async () => {
+    state.settings = settings({ mode: 'builtin', configName: 'nl.conf' })
+    state.status = { ...connected, mode: 'builtin', provider: 'Proton VPN', hostNetwork: false }
+    const { user, page } = await open()
+    expect(page.queryByRole('figure', { name: 'Compose lines' })).toBeNull()
+    await user.click(page.getByRole('button', { name: /Compose for highsea connects/ }))
+    await settle()
+    expect(page.getByRole('figure', { name: 'Compose lines' })).toBeTruthy()
   })
 })

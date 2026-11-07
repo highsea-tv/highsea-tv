@@ -257,6 +257,7 @@
         "@highsea-tv/sdk": "workspace:*",
         "@highsea-tv/tokens": "workspace:*",
         "@highsea-tv/ui": "workspace:*",
+        "@highsea-tv/vpn": "workspace:*",
         "@simplewebauthn/browser": "14.0.0",
       },
       "devDependencies": {

@@ -59,6 +59,12 @@ export const VpnStatus = z
     message: z.string().nullable(),
     /** Failed for want of NET_ADMIN: the page shows the compose lines to add. */
     needsCapability: z.boolean(),
+    /**
+     * highsea's container is on host networking, where highsea connects' interface and rule would
+     * land in the host's network (ADR 0042): the page says so and opens Compose for highsea
+     * connects. A draft for one-compose-file.md's part B, optional until the server reports it.
+     */
+    hostNetwork: z.boolean().optional(),
     exitIp: z.string().nullable(),
     country: z.string().nullable(),
     forwardedPort: z.number().int().nullable(),
