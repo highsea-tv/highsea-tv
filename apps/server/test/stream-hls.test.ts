@@ -7,14 +7,13 @@
 // previews made by the `media.trickplay` job and served. Skipped, and said so, without ffmpeg; the
 // runs themselves are tested in packages/stream.
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
-import { execFileSync } from 'node:child_process'
-import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, renameSync, rmSync, writeFileSync } from 'node:fs'
 import type { AddressInfo } from 'node:net'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { schema } from '@highsea-tv/db'
 import { createProbe } from '@highsea-tv/media/shared'
-import { hasFfmpeg } from '@highsea-tv/media/testing'
+import { hasFfmpeg, runTool } from '@highsea-tv/media/testing'
 import type { Runtime } from '@highsea-tv/runtime'
 import { createClient } from '@highsea-tv/sdk'
 import { createApi } from '../src/api/app.ts'
@@ -26,15 +25,20 @@ const SINTEL = 45745
 const SECONDS = 60
 const ffprobe = process.env.HIGHSEA_FFPROBE || 'ffprobe'
 
-/** A minute of H.264 at 24 fps with a keyframe every 2 s, AAC, and an English SubRip track. */
-function makeClip(path: string) {
+/**
+ * A minute of H.264 at 24 fps with a keyframe every 2 s, AAC, and an English SubRip track. Made
+ * without blocking, under the tools' time limit (TOOL_LIMIT in @highsea-tv/media/testing): a sync
+ * ffmpeg here once hung CI for four hours (Bun's lost sync-spawn exit, oven-sh/bun#47257).
+ */
+async function makeClip(path: string) {
   const srt = `${path}.srt`
   writeFileSync(srt, '1\n00:00:00,000 --> 00:00:02,000\nHello.\n')
-  execFileSync(process.env.HIGHSEA_FFMPEG || 'ffmpeg', [
+  await runTool(process.env.HIGHSEA_FFMPEG || 'ffmpeg', [
     ...[
       '-v',
       'error',
       '-y',
+      '-nostdin',
       '-f',
       'lavfi',
       '-i',
@@ -65,11 +69,14 @@ describe.skipIf(!hasFfmpeg)('HLS over HTTP', () => {
   let url: string
   let api: ReturnType<typeof createClient>
   let token: string
-  let close: () => Promise<void>
+  let close: (() => Promise<void>) | undefined
 
+  // Making the clip, probing it and booting take a second or two, more on a busy runner: past
+  // bun:test's default 5 s, which hooks share with tests (https://bun.com/docs/test/writing-tests,
+  // Timeouts), the hook would fail half-done. The clip's own limit ends a stall well before this.
   beforeAll(async () => {
     dir = mkdtempSync(join(tmpdir(), 'highsea-hls-api-'))
-    const path = makeClip(join(dir, 'Sintel (2010).mkv'))
+    const path = await makeClip(join(dir, 'Sintel (2010).mkv'))
     const probe = await createProbe()(path)
     runtime = await bootRuntime()
     ;({ token } = await withOwner(runtime))
@@ -136,11 +143,18 @@ describe.skipIf(!hasFfmpeg)('HLS over HTTP', () => {
         server.closeAllConnections()
         server.close(() => r())
       })
-  })
+  }, 60_000)
+  // whatever the setup reached, everything it started is stopped and its folder removed
   afterAll(async () => {
-    await close()
-    await cleanup()
-    rmSync(dir, { recursive: true, force: true })
+    try {
+      await close?.()
+    } finally {
+      try {
+        await cleanup()
+      } finally {
+        if (dir) rmSync(dir, { recursive: true, force: true })
+      }
+    }
   })
 
   const play = () =>
@@ -185,12 +199,12 @@ describe.skipIf(!hasFfmpeg)('HLS over HTTP', () => {
     const init = Buffer.from(await (await fetch(`${base}init.mp4`)).arrayBuffer())
     const joined = join(dir, 'joined.mp4')
     writeFileSync(joined, Buffer.concat([init, body]))
-    const first = execFileSync(ffprobe, [
-      ...['-v', 'error', '-select_streams', 'v', '-show_entries', 'packet=pts_time'],
-      ...['-of', 'csv=p=0', '-read_intervals', '%+#1', joined],
-    ])
-      .toString()
-      .trim()
+    const first = (
+      await runTool(ffprobe, [
+        ...['-v', 'error', '-select_streams', 'v', '-show_entries', 'packet=pts_time'],
+        ...['-of', 'csv=p=0', '-read_intervals', '%+#1', joined],
+      ])
+    ).trim()
     // on the film's timeline: the last segment starts in the film's last minute's end
     expect(Number(first)).toBeGreaterThan(SECONDS - 15)
 
@@ -226,7 +240,7 @@ describe.skipIf(!hasFfmpeg)('HLS over HTTP', () => {
     const { path } = runtime.db.select().from(schema.mediaFiles).get() as { path: string }
     const session = await play()
     const moved = `${path}.away`
-    execFileSync('mv', [path, moved])
+    renameSync(path, moved)
     try {
       const base = `${url}${(session.url as string).replace(/main\.m3u8$/, '')}`
       const r = await fetch(`${base}9.m4s`)
@@ -235,7 +249,7 @@ describe.skipIf(!hasFfmpeg)('HLS over HTTP', () => {
         'This film didn’t start.',
       )
     } finally {
-      execFileSync('mv', [moved, path])
+      renameSync(moved, path)
       await api.playback.stop({ params: { id: session.id } })
     }
   })

@@ -67,6 +67,10 @@ jobs:
           - runner: ubuntu-24.04
             target: x86_64-unknown-linux-gnu
     runs-on: ${{ matrix.runner }}
+    # Without a limit a job may run for 360 minutes, GitHub's default
+    # (https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#jobsjob_idtimeout-minutes);
+    # the last 12 builds took up to 21 minutes on each of the three
+    timeout-minutes: 45
     defaults:
       run:
         shell: bash

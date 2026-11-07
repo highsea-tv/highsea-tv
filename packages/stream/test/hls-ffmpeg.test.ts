@@ -9,7 +9,7 @@ import { execFileSync, spawn as nodeSpawn } from 'node:child_process'
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { hasFfmpeg } from '@highsea-tv/media/testing'
+import { hasFfmpeg, TOOL_LIMIT } from '@highsea-tv/media/testing'
 import type { PlaybackDecision } from '../src/decision/index.ts'
 import { type Accel, clipArgs, parseList, probeArgs } from '../src/hardware/index.ts'
 import {
@@ -30,6 +30,8 @@ import { makeTrickplay } from '../src/trickplay/index.ts'
 
 const ffmpeg = process.env.HIGHSEA_FFMPEG || 'ffmpeg'
 const ffprobe = process.env.HIGHSEA_FFPROBE || 'ffprobe'
+/** ffmpeg or ffprobe run here, under the tests' time limit (TOOL_LIMIT in @highsea-tv/media/testing). */
+const run = (bin: string, args: string[]) => execFileSync(bin, args, TOOL_LIMIT)
 
 /** Each packet's stream, time and whether it's a keyframe, of a segment read with its header. */
 function packets(dir: string, files: string[]) {
@@ -38,7 +40,7 @@ function packets(dir: string, files: string[]) {
     joined,
     Buffer.concat([join(dir, 'header.mp4'), ...files].map((f) => readFileSync(f))),
   )
-  return execFileSync(ffprobe, [
+  return run(ffprobe, [
     ...['-v', 'error', '-show_entries', 'packet=stream_index,pts_time,flags'],
     ...['-of', 'csv=p=0', joined],
   ])
@@ -102,7 +104,7 @@ describe.skipIf(!hasFfmpeg)('HLS with ffmpeg', () => {
       '1\n00:00:01,000 --> 00:00:03,000\nHello.\n\n2\n00:00:30,000 --> 00:00:32,000\nLater.\n',
     )
     // 24 fps with a keyframe every 2 s, and one forced at 5 s, which x264 counts on from
-    execFileSync(ffmpeg, [
+    run(ffmpeg, [
       ...[
         '-v',
         'error',
@@ -456,7 +458,7 @@ describe.skipIf(!hasFfmpeg)('HLS with ffmpeg', () => {
     const sheets = await makeTrickplay({ ffmpeg, input: clip, index: 0, dir: out })
     expect(sheets).toBe(1)
     expect(existsSync(`${out}.part`)).toBe(false)
-    const size = execFileSync(ffprobe, [
+    const size = run(ffprobe, [
       ...['-v', 'error', '-show_entries', 'stream=width,height', '-of', 'csv=p=0'],
       join(out, '0.jpg'),
     ])
@@ -467,8 +469,7 @@ describe.skipIf(!hasFfmpeg)('HLS with ffmpeg', () => {
 })
 
 const hasLibass =
-  hasFfmpeg &&
-  / subtitles +V->V/.test(execFileSync(ffmpeg, ['-hide_banner', '-filters']).toString())
+  hasFfmpeg && / subtitles +V->V/.test(run(ffmpeg, ['-hide_banner', '-filters']).toString())
 if (hasFfmpeg && !hasLibass)
   console.warn('This ffmpeg has no libass, so the tests that burn in ASS are skipped.')
 
@@ -479,7 +480,7 @@ function frameAt(dir: string, files: string[], seconds: number) {
     joined,
     Buffer.concat([join(dir, 'header.mp4'), ...files].map((f) => readFileSync(f))),
   )
-  return execFileSync(ffmpeg, [
+  return run(ffmpeg, [
     ...['-v', 'error', '-ss', String(seconds), '-i', joined],
     ...['-frames:v', '1', '-f', 'rawvideo', '-pix_fmt', 'gray', '-'],
   ])
@@ -527,7 +528,7 @@ describe.skipIf(!hasFfmpeg)('subtitles burned in, and the downmix, with ffmpeg (
     writeFileSync(sup, pgsBox({ width: W, height: H, ...BOX, from: 0.5, to: 4 }))
     writeFileSync(join(dir, 'box.ass'), ass)
     // black, so anything bright is the subtitle; the PGS track is stream 1, the ASS stream 2
-    execFileSync(ffmpeg, [
+    run(ffmpeg, [
       ...[
         '-v',
         'error',
@@ -596,11 +597,14 @@ describe.skipIf(!hasFfmpeg)('subtitles burned in, and the downmix, with ffmpeg (
   test('the downmix’s levels on a tone in each channel, against RFC 7845’s matrices', () => {
     /** Each output channel's RMS level in dB, as `astats` measures it. */
     const rms = (filters: string) => {
-      const r = Bun.spawnSync([
-        ffmpeg,
-        ...['-hide_banner', '-nostdin', '-f', 'lavfi', '-i', 'sine=frequency=1000:duration=1'],
-        ...['-af', `${filters},astats`, '-f', 'null', '-'],
-      ])
+      const r = Bun.spawnSync(
+        [
+          ffmpeg,
+          ...['-hide_banner', '-nostdin', '-f', 'lavfi', '-i', 'sine=frequency=1000:duration=1'],
+          ...['-af', `${filters},astats`, '-f', 'null', '-'],
+        ],
+        TOOL_LIMIT,
+      )
       const text = r.stderr.toString()
       const channels = text.split(/Channel: \d+/).slice(1)
       return channels.map((c) => {
@@ -633,7 +637,7 @@ describe.skipIf(!hasFfmpeg)('subtitles burned in, and the downmix, with ffmpeg (
 })
 
 const filters = hasFfmpeg
-  ? parseList(execFileSync(ffmpeg, ['-hide_banner', '-filters']).toString())
+  ? parseList(run(ffmpeg, ['-hide_banner', '-filters']).toString())
   : new Set<string>()
 const hasZscale = filters.has('zscale') && filters.has('tonemap')
 if (hasFfmpeg && !hasZscale)
@@ -643,7 +647,7 @@ const hasVideoToolbox =
   hasFfmpeg &&
   process.platform === 'darwin' &&
   filters.has('scale_vt') &&
-  Bun.spawnSync([ffmpeg, ...probeArgs('videotoolbox', null)]).exitCode === 0
+  Bun.spawnSync([ffmpeg, ...probeArgs('videotoolbox', null)], TOOL_LIMIT).exitCode === 0
 if (hasFfmpeg && !hasVideoToolbox)
   console.warn('No VideoToolbox here, so the tests that transcode on it are skipped.')
 
@@ -662,8 +666,8 @@ describe.skipIf(!hasFfmpeg)('hardware and tone mapping, with ffmpeg (4.3b)', () 
     writeFileSync(sup, pgsBox({ width: W, height: H, ...BOX, from: 0.5, to: 4 }))
     // HDR10 as the check's clip is, small, with a PGS track as stream 1
     const made = join(dir, 'hdr-video.mkv')
-    execFileSync(ffmpeg, clipArgs(made, { width: W, height: H, fps: 24, seconds: 14 }))
-    execFileSync(ffmpeg, [
+    run(ffmpeg, clipArgs(made, { width: W, height: H, fps: 24, seconds: 14 }))
+    run(ffmpeg, [
       ...['-v', 'error', '-y', '-i', made, '-i', sup, '-map', '0:v', '-map', '1:s'],
       ...['-c', 'copy', hdr],
     ])
@@ -706,7 +710,7 @@ describe.skipIf(!hasFfmpeg)('hardware and tone mapping, with ffmpeg (4.3b)', () 
       joined,
       Buffer.concat([join(t.dir, 'header.mp4'), ...files].map((f) => readFileSync(f))),
     )
-    return execFileSync(ffprobe, [
+    return run(ffprobe, [
       ...['-v', 'error', '-select_streams', 'v', '-show_entries'],
       ...['stream=pix_fmt,color_transfer,color_primaries', '-of', 'csv=p=0', joined],
     ])

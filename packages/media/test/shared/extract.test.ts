@@ -34,12 +34,13 @@ import {
   unarBinary,
   unpackedFolder,
 } from '../../src/shared/extract.ts'
+import { TOOL_LIMIT } from '../clips.ts'
 
 const FIXTURES = fileURLToPath(new URL('../fixtures/archives/', import.meta.url))
 
 const hasUnar = (() => {
   try {
-    execFileSync(unarBinary(), ['-v'], { stdio: 'ignore' })
+    execFileSync(unarBinary(), ['-v'], { stdio: 'ignore', ...TOOL_LIMIT })
     return true
   } catch (e) {
     return (e as NodeJS.ErrnoException).code !== 'ENOENT'
