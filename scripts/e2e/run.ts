@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The end-to-end run through the container (phase-3-checkpoint-9.md › Tests (9a)): the production
-// image, started by compose.e2e.yaml beside the fixtures service (scripts/e2e/fixtures.ts) on a
+// image, started by compose.yaml beside this file, with the fixtures service (fixtures.ts) on a
 // network with no way out, driven through the browser with Playwright:
 //
 // 1. the setup wizard, adding the catalog's public test indexer with one click;
@@ -31,8 +31,8 @@ import { launch, ROOT } from '../sweeps/lib.ts'
 
 const IMAGE = process.env.HIGHSEA_IMAGE ?? 'highsea:ci'
 const ARTIFACTS = process.env.E2E_ARTIFACTS
-const COMPOSE = ['compose', '-f', join(ROOT, 'compose.e2e.yaml')]
-// localhost, the fixtures' proxy to the server (compose.e2e.yaml)
+const COMPOSE = ['compose', '-f', join(ROOT, 'scripts', 'e2e', 'compose.yaml')]
+// localhost, the fixtures' proxy to the server (scripts/e2e/compose.yaml)
 const BASE = 'http://localhost:3000'
 const OWNER = { name: 'Ines', username: 'ines', password: 'harbor harbor harbor' }
 const ADMIN = { name: 'Ruth', password: 'ruth ruth ruth' }
@@ -135,7 +135,7 @@ try {
     current = page
     await page.goto(`${BASE}/setup`)
     // /data is empty, so setup takes highsea's own folders and asks only for the owner, then
-    // Review (install-simplicity.md B); TMDB answers with the key compose.e2e.yaml gives the image
+    // Review (install-simplicity.md B); TMDB answers with the key scripts/e2e/compose.yaml gives the image
     await page.getByLabel('Server name').fill('Harbor')
     await page.getByLabel('Your name').fill(OWNER.name)
     await page.getByLabel('Username').fill(OWNER.username)
@@ -467,7 +467,7 @@ try {
     },
   )
 
-  // the server's network has no way out (compose.e2e.yaml): everything above came from the fixtures
+  // the server's network has no way out (scripts/e2e/compose.yaml): everything above came from the fixtures
   const offline = inServer(
     "node -e \"fetch('https://example.com').then(()=>console.log('online'),()=>console.log('offline'))\"",
   )

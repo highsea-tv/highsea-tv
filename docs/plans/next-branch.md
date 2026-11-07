@@ -47,13 +47,14 @@ One gated part. It's small, but it changes how every later change lands, so it's
 ## Progress
 
 - **The branch (A), done on 2026-11-06:** `claude/determined-maxwell-xohgoy` was pushed with D2 and D3, HT-1 to HT-3 and HT-5 accepted into it, and it was renamed `next` on GitHub and in the owner's checkout. Shepherdr's tasks now branch from `next` and merge into it.
-- **CI by branch, the workflow around it and the ADRs (A), built on 2026-11-06 (HT-6) and waiting for the owner's review:**
+- **CI by branch, the workflow around it and the ADRs (A), built on 2026-11-06 (HT-6) and accepted by the owner on 2026-11-06 (PR #8 merged into `next`):**
   - `ci.yml`'s `check` runs on every pull request and every push to `next` or `main`. Its pull requests have no path filter any more, so `check` always reports and both branches can require it; a docs-only pull request now runs it too.
   - The heavy jobs (`ci.yml`'s `playback`, `leak` and `image`, `e2e.yml`, `desktop.yml`, `native.yml`) carry one condition per workflow, with its reason and GitHub's docs beside it, repeated with a YAML alias where a workflow has several jobs: a push to `next`, a pull request into `main`, a pull request with `full-ci`, and a release. The heavy workflows push on `next` only, take every pull request with `labeled` added to the types, and keep their paths. A push to `main` runs only `check`. Every action stays pinned to its SHA.
   - The `signoff`, `checks` and `handoff` skills, CLAUDE.md's git rule and "Now", and `docs/architecture.md`'s commands follow; ADR 0062 and 0050's 2026-11-06 section record it.
   - Checked with `actionlint` and `bun run lint`, and by this part's own pull request into `next` (#8), which ran only `check` while every heavy job showed as skipped.
   - Left for the coordinator after the owner's Accept: the `full-ci` label and the two rulesets (their bodies are in HT-6's Accept card). Still to prove after the merge: the first push to `next` running everything, and a pull request with `full-ci` running everything.
   - Not done here: the `work-through-shepherdr-tasks` memory lives outside the repository, so the coordinator updates it.
+  - **Applied by the coordinator after the Accept, on 2026-11-06:** the `full-ci` label, and the rulesets `next` (a pull request, `check`, no force-push) and `main` (the same, with `playback`, `leak` and both `image` matrix checks), each bypassed by organisation admins. The coordinator's memory is updated. Still to prove: the first push to `next` running every job (running for `a5b68ae` at the sign-off), a pull request with `full-ci`, the pull request from `next` into `main` reporting the image checks by the names `main` requires, and a release run.
 
 ## The branch (A)
 

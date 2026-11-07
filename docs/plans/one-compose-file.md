@@ -45,6 +45,14 @@ Two gated parts, each reviewed:
 
 ## Progress
 
+- **Part A, built on 2026-11-06 and waiting for the owner's review** (HT-7):
+  - **The root holds one compose file.** `compose.bridge.yaml`, `compose.gluetun.yaml` and `compose.connects.yaml` are removed. `compose.yaml`'s header names no other file: it points to the Docker guide for a Mac or Windows and to Settings › VPN for a VPN. Its services are unchanged, and the installer's copy still matches them (`install.test.ts`).
+  - **The build files moved:** `docker/compose.dev.yaml` (build context `..`, folders `../.dev/docker/…`, and the project named `highsea-dev`, since Compose would otherwise name it after its folder) and `scripts/e2e/compose.yaml` (the fixtures' context `../..`). `run.ts`, `fixtures.ts`, `e2e.yml` (its explicit path dropped, since `scripts/e2e/**` covers it), docs/architecture.md, the `checks` skill and the README follow. `docker compose config` resolves both to the root's Dockerfile, and `docker compose -f docker/compose.dev.yaml build` built the image.
+  - **The Docker guide's Linux tab includes `compose.yaml`** with `<include meta='title="compose.yaml"'>../../../../compose.yaml</include>`. fumadocs-mdx 15.4.6 resolves the path from the guide's folder (`dist/remark-include-*.js`), and the built page's block matches the file line for line. The include, not the fallback copy: Vercel builds `apps/docs` with the repository's other files present by default ([Monorepos](https://vercel.com/docs/monorepos)), which the site's workspace packages already rely on. The pull request's `highsea-docs` preview built, and its Linux block is identical to `compose.yaml` (53 lines), so the include holds on Vercel. The e2e job ran with the `full-ci` label and passed with the moved file, as did `check`, `leak`, `playback` and both images.
+  - **The guides:** the Docker guide's data-folder line now says `./data` (the included file's), with `/srv/data` as the example; highsea connects says "add these lines to highsea's service, and take out `network_mode: host`" in place of naming the file; A VPN container points only to Compose for your provider; Recommended setup, Network and remote access, Connections and Prerequisites name the guide or the Settings screen in place of the removed files. `templates/synology/compose.yaml`'s comment and `docs/product/vpn.md`'s two mentions follow.
+  - **Tests:** `content.test.ts` fails when a guide names a compose file the repository doesn't have, by bare name, by path from the root, or relative to the guide as the include is (checked by breaking the include's path and naming `compose.bridge.yaml`).
+  - **ADRs:** dated sections in 0057 and 0020; the index follows. 0042's is part B's.
+
 ## A. The files (A)
 
 - **Removed:** `compose.bridge.yaml`, `compose.gluetun.yaml` and `compose.connects.yaml` (answer 1). Part B gives highsea connects' lines from Settings; until B lands, `connects.mdx` holds them.

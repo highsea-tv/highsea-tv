@@ -8,8 +8,9 @@ description: highsea's own WireGuard tunnel to your VPN provider, what its conta
   Sources:
   - In highsea: packages/admin/src/vpn.tsx and vpn-messages.ts (the screen and its words),
     packages/vpn/src (settings.ts for refusals, the WireGuard reader and the tunnel),
-    catalog/vpn-providers (each provider's steps and port forwarding), compose.connects.yaml at the
-    repository's root.
+    catalog/vpn-providers (each provider's steps and port forwarding). This page is where
+    highsea connects' compose lines are written, until Settings › VPN writes them
+    (one-compose-file.md, part B).
   - WireGuard and wg-quick's configuration format: https://www.wireguard.com/ and
     https://git.zx2c4.com/wireguard-tools/about/src/man/wg-quick.8
   - Docker's capabilities and devices: https://docs.docker.com/reference/compose-file/services/#cap_add
@@ -35,7 +36,7 @@ highsea brings up a WireGuard tunnel inside its own container and binds every to
 - **Its own network**, not host networking. With host networking, highsea's interface and routes would land in the host's network beside everything else.
 - **The TUN device**, only on older kernels without WireGuard built in (Linux before 5.6, which some NAS systems still run).
 
-`compose.connects.yaml` at the root of highsea's repository has all of this. The lines that matter:
+Add these lines to highsea's service in your compose file, and take out `network_mode: host`:
 
 ```yaml title="compose.yaml"
 services:

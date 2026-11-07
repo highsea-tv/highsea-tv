@@ -1,0 +1,35 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# highsea built from this checkout, for development: compose.yaml's setup on the image you build.
+#   docker compose -f docker/compose.dev.yaml up --build
+# Its folders are under .dev/docker (gitignored). compose.yaml at the root runs the published image.
+#
+# Compose resolves this file's relative paths from its own folder, docker/, so the build context
+# and the folders below step up to the repository's root
+# (https://docs.docker.com/reference/compose-file/build/#context,
+# https://docs.docker.com/reference/compose-file/services/#volumes). The context is the root, so
+# the root's Dockerfile and .dockerignore apply as before. The project is named, since Compose
+# would otherwise name it after this folder
+# (https://docs.docker.com/reference/compose-file/version-and-name/#name-top-level-element).
+name: highsea-dev
+services:
+  highsea:
+    build: ..
+    image: highsea:dev
+    container_name: highsea
+    network_mode: host
+    volumes:
+      - ../.dev/docker/config:/config
+      # one root for downloads and the library, so imports can hardlink
+      - ../.dev/docker/data:/data
+      # graphics as compose.yaml hands them over (ADR 0057)
+      - /dev/dri:/dev/dri
+    device_cgroup_rules:
+      - "c 226:128 rw"
+      - "c 226:129 rw"
+      - "c 226:130 rw"
+      - "c 226:131 rw"
+      - "c 226:132 rw"
+      - "c 226:133 rw"
+      - "c 226:134 rw"
+      - "c 226:135 rw"
+    restart: unless-stopped
