@@ -4,6 +4,7 @@
 // release can put on a subtitle: an offset, a framerate, and sections moved apart.
 import { execFileSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
+import { TOOL_LIMIT } from '@highsea-tv/media/testing'
 import { parseSrt } from '../../src/shared/processing/srt.ts'
 import type { CueSpan } from '../../src/sync/align.ts'
 import type { Span } from '../../src/sync/grid.ts'
@@ -109,14 +110,18 @@ export function makeSyncClip(
       ? ['-i', sintel.audio]
       : ['-f', 'lavfi', '-i', `sine=frequency=440:duration=${seconds}:sample_rate=16000`]
   const subtitle = options.subtitle ? ['-i', options.subtitle] : []
-  execFileSync('ffmpeg', [
-    ...['-v', 'error', '-y', '-nostdin'],
-    ...['-f', 'lavfi', '-i', `color=c=black:s=${size}:r=1:d=${seconds}`],
-    ...audio,
-    ...subtitle,
-    ...['-map', '0:v', '-map', '1:a', ...(options.subtitle ? ['-map', '2:s'] : [])],
-    ...['-c:v', 'libx264', '-preset', 'ultrafast', '-c:a', 'flac', '-c:s', 'srt'],
-    ...['-t', String(seconds), path],
-  ])
+  execFileSync(
+    'ffmpeg',
+    [
+      ...['-v', 'error', '-y', '-nostdin'],
+      ...['-f', 'lavfi', '-i', `color=c=black:s=${size}:r=1:d=${seconds}`],
+      ...audio,
+      ...subtitle,
+      ...['-map', '0:v', '-map', '1:a', ...(options.subtitle ? ['-map', '2:s'] : [])],
+      ...['-c:v', 'libx264', '-preset', 'ultrafast', '-c:a', 'flac', '-c:s', 'srt'],
+      ...['-t', String(seconds), path],
+    ],
+    TOOL_LIMIT,
+  )
   return path
 }
