@@ -1,6 +1,6 @@
 # One client platform, part E: the guides, the specs and the full checks
 
-- **Status:** Scoped on 2026-11-09, after the one compose file's sign-off. Waiting for the owner's answers to [the open questions](#open-questions-for-the-owner). Nothing is built.
+- **Status:** Scoped on 2026-11-09, after the one compose file's sign-off, and approved with [the owner's answers](#the-owners-answers) of 2026-11-09: every recommendation. Nothing is built.
 - **Parent plan:** [one-client-platform.md](one-client-platform.md), part E: "The guides' drawn parts on the library, the design language's platform guides on the form-factor rule, the product specs naming one screen per destination, the ADRs, `CLAUDE.md`, and every check."
 
 ## Read first
@@ -25,7 +25,7 @@ The design language, the product specs, the ADRs, `docs/architecture.md`, `CLAUD
 ## Out of scope
 
 - **New screens and features.** Shows' and music's server work, Music in the admin (prototype-gaps.md's stage 7), and downloads (4.6) keep their own phases.
-- **Android and Android TV (4.5c).** Their builds come from `apps/client` and are checked there. ADRs 0053 and 0059 keep what 4.5c decides ([question 10](#open-questions-for-the-owner)).
+- **Android and Android TV (4.5c).** Their builds come from `apps/client` and are checked there. ADRs 0053 and 0059 stay Proposed until 4.5c ([answer 10](#the-owners-answers)).
 - **Fumadocs itself.** Its search, sidebar, table of contents, code blocks, headings and page layout stay its own (the parent plan's answer 8).
 - **The guides' words.** Part E changes how a guide's parts are drawn, not what any guide says. Guides change only where a screenshot they show looks different.
 - **Publishing anything.** The guides go out when the owner merges `next` into `main`. Nothing is tagged or released.
@@ -72,7 +72,7 @@ The design language, the product specs, the ADRs, `docs/architecture.md`, `CLAUD
 
 ## The size of this part, and its batches
 
-Three gated batches, each reviewed by the owner ([question 1](#open-questions-for-the-owner)):
+Three gated batches, each reviewed by the owner ([answer 1](#the-owners-answers)):
 
 - **E1, the tokens.** It opens with the proposed token set, every value with its family, name and where it's used, and stops for the owner's approval before anything is applied, since token values are locked. Then the approved tokens are added, the 548 excepted values and the 346 the check doesn't read yet are moved onto them, and the scrollbar's and the hover's constants become tokens. The library's old breakpoints move onto the form-factor rule. The values rule then reads the admin and the guides, and the exceptions file keeps only the reasons that never expire. Nothing should look different, except where an approved token rounds a value, and each of those is listed beside its old self.
 - **E2, the guides on the library.** The callout, the cards and the figures drawn by the library through react-native-web, in Fumadocs' MDX; the unused `ScreenshotToCome` removed; `one-place` reading `apps/docs`; and a sweep over the guides' export.
@@ -88,7 +88,7 @@ Nothing yet.
 
 The owner's answer 7 at part A asked for a token set proposed for approval. It's written in two steps:
 
-1. **The shape, approved with this scope** ([question 2](#open-questions-for-the-owner)): the families below, the rule for which value gets a token, and where each family lives.
+1. **The shape, approved with this scope** ([answer 2](#the-owners-answers)): the families below, the rule for which value gets a token, and where each family lives.
 2. **The values, approved at E1's first stop:** a table in this plan's Progress listing every proposed token (its family, name, value and the files that use it), each excepted value against the token it moves onto, and every value that would round. Nothing is applied before the owner approves it.
 
 **The rule:** a value gets a token when it names a design decision used in more than one place, or a measure the specs or the design language name. A measure used by a single component goes into that component's group in the tokens, beside the control spec, as `density` and `controlGeometry` already are. Where a value sits within one step of an existing token and the owner's answer 8 at part A applies (Text's mapping to the nearest style), it moves onto that token rather than getting a new one, and the change is listed.
@@ -112,13 +112,13 @@ The colours in the families above are written from the theme's roles where they 
 ### What else moves (E1)
 
 - **The scrollbar** (`scrollbar.ts`) and **the hover** (`lift.ts`) read their new tokens. `scrollbar.ts`'s `page` (0.875 of the view per click on the track) is the browser's behaviour, not a measure, and stays a constant.
-- **The library's old breakpoints** ([question 5](#open-questions-for-the-owner)): `Banner`, `Row` and `page-parts.tsx` take the form-factor rule, `breakpoints` and `density.sidebarRail` leave the tokens, and spacing-layout.md's breakpoint table goes. A layout that moves is put beside its old self for the owner.
-- **The check reads everything** ([question 3](#open-questions-for-the-owner)): `scripts/one-place.ts`'s values rule adds `packages/admin/src` and `apps/docs/components`, and `one-place.test.ts` covers both.
+- **The library's old breakpoints** ([answer 5](#the-owners-answers)): `Banner`, `Row` and `page-parts.tsx` take the form-factor rule, `breakpoints` and `density.sidebarRail` leave the tokens, and spacing-layout.md's breakpoint table goes. A layout that moves is put beside its old self for the owner.
+- **The check reads everything** ([answer 3](#the-owners-answers)): `scripts/one-place.ts`'s values rule adds `packages/admin/src` and `apps/docs/components`, and `one-place.test.ts` covers both.
 - **The exceptions file** keeps only the lasting entries. `one-place.ts` then fails on any exception whose `until` names a part, so a part can't end with one open.
 
 ### The library's gaps (E1)
 
-[Question 8](#open-questions-for-the-owner) decides which of D2's list are built:
+By [answer 8](#the-owners-answers), two of D2's list are built and the rest wait:
 
 - **Fixes, built in E1:** react-native-svg's React Native props reaching the `<svg>` on the web (C1's note), so React's development warnings stop; and a `title` the web keeps where the library already passes one (react-native-web drops it).
 - **New parts, left until a screen needs them:** a truncating Badge, a table cell spanning columns, a row's title tooltip, a number input with limits, a `MultiSelect`, a heading level for a small EmptyState and a Dialog's fade-out. They're listed in [roadmap.md](../roadmap.md)'s follow-ups so they aren't lost.
@@ -127,7 +127,7 @@ The colours in the families above are written from the theme's roles where they 
 
 The guides keep Fumadocs' MDX. MDX lets a page's elements and named components be replaced by passing a `components` map ([MDX › Using MDX › Components](https://mdxjs.com/docs/using-mdx/#components)), and Fumadocs builds its own defaults that way: "The default MDX components include Cards, Callouts, Code Blocks and Headings" ([Fumadocs › Components](https://www.fumadocs.dev/docs/ui/components)). `apps/docs/components/mdx.tsx` already spreads Fumadocs' defaults and adds its own, so the guides' parts are replaced there, and no guide's MDX changes.
 
-What's drawn by the library ([question 6](#open-questions-for-the-owner)):
+What's drawn by the library ([answer 6](#the-owners-answers)):
 
 - **`Callout`** becomes the library's `Banner` (its card variant, its tone from the callout's `type`: `info`, `warning`, `success`, and `error` as `danger`), which already draws the clients' notices.
 - **`Card` and `Cards`** become a library link card and its grid: a title, a description and the whole card as one link, on the panel's look. It's new in the library, ready for any app (the settings index and Get the apps draw much the same). The cards keep Next's `Link` for client-side navigation inside the static export, passed in as the card's link, as `@highsea-tv/admin`'s `NavigationProvider` does for the admin.
@@ -137,12 +137,12 @@ What's drawn by the library ([question 6](#open-questions-for-the-owner)):
 
 **How they're drawn.** Each library part is a client component (`'use client'`), since react-native-web's components use hooks and context ([Next.js › use client](https://nextjs.org/docs/app/api-reference/directives/use-client)). The MDX body stays a server component that renders them, as the site title already is. The site's root layout already writes the library's sheet into each exported page through `useServerInsertedHTML` ([Next.js › CSS-in-JS](https://nextjs.org/docs/app/guides/css-in-js)), as react-native-web's server rendering asks ([Rendering on the server](https://necolas.github.io/react-native-web/docs/rendering/)), so the export's pages are styled before any script runs. The static export stays as it is ([Next.js › Static Exports](https://nextjs.org/docs/app/guides/static-exports)).
 
-**Tailwind** ([question 7](#open-questions-for-the-owner)) stays in `apps/docs` only as Fumadocs' frame needs it. highsea's own components in the guides write no Tailwind class.
+**Tailwind** ([answer 7](#the-owners-answers)) stays in `apps/docs` only as Fumadocs' frame needs it. highsea's own components in the guides write no Tailwind class.
 
 **Checks for the guides:**
 
 - `one-place` reads `apps/docs/components` for values and parts. The guides' components draw from the library only, as the admin's hosts do.
-- A sweep over the guides' static export ([question 11](#open-questions-for-the-owner)): `scripts/sweeps/docs.ts` builds the guides, serves `out/` and loads every page at 1440 and 390, with axe, overflow and the keyboard walk, in the site's one theme.
+- A sweep over the guides' static export ([answer 11](#the-owners-answers)): `scripts/sweeps/docs.ts` builds the guides, serves `out/` and loads every page at 1440 and 390, with axe, overflow and the keyboard walk, in the site's one theme.
 - Every guide page beside its old self at 1440 and 390, for the owner: the cards, the callout and the figures.
 - `content.test.ts` and the guides' build, as now.
 
@@ -159,7 +159,7 @@ What's drawn by the library ([question 6](#open-questions-for-the-owner)):
 
 ### The product specs
 
-Each client spec names the one screen per destination ([question 9](#open-questions-for-the-owner)):
+Each client spec names the one screen per destination ([answer 9](#the-owners-answers)):
 
 - **A `Screen:` line** naming the file in `apps/client/src/app/` (or `packages/admin/src/` for the admin), beside the `Prototype:` line.
 - **The `Prototype:` lines** on the routes the prototypes serve now: the client at `/web` inside the frames, the admin at `/admin/…`, and Shows' admin at `/series`.
@@ -170,13 +170,13 @@ Each client spec names the one screen per destination ([question 9](#open-questi
 ### The ADRs and the project's docs
 
 - **Dated sections:** 0060 (the tokens E1 adds, the library's link card and figure, and the breakpoints gone), 0061 (part E, and the platform done), 0008 (the guides' parts on React Native), 0003 (the guides' build, if E2 changes it).
-- **Their status** ([question 10](#open-questions-for-the-owner)): 0060 and 0061 Accepted at part E's sign-off.
+- **Their status** ([answer 10](#the-owners-answers)): 0060 and 0061 Accepted at part E's sign-off; 0053's phone and TV part and 0059 stay Proposed until 4.5c.
 - **The index** and its list of which work added which.
 - **`docs/architecture.md`** (the guides' row, the tokens' new groups), **`CLAUDE.md`** (Now, and "Tailwind is left only in…"), **the `checks` skill**, **the sweeps' README** (Radix's waits gone, the guides' sweep added) and `scripts/sweeps/lib.ts` and `server.ts`' Radix comments.
 
 ### Every check
 
-[Question 12](#open-questions-for-the-owner) says how far "every check" goes. Recommended, under Node 26.11.1:
+"Every check" goes as far as [answer 12](#the-owners-answers) says, under Node 26.11.1:
 
 - `/checks full`: lint, typecheck, the tests and the client's Jest tests, smoke, `one-place`, `controls.ts` and `bundles.ts`, licences, the audit, the docs build, and the sweeps (`pages.ts`, `keyboard.ts`, `dpad.ts`, `server.ts`, `playback.ts`, and the guides' new one).
 - **The simulators:** `layout.ts` over every destination on the web, the iPhone and the Apple TV, last run in B3; `tv.ts`'s remote walk and `phone.ts`, which D3 left.
@@ -186,13 +186,13 @@ Each client spec names the one screen per destination ([question 9](#open-questi
 
 ## ADRs
 
-- **No new ADR.** Part E finishes ADR 0061's decision. One is written only if the owner's answer to question 2 departs from the token rules in 0060.
+- **No new ADR.** Part E finishes ADR 0061's decision. The token rules the owner approved (answer 2) sit within 0060's, so its dated section records them.
 - **Dated sections:**
   - 0060: the tokens added in E1, the library's link card and figure, and the old breakpoints removed (E1, E2);
   - 0061: the tokens and the check over the admin and the guides (E1), the guides on the library (E2), and the platform's sign-off (E3);
   - 0008: the guides draw their parts in React Native (E2);
   - 0003: only if the guides' build changes (E2).
-- **Status:** see [question 10](#open-questions-for-the-owner).
+- **Status:** 0060 and 0061 Accepted at part E's sign-off; 0053's phone and TV part and 0059 stay Proposed until 4.5c (answer 10).
 
 ## Risks
 
@@ -245,6 +245,19 @@ Each client spec names the one screen per destination ([question 9](#open-questi
     **Recommended:** `/checks full`, the simulators (`layout.ts` over every destination, `tv.ts` and `phone.ts`), the image with the end-to-end run, the admin's comparison sheet, and CI's heavy jobs once through `full-ci`.
     Or: `/checks full` and CI only, as D3 ran. Hours shorter, but the TV's remote walk and the layout check over every destination haven't run since B3, and part E ends the platform.
 
-## The owner's changes
-
 ## The owner's answers
+
+On 2026-11-09 the owner took every recommendation for questions 1 to 12.
+
+1. Three batches, E1 (the tokens), E2 (the guides on the library) and E3 (the docs and every check), each reviewed, the tokens first.
+2. The token set's families and rule are approved now; every value is approved at E1's first stop, from a table of each token, its value and its users, before anything moves.
+3. The values rule reads `packages/admin/src` and `apps/docs/components` from E1, and their 347 values move onto the same token set.
+4. A `scrollbar` group in `scales.ts` at today's measures, documented in spacing-layout.md; the 0.875 page stays a constant.
+5. `Banner`, `Row` and the page parts take the form-factor rule, and `breakpoints` and `density.sidebarRail` leave the tokens, with any moved layout put beside its old self.
+6. The library draws the guides' callout (`Banner`), cards (a new link card and grid) and figures (on `Image`); Fumadocs keeps its code blocks, headings, tables, `Steps`, `Tabs`, search, sidebar and table of contents.
+7. Tailwind stays in the guides only for Fumadocs' frame, and `ScreenshotToCome` goes as unused.
+8. E1 builds the two fixes (react-native-svg's props on the `<svg>`, and a `title` the web keeps); the new parts wait until a screen needs them, listed in the roadmap's follow-ups.
+9. Each client spec gains a `Screen:` line and its current `Prototype:` routes, with stage 8's four spec items done in the same pass.
+10. 0060 and 0061 become Accepted at part E's sign-off; 0053's phone and TV part and 0059 stay Proposed until 4.5c.
+11. `scripts/sweeps/docs.ts` sweeps the guides' static export: axe, overflow and the keyboard walk on every page at 1440 and 390.
+12. Every check means `/checks full`, the simulators (`layout.ts` over every destination, `tv.ts` and `phone.ts`), the image with the end-to-end run, the admin's comparison sheet, and CI's heavy jobs once through `full-ci`.
