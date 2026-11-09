@@ -257,11 +257,13 @@ const stateLine = (
       return {
         icon: 'error',
         tone: 'danger',
-        title: v.hostNetwork
-          ? t('state.hostNetwork')
-          : v.needsCapability
-            ? t('state.capability')
-            : t('state.failed'),
+        // only highsea connects minds host networking; an interface on the host usually needs it
+        title:
+          v.mode === 'builtin' && v.hostNetwork
+            ? t('state.hostNetwork')
+            : v.needsCapability
+              ? t('state.capability')
+              : t('state.failed'),
         line: v.message ?? '',
       }
   }

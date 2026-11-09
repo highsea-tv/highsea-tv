@@ -341,6 +341,23 @@ describe('Settings › VPN', () => {
     )
   })
 
+  test('the other modes don’t mind host networking: a failure there says only that', async () => {
+    state.settings = settings({ mode: 'interface', interface: 'wg0' })
+    state.status = {
+      ...off,
+      mode: 'interface',
+      provider: 'wg0',
+      state: 'failed',
+      needsCapability: false,
+      hostNetwork: true,
+      message: 'wg0 has no address.',
+    }
+    const { page } = await open()
+    const status = within(page.getByRole('status'))
+    expect(status.getByText('Couldn’t connect')).toBeTruthy()
+    expect(status.queryByText('highsea is on host networking')).toBeNull()
+  })
+
   test('connected through highsea connects, the lines stay folded until opened', async () => {
     state.settings = settings({ mode: 'builtin', configName: 'nl.conf' })
     state.status = { ...connected, mode: 'builtin', provider: 'Proton VPN', hostNetwork: false }

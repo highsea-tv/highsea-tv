@@ -11177,6 +11177,7 @@
           "state",
           "message",
           "needsCapability",
+          "hostNetwork",
           "exitIp",
           "country",
           "forwardedPort",
