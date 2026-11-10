@@ -8,13 +8,12 @@ import {
   type ControlSize,
   controlMetrics,
 } from './controls.ts'
-import { COARSE_POINTER } from './form-factor.ts'
+import { COARSE_POINTER, REGULAR_WIDTH } from './form-factor.ts'
 import { durations, springs, springToCss } from './motion.ts'
 import { COLOR_ROLES } from './roles.ts'
 import {
   aspect,
   blur,
-  breakpoints,
   density,
   elevation,
   focus,
@@ -128,7 +127,8 @@ function utilityEntries(): Entries {
       `blur-${k}`,
       `${blur[k].radius}px`,
     ]),
-    ...Object.entries(breakpoints).map(([k, v]): [string, string] => [`breakpoint-${k}`, rem(v)]),
+    // the form-factor rule's one width (form-factor.ts), for the prototypes' chrome: `regular:`
+    ['breakpoint-regular', rem(REGULAR_WIDTH)],
     ['ease-spring', base.easing],
     ['ease-spring-quick', quick.easing],
     ['ease-out', 'cubic-bezier(0, 0, 0.2, 1)'],

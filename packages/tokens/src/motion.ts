@@ -91,3 +91,14 @@ export const choreography = {
   pulseBrightness: 1.35,
   dialogScale: 0.98,
 } as const
+
+/**
+ * A pointer's hover (motion.md › Hover): artwork lifts to a scale (a poster's, a person's photo's)
+ * and a fill with no hover role brightens (`soft` for the primary button, `strong` for the danger
+ * button and the film row's posters). The TV's focus has its own, `focus.tv`.
+ */
+export const hover = {
+  posterScale: 1.02,
+  photoScale: 1.05,
+  brightness: { soft: 1.08, strong: 1.1 },
+} as const

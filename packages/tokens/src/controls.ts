@@ -181,3 +181,314 @@ export const CONTROLS = [
   'Switch',
 ] as const
 export type ControlName = (typeof CONTROLS)[number]
+
+// ---- the components' own measures (one-client-platform-e.md › The tokens, E1): a measure only
+// one component draws, in that component's group, as `density` and `controlGeometry` are. px with a
+// pointer and on touch; a `tv` key's are screen units.
+
+/** The account's avatar beside the server's name. */
+export const avatar = { size: 36 } as const
+
+/** Badge's status dot and QualityTag's height and icon. */
+export const badge = {
+  dot: 6,
+  dotTv: 0.4,
+  iconTv: 0.95,
+  tag: { height: 20, heightTv: 1.04 },
+} as const
+
+/** A drag handle's square, in SortableList and the widget editor. */
+export const dragHandle = 28
+
+/** EmptyState's icon inside its disc, and its words' greatest widths. */
+export const emptyState = { icon: 26, words: 320, wordsInline: 440 } as const
+
+/** FeaturedCard's: its words' widths, its title's sizes, the share of a phone it takes, and the TV's in u. */
+export const featuredCard = {
+  tagline: 480,
+  title: { min: 48, max: 88, width: 352 },
+  touchShare: 0.78,
+  words: 608,
+  tv: {
+    height: 40.5,
+    inset: 2.8,
+    lineY: 0.15,
+    radius: 1.4,
+    skeletonMetaWidth: 16,
+    skeletonTitle: 6,
+    skeletonTitleWidth: 22,
+    words: 34,
+  },
+} as const
+
+/** FilmRow's on the TV, in u. */
+export const filmRow = {
+  tv: {
+    captionBottom: 1.1,
+    skeletonLine: 1,
+    skeletonTitle: 1.2,
+    skeletonTitleWidth: 12,
+    title: 1.6,
+    titleLeading: 1.7,
+  },
+} as const
+
+/** LetterIndex's line. */
+export const letterIndex = { leading: 12 } as const
+
+/** The Lockup's sizes: the sidebar's and the guides' (`size`), the sign-in card's, the TV preview's. */
+export const lockup = { size: 17, auth: 20, tv: 22 } as const
+
+/** The music player's: the bar's icons and queue, Now Playing's backdrop, and the TV's in u. */
+export const musicPlayer = {
+  backdropScale: 1.5,
+  bar: { icon: 18, skipIcon: 17 },
+  queueWidth: 384,
+  tv: {
+    bars: 1.2,
+    bigIcon: 2,
+    cover: 24,
+    dot: 0.3,
+    headCover: 2,
+    markWidth: 0.2,
+    pausedScale: 0.9,
+    play: 5,
+    round: 3.6,
+    title: 3,
+    upNext: 9,
+  },
+} as const
+
+/** The overlays' widths: the menu, the popover, the tooltip, the toaster and the command palette. */
+export const overlay = {
+  menu: 224,
+  popover: 288,
+  tooltip: 256,
+  toaster: 420,
+  palette: { width: 560, field: 48, list: 360, row: 36 },
+} as const
+
+/** The page parts': a named action's width, and the TV's fact label, person's name and photo, in u. */
+export const pageParts = {
+  namedAction: 80,
+  tv: { factLabel: 9, personName: 20, photo: 13 },
+} as const
+
+/** The video player's, on a pointer and touch, and the TV's in u. */
+export const player = {
+  icon: { md: 22, lg: 28, xl: 34, '2xl': 36 },
+  menu: { checkTouch: 18, row: 40 },
+  message: { maxWidth: 448 },
+  panel: { width: 352 },
+  pictureIcon: 40,
+  round: { md: 56, lg: 72, xl: 80 },
+  scrubber: {
+    hit: 32,
+    preview: 160,
+    previewLift: 36,
+    thumb: 14,
+    thumbActive: 20,
+    track: 4,
+  },
+  subtitle: { gap: 2, size: 17, sizeTv: 1.8 },
+  timeMinWidth: 96,
+  touch: { subtitleLift: 84 },
+  tv: {
+    chipY: 0.15,
+    fade: 6,
+    next: 30,
+    nextBottom: 14,
+    nextChoices: 46,
+    play: 6,
+    playIcon: 2.6,
+    preview: 14,
+    scrubberHit: 1.6,
+    thumb: 1.4,
+    track: 0.5,
+    trackFocused: 0.8,
+    upNextStill: 10,
+  },
+  upNext: { still: 96 },
+  volume: { track: 6, width: 80 },
+} as const
+
+/** ProgressBar's height, and the panel look's. */
+export const progress = { height: 4, panel: 5 } as const
+
+/** Rating's star on the TV, in u. */
+export const rating = { starTv: 1.04 } as const
+
+/** The admin's search trigger in the top bar. */
+export const searchTrigger = { width: 320 } as const
+
+/** SectionHeading's action's square. */
+export const sectionHeading = { action: 28 } as const
+
+/** The server card's mark in the sidebar. */
+export const serverCard = { mark: 26 } as const
+
+/** Sheet's header. */
+export const sheet = { header: 56 } as const
+
+/** The sidebar item's padding down. */
+export const sidebar = { itemY: 7 } as const
+
+/** SortableList's row. */
+export const sortableList = { row: 56 } as const
+
+/** Sparkline's height and stroke. */
+export const sparkline = { height: 48, stroke: 1.5 } as const
+
+/** The status bar's item basis. */
+export const statusBar = { itemBasis: 160 } as const
+
+/** Stepper's disc and row. */
+export const stepper = { disc: 22, row: 36 } as const
+
+/** Table's head. */
+export const table = { head: 36 } as const
+
+/** Toggle's thumb and track. */
+export const toggle = { thumb: 18, track: 40 } as const
+
+/** The TV's acknowledgement card, in u. */
+export const tvConfirm = { icon: 1.1, width: 44 } as const
+
+/** The TV's detail page, in u. */
+export const tvDetail = { progressLine: 0.3, progressWidth: 11, sideDialog: 32 } as const
+
+/** The TV's menu card, in u. */
+export const tvMenu = { column: 30 } as const
+
+/** The TV's message, in u. */
+export const tvMessage = { keyDot: 0.5, width: 46 } as const
+
+/** The TV's notice card, in u. */
+export const tvNotice = { width: 40 } as const
+
+/** The TV's tiles, in u. */
+export const tvTiles = { progress: 0.25, wide: 17 } as const
+
+/** Waveform's shortest bar. */
+export const waveform = { barMin: 2 } as const
+
+/** A widget's head, and the resize mark. */
+export const widget = { head: 24, resizeMark: 12 } as const
+
+/** The basis a wrapping row's item takes before it wraps (the admin's forms, the status panels). */
+export const wrapBasis = 192
+
+/**
+ * The admin's screens' own measures (one-client-platform-e.md, answer 9 on E1's values): the few
+ * the screens share first, then a key per screen. `skeleton` is the loading states' one scale.
+ */
+export const admin = {
+  measure: 600,
+  filterWidth: 192,
+  progressWidth: 160,
+  selectWidth: 144,
+  sideColumn: 208,
+  search: { basis: 256, maxWidth: 576 },
+  summaryPoster: { above: 128, beside: 144 },
+  table: { cellX: 14, checkColumn: 40 },
+  skeleton: {
+    block: 96,
+    card: 128,
+    field: 40,
+    heading: 28,
+    headingLarge: 32,
+    item: 64,
+    line: 20,
+    panel: 160,
+    row: 48,
+    title: 24,
+    width: { sm: 96, md: 160, lg: 192, xl: 256 },
+  },
+  activity: { blockReasonWidth: 320, reasonWidth: 288 },
+  appearance: {
+    editorFieldsWidth: 320,
+    hexWidth: 128,
+    previewMark: 28,
+    previewWidth: 256,
+    sampleMark: 22,
+    /** The accent offered when a custom accent is turned on: a suggestion, not a theme's colour. */
+    suggestedAccent: '#8fbfb7',
+  },
+  authCard: { cardWidth: 384 },
+  collections: { art: 56 },
+  collectionsEditor: {
+    artwork: { column: 160, poster: 112 },
+    cell: 64,
+    result: { minWidth: 288, maxWidth: 352 },
+  },
+  collectionsRules: { columns: { field: 192, op: 160 }, matchWidth: 96 },
+  curation: { reachWidth: 192, sampleWidth: 36 },
+  curationFrame: { maxWidth: 448, panel: 320, spot: { min: 224, max: 320 } },
+  curationPreview: { bezel: 12, deviceCorner: 56, platformWidth: 160, screenCorner: 44 },
+  curationSection: { thumb: 40, thumbSmall: 32 },
+  curationShared: { formWidth: 448 },
+  downloads: { categoryWidth: 176, priorityWidth: 160, sheetWidth: 640 },
+  general: { keyIdWidth: 192, logLevelWidth: 288 },
+  import: { choice: 176, movie: 240, name: 288 },
+  indexers: {
+    bullet: 20,
+    healthWidth: 288,
+    languageWidth: 176,
+    priorityWidth: 112,
+    searchWidth: 256,
+  },
+  lists: { codeTracking: 2, profileWidth: 224 },
+  mediaSections: {
+    crewPhoto: { width: 28 },
+    posterBlock: 112,
+    posterColumn: 160,
+    sideColumn: 320,
+  },
+  movieDetail: { factBasis: 96, labelWidth: 64, languageWidth: 224 },
+  nowPlaying: { posterWidth: 64, selectWidth: 176 },
+  person: { departmentWidth: 192, libraryColumn: 160 },
+  security: { fieldWidth: 192 },
+  setup: {
+    header: 56,
+    labelWidth: 160,
+    listHeight: 256,
+    moreWidth: 224,
+    pageWidth: 960,
+    portWidth: 112,
+    rowHeight: 36,
+  },
+  shell: { skipLinkOffset: 80 },
+  showDetail: {
+    monitoredColumn: 56,
+    numberColumn: 40,
+    searchColumn: 48,
+    statusMinWidth: 96,
+    titleMaxWidth: 320,
+  },
+  showsLibrary: { episodesWidth: 144 },
+  subtitles: { addWidth: 224, formWidth: 672, leftWidth: 224, ruleWidth: 192, short: 128 },
+  system: {
+    eventTime: 80,
+    levelWidth: 208,
+    measure: 800,
+    narrow: 640,
+    searchWidth: 256,
+    stateWidth: 176,
+  },
+  twoFactor: { qr: 176 },
+  users: { toolbarField: 224 },
+  vpn: { labelWidth: 128 },
+  wanted: { day: { minHeight: 96 }, dot: 10, monthLabel: 160, timeColumn: 56 },
+  widgets: {
+    calendarCell: 28,
+    dot: 6,
+    dotSmall: 4,
+    graphMin: 48,
+    legendSwatch: 8,
+    metaMax: 160,
+    poster: 32,
+    progressColumn: 160,
+    speedColumn: 64,
+    storageBar: 8,
+  },
+} as const
