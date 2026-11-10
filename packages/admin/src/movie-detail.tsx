@@ -1558,7 +1558,7 @@ function InteractiveSearch({ id, indexers }: { id: number; indexers: number }) {
                         ? [
                             row,
                             <TableRow key={`${r.guid}-reasons`} selected>
-                              <TableCell span={8} maxWidth={10000}>
+                              <TableCell span={8}>
                                 <Reasons release={r} />
                               </TableCell>
                             </TableRow>,
