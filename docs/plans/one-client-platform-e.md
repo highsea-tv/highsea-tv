@@ -964,6 +964,19 @@ On 2026-11-10 the owner took every recommendation for calls 1 to 14 except 10 an
 13. `admin.appearance.suggestedAccent` (`#8fbfb7`).
 14. The 7 small corners and TV spaces round as listed.
 
+### 2026-11-10: E1 built, waiting for the owner's review
+
+Every one of the 895 values now reads its approved token, with no value changed from the answers of 2026-11-10 (HT-13, on `task/13-e1-apply-the-approved-tokens`).
+
+- **The tokens.** `packages/tokens` gains the approved groups (space 1.5 and 2.5, the small radii, the admin's group, the scrollbar's, hover's `photoScale`, lines and over artwork, the phone's and the TV's type rows, `tv.space` and `tv.head`), and the old breakpoints are gone: one width rule, compact below 768 and regular from 768 up, with `--breakpoint-regular` the Tailwind theme's one breakpoint.
+- **The library, the admin, the client and the guides** read the tokens. The admin shell's padding is on `density.mainPadding` (answer 10), the forward-by button draws `rotate-cw` (answer 12), and the 29 roundings are as listed.
+- **The spanning table cell** (answer 9): `TableCell span` spans its row on the web and carries the row's tint across it, so the first column isn't tinted twice (a row's background paints only behind its cells, [CSS 2.2 § 17.5.1](https://www.w3.org/TR/CSS22/tables.html#table-layers)). Movie detail's `maxWidth={10000}` is gone, and Users' empty row spans too.
+- **The check.** `bun run one-place` reads `packages/admin/src` and `apps/docs/components` as well, and an exception must be lasting (`"until": null`). Three are left, the 18 lasting values: `window.tsx`, `alpha.ts` and `hidden-heading.tsx`.
+- **The docs** done now rather than in E3, as they describe the values: the design language's spacing, elevation, type, icon and motion pages, the admin's and the TV's platform pages, ADR 0060's section of 2026-11-10, and the roadmap's list of the library parts left for later (answer 8).
+- **Layouts that lost a middle step.** "All on 768" reached about 80 width readers in the admin and 3 in the client beyond the six asked about. What moved: the page gutter (16, then 64 from 768), the pointer card, the banner's actions, the widget grid (one column, then four), the stepper, the portrait page, the status bar's items, the film's hero and cards, Downloads' still, a show's episodes and related, and in the admin Appearance's themes, Backups, the kind grid, Curation's gutter, Indexers' catalog, cast and crew, the Settings index and Setup.
+- **The checks** all pass but four HLS tests (`packages/stream/test/hls-ffmpeg.test.ts`), which fail the same way on the base commit; the branch doesn't touch `packages/stream`. The simulators weren't run, as none was booted.
+- **For the owner.** Between 768 and about 1100 the Settings pages are cramped (their own nav beside the sidebar); Appearance's Identity breaks "accent" mid-word at 900. A locked layout, so it's left for the owner's decision.
+
 ## The tokens (E1)
 
 ### The proposed token set
