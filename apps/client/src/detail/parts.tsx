@@ -11,7 +11,7 @@ import { createLibraryText, type FactCredit, peopleOf } from '@highsea-tv/client
 import { useLocale, useT } from '@highsea-tv/i18n/react'
 import { useMedia } from '@highsea-tv/native/media'
 import { ApiError } from '@highsea-tv/sdk'
-import { breakpoints, formFactorLayouts } from '@highsea-tv/tokens'
+import { formFactorLayouts, REGULAR_WIDTH } from '@highsea-tv/tokens'
 import {
   Button,
   Certification,
@@ -51,7 +51,7 @@ const SHARE = formFactorLayouts['compact-touch'].itemShare
 export const filmPath = (id: number | string) => `/movies/${id}` as Href
 export const personPath = (id: number | string) => `/people/${id}` as Href
 
-/** A pointer's hero, never shorter than 32rem; and from medium the share of the window's height
+/** A pointer's hero, never shorter than 32rem; and from 768 the share of the window's height
  * it fills, at most a 16:9 frame of its width (web/detail.tsx's heroHeight). */
 const HERO = {
   min: space['16'] * 8,
@@ -60,14 +60,14 @@ const HERO = {
 }
 
 /**
- * A film's hero with a pointer, loaded or loading (web/detail.tsx's heroHeight): from medium it
+ * A film's hero with a pointer, loaded or loading (web/detail.tsx's heroHeight): from 768 it
  * runs under the top bar (`overlay`, for useChromeOverlay) and fills the first screen less the next
- * row's title peeking under it, min(82svh, 56.25vw); below medium the page starts under the bar.
+ * row's title peeking under it, min(82svh, 56.25vw); below it the page starts under the bar.
  * Never under 32rem.
  */
 export function useHero() {
   const window = useWindowDimensions()
-  const overlay = window.width >= breakpoints.medium
+  const overlay = window.width >= REGULAR_WIDTH
   const fill = Math.min(window.height * HERO.share, window.width * HERO.frame)
   return { overlay, minHeight: overlay ? Math.max(HERO.min, fill) : HERO.min }
 }
@@ -341,7 +341,7 @@ export function useRowWidths() {
  * Touch's and a pointer's rows under the hero: More like this as stills with their titles and
  * years, the collection it's in (with its art when Collections lists it), Cast and crew (each
  * opening the person's page), then About, Information, and Languages and quality as cards: side by
- * side with a pointer (three in a wide window, two from medium with About across both).
+ * side with a pointer in a regular window (from 768, the form-factor rule).
  */
 export function Below({ d }: { d: ClientDetail }) {
   const t = useT(detailMessages)
@@ -483,7 +483,7 @@ function Cards({ d }: { d: ClientDetail }) {
   )
   const languages = <FactsCard title={t('languages')} facts={facts.languagesOf(d)} onOpen={open} />
   const gap = input === 'pointer' ? space['4'] : space['3']
-  if (input !== 'pointer' || width < breakpoints.medium)
+  if (input !== 'pointer' || width < REGULAR_WIDTH)
     return (
       <View style={{ paddingHorizontal: gutter, gap }}>
         {about}
@@ -491,10 +491,9 @@ function Cards({ d }: { d: ClientDetail }) {
         {languages}
       </View>
     )
-  const wide = width >= breakpoints.wide
   return (
     <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap, paddingHorizontal: gutter }}>
-      <View style={{ flexGrow: 1.2, flexBasis: wide ? 0 : '100%' }}>{about}</View>
+      <View style={{ flexGrow: 1.2, flexBasis: 0 }}>{about}</View>
       <View style={{ flexGrow: 1, flexBasis: 0 }}>{information}</View>
       <View style={{ flexGrow: 1, flexBasis: 0 }}>{languages}</View>
     </View>

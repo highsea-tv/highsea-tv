@@ -216,7 +216,7 @@ function TitleBar({ os, overlay }: { os: DesktopOs; overlay: boolean }) {
           flexShrink: 1,
         }}
       >
-        <Mark size={14} />
+        <Mark size={tokens.icon.size.xs} />
         <Text variant="caption" color="text-2" numberOfLines={1}>
           highsea
         </Text>

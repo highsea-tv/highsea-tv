@@ -36,8 +36,19 @@ import { useT } from '@highsea-tv/i18n/react'
 import { useMedia } from '@highsea-tv/native/media'
 import { type Playback, TRANSCODE_LIMIT } from '@highsea-tv/native/playback'
 import { useQuery } from '@highsea-tv/sdk/react'
-import type { ColorRole } from '@highsea-tv/tokens'
-import { alpha, Button, Icon, type IconName, Press, Text, tokens, useTheme } from '@highsea-tv/ui'
+import { type ColorRole, line, player } from '@highsea-tv/tokens'
+import {
+  alpha,
+  Button,
+  glassOf,
+  Icon,
+  type IconName,
+  Press,
+  scrimOf,
+  Text,
+  tokens,
+  useTheme,
+} from '@highsea-tv/ui'
 import { Image } from 'expo-image'
 import { type Href, router } from 'expo-router'
 import { type ReactNode, useCallback, useEffect, useState } from 'react'
@@ -50,15 +61,15 @@ import {
 import { playerScreenMessages as messages } from './messages.ts'
 
 const { space, radius } = tokens
+const tvSpace = tokens.tv.space
 
 export const { clock } = createFormat()
 export const playerText = createPlayerText()
 
-/** The scrims over the picture, the prototype's: a message's, and the waiting badge's glass. */
-export const SCRIM = 'rgba(0,0,0,0.72)'
+/** The scrim over the picture behind a message, the prototype's black at 0.72 (`art.alpha.70`). */
+export const SCRIM = scrimOf(70)
 /** The eyebrows' capitals, drawn so, while assistive technology reads the words. */
 const UPPER = { textTransform: 'uppercase' } as const
-export const GLASS = 'rgba(11,11,12,0.62)'
 
 export type FilmUpNext = UpNext<ClientItem, number, string | null>
 
@@ -184,11 +195,10 @@ export type PlayerModel = ReturnType<typeof usePlayerModel>
 export function Round({
   icon,
   label,
-  size = 44,
-  iconSize = 22,
+  size = tokens.targets.touch,
+  iconSize = player.icon.md,
   tint,
   filled,
-  flip,
   pressed,
   expanded,
   onPress,
@@ -199,8 +209,6 @@ export function Round({
   iconSize?: number
   tint?: ColorRole
   filled?: boolean
-  /** Mirrored: Forward is Back's icon turned round. */
-  flip?: boolean
   /** A toggle's state (Mute, Picture in picture). */
   pressed?: boolean
   /** What it opens shows (Audio and subtitles). */
@@ -233,9 +241,7 @@ export function Round({
             : undefined,
       })}
     >
-      <View style={flip ? { transform: [{ scaleX: -1 }] } : undefined}>
-        <Icon name={icon} size={iconSize} color={tint ?? 'text'} />
-      </View>
+      <Icon name={icon} size={iconSize} color={tint ?? 'text'} />
     </Press>
   )
 }
@@ -268,8 +274,8 @@ export function Preview({
         width,
         height: tile.height * scale,
         overflow: 'hidden',
-        borderRadius: 4 * theme.u,
-        borderWidth: 1,
+        borderRadius: radius['2xs'] * theme.u,
+        borderWidth: line.thin,
         borderColor: theme.colors['line-strong'],
         backgroundColor: theme.colors.s2,
       }}
@@ -332,6 +338,7 @@ export function Scrubber({
   const preview = drag ?? over
   const versionId = p.version?.id
   const pf = duration && preview !== null ? Math.min(1, preview / duration) : 0
+  const thumb = drag === null ? player.scrubber.thumb : player.scrubber.thumbActive
   return (
     <View
       onLayout={(e: LayoutChangeEvent) => setWidth(e.nativeEvent.layout.width)}
@@ -369,15 +376,18 @@ export function Scrubber({
             onPointerLeave: () => setOver(null),
           }
         : {})}
-      style={{ height: 32, justifyContent: 'center' }}
+      style={{ height: player.scrubber.hit, justifyContent: 'center' }}
     >
       {preview !== null && manifest && versionId ? (
         <View
           pointerEvents="none"
           style={{
             position: 'absolute',
-            bottom: 36,
-            left: Math.max(0, Math.min(width - 160, pf * width - 80)),
+            bottom: player.scrubber.previewLift,
+            left: Math.max(
+              0,
+              Math.min(width - player.scrubber.preview, pf * width - player.scrubber.preview / 2),
+            ),
             alignItems: 'center',
             gap: space['1'],
           }}
@@ -387,19 +397,25 @@ export function Scrubber({
             versionId={versionId}
             manifest={manifest}
             seconds={preview}
-            width={160}
+            width={player.scrubber.preview}
           />
           <Text variant="mono" mono>
             {clock(preview)}
           </Text>
         </View>
       ) : null}
-      <View style={{ height: 4, borderRadius: 2, backgroundColor: alpha(theme.colors.text, 0.25) }}>
+      <View
+        style={{
+          height: player.scrubber.track,
+          borderRadius: radius.pill,
+          backgroundColor: alpha(theme.colors.text, 0.25),
+        }}
+      >
         <View
           style={{
             width: `${f * 100}%`,
-            height: 4,
-            borderRadius: 2,
+            height: player.scrubber.track,
+            borderRadius: radius.pill,
             backgroundColor: theme.colors['accent-fill'],
           }}
         />
@@ -408,10 +424,10 @@ export function Scrubber({
         pointerEvents="none"
         style={{
           position: 'absolute',
-          left: f * width - (drag === null ? 7 : 10),
-          width: drag === null ? 14 : 20,
-          height: drag === null ? 14 : 20,
-          borderRadius: 10,
+          left: f * width - thumb / 2,
+          width: thumb,
+          height: thumb,
+          borderRadius: radius.pill,
           backgroundColor: theme.colors.text,
         }}
       />
@@ -427,16 +443,16 @@ export function CueLine({ p }: { p: Playback }) {
   const lines = cuesAt(p.cues, p.state.position, p.offsetMs)
   if (!lines.length) return null
   return (
-    <View pointerEvents="none" style={{ alignItems: 'center', gap: 2 * u }}>
+    <View pointerEvents="none" style={{ alignItems: 'center', gap: player.subtitle.gap * u }}>
       {lines.map((line) => (
         <Text
           key={line}
-          size={tv ? 1.8 : 17}
+          size={tv ? player.subtitle.sizeTv : player.subtitle.size}
           weight={600}
           align="center"
           style={{
             color: theme.colors.text,
-            backgroundColor: 'rgba(0,0,0,0.6)',
+            backgroundColor: scrimOf(60),
             paddingHorizontal: (tv ? 0.5 : 6) * (tv ? u : 1),
             borderRadius: (tv ? 0.2 : 2) * (tv ? u : 1),
             maxWidth: '80%',
@@ -483,7 +499,7 @@ export function NudgePreview({ offsetMs }: { offsetMs: number }) {
           top: 0,
           bottom: 0,
           left: width / 2,
-          width: 1,
+          width: line.thin,
           backgroundColor: theme.colors['line-strong'],
         }}
       />
@@ -536,11 +552,23 @@ export function Waiting({ preparing }: { preparing: boolean }) {
         accessibilityLabel={preparing ? t('preparing') : t('buffering')}
         style={{
           alignItems: 'center',
-          gap: tv ? 0.8 * u : 8,
-          paddingHorizontal: preparing ? (tv ? 2.4 * u : 24) : tv ? 1.4 * u : 16,
-          paddingVertical: preparing ? (tv ? 1.6 * u : 16) : tv ? 1.4 * u : 16,
-          borderRadius: preparing ? (tv ? 1 * u : 12) : 999,
-          backgroundColor: GLASS,
+          gap: tv ? tvSpace['4'] * u : space['2'],
+          paddingHorizontal: preparing
+            ? tv
+              ? tvSpace['12'] * u
+              : space['6']
+            : tv
+              ? tvSpace['7'] * u
+              : space['4'],
+          paddingVertical: preparing
+            ? tv
+              ? tvSpace['8'] * u
+              : space['4']
+            : tv
+              ? tvSpace['7'] * u
+              : space['4'],
+          borderRadius: preparing ? (tv ? tokens.tv.radius.panel * u : radius.md) : radius.pill,
+          backgroundColor: glassOf(theme.colors),
         }}
       >
         {/* the box above is the progress bar, with its name; the spinner only draws it */}
@@ -595,7 +623,7 @@ export function StreamMessage({ p, onBack }: { p: Playback; onBack: () => void }
         zIndex: 30,
       }}
     >
-      <View style={{ maxWidth: 448, alignItems: 'center', gap: space['3'] }}>
+      <View style={{ maxWidth: player.message.maxWidth, alignItems: 'center', gap: space['3'] }}>
         <Text variant="title" align="center" accessibilityRole="header">
           {w.title}
         </Text>
@@ -603,7 +631,7 @@ export function StreamMessage({ p, onBack }: { p: Playback; onBack: () => void }
           <View
             style={{
               borderRadius: radius.sm,
-              borderWidth: 1,
+              borderWidth: line.thin,
               borderColor: theme.colors.line,
               backgroundColor: alpha(theme.colors.s2, 0.8),
               paddingHorizontal: space['4'],
@@ -661,7 +689,7 @@ export function NextUpCard({
     gap: space['3'],
     padding: space['4'],
     borderRadius: radius.md,
-    borderWidth: 1,
+    borderWidth: line.thin,
     borderColor: theme.colors.line,
     backgroundColor: alpha(theme.colors.bg, 0.8),
     boxShadow: tokens.elevation[4].boxShadow,
@@ -678,14 +706,14 @@ export function NextUpCard({
               accessibilityRole="button"
               accessibilityLabel={item.title}
               onPress={() => m.play(item.id)}
-              style={{ flex: 1, minWidth: 0, gap: 6 }}
+              style={{ flex: 1, minWidth: 0, gap: space['1.5'] }}
             >
               <Image
                 source={media(item.art.backdrop)}
                 style={{
                   width: '100%',
                   aspectRatio: 16 / 9,
-                  borderRadius: 4,
+                  borderRadius: radius['2xs'],
                   backgroundColor: theme.colors.s2,
                 }}
                 contentFit="cover"
@@ -707,9 +735,9 @@ export function NextUpCard({
         <Image
           source={next.still ? media(next.still) : undefined}
           style={{
-            width: 96,
+            width: player.upNext.still,
             aspectRatio: 16 / 9,
-            borderRadius: 4,
+            borderRadius: radius['2xs'],
             backgroundColor: theme.colors.s2,
           }}
           contentFit="cover"
@@ -759,7 +787,11 @@ function Choice({
   const touch = theme.formFactor.input === 'touch'
   const check = (
     <View style={{ opacity: chosen ? 1 : 0 }}>
-      <Icon name="check" size={touch ? 18 : 14} color={touch ? 'accent-text' : 'text'} />
+      <Icon
+        name="check"
+        size={touch ? player.menu.checkTouch : tokens.icon.size.xs}
+        color={touch ? 'accent-text' : 'text'}
+      />
     </View>
   )
   return (
@@ -771,10 +803,10 @@ function Choice({
       style={({ hovered }) => ({
         flexDirection: 'row',
         alignItems: 'center',
-        gap: touch ? 12 : 8,
-        minHeight: touch ? 44 : 40,
-        paddingHorizontal: touch ? 0 : 10,
-        borderRadius: 6,
+        gap: touch ? space['3'] : space['2'],
+        minHeight: touch ? tokens.targets.touch : player.menu.row,
+        paddingHorizontal: touch ? 0 : space['2.5'],
+        borderRadius: radius.xs,
         backgroundColor: hovered ? alpha(theme.colors.text, 0.08) : undefined,
       })}
     >
@@ -898,7 +930,7 @@ export function TrackLists({
                   mono
                   align="center"
                   accessibilityLiveRegion="polite"
-                  style={{ minWidth: 96 }}
+                  style={{ minWidth: player.timeMinWidth }}
                 >
                   {playerText.offsetLabel(p.offsetMs)}
                 </Text>

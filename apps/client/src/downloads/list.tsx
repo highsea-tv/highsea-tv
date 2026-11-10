@@ -5,7 +5,7 @@
 // app's own setting under it (Wi-Fi only on a phone, Kept in on a computer). A film is a row with
 // its still; episodes sit under their show and season, and songs under their album, each group
 // with its size and Remove (their sources come with shows and music, B3). The still's column is
-// the prototype's min(7rem, 35%), 10rem from medium.
+// the prototype's min(7rem, 35%), 10rem from 768.
 import {
   downloadsMessages,
   entriesOf,
@@ -25,7 +25,7 @@ import {
 import { playPath } from '@highsea-tv/client/library'
 import { useT } from '@highsea-tv/i18n/react'
 import { useMedia } from '@highsea-tv/native/media'
-import { breakpoints } from '@highsea-tv/tokens'
+import { REGULAR_WIDTH } from '@highsea-tv/tokens'
 import {
   Badge,
   Button,
@@ -48,7 +48,7 @@ import type { Downloads } from './store.ts'
 
 const { space } = tokens
 
-/** The still's column: the prototype's 7rem (at most 35% of the row), 10rem from medium. */
+/** The still's column: the prototype's 7rem (at most 35% of the row), 10rem from 768. */
 const STILL = { compact: space['16'] + space['12'], medium: space['16'] * 2 + space['8'] }
 /** The progress bar's widest, and the settings': the prototype's 24rem and 32rem. */
 const BAR_MAX = space['16'] * 6
@@ -58,7 +58,7 @@ const GROUP_MAX = space['16'] * 11
 
 function useStillWidth(width: number) {
   const window = useWindowDimensions().width
-  if (window >= breakpoints.medium) return STILL.medium
+  if (window >= REGULAR_WIDTH) return STILL.medium
   // before the row has measured itself, the compact column
   return width === 0 ? STILL.compact : Math.min(STILL.compact, width * 0.35)
 }
