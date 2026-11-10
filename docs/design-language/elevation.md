@@ -17,6 +17,7 @@ The shadows come from the reference board: level 2 is the segmented-control thum
 **Rules**
 - **Shadows are always black.** Never colored, never a glow.
 - **Borders:**
+  - one width, `line.thin` (1), in every place; a border overlapped by its neighbour's takes `-line.thin`;
   - `line` on level-1 surfaces;
   - `line-strong` on inputs and on the admin frame;
   - no border on levels 3–4 when the shadow already separates them.
@@ -36,6 +37,24 @@ Blur is only for chrome that floats over *moving or image content*. Never blur o
 
 - Provide a solid fallback when blur is unavailable: the same color at 96% opacity.
 - Reduced-transparency settings switch blur off and use the fallback.
+
+## Lines
+
+`line.thin` (1) is every border and rule. `line.thick` (2) is the line tabs' underline, a rule group's bar and the resize mark.
+
+## Over artwork
+
+The `art` tokens hold what sits over pictures and video:
+
+| Token | Value | Use |
+| --- | --- | --- |
+| `art.black` | `#000000` | Under video and the scrims over art, as shadows are always black |
+| `art.alpha` | 35, 50, 60, 70, 80 | A scrim is `art.black` at one of these steps (0.35 to 0.8) |
+| `art.glass` | `bg` at 0.62 | The dark glass of a badge over a poster, a still's note and the TV player's chips |
+| `art.edge` | `text` at 0.04 | The hairline inside a poster's or a mosaic's edge |
+| `art.backdropScale` | 1.1 | A blurred backdrop's scale, so its blurred edges sit outside the screen |
+
+The glass and the edge are a theme's roles, so a theme that changes `bg` or `text` changes them. The library's `glassOf`, `artEdgeOf` and `scrimOf` draw them.
 
 ## Scrims over artwork
 

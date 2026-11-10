@@ -35,9 +35,11 @@ The home screen uses the **Hero + rows** layout, locked in [direction.md](../../
 | An album or a playlist | A left column 24u wide with an 18u cover and a 2.4u title, 4u from the songs |
 | Who's watching | Circles 9.5u, 2.8u apart, under a 3.2u title; at the opening, 11u circles 3u apart under a 3.6u title |
 | A PIN | A pad 17u wide with 0.8u between keys, under a 5.6u circle and a 2.4u title |
-| Radii | Posters 0.5u (≈ 10px at 1080p); controls by the TV rule, `radius-sm` at 1.75 times (≈ 0.73u, [controls](../controls.md)); quality pills 0.3u |
+| Radii | Posters 0.5u (≈ 10px at 1080p); controls by the TV rule, `radius-sm` at 1.75 times (≈ 0.73u, [controls](../controls.md)); quality pills 0.3u; small parts 0.4u (`tv.radius.sm`), cards and notes 0.6u (`tv.radius.md`), panels and dialogs 1u (`tv.radius.panel`) |
 
-The rows from Continue watching to A PIN are the prototypes' values, kept when B1 and B3 moved the screens to apps/client (`apps/client/src/home/sizes.ts`, `src/alerts/sizes.ts`, `src/shows/sizes.ts`, `src/music/sizes.ts`, `src/profiles/sizes.ts` and `@highsea-tv/ui`'s `PersonPortrait`). None is a token yet; part E gives them tokens once the owner approves the values.
+The rows from Continue watching to A PIN are the prototypes' values, kept when B1 and B3 moved the screens to apps/client (`apps/client/src/home/sizes.ts`, `src/alerts/sizes.ts`, `src/shows/sizes.ts`, `src/music/sizes.ts`, `src/profiles/sizes.ts` and `@highsea-tv/ui`'s `PersonPortrait`). They're the screens' own measures, named once in those files, and part E's value table left them there.
+
+**Spacing.** The TV's spaces are `tv.space`, keyed as the clients' scale is but in screen units: a step is 0.2u, so `tv.space.5` is 1u and `tv.space.12` is 2.4u (part E). The head's measures (the account's 3u circle, its 2.2u avatar, the 0.6u dots and the 2.6u stops) are `tv.head`, and the screen's height, 56.25u, is `tv.screenHeight`.
 
 **Safe area.**
 - Text and focusable items stay at least 2.4u (≈ 46px at 1080p) from every edge (`tv.safe` in the tokens). The owner tightened it from 4.5u and 3.2u on 2026-10-30, inside tvOS's guideline of 80 × 60 points, and confirmed it on 2026-11-03.
@@ -58,7 +60,8 @@ The rows from Continue watching to A PIN are the prototypes' values, kept when B
 | Server name | 1.05u | 20 | 600 |
 | Eyebrow | 0.95u | 18 | 600, uppercase, +0.14em, `accent-text` |
 | Announcement pill | 0.95u | 18 | 400, `text-2` |
-| Quality pills (4K HDR, CC) | 0.8u | 15 | 600, outlined |
+| Quality pills (4K HDR, CC) | 0.8u | 15 | 600, outlined, +0.04em (`tracking.tag`) |
+| A dialog's or a player's title (album, PIN, message, player) | 2.4u | 46 | 600 (`tvText.title`) |
 
 **Minimum.** Nothing on TV is smaller than 0.8u (≈ 15px at 1080p). Anything the user must read to act is at least 0.95u.
 

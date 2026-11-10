@@ -21,6 +21,7 @@ Both are licensed under SIL OFL 1.1 and are bundled with the apps by `@highsea-t
 - **Display and heading** use −0.035em tracking. **Titles** use −0.01em.
 - **The wordmark** uses −0.045em. It is a drawn lockup, not a text style.
 - **Labels** (small uppercase mono, such as section kickers and table headers) use 11px, +0.06em tracking and `text-3`.
+- **Quality tags** (4K, HDR, 1080p) use +0.04em (`tracking.tag`): 0.44px at 11px, and 0.032u at the TV's 0.8u.
 
 ## Figures
 
@@ -54,7 +55,7 @@ Taken from the reference board:
 
 ### TV
 
-TV type is sized in screen units, where `1u` is 1% of screen width (19.2px at 1080p). See [TV › Type](platforms/tv.md#type).
+TV type is sized in screen units, where `1u` is 1% of screen width (19.2px at 1080p). A dialog's or a player's title (the album's, the PIN's, a message's, the player's) is `tvText.title`, 2.4u at 600. See [TV › Type](platforms/tv.md#type).
 
 ### Mobile
 
@@ -64,10 +65,14 @@ These sizes are in points. They are derived from the board's scaled phone frame 
 | --- | --- | --- |
 | Large title | 30 / 36 | 600 |
 | Title | 20 / 26 | 600 |
+| Headline (a section's heading, a player's title) | 17 / 22 | 600 |
 | Body | 16 / 22 | 400 |
+| Subheadline (the mini player's title) | 15 / 20 | 400 |
 | Callout (cards, metadata) | 14 / 19 | 400 |
 | Caption | 12 / 16 | 400 |
 | Tab label | 10.5 | 500 |
+
+Headline and Subheadline are iOS's styles of the same names ([HIG › Typography](https://developer.apple.com/design/human-interface-guidelines/typography)), added in part E as `mobileText.headline` and `mobileText.subheadline`.
 
 Mobile text follows the platform's text-size setting (Dynamic Type or Android font scale), up to at least 200%.
 

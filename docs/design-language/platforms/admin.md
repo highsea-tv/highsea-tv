@@ -70,11 +70,12 @@ Comfortable spacing comes from grouping, not from padding. Whitespace separates 
 
 ## Responsive
 
-| Breakpoint | Behavior |
+The admin lays out by the clients' one rule ([spacing-layout › Width classes](../spacing-layout.md#width-classes)), as D1 built it: there's no icon rail and no middle step.
+
+| Width class | Behavior |
 | --- | --- |
-| expanded and wide (≥ 1024) | Full sidebar; 4-column widget grid |
-| medium (600–1023) | Sidebar collapses to a 64px icon rail with tooltips; 2-column widget grid |
-| compact (< 600) | The sidebar becomes a menu sheet behind a top-bar button; 1-column widgets; tables become stacked rows |
+| regular (≥ 768) | Full sidebar; 4-column widget grid; forms and settings in their columns |
+| compact (< 768) | The sidebar becomes a menu sheet behind a top-bar button; 1-column widgets; tables become stacked rows |
 
 ## Sound
 

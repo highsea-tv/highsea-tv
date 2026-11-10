@@ -44,6 +44,11 @@ The artwork behind it cross-fades between two layers, so there is never a blank 
 - **Ring:** appears with the focus state, with no ring "travel" between items.
 - **Tracks:** rows and columns move by transform with `spring.base` to keep focus in view (see [TV › Scrolling](platforms/tv.md#scrolling)).
 
+**Hover (a pointer)**
+- **Artwork lifts:** a poster scales to `hover.posterScale` (1.02) and a person's photo to `hover.photoScale` (1.05), with `spring.base`.
+- **Fills brighten** where there's no hover role: `hover.brightness.soft` (1.08) for the primary button, `hover.brightness.strong` (1.1) for the danger button and the film row's posters, over `duration.color`.
+- The TV has no hover: its focus has the scales above.
+
 **Sheets and dialogs**
 - They rise with `spring.base`. Sheets enter from the bottom edge; dialogs enter with a 0.98 scale and fade.
 - They leave with a 140ms fade and no spring.

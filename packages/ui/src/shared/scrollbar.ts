@@ -2,7 +2,7 @@
 // The scrollbar drawn over a page, once for both renderers: the web's PageScrollbar (over the
 // document) and the native renderer's ScrollView on the web (over its own scroller). The browser's
 // own bar takes a column of its own, so both hide it and draw this thin handle instead.
-// Its measures are the `scrollbar` tokens (spacing-layout.md › Scrollbar), approved with 4.4a.
+// Its measures are the `scrollbar` tokens (spacing-layout.md › The scrollbar), approved with 4.4a.
 import { scrollbar } from '@highsea-tv/tokens'
 
 export const SCROLLBAR = {
