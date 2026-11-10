@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The steps of a wizard (the web renderer's web/components/stepper.tsx, drawn once here since D3,
-// one-client-platform-d.md): a vertical list beside the form from `expanded` up, where finished
-// steps are buttons back to themselves and later ones plain text until reached; below `expanded`,
-// "Step 3 of 8" with the step's name and a bar. Its semantics are roles, which react-native-web
-// writes as ARIA: a `navigation` round an ordered `list`, the step shown `aria-current="step"`
-// (https://www.w3.org/TR/wai-aria-1.2/#aria-current). The app passes its words.
-import { breakpoints } from '@highsea-tv/tokens'
+// one-client-platform-d.md): a vertical list beside the form in a regular window, where finished
+// steps are buttons back to themselves and later ones plain text until reached; in a compact one
+// (below 768, the form-factor rule), "Step 3 of 8" with the step's name and a bar. Its semantics
+// are roles, which react-native-web writes as ARIA: a `navigation` round an ordered `list`, the
+// step shown `aria-current="step"` (https://www.w3.org/TR/wai-aria-1.2/#aria-current). The app
+// passes its words.
+import { line, stepper, webText } from '@highsea-tv/tokens'
 import { View } from 'react-native'
-import { useWindowAtLeast } from './admin.tsx'
+import { useRegularWindow } from './admin.tsx'
 import { Icon } from './icon.tsx'
 import { Press } from './press.tsx'
 import { ProgressBar } from './progress.tsx'
@@ -17,10 +18,10 @@ import { tokens, useTheme } from './theme.tsx'
 const s = tokens.space
 const ui = tokens.adminText.ui
 /** A step's numbered disc (the web's size-5.5), its number in 11 mono. */
-const DISC = 22
-const DISC_TEXT = 11
+const DISC = stepper.disc
+const DISC_TEXT = webText.label.size
 /** A step's row (the web's h-9). */
-const ROW = 36
+const ROW = stepper.row
 
 export type StepperStep = { id: string; label: string }
 
@@ -51,9 +52,9 @@ export function Stepper({
   doneLabel,
 }: StepperProps) {
   const theme = useTheme()
-  const expanded = useWindowAtLeast(breakpoints.expanded)
+  const regular = useRegularWindow()
   const step = steps[current]
-  if (!expanded)
+  if (!regular)
     return (
       <View role="navigation" aria-label={label} style={{ gap: s['2'] }}>
         <Text variant="caption" color="text-2">
@@ -81,7 +82,7 @@ export function Stepper({
                 height: DISC,
                 flexShrink: 0,
                 borderRadius: tokens.radius.pill,
-                borderWidth: 1,
+                borderWidth: line.thin,
                 alignItems: 'center',
                 justifyContent: 'center',
                 borderColor: theme.colors[active ? 'accent' : done ? 'line-strong' : 'line'],
@@ -89,7 +90,7 @@ export function Stepper({
               }}
             >
               {done ? (
-                <Icon name="check" size={12} color="text" />
+                <Icon name="check" size={tokens.icon.size['2xs']} color="text" />
               ) : (
                 <Text mono size={DISC_TEXT} leading={1} color={active ? 'on-accent' : 'text-3'}>
                   {String(i + 1)}

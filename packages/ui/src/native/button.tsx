@@ -12,6 +12,7 @@
 // Pressable reports hover for a mouse or a pen, not for touch
 // (https://necolas.github.io/react-native-web/docs/pressable/).
 import type { ControlLook } from '@highsea-tv/tokens'
+import { line } from '@highsea-tv/tokens'
 import type { Ref } from 'react'
 import {
   type AccessibilityProps,
@@ -30,8 +31,8 @@ import { tokens, useControl, useTheme } from './theme.tsx'
 import type { ViewHandle } from './tv/focusable.tsx'
 import type { TileSource } from './tv/tiles.tsx'
 
-/** The outline's width (one-place-exceptions.json: no border width in the tokens yet). */
-const EDGE = 1
+/** The outline's width: a thin line (elevation.md › Lines). */
+const EDGE = line.thin
 
 export type { ButtonVariant } from '../shared/controls.ts'
 

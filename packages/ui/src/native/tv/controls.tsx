@@ -3,18 +3,19 @@
 // Chip at the TV's rule (controls.md; design system 1.1), not components of their own. What stays
 // here: a key on the on-screen keyboard, a grid cell at the control's height and corner that fills
 // with `text` when focused, and a message that fills the screen with its actions.
+import { tvMessage, tvText } from '@highsea-tv/tokens'
 import type { ReactNode, Ref } from 'react'
 import { View } from 'react-native'
 import { ControlText } from '../control.tsx'
 import { Text } from '../text.tsx'
-import { useControl, useTheme } from '../theme.tsx'
+import { tokens, useControl, useTheme } from '../theme.tsx'
 import { Focusable, type ViewHandle } from './focusable.tsx'
 
 export { alpha } from '../alpha.ts'
 
 /** The dot a key that toggles draws before its words, in units (the TV prototype's Shift). */
-const KEY_DOT = 0.5
-const KEY_DOT_GAP = 0.6
+const KEY_DOT = tvMessage.keyDot
+const KEY_DOT_GAP = tokens.tv.space['3']
 
 /**
  * A key on the on-screen keyboard: a grid cell that fills with `text` on focus. A key that
@@ -109,10 +110,16 @@ export function TvMessage({
   const u = useTheme().u
   return (
     <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-      <View style={{ maxWidth: 46 * u, alignItems: 'center', gap: 1.4 * u }}>
+      <View
+        style={{
+          maxWidth: tvMessage.width * u,
+          alignItems: 'center',
+          gap: tokens.tv.space['7'] * u,
+        }}
+      >
         <Text
           variant="heroTitle"
-          size={2.4}
+          size={tvText.title.size}
           align="center"
           accessibilityRole="header"
           aria-level={level}
@@ -124,7 +131,15 @@ export function TvMessage({
             {children}
           </Text>
         ) : null}
-        <View style={{ marginTop: 1 * u, flexDirection: 'row', gap: 1 * u }}>{actions}</View>
+        <View
+          style={{
+            marginTop: tokens.tv.space['5'] * u,
+            flexDirection: 'row',
+            gap: tokens.tv.space['5'] * u,
+          }}
+        >
+          {actions}
+        </View>
       </View>
     </View>
   )

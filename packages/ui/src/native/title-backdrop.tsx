@@ -9,6 +9,7 @@
 //   same way, behind the page's first screen, scrolling with it (tv/detail.tsx).
 // React Native draws CSS gradients itself (https://reactnative.dev/docs/view-style-props#backgroundimage).
 
+import { tv } from '@highsea-tv/tokens'
 import { StyleSheet, View } from 'react-native'
 import { alpha } from './alpha.ts'
 import { Image } from './image.tsx'
@@ -16,7 +17,7 @@ import { useTheme } from './theme.tsx'
 import type { TileSource } from './tv/tiles.tsx'
 
 /** The TV's art's height: one 16:9 screen, in units. */
-export const BACKDROP_HEIGHT = 56.25
+export const BACKDROP_HEIGHT = tv.screenHeight
 
 export type TitleBackdropProps = { source: TileSource | undefined }
 

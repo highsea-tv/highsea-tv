@@ -16,6 +16,8 @@
 //   title. The focus engine would enter it at whichever letter lies level with the tile, so its
 //   guide sends focus to the focused title's letter, `at`, instead (react-native-tvos's
 //   TVFocusGuideView `destinations`).
+
+import { letterIndex, line, webText } from '@highsea-tv/tokens'
 import { useEffect, useRef, useState } from 'react'
 import { type GestureResponderEvent, useWindowDimensions, View } from 'react-native'
 import { Press } from './press.tsx'
@@ -39,7 +41,7 @@ export function nearestLetter(letters: readonly string[], l: string, present: Se
 }
 
 /** The TV's rail's column, in units: the room a grid leaves for it beside its first column. */
-export const RAIL_WIDTH = 2
+export const RAIL_WIDTH = line.thick
 /**
  * A pointer's letters' size, the prototype's 1.5rem, and the page's gap under the column: the
  * column's width, which a grid beside it leaves room for.
@@ -130,16 +132,16 @@ function TouchForm({ letters, present, label, onLetter }: LetterIndexProps) {
             height: LETTER,
             alignItems: 'center',
             justifyContent: 'center',
-            borderRadius: 4,
+            borderRadius: tokens.radius['2xs'],
             backgroundColor: held === l ? theme.colors.s2 : undefined,
           }}
         >
           <Text
             variant="caption"
-            size={11}
+            size={webText.label.size}
             weight={600}
             color={present.has(l) ? 'accent-text' : 'text-3'}
-            style={{ opacity: present.has(l) ? 1 : 0.4, lineHeight: 12 }}
+            style={{ opacity: present.has(l) ? 1 : 0.4, lineHeight: letterIndex.leading }}
           >
             {l}
           </Text>

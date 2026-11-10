@@ -3,6 +3,7 @@
 // the theme's accent; the lockup, the mark beside `highsea tv` in live text as the web's
 // (web/components/brand.tsx); and the avatar: the person's initial on accent-soft.
 import { MARK_GRID, MARK_SMALL_BELOW, markGeometry } from '@highsea-tv/brand'
+import { avatar, lockup } from '@highsea-tv/tokens'
 import { useId } from 'react'
 import { View } from 'react-native'
 import Svg, { Circle, Defs, LinearGradient, Mask, Path, Rect, Stop } from 'react-native-svg'
@@ -61,7 +62,7 @@ export function Mark({
  * The lockup from live text, as the web's: the mark in a 1.15em box, 0.42em before `highsea tv`,
  * the name semibold with the wordmark's tracking and ` tv` medium in text-3.
  */
-export function Lockup({ size = 17 }: { size?: number }) {
+export function Lockup({ size = lockup.size }: { size?: number }) {
   const theme = useTheme()
   const px = size * theme.u
   const tracking = tokens.tracking.wordmark * px
@@ -110,7 +111,7 @@ const TONES = {
  */
 export function Avatar({
   name,
-  size = 36,
+  size = avatar.size,
   tone = 'accent',
   ring = false,
 }: {

@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // An empty or error state: an icon in a soft disc, a title, what to do, and an action.
+
+import { emptyState } from '@highsea-tv/tokens'
 import type { ReactNode } from 'react'
 import { View } from 'react-native'
 import { useDense } from './dense.tsx'
@@ -35,14 +37,19 @@ export function EmptyState({
   // (web/components/page.tsx's `gap-3 px-6 py-12`, `size-11`, `gap-1`; HT-4).
   const dense = useDense()
   if (size === 'sm') return <Small {...{ icon, title, children, action, tone, level }} />
-  const disc = dense ? 44 : 56
+  const disc = dense ? tokens.icon.disc.md : tokens.icon.disc.lg
   const words = (
     <>
       <Text variant="title" align="center" accessibilityRole="header" aria-level={level}>
         {title}
       </Text>
       {children ? (
-        <Text variant="callout" color="text-2" align="center" style={{ maxWidth: 320 * theme.u }}>
+        <Text
+          variant="callout"
+          color="text-2"
+          align="center"
+          style={{ maxWidth: emptyState.words * theme.u }}
+        >
           {children}
         </Text>
       ) : null}
@@ -68,7 +75,7 @@ export function EmptyState({
       >
         <Icon
           name={icon}
-          size={dense ? 20 : 26}
+          size={dense ? tokens.icon.size.md : emptyState.icon}
           color={tone === 'error' ? 'badge-danger' : 'text-2'}
         />
       </View>
@@ -126,17 +133,19 @@ function Small({
       <View
         aria-hidden
         style={{
-          width: 32,
-          height: 32,
+          width: tokens.icon.disc.sm,
+          height: tokens.icon.disc.sm,
           borderRadius: tokens.radius.pill,
           alignItems: 'center',
           justifyContent: 'center',
           backgroundColor: theme.colors[error ? 'badge-danger-bg' : 's2'],
         }}
       >
-        <Icon name={icon} size={16} color={error ? 'danger' : 'text-3'} />
+        <Icon name={icon} size={tokens.icon.size.sm} color={error ? 'danger' : 'text-3'} />
       </View>
-      <View style={{ gap: tokens.space['1'], maxWidth: 440, alignItems: 'center' }}>
+      <View
+        style={{ gap: tokens.space['1'], maxWidth: emptyState.wordsInline, alignItems: 'center' }}
+      >
         <Text
           size={ui.size}
           leading={ui.leading}

@@ -3,7 +3,7 @@
 // each one part with a form per form factor, so a film's page, a show's or an album's draws them
 // at any: an action named by its icon, a person's round portrait with their role, and a card of
 // facts. Each takes data and callbacks only; the app routes and words them.
-import { breakpoints } from '@highsea-tv/tokens'
+import { hover, line, pageParts, REGULAR_WIDTH } from '@highsea-tv/tokens'
 import { type ReactNode, type Ref, useState } from 'react'
 import { type AccessibilityState, StyleSheet, useWindowDimensions, View } from 'react-native'
 import Animated from 'react-native-reanimated'
@@ -11,6 +11,7 @@ import { alpha } from './alpha.ts'
 import { ariaRole } from './aria.ts'
 import { Button } from './button.tsx'
 import { focusVisible } from './dom'
+import { scrimOf } from './glass.ts'
 import { Icon, type IconName } from './icon.tsx'
 import { Image } from './image.tsx'
 import { useLift } from './lift.ts'
@@ -27,16 +28,16 @@ const tv = tokens.tv
 /** The phone's round icon, in points: touch's 44-point target on its own. */
 const ROUND = tokens.targets.touch
 /** The phone's action, wide enough for a two-line name (the prototype's w-20). */
-const NAMED_WIDTH = 80
+const NAMED_WIDTH = pageParts.namedAction
 /** A portrait's scale under a pointer (the web prototype's hover:scale-105 on cast photos). */
-const PHOTO_LIFT = 1.05
+const PHOTO_LIFT = hover.photoScale
 /** A search result's portrait by touch (the phone prototype's size-16), in its 72 column (w-18). */
 const RESULT_PHOTO = tokens.space['16']
 const RESULT_WIDTH = tokens.space['16'] + tokens.space['2']
 /** The pointer's chip's portrait (the web prototype's size-8). */
 const CHIP_PHOTO = tokens.space['8']
 /** The room a fact's label takes before its value on the TV, in units. */
-const TV_LABEL_WIDTH = 9
+const TV_LABEL_WIDTH = pageParts.tv.factLabel
 
 /** The element with focus on the web, which a control's onFocus doesn't hand on; none elsewhere. */
 const activeElement = () =>
@@ -177,8 +178,8 @@ function IconAction({
           style={{
             position: 'absolute',
             top: '100%',
-            marginTop: 0.7 * u,
-            width: 20 * u,
+            marginTop: tv.space['3.5'] * u,
+            width: pageParts.tv.personName * u,
             textAlign: 'center',
             opacity: named ? 1 : 0,
           }}
@@ -305,7 +306,7 @@ function PersonChip(props: PersonTileProps) {
         paddingLeft: tokens.space['1'],
         paddingRight: tokens.space['3'] + tokens.space['0.5'],
         borderRadius: tokens.radius.pill,
-        borderWidth: 1,
+        borderWidth: line.thin,
         borderColor: theme.colors.line,
         backgroundColor: s.hovered ? theme.colors.s2 : theme.colors.s1,
       })}
@@ -479,7 +480,7 @@ function TvPerson(props: PersonTileProps) {
             weight={600}
             color={focused ? 'text' : 'text-2'}
             numberOfLines={1}
-            style={{ marginTop: 0.9 * u, textAlign: 'center' }}
+            style={{ marginTop: tv.space['4.5'] * u, textAlign: 'center' }}
           >
             {name}
           </Text>
@@ -514,8 +515,7 @@ export function PersonPortrait({
   const drawn =
     input === 'tv'
       ? (size ?? p.tv) * theme.u
-      : (size ??
-        (input === 'touch' ? p.touch : width >= breakpoints.medium ? p.pointerWide : p.pointer))
+      : (size ?? (input === 'touch' ? p.touch : width >= REGULAR_WIDTH ? p.pointerWide : p.pointer))
   const shadow =
     input === 'tv'
       ? focusShadow(theme.colors.text, theme.u, theme.focusRingScale)
@@ -534,9 +534,9 @@ const PORTRAIT = {
   touch: tokens.space['16'] * 2,
   pointer: tokens.space['12'] * 3,
   pointerWide: tokens.space['16'] * 3,
-  tv: 13,
-  touchShadow: '0px 8px 24px rgba(0, 0, 0, 0.35)',
-  pointerShadow: '0px 8px 32px rgba(0, 0, 0, 0.35)',
+  tv: pageParts.tv.photo,
+  touchShadow: `0px 8px 24px ${scrimOf(35)}`,
+  pointerShadow: `0px 8px 32px ${scrimOf(35)}`,
 }
 
 const initials = (name: string) =>
@@ -695,8 +695,8 @@ function TvFacts({
     <View
       style={{
         flex: 1,
-        gap: 0.9 * u,
-        padding: 1.6 * u,
+        gap: tv.space['4.5'] * u,
+        padding: tv.space['8'] * u,
         borderRadius: radius,
         backgroundColor: focused ? theme.colors.s2 : alpha(theme.colors.s1, 0.8),
       }}
@@ -706,9 +706,12 @@ function TvFacts({
       </Text>
       {children}
       {facts ? (
-        <View style={{ gap: 0.5 * u }}>
+        <View style={{ gap: tv.space['2.5'] * u }}>
           {facts.map(([k, v, to]) => (
-            <View key={k} style={{ flexDirection: 'row', alignItems: 'center', gap: 1.2 * u }}>
+            <View
+              key={k}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: tv.space['6'] * u }}
+            >
               <Text variant="meta" color="text-3" style={{ minWidth: TV_LABEL_WIDTH * u }}>
                 {k}
               </Text>
@@ -762,7 +765,7 @@ function TvFacts({
 }
 
 /** A fact's link inside a TV card (the prototype's `quiet` text): it lifts and inverts on focus. */
-const TV_LINK = { pad: 0.6, padY: 0.2, radius: 0.4 }
+const TV_LINK = { pad: tv.space['3'], padY: tv.space['1'], radius: tv.radius.sm }
 
 function TvFactLink({
   value,

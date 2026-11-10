@@ -7,6 +7,7 @@
 // the platform's engine (./engine, a platform pair): tvOS's and Android TV's own on the devices,
 // and the spatial focus engine in a browser. The drawing here is the same on all of them.
 
+import { art } from '@highsea-tv/tokens'
 import {
   type ComponentRef,
   createContext,
@@ -25,6 +26,7 @@ import {
   type ViewStyle,
 } from 'react-native'
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated'
+import { alpha } from '../alpha.ts'
 import { ariaRole } from '../aria.ts'
 import { tokens, useMotionReduced, useTheme } from '../theme.tsx'
 import { requestFocus, useStop } from './engine'
@@ -61,7 +63,7 @@ export type Lift = keyof typeof LIFT
 /** The ring as a box shadow, at this theme's ring scale and unit. */
 export function focusShadow(text: string, u: number, scale = 1) {
   const s = ring.shadow
-  return `0 0 0 ${ring.width * scale * u}px ${text}, ${s.x}px ${s.y * u}px ${s.blur * u}px ${s.spread * u}px rgba(0, 0, 0, ${s.opacity})`
+  return `0 0 0 ${ring.width * scale * u}px ${text}, ${s.x}px ${s.y * u}px ${s.blur * u}px ${s.spread * u}px ${alpha(art.black, s.opacity)}`
 }
 
 /**

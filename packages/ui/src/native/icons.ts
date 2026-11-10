@@ -76,6 +76,7 @@ import {
   Repeat,
   Repeat1,
   RotateCcw,
+  RotateCw,
   ScanQrCode,
   ScrollText,
   Search,
@@ -158,6 +159,8 @@ export const icons = {
   copy: Copy,
   refresh: RefreshCw,
   replay: RotateCcw,
+  /** Forward by a few seconds: replay's clockwise twin (the player's forward-by button). */
+  forward: RotateCw,
   filter: Funnel,
   more: Ellipsis,
   close: X,

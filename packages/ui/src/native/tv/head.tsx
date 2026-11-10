@@ -25,10 +25,10 @@ import { Focusable, type ViewHandle } from './focusable.tsx'
 const tv = tokens.tv
 
 /** A stop's height, in units: a tab's pill, or the round stop of an icon. */
-const STOP = 2.6
+const STOP = tv.head.stop
 /** The account's round stop, and the avatar inside it. */
-const ACCOUNT = 3
-const AVATAR = 2.2
+const ACCOUNT = tv.head.account
+const AVATAR = tv.head.avatar
 
 /**
  * The head's height from the screen's top, in units: its safe area and its tallest stop, the
@@ -72,21 +72,26 @@ export function TvHead({
     >
       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
         <View style={{ flex: 1, alignItems: 'flex-start' }}>{start}</View>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 0.6 * u }}>{center}</View>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: tv.space['3'] * u }}>
+          {center}
+        </View>
         <View
           style={{
             flex: 1,
             flexDirection: 'row',
             justifyContent: 'flex-end',
             alignItems: 'center',
-            gap: 0.6 * u,
+            gap: tv.space['3'] * u,
           }}
         >
           {end}
         </View>
       </View>
       {inside && down ? (
-        <FocusGuide destinations={[down]} style={{ alignSelf: 'stretch', height: 1 * u }} />
+        <FocusGuide
+          destinations={[down]}
+          style={{ alignSelf: 'stretch', height: tv.head.guide * u }}
+        />
       ) : null}
     </FocusGuide>
   )
@@ -153,7 +158,7 @@ export function TvHeadStop({
               alignItems: 'center',
               justifyContent: 'center',
               borderRadius: size / 2,
-              paddingHorizontal: text ? 1.4 * u : 0,
+              paddingHorizontal: text ? tv.space['7'] * u : 0,
               backgroundColor: focused ? theme.colors.text : 'transparent',
             }}
           >
@@ -172,10 +177,10 @@ export function TvHeadStop({
               <View
                 style={{
                   position: 'absolute',
-                  top: 0.45 * u,
-                  right: 0.45 * u,
-                  width: 0.6 * u,
-                  height: 0.6 * u,
+                  top: tv.head.dotOffset * u,
+                  right: tv.head.dotOffset * u,
+                  width: tv.head.dot * u,
+                  height: tv.head.dot * u,
                   borderRadius: tokens.tv.radius.pill * u,
                   backgroundColor: theme.colors.accent,
                 }}

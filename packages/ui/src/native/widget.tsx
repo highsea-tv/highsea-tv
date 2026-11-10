@@ -8,10 +8,10 @@
 // On the web the grid is CSS grid through react-native-web's style pass-through
 // (https://necolas.github.io/react-native-web/docs/styling/, https://drafts.csswg.org/css-grid-2/);
 // elsewhere (a phone or TV never draws the admin) widgets stack in one column.
-import { breakpoints } from '@highsea-tv/tokens'
+import { line, widget } from '@highsea-tv/tokens'
 import type { ComponentRef, ReactNode, Ref } from 'react'
 import { Platform, View, type ViewStyle } from 'react-native'
-import { useWindowAtLeast } from './admin.tsx'
+import { useRegularWindow } from './admin.tsx'
 import { Icon } from './icon.tsx'
 import { Text } from './text.tsx'
 import { tokens, useTheme } from './theme.tsx'
@@ -19,11 +19,9 @@ import { tokens, useTheme } from './theme.tsx'
 const web = Platform.OS === 'web'
 const d = tokens.density
 
-/** How many columns the grid has at this window's width: 4, 2 or 1. */
-export function useWidgetColumns(): 1 | 2 | 4 {
-  const expanded = useWindowAtLeast(breakpoints.expanded)
-  const medium = useWindowAtLeast(breakpoints.medium)
-  return expanded ? 4 : medium ? 2 : 1
+/** How many columns the grid has: 4 in a regular window (from 768, the form-factor rule), else 1. */
+export function useWidgetColumns(): 1 | 4 {
+  return useRegularWindow() ? 4 : 1
 }
 
 export type WidgetGridProps = {
@@ -116,7 +114,7 @@ export function WidgetFrame({
           gap: tokens.space['2'] + tokens.space['0.5'],
           padding: d.widgetPadding,
           borderRadius: tokens.radius.md,
-          borderWidth: 1,
+          borderWidth: line.thin,
           borderStyle: editing ? 'dashed' : 'solid',
           borderColor: editing ? theme.colors['line-strong'] : theme.colors.line,
           backgroundColor: theme.colors.s1,
@@ -131,13 +129,13 @@ export function WidgetFrame({
           flexDirection: 'row',
           alignItems: 'center',
           gap: tokens.space['2'],
-          minHeight: 24,
+          minHeight: widget.head,
         }}
       >
         {editing
           ? (handle ?? (
               <View style={{ marginLeft: -tokens.space['1'] }}>
-                <Icon name="drag" size={16} color="text-3" />
+                <Icon name="drag" size={tokens.icon.size.sm} color="text-3" />
               </View>
             ))
           : null}
@@ -160,7 +158,7 @@ export function WidgetFrame({
         {meta ? (
           <View style={{ minWidth: 0, maxWidth: '50%', alignItems: 'flex-end' }}>
             {typeof meta === 'string' ? (
-              <Text size={12} leading={1.4} color="text-3" align="right">
+              <Text size={tokens.adminText.figure.size} leading={1.4} color="text-3" align="right">
                 {meta}
               </Text>
             ) : (
@@ -192,13 +190,13 @@ export function WidgetFrame({
               aria-hidden
               style={{
                 position: 'absolute',
-                right: 4,
-                bottom: 4,
-                width: 12,
-                height: 12,
-                borderRightWidth: 2,
-                borderBottomWidth: 2,
-                borderBottomRightRadius: 5,
+                right: tokens.space['1'],
+                bottom: tokens.space['1'],
+                width: widget.resizeMark,
+                height: widget.resizeMark,
+                borderRightWidth: line.thick,
+                borderBottomWidth: line.thick,
+                borderBottomRightRadius: tokens.radius['2xs'],
                 borderColor: theme.colors['text-3'],
               }}
             />

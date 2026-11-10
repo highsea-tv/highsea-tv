@@ -36,6 +36,8 @@
 // text into wrapping (admin.md › Tables). A cell held to a width (`maxWidth`) is as wide as its
 // content up to that width, where it wraps (max-width clamps a max-content width); one spanning
 // columns takes what it's given.
+
+import { line, table } from '@highsea-tv/tokens'
 import {
   Children,
   type ComponentRef,
@@ -49,6 +51,7 @@ import {
   useSyncExternalStore,
 } from 'react'
 import { type LayoutChangeEvent, Platform, View, type ViewStyle } from 'react-native'
+import { visuallyHidden } from './hidden-heading.tsx'
 import { Text } from './text.tsx'
 import { tokens, useTheme } from './theme.tsx'
 import { Tooltip } from './tooltip.tsx'
@@ -89,7 +92,7 @@ export function TableFrame({ children, label }: { children: ReactNode; label?: s
         minWidth: 0,
         overflow: 'hidden',
         borderRadius: tokens.radius.lg,
-        borderWidth: 1,
+        borderWidth: line.thin,
         borderColor: theme.colors.line,
         backgroundColor: theme.colors.s1,
       }}
@@ -111,7 +114,7 @@ export function TableToolbar({ children }: { children: ReactNode }) {
         gap: s['3'],
         paddingHorizontal: s['3'] + s['0.5'],
         paddingVertical: s['3'],
-        borderBottomWidth: 1,
+        borderBottomWidth: line.thin,
         borderBottomColor: theme.colors.line,
       }}
     >
@@ -300,10 +303,10 @@ export function TableHead({ children, numeric, align, width, hidden }: TableHead
           textAlign: textAlign({ numeric, align }),
         }),
         {
-          height: 36,
+          height: table.head,
           width,
           paddingHorizontal: s['3'],
-          borderBottomWidth: 1,
+          borderBottomWidth: line.thin,
           borderBottomColor: theme.colors.line,
         },
         !web ? { flex: width ? undefined : 1, justifyContent: 'center' } : null,
@@ -311,10 +314,7 @@ export function TableHead({ children, numeric, align, width, hidden }: TableHead
     >
       {hidden ? (
         typeof children === 'string' ? (
-          <View
-            pointerEvents="none"
-            style={{ position: 'absolute', width: 1, height: 1, margin: -1, overflow: 'hidden' }}
-          >
+          <View pointerEvents="none" style={visuallyHidden}>
             <Text numberOfLines={1}>{children}</Text>
           </View>
         ) : null
@@ -445,7 +445,7 @@ export function TableCell({
           maxWidth: most,
           paddingHorizontal: s['3'],
           paddingVertical: s['2'],
-          borderBottomWidth: last ? 0 : 1,
+          borderBottomWidth: last ? 0 : line.thin,
           borderBottomColor: theme.colors.line,
         },
         !web ? { flex: 1, justifyContent: 'center' } : null,

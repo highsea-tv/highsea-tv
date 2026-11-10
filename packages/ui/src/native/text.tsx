@@ -29,6 +29,8 @@ const NEAREST: Record<Variant, { mobile: MobileVariant; tv: TvVariant; web: WebV
   callout: { mobile: 'callout', tv: 'meta', web: 'body' },
   caption: { mobile: 'caption', tv: 'meta', web: 'caption' },
   tabLabel: { mobile: 'tabLabel', tv: 'pill', web: 'caption' },
+  headline: { mobile: 'headline', tv: 'rowTitle', web: 'title' },
+  subheadline: { mobile: 'subheadline', tv: 'synopsis', web: 'body' },
   // the TV's
   heroTitle: { mobile: 'largeTitle', tv: 'heroTitle', web: 'display' },
   synopsis: { mobile: 'body', tv: 'synopsis', web: 'body' },
