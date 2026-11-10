@@ -82,16 +82,16 @@ Three gated batches, each reviewed by the owner ([answer 1](#the-owners-answers)
 
 ### 2026-11-10: E1's proposed token values, waiting for the owner's approval
 
-E1's first stop: the value table that [the proposed token set](#the-proposed-token-set) asks for. Nothing is applied. `packages/tokens`, the library, the admin and the guides are unchanged, `scripts/one-place-exceptions.json` still lists 548, and the shape approved with this scope (the families, the rule and where each family lives) is kept, with the few places it needs a call listed at the end.
+E1's first stop: the value table that [the proposed token set](#the-proposed-token-set) asks for. The owner approved it on 2026-11-10 with two changes ([below](#the-owners-changes-to-e1s-values)), and the tables here are updated to match the answers; the calls stay as they were asked. Nothing is applied yet. `packages/tokens`, the library, the admin and the guides are unchanged, `scripts/one-place-exceptions.json` still lists 548, and the shape approved with this scope (the families, the rule and where each family lives) is kept, with the few places it needs a call listed at the end.
 
 **How it was measured.** The values rule's own reader (`literals()` in `scripts/one-place.ts`, run from a copy outside the repository so nothing in the check changed) over the three folders the check reads and the two it doesn't read yet, `packages/admin/src` and `apps/docs/components`. It finds 895 values: the 548 excepted, 346 in the admin and the site title's one, the same as [Where things stand](#where-things-stand). Each was then read in place and given a token by the plan's rule. The scrollbar's and the hover's named constants aren't literals at their use, so the reader doesn't see them; they're counted by hand from `scrollbar.ts`, `lift.ts` and `page-parts.tsx`.
 
 **In short.**
 
-- 324 new tokens: 313 for the 895 values and 11 for the named constants. Another 28 tokens that exist already take values written by hand.
-- 27 values would round, each listed beside its old self below. Every other value keeps its exact size or colour.
-- 19 values stay listed with a lasting reason, in 4 files: the window chrome, the visually hidden technique, `alpha()`'s pattern and a mirrored icon.
-- 5 families come out well off the plan's estimates (line widths, the TV's spaces, icons, overlays and the component measures). The first table says why.
+- 321 new tokens: 310 for the 895 values and 11 for the named constants. Another 29 tokens that exist already take values written by hand.
+- 29 values would round, each listed beside its old self below, the admin shell's padding among them (answer 10). Every other value keeps its exact size or colour.
+- 18 values stay listed with a lasting reason, in 3 files: the window chrome, the visually hidden technique and `alpha()`'s pattern. 2 more leave the code with no token: the mirrored icon (answer 12) and Movie detail's `maxWidth={10000}` (answer 9).
+- 4 families come out well off the plan's estimates (line widths, icons, overlays and the component measures). The first table says why.
 
 #### The counts, measured
 
@@ -102,12 +102,13 @@ E1's first stop: the value table that [the proposed token set](#the-proposed-tok
 | Type off the scales | 45 | 40 | 37 | 3 | 0 | Close: 40, of which 3 in the admin. The TV's 2.4 titles are in it (`tvText.title`), and the 22 and 18 on the phone's Now Playing round onto existing styles. |
 | Icons | 20 | 72 | 27 | 45 | 0 | Higher: the admin writes its icons' sizes in place 45 times (14 fifteen times, 16 fourteen times), and the 32, 44 and 56 discs and the 1 drop are counted here. |
 | Overlays over art | 10 | 33 | 32 | 1 | 0 | Higher: black itself (9: behind video, in the scrims' and masks' gradients), the backdrop's 1.1 scale (2) and the hairline inside artwork (2) are counted here with the scrims and the glass. |
-| Stay listed, with a lasting reason | 19 | 19 | 19 | 0 | 0 | As estimated: the window chrome 13, the hidden heading 3, `alpha.ts` 2, and the player's mirrored icon 1. |
-| Component measures, in all | 600 | 488 | 277 | 210 | 1 | Lower, because the line widths, icons and overlays above took values the estimate had here. Split below. |
-| · onto tokens that exist | | 57 | 46 | 11 | 0 | |
+| Stay listed, with a lasting reason | 19 | 18 | 18 | 0 | 0 | One under the estimate: the window chrome 13, the hidden heading 3 and `alpha.ts` 2. The player's mirrored icon goes with its own glyph (answer 12). |
+| Gone with a change the owner chose |  | 2 | 1 | 1 | 0 | Not in the plan's families: the mirrored icon's `scaleX: -1` (answer 12) and Movie detail's `maxWidth={10000}` (answer 9) leave the code with no token. |
+| Component measures, in all | 600 | 487 | 277 | 209 | 1 | Lower, because the line widths, icons and overlays above took values the estimate had here. Split below. |
+| · onto tokens that exist | | 59 | 46 | 13 | 0 | |
 | · new steps on locked scales | | 55 | 37 | 18 | 0 | |
 | · the library's and client's groups | | 192 | 183 | 8 | 1 | |
-| · the admin's screens | | 167 | 0 | 167 | 0 | |
+| · the admin's screens | | 164 | 0 | 164 | 0 | |
 | · one visually hidden style | | 17 | 11 | 6 | 0 | |
 | Pointer hover (named, not read by the check) | 3 | 4 | | | | `lift.ts`'s three, and `page-parts.tsx`'s `PHOTO_LIFT` (1.05) for the person's photo, which the estimate missed. |
 | The scrollbar (named, not read by the check) | 7 | 7 | | | | As estimated. |
@@ -200,7 +201,7 @@ In `scales.ts` beside `blur`, as `art` (the plan's name `overlay` is taken by th
 | `art.edge` | `text` at 0.04; the hairline inside artwork; written white today | scales.ts `art` | 2 | `admin/collection-art.tsx` 1, `ui/poster.tsx` 1 |
 | `art.glass` | `bg` at 0.62; rgba(11,11,12,0.62) in the default theme | scales.ts `art` | 2 | `client/player/parts.tsx` 1, `ui/glass.ts` 1 |
 
-##### Component measures: onto tokens that exist (57 values)
+##### Component measures: onto tokens that exist (59 values)
 
 No new token: the value is already a token's, written by hand. The `radius.pill` rows are half-height corners (a 4-high track's 2, a circle's 40), which the pill radius draws the same.
 
@@ -208,6 +209,7 @@ No new token: the value is already a token's, written by hand. The `radius.pill`
 | --- | --- | --- | --- | --- |
 | `controlGeometry.md.height` | 36 | exists | 2 | `admin/links.tsx` 1, `admin/login.tsx` 1 |
 | `controlGeometry.md.inset` | 3 | exists | 1 | `ui/toggle.tsx` 1 |
+| `density.mainPadding` | 24 | exists | 2 | `admin/shell.tsx` 2 |
 | `radius.md` | 12 | exists | 1 | `client/player/parts.tsx` 1 |
 | `radius.pill` | 999 | exists | 12 | `client/music-player/now-playing-tv.tsx` 2, `client/player/parts.tsx` 4, `client/player/pointer.tsx` 3, `client/player/tv.tsx` 2, `ui/toaster.tsx` 1 |
 | `space.0.5` | 2 | exists | 6 | `admin/curation-preview.tsx` 1, `admin/import.tsx` 1, `admin/library-import.tsx` 1, `admin/widgets.tsx` 3 |
@@ -386,7 +388,7 @@ A group per component, in `controls.ts` beside `controlGeometry` (or `scales.ts`
 | `widget.resizeMark` | 12 | `controls.ts` | 4 | `ui/widget-editor.web.tsx` 2, `ui/widget.tsx` 2 |
 | `wrapBasis` | 192 | `controls.ts` | 5 | `admin/appearance.tsx` 1, `admin/import.tsx` 1, `admin/library-import.tsx` 1, `admin/vpn.tsx` 1, `ui/admin.tsx` 1 |
 
-##### Component measures: the admin's screens (167 values)
+##### Component measures: the admin's screens (164 values)
 
 The admin screens' own measures, as the plan's risks section says: one `admin` group in `controls.ts`, a key per screen, with the few the screens share (`admin.measure`, `admin.table.cellX`, `admin.filterWidth` and the like) at the group's top. The skeletons' heights and widths are one `admin.skeleton` scale, since every screen's loading state repeats them.
 
@@ -447,7 +449,6 @@ The admin screens' own measures, as the plan's risks section says: one `admin` g
 | `admin.movieDetail.factBasis` | 96 | `controls.ts` `admin` | 1 | `admin/movie-detail.tsx` 1 |
 | `admin.movieDetail.labelWidth` | 64 | `controls.ts` `admin` | 2 | `admin/movie-detail.tsx` 2 |
 | `admin.movieDetail.languageWidth` | 224 | `controls.ts` `admin` | 1 | `admin/movie-detail.tsx` 1 |
-| `admin.movieDetail.tableCellMaxWidth` | 10000 | `controls.ts` `admin` | 1 | `admin/movie-detail.tsx` 1 |
 | `admin.nowPlaying.posterWidth` | 64 | `controls.ts` `admin` | 1 | `admin/now-playing.tsx` 1 |
 | `admin.nowPlaying.selectWidth` | 176 | `controls.ts` `admin` | 1 | `admin/now-playing.tsx` 1 |
 | `admin.person.departmentWidth` | 192 | `controls.ts` `admin` | 1 | `admin/person.tsx` 1 |
@@ -464,8 +465,6 @@ The admin screens' own measures, as the plan's risks section says: one `admin` g
 | `admin.setup.pageWidth` | 960 | `controls.ts` `admin` | 1 | `admin/setup.tsx` 1 |
 | `admin.setup.portWidth` | 112 | `controls.ts` `admin` | 1 | `admin/setup.tsx` 1 |
 | `admin.setup.rowHeight` | 36 | `controls.ts` `admin` | 1 | `admin/setup.tsx` 1 |
-| `admin.shell.main.x` | 26 | `controls.ts` `admin` | 1 | `admin/shell.tsx` 1 |
-| `admin.shell.main.y` | 22 | `controls.ts` `admin` | 1 | `admin/shell.tsx` 1 |
 | `admin.shell.skipLinkOffset` | 80 | `controls.ts` `admin` | 1 | `admin/shell.tsx` 1 |
 | `admin.showDetail.monitoredColumn` | 56 | `controls.ts` `admin` | 1 | `admin/show-detail.tsx` 1 |
 | `admin.showDetail.numberColumn` | 40 | `controls.ts` `admin` | 1 | `admin/show-detail.tsx` 1 |
@@ -520,6 +519,10 @@ The admin screens' own measures, as the plan's risks section says: one `admin` g
 | `admin.widgets.progressColumn` | 160 | `controls.ts` `admin` | 1 | `admin/widgets.tsx` 1 |
 | `admin.widgets.speedColumn` | 64 | `controls.ts` `admin` | 1 | `admin/widgets.tsx` 1 |
 | `admin.widgets.storageBar` | 8 | `controls.ts` `admin` | 1 | `admin/widgets.tsx` 1 |
+
+##### Gone with a change the owner chose (2 values)
+
+No token: the player's forward-by button draws Lucide's `rotate-cw` instead of the replay arrow mirrored by `scaleX: -1` (`client/player/parts.tsx`, [answer 12](#the-owners-answers-on-e1s-values)), and Movie detail's expanded release row spans its columns with the library's new spanning cell instead of `maxWidth={10000}` (`admin/movie-detail.tsx`, [answer 9](#the-owners-answers-on-e1s-values)).
 
 ##### Component measures: one visually hidden style (17 values)
 
@@ -713,13 +716,14 @@ Per family, then per file: the value as written, the token it moves onto, and ho
   - `ui/tv/cards.tsx` (1): rgba(0,0,0,0.72) → `art.alpha.70`
   - `ui/tv/focusable.tsx` (1): rgba(0, 0, 0, …) → `art.black`
   - `ui/tv/page.tsx` (2): 1.1 → `art.backdropScale`; alpha(#000000, 0.55) → `art.black`
-- **Component measures: onto tokens that exist** (57: 46 excepted, 11 admin, 0 guides)
+- **Component measures: onto tokens that exist** (59: 46 excepted, 13 admin, 0 guides)
   - `admin/appearance.tsx` (3): #d6cfc2 → `theme.colors.accent` ×2; #a2a2a7 → `theme.colors.text-3`
   - `admin/curation-preview.tsx` (1): 2 → `space.0.5`
   - `admin/import.tsx` (1): 2 → `space.0.5`
   - `admin/library-import.tsx` (1): 2 → `space.0.5`
   - `admin/links.tsx` (1): 36 → `controlGeometry.md.height`
   - `admin/login.tsx` (1): 36 → `controlGeometry.md.height`
+  - `admin/shell.tsx` (2): 22 → `density.mainPadding`; 26 → `density.mainPadding`
   - `admin/widgets.tsx` (3): 2 → `space.0.5` ×3
   - `client/music-player/now-playing-tv.tsx` (2): 0.1 → `radius.pill`; 0.15 → `radius.pill`
   - `client/player/parts.tsx` (14): 12 → `radius.md`; 10 → `radius.pill`; 2 → `radius.pill` ×2; 999 → `radius.pill`; 8 → `space.2` ×2; 12 → `space.3`; 16 → `space.4` ×3; 24 → `space.6`; 44 → `targets.touch` ×2
@@ -814,7 +818,7 @@ Per family, then per file: the value as written, the token it moves onto, and ho
   - `ui/waveform.tsx` (1): 2 → `waveform.barMin`
   - `ui/widget-editor.web.tsx` (4): 28 → `dragHandle` ×2; 12 → `widget.resizeMark` ×2
   - `ui/widget.tsx` (3): 24 → `widget.head`; 12 → `widget.resizeMark` ×2
-- **Component measures: the admin's screens** (167: 0 excepted, 167 admin, 0 guides)
+- **Component measures: the admin's screens** (164: 0 excepted, 164 admin, 0 guides)
   - `admin/account.tsx` (4): 128 → `admin.skeleton.card` ×2; 40 → `admin.skeleton.field` ×2
   - `admin/activity.tsx` (3): 320 → `admin.activity.blockReasonWidth`; 288 → `admin.activity.reasonWidth`; 160 → `admin.progressWidth`
   - `admin/appearance.tsx` (7): 320 → `admin.appearance.editorFieldsWidth`; 128 → `admin.appearance.hexWidth`; 28 → `admin.appearance.previewMark`; 256 → `admin.appearance.previewWidth`; 22 → `admin.appearance.sampleMark`; #8fbfb7 → `admin.appearance.suggestedAccent` ×2
@@ -840,13 +844,13 @@ Per family, then per file: the value as written, the token it moves onto, and ho
   - `admin/loadable.tsx` (1): 48 → `admin.skeleton.row`
   - `admin/login.tsx` (4): 40 → `admin.skeleton.field` ×2; 24 → `admin.skeleton.title`; 160 → `admin.skeleton.width.md`
   - `admin/media-sections.tsx` (7): 600 → `admin.measure`; 28 → `admin.mediaSections.crewPhoto.width`; 112 → `admin.mediaSections.posterBlock`; 160 → `admin.mediaSections.posterColumn`; 320 → `admin.mediaSections.sideColumn`; 128 → `admin.summaryPoster.above`; 144 → `admin.summaryPoster.beside`
-  - `admin/movie-detail.tsx` (7): 96 → `admin.movieDetail.factBasis`; 64 → `admin.movieDetail.labelWidth` ×2; 224 → `admin.movieDetail.languageWidth`; 10000 → `admin.movieDetail.tableCellMaxWidth`; 48 → `admin.skeleton.row` ×2
+  - `admin/movie-detail.tsx` (6): 96 → `admin.movieDetail.factBasis`; 64 → `admin.movieDetail.labelWidth` ×2; 224 → `admin.movieDetail.languageWidth`; 48 → `admin.skeleton.row` ×2
   - `admin/now-playing.tsx` (2): 64 → `admin.nowPlaying.posterWidth`; 176 → `admin.nowPlaying.selectWidth`
   - `admin/person.tsx` (4): 600 → `admin.measure`; 192 → `admin.person.departmentWidth`; 160 → `admin.person.libraryColumn`; 14 → `admin.table.cellX`
   - `admin/security.tsx` (1): 192 → `admin.security.fieldWidth`
   - `admin/settings.tsx` (1): 208 → `admin.sideColumn`
   - `admin/setup.tsx` (17): 600 → `admin.measure`; 56 → `admin.setup.header`; 160 → `admin.setup.labelWidth`; 256 → `admin.setup.listHeight`; 224 → `admin.setup.moreWidth`; 960 → `admin.setup.pageWidth`; 112 → `admin.setup.portWidth`; 36 → `admin.setup.rowHeight`; 208 → `admin.sideColumn`; 96 → `admin.skeleton.block` ×2; 32 → `admin.skeleton.headingLarge`; 64 → `admin.skeleton.item` ×2; 20 → `admin.skeleton.line`; 160 → `admin.skeleton.panel`; 256 → `admin.skeleton.width.xl`
-  - `admin/shell.tsx` (3): 26 → `admin.shell.main.x`; 22 → `admin.shell.main.y`; -80 → `admin.shell.skipLinkOffset`
+  - `admin/shell.tsx` (1): -80 → `admin.shell.skipLinkOffset`
   - `admin/show-detail.tsx` (6): 56 → `admin.showDetail.monitoredColumn`; 40 → `admin.showDetail.numberColumn`; 48 → `admin.showDetail.searchColumn`; 96 → `admin.showDetail.statusMinWidth`; 320 → `admin.showDetail.titleMaxWidth`; 14 → `admin.table.cellX`
   - `admin/shows-library.tsx` (5): 192 → `admin.filterWidth`; 144 → `admin.selectWidth`; 144 → `admin.showsLibrary.episodesWidth`; 14 → `admin.table.cellX`; 40 → `admin.table.checkColumn`
   - `admin/subtitles.tsx` (5): 224 → `admin.subtitles.addWidth`; 672 → `admin.subtitles.formWidth`; 224 → `admin.subtitles.leftWidth`; 192 → `admin.subtitles.ruleWidth`; 128 → `admin.subtitles.short`
@@ -863,15 +867,17 @@ Per family, then per file: the value as written, the token it moves onto, and ho
   - `ui/command-palette.tsx` (3): -1 → `HIDDEN`; 1 → `HIDDEN` ×2
   - `ui/sheet.tsx` (3): -1 → `HIDDEN`; 1 → `HIDDEN` ×2
   - `ui/table.tsx` (3): -1 → `HIDDEN`; 1 → `HIDDEN` ×2
-- **Stay listed, with a lasting reason** (19: 19 excepted, 0 admin, 0 guides)
+- **Stay listed, with a lasting reason** (18: 18 excepted, 0 admin, 0 guides)
   - `client/desktop/window.tsx` (13): #28c840 → `LASTING:window`; #c42b1c → `LASTING:window`; #febc2e → `LASTING:window`; #ff5f57 → `LASTING:window`; #ffffff → `LASTING:window`; -2 → `LASTING:window`; 1 → `LASTING:window`; 10 → `LASTING:window` ×2; 14 → `LASTING:window`; 46 → `LASTING:window`; 5 → `LASTING:window` ×2
-  - `client/player/parts.tsx` (1): -1 → `LASTING:mirror`
   - `ui/alpha.ts` (2): hsl() → `LASTING:alpha`; hsla(… … … / …) → `LASTING:alpha`
   - `ui/hidden-heading.tsx` (3): -1 → `LASTING:hidden`; 1 → `LASTING:hidden` ×2
+- **Gone with a change the owner chose** (2: 1 excepted, 1 admin, 0 guides)
+  - `admin/movie-detail.tsx` (1): 10000 → `GONE:spanCell`
+  - `client/player/parts.tsx` (1): -1 → `GONE:forward`
 
-#### Values that would round (27)
+#### Values that would round (29)
 
-Each moves onto the nearest token rather than getting one of its own (the rule, and answer 8 at part A for type). Everything else keeps its value exactly.
+Each moves onto the nearest token rather than getting one of its own (the rule, answer 8 at part A for type, and the owner's answer 10 for the admin shell's padding). Everything else keeps its value exactly.
 
 | Where | Draws | Old | New |
 | --- | --- | --- | --- |
@@ -901,14 +907,15 @@ Each moves onto the nearest token rather than getting one of its own (the rule, 
 | `admin/discover-shows.tsx:162` | the stars on Discover Shows | 11 | 12 (`icon.size.2xs`) |
 | `admin/discover.tsx:77` | the stars on Discover | 11 | 12 (`icon.size.2xs`) |
 | `admin/settings.tsx:96` | Settings' section icons | 18 | 20 (`icon.size.md`) |
+| `admin/shell.tsx:545` | the admin shell's main area, across (every admin page) | 26 | 24 (`density.mainPadding`) |
+| `admin/shell.tsx:546` | the admin shell's main area, down (every admin page) | 22 | 24 (`density.mainPadding`) |
 | `admin/system.tsx:539` | System's link icons | 18 | 20 (`icon.size.md`) |
 
-#### Lasting exceptions, `"until": null` (19)
+#### Lasting exceptions, `"until": null` (18)
 
 | File | Values | Reason |
 | --- | --- | --- |
 | `client/desktop/window.tsx` | 13: 46, #c42b1c, #ffffff, #ff5f57, #febc2e, #28c840, 1, 10, 10, 5, 5, -2, 14 | The operating systems' window chrome: Windows' 46-wide caption buttons and Close red, macOS's three traffic-light colours and their measures. They copy Windows and macOS, not highsea's design. |
-| `client/player/parts.tsx` | 1: -1 | `scaleX: -1` mirrors an icon (the forward-by button draws the replay arrow mirrored): a transform, not a measure. |
 | `ui/alpha.ts` | 2: hsla(… … … / …), hsl() | `alpha()`'s `hsl()` and `hsla(… / …)` patterns: a parser's text, not a colour. |
 | `ui/hidden-heading.tsx` | 3: 1, 1, -1 | The visually hidden technique's 1 × 1 box and −1 margin, which the shared style keeps. |
 
@@ -930,6 +937,32 @@ Each is a judgement this table makes, with the recommendation first. The first t
 12. **The mirrored icon.** The player's forward-by button draws the replay arrow with `scaleX: -1`. Recommended: a lasting exception (a transform, not a measure). The other way is a `fast-forward` glyph of its own in the icon set.
 13. **Appearance's suggested accent** (`#8fbfb7`, twice in `appearance.tsx`) is the colour offered when the owner turns a custom accent on. Recommended: `admin.appearance.suggestedAccent`, since it's a suggestion rather than a theme's colour. The other way is a theme preset in `themes.ts`.
 14. **Small roundings in corners and TV spaces (7 values).** The 4 corners (the admin's key caps, the quality tag off the TV, the two widgets' resize marks) onto `radius.2xs` (4), the TV quality tag's 0.26u corner onto `tv.radius.pill` (0.3u), and the 0.31u padding and star gap onto `tv.space.1.5` (0.3u). Recommended: round; each moves by 1 or by 0.04u or less.
+
+#### The owner's changes to E1's values
+
+On 2026-11-10, reviewing E1's value table, the owner made 2 changes:
+
+1. **The admin shell's padding rounds** (call 10). `shell.tsx`'s main area moves from 26 across and 22 down onto `density.mainPadding` (24), with no `admin.shell.main` tokens. Every admin page moves by 2, and both values are in [the rounding table](#values-that-would-round-29) beside their old selves.
+2. **The forward-by button gets its own glyph** (call 12). It draws Lucide's `rotate-cw` (in `lucide-react-native` 1.57.0, the version the library pins), the clockwise twin of `rotate-ccw`, which `replay` draws today, so [iconography.md](../design-language/iconography.md)'s base set covers it and no custom glyph is needed. `icons.ts` gains it by a semantic name (`forward`), and `scaleX: -1` leaves `client/player/parts.tsx`, so it isn't a lasting exception: [18 remain](#lasting-exceptions-until-null-18).
+
+#### The owner's answers on E1's values
+
+On 2026-11-10 the owner took every recommendation for calls 1 to 14 except 10 and 12.
+
+1. The new steps are added: `space.1.5` (6), `space.2.5` (10), `radius.xs` (6), `radius.2xs` (4), `radius.3xs` (2), and `tv.radius.sm` (0.4), `.md` (0.6) and `.panel` (1). This is the owner's sign-off that [direction.md › Shape](../brand/direction.md#shape) requires for the new radii, so E1 adds them to direction.md and spacing-layout.md's radius table.
+2. Five scrim steps, `art.alpha` 35, 50, 60, 70 and 80, and the 7 alphas between them round.
+3. The family is named `art`.
+4. `art.edge` is the `text` role at 0.04.
+5. The 6 type values round as listed, under answer 8 at part A.
+6. The phone's 13s move onto `adminText.ui`, as the approved shape says.
+7. The 7 icons round as listed; the TV badge's 0.95u and the acknowledgement card's 1.1u stay their components' own.
+8. One shared visually hidden style in the library; `hidden-heading.tsx`'s 3 values are its lasting exception.
+9. The admin's own group as listed, now 125 keys. Movie detail's `maxWidth={10000}` gets no token: E1 builds the library's table cell spanning columns for the expanded release row and removes it ([the library's gaps](#the-librarys-gaps-e1)).
+10. **Changed by the owner:** the shell's 26 × 22 rounds onto `density.mainPadding` (24), with no tokens of its own; every admin page moves by 2.
+11. `hover.photoScale` (1.05) beside the other three in `motion.ts`.
+12. **Changed by the owner:** the forward-by button draws Lucide's `rotate-cw` as its own `forward` glyph instead of the replay arrow mirrored.
+13. `admin.appearance.suggestedAccent` (`#8fbfb7`).
+14. The 7 small corners and TV spaces round as listed.
 
 ## The tokens (E1)
 
@@ -963,14 +996,16 @@ The colours in the families above are written from the theme's roles where they 
 - **The scrollbar** (`scrollbar.ts`) and **the hover** (`lift.ts`) read their new tokens. `scrollbar.ts`'s `page` (0.875 of the view per click on the track) is the browser's behaviour, not a measure, and stays a constant.
 - **The library's old breakpoints** ([answer 5](#the-owners-answers)): `Banner`, `Row` and `page-parts.tsx` take the form-factor rule, `breakpoints` and `density.sidebarRail` leave the tokens, and spacing-layout.md's breakpoint table goes. A layout that moves is put beside its old self for the owner.
 - **The check reads everything** ([answer 3](#the-owners-answers)): `scripts/one-place.ts`'s values rule adds `packages/admin/src` and `apps/docs/components`, and `one-place.test.ts` covers both.
+- **The owner's answers on E1's values** ([2026-11-10](#the-owners-answers-on-e1s-values)): the new radii go into [direction.md › Shape](../brand/direction.md#shape) and spacing-layout.md's radius table (answer 1); `icons.ts` gains `forward`, Lucide's `rotate-cw`, which the player's forward-by button draws instead of the replay arrow mirrored (answer 12); and the admin shell's main area pads by `density.mainPadding` (answer 10).
 - **The exceptions file** keeps only the lasting entries. `one-place.ts` then fails on any exception whose `until` names a part, so a part can't end with one open.
 
 ### The library's gaps (E1)
 
-By [answer 8](#the-owners-answers), two of D2's list are built and the rest wait:
+By [answer 8](#the-owners-answers), two of D2's list are built and the rest wait, except the spanning cell, which [answer 9 on E1's values](#the-owners-answers-on-e1s-values) brings into E1:
 
 - **Fixes, built in E1:** react-native-svg's React Native props reaching the `<svg>` on the web (C1's note), so React's development warnings stop; and a `title` the web keeps where the library already passes one (react-native-web drops it).
-- **New parts, left until a screen needs them:** a truncating Badge, a table cell spanning columns, a row's title tooltip, a number input with limits, a `MultiSelect`, a heading level for a small EmptyState and a Dialog's fade-out. They're listed in [roadmap.md](../roadmap.md)'s follow-ups so they aren't lost.
+- **A new part, built in E1:** a table cell spanning columns, for Movie detail's expanded release row, which then drops its `maxWidth={10000}` stand-in.
+- **New parts, left until a screen needs them:** a truncating Badge, a row's title tooltip, a number input with limits, a `MultiSelect`, a heading level for a small EmptyState and a Dialog's fade-out. They're listed in [roadmap.md](../roadmap.md)'s follow-ups so they aren't lost.
 
 ## The guides on the library (E2)
 
