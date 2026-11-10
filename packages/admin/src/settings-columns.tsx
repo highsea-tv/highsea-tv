@@ -1,11 +1,10 @@
 'use client'
 // SPDX-License-Identifier: AGPL-3.0-only
 // What Settings › General, Appearance, Playback and Download client share, drawn with the library's
-// native renderer since D3 (one-client-platform-d.md): fields side by side from medium widths, each
+// native renderer since D3 (one-client-platform-d.md): fields side by side in a regular window, each
 // its share of the row (the web's `grid items-start gap-4 medium:grid-cols-*`), and a link out to
 // a page in a new tab with the external icon (the web's `target="_blank"` link), which it says.
-import { breakpoints } from '@highsea-tv/tokens'
-import { Icon, Press, Text, tokens, useTheme, useWindowAtLeast } from '@highsea-tv/ui/native'
+import { Icon, Press, Text, tokens, useRegularWindow, useTheme } from '@highsea-tv/ui/native'
 import { Children, type ReactNode } from 'react'
 import { View } from 'react-native'
 
@@ -13,19 +12,11 @@ const s = tokens.space
 const ui = tokens.adminText.ui
 
 /**
- * Fields side by side from `at` (medium by default), 16 apart and aligned at their tops, each its
- * share of the row; one above the other below it. A `null` child keeps its share empty.
+ * Fields side by side in a regular window, 16 apart and aligned at their tops, each its share of
+ * the row; one above the other in a compact one. A `null` child keeps its share empty.
  */
-export function Columns({
-  shares,
-  at = breakpoints.medium,
-  children,
-}: {
-  shares: number[]
-  at?: number
-  children: ReactNode
-}) {
-  const beside = useWindowAtLeast(at)
+export function Columns({ shares, children }: { shares: number[]; children: ReactNode }) {
+  const beside = useRegularWindow()
   const cells = Children.toArray(children)
   return (
     <View
@@ -96,7 +87,11 @@ export function ExternalLink({
           >
             {children}
           </Text>
-          <Icon name="external" size={accent ? 14 : 12} color={accent ? 'accent-text' : 'text-3'} />
+          <Icon
+            name="external"
+            size={accent ? tokens.icon.size.xs : tokens.icon.size['2xs']}
+            color={accent ? 'accent-text' : 'text-3'}
+          />
         </View>
       )}
     </Press>

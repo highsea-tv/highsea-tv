@@ -21,7 +21,6 @@ import type {
 } from '@highsea-tv/api-contract'
 import { useT } from '@highsea-tv/i18n/react'
 import { useAction, useQuery } from '@highsea-tv/sdk/react'
-import { breakpoints } from '@highsea-tv/tokens'
 import {
   Button,
   Checkbox,
@@ -34,7 +33,7 @@ import {
   TextLink,
   toast,
   tokens,
-  useWindowAtLeast,
+  useRegularWindow,
 } from '@highsea-tv/ui/native'
 import { type ReactNode, useState } from 'react'
 import { View } from 'react-native'
@@ -149,7 +148,7 @@ export function AddMovieDialog({
   const noFolders = options.data?.folders.length === 0
   const ready = options.status === 'success' && form && !noFolders && form.qualityProfileId !== ''
 
-  const two = useWindowAtLeast(breakpoints.medium)
+  const two = useRegularWindow()
 
   return (
     <Dialog
@@ -311,7 +310,7 @@ export function AddMovieDialog({
   )
 }
 
-/** Two fields side by side from medium up (the web's medium:grid-cols-2). */
+/** Two fields side by side in a regular window (the web's medium:grid-cols-2). */
 const HALF = { flex: 1, flexBasis: 0, minWidth: 0 } as const
 
 /** What's wrong and where it's fixed, in the danger colour, wrapping (the web's error line). */
@@ -326,7 +325,7 @@ function Problem({ children, icon = true }: { children: ReactNode; icon?: boolea
         rowGap: tokens.space['0.5'],
       }}
     >
-      {icon ? <Icon name="alert" size={14} color="badge-danger" /> : null}
+      {icon ? <Icon name="alert" size={tokens.icon.size.xs} color="badge-danger" /> : null}
       {children}
     </View>
   )

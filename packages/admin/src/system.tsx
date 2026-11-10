@@ -24,7 +24,7 @@ import { bytes, duration, percent } from '@highsea-tv/core/format'
 import { useLocale, useT } from '@highsea-tv/i18n/react'
 import type { ApiError } from '@highsea-tv/sdk'
 import { useAction, useClient, useQuery } from '@highsea-tv/sdk/react'
-import { breakpoints } from '@highsea-tv/tokens'
+import { admin, line } from '@highsea-tv/tokens'
 import {
   Badge,
   type BadgeTone,
@@ -56,8 +56,8 @@ import {
   TextLink,
   toast,
   tokens,
+  useRegularWindow,
   useTheme,
-  useWindowAtLeast,
 } from '@highsea-tv/ui/native'
 import { type ReactNode, useEffect, useState } from 'react'
 import { ActivityIndicator, ScrollView, View } from 'react-native'
@@ -89,7 +89,7 @@ const sp = tokens.space
 const ui = tokens.adminText.ui
 const figure = tokens.adminText.figure
 /** Health's and Events' measure (the web's max-w-200). */
-const MEASURE = 800
+const MEASURE = admin.system.measure
 
 export function System({ tab: asked = 'status' }: { tab?: SystemTab }) {
   const t = useT(messages)
@@ -164,7 +164,7 @@ function Status() {
   const t = useT(messages)
   const locale = useLocale()
   const now = useNow()
-  const side = useWindowAtLeast(breakpoints.expanded)
+  const side = useRegularWindow()
   const [apps, setApps] = useState(false)
   const info = useQuery('public-info', (c) => c.system.publicInfo(), ['server.updated'])
   const status = useQuery('system:status', (c) => c.system.status(), STATUS_TOPICS, {
@@ -253,13 +253,13 @@ function Status() {
 /** Between Status's panels (the web's gap-4). */
 const GAP = tokens.space['4']
 /** About's measure (the web's max-w-200, 800). */
-const ABOUT_WIDTH = 800
+const ABOUT_WIDTH = admin.system.measure
 /** A column of two side by side. */
 const HALF = { flex: 1, flexBasis: 0, minWidth: 0 } as const
 
 /** The four figures: two to a row in a compact window, four otherwise. */
 function StatRow({ children }: { children: ReactNode[] }) {
-  const four = useWindowAtLeast(breakpoints.medium)
+  const four = useRegularWindow()
   const per = four ? 4 : 2
   const rows: ReactNode[][] = []
   for (let i = 0; i < children.length; i += per) rows.push(children.slice(i, i + per))
@@ -424,7 +424,8 @@ function Catalog() {
   const now = useNow()
   const status = useQuery('catalog-status', (c) => c.catalog.status(), [INDEXER_TOPICS.catalog])
   const check = useAction((c) => c.catalog.check())
-  if (status.status === 'loading') return <Skeleton width={160} height={20} />
+  if (status.status === 'loading')
+    return <Skeleton width={admin.skeleton.width.md} height={admin.skeleton.line} />
   if (status.status === 'error')
     return (
       <Text variant="caption" color="text-3">
@@ -498,8 +499,8 @@ const HEALTH_TOPICS = [
 const STATUS_TOPICS = ['server.updated', INDEXER_TOPICS.catalog]
 
 /** A list of rows in a box, each but the first with the line above it (the web's divide-y). */
-const divided = (i: number, line: string) =>
-  i > 0 ? { borderTopWidth: 1, borderTopColor: line } : null
+const divided = (i: number, color: string) =>
+  i > 0 ? { borderTopWidth: line.thin, borderTopColor: color } : null
 
 /** Text that breaks anywhere rather than overflow (the web's overflow-wrap: anywhere). */
 const ANYWHERE = { overflowWrap: 'anywhere' } as object
@@ -529,14 +530,14 @@ function Health() {
                     flexDirection: 'row',
                     gap: sp['3'],
                     padding: sp['4'],
-                    borderWidth: 1,
+                    borderWidth: line.thin,
                     borderColor: theme.colors.line,
                     borderRadius: tokens.radius.lg,
                     backgroundColor: theme.colors.s1,
                   }}
                 >
                   <View style={{ marginTop: sp['0.5'] }}>
-                    <Icon name={l.icon} size={18} color="text-2" />
+                    <Icon name={l.icon} size={tokens.icon.size.md} color="text-2" />
                   </View>
                   <View style={{ flex: 1, minWidth: 0, gap: sp['1'] }}>
                     <View
@@ -592,7 +593,7 @@ function Muted({ children }: { children: string }) {
 }
 
 /** The state column's width (the web's w-44). */
-const STATE_WIDTH = 176
+const STATE_WIDTH = admin.system.stateWidth
 
 /** The prototype's Tasks table: every schedule, its state, interval, last and next run, Run now. */
 function Tasks() {
@@ -693,9 +694,9 @@ const LOG_LIMIT = 1000
 /** Lines shown at once: the search narrows them. */
 const LOG_SHOWN = 200
 /** The toolbar's level menu and search (the web's w-52 and w-64). */
-const LEVEL_WIDTH = 208
-const SEARCH_WIDTH = 256
-/** A line's columns from a medium window up: time, level, source (the web's 10rem 4.5rem 7rem). */
+const LEVEL_WIDTH = admin.system.levelWidth
+const SEARCH_WIDTH = admin.system.searchWidth
+/** A line's columns in a regular window: time, level, source (the web's 10rem 4.5rem 7rem). */
 const LOG_COLUMNS = [160, 72, 112] as const
 /** A row's padding (the web's px-3.5 py-2). */
 const ROW_PAD = { paddingHorizontal: sp['3'] + sp['0.5'], paddingVertical: sp['2'] } as const
@@ -739,7 +740,7 @@ function Logs() {
   const t = useT(messages)
   const theme = useTheme()
   const locale = useLocale()
-  const columns = useWindowAtLeast(breakpoints.medium)
+  const columns = useRegularWindow()
   const [level, setLevel] = useState<LogEntry['level']>('info')
   const [q, setQ] = useState('')
   const logs = useQuery(
@@ -847,7 +848,12 @@ function Logs() {
                     ))}
                   </View>
                 )}
-                <View style={[ROW_PAD, { borderTopWidth: 1, borderTopColor: theme.colors.line }]}>
+                <View
+                  style={[
+                    ROW_PAD,
+                    { borderTopWidth: line.thin, borderTopColor: theme.colors.line },
+                  ]}
+                >
                   <Text variant="caption" color="text-3">
                     {t('logs.kept', { days: String(l.files.length), size: bytes(size) })}
                   </Text>
@@ -905,7 +911,7 @@ function Crashes() {
                       minWidth: 0,
                       paddingHorizontal: sp['3'],
                       paddingVertical: sp['2'],
-                      borderWidth: 1,
+                      borderWidth: line.thin,
                       borderColor: theme.colors.line,
                       borderRadius: tokens.radius.md,
                     }}
@@ -953,7 +959,7 @@ function Crashes() {
 /** Events kept on screen. */
 const EVENTS_SHOWN = 40
 /** An event's time column (the web's w-20). */
-const EVENT_TIME = 80
+const EVENT_TIME = admin.system.eventTime
 
 /** The live event stream every app listens to, as it arrives. */
 function Events() {
@@ -977,7 +983,7 @@ function Events() {
     second: '2-digit',
   })
   const box = {
-    borderWidth: 1,
+    borderWidth: line.thin,
     borderColor: theme.colors.line,
     borderRadius: tokens.radius.lg,
     backgroundColor: theme.colors.s1,
@@ -1222,7 +1228,7 @@ const RESTART_POLL = 1500
 /** A restart too quick to be seen down still counts once this has passed. */
 const RESTART_GRACE = 20_000
 /** Restarting's and Updates' measure (the web's max-w-160). */
-const NARROW = 640
+const NARROW = admin.system.narrow
 
 /**
  * After a restore: the server exits and comes back on the backup. Asks `/api/health` until the
@@ -1267,7 +1273,7 @@ function Restarting({ name }: { name: string }) {
         maxWidth: NARROW,
         gap: sp['3'],
         padding: sp['5'],
-        borderWidth: 1,
+        borderWidth: line.thin,
         borderColor: theme.colors.line,
         borderRadius: tokens.radius.lg,
         backgroundColor: theme.colors.s1,
@@ -1314,7 +1320,7 @@ function Updates() {
             maxWidth: NARROW,
             gap: sp['4'],
             padding: sp['5'],
-            borderWidth: 1,
+            borderWidth: line.thin,
             borderColor: theme.colors.line,
             borderRadius: tokens.radius.lg,
             backgroundColor: theme.colors.s1,
@@ -1413,7 +1419,7 @@ function NotesLink({ href, children }: { href: string; children: string }) {
           >
             {children}
           </Text>
-          <Icon name="external" size={14} color="accent-text" />
+          <Icon name="external" size={tokens.icon.size.xs} color="accent-text" />
         </View>
       )}
     </Press>

@@ -1,4 +1,6 @@
 'use client'
+import type { ClientType, CurationPreviewInput } from '@highsea-tv/api-contract'
+import { useQuery } from '@highsea-tv/sdk/react'
 // SPDX-License-Identifier: AGPL-3.0-only
 // The live client preview (A11; checkpoint 8c), ported from the prototype's curation/preview.tsx.
 // The server resolves the draft as one person would get it on one kind of app
@@ -6,8 +8,7 @@
 // own size, scaled to fit (curation-frame.tsx). The frame is inert: a picture of the client, not a
 // second app to tab into. "Preview as" offers everyone on the server, not the prototype's two
 // sample people.
-import type { ClientType, CurationPreviewInput } from '@highsea-tv/api-contract'
-import { useQuery } from '@highsea-tv/sdk/react'
+import { admin } from '@highsea-tv/tokens'
 import {
   Icon,
   PageFrame,
@@ -122,7 +123,7 @@ export function ClientPreview({
       scale={platform === 'mobile' ? 1 : scale}
     />
   )
-  const bezel = 12
+  const bezel = admin.curationPreview.bezel
 
   return (
     <View
@@ -157,7 +158,7 @@ export function ClientPreview({
             label: t(`platform.${p}`),
           }))}
         />
-        <View style={{ width: 160 }}>
+        <View style={{ width: admin.curationPreview.platformWidth }}>
           <Select
             aria-label={t('previewAs')}
             value={viewer ?? ''}
@@ -186,14 +187,22 @@ export function ClientPreview({
                 width: screen.w + bezel * 2,
                 height: screen.h + bezel * 2,
                 padding: bezel,
-                borderRadius: 56,
+                borderRadius: admin.curationPreview.deviceCorner,
                 backgroundColor: theme.colors.s3,
                 boxShadow: `0 0 0 1px ${theme.colors['line-strong']}`,
                 transformOrigin: 'top left',
                 transform: [{ scale }],
               }}
             >
-              <View style={{ flex: 1, overflow: 'hidden', borderRadius: 44 }}>{iframe}</View>
+              <View
+                style={{
+                  flex: 1,
+                  overflow: 'hidden',
+                  borderRadius: admin.curationPreview.screenCorner,
+                }}
+              >
+                {iframe}
+              </View>
             </View>
           </View>
         ) : (
@@ -211,10 +220,14 @@ export function ClientPreview({
       </View>
       <View
         aria-live="polite"
-        style={{ flexDirection: 'row', alignItems: 'flex-start', gap: tokens.space['1'] + 2 }}
+        style={{
+          flexDirection: 'row',
+          alignItems: 'flex-start',
+          gap: tokens.space['1'] + tokens.space['0.5'],
+        }}
       >
-        <View style={{ marginTop: 1 }}>
-          <Icon name={reaches ? 'info' : 'warning'} size={14} color="text-3" />
+        <View style={{ marginTop: tokens.icon.drop }}>
+          <Icon name={reaches ? 'info' : 'warning'} size={tokens.icon.size.xs} color="text-3" />
         </View>
         <Text variant="caption" color="text-3" style={{ flex: 1, minWidth: 0 }}>
           {preview.status === 'loading'

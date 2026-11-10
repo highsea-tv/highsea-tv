@@ -12,7 +12,7 @@
 import { bytes } from '@highsea-tv/core/format'
 import { useT } from '@highsea-tv/i18n/react'
 import { useAction, useQuery } from '@highsea-tv/sdk/react'
-import { breakpoints } from '@highsea-tv/tokens'
+import { admin } from '@highsea-tv/tokens'
 import {
   Button,
   type CommandGroup,
@@ -33,9 +33,9 @@ import {
   tokens,
   useCommandPaletteShortcut,
   useFormFactor,
+  useRegularWindow,
   useScrollSource,
   useTheme,
-  useWindowAtLeast,
 } from '@highsea-tv/ui/native'
 import {
   type ComponentRef,
@@ -373,19 +373,15 @@ function AdminStatusBar() {
   return (
     <StatusBar>
       <StatusItem dot="success">{server.data.name}</StatusItem>
-      <StatusItem hideBelow="medium">
-        {t('server.version', { version: server.data.version })}
-      </StatusItem>
-      <StatusItem hideBelow="medium">
+      <StatusItem hideCompact>{t('server.version', { version: server.data.version })}</StatusItem>
+      <StatusItem hideCompact>
         {t('status.clients', { clients: server.data.clientsConnected })}
       </StatusItem>
       {s && (
         <>
-          <StatusItem hideBelow="expanded">{t('status.cpu', { value: s.cpu })}</StatusItem>
-          <StatusItem hideBelow="expanded">
-            {t('status.ram', { value: bytes(s.memory.used) })}
-          </StatusItem>
-          <StatusItem hideBelow="expanded">
+          <StatusItem hideCompact>{t('status.cpu', { value: s.cpu })}</StatusItem>
+          <StatusItem hideCompact>{t('status.ram', { value: bytes(s.memory.used) })}</StatusItem>
+          <StatusItem hideCompact>
             {t('status.free', { value: bytes(s.disks.reduce((sum, d) => sum + d.free, 0)) })}
           </StatusItem>
         </>
@@ -463,7 +459,7 @@ export function AdminShell({ role: initialRole, children }: { role: Role; childr
   const page = useScrollSource(false, { ref: scroller })
   const [skipFocused, setSkipFocused] = useState(false)
   const { colors } = useTheme()
-  const medium = useWindowAtLeast(breakpoints.medium)
+  const medium = useRegularWindow()
   const togglePalette = useCallback(() => setPalette((o) => !o), [])
   useCommandPaletteShortcut(togglePalette)
   const onClick = useClientLinks()
@@ -518,7 +514,7 @@ export function AdminShell({ role: initialRole, children }: { role: Role; childr
             top: tokens.space['3'],
             start: tokens.space['3'],
             zIndex: 50,
-            transform: [{ translateY: skipFocused ? 0 : -80 }],
+            transform: [{ translateY: skipFocused ? 0 : -admin.shell.skipLinkOffset }],
           }}
         >
           <Button
@@ -542,8 +538,8 @@ export function AdminShell({ role: initialRole, children }: { role: Role; childr
                   NO_OUTLINE,
                   {
                     gap: tokens.space['5'],
-                    paddingHorizontal: medium ? 26 : tokens.space['4'],
-                    paddingVertical: medium ? 22 : tokens.space['4'],
+                    paddingHorizontal: medium ? tokens.density.mainPadding : tokens.space['4'],
+                    paddingVertical: medium ? tokens.density.mainPadding : tokens.space['4'],
                   },
                 ]}
               >

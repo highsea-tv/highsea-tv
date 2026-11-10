@@ -2,13 +2,13 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The small parts Settings › Connections, Import lists and Migration share, drawn with the library's
 // native renderer since D3 (one-client-platform-d.md): a row's card on `s2` (the web's
-// `rounded-md border border-line bg-s2 p-3`), a caption, a dialog form's two columns from medium
+// `rounded-md border border-line bg-s2 p-3`), a caption, a dialog form's two columns in a regular window
 // widths (the web's `grid gap-4 medium:grid-cols-2`, a field `medium:col-span-2` unless it's a half),
 // and a group of checkboxes with its legend (the web's `<fieldset>`), named by its legend as
 // WAI-ARIA's group is (https://www.w3.org/WAI/ARIA/apg/practices/names-and-descriptions/).
 import type { ColorRole } from '@highsea-tv/tokens'
-import { breakpoints } from '@highsea-tv/tokens'
-import { Text, tokens, useTheme, useWindowAtLeast } from '@highsea-tv/ui/native'
+import { line } from '@highsea-tv/tokens'
+import { Text, tokens, useRegularWindow, useTheme } from '@highsea-tv/ui/native'
 import type { ReactNode } from 'react'
 import { View, type ViewStyle } from 'react-native'
 
@@ -44,7 +44,7 @@ export function Card({
         {
           gap,
           padding: s['3'],
-          borderWidth: 1,
+          borderWidth: line.thin,
           borderColor: theme.colors.line,
           borderRadius: tokens.radius.md,
           backgroundColor: theme.colors.s2,
@@ -120,7 +120,7 @@ export function Line({
   )
 }
 
-/** A dialog's form: its fields in two columns from medium widths, 16 apart. */
+/** A dialog's form: its fields in two columns in a regular window, 16 apart. */
 export function FormGrid({ children }: { children: ReactNode }) {
   return (
     <View style={{ flexDirection: 'row', flexWrap: 'wrap', columnGap: s['4'], rowGap: s['4'] }}>
@@ -129,9 +129,9 @@ export function FormGrid({ children }: { children: ReactNode }) {
   )
 }
 
-/** One of a FormGrid's cells: the whole row, or half of it from medium widths. */
+/** One of a FormGrid's cells: the whole row, or half of it in a regular window. */
 export function Cell({ half = false, children }: { half?: boolean; children: ReactNode }) {
-  const medium = useWindowAtLeast(breakpoints.medium)
+  const medium = useRegularWindow()
   return (
     <View
       style={
@@ -147,7 +147,7 @@ export function Cell({ half = false, children }: { half?: boolean; children: Rea
 
 /**
  * A group of checkboxes with its legend and a hint under it, the checkboxes in a box on `s2`, in two
- * columns from medium widths.
+ * columns in a regular window.
  */
 export function CheckGroup({
   legend,
@@ -159,7 +159,7 @@ export function CheckGroup({
   children: ReactNode
 }) {
   const theme = useTheme()
-  const medium = useWindowAtLeast(breakpoints.medium)
+  const medium = useRegularWindow()
   return (
     <View role="group" aria-label={legend} style={{ gap: s['2'] }}>
       {/* the legend: the group is named by it, so it's read once, as the group's name */}
@@ -180,7 +180,7 @@ export function CheckGroup({
             gridTemplateColumns: medium ? 'repeat(2, minmax(0, 1fr))' : 'minmax(0, 1fr)',
             gap: s['2'],
             padding: s['3'],
-            borderWidth: 1,
+            borderWidth: line.thin,
             borderColor: theme.colors.line,
             borderRadius: tokens.radius.md,
             backgroundColor: theme.colors.s2,

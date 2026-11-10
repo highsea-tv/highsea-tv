@@ -1,4 +1,9 @@
 'use client'
+import type { BlocklistEntry, HistoryEvent, QueueItem } from '@highsea-tv/api-contract'
+import { bytes, duration, rate } from '@highsea-tv/core/format'
+import { useLocale, useT } from '@highsea-tv/i18n/react'
+import type { HighseaClient } from '@highsea-tv/sdk'
+import { useAction, useQuery } from '@highsea-tv/sdk/react'
 // SPDX-License-Identifier: AGPL-3.0-only
 // A7 Activity (activity-downloads.md#activity), ported from the prototype with real data: the
 // queue, live, with the states that need a person (stalled, import blocked) explained in the row
@@ -8,11 +13,7 @@
 // - history and the blocklist rows carry the movie's title; a blocklist entry whose movie has
 //   left the library shows the release alone.
 // Drawn with the library's native renderer since D2 (one-client-platform-d.md).
-import type { BlocklistEntry, HistoryEvent, QueueItem } from '@highsea-tv/api-contract'
-import { bytes, duration, rate } from '@highsea-tv/core/format'
-import { useLocale, useT } from '@highsea-tv/i18n/react'
-import type { HighseaClient } from '@highsea-tv/sdk'
-import { useAction, useQuery } from '@highsea-tv/sdk/react'
+import { admin } from '@highsea-tv/tokens'
 import {
   Badge,
   Button,
@@ -361,11 +362,11 @@ function Queue() {
 }
 
 /** A progress column's width (the web's w-40). */
-const PROGRESS_WIDTH = 160
+const PROGRESS_WIDTH = admin.progressWidth
 /** A cell that wraps its reason (the web's max-w-72). */
-const REASON_WIDTH = 288
+const REASON_WIDTH = admin.activity.reasonWidth
 /** The blocklist's reason (the web's max-w-80). */
-const BLOCK_REASON_WIDTH = 320
+const BLOCK_REASON_WIDTH = admin.activity.blockReasonWidth
 
 // ---------------------------------------------------------------- history
 
@@ -431,7 +432,7 @@ function HistoryTable({ events, showTitle }: { events: HistoryEvent[]; showTitle
         {events.map((e) => (
           <TableRow key={e.id}>
             <TableCell>
-              <Icon name={historyIcon[e.type]} size={14} color="text-3" />
+              <Icon name={historyIcon[e.type]} size={tokens.icon.size.xs} color="text-3" />
               <Text size={ui.size} leading={ui.leading} numberOfLines={1}>
                 {t(`event.${e.type}`)}
               </Text>

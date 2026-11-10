@@ -1,4 +1,9 @@
 'use client'
+import type { Torrent, TorrentFile, TorrentLimits, VpnStatus } from '@highsea-tv/api-contract'
+import { bytes, duration, percent, rate } from '@highsea-tv/core/format'
+import { useLocale, useT } from '@highsea-tv/i18n/react'
+import { useAction, useQuery } from '@highsea-tv/sdk/react'
+import type { ColorRole } from '@highsea-tv/tokens'
 // SPDX-License-Identifier: AGPL-3.0-only
 // A8 Downloads (activity-downloads.md#downloads), ported from the prototype with real data: every
 // torrent, the library's and manual ones, with live rates; a detail sheet with files and their
@@ -16,11 +21,7 @@
 // - trackers can be not contacted yet, private torrents say so in General, and the seeding rule
 //   carries its minimum time.
 // Drawn with the library's native renderer since D2 (one-client-platform-d.md).
-import type { Torrent, TorrentFile, TorrentLimits, VpnStatus } from '@highsea-tv/api-contract'
-import { bytes, duration, percent, rate } from '@highsea-tv/core/format'
-import { useLocale, useT } from '@highsea-tv/i18n/react'
-import { useAction, useQuery } from '@highsea-tv/sdk/react'
-import type { ColorRole } from '@highsea-tv/tokens'
+import { admin, line } from '@highsea-tv/tokens'
 import {
   Badge,
   Button,
@@ -75,11 +76,11 @@ const LIVE = ['torrents.updated', 'queue.updated']
 const RATES_EVERY = 2_000
 const VPN_SETTINGS = '/settings/vpn'
 /** The category filter (the web's w-44), the progress column (w-40) and a file's priority (w-40). */
-const CATEGORY_WIDTH = 176
-const PROGRESS_WIDTH = 160
-const PRIORITY_WIDTH = 160
+const CATEGORY_WIDTH = admin.downloads.categoryWidth
+const PROGRESS_WIDTH = admin.progressWidth
+const PRIORITY_WIDTH = admin.downloads.priorityWidth
 /** The detail sheet's widest (the web's min(40rem, 100vw - 2rem); the sheet keeps the margin). */
-const SHEET_WIDTH = 640
+const SHEET_WIDTH = admin.downloads.sheetWidth
 
 const states = {
   all: () => true,
@@ -329,7 +330,7 @@ function VpnBanner({ limits: l }: { limits: TorrentLimits }) {
   const status = useQuery('vpn:status', (c) => c.vpn.status(), ['vpn.updated'])
   const v = status.data
   if (!v) return null
-  const [icon, tone, title, line] = vpnLine(v, t)
+  const [icon, tone, title, detail] = vpnLine(v, t)
   const down = l.downloadRate
     ? t('rate.down', { rate: rate(l.downloadRate) })
     : t('rate.downUnlimited')
@@ -345,19 +346,19 @@ function VpnBanner({ limits: l }: { limits: TorrentLimits }) {
         rowGap: sp['1'],
         paddingHorizontal: sp['3'] + sp['0.5'],
         paddingVertical: sp['2'] + sp['0.5'],
-        borderWidth: 1,
+        borderWidth: line.thin,
         borderColor: theme.colors.line,
         borderRadius: tokens.radius.md,
         backgroundColor: theme.colors.s1,
         minWidth: 0,
       }}
     >
-      <Icon name={icon} size={16} color={tone} />
+      <Icon name={icon} size={tokens.icon.size.sm} color={tone} />
       <Text size={ui.size} leading={ui.leading} weight={500}>
         {title}
       </Text>
       <Text size={ui.size} leading={ui.leading} color="text-2">
-        {line}
+        {detail}
       </Text>
       {v.state === 'off' && (
         <TextLink href={VPN_SETTINGS} look="ui">
@@ -680,7 +681,7 @@ function TorrentSheet({
             <View
               style={{
                 padding: sp['3'],
-                borderWidth: 1,
+                borderWidth: line.thin,
                 borderColor: theme.colors.line,
                 borderRadius: tokens.radius.md,
                 backgroundColor: theme.colors.s2,
@@ -876,7 +877,7 @@ function Trackers({ torrent: x }: { torrent: Torrent }) {
           style={{
             gap: sp['0.5'],
             padding: sp['3'],
-            borderWidth: 1,
+            borderWidth: line.thin,
             borderColor: theme.colors.line,
             borderRadius: tokens.radius.md,
             minWidth: 0,

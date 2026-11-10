@@ -27,7 +27,7 @@ import {
 } from '@highsea-tv/api-contract'
 import { useLocale, useT } from '@highsea-tv/i18n/react'
 import { useAction, useQuery } from '@highsea-tv/sdk/react'
-import { breakpoints } from '@highsea-tv/tokens'
+import { admin, line } from '@highsea-tv/tokens'
 import {
   Badge,
   Button,
@@ -41,8 +41,8 @@ import {
   Tooltip,
   toast,
   tokens,
+  useRegularWindow,
   useTheme,
-  useWindowAtLeast,
 } from '@highsea-tv/ui/native'
 import { useState } from 'react'
 import { View } from 'react-native'
@@ -419,8 +419,8 @@ function Catalog() {
 
 const blankExtra = { url: '', keyId: '', publicKey: '' }
 const sp = tokens.space
-/** The key id's column from medium widths, as the web's `12rem`. */
-const KEY_ID_WIDTH = 192
+/** The key id's column in a regular window, as the web's `12rem`. */
+const KEY_ID_WIDTH = admin.general.keyIdWidth
 
 function CatalogSettingsGroup() {
   const t = useT(messages)
@@ -430,7 +430,7 @@ function CatalogSettingsGroup() {
   const [extraError, setExtraError] = useState<string | null>(null)
   const [removing, setRemoving] = useState<string | null>(null)
   const theme = useTheme()
-  const medium = useWindowAtLeast(breakpoints.medium)
+  const medium = useRegularWindow()
 
   const change = (patch: CatalogSettingsPatch) =>
     save.run(patch).then(
@@ -507,7 +507,7 @@ function CatalogSettingsGroup() {
                           minWidth: 0,
                           paddingHorizontal: sp['3'],
                           paddingVertical: sp['2'],
-                          borderWidth: 1,
+                          borderWidth: line.thin,
                           borderColor: theme.colors.line,
                           borderRadius: tokens.radius.md,
                           backgroundColor: theme.colors.s1,
@@ -543,7 +543,7 @@ function CatalogSettingsGroup() {
                 style={{
                   gap: sp['3'],
                   padding: sp['3'],
-                  borderWidth: 1,
+                  borderWidth: line.thin,
                   borderColor: theme.colors.line,
                   borderRadius: tokens.radius.md,
                 }}
@@ -659,8 +659,8 @@ function Updates({ value, set, owner }: Part) {
 
 // ---------------------------------------------------------------- diagnostics
 
-/** The log level's select from medium widths, as the web's `max-w-72`. */
-const LOG_LEVEL_WIDTH = 288
+/** The log level's select in a regular window, as the web's `max-w-72`. */
+const LOG_LEVEL_WIDTH = admin.general.logLevelWidth
 
 function Diagnostics({
   value,
@@ -670,7 +670,7 @@ function Diagnostics({
   owner,
 }: Part & { metrics: MetricsSettings; setMetrics: (m: MetricsSettings) => void }) {
   const t = useT(messages)
-  const medium = useWindowAtLeast(breakpoints.medium)
+  const medium = useRegularWindow()
   return (
     <Group title={t('diagnostics.title')} description={t('diagnostics.description')}>
       <Field label={t('diagnostics.logLevel')} hint={t('diagnostics.logLevelHint')}>

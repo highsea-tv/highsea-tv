@@ -1,12 +1,4 @@
 'use client'
-// SPDX-License-Identifier: AGPL-3.0-only
-// A17's Library import mode (manual-import.md › Library import; the owner's answer 9): a library
-// already on disk. The same table as Manual import with folders for files and TMDB's match as the
-// movie column. The owner picks a root folder (Settings › Media management's "Import what's
-// already here" opens it with the folder chosen), looks inside, checks the matches, and starts a
-// job that adds each movie where it is; Rename to my format renames them as it goes. The job's
-// progress is live on `import.updated`.
-// Drawn with the library's native renderer since D2 (one-client-platform-d.md).
 import {
   LIBRARY_IMPORT_TOPIC,
   type LibraryCandidate,
@@ -16,6 +8,15 @@ import {
 import { bytes } from '@highsea-tv/core/format'
 import { useT } from '@highsea-tv/i18n/react'
 import { useAction, useClient, useQuery } from '@highsea-tv/sdk/react'
+// SPDX-License-Identifier: AGPL-3.0-only
+// A17's Library import mode (manual-import.md › Library import; the owner's answer 9): a library
+// already on disk. The same table as Manual import with folders for files and TMDB's match as the
+// movie column. The owner picks a root folder (Settings › Media management's "Import what's
+// already here" opens it with the folder chosen), looks inside, checks the matches, and starts a
+// job that adds each movie where it is; Rename to my format renames them as it goes. The job's
+// progress is live on `import.updated`.
+// Drawn with the library's native renderer since D2 (one-client-platform-d.md).
+import { admin, line, wrapBasis } from '@highsea-tv/tokens'
 import {
   Badge,
   Button,
@@ -46,9 +47,9 @@ import { Release } from './table-parts.tsx'
 
 const sp = tokens.space
 /** The movie and profile columns (the web's w-60 and w-44), and a folder's (max-w-72). */
-const MOVIE_WIDTH = 240
-const PROFILE_WIDTH = 176
-const NAME_WIDTH = 288
+const MOVIE_WIDTH = admin.import.movie
+const PROFILE_WIDTH = admin.import.choice
+const NAME_WIDTH = admin.import.name
 
 type Row = LibraryCandidate & { selected: boolean }
 
@@ -102,7 +103,7 @@ export function ImportPanel({
       style={{
         gap,
         padding: sp['4'],
-        borderWidth: 1,
+        borderWidth: line.thin,
         borderColor: theme.colors.line,
         borderRadius: tokens.radius.lg,
         backgroundColor: theme.colors.s1,
@@ -206,7 +207,7 @@ export function LibraryImport({ root: initialRoot = '' }: { root?: string }) {
             hint={roots.data && rootOptions.length === 0 ? t('noRoots') : t('rootHint', TAGS)}
           >
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: sp['2'] }}>
-              <View style={{ flexGrow: 1, flexShrink: 1, flexBasis: 192, minWidth: 0 }}>
+              <View style={{ flexGrow: 1, flexShrink: 1, flexBasis: wrapBasis, minWidth: 0 }}>
                 <Select
                   aria-label={t('root')}
                   value={root}
@@ -317,7 +318,14 @@ export function LibraryImport({ root: initialRoot = '' }: { root?: string }) {
                         />
                       </TableCell>
                       <TableCell tall maxWidth={NAME_WIDTH}>
-                        <View style={{ minWidth: 0, flex: 1, alignItems: 'flex-start', gap: 2 }}>
+                        <View
+                          style={{
+                            minWidth: 0,
+                            flex: 1,
+                            alignItems: 'flex-start',
+                            gap: tokens.space['0.5'],
+                          }}
+                        >
                           <Release color="text">{r.name}</Release>
                           {r.file && (
                             <Release color="text-3">{r.file.split('/').pop() ?? r.file}</Release>

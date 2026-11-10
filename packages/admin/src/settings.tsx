@@ -1,12 +1,12 @@
 'use client'
 // SPDX-License-Identifier: AGPL-3.0-only
 // Settings (A12; docs/product/settings.md), ported from the prototype: an index of every area in
-// five groups, and each area's page with the areas beside it from expanded widths. Drawn with the
+// five groups, and each area's page with the areas beside it in a regular window. Drawn with the
 // library's native renderer since D3 (one-client-platform-d.md): a group is the library's Panel in
 // its `group` look, and links are Presses with `href`, which react-native-web writes as `<a>`
 // (https://necolas.github.io/react-native-web/docs/view/#href).
 import { useT } from '@highsea-tv/i18n/react'
-import { blur, breakpoints } from '@highsea-tv/tokens'
+import { admin, blur, line } from '@highsea-tv/tokens'
 import {
   alpha,
   Button,
@@ -15,8 +15,8 @@ import {
   Press,
   Text,
   tokens,
+  useRegularWindow,
   useTheme,
-  useWindowAtLeast,
 } from '@highsea-tv/ui/native'
 import type { ReactNode } from 'react'
 import { Platform, View, type ViewStyle } from 'react-native'
@@ -52,9 +52,8 @@ export function SettingsIndex() {
   const t = useT(messages)
   const theme = useTheme()
   const groups = areaGroupsFor(useShell().role)
-  const medium = useWindowAtLeast(breakpoints.medium)
-  const wide = useWindowAtLeast(breakpoints.wide)
-  const columns = wide ? 3 : medium ? 2 : 1
+  const regular = useRegularWindow()
+  const columns = regular ? 3 : 1
   return (
     <AdminPage title={t('title')} description={t('description')}>
       <View style={{ gap: s['8'] }}>
@@ -86,14 +85,14 @@ export function SettingsIndex() {
                       flexDirection: 'row',
                       gap: s['3'],
                       padding: s['4'],
-                      borderWidth: 1,
+                      borderWidth: line.thin,
                       borderColor: theme.colors.line,
                       borderRadius: tokens.radius.lg,
                       backgroundColor: hovered ? theme.colors.s2 : theme.colors.s1,
                     })}
                   >
                     <View style={{ paddingTop: s['0.5'] }}>
-                      <Icon name={a.icon} size={18} color="accent-text" />
+                      <Icon name={a.icon} size={tokens.icon.size.md} color="accent-text" />
                     </View>
                     <View style={{ flex: 1, minWidth: 0, gap: s['1'] }}>
                       <Text size={ui.size} leading={ui.leading} weight={600}>
@@ -114,7 +113,7 @@ export function SettingsIndex() {
   )
 }
 
-/** The areas beside an area's page, from expanded widths. */
+/** The areas beside an area's page, in a regular window. */
 function AreaNav({ current }: { current: AreaId }) {
   const t = useT(messages)
   const theme = useTheme()
@@ -140,7 +139,7 @@ function AreaNav({ current }: { current: AreaId }) {
                       alignItems: 'center',
                       gap: s['2'],
                       paddingHorizontal: s['2'] + s['0.5'],
-                      paddingVertical: 6,
+                      paddingVertical: tokens.space['1.5'],
                       borderRadius: tokens.radius.sm,
                       backgroundColor:
                         active || hovered ? alpha(theme.colors.text, 0.06) : 'transparent',
@@ -155,7 +154,9 @@ function AreaNav({ current }: { current: AreaId }) {
                         >
                           {t(`area.${a.id}`)}
                         </Text>
-                        {a.href ? <Icon name="external" size={12} color="text-3" /> : null}
+                        {a.href ? (
+                          <Icon name="external" size={tokens.icon.size['2xs']} color="text-3" />
+                        ) : null}
                       </>
                     )}
                   </Press>
@@ -180,12 +181,12 @@ export function AreaPage({
   children: ReactNode
 }) {
   const t = useT(messages)
-  const expanded = useWindowAtLeast(breakpoints.expanded)
+  const expanded = useRegularWindow()
   return (
     <AdminPage title={t(`area.${id}`)} description={t(`area.${id}.description`)} actions={actions}>
       <View style={{ flexDirection: 'row', gap: s['6'], alignItems: 'flex-start' }}>
         {expanded ? (
-          <View style={{ width: 208, flexShrink: 0 }}>
+          <View style={{ width: admin.sideColumn, flexShrink: 0 }}>
             <AreaNav current={id} />
           </View>
         ) : null}
@@ -204,7 +205,11 @@ export function AreaPage({
             >
               {({ hovered }) => (
                 <>
-                  <Icon name="chevron-left" size={16} color={hovered ? 'text' : 'text-2'} />
+                  <Icon
+                    name="chevron-left"
+                    size={tokens.icon.size.sm}
+                    color={hovered ? 'text' : 'text-2'}
+                  />
                   <Text size={ui.size} leading={ui.leading} color={hovered ? 'text' : 'text-2'}>
                     {t('all')}
                   </Text>
@@ -272,7 +277,7 @@ export function SaveBar({
           gap: s['2'],
           paddingHorizontal: s['4'],
           paddingVertical: s['3'],
-          borderWidth: 1,
+          borderWidth: line.thin,
           borderColor: theme.colors['line-strong'],
           borderRadius: tokens.radius.lg,
           backgroundColor: alpha(theme.colors.bg, BLURS ? blur.bar.opacity : blur.fallbackOpacity),

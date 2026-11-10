@@ -21,7 +21,7 @@ import type { T as Translate } from '@highsea-tv/i18n'
 import { useT } from '@highsea-tv/i18n/react'
 import { useAction, useQuery } from '@highsea-tv/sdk/react'
 import type { ColorRole } from '@highsea-tv/tokens'
-import { breakpoints } from '@highsea-tv/tokens'
+import { admin, line, wrapBasis } from '@highsea-tv/tokens'
 import {
   Badge,
   type BadgeTone,
@@ -40,8 +40,8 @@ import {
   toast,
   tokens,
   useMotionReduced,
+  useRegularWindow,
   useTheme,
-  useWindowAtLeast,
 } from '@highsea-tv/ui/native'
 import { composeFor } from '@highsea-tv/vpn/compose'
 import { type ReactNode, useEffect, useRef, useState } from 'react'
@@ -55,9 +55,9 @@ import { vpn as messages } from './vpn-messages.ts'
 const s = tokens.space
 const ui = tokens.adminText.ui
 
-/** Columns from medium widths (the web's `medium:grid-cols-N`), one below. */
+/** Columns in a regular window (the web's `medium:grid-cols-N`), one below. */
 function Columns({ count = 2, children }: { count?: number; children: ReactNode }) {
-  const medium = useWindowAtLeast(breakpoints.medium)
+  const medium = useRegularWindow()
   return (
     <View
       style={
@@ -78,7 +78,12 @@ function Section({ children }: { children: ReactNode }) {
   const theme = useTheme()
   return (
     <View
-      style={{ gap: s['4'], borderTopWidth: 1, borderColor: theme.colors.line, paddingTop: s['4'] }}
+      style={{
+        gap: s['4'],
+        borderTopWidth: line.thin,
+        borderColor: theme.colors.line,
+        paddingTop: s['4'],
+      }}
     >
       {children}
     </View>
@@ -280,13 +285,13 @@ const marks: Record<VpnCheck['result'], { icon: IconName; tone: ColorRole }> = {
 function StatusGroup({ status: v }: { status: VpnStatus }) {
   const t = useT(messages)
   const theme = useTheme()
-  const medium = useWindowAtLeast(breakpoints.medium)
+  const medium = useRegularWindow()
   const { now, relative } = useRelative()
   const check = useAction((c) => c.vpn.check())
   const reconnect = useAction((c) => c.vpn.reconnect())
   const head = stateLine(v, t)
   const checkedJustNow = v.checkedAt !== null && now - Date.parse(v.checkedAt) < 60_000
-  const icon = <Icon name={head.icon} size={20} color={head.tone} />
+  const icon = <Icon name={head.icon} size={tokens.icon.size.md} color={head.tone} />
   return (
     <Group title={t('status.title')}>
       <View role="status" style={{ flexDirection: 'row', gap: s['3'] }}>
@@ -313,7 +318,7 @@ function StatusGroup({ status: v }: { status: VpnStatus }) {
           role="list"
           aria-label={t('checks')}
           style={{
-            borderWidth: 1,
+            borderWidth: line.thin,
             borderColor: theme.colors.line,
             borderRadius: tokens.radius.md,
             overflow: 'hidden',
@@ -343,12 +348,17 @@ function StatusGroup({ status: v }: { status: VpnStatus }) {
                   gap: s['3'],
                   paddingHorizontal: s['3'],
                   paddingVertical: s['2'] + s['0.5'],
-                  borderTopWidth: i ? 1 : 0,
+                  borderTopWidth: i ? line.thin : 0,
                   borderColor: theme.colors.line,
                 }}
               >
                 <View style={{ paddingTop: s['0.5'] }}>
-                  <Icon name={m.icon} size={16} color={m.tone} label={t(`mark.${c.result}`)} />
+                  <Icon
+                    name={m.icon}
+                    size={tokens.icon.size.sm}
+                    color={m.tone}
+                    label={t(`mark.${c.result}`)}
+                  />
                 </View>
                 {medium ? (
                   <>
@@ -356,7 +366,7 @@ function StatusGroup({ status: v }: { status: VpnStatus }) {
                       size={ui.size}
                       leading={ui.leading}
                       weight={500}
-                      style={{ width: 128, flexShrink: 0 }}
+                      style={{ width: admin.vpn.labelWidth, flexShrink: 0 }}
                     >
                       {c.label}
                     </Text>
@@ -433,7 +443,7 @@ export function CopyBlock({ label, text }: { label: string; text: string }) {
         // must take focus to scroll by keyboard (axe's scrollable-region-focusable)
         {...FOCUSABLE}
         style={{
-          borderWidth: 1,
+          borderWidth: line.thin,
           borderColor: theme.colors.line,
           borderRadius: tokens.radius.md,
           backgroundColor: theme.colors.s2,
@@ -482,7 +492,7 @@ function ConnectionGroup({
 }) {
   const t = useT(messages)
   const theme = useTheme()
-  const medium = useWindowAtLeast(breakpoints.medium)
+  const medium = useRegularWindow()
   return (
     <Group title={t('connection.title')} description={t('connection.description')}>
       <View
@@ -512,7 +522,7 @@ function ConnectionGroup({
                 flexDirection: 'row',
                 gap: s['2'] + s['0.5'],
                 padding: s['3'],
-                borderWidth: 1,
+                borderWidth: line.thin,
                 borderRadius: tokens.radius.md,
                 borderColor: chosen ? theme.colors.accent : theme.colors.line,
                 backgroundColor: chosen
@@ -710,7 +720,7 @@ function BuiltIn({ v, set, linesNeeded }: { v: Draft; set: Set; linesNeeded: boo
                         gap: s['1'] + s['0.5'],
                       }}
                     >
-                      <Icon name="check" size={14} color="success" />
+                      <Icon name="check" size={tokens.icon.size.xs} color="success" />
                       <Text variant="caption" color="text-2" mono numberOfLines={1}>
                         {v.configName}
                       </Text>
@@ -801,7 +811,7 @@ function ComposePanel({
   return (
     <View
       style={{
-        borderWidth: 1,
+        borderWidth: line.thin,
         borderColor: theme.colors.line,
         borderRadius: tokens.radius.md,
         paddingHorizontal: s['3'],
@@ -966,14 +976,18 @@ export function VpnSummary({ action }: { action: ReactNode }) {
         alignItems: 'center',
         gap: s['2'],
         padding: s['3'],
-        borderWidth: 1,
+        borderWidth: line.thin,
         borderColor: theme.colors.line,
         borderRadius: tokens.radius.md,
         backgroundColor: theme.colors.s2,
       }}
     >
       <Badge tone={toneOf[status.data.state]}>{head.title}</Badge>
-      <Text variant="caption" color="text-3" style={{ minWidth: 0, flexGrow: 1, flexBasis: 192 }}>
+      <Text
+        variant="caption"
+        color="text-3"
+        style={{ minWidth: 0, flexGrow: 1, flexBasis: wrapBasis }}
+      >
         {head.line}
       </Text>
       {action}

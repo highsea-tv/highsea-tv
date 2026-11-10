@@ -9,7 +9,7 @@
 import type { Tag } from '@highsea-tv/api-contract'
 import { useT } from '@highsea-tv/i18n/react'
 import { useAction } from '@highsea-tv/sdk/react'
-import { breakpoints } from '@highsea-tv/tokens'
+import { line } from '@highsea-tv/tokens'
 import {
   Button,
   ConfirmDialog,
@@ -18,8 +18,8 @@ import {
   Input,
   toast,
   tokens,
+  useRegularWindow,
   useTheme,
-  useWindowAtLeast,
 } from '@highsea-tv/ui/native'
 import { useState } from 'react'
 import { View } from 'react-native'
@@ -34,7 +34,7 @@ const s = tokens.space
 export function TagSettings() {
   const t = useT(messages)
   const theme = useTheme()
-  const medium = useWindowAtLeast(breakpoints.medium)
+  const medium = useRegularWindow()
   const tags = useTags()
   const [renaming, setRenaming] = useState<Tag | null>(null)
   const [removing, setRemoving] = useState<Tag | null>(null)
@@ -49,7 +49,7 @@ export function TagSettings() {
               <View
                 style={{
                   padding: s['4'],
-                  borderWidth: 1,
+                  borderWidth: line.thin,
                   borderColor: theme.colors.line,
                   borderRadius: tokens.radius.md,
                   backgroundColor: theme.colors.s2,

@@ -21,7 +21,7 @@ import {
 import { useLocale, useT } from '@highsea-tv/i18n/react'
 import type { HighseaClient } from '@highsea-tv/sdk'
 import { useAction, useQuery } from '@highsea-tv/sdk/react'
-import { breakpoints } from '@highsea-tv/tokens'
+import { admin, line } from '@highsea-tv/tokens'
 import {
   alpha,
   Button,
@@ -44,8 +44,8 @@ import {
   TitleLink,
   toast,
   tokens,
+  useRegularWindow,
   useTheme,
-  useWindowAtLeast,
 } from '@highsea-tv/ui/native'
 import { useState } from 'react'
 import { View } from 'react-native'
@@ -267,13 +267,13 @@ function Quiet({ children }: { children: string }) {
 }
 
 /** A day's cell: a seventh of the week (the web's grid-cols-7), at least 96 tall. */
-const DAY = { width: `${100 / 7}%`, minHeight: 96 } as const
+const DAY = { width: `${100 / 7}%`, minHeight: admin.wanted.day.minHeight } as const
 
 function Calendar() {
   const t = useT(messages)
   const theme = useTheme()
   const tones = useTones()
-  const grid = useWindowAtLeast(breakpoints.medium)
+  const grid = useRegularWindow()
   const locale = intlLocale(useLocale())
   const now = useNow()
   const [offset, setOffset] = useState(0)
@@ -301,15 +301,15 @@ function Calendar() {
     new Intl.DateTimeFormat(locale, { weekday: 'short' }).format(new Date(2024, 0, 1 + i)),
   )
   const kind = (e: CalendarEntry) => t(`kind.${e.kind}`)
-  const line = theme.colors.line
+  const lineColor = theme.colors.line
   const legend = (tone: Tone, words: string) => (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: s['1'] + s['0.5'] }}>
       <View
         style={{
-          width: 10,
-          height: 10,
+          width: admin.wanted.dot,
+          height: admin.wanted.dot,
           borderRadius: tokens.radius.pill,
-          borderWidth: 1,
+          borderWidth: line.thin,
           borderColor: tones(tone).dot,
         }}
       />
@@ -329,7 +329,7 @@ function Calendar() {
           accessibilityLabel={t('calendar.previous')}
           onPress={() => setOffset(offset - 1)}
         />
-        <View style={{ minWidth: 160 }}>
+        <View style={{ minWidth: admin.wanted.monthLabel }}>
           <Text variant="title" align="center" role="heading" aria-level={2} aria-live="polite">
             {monthName}
           </Text>
@@ -356,28 +356,32 @@ function Calendar() {
       <Loadable query={entries} what={t('calendar.what')}>
         {(all) => {
           const on = (day: number) => all.filter((e) => e.date === isoDay(year, month, day))
-          // a month grid from medium; a list of release days on a phone
+          // a month grid in a regular window; a list of release days on a phone
           return grid ? (
             <View
               style={{
                 overflow: 'hidden',
-                borderWidth: 1,
-                borderColor: line,
+                borderWidth: line.thin,
+                borderColor: lineColor,
                 borderRadius: tokens.radius.lg,
               }}
             >
               <View
                 style={{
                   flexDirection: 'row',
-                  borderBottomWidth: 1,
-                  borderBottomColor: line,
+                  borderBottomWidth: line.thin,
+                  borderBottomColor: lineColor,
                   backgroundColor: theme.colors.s1,
                 }}
               >
                 {weekdays.map((d) => (
                   <View
                     key={d}
-                    style={{ width: DAY.width, paddingHorizontal: s['2'], paddingVertical: 6 }}
+                    style={{
+                      width: DAY.width,
+                      paddingHorizontal: s['2'],
+                      paddingVertical: s['1.5'],
+                    }}
                   >
                     <Text variant="label" color="text-3">
                       {d}
@@ -393,9 +397,9 @@ function Calendar() {
                     aria-hidden
                     style={{
                       ...DAY,
-                      borderEndWidth: 1,
-                      borderBottomWidth: 1,
-                      borderColor: line,
+                      borderEndWidth: line.thin,
+                      borderBottomWidth: line.thin,
+                      borderColor: lineColor,
                       backgroundColor: theme.colors.bg,
                     }}
                   />
@@ -426,10 +430,10 @@ function Calendar() {
                         ...DAY,
                         minWidth: 0,
                         gap: s['1'],
-                        padding: 6,
-                        borderEndWidth: 1,
-                        borderBottomWidth: 1,
-                        borderColor: line,
+                        padding: s['1.5'],
+                        borderEndWidth: line.thin,
+                        borderBottomWidth: line.thin,
+                        borderColor: lineColor,
                       }}
                     >
                       <View
@@ -461,9 +465,9 @@ function Calendar() {
                             {...linkTo(moviePath(e.movie.id))}
                             {...({ title: label } as object)}
                             style={({ hovered }) => ({
-                              paddingHorizontal: 6,
+                              paddingHorizontal: s['1.5'],
                               paddingVertical: s['0.5'],
-                              borderWidth: 1,
+                              borderWidth: line.thin,
                               borderColor: tone.edge,
                               borderRadius: tokens.radius.sm,
                               backgroundColor: hovered ? theme.colors.s2 : 'transparent',
@@ -508,13 +512,13 @@ function Calendar() {
                           alignItems: 'center',
                           gap: s['3'],
                           padding: s['3'],
-                          borderWidth: 1,
+                          borderWidth: line.thin,
                           borderColor: tone.edge,
                           borderRadius: tokens.radius.md,
                           backgroundColor: theme.colors.s1,
                         }}
                       >
-                        <View style={{ width: 56, flexShrink: 0 }}>
+                        <View style={{ width: admin.wanted.timeColumn, flexShrink: 0 }}>
                           <Text size={figure.size} leading={figure.leading} mono color="text-3">
                             {short.format(new Date(year, month, Number(e.date.slice(8))))}
                           </Text>

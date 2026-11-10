@@ -53,7 +53,7 @@ import { bytes, duration, percent, rate } from '@highsea-tv/core/format'
 import { useLocale, useT } from '@highsea-tv/i18n/react'
 import type { ApiError } from '@highsea-tv/sdk'
 import { useAction, useQuery } from '@highsea-tv/sdk/react'
-import { breakpoints } from '@highsea-tv/tokens'
+import { admin, line } from '@highsea-tv/tokens'
 import {
   Badge,
   type BadgeTone,
@@ -88,8 +88,8 @@ import {
   Tooltip,
   toast,
   tokens,
+  useRegularWindow,
   useTheme,
-  useWindowAtLeast,
 } from '@highsea-tv/ui/native'
 import { type ComponentRef, type ReactNode, useCallback, useEffect, useRef, useState } from 'react'
 import { View } from 'react-native'
@@ -705,7 +705,7 @@ function InTheQueue({ movie: m }: { movie: Movie }) {
             gap: s['2'],
             padding: s['3'] + s['0.5'],
             borderRadius: tokens.radius.md,
-            borderWidth: 1,
+            borderWidth: line.thin,
             borderColor: theme.colors.line,
             backgroundColor: theme.colors.s1,
           }}
@@ -835,7 +835,14 @@ function Versions({
               minWidth: 0,
             }}
           >
-            <View style={{ flexGrow: 1, flexShrink: 1, flexBasis: 96, minWidth: 0 }}>
+            <View
+              style={{
+                flexGrow: 1,
+                flexShrink: 1,
+                flexBasis: admin.movieDetail.factBasis,
+                minWidth: 0,
+              }}
+            >
               <Text
                 size={UI.size}
                 leading={UI.leading}
@@ -1025,8 +1032,8 @@ function EditDialog({
 }) {
   const t = useT(messages)
   const tt = useT(tagsMessages)
-  // two columns from medium, as the add dialog has them
-  const two = useWindowAtLeast(breakpoints.medium)
+  // two columns in a regular window, as the add dialog has them
+  const two = useRegularWindow()
   const initial = () => ({
     rootFolder: m.rootFolder,
     languageProfileId: m.languageProfileId,
@@ -1171,7 +1178,7 @@ function Files({ movie: m }: { movie: Movie }) {
                   padding: s['4'],
                   minWidth: 0,
                   borderRadius: tokens.radius.lg,
-                  borderWidth: 1,
+                  borderWidth: line.thin,
                   borderColor: theme.colors.line,
                   backgroundColor: theme.colors.s1,
                 }}
@@ -1228,7 +1235,7 @@ function FileStreams({ file: f }: { file: MediaFile }) {
       <View role="list" style={{ gap: s['1'], minWidth: 0 }}>
         {f.streams.map((st) => (
           <View key={st.index} role="listitem" style={{ flexDirection: 'row', gap: s['3'] }}>
-            <View style={{ width: 64, flexShrink: 0 }}>
+            <View style={{ width: admin.movieDetail.labelWidth, flexShrink: 0 }}>
               <Text size={UI.size} leading={UI.leading} color="text-3">
                 {t(`stream.${st.type}`)}
               </Text>
@@ -1313,7 +1320,11 @@ function History({ id }: { id: number }) {
                     {items.map((e) => (
                       <TableRow key={e.id}>
                         <TableCell>
-                          <Icon name={historyIcon[e.type]} size={14} color="text-3" />
+                          <Icon
+                            name={historyIcon[e.type]}
+                            size={tokens.icon.size.xs}
+                            color="text-3"
+                          />
                           <Text size={UI.size} leading={UI.leading}>
                             {t(`history.${e.type}`)}
                           </Text>
@@ -1360,7 +1371,7 @@ function SearchTab({ id }: { id: number }) {
     return (
       <View aria-busy style={{ gap: s['3'] }}>
         {[0, 1, 2].map((i) => (
-          <Skeleton key={i} height={48} />
+          <Skeleton key={i} height={admin.skeleton.row} />
         ))}
       </View>
     )
@@ -1441,7 +1452,7 @@ function InteractiveSearch({ id, indexers }: { id: number; indexers: number }) {
         <>
           <Caption>{t('search.searching', { count: indexers })}</Caption>
           {[0, 1, 2, 3].map((i) => (
-            <Skeleton key={i} height={48} />
+            <Skeleton key={i} height={admin.skeleton.row} />
           ))}
         </>
       }
@@ -1586,7 +1597,7 @@ function Reasons({ release: r }: { release: Release }) {
           role="listitem"
           style={{ flexDirection: 'row', alignItems: 'flex-start', gap: s['1'] + s['0.5'] }}
         >
-          <View style={{ marginTop: 1, flexShrink: 0 }}>
+          <View style={{ marginTop: tokens.icon.drop, flexShrink: 0 }}>
             <Icon
               name={
                 reason.kind === 'accepted'
@@ -1595,7 +1606,7 @@ function Reasons({ release: r }: { release: Release }) {
                     ? 'warning'
                     : 'close'
               }
-              size={14}
+              size={tokens.icon.size.xs}
               color={
                 reason.kind === 'accepted'
                   ? 'success'
@@ -1882,7 +1893,7 @@ function TrackRow({
               <View
                 role="status"
                 aria-label={t('subs.offsetLabel', { language })}
-                style={{ width: 64 }}
+                style={{ width: admin.movieDetail.labelWidth }}
               >
                 <Text
                   size={FIGURE.size}
@@ -1946,7 +1957,7 @@ const searchRefusal = (error: unknown) => {
 }
 
 /** The language field's width (the web's w-56). */
-const LANGUAGE_WIDTH = 224
+const LANGUAGE_WIDTH = admin.movieDetail.languageWidth
 
 function SubtitleSearch({
   id,

@@ -1,4 +1,5 @@
 'use client'
+
 // SPDX-License-Identifier: AGPL-3.0-only
 // A person's page (docs/product/media-pages.md#person-page), ported from the prototype's
 // media/person.tsx: portrait, biography, their best-known titles, then the filmography marked by
@@ -22,6 +23,7 @@ import {
 } from '@highsea-tv/api-contract'
 import { useT } from '@highsea-tv/i18n/react'
 import { useQuery } from '@highsea-tv/sdk/react'
+import { admin } from '@highsea-tv/tokens'
 import {
   Badge,
   Button,
@@ -185,7 +187,7 @@ function Summary({ person: p }: { person: Person }) {
         />
       )}
       {/* the biography keeps TMDB's paragraphs: a Text keeps its newlines, as pre-line did */}
-      <Text variant="body" color="text-2" style={{ maxWidth: 600 }}>
+      <Text variant="body" color="text-2" style={{ maxWidth: admin.measure }}>
         {p.bio ?? t('noBio', { name: p.name })}
       </Text>
     </SummaryCard>
@@ -214,7 +216,7 @@ type Filter = 'all' | 'in' | 'out'
 const ALL = 'all'
 
 /** The department filter's width (the web's w-48). */
-const DEPARTMENT_WIDTH = 192
+const DEPARTMENT_WIDTH = admin.person.departmentWidth
 
 function Filmography({
   person: p,
@@ -273,7 +275,9 @@ function Filmography({
           )}
         </TableToolbar>
         {shown.length === 0 ? (
-          <View style={{ paddingHorizontal: 14, paddingVertical: tokens.space['8'] }}>
+          <View
+            style={{ paddingHorizontal: admin.table.cellX, paddingVertical: tokens.space['8'] }}
+          >
             <Text variant="caption" color="text-3" align="center">
               {t('nothing')}
             </Text>
@@ -284,7 +288,7 @@ function Filmography({
               <TableRow>
                 <TableHead>{t('title')}</TableHead>
                 <TableHead>{t('role')}</TableHead>
-                <TableHead width={160}>{t('library')}</TableHead>
+                <TableHead width={admin.person.libraryColumn}>{t('library')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
