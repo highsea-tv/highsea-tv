@@ -7,7 +7,17 @@ import { SEED } from '@highsea-tv/mock/films'
 import { act, cleanup, fireEvent, screen } from '@testing-library/react-native'
 import { router } from 'expo-router'
 import { StyleSheet } from 'react-native'
-import { flush, fresh, rewrite, sent, serve, signedIn, words } from './mock.ts'
+import {
+  flush,
+  fresh,
+  phoneWindow,
+  pointerWindow,
+  rewrite,
+  sent,
+  serve,
+  signedIn,
+  words,
+} from './mock.ts'
 
 // the phone, unless a test asks for a pointer's window
 jest.mock('../src/form-factor', () => ({
@@ -66,6 +76,7 @@ beforeEach(fresh)
 afterEach(async () => {
   for (const h of asks().hold ?? []) h.release()
   await cleanup()
+  phoneWindow()
   delete (globalThis as { __formFactor?: string }).__formFactor
   delete (globalThis as { __ask?: Ask }).__ask
 })
@@ -344,9 +355,7 @@ describe('a film’s page on the phone', () => {
 })
 
 describe('a film’s page with a pointer', () => {
-  beforeEach(() => {
-    ;(globalThis as { __formFactor?: string }).__formFactor = 'regular-pointer'
-  })
+  beforeEach(pointerWindow)
 
   test('Mark as watched names what it will do, and changes as it’s done', async () => {
     await at(FILM)
@@ -467,9 +476,7 @@ describe('a person’s page', () => {
 })
 
 describe('a person’s page with a pointer', () => {
-  beforeEach(() => {
-    ;(globalThis as { __formFactor?: string }).__formFactor = 'regular-pointer'
-  })
+  beforeEach(pointerWindow)
 
   test('their art runs under the top bar, with the biography cut at three lines', async () => {
     edit((body) => {

@@ -84,6 +84,24 @@ function newTransport(): MockTransport {
 }
 
 /** Starts the mock server, the device's store and the rewrites again. */
+/**
+ * A pointer's window. Jest's is React Native's mock's, 750 wide: compact under the one width rule
+ * (768, spacing-layout.md), so a test that asks for `regular-pointer` widens it to match, and
+ * `phoneWindow` puts it back after the test's cleanup (so nothing drawn hears the change).
+ */
+const PHONE_WINDOW = (() => {
+  const { Dimensions } = require('react-native')
+  return { window: Dimensions.get('window'), screen: Dimensions.get('screen') }
+})()
+export function pointerWindow() {
+  ;(globalThis as { __formFactor?: string }).__formFactor = 'regular-pointer'
+  const wide = { width: 1024, height: 768, scale: 2, fontScale: 1 }
+  require('react-native').Dimensions.set({ window: wide, screen: wide })
+}
+export function phoneWindow() {
+  require('react-native').Dimensions.set(PHONE_WINDOW)
+}
+
 export function fresh() {
   live.transport = newTransport()
   live.store = memoryStore(live.cookie)
