@@ -411,6 +411,8 @@ export const admin = {
     previewMark: 28,
     previewWidth: 256,
     sampleMark: 22,
+    /** The least a theme's card takes in its grid: its mark, its name and line, its swatches. */
+    themeMin: 192,
     /** The accent offered when a custom accent is turned on: a suggestion, not a theme's colour. */
     suggestedAccent: '#8fbfb7',
   },
@@ -421,6 +423,8 @@ export const admin = {
     cell: 64,
     result: { minWidth: 288, maxWidth: 352 },
   },
+  /** The least a connection kind's Add button takes in its grid: its icon and its longest name. */
+  connections: { kindMin: 144 },
   collectionsRules: { columns: { field: 192, op: 160 }, matchWidth: 96 },
   curation: { reachWidth: 192, sampleWidth: 36 },
   curationFrame: { maxWidth: 448, panel: 320, spot: { min: 224, max: 320 } },
@@ -448,6 +452,13 @@ export const admin = {
   nowPlaying: { posterWidth: 64, selectWidth: 176 },
   person: { departmentWidth: 192, libraryColumn: 160 },
   security: { fieldWidth: 192 },
+  /**
+   * Settings: the least an area's page needs beside the areas' column, so Appearance's identity
+   * keeps its fields and preview side by side without breaking a word (the owner's decision of
+   * 2026-11-10). Below it, the areas fold into a menu above the page. A component's own measure,
+   * not a page width: the window it gives is the sidebar, the padding, the column and this.
+   */
+  settings: { contentMin: 640 },
   setup: {
     header: 56,
     labelWidth: 160,

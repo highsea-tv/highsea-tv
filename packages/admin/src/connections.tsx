@@ -22,6 +22,7 @@ import {
 import type { T as Translate } from '@highsea-tv/i18n'
 import { useT } from '@highsea-tv/i18n/react'
 import { useAction, useClient, useQuery } from '@highsea-tv/sdk/react'
+import { admin } from '@highsea-tv/tokens'
 import {
   Badge,
   Button,
@@ -211,17 +212,21 @@ const inputOf = (c: Connection): ConnectionInput => ({
 
 const s = tokens.space
 
-/** The kinds' grid: two columns in a compact window, five in a regular one. */
+/**
+ * The kinds' grid, by its own width: as many columns as fit at `admin.connections.kindMin` each,
+ * at most five, so a kind's name never breaks (CSS Grid's auto-fill,
+ * https://www.w3.org/TR/css-grid-1/#auto-repeat). Two on a phone, five at 1440 as before.
+ */
+const KIND_COLUMNS = `repeat(auto-fill, minmax(max(${admin.connections.kindMin}px, calc((100% - ${4 * s['2']}px) / 5)), 1fr))`
+
 function KindGrid({ children }: { children: ReactNode }) {
-  const regular = useRegularWindow()
-  const columns = regular ? 5 : 2
   return (
     <View
       role="list"
       style={
         {
           display: 'grid',
-          gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
+          gridTemplateColumns: KIND_COLUMNS,
           gap: s['2'],
         } as unknown as ViewStyle
       }

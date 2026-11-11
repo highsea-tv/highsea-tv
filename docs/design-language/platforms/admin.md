@@ -74,7 +74,7 @@ The admin lays out by the clients' one rule ([spacing-layout › Width classes](
 
 | Width class | Behavior |
 | --- | --- |
-| regular (≥ 768) | Full sidebar; 4-column widget grid; forms and settings in their columns |
+| regular (≥ 768) | Full sidebar; 4-column widget grid; forms and settings in their columns; Settings' areas beside an area's page from 1136 and a menu above it below that ([Width classes](../spacing-layout.md#width-classes)) |
 | compact (< 768) | The sidebar becomes a menu sheet behind a top-bar button; 1-column widgets; tables become stacked rows |
 
 ## Sound

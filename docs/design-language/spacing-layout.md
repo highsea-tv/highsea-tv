@@ -50,6 +50,12 @@ One rule lays out every client and the admin: the form-factor rule (`form-factor
 | regular | ≥ 768 | Tablets, laptops and desktops. The admin's full sidebar and 4-column widget grid; content max width applies |
 | TV | 16:9 | Laid out in screen units, at any width |
 
+A component may still lay out by what its own content needs. That is a measure of the component, kept in its token group with its reason, and not a second page width: the page is compact or regular by the rule above either way. The admin has three:
+
+- **Settings' areas** sit beside an area's page once the window has room for the sidebar, the page's padding, the areas' column and the least the page needs beside them (`admin.settings.contentMin`, 640, which keeps Appearance's identity and themes from breaking a word): from 1136. Below that they fold into a menu above the page, beside All settings (the owner, 2026-11-10).
+- **The connection kinds' grid** takes as many columns as fit at `admin.connections.kindMin` (144) each, at most five, with CSS Grid's `auto-fill`.
+- **Appearance's themes** take as many cards as fit at `admin.appearance.themeMin` (192) each, at most three, the same way.
+
 ## Grids per platform
 
 | Platform | Grid | Details |

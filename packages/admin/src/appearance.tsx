@@ -81,6 +81,12 @@ const CODE_BASIS = wrapBasis
 /** The preview's mark, and the sample's. */
 const PREVIEW_MARK = admin.appearance.previewMark
 const SAMPLE_MARK = admin.appearance.sampleMark
+/**
+ * The themes' grid, by its own width: as many cards as fit at `admin.appearance.themeMin` each
+ * (the mark, the name, its line and the swatches), at most three, so a name or "Default" never
+ * breaks (CSS Grid's auto-fill, https://www.w3.org/TR/css-grid-1/#auto-repeat).
+ */
+const THEME_COLUMNS = `repeat(auto-fill, minmax(max(${admin.appearance.themeMin}px, calc((100% - ${2 * tokens.space['2']}px) / 3)), 1fr))`
 const [POSTER_W, POSTER_H] = tokens.aspect.poster
 
 const hex = (c: string) => formatHex(parseColor(c)).slice(0, 7)
@@ -420,7 +426,6 @@ function Themes({
 }) {
   const t = useT(messages)
   const { colors } = useTheme()
-  const regular = useRegularWindow()
   const [editing, setEditing] = useState<CustomTheme | null>(null)
   const remove = useAction((c, id: string) => c.appearance.deleteTheme({ params: { id } }))
   const all = useMemo(
@@ -434,7 +439,6 @@ function Themes({
     ],
     [themes],
   )
-  const columns = regular ? 3 : 1
   return (
     <Group title={t('themes.title')} description={t('themes.description')}>
       <View
@@ -443,7 +447,7 @@ function Themes({
         style={
           {
             display: 'grid',
-            gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
+            gridTemplateColumns: THEME_COLUMNS,
             gap: s['2'],
           } as unknown as ViewStyle
         }
