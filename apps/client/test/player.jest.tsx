@@ -349,7 +349,13 @@ describe('the web’s picture', () => {
       picture = usePicture(p, { dim: false, raised: false }).picture
       return null
     }
-    await render(<Picture />)
+    // the cue's colour is the theme's text, so it's drawn inside the app's ThemeProvider
+    const { ThemeProvider } = jest.requireActual('@highsea-tv/ui')
+    await render(
+      <ThemeProvider>
+        <Picture />
+      </ThemeProvider>,
+    )
     const [track] = elementsOf(picture, 'track')
     expect(track?.props).toMatchObject({
       kind: 'subtitles',

@@ -5,16 +5,18 @@
 // actions as props, so any app on the TV's rule can draw them. The featured card is FeaturedCard's
 // TV form now (../featured-card.tsx).
 
+import { tvConfirm, tvMenu, tvNotice, tvText } from '@highsea-tv/tokens'
 import type { Ref } from 'react'
 import { StyleSheet, View } from 'react-native'
 import { alpha } from '../alpha.ts'
 import { Button } from '../button.tsx'
+import { scrimOf } from '../glass.ts'
 import { Icon } from '../icon.tsx'
 import type { IconName } from '../icons.ts'
 import { Image } from '../image.tsx'
 import { type InlineRun, InlineText } from '../inline-text.tsx'
 import { Text } from '../text.tsx'
-import { useControl, useTheme } from '../theme.tsx'
+import { tokens, useControl, useTheme } from '../theme.tsx'
 import { FocusGuide } from './engine'
 import { Focusable, type ViewHandle } from './focusable.tsx'
 import type { TileSource } from './tiles.tsx'
@@ -46,8 +48,9 @@ export function TvMenu({
 }) {
   const theme = useTheme()
   const u = theme.u
-  const width = 30 * u
-  const gap = 0.6 * u
+  const tv = tokens.tv
+  const width = tvMenu.column * u
+  const gap = tv.space['3'] * u
   const start = Math.max(
     0,
     options.findIndex((o) => o.current),
@@ -60,11 +63,13 @@ export function TvMenu({
       accessibilityLabel={title}
       style={[
         StyleSheet.absoluteFill,
-        { alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.72)' },
+        { alignItems: 'center', justifyContent: 'center', backgroundColor: scrimOf(70) },
       ]}
     >
-      <View style={{ width: columns > 1 ? across : width, maxWidth: '90%', gap: 1.2 * u }}>
-        <View style={{ gap: 0.3 * u }}>
+      <View
+        style={{ width: columns > 1 ? across : width, maxWidth: '90%', gap: tv.space['6'] * u }}
+      >
+        <View style={{ gap: tv.space['1.5'] * u }}>
           <Text variant="rowTitle" accessibilityRole="header" aria-level={2}>
             {title}
           </Text>
@@ -144,17 +149,17 @@ export function TvConfirm({
     >
       <View
         style={{
-          maxWidth: 40 * u,
+          maxWidth: tvNotice.width * u,
           alignItems: 'center',
-          gap: 1.4 * u,
-          padding: 2.4 * u,
-          borderRadius: 1 * u,
+          gap: tokens.tv.space['7'] * u,
+          padding: tokens.tv.space['12'] * u,
+          borderRadius: tokens.tv.radius.panel * u,
           backgroundColor: theme.colors.s1,
         }}
       >
         <Text
           variant="heroTitle"
-          size={2.2}
+          size={tvText.title.size}
           accessibilityRole="header"
           aria-level={2}
           style={{ textAlign: 'center' }}
@@ -170,7 +175,7 @@ export function TvConfirm({
           trapFocusDown
           trapFocusLeft
           trapFocusRight
-          style={{ flexDirection: 'row', gap: 1 * u }}
+          style={{ flexDirection: 'row', gap: tokens.tv.space['5'] * u }}
         >
           <Button variant="overlay" hasTVPreferredFocus onPress={onCancel}>
             {cancel}
@@ -186,13 +191,13 @@ export function TvConfirm({
 
 /** The acknowledgement's card: its width, gap, inset, title, image's gap and icon, in units. */
 const ACKNOWLEDGE = {
-  width: 44,
-  gap: 1.4,
-  pad: 2.4,
-  title: 2.4,
-  leading: 1.15,
-  imageGap: 0.4,
-  icon: 1.1,
+  width: tvConfirm.width,
+  gap: tokens.tv.space['7'],
+  pad: tokens.tv.space['12'],
+  title: tvText.title.size,
+  leading: tvText.title.leading,
+  imageGap: tokens.tv.space['2'],
+  icon: tvConfirm.icon,
 }
 
 /**
@@ -243,7 +248,7 @@ export function TvAcknowledge({
           gap: ACKNOWLEDGE.gap * u,
           padding: pad,
           overflow: 'hidden',
-          borderRadius: 1 * u,
+          borderRadius: tokens.tv.radius.panel * u,
           backgroundColor: theme.colors.s1,
         }}
       >
@@ -260,7 +265,7 @@ export function TvAcknowledge({
             accessibilityIgnoresInvertColors
           />
         ) : null}
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 0.6 * u }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: tokens.tv.space['3'] * u }}>
           <Icon name="announcement" size={ACKNOWLEDGE.icon} color="accent-text" />
           <Text variant="eyebrow" color="accent-text">
             {eyebrow}

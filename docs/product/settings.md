@@ -25,7 +25,7 @@ Everything about how the server runs, in one place, one area per page: the regio
 ## Layout
 
 - **The index** (`/settings`): four groups (Server, People, Library, Downloads and alerts), and since 6b a fifth, System, with Migration, each a grid of cards (1, 2 or 3 across) with the area's icon, name and one line on what's inside. Subtitles links to its own page, opened on its settings (Providers), not Wanted; `/settings/subtitles` goes there too (prototype-gaps.md, stage 5).
-- **An area** (`/settings/{area}`): the page header with the area's name and line; from expanded, the areas beside the content (grouped, the current one marked); below expanded, **All settings** back to the index. Content is a stack of **groups** (a titled card each).
+- **An area** (`/settings/{area}`): the page header with the area's name and line; once the window has room for both (from 1136, `admin.settings.contentMin`), the areas beside the content (grouped, the current one marked); below that, **All settings** back to the index and the current area as a menu of every area, grouped, above the content (the owner, 2026-11-10). Content is a stack of **groups** (a titled card each).
 - **The save bar:** while an area has unsaved changes, "You have unsaved changes." with **Discard** and **Save** sticks to the bottom of the page.
 
 | Area | Groups and main controls |

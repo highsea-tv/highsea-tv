@@ -7,8 +7,26 @@
 // react-native-web maps `header` to the `heading` role and draws it with `aria-level` as that
 // level's element (<h1> to <h6>, its propsToAriaRole and propsToAccessibilityComponent);
 // VoiceOver and TalkBack read it as a heading.
-import { View } from 'react-native'
+// `visuallyHidden` is that pattern as one style, which every part that reads words without drawing
+// them takes (a sheet's title, a table's caption, the command palette's, the admin's): its 1 × 1
+// box and −1 margin are the technique's own measures, listed in one-place-exceptions.json for good.
+import { Platform, View, type ViewStyle } from 'react-native'
 import { Text } from './text.tsx'
+
+/**
+ * Read, never seen: the web's visually-hidden pattern (WCAG's technique C7,
+ * https://www.w3.org/WAI/WCAG22/Techniques/css/C7), a 1-point box out of the layout that clips its
+ * contents. On the web it also clips with `clip` and keeps a line from wrapping, as the pattern
+ * does; React Native's own platforms have neither property, and clip by `overflow`.
+ */
+export const visuallyHidden: ViewStyle = {
+  position: 'absolute',
+  width: 1,
+  height: 1,
+  margin: -1,
+  overflow: 'hidden',
+  ...(Platform.OS === 'web' ? ({ clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap' } as object) : {}),
+}
 
 export type HiddenHeadingProps = {
   children: string
@@ -18,10 +36,7 @@ export type HiddenHeadingProps = {
 
 export function HiddenHeading({ children, level = 1 }: HiddenHeadingProps) {
   return (
-    <View
-      pointerEvents="none"
-      style={{ position: 'absolute', width: 1, height: 1, margin: -1, overflow: 'hidden' }}
-    >
+    <View pointerEvents="none" style={visuallyHidden}>
       <Text accessibilityRole="header" aria-level={level} numberOfLines={1}>
         {children}
       </Text>

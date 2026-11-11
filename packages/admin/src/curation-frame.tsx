@@ -10,7 +10,7 @@
 // (https://developer.mozilla.org/en-US/docs/Web/API/Window/postMessage#security_concerns); the
 // frame fetches nothing.
 import type { ClientAnnouncement, CurationPreview, HomeSection } from '@highsea-tv/api-contract'
-import { breakpoints } from '@highsea-tv/tokens'
+import { admin, line, lockup } from '@highsea-tv/tokens'
 import {
   Banner,
   type BannerTone,
@@ -23,8 +23,8 @@ import {
   Row,
   Text,
   tokens,
+  useRegularWindow,
   useTheme,
-  useWindowAtLeast,
 } from '@highsea-tv/ui/native'
 import { useEffect, useState } from 'react'
 import { useWindowDimensions, View, type ViewStyle } from 'react-native'
@@ -79,11 +79,10 @@ export function PreviewFrame() {
   return <Home {...state} />
 }
 
-/** The page's gutter: 16, 32 from a medium window, 64 from a wide one (the web's px-4/8/16). */
+/** The page's gutter: 16 in a compact window, 64 in a regular one (the web's px-4 and px-16). */
 function useGutter() {
-  const medium = useWindowAtLeast(breakpoints.medium)
-  const wide = useWindowAtLeast(breakpoints.wide)
-  return wide ? sp['16'] : medium ? sp['8'] : sp['4']
+  const regular = useRegularWindow()
+  return regular ? sp['16'] : sp['4']
 }
 
 function Home({ preview, platform }: FrameMessage) {
@@ -126,7 +125,7 @@ function Home({ preview, platform }: FrameMessage) {
           paddingVertical: sp['4'],
         }}
       >
-        <Lockup size={platform === 'tv' ? 22 : 17} />
+        <Lockup size={platform === 'tv' ? lockup.tv : lockup.size} />
         {pill && (
           <View
             style={{
@@ -195,11 +194,11 @@ function Home({ preview, platform }: FrameMessage) {
           <View
             style={{
               width: '100%',
-              maxWidth: 448,
+              maxWidth: admin.curationFrame.maxWidth,
               gap: sp['3'],
               padding: sp['6'],
               borderRadius: tokens.radius.lg,
-              borderWidth: 1,
+              borderWidth: line.thin,
               borderColor: theme.colors.line,
               backgroundColor: theme.colors.s1,
             }}
@@ -237,11 +236,11 @@ function Home({ preview, platform }: FrameMessage) {
             end: sp['6'],
             bottom: sp['6'],
             zIndex: 20,
-            width: 320,
+            width: admin.curationFrame.panel,
             padding: sp['4'],
             gap: sp['1'],
             borderRadius: tokens.radius.md,
-            borderWidth: 1,
+            borderWidth: line.thin,
             borderColor: theme.colors.line,
             backgroundColor: theme.colors.s2,
             boxShadow: tokens.elevation[3].boxShadow,
@@ -294,7 +293,10 @@ function Section({
   }
   const spotlight = s.layout === 'spotlight' && platform !== 'mobile'
   // a spotlight's card: clamp(14rem, 24vw, 20rem)
-  const spot = Math.min(Math.max(224, window * 0.24), 320)
+  const spot = Math.min(
+    Math.max(admin.curationFrame.spot.min, window * 0.24),
+    admin.curationFrame.spot.max,
+  )
   const poster = pointerItemWidth(window)
   return (
     <View nativeID={id} style={first ? { paddingTop: sp['16'] + sp['4'] } : undefined}>

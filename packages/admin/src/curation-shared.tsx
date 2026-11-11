@@ -13,7 +13,7 @@ import type {
 import type { T as Translate } from '@highsea-tv/i18n'
 import { useLocale, useT } from '@highsea-tv/i18n/react'
 import { type Query, useQuery } from '@highsea-tv/sdk/react'
-import { breakpoints } from '@highsea-tv/tokens'
+import { admin, line } from '@highsea-tv/tokens'
 import {
   Badge,
   type BadgeTone,
@@ -23,8 +23,8 @@ import {
   SegmentedControl,
   Text,
   tokens,
+  useRegularWindow,
   useTheme,
-  useWindowAtLeast,
 } from '@highsea-tv/ui/native'
 import { type ReactNode, useEffect, useRef, useState } from 'react'
 import { View } from 'react-native'
@@ -160,7 +160,7 @@ function toggle<T>(xs: T[], x: T, on: boolean): T[] {
 const s = tokens.space
 const ui = tokens.adminText.ui
 /** A group's name to its fields (the web's legend, mb-1.5). */
-const LEGEND_GAP = 6
+const LEGEND_GAP = tokens.space['1.5']
 
 /**
  * A group of the composer's fields under its name (the web's fieldset and legend): a group named
@@ -210,11 +210,11 @@ export function ChoiceWell({
   columns = 2,
 }: {
   children: ReactNode[]
-  /** One column always, or two from a medium window up (by default). */
+  /** One column always, or two in a regular window (by default). */
   columns?: 1 | 2
 }) {
   const theme = useTheme()
-  const medium = useWindowAtLeast(breakpoints.medium)
+  const medium = useRegularWindow()
   const two = columns === 2 && medium
   return (
     <View
@@ -225,7 +225,7 @@ export function ChoiceWell({
         columnGap: s['2'],
         padding: s['3'],
         borderRadius: tokens.radius.md,
-        borderWidth: 1,
+        borderWidth: line.thin,
         borderColor: theme.colors.line,
         backgroundColor: theme.colors.s2,
       }}
@@ -240,9 +240,9 @@ export function ChoiceWell({
   )
 }
 
-/** Two columns side by side from a medium window up (the web's medium:grid-cols-2). */
+/** Two columns side by side in a regular window (the web's medium:grid-cols-2). */
 export function Pair({ first, second }: { first: ReactNode; second: ReactNode }) {
-  const two = useWindowAtLeast(breakpoints.medium)
+  const two = useRegularWindow()
   const column = two ? { flex: 1, flexBasis: 0, minWidth: 0, gap: s['2'] } : { gap: s['2'] }
   return (
     <View style={{ flexDirection: two ? 'row' : 'column', gap: s['3'] }}>
@@ -252,11 +252,11 @@ export function Pair({ first, second }: { first: ReactNode; second: ReactNode })
   )
 }
 
-/** The form's column in an expanded window (the web's min(28rem, 50%)). */
-const FORM_WIDTH = 448
+/** The form's column in a regular window (the web's min(28rem, 50%)). */
+const FORM_WIDTH = admin.curationShared.formWidth
 
 /**
- * A composer: its form, and beside it from an expanded window the client preview, held in view as
+ * A composer: its form, and beside it in a regular window the client preview, held in view as
  * the page scrolls (the web's sticky top-4); one column below that.
  */
 export function ComposerColumns({
@@ -269,7 +269,7 @@ export function ComposerColumns({
   form: ReactNode
   preview: ReactNode
 }) {
-  const side = useWindowAtLeast(breakpoints.expanded)
+  const side = useRegularWindow()
   return (
     <View
       style={{
@@ -306,7 +306,7 @@ export function ComposerActions({ children }: { children: ReactNode }) {
         flexDirection: 'row',
         flexWrap: 'wrap',
         gap: s['2'],
-        borderTopWidth: 1,
+        borderTopWidth: line.thin,
         borderColor: theme.colors.line,
         paddingTop: s['4'],
       }}

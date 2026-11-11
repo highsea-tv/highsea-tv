@@ -19,7 +19,7 @@
 // and focus move along the drawn items, and a shelf is short.
 // Each form is a group named by its title (https://www.w3.org/TR/wai-aria-1.2/#group), not a list:
 // a list may hold only its items, and the row holds its heading and arrows too.
-import { breakpoints, formFactorLayouts, web } from '@highsea-tv/tokens'
+import { formFactorLayouts, web } from '@highsea-tv/tokens'
 import { type ComponentRef, type ReactNode, type Ref, useEffect, useRef, useState } from 'react'
 import { ScrollView, useWindowDimensions, View } from 'react-native'
 import { moveInRow, roveRow } from './dom'
@@ -45,19 +45,15 @@ const PAGE_SHARE = 0.85
 
 /**
  * The page's side inset at this form factor, which a row's first item sits on: the phone's gutter,
- * the TV's safe area, and with a pointer the web's margin by the window's width (the prototype's
- * `px-4 medium:px-8 wide:px-16`: the phone's 16 below `medium`, then `web.margin`'s 32 and 64).
+ * the TV's safe area, and with a pointer the web's margin by the form-factor rule (the prototype's
+ * `px-4 medium:px-8 wide:px-16` on the one split: the phone's 16 in a compact window, then
+ * `web.margin.wide`'s 64 from 768).
  */
 export function usePageGutter(): number {
   const { formFactor, u } = useTheme()
-  const { width } = useWindowDimensions()
   if (formFactor.input === 'tv') return tokens.tv.safe.x * u
   if (formFactor.input === 'touch') return phoneGutter
-  return width < breakpoints.medium
-    ? phoneGutter
-    : width < breakpoints.wide
-      ? web.margin.compact
-      : web.margin.wide
+  return formFactor.widthClass === 'compact' ? phoneGutter : web.margin.wide
 }
 
 /**
@@ -147,7 +143,7 @@ function TouchForm<T>({
   titleHref,
 }: RowProps<T>) {
   return (
-    <View style={{ gap: 10 }} role="group" accessibilityLabel={title}>
+    <View style={{ gap: tokens.space['2.5'] }} role="group" accessibilityLabel={title}>
       {titleHidden ? null : (
         <SectionHeading
           title={title}
@@ -322,7 +318,12 @@ function TvForm<T>({
   const w = (itemWidth ?? (wide ? WIDE_WIDTH : tokens.tv.poster.width)) * u
   const inset = tokens.tv.safe.x * u
   return (
-    <View ref={ref} role="group" accessibilityLabel={title} style={{ gap: 0.8 * u }}>
+    <View
+      ref={ref}
+      role="group"
+      accessibilityLabel={title}
+      style={{ gap: tokens.tv.space['4'] * u }}
+    >
       <SectionHeading title={title} suffix={suffix} inset={inset} />
       <FocusGuide autoFocus trapFocusLeft trapFocusRight>
         <TvScroll
@@ -331,7 +332,7 @@ function TvForm<T>({
           contentContainerStyle={{
             gap: tokens.tv.poster.gap * u,
             paddingHorizontal: inset,
-            paddingVertical: 1 * u,
+            paddingVertical: tokens.tv.space['5'] * u,
           }}
         >
           {items.map((item, index) => (

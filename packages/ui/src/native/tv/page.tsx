@@ -4,6 +4,7 @@
 // ambient backdrop. None of it knows an app's data, so every app on the TV's rule shares it. In a
 // browser, the engine pair (./engine.web.tsx) lands Kept parts and follows focus the same way.
 
+import { art } from '@highsea-tv/tokens'
 import { createContext, type ReactNode, useContext, useState } from 'react'
 import { StyleSheet, useWindowDimensions, View, type ViewProps } from 'react-native'
 import { alpha } from '../alpha.ts'
@@ -20,7 +21,7 @@ const tv = tokens.tv
  * The space between a TV page's rows, in units: under the head, between Home's featured card and
  * its rows, and between a grid's lines (the TV prototype's pages' gap-[1.6cqw]).
  */
-export const TV_ROW_GAP = 1.6
+export const TV_ROW_GAP = tv.space['8']
 
 /** Where a page's part lands, `keep` of the screen down, or null outside a TvPage. */
 const KeepContext = createContext<number | null>(null)
@@ -148,7 +149,9 @@ export function TvGrid<T>({
 export function TvWords({ title, children }: { title: string; children?: ReactNode }) {
   const u = useTheme().u
   return (
-    <View style={{ gap: 1.2 * u, paddingTop: 2 * u, alignItems: 'flex-start' }}>
+    <View
+      style={{ gap: tv.space['6'] * u, paddingTop: tv.space['10'] * u, alignItems: 'flex-start' }}
+    >
       <Text variant="synopsis" color="text-2">
         {title}
       </Text>
@@ -178,13 +181,13 @@ export function TvAmbient({ source }: { source: TileSource | undefined }) {
       {source ? (
         <Image
           source={source}
-          style={[StyleSheet.absoluteFill, { transform: [{ scale: 1.1 }] }]}
+          style={[StyleSheet.absoluteFill, { transform: [{ scale: art.backdropScale }] }]}
           contentFit="cover"
           blurRadius={tv.ambientBlur * u}
           accessibilityIgnoresInvertColors
         />
       ) : null}
-      <View style={[StyleSheet.absoluteFill, { backgroundColor: alpha('#000000', 0.55) }]} />
+      <View style={[StyleSheet.absoluteFill, { backgroundColor: alpha(art.black, 0.55) }]} />
       <View
         style={[
           StyleSheet.absoluteFill,

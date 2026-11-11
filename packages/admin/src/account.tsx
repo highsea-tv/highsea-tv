@@ -10,7 +10,7 @@
 import type { Passkey, User } from '@highsea-tv/api-contract'
 import { useT } from '@highsea-tv/i18n/react'
 import { useAction, useQuery } from '@highsea-tv/sdk/react'
-import { breakpoints } from '@highsea-tv/tokens'
+import { admin, line } from '@highsea-tv/tokens'
 import {
   Badge,
   Button,
@@ -23,8 +23,8 @@ import {
   Text,
   toast,
   tokens,
+  useRegularWindow,
   useTheme,
-  useWindowAtLeast,
 } from '@highsea-tv/ui/native'
 import {
   browserSupportsWebAuthn,
@@ -56,7 +56,7 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
         gap: s['3'],
         padding: s['4'],
         minWidth: 0,
-        borderWidth: 1,
+        borderWidth: line.thin,
         borderColor: theme.colors.line,
         borderRadius: tokens.radius.lg,
         backgroundColor: theme.colors.s1,
@@ -99,8 +99,8 @@ export function AccountSheet({
     >
       {session.status !== 'success' ? (
         <View aria-busy style={{ gap: s['3'] }}>
-          <Skeleton height={128} />
-          <Skeleton height={128} />
+          <Skeleton height={admin.skeleton.card} />
+          <Skeleton height={admin.skeleton.card} />
         </View>
       ) : (
         <View style={{ gap: s['4'] }}>
@@ -285,7 +285,7 @@ function TwoFactor({ hasPassword }: { hasPassword: boolean }) {
   return (
     <Section title={t('twoFactor.title')}>
       {status.status !== 'success' ? (
-        <Skeleton height={40} />
+        <Skeleton height={admin.skeleton.field} />
       ) : step.kind === 'codes' ? (
         <RecoveryCodes codes={step.codes} onDone={reset} />
       ) : step.kind === 'enrol' ? (
@@ -375,7 +375,7 @@ function TwoFactor({ hasPassword }: { hasPassword: boolean }) {
 function Passkeys() {
   const t = useT(account)
   const theme = useTheme()
-  const beside = useWindowAtLeast(breakpoints.medium)
+  const beside = useRegularWindow()
   const { relative, seen } = useRelative()
   const info = useQuery('public-info', (c) => c.system.publicInfo(), ['settings.updated'])
   const list = useQuery('passkeys', (c) => c.me.passkeys(), ['users.updated'])
@@ -397,7 +397,7 @@ function Passkeys() {
   return (
     <Section title={t('passkeys.title')}>
       {list.status !== 'success' ? (
-        <Skeleton height={40} />
+        <Skeleton height={admin.skeleton.field} />
       ) : (
         <>
           {list.data.length === 0 ? (
@@ -413,7 +413,7 @@ function Passkeys() {
                     alignItems: beside ? 'center' : 'stretch',
                     gap: s['2'],
                     padding: s['3'],
-                    borderWidth: 1,
+                    borderWidth: line.thin,
                     borderColor: theme.colors.line,
                     borderRadius: tokens.radius.md,
                     backgroundColor: theme.colors.s2,

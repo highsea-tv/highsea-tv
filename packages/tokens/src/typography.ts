@@ -16,6 +16,8 @@ export const tracking = {
   wordmark: -0.045,
   label: 0.06,
   eyebrow: 0.14,
+  /** The quality tag's: 0.44 at 11, and 0.032u at the TV's 0.8u. */
+  tag: 0.04,
 } as const
 
 export type TextStyle = {
@@ -62,7 +64,11 @@ export const adminText = {
 export const mobileText = {
   largeTitle: { size: 30, leading: 36 / 30, weight: semibold, tracking: tracking.display },
   title: { size: 20, leading: 26 / 20, weight: semibold, tracking: tracking.title },
+  /** iOS's Headline, 17 pt semibold on 22 (HIG › Typography): a section's heading, a player's title. */
+  headline: { size: 17, leading: 22 / 17, weight: semibold },
   body: { size: 16, leading: 22 / 16, weight: regular },
+  /** iOS's Subheadline, 15 pt on 20 (HIG › Typography): the mini player's title. */
+  subheadline: { size: 15, leading: 20 / 15, weight: regular },
   callout: { size: 14, leading: 19 / 14, weight: regular },
   caption: { size: 12, leading: 16 / 12, weight: regular },
   tabLabel: { size: 10.5, leading: 1.2, weight: medium },
@@ -71,6 +77,8 @@ export const mobileText = {
 /** TV, in screen units. Nothing is smaller than 0.8u; anything needed to act is ≥ 0.95u. */
 export const tvText = {
   heroTitle: { size: 5.2, leading: 0.95, weight: semibold, tracking: tracking.display },
+  /** A dialog's or a player's title: the album's, the PIN's and a message's (tv.md). */
+  title: { size: 2.4, leading: 1.15, weight: semibold, tracking: tracking.title },
   synopsis: { size: 1.15, leading: 1.45, weight: regular },
   rowTitle: { size: 1.2, leading: 1.3, weight: semibold },
   button: { size: 1.1, leading: 1.2, weight: semibold },

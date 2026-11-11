@@ -9,7 +9,7 @@
 import type { ApiKey, Device, User } from '@highsea-tv/api-contract'
 import { useT } from '@highsea-tv/i18n/react'
 import { useAction, useQuery } from '@highsea-tv/sdk/react'
-import { breakpoints } from '@highsea-tv/tokens'
+import { admin, line } from '@highsea-tv/tokens'
 import {
   Badge,
   type BadgeTone,
@@ -35,8 +35,8 @@ import {
   Text,
   toast,
   tokens,
+  useRegularWindow,
   useTheme,
-  useWindowAtLeast,
 } from '@highsea-tv/ui/native'
 import { type ReactNode, useState } from 'react'
 import { View } from 'react-native'
@@ -531,7 +531,7 @@ function LibrariesField({
           style={{
             gap: s['2'],
             padding: s['3'],
-            borderWidth: 1,
+            borderWidth: line.thin,
             borderColor: theme.colors.line,
             borderRadius: tokens.radius.md,
             backgroundColor: theme.colors.s2,
@@ -781,7 +781,7 @@ function Devices() {
         return (
           <TableFrame>
             <TableToolbar>
-              <View style={{ width: 224 }}>
+              <View style={{ width: admin.users.toolbarField }}>
                 <Select
                   aria-label={t('devices.whose')}
                   value={who}
@@ -832,7 +832,11 @@ function Devices() {
                           gap: s['2'] + s['0.5'],
                         }}
                       >
-                        <Icon name={clientIcon[d.client]} size={16} color="text-3" />
+                        <Icon
+                          name={clientIcon[d.client]}
+                          size={tokens.icon.size.sm}
+                          color="text-3"
+                        />
                         <Text size={ui.size} leading={ui.leading} numberOfLines={1}>
                           {d.name}
                         </Text>
@@ -911,7 +915,7 @@ function Devices() {
 function Keys() {
   const t = useT(messages)
   const theme = useTheme()
-  const medium = useWindowAtLeast(breakpoints.medium)
+  const medium = useRegularWindow()
   // the owner sees everyone's keys, so any key that acts on the server can be revoked; an admin
   // sees their own
   const keys = useQuery('settings:keys', (c) => c.apiKeys.list(), ['users.updated'])
@@ -925,7 +929,7 @@ function Keys() {
   const [revoking, setRevoking] = useState<ApiKey | null>(null)
   const revoke = useAction((c, id: string) => c.apiKeys.revoke({ params: { id } }))
   const card = {
-    borderWidth: 1,
+    borderWidth: line.thin,
     borderColor: theme.colors.line,
     borderRadius: tokens.radius.lg,
     backgroundColor: theme.colors.s1,
@@ -964,7 +968,7 @@ function Keys() {
                       gap: s['2'],
                     }}
                   >
-                    <Icon name="key" size={16} color="text-3" />
+                    <Icon name="key" size={tokens.icon.size.sm} color="text-3" />
                     <Text size={ui.size} leading={ui.leading} weight={600}>
                       {k.name}
                     </Text>

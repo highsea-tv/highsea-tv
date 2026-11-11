@@ -9,7 +9,8 @@ import { SEEK_S, titleLines } from '@highsea-tv/client/player'
 import { useT } from '@highsea-tv/i18n/react'
 import { useMedia } from '@highsea-tv/native/media'
 import type { Playback } from '@highsea-tv/native/playback'
-import { family, Icon, Press, Sheet, Text, tokens, useTheme } from '@highsea-tv/ui'
+import { adminText, art, mobileText, player } from '@highsea-tv/tokens'
+import { alpha, family, Icon, Press, Sheet, scrimOf, Text, tokens, useTheme } from '@highsea-tv/ui'
 import { Image } from 'expo-image'
 import { View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -29,9 +30,8 @@ import { airPlayButton, DRAWS_CUES, HAS_AIRPLAY, useExternal, usePicture } from 
 
 const { space } = tokens
 
-/** The scrim under the controls, the prototype's. */
-const SCRIM = 'rgba(0,0,0,0.45)'
-const SOFT = 'rgba(237,237,238,0.8)'
+/** The scrim under the controls, the prototype's black at 0.45, on `art.alpha.50`. */
+const SCRIM = scrimOf(50)
 
 export function TouchPlayer({
   id,
@@ -57,12 +57,14 @@ export function TouchPlayer({
   const d = p.detail.data
   // a message over the frame has the screen to itself; on another screen the controls stay up
   const chrome = !m.message && !pip && (external || m.shown)
-  const top = Math.max(insets.top, 12)
-  const side = Math.max(insets.left, insets.right, 16)
+  const top = Math.max(insets.top, space['3'])
+  const side = Math.max(insets.left, insets.right, space['4'])
+  // the times' quieter text: `text` at 0.8
+  const soft = alpha(theme.colors.text, art.alpha[80])
   const { wake, hide } = m
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#000' }}>
+    <View style={{ flex: 1, backgroundColor: art.black }}>
       {picture}
       {external && d?.item.art.backdrop ? (
         <Image
@@ -95,12 +97,12 @@ export function TouchPlayer({
           }}
         >
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: space['2'] }}>
-            <Icon name="airplay" size={20} />
-            <Text variant="body" size={17} weight={600}>
+            <Icon name="airplay" size={tokens.icon.size.md} />
+            <Text variant="body" size={mobileText.headline.size} weight={600}>
               {t('external')}
             </Text>
           </View>
-          <Text variant="caption" size={13} color="text-2">
+          <Text variant="caption" size={adminText.ui.size} color="text-2">
             {t('externalBody')}
           </Text>
         </View>
@@ -111,7 +113,7 @@ export function TouchPlayer({
             position: 'absolute',
             left: 0,
             right: 0,
-            bottom: chrome ? 84 : Math.max(insets.bottom, 24),
+            bottom: chrome ? player.touch.subtitleLift : Math.max(insets.bottom, space['6']),
           }}
         >
           <CueLine p={p} />
@@ -140,7 +142,7 @@ export function TouchPlayer({
             />
             <Text
               variant="body"
-              size={17}
+              size={mobileText.headline.size}
               weight={600}
               numberOfLines={1}
               style={{ flex: 1 }}
@@ -182,8 +184,8 @@ export function TouchPlayer({
             <Round
               icon="replay"
               label={t('backBy', { seconds: SEEK_S })}
-              size={56}
-              iconSize={28}
+              size={player.round.md}
+              iconSize={player.icon.lg}
               onPress={() => {
                 p.seekBy(-SEEK_S)
                 wake()
@@ -192,8 +194,8 @@ export function TouchPlayer({
             <Round
               icon={state.playing ? 'pause' : 'play'}
               label={state.playing ? t('pause') : t('play')}
-              size={72}
-              iconSize={36}
+              size={player.round.lg}
+              iconSize={player.icon['2xl']}
               filled
               onPress={() => {
                 p.toggle()
@@ -201,11 +203,10 @@ export function TouchPlayer({
               }}
             />
             <Round
-              icon="replay"
-              flip
+              icon="forward"
               label={t('forwardBy', { seconds: SEEK_S })}
-              size={56}
-              iconSize={28}
+              size={player.round.md}
+              iconSize={player.icon.lg}
               onPress={() => {
                 p.seekBy(SEEK_S)
                 wake()
@@ -215,8 +216,8 @@ export function TouchPlayer({
           <View
             style={{
               gap: space['1'],
-              paddingHorizontal: side + 16,
-              paddingBottom: Math.max(insets.bottom, 16),
+              paddingHorizontal: side + space['4'],
+              paddingBottom: Math.max(insets.bottom, space['4']),
             }}
           >
             {/* the scrubber speaks the position, "4:10 of 1:52:00"; these only show it */}
@@ -225,10 +226,16 @@ export function TouchPlayer({
               importantForAccessibility="no-hide-descendants"
               style={{ flexDirection: 'row', justifyContent: 'space-between' }}
             >
-              <Text size={12} style={{ color: SOFT, fontFamily: family(400, 'mono') }}>
+              <Text
+                size={mobileText.caption.size}
+                style={{ color: soft, fontFamily: family(400, 'mono') }}
+              >
                 {clock(state.position)}
               </Text>
-              <Text size={12} style={{ color: SOFT, fontFamily: family(400, 'mono') }}>
+              <Text
+                size={mobileText.caption.size}
+                style={{ color: soft, fontFamily: family(400, 'mono') }}
+              >
                 {`−${clock(Math.max(0, state.duration - state.position))}`}
               </Text>
             </View>

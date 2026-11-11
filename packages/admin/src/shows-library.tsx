@@ -1,4 +1,8 @@
 'use client'
+import type { Series, SeriesUpdate } from '@highsea-tv/api-contract'
+import { bytes } from '@highsea-tv/core/format'
+import { useLocale, useT } from '@highsea-tv/i18n/react'
+import { useAction, useQuery } from '@highsea-tv/sdk/react'
 // SPDX-License-Identifier: AGPL-3.0-only
 // Shows (docs/product/shows.md#library), moved from the prototype with D3 of the one client
 // platform (one-client-platform-d.md, answer 5) and laid out as Movies is: grid or table, a
@@ -9,10 +13,7 @@
 // Drawn only when the server serves shows (`Served`, serves.tsx): the routes are drafts the mock
 // answers and the server answers 501. The drafts have no bulk route, so the bulk bar edits,
 // searches and removes each show in turn, as the prototype did.
-import type { Series, SeriesUpdate } from '@highsea-tv/api-contract'
-import { bytes } from '@highsea-tv/core/format'
-import { useLocale, useT } from '@highsea-tv/i18n/react'
-import { useAction, useQuery } from '@highsea-tv/sdk/react'
+import { admin, line } from '@highsea-tv/tokens'
 import {
   Badge,
   Button,
@@ -292,7 +293,7 @@ function Library() {
                     flexWrap: 'wrap',
                     alignItems: 'center',
                     gap: tokens.space['2'],
-                    borderBottomWidth: 1,
+                    borderBottomWidth: line.thin,
                     borderBottomColor: colors.line,
                     backgroundColor: colors['accent-soft'],
                     paddingHorizontal: CELL_X,
@@ -354,7 +355,7 @@ function Library() {
                 <Table label={t('title')}>
                   <TableHeader>
                     <TableRow>
-                      <TableHead width={40}>
+                      <TableHead width={admin.table.checkColumn}>
                         <Checkbox
                           label={t('col.selectAll')}
                           hideLabel
@@ -535,8 +536,8 @@ function GridTile({ show: s }: { show: Series }) {
 }
 
 /** A table cell's side padding (the web's px-3.5), which the toolbars and the grid share. */
-const CELL_X = 14
+const CELL_X = admin.table.cellX
 /** The title filter's width (the web's w-48), the sort's (w-36) and the episodes column's (w-36). */
-const FILTER_WIDTH = 192
-const SELECT_WIDTH = 144
-const EPISODES_WIDTH = 144
+const FILTER_WIDTH = admin.filterWidth
+const SELECT_WIDTH = admin.selectWidth
+const EPISODES_WIDTH = admin.showsLibrary.episodesWidth

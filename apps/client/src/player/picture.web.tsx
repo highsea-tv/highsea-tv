@@ -15,6 +15,7 @@
 // Media Session API (https://developer.mozilla.org/en-US/docs/Web/API/Media_Session_API).
 import { SEEK_S } from '@highsea-tv/client/player'
 import { useWebHost } from '@highsea-tv/native/web-host'
+import { scrimOf, useTheme } from '@highsea-tv/ui'
 import { type ReactNode, type RefObject, useEffect, useRef, useState } from 'react'
 import { useFrameState } from '../frame-channel.ts'
 import { mock } from '../transport.ts'
@@ -46,14 +47,16 @@ export const DRAWS_CUES: typeof nativeDraws = false
 /** Where the subtitle's last line ends, from the top: the prototype's 16% and 22% from the bottom. */
 const LINE = { low: 84, raised: 78 }
 
-/** The subtitle's look, the prototype's CueLine's: white on a 60% black, semibold. */
-const CUE_STYLE = `video[data-player]::cue{background-color:rgba(0,0,0,0.6);color:#ededee;font-weight:600;font-size:clamp(1rem,2.2vw,1.6rem);line-height:1.3}`
+/** The subtitle's look, the prototype's CueLine's: the theme's `text` on a 60% black, semibold. */
+const cueStyle = (text: string) =>
+  `video[data-player]::cue{background-color:${scrimOf(60)};color:${text};font-weight:600;font-size:clamp(1rem,2.2vw,1.6rem);line-height:1.3}`
 
 /** Inside Tauri's webview the server's scheme is another origin, which a track loads only with CORS. */
 const inApp = () => typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window
 
 export const usePicture: typeof nativePicture = (p, o) => {
   const player = p.player as unknown as WebPlayer
+  const theme = useTheme()
   const host = useWebHost()
   const track = useRef<HTMLTrackElement>(null)
   const [pip, setPip] = useState(false)
@@ -153,7 +156,7 @@ export const usePicture: typeof nativePicture = (p, o) => {
   const video = () => player.video.current
   const picture: ReactNode = (
     <>
-      <style>{CUE_STYLE}</style>
+      <style>{cueStyle(theme.colors.text)}</style>
       {/* biome-ignore lint/a11y/useMediaCaption: the chosen subtitle is its <track>, added when there's one */}
       <video
         ref={player.attach}

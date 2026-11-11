@@ -20,6 +20,8 @@
 // collision padding does: the menu's 6 from its trigger at its end edge, the popover's 8 at its
 // start; on `s3` edged in `line-strong` and `radius.md` round over elevation 4 (overlay.ts's
 // floatingSurface).
+
+import { line, overlay } from '@highsea-tv/tokens'
 import {
   type ComponentRef,
   Fragment,
@@ -53,8 +55,8 @@ const { space } = tokens
 type Handle = ComponentRef<typeof View>
 
 /** Where a panel hangs: the menu's side offset, alignment and collision padding, and its size. */
-const MENU = { offset: 6, edge: 8, minWidth: 224, pad: space['1'] + space['0.5'] }
-const POPOVER = { offset: space['2'], edge: space['3'], width: 288, pad: space['4'] }
+const MENU = { offset: 6, edge: 8, minWidth: overlay.menu, pad: space['1'] + space['0.5'] }
+const POPOVER = { offset: space['2'], edge: space['3'], width: overlay.popover, pad: space['4'] }
 /** A menu's row: the web's min-h-8, gap-2.5, px-2.5 and py-1.5 (overlay.ts's menuItem). */
 const ITEM = {
   height: space['8'],
@@ -392,7 +394,7 @@ function MenuLine() {
     <View
       aria-hidden
       style={{
-        height: 1,
+        height: line.thin,
         marginHorizontal: space['1'],
         marginVertical: space['1'] + space['0.5'],
         backgroundColor: theme.colors.line,
@@ -557,7 +559,7 @@ function Anchored({
           maxHeight: room,
           opacity: ready ? 1 : 0,
           borderRadius: tokens.radius.md,
-          borderWidth: 1,
+          borderWidth: line.thin,
           borderColor: theme.colors['line-strong'],
           backgroundColor: theme.colors.s3,
           boxShadow: tokens.elevation[4].boxShadow,

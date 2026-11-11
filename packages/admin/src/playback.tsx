@@ -22,7 +22,7 @@ import { useT } from '@highsea-tv/i18n/react'
 import type { ApiError } from '@highsea-tv/sdk'
 import { useAction, useQuery } from '@highsea-tv/sdk/react'
 import type { ColorRole } from '@highsea-tv/tokens'
-import { breakpoints } from '@highsea-tv/tokens'
+import { line } from '@highsea-tv/tokens'
 import {
   Badge,
   Button,
@@ -38,8 +38,8 @@ import {
   toast,
   tokens,
   useMotionReduced,
+  useRegularWindow,
   useTheme,
-  useWindowAtLeast,
 } from '@highsea-tv/ui/native'
 import { useState } from 'react'
 import { ActivityIndicator, View } from 'react-native'
@@ -327,7 +327,7 @@ function HardwareGroup({
   const now = useNow()
   const theme = useTheme()
   const reduced = useMotionReduced()
-  const medium = useWindowAtLeast(breakpoints.medium)
+  const medium = useRegularWindow()
   const label = (id: AccelerationPath) => t(`path.${id}`)
   const found = status.paths.some((p) => !p.unavailable)
   const inUse = status.inUse
@@ -341,7 +341,7 @@ function HardwareGroup({
         <View style={{ paddingTop: s['0.5'] }}>
           <Icon
             name={inUse ? 'speed' : 'warning'}
-            size={20}
+            size={tokens.icon.size.md}
             color={inUse ? 'success' : 'warning'}
           />
         </View>
@@ -371,7 +371,7 @@ function HardwareGroup({
         role="list"
         aria-label={t('hardware.found')}
         style={{
-          borderWidth: 1,
+          borderWidth: line.thin,
           borderColor: theme.colors.line,
           borderRadius: tokens.radius.md,
         }}
@@ -405,7 +405,7 @@ function HardwareGroup({
                 columnGap: s['3'],
                 paddingHorizontal: s['3'],
                 paddingVertical: s['2'] + s['0.5'],
-                borderTopWidth: i === 0 ? 0 : 1,
+                borderTopWidth: i === 0 ? 0 : line.thin,
                 borderColor: theme.colors.line,
               }}
             >
@@ -418,12 +418,12 @@ function HardwareGroup({
                 {p.checking ? (
                   <ActivityIndicator
                     aria-hidden
-                    size={16}
+                    size={tokens.icon.size.sm}
                     color={theme.colors[m.tone]}
                     animating={!reduced}
                   />
                 ) : (
-                  <Icon name={m.icon} size={16} color={m.tone} />
+                  <Icon name={m.icon} size={tokens.icon.size.sm} color={m.tone} />
                 )}
               </View>
               <View style={{ flex: 1, minWidth: 0, gap: s['1'] }}>

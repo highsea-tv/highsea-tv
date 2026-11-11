@@ -29,7 +29,7 @@ import { percent } from '@highsea-tv/core/format'
 import { useT } from '@highsea-tv/i18n/react'
 import type { HighseaClient } from '@highsea-tv/sdk'
 import { useAction, useQuery } from '@highsea-tv/sdk/react'
-import { breakpoints, type ColorRole } from '@highsea-tv/tokens'
+import { admin, type ColorRole, line } from '@highsea-tv/tokens'
 import {
   Badge,
   Button,
@@ -57,8 +57,8 @@ import {
   TitleLink,
   toast,
   tokens,
+  useRegularWindow,
   useTheme,
-  useWindowAtLeast,
 } from '@highsea-tv/ui/native'
 import { type ReactNode, useEffect, useRef, useState } from 'react'
 import { ScrollView, View } from 'react-native'
@@ -143,7 +143,7 @@ export function Subtitles({ tab = 'wanted' }: { tab?: Tab }) {
 
 function Stats() {
   const t = useT(messages)
-  const four = useWindowAtLeast(breakpoints.medium)
+  const four = useRegularWindow()
   const stats = useQuery('subtitles:stats', (c) => c.subtitles.stats(), TOPICS)
   if (stats.status !== 'success') return null
   const s = stats.data
@@ -195,7 +195,7 @@ function Answer({ ok, children }: { ok: boolean; children: string }) {
       style={{
         padding: sp['3'],
         borderRadius: tokens.radius.md,
-        borderWidth: 1,
+        borderWidth: line.thin,
         borderColor: theme.colors.line,
         backgroundColor: theme.colors.s2,
       }}
@@ -365,7 +365,7 @@ function Wanted() {
 // ---------------------------------------------------------------- providers
 
 /** The quota column's width (the web's w-56). */
-const LEFT_WIDTH = 224
+const LEFT_WIDTH = admin.subtitles.leftWidth
 
 function Providers() {
   const t = useT(messages)
@@ -677,7 +677,7 @@ function Card({
         gap: sp[strong ? '4' : '2'],
         padding: sp['4'],
         borderRadius: tokens.radius.lg,
-        borderWidth: 1,
+        borderWidth: line.thin,
         borderColor: theme.colors[strong ? 'line-strong' : 'line'],
         backgroundColor: theme.colors.s1,
         minWidth: 0,
@@ -698,7 +698,7 @@ function ProfileCard({
   onEdit: () => void
 }) {
   const t = useT(messages)
-  const side = useWindowAtLeast(breakpoints.medium)
+  const side = useRegularWindow()
   const name = (code: string) => languages.find((l) => l.code === code)?.name ?? code
   return (
     <Card label={p.name}>
@@ -745,9 +745,9 @@ function ProfileCard({
 }
 
 /** A rule's select's width in a regular window (the web's 12rem). */
-const RULE_WIDTH = 192
+const RULE_WIDTH = admin.subtitles.ruleWidth
 /** The add-a-language select's width (the web's w-56). */
-const ADD_WIDTH = 224
+const ADD_WIDTH = admin.subtitles.addWidth
 
 /** A score field's number, held to 0 to `max`. */
 const held = (text: string, max: number) => Math.max(0, Math.min(max, Number(text) || 0))
@@ -762,7 +762,7 @@ function ProfileEditor({
   onDone: () => void
 }) {
   const t = useT(messages)
-  const wide = useWindowAtLeast(breakpoints.medium)
+  const wide = useRegularWindow()
   const [draft, setDraft] = useState(profile)
   const [touched, setTouched] = useState(false)
   const save = useAction((c, p: ProfileDraft) => {
@@ -983,9 +983,9 @@ function ProfileEditor({
 // ---------------------------------------------------------------- scoring and sync
 
 /** A short number field's width (the web's w-32). */
-const SHORT = 128
+const SHORT = admin.subtitles.short
 /** The form's measure (the web's max-w-2xl). */
-const FORM_WIDTH = 672
+const FORM_WIDTH = admin.subtitles.formWidth
 
 function Scoring() {
   const t = useT(messages)

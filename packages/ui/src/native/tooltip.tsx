@@ -7,6 +7,8 @@
 // trigger's place in the window, so a scroller or a frame that clips can't cut it off
 // (https://drafts.csswg.org/css-position/#fixed-pos). Touch and the TV have no hover: there it
 // draws only its trigger, and the trigger's own label carries what it says.
+
+import { overlay } from '@highsea-tv/tokens'
 import { type ComponentRef, type ReactNode, useEffect, useId, useRef, useState } from 'react'
 import { Platform, View, type ViewStyle } from 'react-native'
 import { OWN_SIZE } from './own-size.ts'
@@ -14,8 +16,8 @@ import { Text } from './text.tsx'
 import { tokens, useTheme } from './theme.tsx'
 
 const DELAY_MS = 700
-const GAP = 6
-const EDGE = 8
+const GAP = tokens.space['1.5']
+const EDGE = tokens.space['2']
 
 export type TooltipProps = {
   content: string
@@ -127,7 +129,7 @@ export function Tooltip({ content, disabled, focusable, whenTruncated, children 
               top: place.top - GAP,
               transform: 'translate(-50%, -100%)',
               zIndex: 70,
-              maxWidth: 256,
+              maxWidth: overlay.tooltip,
               paddingHorizontal: tokens.space['2'] + tokens.space['0.5'],
               paddingVertical: tokens.space['1'] + tokens.space['0.5'],
               borderRadius: tokens.radius.sm,

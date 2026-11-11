@@ -9,6 +9,7 @@
 import { useServes } from '@highsea-tv/client/data'
 import { useT } from '@highsea-tv/i18n/react'
 import { useMedia } from '@highsea-tv/native/media'
+import { adminText, mobileText, player, musicPlayer as sizes, webText } from '@highsea-tv/tokens'
 import {
   alpha,
   Button,
@@ -19,6 +20,7 @@ import {
   ScrollView,
   Sheet,
   Slider,
+  scrimOf,
   Text,
   tokens,
   usePageGutter,
@@ -49,7 +51,7 @@ const UPPER = { textTransform: 'uppercase' } as const
 /** The cover's width in the column, and its scale while paused: the prototype's 88% and 0.86. */
 const COVER = { width: '88%', paused: 0.86 } as const
 /** The cover behind everything: the prototype's blur-[60px], scale-150 and opacity-50. */
-const BACKDROP = { blur: 60, scale: 1.5, opacity: 0.5 } as const
+const BACKDROP = { blur: 60, scale: sizes.backdropScale, opacity: 0.5 } as const
 
 /** Closes Now playing: back to the tab it opened over, or Home when opened by its address. */
 const close = () => (router.canGoBack() ? router.back() : router.navigate('/' as Href))
@@ -124,10 +126,17 @@ function Playing() {
       : (p.from?.name ?? song.album.title)
   const from = (
     <>
-      <Text variant="mono" mono size={11} color="text-3" align="center" style={UPPER}>
+      <Text
+        variant="mono"
+        mono
+        size={webText.label.size}
+        color="text-3"
+        align="center"
+        style={UPPER}
+      >
         {t('playingFrom')}
       </Text>
-      <Text variant="body" weight={600} size={13} align="center" numberOfLines={1}>
+      <Text variant="body" weight={600} size={adminText.ui.size} align="center" numberOfLines={1}>
         {fromName}
       </Text>
     </>
@@ -207,7 +216,7 @@ function Playing() {
               backgroundColor: theme.colors.s2,
               overflow: 'hidden',
               transform: [{ scale }],
-              boxShadow: '0 16px 40px rgba(0,0,0,0.45)',
+              boxShadow: `0 16px 40px ${scrimOf(50)}`,
             }}
           >
             {song.album.cover ? (
@@ -224,7 +233,7 @@ function Playing() {
           <View style={{ minWidth: 0 }}>
             <Text
               variant="title"
-              size={22}
+              size={mobileText.title.size}
               accessibilityRole="header"
               aria-level={1}
               numberOfLines={1}
@@ -236,7 +245,7 @@ function Playing() {
               onPress={() => goTo(artistPath(song.album.artist.id))}
               style={{ alignSelf: 'flex-start', maxWidth: '100%' }}
             >
-              <Text variant="body" size={18} color="text-2" numberOfLines={1}>
+              <Text variant="body" size={mobileText.headline.size} color="text-2" numberOfLines={1}>
                 {song.album.artist.name}
               </Text>
             </Press>
@@ -249,10 +258,10 @@ function Playing() {
               height={space['12']}
             />
             <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-              <Text variant="mono" mono size={12} color="text-3">
+              <Text variant="mono" mono size={mobileText.caption.size} color="text-3">
                 {clock(p.position)}
               </Text>
-              <Text variant="mono" mono size={12} color="text-3">
+              <Text variant="mono" mono size={mobileText.caption.size} color="text-3">
                 {t('left', { time: clock(song.duration - p.position) })}
               </Text>
             </View>
@@ -265,7 +274,7 @@ function Playing() {
               icon="shuffle"
               label={t('shuffle')}
               size={space['10'] + space['1']}
-              iconSize={22}
+              iconSize={player.icon.md}
               tint="text-2"
               on={p.shuffle}
               onPress={p.toggleShuffle}
@@ -274,7 +283,7 @@ function Playing() {
               icon="previous"
               label={t('previous')}
               size={space['12'] + space['2']}
-              iconSize={34}
+              iconSize={player.icon.xl}
               disabled={!p.hasPrevious}
               onPress={p.previous}
             />
@@ -282,7 +291,7 @@ function Playing() {
               icon={p.playing ? 'pause' : 'play'}
               label={p.playing ? t('pause') : t('play')}
               size={space['16'] + space['2']}
-              iconSize={34}
+              iconSize={player.icon.xl}
               filled
               onPress={p.toggle}
             />
@@ -290,7 +299,7 @@ function Playing() {
               icon="next"
               label={t('next')}
               size={space['12'] + space['2']}
-              iconSize={34}
+              iconSize={player.icon.xl}
               disabled={!p.hasNext}
               onPress={p.next}
             />
@@ -298,14 +307,14 @@ function Playing() {
               icon={r.icon}
               label={r.label}
               size={space['10'] + space['1']}
-              iconSize={22}
+              iconSize={player.icon.md}
               tint="text-2"
               on={p.repeat !== 'off'}
               onPress={p.cycleRepeat}
             />
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: space['3'] }}>
-            <Icon name="mute" size={16} color="text-3" />
+            <Icon name="mute" size={tokens.icon.size.sm} color="text-3" />
             <View style={{ flex: 1 }}>
               <Slider
                 value={volume}
@@ -315,7 +324,7 @@ function Playing() {
                 track={space['1'] + space['0.5']}
               />
             </View>
-            <Icon name="sound" size={16} color="text-3" />
+            <Icon name="sound" size={tokens.icon.size.sm} color="text-3" />
           </View>
           <View
             style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}

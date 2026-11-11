@@ -1,10 +1,4 @@
 'use client'
-// SPDX-License-Identifier: AGPL-3.0-only
-// The featured-section composer (A11, curation.md#section-composer; checkpoint 8c), ported from
-// the prototype's curation/section-editor.tsx: a title, a layout, where its titles come from
-// (picked by hand, or a rule that keeps itself fresh), hero taglines, who sees it and when, beside
-// the live client preview. What a source picks comes from `POST /curation/sections/resolve`; the
-// picker searches the library (`GET /movies?title=`) and offers titles with a file.
 import type {
   FeaturedLayout,
   FeaturedRule,
@@ -16,6 +10,13 @@ import type {
 } from '@highsea-tv/api-contract'
 import { FEATURED_RULES } from '@highsea-tv/api-contract'
 import { useAction, useQuery } from '@highsea-tv/sdk/react'
+// SPDX-License-Identifier: AGPL-3.0-only
+// The featured-section composer (A11, curation.md#section-composer; checkpoint 8c), ported from
+// the prototype's curation/section-editor.tsx: a title, a layout, where its titles come from
+// (picked by hand, or a rule that keeps itself fresh), hero taglines, who sees it and when, beside
+// the live client preview. What a source picks comes from `POST /curation/sections/resolve`; the
+// picker searches the library (`GET /movies?title=`) and offers titles with a file.
+import { admin, line } from '@highsea-tv/tokens'
 import {
   Button,
   ConfirmDialog,
@@ -281,7 +282,7 @@ function Well({ children, live }: { children: ReactNode; live?: boolean }) {
         gap: sp['2'],
         padding: sp['3'],
         borderRadius: tokens.radius.md,
-        borderWidth: 1,
+        borderWidth: line.thin,
         borderColor: theme.colors.line,
         backgroundColor: theme.colors.s2,
       }}
@@ -422,7 +423,12 @@ function Source({
             >
               {picks.items.slice(0, 8).map((m) => (
                 <View key={m.id} role="listitem">
-                  <Thumb title={m.title} src={m.art.poster} width={40} fill="s3" />
+                  <Thumb
+                    title={m.title}
+                    src={m.art.poster}
+                    width={admin.curationSection.thumb}
+                    fill="s3"
+                  />
                 </View>
               ))}
             </View>
@@ -487,7 +493,13 @@ function Picker({
           {(m, handle) => (
             <>
               {handle}
-              <Thumb title={m.title} src={m.art.poster} width={32} label="" fill="s3" />
+              <Thumb
+                title={m.title}
+                src={m.art.poster}
+                width={admin.curationSection.thumbSmall}
+                label=""
+                fill="s3"
+              />
               <TitleYear title={m.title} year={m.year} />
               <Button
                 size="sm"

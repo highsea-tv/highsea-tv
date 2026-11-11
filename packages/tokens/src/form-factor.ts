@@ -14,8 +14,8 @@ export type Input = ControlPlatform
 /**
  * A phone or a narrow window, a tablet or a wide window, or a TV. The names are Apple's horizontal
  * size classes (https://developer.apple.com/documentation/uikit/uiuserinterfacesizeclass), split
- * at 768: they aren't spacing-layout.md's breakpoints (`breakpoints` in scales.ts), whose
- * `compact` is below 600.
+ * at 768. It's the one width rule: the admin's and the library's old 600, 1024 and 1440 left the
+ * tokens in part E (one-client-platform-e.md, answer 5).
  */
 export type WidthClass = 'compact' | 'regular' | 'tv'
 

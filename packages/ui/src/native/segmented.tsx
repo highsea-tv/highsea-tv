@@ -4,6 +4,8 @@
 // control's height with the spec's inset; the chosen segment is `control-selected` (3:1 on the
 // track) in the same corner less the inset, its label `text` at 600. On the phone each segment's
 // target reaches 44 through the hit area; on the TV each is a focus stop.
+
+import { line, webText } from '@highsea-tv/tokens'
 import { Platform, View, type ViewStyle } from 'react-native'
 import type { SegmentedCommon } from '../shared/controls.ts'
 import { ControlPress, ControlText, lookAt, useControllable } from './control.tsx'
@@ -13,7 +15,7 @@ import { Text } from './text.tsx'
 import { tokens, useControl, useTheme } from './theme.tsx'
 
 /** A count after a tab's label: mono 11 in `text-3`, `text` on the chosen tab (web/components/tabs.tsx). */
-const COUNT_SIZE = 11
+const COUNT_SIZE = webText.label.size
 
 function Count({ on, n }: { on: boolean; n: number }) {
   return (
@@ -159,7 +161,7 @@ function LineTabs<V extends string>({
         // the web renderer's line list: 20 between tabs on a pointer (web/components/tabs.tsx's
         // `gap-5`), the control's padding on the TV (HT-4)
         gap: tv ? m.pad : tokens.space['5'] * theme.u,
-        borderBottomWidth: 1,
+        borderBottomWidth: line.thin,
         borderBottomColor: theme.colors.line,
         ...SIDEWAYS,
       }}
@@ -182,7 +184,7 @@ function LineTabs<V extends string>({
               alignItems: 'center',
               justifyContent: 'center',
               paddingHorizontal: tv ? 0 : tokens.space['0.5'] * theme.u,
-              marginBottom: -1,
+              marginBottom: -line.thin,
               opacity: o.disabled ? tokens.controls.disabledOpacity : 1,
             }}
           >
@@ -198,7 +200,7 @@ function LineTabs<V extends string>({
                       left: 0,
                       right: 0,
                       bottom: 0,
-                      height: 2,
+                      height: line.thick,
                       borderRadius: tokens.radius.pill,
                       backgroundColor: theme.colors.accent,
                     }}

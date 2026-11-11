@@ -1,4 +1,8 @@
 'use client'
+import type { ImportCandidate, Movie } from '@highsea-tv/api-contract'
+import { bytes } from '@highsea-tv/core/format'
+import { useT } from '@highsea-tv/i18n/react'
+import { useAction, useClient, useQuery } from '@highsea-tv/sdk/react'
 // SPDX-License-Identifier: AGPL-3.0-only
 // A17 Manual import (manual-import.md), ported from the prototype with real data: files highsea
 // didn't download, or couldn't import on its own. Pick a folder, check what each file matched, see
@@ -13,10 +17,7 @@
 // - a Version column (6b, answer 8): each file picks one of its movie's versions, the scan's
 //   choice (the first without a file) by default; two files for one version are refused.
 // Drawn with the library's native renderer since D2 (one-client-platform-d.md).
-import type { ImportCandidate, Movie } from '@highsea-tv/api-contract'
-import { bytes } from '@highsea-tv/core/format'
-import { useT } from '@highsea-tv/i18n/react'
-import { useAction, useClient, useQuery } from '@highsea-tv/sdk/react'
+import { admin, wrapBasis } from '@highsea-tv/tokens'
 import {
   Badge,
   Button,
@@ -49,9 +50,9 @@ import { Release } from './table-parts.tsx'
 
 const sp = tokens.space
 /** The movie and version columns (the web's w-60 and w-44), and a file's or name's (max-w-72). */
-const MOVIE_WIDTH = 240
-const VERSION_WIDTH = 176
-const NAME_WIDTH = 288
+const MOVIE_WIDTH = admin.import.movie
+const VERSION_WIDTH = admin.import.choice
+const NAME_WIDTH = admin.import.name
 
 type Mode = 'hardlink' | 'move'
 type Row = ImportCandidate & { selected: boolean; done: boolean; error: string | null }
@@ -165,7 +166,7 @@ export function ManualImport({ initialPath }: { initialPath?: string } = {}) {
         <ImportPanel label={t('folder')}>
           <Field label={t('folder')} error={error ?? undefined} hint={t('folderHint')}>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: sp['2'] }}>
-              <View style={{ flexGrow: 1, flexShrink: 1, flexBasis: 192, minWidth: 0 }}>
+              <View style={{ flexGrow: 1, flexShrink: 1, flexBasis: wrapBasis, minWidth: 0 }}>
                 <Input mono value={path} onChangeText={setPath} />
               </View>
               <Button
@@ -267,7 +268,14 @@ export function ManualImport({ initialPath }: { initialPath?: string } = {}) {
                         />
                       </TableCell>
                       <TableCell tall maxWidth={NAME_WIDTH}>
-                        <View style={{ minWidth: 0, flex: 1, alignItems: 'flex-start', gap: 2 }}>
+                        <View
+                          style={{
+                            minWidth: 0,
+                            flex: 1,
+                            alignItems: 'flex-start',
+                            gap: tokens.space['0.5'],
+                          }}
+                        >
                           <Release color="text">{file}</Release>
                           {r.skip ? (
                             <Text variant="caption" color="text-3">

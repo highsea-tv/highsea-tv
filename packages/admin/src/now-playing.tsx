@@ -21,7 +21,7 @@ import { duration } from '@highsea-tv/core/format'
 import { useLocale, useT } from '@highsea-tv/i18n/react'
 import { ApiError } from '@highsea-tv/sdk'
 import { useAction, useQuery } from '@highsea-tv/sdk/react'
-import { breakpoints } from '@highsea-tv/tokens'
+import { admin, line } from '@highsea-tv/tokens'
 import {
   Badge,
   Button,
@@ -51,8 +51,8 @@ import {
   TitleLink,
   toast,
   tokens,
+  useRegularWindow,
   useTheme,
-  useWindowAtLeast,
 } from '@highsea-tv/ui/native'
 import { type ReactNode, useState } from 'react'
 import { View } from 'react-native'
@@ -108,7 +108,7 @@ export function NowPlayingPage({ tab = 'now' }: { tab?: Tab }) {
 
 /** Two figures to a row in a compact window, four otherwise (the web's grid-cols-2 medium:grid-cols-4). */
 function StatRow({ children }: { children: ReactNode[] }) {
-  const four = useWindowAtLeast(breakpoints.medium)
+  const four = useRegularWindow()
   const per = four ? 4 : 2
   const rows: ReactNode[][] = []
   for (let i = 0; i < children.length; i += per) rows.push(children.slice(i, i + per))
@@ -198,7 +198,7 @@ function SessionRow({ s, onStop }: { s: StreamSession; onStop: () => void }) {
         gap: sp['4'],
         padding: sp['4'],
         minWidth: 0,
-        borderWidth: 1,
+        borderWidth: line.thin,
         borderColor: theme.colors.line,
         borderRadius: tokens.radius.lg,
         backgroundColor: theme.colors.s1,
@@ -246,7 +246,7 @@ function SessionRow({ s, onStop }: { s: StreamSession; onStop: () => void }) {
               ) : null}
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: sp['1'] + sp['0.5'] }}>
-              <Icon name={clientIcon[s.client]} size={14} color="text-2" />
+              <Icon name={clientIcon[s.client]} size={tokens.icon.size.xs} color="text-2" />
               <Text variant="caption" color="text-2" numberOfLines={1} style={{ flexShrink: 1 }}>
                 {`${s.user.displayName} · ${s.deviceName}`}
               </Text>
@@ -345,7 +345,7 @@ function SessionRow({ s, onStop }: { s: StreamSession; onStop: () => void }) {
             role="list"
             style={{
               gap: sp['1'],
-              borderTopWidth: 1,
+              borderTopWidth: line.thin,
               borderTopColor: theme.colors.line,
               paddingTop: sp['3'],
             }}
@@ -377,7 +377,7 @@ function SessionRow({ s, onStop }: { s: StreamSession; onStop: () => void }) {
 }
 
 /** The poster's width (the web's 64px column). */
-const POSTER_WIDTH = 64
+const POSTER_WIDTH = admin.nowPlaying.posterWidth
 
 function StopDialog({ session, onClose }: { session: StreamSession | null; onClose: () => void }) {
   const t = useT(messages)
@@ -442,7 +442,7 @@ function StopDialog({ session, onClose }: { session: StreamSession | null; onClo
 // ---------------------------------------------------------------- history
 
 /** The toolbar's select (the web's w-44). */
-const SELECT_WIDTH = 176
+const SELECT_WIDTH = admin.nowPlaying.selectWidth
 
 function History() {
   const t = useT(messages)
@@ -509,7 +509,7 @@ function History() {
                       <Muted>{w.user.displayName}</Muted>
                     </TableCell>
                     <TableCell>
-                      <Icon name={clientIcon[w.client]} size={14} color="text-2" />
+                      <Icon name={clientIcon[w.client]} size={tokens.icon.size.xs} color="text-2" />
                       <Muted>{w.deviceName}</Muted>
                     </TableCell>
                     <TableCell>

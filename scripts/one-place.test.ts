@@ -110,7 +110,7 @@ describe('screens', () => {
         rule: 'screens',
         path: 'design/prototypes/src/web/**',
         count: 1,
-        until: 'B',
+        until: null,
         reason: 'B moves it',
       },
     ]
@@ -184,7 +184,7 @@ describe('screens', () => {
           rule: 'screens',
           path: 'design/prototypes/src/*/**',
           count: 2,
-          until: 'B',
+          until: null,
           reason: 'B moves them',
         },
       ],
@@ -237,7 +237,7 @@ describe('parts', () => {
         rule: 'parts',
         path: 'apps/client/src/parts/person.tsx',
         name: 'PersonTile',
-        until: 'B',
+        until: null,
         reason: 'B makes it a form of the library’s',
       },
     ]
@@ -317,6 +317,15 @@ describe('values', () => {
 
   test('a literal colour, size, space or corner fails', async () => {
     expect(await run({ [file]: card })).toEqual(found)
+  })
+
+  test('the admin’s screens and the guides’ components are read too (E1)', async () => {
+    const admin = 'packages/admin/src/card.tsx'
+    const guide = 'apps/docs/components/card.tsx'
+    expect(await run({ [admin]: card, [guide]: card })).toEqual([
+      ...found.map((f) => f.replace(file, admin)),
+      ...found.map((f) => f.replace(file, guide)),
+    ])
   })
 
   test('the tokens, 0, percentages, comments, types and a mask’s white pass', async () => {
@@ -409,7 +418,9 @@ describe('values', () => {
   test('a file’s values pass when the exceptions give their number, and fail on another', async () => {
     const values = (count: number) =>
       listing({
-        exceptions: [{ rule: 'values', path: file, count, until: 'E', reason: 'before the check' }],
+        exceptions: [
+          { rule: 'values', path: file, count, until: null, reason: 'before the check' },
+        ],
       })
     const listed = await check(repo({ [file]: card, ...values(8) }))
     expect(listed.findings).toEqual([])
@@ -433,14 +444,14 @@ describe('the exceptions', () => {
         rule: 'screens',
         path: 'design/prototypes/src/web/**',
         count: 3,
-        until: 'B',
+        until: null,
         reason: 'B moves them',
       },
       {
         rule: 'parts',
         path: 'apps/client/src/poster.tsx',
         name: 'Poster',
-        until: 'B',
+        until: null,
         reason: 'B',
       },
       { rule: 'values', path: 'apps/client/src/plain.tsx', count: 1, until: null, reason: 'stays' },
@@ -469,11 +480,13 @@ describe('the exceptions', () => {
       { rule: 'screens', path: 'b', until: 'B' },
       { rule: 'screens', path: 'c', until: 'F', reason: 'r' },
       { rule: 'screens', path: 'd', reason: 'r' },
-      { rule: 'parts', path: 'e', until: 'B', reason: 'r' },
-      { rule: 'values', path: 'f', until: 'E', reason: 'r' },
+      { rule: 'parts', path: 'e', until: null, reason: 'r' },
+      { rule: 'values', path: 'f', until: null, reason: 'r' },
       { rule: 'screens', path: 'g', until: null, count: 0, reason: 'r' },
-      { rule: 'parts', path: 'h', name: 'H', count: 1, until: 'B', reason: 'r' },
+      { rule: 'parts', path: 'h', name: 'H', count: 1, until: null, reason: 'r' },
       'i',
+      // open until a part: since E1 every exception stays, so a part can't end with one open
+      { rule: 'values', path: 'j', count: 1, until: 'E', reason: 'before the check' },
     ]
     const moved = [{ destination: 'Settings', part: 'A', copies: [] }]
     const findings = (await check(repo(listing({ moved, exceptions })))).findings
@@ -482,13 +495,14 @@ describe('the exceptions', () => {
       'renderer exceptions are listed in parity.ts, with reasons',
       "colours isn't a rule: screens, parts or values",
       'b has no reason',
-      "c's until is the part that removes it, A to E, or null if it stays",
-      "d's until is the part that removes it, A to E, or null if it stays",
+      "c's until is null, for an exception that stays",
+      "d's until is null, for an exception that stays",
       'e names no component',
       `f${count}`,
       `g${count}`,
       `h${count}`,
       'an exception is an object',
+      'j is open until part E: move its values onto the tokens, or give it a reason that never expires and "until": null',
       'Settings lists its copies, each a path with the names in it, if any',
     ])
     expect(new Set(findings.map((f) => f.rule))).toEqual(new Set(['exceptions']))

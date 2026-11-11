@@ -1,4 +1,7 @@
 'use client'
+import { useT } from '@highsea-tv/i18n/react'
+import type { ApiError } from '@highsea-tv/sdk'
+import { useAction, useQuery } from '@highsea-tv/sdk/react'
 // SPDX-License-Identifier: AGPL-3.0-only
 // The pages a link opens: an invite or a password reset (users-devices.md § Invites), and the
 // approval of a TV's sign-in code (connectivity.md § Pairing, after RFC 8628 § 3.3: the person
@@ -6,9 +9,7 @@
 // the approving device is signed in already (ADR 0024). Drawn with the library's native renderer
 // since D3 (one-client-platform-d.md): a form's submit is its primary button and Enter in its
 // fields (`onSubmitEditing`).
-import { useT } from '@highsea-tv/i18n/react'
-import type { ApiError } from '@highsea-tv/sdk'
-import { useAction, useQuery } from '@highsea-tv/sdk/react'
+import { admin, controlGeometry } from '@highsea-tv/tokens'
 import { Button, EmptyState, Field, Input, Skeleton, Text, tokens } from '@highsea-tv/ui/native'
 import { useState } from 'react'
 import { TextInput, View } from 'react-native'
@@ -24,10 +25,10 @@ function Loading() {
   return (
     <Card>
       <View aria-busy style={{ gap: s['4'] }}>
-        <Skeleton width={192} height={24} />
-        <Skeleton height={40} />
-        <Skeleton height={40} />
-        <Skeleton height={36} />
+        <Skeleton width={admin.skeleton.width.lg} height={admin.skeleton.title} />
+        <Skeleton height={admin.skeleton.field} />
+        <Skeleton height={admin.skeleton.field} />
+        <Skeleton height={controlGeometry.md.height} />
       </View>
     </Card>
   )

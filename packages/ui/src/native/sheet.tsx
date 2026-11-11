@@ -9,10 +9,12 @@
 // the dialogs answered by their footer keep their look.
 
 import { useT } from '@highsea-tv/i18n/react'
+import { line, sheet } from '@highsea-tv/tokens'
 import { type ReactNode, useEffect, useId, useRef, useSyncExternalStore } from 'react'
 import { Modal, Platform, Pressable, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Button } from './button.tsx'
+import { visuallyHidden } from './hidden-heading.tsx'
 import { uiMessages } from './messages.ts'
 import { useScrimStyle } from './scrim.ts'
 import { ScrollView } from './scroll-view.tsx'
@@ -163,7 +165,7 @@ function PageSheet({ open, onClose, title, children, footer, onDismiss }: SheetP
               alignItems: 'center',
               paddingHorizontal: tokens.space['4'],
               paddingTop: tokens.space['3'],
-              minHeight: 56,
+              minHeight: sheet.header,
             }}
           >
             <Text
@@ -220,7 +222,7 @@ function PageSheet({ open, onClose, title, children, footer, onDismiss }: SheetP
 /** A side sheet's widest by its edge (the web renderer's w-[min(26rem,…)] and w-[min(20rem,…)]). */
 const SIDE_WIDTH = { right: 416, left: 320 } as const
 /** The space a side sheet leaves beside it in a narrow window (the web's 100vw - 2rem). */
-const SIDE_MARGIN = 32
+const SIDE_MARGIN = tokens.space['8']
 
 /**
  * A pointer's side sheet (web/components/dialog.tsx's SheetContent at `right` or `left`): over the
@@ -342,10 +344,7 @@ function SideSheet({
 /** A title read but not shown: HiddenHeading's visually-hidden box, with the id that names the sheet. */
 function HiddenTitle({ id, children }: { id: string; children: string }) {
   return (
-    <View
-      pointerEvents="none"
-      style={{ position: 'absolute', width: 1, height: 1, margin: -1, overflow: 'hidden' }}
-    >
+    <View pointerEvents="none" style={visuallyHidden}>
       <Text accessibilityRole="header" aria-level={2} nativeID={id} numberOfLines={1}>
         {children}
       </Text>
@@ -423,7 +422,7 @@ export function Dialog({
             padding: tokens.space['5'],
             borderRadius: tokens.radius.lg,
             backgroundColor: theme.colors.s3,
-            borderWidth: 1,
+            borderWidth: line.thin,
             borderColor: theme.colors.line,
             boxShadow: tokens.elevation[4].boxShadow,
           }}

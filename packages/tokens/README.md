@@ -1,6 +1,6 @@
 # @highsea-tv/tokens
 
-The single source for highsea's design values: color roles and themes, type, spacing, radii, elevation, blur, density, focus, motion and sound. The rules for *using* them are in [`docs/design-language/`](../../docs/design-language/README.md). Locked values come from [`docs/brand/direction.md`](../../docs/brand/direction.md).
+The single source for highsea's design values: color roles and themes, type, spacing, radii, line widths, elevation, blur, what sits over artwork (`art`), density, focus, motion and hover, the scrollbar, each component's own measures (`controls.ts`) and sound. Since part E of the one client platform, nothing outside the tokens writes a colour, size or corner (`bun run one-place` checks it). The rules for *using* them are in [`docs/design-language/`](../../docs/design-language/README.md). Locked values come from [`docs/brand/direction.md`](../../docs/brand/direction.md).
 
 ## Outputs
 
@@ -27,10 +27,10 @@ Tailwind's palette, shadows, radii, breakpoints and animations are cleared. Only
 | Color role `s1`, `text-2`, `accent-fill`… | `--color-s1` … | `bg-s1`, `text-text-2`, `bg-accent-fill text-on-accent` |
 | Badge colors (derived) | `--color-badge-success`, `--color-badge-success-bg` | `text-badge-success bg-badge-success-bg` |
 | `space-3` | `--spacing` (4px base) | `p-3`, `gap-0.5` |
-| `radius-sm`, `radius-md`, `radius-lg`, `radius-xl`, `radius-poster` | `--radius-*` | `rounded-md`, `rounded-poster`, `rounded-full` (pill) |
+| `radius-3xs`, `radius-2xs`, `radius-xs`, `radius-sm`, `radius-md`, `radius-lg`, `radius-xl`, `radius-poster` | `--radius-*` | `rounded-md`, `rounded-poster`, `rounded-full` (pill) |
 | Elevation levels 2–4 | `--shadow-2` … `--shadow-4` | `shadow-3` |
 | Blur recipes | `--blur-bar`, `--blur-pill`, `--blur-badge`, `--blur-scrim` | `backdrop-blur-bar` |
-| Breakpoints | `--breakpoint-medium`, `-expanded`, `-wide` | `medium:`, `expanded:`, `wide:` (compact is the default) |
+| The form-factor rule's one width, 768 ([spacing-layout › Width classes](../../docs/design-language/spacing-layout.md#width-classes)) | `--breakpoint-regular` | `regular:` (compact is the default) |
 | Text styles | `--text-display` … `--text-widget-title` | `text-title`, `text-figure font-mono` |
 | `spring.base`, `spring.quick` | `--ease-spring`, `--ease-spring-quick` with `--duration-spring`, `--duration-spring-quick` | `ease-spring duration-(--duration-spring)` |
 | Durations, stagger | `--duration-color`, `-fade-out`, `-dwell`, `-pulse`, `--stagger` | |

@@ -10,7 +10,6 @@ import { BACKUP_SCHEDULES, type BackupSettings, OPERATIONS_TOPICS } from '@highs
 import { useLocale, useT } from '@highsea-tv/i18n/react'
 import type { ApiError } from '@highsea-tv/sdk'
 import { useAction, useQuery } from '@highsea-tv/sdk/react'
-import { breakpoints } from '@highsea-tv/tokens'
 import {
   DateTimeInput,
   Field,
@@ -20,7 +19,7 @@ import {
   TextLink,
   toast,
   tokens,
-  useWindowAtLeast,
+  useRegularWindow,
 } from '@highsea-tv/ui/native'
 import { Children, type ReactNode, useState } from 'react'
 import { View } from 'react-native'
@@ -70,13 +69,12 @@ type Draft = Omit<BackupSettings, 'keep'> & { keep: string }
 const sp = tokens.space
 
 /**
- * The schedule's fields, in two columns from medium widths and four from expanded (the web's
+ * The schedule's fields, one to a row in a compact window and four in a regular one (the web's
  * `grid gap-4 medium:grid-cols-2 expanded:grid-cols-4`): a short row keeps its empty places.
  */
 function FieldRows({ children }: { children: ReactNode }) {
-  const medium = useWindowAtLeast(breakpoints.medium)
-  const expanded = useWindowAtLeast(breakpoints.expanded)
-  const per = expanded ? 4 : medium ? 2 : 1
+  const regular = useRegularWindow()
+  const per = regular ? 4 : 1
   const cells = Children.toArray(children)
   const rows: ReactNode[][] = []
   for (let i = 0; i < cells.length; i += per) rows.push(cells.slice(i, i + per))

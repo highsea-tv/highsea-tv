@@ -56,7 +56,7 @@ import {
   validateFormat,
 } from '@highsea-tv/quality/browser'
 import { useAction, useQuery } from '@highsea-tv/sdk/react'
-import { breakpoints } from '@highsea-tv/tokens'
+import { line } from '@highsea-tv/tokens'
 import {
   Badge,
   Banner,
@@ -84,8 +84,8 @@ import {
   TitleLink,
   toast,
   tokens,
+  useRegularWindow,
   useTheme,
-  useWindowAtLeast,
 } from '@highsea-tv/ui/native'
 import { type ReactNode, useMemo, useState } from 'react'
 import { View, type ViewStyle } from 'react-native'
@@ -127,7 +127,11 @@ function Back({ to, children }: { to: string; children: string }) {
     >
       {({ hovered }) => (
         <>
-          <Icon name="chevron-left" size={16} color={hovered ? 'text' : 'text-2'} />
+          <Icon
+            name="chevron-left"
+            size={tokens.icon.size.sm}
+            color={hovered ? 'text' : 'text-2'}
+          />
           <Text size={ui.size} leading={ui.leading} color={hovered ? 'text' : 'text-2'}>
             {children}
           </Text>
@@ -192,9 +196,9 @@ function NumberInput({
   )
 }
 
-/** Fields side by side: `columns` from medium widths, one above another below (16 apart). */
+/** Fields side by side: `columns` in a regular window, one above another below (16 apart). */
 function Columns({ columns, children }: { columns: string; children: ReactNode }) {
-  const medium = useWindowAtLeast(breakpoints.medium)
+  const medium = useRegularWindow()
   return (
     <View
       style={grid({
@@ -940,7 +944,7 @@ function FormatForm({
               style={{
                 gap: s['3'],
                 padding: s['3'],
-                borderWidth: 1,
+                borderWidth: line.thin,
                 borderColor: theme.colors.line,
                 borderRadius: tokens.radius.md,
                 backgroundColor: theme.colors.s2,
@@ -1000,7 +1004,7 @@ function ConditionRow({
       <View
         style={grid({
           display: 'grid',
-          gridTemplateColumns: useWindowAtLeast(breakpoints.medium)
+          gridTemplateColumns: useRegularWindow()
             ? // the web's 12rem: 192
               `${s['12'] * 4}px minmax(0, 1fr) auto`
             : 'minmax(0, 1fr)',
@@ -1066,7 +1070,7 @@ function ConditionValue({
 }) {
   const t = useT(messages)
   const languageOptions = useLanguageOptions()
-  const medium = useWindowAtLeast(breakpoints.medium)
+  const medium = useRegularWindow()
   switch (c.kind) {
     case 'title':
     case 'edition':

@@ -7,6 +7,7 @@ export const settings = defineMessages({
   description: 'How the server runs, who uses it, and how it looks.',
   nav: 'Settings',
   all: 'All settings',
+  navMenu: 'Settings area: {area}',
   'group.server': 'Server',
   'group.people': 'People',
   'group.library': 'Library',

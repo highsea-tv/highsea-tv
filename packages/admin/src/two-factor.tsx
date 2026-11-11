@@ -1,9 +1,10 @@
 'use client'
+import { useT } from '@highsea-tv/i18n/react'
 // SPDX-License-Identifier: AGPL-3.0-only
 // Pieces of two-step verification that sign-in and "Your account" share: the code field, the
 // authenticator's QR code with its key, and the recovery codes shown once. Drawn with the
 // library's native renderer since D3 (one-client-platform-d.md).
-import { useT } from '@highsea-tv/i18n/react'
+import { admin } from '@highsea-tv/tokens'
 import {
   Button,
   Field,
@@ -22,7 +23,7 @@ import { account } from './account-messages.ts'
 const s = tokens.space
 const figure = tokens.adminText.figure
 /** The QR code's side (the web's w-44). */
-const QR = 176
+const QR = admin.twoFactor.qr
 
 export type InputHandle = ComponentRef<typeof TextInput>
 

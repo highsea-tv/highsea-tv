@@ -1,10 +1,11 @@
 'use client'
+import { useT } from '@highsea-tv/i18n/react'
+import type { Query } from '@highsea-tv/sdk/react'
 // SPDX-License-Identifier: AGPL-3.0-only
 // A section's data states in one place (the prototype's loadable.tsx): a skeleton while loading,
 // an error with Try again, and the content once it's in. Drawn with the library's native renderer
 // since D2 (one-client-platform-d.md).
-import { useT } from '@highsea-tv/i18n/react'
-import type { Query } from '@highsea-tv/sdk/react'
+import { admin } from '@highsea-tv/tokens'
 import { Button, EmptyState, Skeleton, tokens } from '@highsea-tv/ui/native'
 import type { ReactNode } from 'react'
 import { View, type ViewStyle } from 'react-native'
@@ -26,7 +27,7 @@ export function Loadable<T>({
   if (query.status === 'loading')
     return (
       <View aria-busy style={{ gap: tokens.space['3'] }}>
-        {skeleton ?? [0, 1, 2, 3].map((i) => <Skeleton key={i} height={48} />)}
+        {skeleton ?? [0, 1, 2, 3].map((i) => <Skeleton key={i} height={admin.skeleton.row} />)}
       </View>
     )
   if (query.status === 'error')
