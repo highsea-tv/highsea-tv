@@ -170,6 +170,17 @@ export function useChromeOverlay(on = true): ChromeScroll {
   const ask = useContext(ShellAsk)
   useClaim(ask?.setOverlay, true, on)
   const scroll = ask?.scroll
+  // the chrome follows only the page on view: a page left under the next one in the stack can
+  // still be scrolling (the TV's focus moved it just before the press that opened the next), and
+  // would move the next page's head away. Each page keeps where it is, and hands that to the
+  // chrome as it comes back on view, at 0 the first time
+  const live = useIsFocused() && on
+  const here = useRef(live)
+  here.current = live
+  const at = useRef(0)
+  useEffect(() => {
+    if (live) scroll?.setValue(at.current)
+  }, [live, scroll])
   const formFactor = useFormFactor()
   const pad =
     formFactor.input !== 'pointer'
@@ -177,15 +188,18 @@ export function useChromeOverlay(on = true): ChromeScroll {
       : formFactor.widthClass === 'compact'
         ? TOP_BAR_HEIGHT + COMPACT_NAV_HEIGHT
         : TOP_BAR_HEIGHT
-  return useMemo(
-    () => ({
-      onScroll: (e) => scroll?.setValue(e.nativeEvent.contentOffset.y),
+  return useMemo(() => {
+    const follow = (y: number) => {
+      at.current = y
+      if (here.current) scroll?.setValue(y)
+    }
+    return {
+      onScroll: (e) => follow(e.nativeEvent.contentOffset.y),
       scrollEventThrottle: FRAME_MS,
-      offset: (y) => scroll?.setValue(y),
+      offset: follow,
       pad,
-    }),
-    [scroll, pad],
-  )
+    }
+  }, [scroll, pad])
 }
 
 /** The server's name: what it calls itself once it answers, else the name this device knows. */

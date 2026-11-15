@@ -1,6 +1,7 @@
 # Appearance
 
-- **Platforms:** Admin, every breakpoint. Every client inherits what it sets.
+- **Platforms:** Admin, compact and regular windows. Every client inherits what it sets.
+- **Screen:** `packages/admin/src/appearance.tsx` (the theme editor is its `ThemeEditor`), at `apps/server/app/(admin)/settings/appearance/`.
 - **Prototype:** `#/admin/settings/appearance` (A12).
 - **Roadmap:** [Phase 2 › A12](../roadmap.md#phase-2-design-prototypes-gate-user-sign-off), [Personalization](../roadmap.md#personalization-highseapersonalization). Rules: [color.md › custom themes and server branding](../design-language/color.md#custom-themes-and-server-branding), [sound.md › defaults](../design-language/sound.md#defaults).
 
@@ -14,7 +15,7 @@ How the server presents itself to everyone who connects: its name, mark and acce
 
 ## Layout
 
-A settings area ([settings.md](settings.md#layout)): the areas beside it from expanded, a back link below.
+A settings area ([settings.md](settings.md#layout)): the areas beside it once the window has room (from 1136), All settings and the areas' menu above it below that.
 
 - **Server identity:**
   - **Name** (40 characters);
@@ -70,7 +71,7 @@ Through `@highsea-tv/sdk` (the contract is `@highsea-tv/api-contract`'s `appeara
 
 ## Decisions
 
-- **The editor is the Storybook theme editor, in the product:** the same engine, the same audit, the same share codes. One override is exposed (quiet text); anything more is a share code away.
+- **The editor is the theme editor of design system v1.0, in the product** (the admin's `ThemeEditor` in `packages/admin/src/appearance.tsx`): the same engine, the same audit, the same share codes. One override is exposed (quiet text); anything more is a share code away.
 - **A failing theme can't be saved.** The audit is the design system's contrast policy, not advice.
 - **The brand accent is optional** and goes through the same generator, so the accent family still passes contrast whatever color the owner picks.
 - **Sound defaults are per kind of app** (TV on, phones and web off), following [sound.md › defaults](../design-language/sound.md#defaults); the admin's own sound stays a per-browser choice.

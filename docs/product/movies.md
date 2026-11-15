@@ -1,7 +1,8 @@
 # Movies: discover, library and detail
 
-- **Platforms:** Admin (`apps/server`), every breakpoint.
-- **Prototype:** `#/admin/discover` (A4), `#/admin/movies` (A5), `#/admin/movies/1` (A6). The movie page is a media page: its shared anatomy, the not-added state, people and other media types are in [media-pages.md](media-pages.md).
+- **Platforms:** Admin (`apps/server`), compact and regular windows.
+- **Screen:** `packages/admin/src/discover.tsx`, `library.tsx` and `movie-detail.tsx`, with the Add dialog in `add-dialog.tsx`; at `apps/server/app/(admin)/discover/` and `movies/`.
+- **Prototype:** `#/admin/discover` (A4), `#/admin/movies` (A5), `#/admin/movies/10000` (A6, Sintel). The movie page is a media page: its shared anatomy, the not-added state, people and other media types are in [media-pages.md](media-pages.md).
 - **Roadmap:** [Phase 2 › A4–A6](../roadmap.md#phase-2-design-prototypes-gate-user-sign-off), [Movie pipeline](../roadmap.md#movie-pipeline), [Admin UI routes](../roadmap.md#admin-ui-routes-built-to-match-the-phase-2-prototypes) (`/discover`, `/movies`, `/movies/[id]`). Media model: [ADR 0012](../adr/0012-unified-media-item-model.md).
 
 ## Purpose
@@ -24,7 +25,7 @@ The front of the pipeline. **Discover** finds a movie and adds it with everythin
 - `PageHeader`: "Discover", a one-line description.
 - A search field (max 36rem). Empty, the page shows four tabs above the grid: **Trending** (this week), **Popular**, **Now playing** and **Upcoming**, each from TMDB for the server's region; typing replaces them with **Results for "…"**. Results are instant (deferred input, no submit button). The tabs are approved by the owner on 2026-10-20; the prototype shows Trending only.
 - A poster grid (`auto-fill, minmax(8.5rem, 1fr)`): poster, title (two lines), year and rating, then **Add** or an **In library** badge that links to the movie. The poster and title are one link to the movie's page, `/movies/{id}` by TMDB id: the same address the library and everything else use, in the library or not.
-- **Add dialog** (`md`), shared by Discover, the movie page, person pages and collections: the synopsis (or, for several movies, their titles), then Folder (full width), Quality profile and Subtitle languages (two columns from medium), Minimum availability, **Monitored** (switch) and **Search now** (checkbox, on). The primary button reads **Add and search** or **Add movie** to match.
+- **Add dialog** (`md`), shared by Discover, the movie page, person pages and collections: the synopsis (or, for several movies, their titles), then Folder (full width), Quality profile and Subtitle languages (two columns in a regular window), Minimum availability, **Monitored** (switch) and **Search now** (checkbox, on). The primary button reads **Add and search** or **Add movie** to match.
 
 ### Library (A5)
 
@@ -86,7 +87,7 @@ The anatomy, the Overview's rows (cast, trailers, collection, More like this, Ab
 - **Subtitle tracks:** − and + move a track 50 ms earlier or later and save at once; the offset reads "+250 ms" / "−120 ms". The offset shown is the sync's correction at the first cue plus the owner's nudge. **Re-sync** queues the sync in the background and toasts "Syncing English to the audio"; the badge follows, and while the tab is open a second toast gives the result: "Synced English to the audio · Offset −350 ms, 98% confidence.", "Kept the original English timing · The sync was 52% sure, under the minimum confidence." or "Couldn’t sync English". Re-sync puts the nudge back to zero (checkpoint 7b). Delete removes an external track and toasts "Subtitles deleted".
 - **Subtitle search:** pick a language (the movie's profile's first, else English), **Search providers**, then **Use** on a result: it downloads and joins the tracks (and, unless Sync to the audio is off, syncs in the background). No provider on reads "Turn on a subtitle provider in Subtitles to search."; none answering reads "No subtitle provider answered. Try again in a few minutes."; nothing found reads "No provider has subtitles in that language."
 - **Subtitle languages (bulk):** the library's bulk bar sets a profile on every selected movie and toasts "Subtitle languages set to {profile} for 3 movies".
-- **Keyboard:** every control is a native button, link, switch or Radix control in reading order; the reasons toggle has `aria-expanded`. No custom shortcuts.
+- **Keyboard:** every control is the library's button, link, switch or menu, in reading order; the reasons toggle has `aria-expanded`. No custom shortcuts.
 - **Sound:** none; admin sound is off by default.
 
 ## Copy

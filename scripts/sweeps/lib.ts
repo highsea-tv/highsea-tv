@@ -192,8 +192,9 @@ export async function acknowledge(page: Page) {
   const got = page.getByRole('button', { name: 'Got it' })
   if (await got.count()) {
     await got.first().click()
-    // Radix keeps the dialog mounted (data-state="closed") through its exit animation, with its
-    // focus guards and aria-hidden still in place, so wait for the dialog itself to go, not the button
+    // the library's dialog is react-native-web's Modal, which stays mounted through its exit
+    // animation (its ModalAnimation, https://necolas.github.io/react-native-web/docs/modal/), still
+    // aria-modal and holding focus, so wait for the dialog itself to go, not the button
     await page
       .waitForFunction(() => !document.querySelector('[role=dialog],[role=alertdialog]'), null, {
         timeout: 5000,

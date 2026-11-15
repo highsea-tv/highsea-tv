@@ -1,6 +1,7 @@
 # Indexers
 
-- **Platforms:** Admin (`apps/server`), every breakpoint.
+- **Platforms:** Admin (`apps/server`), compact and regular windows.
+- **Screen:** `packages/admin/src/indexers.tsx`, at `apps/server/app/(admin)/indexers/`.
 - **Prototype:** `#/admin/indexers` (A9).
 - **Roadmap:** [Phase 2 › A9](../roadmap.md#phase-2-design-prototypes-gate-user-sign-off), [Indexers and the independent catalog](../roadmap.md#indexers-and-the-independent-catalog), [ADR 0007](../adr/0007-signed-independent-catalogs.md).
 - **Built:** Phase 3 checkpoint 5 ([plan](../plans/phase-3-checkpoint-5.md)), with [ADR 0033](../adr/0033-indexer-definitions.md), [0034](../adr/0034-catalog-service-and-signing.md) and [0035](../adr/0035-indexer-health-and-search.md).
@@ -43,7 +44,7 @@ Where highsea looks for releases. The page shows whether each indexer is working
 - **Retry now** clears a backoff and puts the indexer back in rotation.
 - **Test** (menu) shows the result as a toast with the latency.
 - **Enabled** saves on change.
-- **Keyboard:** every control is native or Radix, in reading order.
+- **Keyboard:** every control is the library's, in reading order.
 - **Sound:** none.
 
 ## Copy

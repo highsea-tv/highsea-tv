@@ -1,6 +1,7 @@
 # Collections: smart and hand-picked
 
-- **Platforms:** Admin (`apps/server`), every breakpoint, for owners and admins. What it makes shows in every client's library.
+- **Platforms:** Admin (`apps/server`), compact and regular windows, for owners and admins. What it makes shows in every client's library.
+- **Screen:** the admin's `packages/admin/src/collections.tsx`, `collections-editor.tsx`, `collections-rules.tsx` and `collection.tsx` (at `apps/server/app/(admin)/collections/`); the clients' `apps/client/src/app/(in)/collections.tsx` and `collections/[id].tsx`.
 - **Prototype:** `#/admin/collections` (the list), `#/admin/collections/{id|new}` (the editor) (A19); `#/web/library/collections`, `#/mobile/library/collections`, `#/tv/library/collections` and each app's `/collections/{id}` (C9).
 - **Plan:** [smart-collections.md](../plans/smart-collections.md), with the owner's answers. The section composer's side is [curation.md](curation.md#the-composers); TMDB's collections are [client-search.md](client-search.md#collections).
 
@@ -39,7 +40,7 @@ A collection has a name, a summary, artwork, its films and its shows. The films 
 
 ### The editor
 
-Two columns from expanded (the form, and the result beside it and sticky); stacked below expanded, the result second.
+Two columns in a regular window (the form, and the result beside it and sticky); stacked in a compact one, the result second.
 
 - **Name** (required) and **Summary** (optional, shown on the collection's page in the apps).
 - **Artwork:** **Upload a poster**, or **Use the mosaic** (the default).

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Customize mode for the widget grid in a browser (admin.md#customizing; docs/product/dashboard.md),
 // the web's side of ./widget-editor.tsx, as the web renderer's (web/components/widget-editor.tsx).
-// Order is the layout: widgets flow through the 4/2/1-column grid of 84 rows, so moving one
+// Order is the layout: widgets flow through the 4/1-column grid of 84 rows, so moving one
 // changes its index, and resizing changes how many columns and rows it spans, snapped to its range.
 // react-native-web's Views are DOM elements, their refs the elements
 // (https://necolas.github.io/react-native-web/docs/view/), so dnd-kit's sortable works on them as

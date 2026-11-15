@@ -185,11 +185,8 @@ function ShellBody() {
     const id = scroll.addListener(({ value }) => setScrolled(value > STUCK))
     return () => scroll.removeListener(id)
   }, [scroll])
-  // a page that lays the chrome over it starts at its top
-  const owner = overlay?.owner
-  useEffect(() => {
-    if (owner) scroll.setValue(0)
-  }, [owner, scroll])
+  // a page that lays the chrome over it hands the chrome where it is as it comes on view
+  // (kit's useChromeOverlay)
   // the announcements need the server; Unreachable stands alone
   const must = useHereAnnouncements().modal
   // the music player, mounted once over every route, drawn only while music is queued (B3)
@@ -271,16 +268,18 @@ function ShellBody() {
   return (
     <Asks value={asks}>
       <View style={{ flex: 1, backgroundColor: theme.colors.bg }}>
-        {over || who ? null : <TopBar />}
+        {/* one bar in one place, laid over the page when it asks (raised above it) and in the flow
+            otherwise: moved between two parents, React would mount it afresh as a page claims the
+            overlay just after it appears, and take an open account menu and the focus with it */}
+        {who ? null : (
+          <View pointerEvents="box-none" style={over ? OVER_BAR : undefined}>
+            <TopBar over={over} glass={over && scrolled} />
+          </View>
+        )}
         <View style={{ flex: 1 }}>{content}</View>
         {/* the music bar along the window's foot, under the page so its foot stays clear */}
         {music ? <MusicBar /> : null}
         <MusicPlayerMount />
-        {over && !who ? (
-          <Over>
-            <TopBar over glass={scrolled} />
-          </Over>
-        ) : null}
         <NoteRegion />
         {offline ? null : <ShellAnnouncements />}
       </View>
@@ -308,6 +307,9 @@ const STUCK = space['2']
 /** The head goes up with the page, as far as it has, and never below its place (an overscroll). */
 const away = (scroll: Animated.Value) =>
   scroll.interpolate({ inputRange: [0, 1], outputRange: [0, -1], extrapolateLeft: 'clamp' })
+
+/** The pointer's bar over a page that lays the chrome over it: Over's place, above the page. */
+const OVER_BAR = { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 1 } as const
 
 /** The head or the top bar laid over the page, which starts at the screen's top under it. */
 function Over({ children }: { children: ReactNode }) {
@@ -456,10 +458,11 @@ const pageMark = (here: boolean) =>
   (here ? { 'aria-current': 'page' } : {}) as Record<string, never>
 
 /**
- * The web's top bar: the server, the destinations, then Alerts and the profile. The server and the
- * profile go to Choose a server and Settings for now; their menus (the prototype's web/shell.tsx)
- * come with part B. Laid `over` a page (kit's useChromeOverlay) it has no line or fill of its own,
- * only the page's background fading out behind it, as the prototype's starts over a hero; once the
+ * The web's top bar: the server, the destinations, then Alerts and the profile. The server goes to
+ * Choose a server where the app keeps several (a plain browser is its own server's), and the
+ * profile opens the account menu (../../account/menu.tsx, the prototype's web/shell.tsx Profile).
+ * Laid `over` a page (kit's useChromeOverlay) it has no line or fill of its own, only the page's
+ * background fading out behind it, as the prototype's starts over a hero; once the
  * page has scrolled under it, it's `glass`, as the prototype's glass-bar: the background at the bar
  * blur's opacity with the blur behind it where the web has one, else the solid fallback's.
  */

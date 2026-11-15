@@ -1,6 +1,7 @@
 # Dashboard
 
-- **Platforms:** Admin (`apps/server`), every breakpoint.
+- **Platforms:** Admin (`apps/server`), compact and regular windows.
+- **Screen:** `packages/admin/src/dashboard.tsx`, with the widgets in `widgets.tsx` and the grid in `@highsea-tv/ui`'s `WidgetEditor`.
 - **Prototype:** `#/admin` (flow A3). Customize mode is part of the same route.
 - **Roadmap:** [Phase 2 › A3](../roadmap.md#phase-2-design-prototypes-gate-user-sign-off), [Personalization › Widgets](../roadmap.md#personalization-highseapersonalization), [Admin UI routes › Dashboard](../roadmap.md#admin-ui-routes-built-to-match-the-phase-2-prototypes). Layout locked in [admin.md › Dashboard](../design-language/platforms/admin.md#dashboard-sidebar--widgets).
 
@@ -17,7 +18,7 @@ The first page after sign-in. It answers "is everything working, and what's happ
 ## Layout
 
 - **Top row** (`PageHeader`): the title "Dashboard", the search trigger (opens ⌘K), and **Customize**. In Customize mode the actions become **Add widget**, a **More layout options** menu, **Cancel** and **Done**, and a one-line description appears under the title.
-- **Widget grid** (`WidgetEditor` from ui-web): 4 columns at expanded and wide, 2 at medium, 1 at compact, in rows of 84px with a 12px gap. Widgets flow in order; each one spans the columns and rows it's sized to (columns clamped to the columns available). There's no dense packing, so a short row can leave a gap: the visual order always matches the DOM and keyboard order.
+- **Widget grid** (the library's `WidgetEditor` and `WidgetGrid`, `@highsea-tv/ui`): 4 columns in a regular window and 1 in a compact one (`useWidgetColumns`), in rows of 84px with a 12px gap (`density.widgetRow`, `density.widgetGap`). Widgets flow in order; each one spans the columns and rows it's sized to (columns clamped to the columns available). There's no dense packing, so a short row can leave a gap: the visual order always matches the DOM and keyboard order.
 - **Widgets** and their sizes: widths in columns and heights in rows, each a range the resize snaps within. The default size is width × height.
 
   | Widget | Width | Height | Default | Who sees it | Content |
@@ -42,11 +43,10 @@ The first page after sign-in. It answers "is everything working, and what's happ
 - **Queue widget** chooses its layout from its own width, not the viewport's: a full table from 760px, a table with fewer columns from 520px, and stacked rows below that.
 - **Responsive:**
 
-  | Breakpoint | Behavior |
+  | Window | Behavior |
   | --- | --- |
-  | expanded and wide (≥ 1024) | Full sidebar; 4-column grid |
-  | medium (600–1023) | Icon rail; 2-column grid; 4-wide widgets take the full row |
-  | compact (< 600) | Menu sheet; 1-column grid; the queue becomes stacked rows; header actions wrap below the title |
+  | regular (≥ 768) | Full sidebar; 4-column grid |
+  | compact (< 768) | Menu sheet; 1-column grid; the queue becomes stacked rows; header actions wrap below the title |
 
 ## States
 
@@ -158,7 +158,7 @@ Through `@highsea-tv/sdk` (the contract is `@highsea-tv/api-contract`'s `dashboa
 - **Widget meta hides while customizing,** so the handle, title and remove button fit in a 1-column widget at 1024 (about 175px wide).
 - **The queue lays out by its own width** (container measurement), not the viewport, because the same widget can be 2 or 4 columns wide.
 - **The members' dashboard is gone** (owner's decision, 2026-10-20). Migration `0004_roles` deletes their saved role layouts. The registry still filters widgets by role on the server, so an owner-only widget could be added later without leaking.
-- **The editor is ui-web's `WidgetEditor`,** shared by the admin and the prototype; the registry is `@highsea-tv/personalization`'s.
+- **The editor is the library's `WidgetEditor`,** shared by the admin and the prototype; the registry is `@highsea-tv/personalization`'s.
 - **Per-widget settings are stored, not yet edited** (owner's decision, 2026-10-20). Each widget shows its defaults.
 - **Columns come from the main area's width, not the viewport's.** At 1024 with the 216px sidebar, a 1-column widget is about 175px: tight for Indexers and Storage. The grid chooses 4, 3 or 2 columns from the main area's width (a container query). *Approved by the owner on 2026-10-20; built with the [dashboard follow-up](#follow-up-customization-on-homarrs-level).*
 
@@ -183,7 +183,7 @@ Through `@highsea-tv/sdk` (the contract is `@highsea-tv/api-contract`'s `dashboa
 
 The owner asked on 2026-10-20 for the dashboard to become as customizable as [Homarr](https://github.com/homarr-labs/homarr)'s boards, with a visible grid while customizing. It comes after Phase 3, and its plan is [plans/dashboard-customization.md](../plans/dashboard-customization.md):
 - free placement on a grid, with resizing on both axes;
-- layouts per breakpoint, with columns from the main area's width;
+- layouts per window class, with columns from the main area's width;
 - containers;
 - a settings dialog per widget;
 - any widget more than once;
