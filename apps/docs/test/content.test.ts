@@ -9,6 +9,8 @@ import { basename, dirname, join, resolve } from 'node:path'
 const dir = join(import.meta.dir, '..', 'content')
 const publicDir = join(import.meta.dir, '..', 'public')
 const root = join(import.meta.dir, '..', '..', '..')
+/** Fumadocs' callout types and aliases, which guide-parts.tsx gives a Banner tone each. */
+const CALLOUT_TYPES = ['info', 'tip', 'warning', 'warn', 'success', 'error', 'idea']
 const pages = readdirSync(dir, { recursive: true, encoding: 'utf8' })
   .filter((f) => f.endsWith('.mdx'))
   .map((f) => {
@@ -238,9 +240,21 @@ describe('the guides', () => {
         }
       })
 
-      test('says what each missing screenshot will show', () => {
-        for (const m of page.body.matchAll(/<ScreenshotToCome([^>]*)\/>/g))
-          expect(m[1]).toMatch(/shows="[^"]{20,}"/)
+      test('gives each callout a title and a type the library draws', () => {
+        // the library's Banner is named by its title (guide-parts.tsx)
+        for (const m of page.body.matchAll(/<Callout\b([^>]*)>/g)) {
+          expect(m[1], page.slug).toMatch(/title="[^"]{5,}"/)
+          const type = /type="([^"]*)"/.exec(m[1] ?? '')?.[1]
+          if (type) expect(CALLOUT_TYPES, page.slug).toContain(type)
+        }
+      })
+
+      test('gives each card a title, a description and a link', () => {
+        for (const m of page.body.matchAll(/<Card\b([^>]*)\/?>/g)) {
+          expect(m[1], page.slug).toMatch(/title="[^"]+"/)
+          expect(m[1], page.slug).toMatch(/description="[^"]+"/)
+          expect(m[1], page.slug).toMatch(/href="[^"]+"/)
+        }
       })
     })
   }

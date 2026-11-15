@@ -102,6 +102,7 @@
       "version": "0.1.0",
       "dependencies": {
         "@highsea-tv/brand": "workspace:*",
+        "@highsea-tv/i18n": "workspace:*",
         "@highsea-tv/tokens": "workspace:*",
         "@highsea-tv/ui": "workspace:*",
         "fumadocs-core": "16.16.2",
