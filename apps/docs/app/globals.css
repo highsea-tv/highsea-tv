@@ -12,6 +12,8 @@
 @import "fumadocs-ui/css/preset.css";
 @import "@highsea-tv/tokens/tokens.css";
 @import "@highsea-tv/brand/fonts.css";
+/* the faces the library's text names, one family a weight (@highsea-tv/ui/native's fonts.ts), as the admin's */
+@import "@highsea-tv/brand/native-fonts.css";
 
 /* design system v1.0 has dark themes only, so the site is always in highsea's default theme */
 :root,
@@ -55,6 +57,40 @@ body {
 :focus-visible {
   outline: var(--focus-ring-width) solid var(--color-focus);
   outline-offset: var(--focus-ring-offset);
+}
+
+/*
+ * Fumadocs' prose gives every `img` a margin (Tailwind Typography's), which reaches into the
+ * library's figure (ImageFigure), whose expo-image `<img>` fills its frame; the figure keeps its
+ * own spacing. Typography's own opt-out is the `not-prose` class, which react-native-web's
+ * elements can't take, so the frame's sheet takes the margin back.
+ */
+.prose [data-expoimage] img {
+  margin: 0;
+}
+
+/*
+ * A heading's copy-link button (Fumadocs' Heading, fumadocs-ui/dist/components/heading.js) shows
+ * only while the heading is hovered, so a keyboard stops on it unseen. It shows while it has the
+ * keyboard's focus too, as WCAG 2.4.7 asks (https://www.w3.org/WAI/WCAG22/Understanding/focus-visible).
+ */
+[class~="group/heading"] > button:focus-visible {
+  opacity: 1;
+}
+
+/*
+ * A table's scroller (GuideTable, components/guide-parts.tsx) keeps Fumadocs' `my-6`, the
+ * tokens' space 6 (`--spacing` is their 4px base). Prose's rules take a margin away where it isn't
+ * wanted (after a heading, at the start and end of a page or a tab), as they do Fumadocs': they're
+ * in Tailwind's layers, which lose to any unlayered rule
+ * (https://developer.mozilla.org/en-US/docs/Web/CSS/@layer), so this one is layered too, after
+ * preflight's reset in `base`, and `:where()` gives it no weight against prose's
+ * (https://developer.mozilla.org/en-US/docs/Web/CSS/:where).
+ */
+@layer components {
+  :where([data-table]) {
+    margin-block: calc(var(--spacing) * 6);
+  }
 }
 
 .prose {

@@ -26,6 +26,7 @@
     "test/native/get-the-apps-web.test.tsx",
     "test/native/stepper-web.test.tsx",
     "test/native/virtual-web.test.tsx",
-    "test/native/scrim-web.test.tsx"
+    "test/native/scrim-web.test.tsx",
+    "test/native/link-card-web.test.tsx"
   ]
 }
