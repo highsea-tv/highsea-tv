@@ -1,6 +1,6 @@
 # One client platform, part E: the guides, the specs and the full checks
 
-- **Status:** Scoped on 2026-11-09, after the one compose file's sign-off, and approved with [the owner's answers](#the-owners-answers) of 2026-11-09: every recommendation. Nothing is built.
+- **Status:** Scoped on 2026-11-09, after the one compose file's sign-off, and approved with [the owner's answers](#the-owners-answers) of 2026-11-09: every recommendation. E1 is signed off (2026-11-14); E2 is being built.
 - **Parent plan:** [one-client-platform.md](one-client-platform.md), part E: "The guides' drawn parts on the library, the design language's platform guides on the form-factor rule, the product specs naming one screen per destination, the ADRs, `CLAUDE.md`, and every check."
 
 ## Read first
@@ -964,7 +964,9 @@ On 2026-11-10 the owner took every recommendation for calls 1 to 14 except 10 an
 13. `admin.appearance.suggestedAccent` (`#8fbfb7`).
 14. The 7 small corners and TV spaces round as listed.
 
-### 2026-11-10: E1 built, waiting for the owner's review
+### 2026-11-10: E1 built, signed off by the owner on 2026-11-14
+
+E1 was built on 2026-11-10 and signed off by the owner on 2026-11-14 (HT-13, pull request #16, approved by merging it into `next`). The owner's Settings decision of 2026-11-10 stands as recorded below.
 
 Every one of the 895 values now reads its approved token, with no value changed from the answers of 2026-11-10 (HT-13, on `task/13-e1-apply-the-approved-tokens`).
 
