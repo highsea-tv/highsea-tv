@@ -1,6 +1,7 @@
 # Login
 
-- **Platforms:** Admin (`apps/server`), every breakpoint. It has no shell.
+- **Platforms:** Admin (`apps/server`), compact and regular windows. It has no shell.
+- **Screen:** `packages/admin/src/login.tsx` (with `two-factor.tsx` and `auth-card.tsx`), at `apps/server/app/login/`; no shell.
 - **Prototype:** `#/admin/login` (flow A18).
 - **Roadmap:** [Phase 2 › A18](../roadmap.md#phase-2-design-prototypes-gate-user-sign-off), [Admin UI routes › Setup and access](../roadmap.md#admin-ui-routes-built-to-match-the-phase-2-prototypes).
 

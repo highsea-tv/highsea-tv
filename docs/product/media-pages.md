@@ -1,7 +1,8 @@
 # Media pages and people
 
-- **Platforms:** Admin (`apps/server`), every breakpoint. The clients' item detail (C4) reuses the metadata layer.
-- **Prototype:** `#/admin/movies/1` (Sintel, in the library), `#/admin/movies/107` (Nanook of the North, not added), `#/admin/movies/30` (a collection with parts missing), `#/admin/people/fritz-lang` (a person).
+- **Platforms:** Admin (`apps/server`), compact and regular windows. The clients' item detail (C4) reuses the metadata layer.
+- **Screen:** `packages/admin/src/movie-detail.tsx`, `show-detail.tsx` and `person.tsx`, drawing their sections from `media-sections.tsx`; a movie at `apps/server/app/(admin)/movies/[id]/`, a person at `people/[id]/`.
+- **Prototype:** `#/admin/movies/10000` (Sintel, in the library), `#/admin/movies/1003000` (Nanook of the North, not added), `#/admin/movies/11073` (Night of the Living Dead, a collection with parts missing), `#/admin/people/98979075` (Fritz Lang). Since D2 the prototype draws the admin over `@highsea-tv/mock`, whose ids are TMDB-like numbers, so the addresses are the server's shape.
 - **Roadmap:** [Phase 2 › A4, A6](../roadmap.md#phase-2-design-prototypes-gate-user-sign-off), [Admin UI routes](../roadmap.md#admin-ui-routes-built-to-match-the-phase-2-prototypes). Decision: [ADR 0014](../adr/0014-universal-media-pages.md). Media model: [ADR 0012](../adr/0012-unified-media-item-model.md).
 
 ## Purpose
@@ -36,13 +37,13 @@ Movies are built in the prototype. Shows, music, books, podcasts and online vide
 The anatomy every media page shares.
 
 - **Page header:** the title; actions by state (see States).
-- **Summary card:** the backdrop at 15% behind it; the poster (9rem column from medium, stacked on compact); a facts line (year, runtime, certification, genres, rating); the tagline; "Directed by …" (people as links; "Created by" for shows, the artist for albums, "By" for books); status badges; the synopsis (65ch); then the library line (path, **Monitored**) once added.
+- **Summary card:** the backdrop at 15% behind it; the poster (9rem column in a regular window, stacked in a compact one); a facts line (year, runtime, certification, genres, rating); the tagline; "Directed by …" (people as links; "Created by" for shows, the artist for albums, "By" for books); status badges; the synopsis (65ch); then the library line (path, **Monitored**) once added.
 - **Tabs** (line variant):
   - **Overview:** always.
   - **Cast and crew:** always.
   - The type's own sections (Seasons for shows; Albums for artists; Tracks for albums; Editions for books).
   - **Files**, **History**, **Search**, **Subtitles:** once added.
-- **Overview:** two columns from expanded, a main column and a 20rem aside.
+- **Overview:** two columns in a regular window, a main column and a 20rem aside.
   - Main:
     - **In the queue** while it downloads;
     - **Cast**: the top-billed ten as a row of portraits, with **All cast and crew**;
@@ -97,7 +98,7 @@ Each type keeps the anatomy above and adds its own sections. Only movies are bui
 - **Trailers** load nothing from YouTube until clicked. A click opens the dialog and plays the video from `youtube-nocookie.com` (in the prototype, a still and a note stand in for the player). Escape closes it and returns focus to the trailer.
 - **All cast and crew** switches to the Cast and crew tab.
 - **People** link from portraits, the "Directed by" line and the crew list.
-- **Keyboard:** each row is one tab stop with arrow keys inside; tabs, the table and dialogs are native or Radix.
+- **Keyboard:** each row is one tab stop with arrow keys inside; tabs, the table and dialogs are the library's controls.
 - **Sound:** none.
 
 ## Copy

@@ -1,6 +1,7 @@
 # Admin shell
 
-- **Platforms:** Admin (`apps/server`), every breakpoint.
+- **Platforms:** Admin (`apps/server`), compact and regular windows.
+- **Screen:** `packages/admin/src/shell.tsx` (the sidebar, the menu sheet, the palette, the status bar and `AdminPage`'s top row; the routes in `nav.ts`), hosted by `apps/server`'s Next app.
 - **Prototype:** `#/admin` and every page under it (flow A1). The not-found page is at `#/admin/nowhere`.
 - **Roadmap:** [Phase 2 › A1](../roadmap.md#phase-2-design-prototypes-gate-user-sign-off), [Admin UI routes](../roadmap.md#admin-ui-routes-built-to-match-the-phase-2-prototypes), [Curation › Announcements](../roadmap.md#curation-highseacuration). Layout locked in [admin.md](../design-language/platforms/admin.md).
 
@@ -16,22 +17,23 @@ The frame every signed-in admin page sits in: where you are, how to get anywhere
 ## Layout
 
 - **Sidebar** ([admin.md › Sidebar](../design-language/platforms/admin.md#sidebar)):
-  - the lockup at the top, or the mark alone in the rail;
+  - the lockup at the top;
   - three nav groups separated by hairlines: Dashboard, Discover, Movies, Shows (stage 6, [shows.md](shows.md)), Wanted, Activity, Downloads · Indexers, Subtitles, Curation · Settings, System;
   - counts in mono `text-3` on Movies and Shows (each library's size) and Activity (the queue length);
   - the **server card** pinned to the bottom: a status dot, the server name, and "v{version} · {n} clients".
-- **Main area:** an optional announcement banner stack, then the page. Each page starts with a `PageHeader` row: the title, the search trigger (with a ⌘K hint at medium and up), and the page's actions.
+- **Main area:** an optional announcement banner stack, then the page. Each page starts with a `PageHeader` row: the title, the search trigger (with a ⌘K hint in a regular window), and the page's actions.
 - **Status bar** (a labelled region, "Server status"), along the bottom of the main column:
-  - left: the server name with a status dot, the version and the connected clients (medium and up);
-  - for owners and admins: CPU, RAM and free disk (expanded and up);
+  - left: the server name with a status dot, then the version and the connected clients (in a regular window);
+  - for owners and admins: CPU, RAM and free disk (in a regular window);
   - right: running jobs and the next scheduled one, for example "No jobs running · Refresh monitored movies in 12 min".
 - **Responsive:**
 
-  | Breakpoint | Sidebar | Top row |
+  By the form-factor rule ([spacing-layout.md](../design-language/spacing-layout.md#width-classes)); the icon rail between 600 and 1023 went with the old breakpoints in part D (D1 of [one-client-platform-d.md](../plans/one-client-platform-d.md)).
+
+  | Window | Sidebar | Top row |
   | --- | --- | --- |
-  | expanded and wide (≥ 1024) | Full, 216px | Title, search, actions |
-  | medium (600–1023) | 64px icon rail with tooltips; the mark replaces the lockup | Title, search, actions |
-  | compact (< 600) | Hidden; a **Menu** button in the top row opens it as a left sheet | Menu, title, search (icon only), actions wrapping below |
+  | regular (≥ 768) | Full, 216px | Title, search, actions |
+  | compact (< 768) | Hidden; a **Menu** button in the top row opens it as a left sheet | Menu, title, search (icon only), actions wrapping below |
 
 ## States
 
@@ -97,8 +99,8 @@ The frame every signed-in admin page sits in: where you are, how to get anywhere
 
 ## Decisions
 
-- **The rail shows the mark alone.** The lockup needs 96px and the rail is 64px.
-- **The status bar is a labelled region, not a footer,** so screen readers can jump to it by name ("Server status"). This was a fix in ui-web's `StatusBar`.
+- ~~**The rail shows the mark alone.**~~ The rail went with the old breakpoints in part D: a regular window has the full sidebar, a compact one the menu sheet.
+- **The status bar is a labelled region, not a footer,** so screen readers can jump to it by name ("Server status"). It's the library's `StatusBar` (`@highsea-tv/ui`), which gives it the region's role and name.
 - **The admin has one shape** (owner's decision, 2026-10-20; [ADR 0032](../adr/0032-administrative-and-normal-access.md)). Only the owner and admins open it, so the members' shorter sidebar, palette and status bar are gone. Users use the clients and see the refusal page here.
 - **The refusal page tells an outsider nothing** beyond what the sign-in page already does: that this is a highsea server.
 - **The server card is degraded only at error-level health,** not warnings. Warnings belong to the System page, so the dot doesn't nag.
@@ -109,7 +111,7 @@ The frame every signed-in admin page sits in: where you are, how to get anywhere
 
 ## Open questions
 
-- **Server branding in the sidebar.** admin.md says a branded server's name and mark lead the lockup. Should the rail show the server's mark too?
-- **The status bar's place at compact.** It takes a row at 390px. Should it hide below medium, leaving the server card in the sheet?
+- **Server branding in the sidebar.** admin.md says a branded server's name and mark lead the lockup. Should the sidebar show the server's mark too?
+- **The status bar's place at compact.** It takes a row at 390px. Should it hide in a compact window, leaving the server card in the sheet? (As built, a compact window keeps the server's name and the jobs, and hides the rest.)
 - **Palette recents.** Should the palette open on the last few pages and titles visited?
 - **Sign out** is a palette action only. Should the server card open a menu with the account, Settings and Sign out?

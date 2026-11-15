@@ -1,6 +1,7 @@
 # Connectivity: connect, sign in, switch servers
 
 - **Platforms:** Web and desktop, mobile, TV.
+- **Screen:** `apps/client/src/app/connect.tsx` (Choose a server) and `sign-in.tsx`, outside the signed-in group; Unreachable is the shell's, `apps/client/src/app/(in)/_layout.tsx`.
 - **Prototype:** `#/web/connect`, `#/mobile/connect`, `#/tv/connect` (C1). The toolbar's **Connection** (on the LAN, remote, unreachable) shows the connection states on every client screen.
 - **Roadmap:** [Phase 2 › C1](../roadmap.md#phase-2-design-prototypes-gate-user-sign-off), [Connectivity, local and remote](../roadmap.md#connectivity-local-and-remote-highseanetwork--sdk), [optional highsea cloud](../roadmap.md#gap-analysis-what-a-true-end-to-end-replacement-still-needs) (find my servers, relay).
 
@@ -16,6 +17,8 @@ Getting from "I installed the app" to watching, on any network, with as little t
 - Unreachable: **Switch server** (web, mobile) or **Another server** (TV).
 
 ## Layout
+
+One screen for every client, Choose a server and its sign-in, by the form-factor rule: touch and a pointer share the prototype's connect flow (`client/connect-flow.tsx`), and the TV has its own list (below). Choosing a server makes it the one in use, then leads to its sign-in, or to Home while this device is still signed in there.
 
 ### Web and mobile
 

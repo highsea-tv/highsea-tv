@@ -1,6 +1,7 @@
 # Wanted and calendar
 
-- **Platforms:** Admin, every breakpoint.
+- **Platforms:** Admin, compact and regular windows.
+- **Screen:** `packages/admin/src/wanted.tsx`, at `apps/server/app/(admin)/wanted/`.
 - **Prototype:** `#/admin/wanted` (Missing), `#/admin/wanted/cutoff`, `#/admin/wanted/calendar` (A14, reference fidelity).
 - **Roadmap:** [Phase 2 › A14](../roadmap.md#phase-2-design-prototypes-gate-user-sign-off), [Admin UI routes](../roadmap.md#admin-ui-routes-built-to-match-the-phase-2-prototypes) (`/wanted`).
 
@@ -20,7 +21,7 @@ What the library is still waiting for: monitored movies with no file yet, movies
 - **Missing / Cutoff unmet:** a table: the poster and title (to the media page), Released, then the quality profile (Missing) or "has · wants" ("WEB 1080p · WEB 2160p", Cutoff unmet), and **Search** per row. Above it, why the list exists and **Search all {n}**.
 - **Calendar:**
   - the month ("October 2026") between **Previous month** and **Next month**, **This month** when away from it, and a key (In the library, Downloading, Wanted, by outline color);
-  - from medium, a month grid (Monday first), today in the accent fill, each day with its releases as chips (to the media page);
+  - in a regular window, a month grid (Monday first), today in the accent fill, each day with its releases as chips (to the media page);
   - on a phone, a list of release days instead;
   - **Subscribe in your calendar app**: the iCal feed's address (with a read-only key) and **Copy**.
 - *As built (8a), where real data changed the prototype:*

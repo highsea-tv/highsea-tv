@@ -1,6 +1,7 @@
 # Emails
 
 - **Platforms:** email clients: Apple Mail, Gmail (web and apps), Outlook (web, Windows, apps), Yahoo, and plain-text readers.
+- **Screen:** `packages/notifications/src/mail/` (`templates.ts`, `messages.ts`), sent through `channels/email.ts`.
 - **Prototype:** `design/prototypes/src/email/` at `index.html?emails` (`#invite`, `#imported`, and one hash per email). The owner asked for it on 2026-10-21, during checkpoint 8b, with MJML suggested, and approved it the same day with the four recommendations below taken, as part of 8b.
 - **Built:** checkpoint 8b. The templates are `@highsea-tv/notifications/mail` (`packages/notifications/src/mail/`), the one source the server sends and the prototype's preview renders; see [As built (8b)](#as-built-8b).
 - **Plan:** [phase-3-checkpoint-8.md › Email for people](../plans/phase-3-checkpoint-8.md#email-for-people) and the Email connection in [Notifications](../plans/phase-3-checkpoint-8.md).

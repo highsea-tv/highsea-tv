@@ -456,10 +456,11 @@ const pageMark = (here: boolean) =>
   (here ? { 'aria-current': 'page' } : {}) as Record<string, never>
 
 /**
- * The web's top bar: the server, the destinations, then Alerts and the profile. The server and the
- * profile go to Choose a server and Settings for now; their menus (the prototype's web/shell.tsx)
- * come with part B. Laid `over` a page (kit's useChromeOverlay) it has no line or fill of its own,
- * only the page's background fading out behind it, as the prototype's starts over a hero; once the
+ * The web's top bar: the server, the destinations, then Alerts and the profile. The server goes to
+ * Choose a server where the app keeps several (a plain browser is its own server's), and the
+ * profile opens the account menu (../../account/menu.tsx, the prototype's web/shell.tsx Profile).
+ * Laid `over` a page (kit's useChromeOverlay) it has no line or fill of its own, only the page's
+ * background fading out behind it, as the prototype's starts over a hero; once the
  * page has scrolled under it, it's `glass`, as the prototype's glass-bar: the background at the bar
  * blur's opacity with the blur behind it where the web has one, else the solid fallback's.
  */

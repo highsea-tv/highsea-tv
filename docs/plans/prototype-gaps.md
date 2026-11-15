@@ -529,11 +529,11 @@ Music starts as a library of files that are already there (the owner's answer 2)
 
 ## Stage 8: the specs and the full checks
 
-- **Specs:** each spec matches the prototype, including what the audit found out of date:
-  - client-settings.md's TV navigation (Settings in the head);
-  - client-detail.md's long press of OK and linked cast;
-  - player.md's episodes, Skip intro and the music player;
-  - client-home.md's rows and featured card.
+- **Specs:** each spec matches the prototype, including what the audit found out of date. Done in part E3 of the one client platform (2026-11-15, [one-client-platform-e.md](one-client-platform-e.md)), each checked against the client as built:
+  - ~~client-settings.md's TV navigation (Settings in the head)~~: the account in the TV's head opens Settings;
+  - ~~client-detail.md's long press of OK and linked cast~~: Mark as watched is a round action on every form factor, and Cast and crew open the person's page;
+  - ~~player.md's episodes, Skip intro and the music player~~: Skip intro and Skip credits wait for the TV series phase's markers, as the spec now says;
+  - ~~client-home.md's rows and featured card~~.
 - **The full checks:** `/checks full` under Node 26.11, with every sweep across every platform, held since 2026-10-30.
 - **The owner signs off the prototype.** As the owner asked, 4.5b then updates the TV's specs, builds `apps/tv` to the prototype, runs `/checks full` and `/checkpoint-report`, and stops. 4.5c doesn't start.
 

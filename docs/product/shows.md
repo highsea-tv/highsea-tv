@@ -1,6 +1,7 @@
 # Shows: the library, a show's page and Add a show
 
-- **Platforms:** Admin (`apps/server`), every breakpoint.
+- **Platforms:** Admin (`apps/server`), compact and regular windows.
+- **Screen:** `packages/admin/src/shows-library.tsx`, `show-detail.tsx`, `discover-shows.tsx` and `add-show-dialog.tsx`. The prototype draws them; `apps/server` routes them with the TV series phase.
 - **Prototype:** `#/admin/shows`, `#/admin/shows/the-lantern-keepers` (and `/files`), `#/admin/discover/shows`. Drawn in stage 6 of [prototype-gaps.md](../plans/prototype-gaps.md#stage-6-shows-in-the-admin) for the TV series phase, which builds it.
 - **Reference:** [movies.md](movies.md), which these pages are laid out as, and Sonarr's series index, series page and Add New Series.
 
@@ -39,7 +40,7 @@ The admin's side of shows. The **library** shows every show here, which are stil
 ### Add a show
 
 - **Discover** gains a **Movies / Shows** segmented control before the search field. Shows is its own address, `/discover/shows`, so Back returns to it. Its grid is Movies': poster, title, year and rating, then **Add** or an **In library** badge that links to the show's page. A show not in the library has no page in the admin yet, so its poster doesn't link; Add is its action.
-- **Add dialog** (`md`), shared by Discover and person pages: the synopsis, then Folder (full width), Quality profile and Subtitle languages (two columns from medium), **Monitor** (All episodes, Future episodes, Missing episodes, First season, None, with a hint for the one chosen), **Season folders** (switch, on) and **Start searching for missing episodes** (checkbox, on; off and disabled with Monitor set to None). The primary button reads **Add and search** or **Add show**.
+- **Add dialog** (`md`), shared by Discover and person pages: the synopsis, then Folder (full width), Quality profile and Subtitle languages (two columns in a regular window), **Monitor** (All episodes, Future episodes, Missing episodes, First season, None, with a hint for the one chosen), **Season folders** (switch, on) and **Start searching for missing episodes** (checkbox, on; off and disabled with Monitor set to None). The primary button reads **Add and search** or **Add show**.
 
 ### Person page
 

@@ -8,7 +8,7 @@
 //   the left and the bottom, the title, its line, the tagline in two lines and the actions the app
 //   passes (Play or Resume, and More info) in a column no wider than 38rem; a press anywhere on the
 //   card does `onPress`, as More info does for the keyboard and screen readers. A Pager, when the
-//   app passes one, stands at the card's bottom end from a medium window up;
+//   app passes one, stands at the card's bottom end in a regular window;
 // - the TV: one large card across the page that's a focus stop, lifting only slightly (at this size
 //   a poster's lift would push it off the screen), the title, the line and the tagline low on the
 //   left (tv/home.tsx).
@@ -88,7 +88,7 @@ export type FeaturedCardProps = {
   poster?: TileSource
   /** A pointer: the buttons under the words (Play or Resume, More info). */
   actions?: ReactNode
-  /** A pointer: a Pager through the section's titles, from a medium window up. */
+  /** A pointer: a Pager through the section's titles, in a regular window. */
   pager?: ReactNode
   /** Opens the title: a tap or a press on the card, or OK on the TV. */
   onPress: () => void

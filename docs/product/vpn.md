@@ -1,6 +1,7 @@
 # VPN
 
-- **Platforms:** Admin, every breakpoint.
+- **Platforms:** Admin, compact and regular windows.
+- **Screen:** `packages/admin/src/vpn.tsx`, at `apps/server/app/(admin)/settings/vpn/`.
 - **Prototype:** `design/prototypes/src/admin/settings/vpn.tsx` (`#/admin/settings/vpn`), approved by the owner on 2026-10-20 (answer V5): the build reference. The owner asked on 2026-10-20 for VPN connections to be a first-class feature, after Phase 2's sign-off, and answered its questions the same day ([checkpoint 6 › VPN questions](../plans/phase-3-checkpoint-6.md#vpn-questions)). In the prototype, **Reconnect** plays connecting, a PIA password or gluetun key of `wrong` plays a failure, **Prototype only · Drop the tunnel** plays the down state, and the empty server lacks NET_ADMIN. *Approved 2026-11-07 (one-compose-file.md, part B):* the empty server is also on host networking, as `compose.yaml` installs it, so picking highsea connects there shows the lines open, and saving it shows the host-networking state; the populated one has the lines and connects.
 - **Built:** checkpoint 6a, 2026-10-20: `/settings/vpn` in `apps/server` (`src/admin/vpn.tsx`) on `@highsea-tv/vpn` ([ADR 0042](../adr/0042-vpn-connections.md)), with the VPN container and interface modes and their checks (answer V1). Checkpoint 6b, 2026-10-20: highsea connects, the providers in the signed catalog, port forwarding and indexers through the VPN ([ADR 0042 › Checkpoint 6b](../adr/0042-vpn-connections.md#checkpoint-6b-highsea-connects-2026-10-20)). What real data changed from the prototype is marked *As built*.
 - **Roadmap:** the built-in torrent engine's bind interface and kill switch, VPN port forwarding ([M1] torrent production features), the VPN binding health check.

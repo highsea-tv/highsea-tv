@@ -1,6 +1,6 @@
 # Admin
 
-The server admin (`apps/server`) is a pro tool used daily for years. It is deliberately dense but calm: mono figures, quiet borders, and status color only where state matters.
+The server admin is a pro tool used daily for years. Its screens are `@highsea-tv/admin` (`packages/admin`), drawn only with the library's React Native parts through react-native-web, with Next.js in `apps/server` as their host; the prototype's `#/admin/…` draws the same screens over the mock ([ADR 0061](../../adr/0061-one-client-platform.md)). It is deliberately dense but calm: mono figures, quiet borders, and status color only where state matters.
 
 ## Dashboard: Sidebar + widgets
 
@@ -38,7 +38,7 @@ This layout is locked in [direction.md](../../brand/direction.md#layouts).
 - widgets show drag handles and resize corners, and snap to the grid;
 - an "Add widget" panel lists the available widgets.
 
-Layouts are saved per user, and owners can set role defaults (see the roadmap's personalization section). The interaction details are designed in Phase 2.
+Layouts are saved per user, and owners can set role defaults (see the roadmap's personalization section). The editor is the library's `WidgetEditor` ([dashboard.md](../../product/dashboard.md)).
 
 ## Density
 
@@ -66,7 +66,7 @@ Comfortable spacing comes from grouping, not from padding. Whitespace separates 
 
 - **Updates without motion:** live values (speeds, progress, ETAs) update in place. Bars animate their width with `duration.color`; numbers change without animation.
 - **Server health:** shown in two places only, the sidebar's server card and the System page. Widgets show their own domain's health (for example, indexers backing off).
-- **Status bar:** a thin status bar at the bottom shows server, version, connected clients, resources and background jobs. It comes from the archived Signal layout and is designed in Phase 2.
+- **Status bar:** a thin status bar at the bottom shows server, version, connected clients, resources and background jobs, its items hidden by width as the window narrows. It comes from the archived Signal layout ([admin-shell.md](../../product/admin-shell.md)).
 
 ## Responsive
 

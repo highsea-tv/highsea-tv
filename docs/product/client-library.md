@@ -1,6 +1,7 @@
 # Client library
 
 - **Platforms:** Web and desktop, mobile, TV.
+- **Screen:** `apps/client/src/app/(in)/library.tsx` (the phone's Library tab), `movies.tsx`, `shows.tsx` and `music.tsx` with `music/` (a pointer's and the TV's destinations), with their parts in `apps/client/src/library/` and `apps/client/src/music/`.
 - **Prototype:** `#/web/library`, `#/mobile/library`, `#/tv/library` (C3).
 - **Roadmap:** [Phase 2 › C3](../roadmap.md#phase-2-design-prototypes-gate-user-sign-off).
 
@@ -15,7 +16,9 @@ Everything the household can watch on this server, to browse rather than search:
 
 ## Layout
 
-- **Media types:** other types (shows, music, books) appear as tabs above the grid only once the server has them. M1 is movies only, so there are no tabs; the page is "Movies".
+One screen per library by the form-factor rule, in three compositions: a pointer's (Web below), touch's (Mobile) and the TV's.
+
+- **Media types:** a pointer and the TV have Movies, Shows, Music and Collections as destinations of their own in the top bar or the head, each only once the server serves it (`useServes`). On the phone they're views of the Library tab, as a row of chips (`?view=`), in the prototype's order: Movies, Shows, Collections, Music. A server that serves films only has Movies and Collections.
 - **Web:** the title "Movies" and the count; **Genre** and **Sort** selects on the right; a grid of posters (`auto-fill, minmax(9rem, 1fr)`) with the title and year under each, or "8 min left" and the progress bar when started.
 - **Mobile:** the large title "Library"; the count ("34 of 34 movies") and **Sort and filter**, which opens a sheet: Sort by (chips), Genre (chips), **Reset**, **Show {n} movies**; three posters a row.
 - **TV:** the server identity, then "Movies" and the sort choices (A–Z, Recently added, Newest) at the top right; seven posters a row, each with its title and year under it (and the progress bar when started); the **alphabet rail** at the left edge (A–Z and #), letters without titles dimmed and skipped. The page scrolls by focus; the server identity scrolls away with it, and rows fade out under the top edge. Only the rail stays put, in the left margin.
@@ -28,10 +31,10 @@ Phase 4's answer 9, prototyped at 4.0b: one filter that hides what this person h
 
 Music has four views: **Albums**, **Artists**, **Songs** and **Playlists**. On the web and desktop they're the segmented control (`/music`, `/music/artists`, `/music/songs`, `/music/playlists`), on the phone the pills under Library's Music (`/library/music/…`; `/music/songs` and `/music/playlists` go there), and on the TV the choices beside the title, with each view's sorts on the right. They fit on one line at 1280 × 720.
 
-- **Songs** is one list: the cover, the title and artist, the album (from medium widths on the web) and the length. It's sorted by Title, Artist, Album, Recently added or Most played (the TV's choices are A–Z, Artist, Album, Recently added and Most played), and on the web and phone filtered by genre. Titles sort without a leading "The" or "A". A row plays the list from there, "Playing from Songs"; the song playing shows moving bars over its cover. Each row has the song's ⋯ menu ([player.md › The music player](player.md#the-music-player-prototype-gaps-stage-3-2026-11-01)); on the phone a long press opens it too, and on the TV holding OK. The web and TV keep the A–Z index while sorted by title, artist or album.
+- **Songs** is one list: the cover, the title and artist, the album (in a regular window on the web) and the length. It's sorted by Title, Artist, Album, Recently added or Most played (the TV's choices are A–Z, Artist, Album, Recently added and Most played), and on the web and phone filtered by genre. Titles sort without a leading "The" or "A". A row plays the list from there, "Playing from Songs"; the song playing shows moving bars over its cover. Each row has the song's ⋯ menu ([player.md › The music player](player.md#the-music-player-prototype-gaps-stage-3-2026-11-01)); on the phone a long press opens it too, and on the TV holding OK. The web and TV keep the A–Z index while sorted by title, artist or album.
 - **Playlists** are each person's own: a grid of tiles on the web and TV, a list on the phone, each with a mosaic of its first four covers, its name and how many songs. The web's **New playlist** sits beside the view's control, and the phone's is the list's first row; both ask for a name and open the new playlist. The TV has no New playlist: playlists are made and changed on the other apps.
 - **A playlist's page** is laid out as an album's: the first cover blurred behind, the mosaic, "Playlist", the name, "{n} songs, {length}", **Play** (Pause while it plays) and **Shuffle**, then its songs in its order, each with its cover, since they come from many albums. On the web, desktop and phone, ⋯ beside Shuffle has **Rename** and **Delete playlist**; the songs drag by their handles to reorder (Space picks one up from the keyboard, the arrows move it, Space drops it), and each song's ⋯ ends with **Remove from this playlist**. Delete asks first. On the TV the page only plays.
-- **Add to playlist** is in a song's and an album's ⋯ menu: the person's playlists, with **New playlist** first. On the web it's a dialog, as ui-web's Menu has no submenu; on the phone, a sheet; on the TV, the menu's next step.
+- **Add to playlist** is in a song's and an album's ⋯ menu: the person's playlists, with **New playlist** first. With a pointer it's a dialog, as the library's Menu has no submenu; by touch, a sheet. The TV leaves playlists to the other apps, so its menu has no Add to playlist.
 
 | Where | Text |
 | --- | --- |
