@@ -26,7 +26,7 @@ RUN find . -type f ! -name package.json ! -name bun.lock ! -path './patches/*' -
 # ---- build: Bun installs and builds; Node 26.11.1 (.nvmrc) is here too, so native modules (better-sqlite3)
 # are built for the Node that runs them
 FROM node:26.11.1-trixie-slim AS build
-COPY --from=oven/bun:1.4.2 /usr/local/bin/bun /usr/local/bin/bun
+COPY --from=oven/bun:1.4.4 /usr/local/bin/bun /usr/local/bin/bun
 RUN apt-get update \
   && apt-get install -y --no-install-recommends python3 make g++ ca-certificates \
   && rm -rf /var/lib/apt/lists/*

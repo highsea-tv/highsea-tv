@@ -78,7 +78,7 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
-          bun-version: 1.4.2
+          bun-version: 1.4.4
       # Tauri's Linux prerequisites (https://v2.tauri.app/start/prerequisites/#linux), and D-Bus for
       # the Secret Service the keychain uses there
       - name: Linux libraries

@@ -70,47 +70,66 @@ export type Clips = {
   sample: string
 }
 
-/** Makes the clips under `dir`. */
-export function makeClips(dir: string): Clips {
+/** The clips' paths under `dir`, and ffmpeg's arguments for each (after `-v error -y -nostdin`). */
+function clipRuns(dir: string): { clips: Clips; runs: string[][] } {
   mkdirSync(dir, { recursive: true })
   const srt = join(dir, 'subs.srt')
   writeFileSync(srt, '1\n00:00:00,000 --> 00:00:02,000\nHello.\n')
   const main = join(dir, 'main.mkv')
-  ffmpeg([
-    ...['-f', 'lavfi', '-i', 'testsrc2=size=1920x1080:rate=24:duration=3'],
-    ...['-f', 'lavfi', '-i', 'sine=frequency=440:duration=3'],
-    ...['-f', 'lavfi', '-i', 'sine=frequency=660:duration=3'],
-    ...['-i', srt],
-    ...['-map', '0:v', '-map', '1:a', '-map', '2:a', '-map', '3:s'],
-    ...['-c:v', 'libx264', '-preset', 'ultrafast', '-pix_fmt', 'yuv420p'],
-    ...['-c:a', 'aac', '-ac:a:0', '6', '-ac:a:1', '2', '-c:s', 'srt'],
-    ...['-metadata:s:a:0', 'language=eng', '-metadata:s:a:1', 'language=fra'],
-    ...['-metadata:s:a:1', 'title=Commentary', '-metadata:s:s:0', 'language=eng'],
-    ...['-disposition:a:0', 'default', '-disposition:a:1', '0', '-disposition:s:0', 'forced'],
-    main,
-  ])
   const hdr = join(dir, 'hdr.mkv')
-  ffmpeg([
-    ...['-f', 'lavfi', '-i', 'testsrc2=size=1920x1080:rate=24:duration=2'],
-    ...['-f', 'lavfi', '-i', 'sine=frequency=440:duration=2'],
-    // tagged in the filter graph: frames carry their colour properties to the encoder
-    // (https://ffmpeg.org/ffmpeg-filters.html#setparams)
-    ...[
-      '-vf',
-      'setparams=color_primaries=bt2020:color_trc=smpte2084:colorspace=bt2020nc,format=yuv420p10le',
-    ],
-    ...['-c:v', 'libx265', '-preset', 'ultrafast', '-x265-params', 'log-level=error'],
-    ...['-c:a', 'aac', '-metadata:s:a:0', 'language=eng'],
-    hdr,
-  ])
   const sample = join(dir, 'sample.mkv')
-  ffmpeg([
-    ...['-f', 'lavfi', '-i', 'testsrc2=size=1920x1080:rate=24:duration=1'],
-    ...['-f', 'lavfi', '-i', 'sine=frequency=440:duration=1'],
-    ...['-c:v', 'libx264', '-preset', 'ultrafast', '-c:a', 'aac'],
-    sample,
-  ])
-  return { main, hdr, sample }
+  const runs = [
+    [
+      ...['-f', 'lavfi', '-i', 'testsrc2=size=1920x1080:rate=24:duration=3'],
+      ...['-f', 'lavfi', '-i', 'sine=frequency=440:duration=3'],
+      ...['-f', 'lavfi', '-i', 'sine=frequency=660:duration=3'],
+      ...['-i', srt],
+      ...['-map', '0:v', '-map', '1:a', '-map', '2:a', '-map', '3:s'],
+      ...['-c:v', 'libx264', '-preset', 'ultrafast', '-pix_fmt', 'yuv420p'],
+      ...['-c:a', 'aac', '-ac:a:0', '6', '-ac:a:1', '2', '-c:s', 'srt'],
+      ...['-metadata:s:a:0', 'language=eng', '-metadata:s:a:1', 'language=fra'],
+      ...['-metadata:s:a:1', 'title=Commentary', '-metadata:s:s:0', 'language=eng'],
+      ...['-disposition:a:0', 'default', '-disposition:a:1', '0', '-disposition:s:0', 'forced'],
+      main,
+    ],
+    [
+      ...['-f', 'lavfi', '-i', 'testsrc2=size=1920x1080:rate=24:duration=2'],
+      ...['-f', 'lavfi', '-i', 'sine=frequency=440:duration=2'],
+      // tagged in the filter graph: frames carry their colour properties to the encoder
+      // (https://ffmpeg.org/ffmpeg-filters.html#setparams)
+      ...[
+        '-vf',
+        'setparams=color_primaries=bt2020:color_trc=smpte2084:colorspace=bt2020nc,format=yuv420p10le',
+      ],
+      ...['-c:v', 'libx265', '-preset', 'ultrafast', '-x265-params', 'log-level=error'],
+      ...['-c:a', 'aac', '-metadata:s:a:0', 'language=eng'],
+      hdr,
+    ],
+    [
+      ...['-f', 'lavfi', '-i', 'testsrc2=size=1920x1080:rate=24:duration=1'],
+      ...['-f', 'lavfi', '-i', 'sine=frequency=440:duration=1'],
+      ...['-c:v', 'libx264', '-preset', 'ultrafast', '-c:a', 'aac'],
+      sample,
+    ],
+  ]
+  return { clips: { main, hdr, sample }, runs }
+}
+
+/** Makes the clips under `dir`. */
+export function makeClips(dir: string): Clips {
+  const { clips, runs } = clipRuns(dir)
+  for (const args of runs) ffmpeg(args)
+  return clips
+}
+
+/**
+ * Makes the same clips without blocking the event loop, so a hook that waits on them keeps
+ * bun:test's timeouts running and stays clear of Bun's sync-spawn bug (`TOOL_LIMIT` above).
+ */
+export async function makeClipsAsync(dir: string): Promise<Clips> {
+  const { clips, runs } = clipRuns(dir)
+  for (const args of runs) await runTool('ffmpeg', ['-v', 'error', '-y', '-nostdin', ...args])
+  return clips
 }
 
 /**

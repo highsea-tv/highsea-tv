@@ -65,7 +65,7 @@ jobs:
           fetch-depth: 0
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
-          bun-version: 1.4.2
+          bun-version: 1.4.4
       - run: bun install --frozen-lockfile
       - name: A real release comes from main
         if: ${{ !inputs.dry-run && github.ref != 'refs/heads/main' }}
@@ -162,7 +162,7 @@ jobs:
           DRY_RUN: ${{ inputs.dry-run }}
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
-          bun-version: 1.4.2
+          bun-version: 1.4.4
       - run: bun install --frozen-lockfile
       # the image's seed signed with the release key, which production servers trust (ADR 0034);
       # a dry run without the key signs it with the development key, as the repository's is
@@ -252,7 +252,7 @@ jobs:
           path: ${{ github.workspace }}
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
-          bun-version: 1.4.2
+          bun-version: 1.4.4
       - run: bun install --frozen-lockfile
       # signed first, then checked, as the image job does: the trust check reads the seed too, and
       # the committed seed is signed with the development key until a release signs it. The seed
@@ -289,7 +289,7 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
-          bun-version: 1.4.2
+          bun-version: 1.4.4
       # the commit's time, so the same commit makes the same package
       # (https://reproducible-builds.org/specs/source-date-epoch/)
       - name: The package
@@ -329,7 +329,7 @@ jobs:
           path: ${{ github.workspace }}
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
-          bun-version: 1.4.2
+          bun-version: 1.4.4
       - name: Linux libraries
         if: runner.os == 'Linux'
         run: |
@@ -416,7 +416,7 @@ jobs:
           path: ${{ runner.temp }}/desktop
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
-          bun-version: 1.4.2
+          bun-version: 1.4.4
       - run: bun install --frozen-lockfile
       - name: latest.json and SHA256SUMS
         run: |
