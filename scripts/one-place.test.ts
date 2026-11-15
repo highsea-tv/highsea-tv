@@ -152,6 +152,43 @@ describe('screens', () => {
     ])
   })
 
+  test('the guides draw from the library only, and their components write no class (E2)', async () => {
+    const files = {
+      'apps/docs/app/layout.tsx': [
+        "import type { ViewProps } from 'react-native'",
+        'export default () => <html className="dark"><body className="flex" /></html>',
+        '',
+      ].join('\n'),
+      'apps/docs/components/guide-parts.tsx': [
+        "import { Banner, ThemeProvider } from '@highsea-tv/ui/native'",
+        'export const Note = () => <ThemeProvider><Banner title="Note" /></ThemeProvider>',
+        '',
+      ].join('\n'),
+      'apps/docs/lib/layout.tsx': "import { Text } from 'react-native'\nexport const T = Text\n",
+      'apps/docs/components/site-title.tsx': [
+        "import { View } from 'react-native'",
+        'export const Title = () => <div className="flex"><View /></div>',
+        '',
+      ].join('\n'),
+    }
+    expect(await run(files)).toEqual([
+      'screens apps/docs/components/site-title.tsx:1 the guides draw react-native, which belongs in the library',
+      "screens apps/docs/components/site-title.tsx:2 the guides draw a Tailwind class, which only Fumadocs' frame writes",
+      'screens apps/docs/lib/layout.tsx:1 the guides draw react-native, which belongs in the library',
+    ])
+  })
+
+  test('a guide’s component can’t take a library part’s name (E2)', async () => {
+    expect(
+      await run({
+        'packages/ui/src/native/admin.tsx': component('Figure'),
+        'apps/docs/components/guide-parts.tsx': component('Figure'),
+      }),
+    ).toEqual([
+      'parts apps/docs/components/guide-parts.tsx:1 Figure is defined again, first at packages/ui/src/native/admin.tsx:1',
+    ])
+  })
+
   test('a second copy of a screen for one platform fails', async () => {
     expect(
       await run({

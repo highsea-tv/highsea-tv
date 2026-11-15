@@ -12,8 +12,13 @@
 //   admin's screens live once in @highsea-tv/admin (packages/admin/src); its hosts, the server's
 //   Next.js routes and the prototype's admin folder, draw nothing of their own: no react-native,
 //   and from the library only its providers (one-client-platform.md, the admin's exception).
-// - parts: a component exported under the same name by more than one module of the client code and
-//   the library (apps/client/src, ui's native renderer, @highsea-tv/client and @highsea-tv/native).
+//   The guides (apps/docs) draw their own parts from the library only (one-client-platform-e.md ›
+//   E2): no react-native, and no Tailwind class in their components. Fumadocs' frame keeps its
+//   own: code blocks, headings and their anchors, tables, Steps, Tabs, the search dialog, the
+//   sidebar and the table of contents are the host's parts, in parity.ts's sense, not drawings.
+// - parts: a component exported under the same name by more than one module of the client code, the
+//   library and the guides (apps/client/src, ui's native renderer, @highsea-tv/client,
+//   @highsea-tv/native and apps/docs/components).
 // - values: in the one drawing (apps/client/src, ui's native renderer, the admin's screens in
 //   packages/admin/src and the guides' components in apps/docs/components), a literal colour, or a
 //   literal number for a size, space or corner where the tokens should be, written in place or in
@@ -55,6 +60,10 @@ const OTHER_SCREENS = [
 const ADMIN_HOSTS = ['apps/server/app', 'design/prototypes/src/admin']
 /** What a host may take from the library: its providers, never a drawing. */
 const HOST_PARTS = new Set(['ThemeProvider'])
+/** The guides' host (E2): Fumadocs' frame, with highsea's parts drawn by the library. */
+const GUIDES = ['apps/docs/app', 'apps/docs/components', 'apps/docs/lib']
+/** The guides' own components, which write no Tailwind class: that's only for Fumadocs' frame. */
+const GUIDES_COMPONENTS = 'apps/docs/components'
 /** The prototypes' client folders, where a destination that has moved must leave no copy. */
 const PROTOTYPES = [
   'design/prototypes/src/web',
@@ -62,12 +71,13 @@ const PROTOTYPES = [
   'design/prototypes/src/tv',
   'design/prototypes/src/client',
 ]
-/** The library and the client code, where a page part is defined once: the library's first. */
+/** The library, the client code and the guides, where a page part is defined once: the library's first. */
 const PARTS = [
   'packages/ui/src/native',
   'packages/client/src',
   'packages/native/src',
   'apps/client/src',
+  GUIDES_COMPONENTS,
 ]
 /** The one drawing, where colours, sizes and corners come from the tokens: the admin and the guides too. */
 const VALUES = [
@@ -1111,6 +1121,34 @@ export async function check(root = ROOT) {
           what: `the admin's host draws ${drawn.join(', ')}, which belongs in @highsea-tv/admin`,
         })
     }
+  }
+  for (const file of GUIDES.flatMap((dir) => sources(root, dir))) {
+    const parsed = trees.get(file) ?? parse(root, file)
+    if (!('program' in parsed)) {
+      // the components are parsed with the parts and values, and said once
+      if (!file.startsWith(`${GUIDES_COMPONENTS}/`)) findings.push(parsed)
+      continue
+    }
+    walk(parsed.program, (node) => {
+      const drawn =
+        node.type === 'ImportDeclaration' &&
+        node.importKind !== 'type' &&
+        keyOf(get(node, 'source')) === 'react-native'
+          ? 'react-native, which belongs in the library'
+          : node.type === 'JSXAttribute' &&
+              file.startsWith(`${GUIDES_COMPONENTS}/`) &&
+              nameOf(get(node, 'name')) === 'className'
+            ? "a Tailwind class, which only Fumadocs' frame writes"
+            : undefined
+      if (drawn)
+        excuse('screens', {
+          rule: 'screens',
+          file,
+          line: lineOf(node),
+          what: `the guides draw ${drawn}`,
+        })
+      return undefined
+    })
   }
   for (const [plain, ...others] of platformFiles(sources(root, SCREENS)))
     for (const file of others)

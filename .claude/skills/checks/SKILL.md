@@ -30,7 +30,7 @@ Use `bun run test`, never a bare `bun test`: it passes `--isolate`, and without 
 For a fix between checkpoint reports, check what it touched and nothing else, and say in the reply what ran and that the full set waits for the report:
 
 - **Tests and types:** `bun run lint`, then the touched workspaces' typecheck and tests (`bun test --isolate <folder>`), not the whole repo.
-- **Sweeps:** only the platform the fix touched. A prototype change to the web screens is `bun scripts/sweeps/pages.ts web` and `bun scripts/sweeps/keyboard.ts web` (a minute or two); `admin` and `mobile` likewise. `dpad.ts` only when TV screens changed. `server.ts` only when `apps/server`, `apps/client`'s web export or what they serve changed (`server.ts pages` or `keyboard` halves it).
+- **Sweeps:** only the platform the fix touched. A prototype change to the web screens is `bun scripts/sweeps/pages.ts web` and `bun scripts/sweeps/keyboard.ts web` (a minute or two); `admin` and `mobile` likewise. `dpad.ts` only when TV screens changed. `server.ts` only when `apps/server`, `apps/client`'s web export or what they serve changed (`server.ts pages` or `keyboard` halves it). `docs.ts` only when `apps/docs` or a library part the guides draw changed (paths narrow it).
 - **Nothing else:** smoke, licences, audit and the docs build only when the fix touched what they check (Node, dependencies, `apps/docs`).
 
 ## Full (before a checkpoint report)
@@ -52,6 +52,7 @@ bun scripts/sweeps/keyboard.ts
 bun scripts/sweeps/dpad.ts
 bun scripts/sweeps/server.ts               # builds, then boots its own seeded production server on :3150
 bun scripts/sweeps/playback.ts             # the web player in Chromium and Firefox, on :3140 (install firefox once)
+bun scripts/sweeps/docs.ts                 # builds the guides, then every page of the export on :3170
 ```
 
 If the work touched packaging, also run `docker compose -f docker/compose.dev.yaml up --build`, then `HIGHSEA_IMAGE=highsea:dev bun scripts/e2e/run.ts` and `bun scripts/image.ts size highsea:dev` (it reports the size; there is no budget since 2026-11-05) and `bun scripts/image.ts hardware highsea:dev`.
