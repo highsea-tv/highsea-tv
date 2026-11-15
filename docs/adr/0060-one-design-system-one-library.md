@@ -1,6 +1,6 @@
 # 0060. One design system and one component library, adaptive to the app it's in
 
-- **Status:** Proposed
+- **Status:** Accepted (2026-11-15, when the owner signed off part E of the one client platform)
 - **Date:** 2026-11-01
 
 Design system 1.1 ([design-system-1-1.md](../plans/design-system-1-1.md)), approved with the owner's answers of 2026-11-01. It stays Proposed until the owner signs off part C, when every app is on it.

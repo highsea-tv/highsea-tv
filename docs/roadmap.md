@@ -396,6 +396,8 @@ Library parts left until a screen needs them (answer 8 on part E's scope, [one-c
 - a heading level for a small EmptyState;
 - a Dialog's fade-out.
 
+**✅ One client platform signed off (2026-11-15).** Parts A to E are built and signed off: every client (the web at `/web`, the desktop app, the phone and the TV) and its prototype in one Expo project, `apps/client`, drawn by one React Native library, with the admin and the guides' parts drawn by it too and `bun run one-place` holding it ([ADR 0061](adr/0061-one-client-platform.md), Accepted). It comes before prototype-gaps' stage 7 (Music in the admin), 4.5c and 4.6, as the status has it since 2026-11-02; stage 8 was done in E3.
+
 ## Phase 4 (later): clients
 `ui-native`, then `apps/web` → `apps/desktop` (Tauri) → `apps/mobile` + `apps/tv` (Expo / react-native-tvos), built from the Phase 2 prototypes. Alongside them: `stream` (playback/transcode, WebSockets), TV/music/books domains, Usenet, requests, and the optional Connect relay.
 
