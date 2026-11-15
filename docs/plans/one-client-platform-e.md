@@ -1,6 +1,6 @@
 # One client platform, part E: the guides, the specs and the full checks
 
-- **Status:** Scoped on 2026-11-09, after the one compose file's sign-off, and approved with [the owner's answers](#the-owners-answers) of 2026-11-09: every recommendation. E1 is signed off (2026-11-14); E2 is built and waits for the owner's review.
+- **Status:** Scoped on 2026-11-09, after the one compose file's sign-off, and approved with [the owner's answers](#the-owners-answers) of 2026-11-09: every recommendation. E1 is signed off (2026-11-14), and E2 (2026-11-15); E3 is being built.
 - **Parent plan:** [one-client-platform.md](one-client-platform.md), part E: "The guides' drawn parts on the library, the design language's platform guides on the form-factor rule, the product specs naming one screen per destination, the ADRs, `CLAUDE.md`, and every check."
 
 ## Read first
@@ -980,7 +980,9 @@ Every one of the 895 values now reads its approved token, with no value changed 
 - **The owner's decision on Settings (2026-11-10).** "All on 768" had put Settings' areas beside an area's page from 768, which cramped it up to about 1100 (Appearance's identity broke "accent" mid-word at 900). Settings now folds its areas until there's room: below a 1136 window, All settings and the current area as a menu of every area (the library's Menu) above the page; from 1136, beside it as before. 1136 is the sidebar, the page's padding, the areas' column and `admin.settings.contentMin` (640, measured: the identity and the themes hold from 636), a component's own measure rather than a second width rule. Two grids that "All on 768" had widened at 768 now take their columns from their own width with CSS Grid's `auto-fill`: the connection kinds at `admin.connections.kindMin` (144, at most five) and Appearance's themes at `admin.appearance.themeMin` (192, at most three). A scan of every area from 390 to 1440 finds no word cut in half. Spacing-layout.md's Width classes, the admin's platform page and the Settings spec say so.
 - **The client's tests.** The root `bun run test` stops after the HLS failures, so the client's Jest tests hadn't run; CI found six failing. Five were pointer tests in Jest's 750-wide window, compact under the one rule: they now widen it to a regular one (`pointerWindow` in the tests' `mock.ts`). The sixth drew the web player's picture, whose subtitle colour now follows the theme, without a ThemeProvider.
 
-### 2026-11-14: E2 built, waiting for the owner's review
+### 2026-11-14: E2 built, signed off by the owner on 2026-11-15
+
+E2 was built on 2026-11-14 and signed off by the owner on 2026-11-15 (HT-14, pull request #17, approved by merging it into `next`). The owner's decision of 2026-11-14 (fix Fumadocs' frame's three findings rather than list them) stands as recorded below.
 
 The guides' callout, cards and figures are drawn by the library through react-native-web, and no guide's MDX changed (HT-14, on `task/14-e2-the-guides-on-the-library`).
 
