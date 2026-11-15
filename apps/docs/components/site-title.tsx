@@ -5,12 +5,13 @@
 // Fumadocs renders the title twice, in the mobile header and the sidebar. Rendered on the server,
 // both would be one tree with one `useId`, so the visible mark's gradient and mask would point at
 // the hidden copy and paint nothing; as a client component each copy gets its own ids.
+import { lockup } from '@highsea-tv/tokens'
 import { Lockup, ThemeProvider } from '@highsea-tv/ui/native'
 
 export function SiteTitle() {
   return (
     <ThemeProvider>
-      <Lockup size={17} />
+      <Lockup size={lockup.size} />
     </ThemeProvider>
   )
 }

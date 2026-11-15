@@ -10,7 +10,7 @@
 
 import { StyleSheet, View } from 'react-native'
 import { Button } from './button.tsx'
-import { GLASS } from './glass.ts'
+import { glassOf } from './glass.ts'
 import { Icon } from './icon.tsx'
 import { Image } from './image.tsx'
 import { Press } from './press.tsx'
@@ -80,7 +80,7 @@ function Still({
           borderRadius: tokens.radius.pill,
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: GLASS,
+          backgroundColor: glassOf(theme.colors),
         }}
       >
         <Icon name="play" size={size * 0.45} filled />

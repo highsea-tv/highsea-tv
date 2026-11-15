@@ -25,7 +25,7 @@ import {
 import type { T as Translate } from '@highsea-tv/i18n'
 import { useT } from '@highsea-tv/i18n/react'
 import { useAction, useQuery } from '@highsea-tv/sdk/react'
-import { breakpoints } from '@highsea-tv/tokens'
+import { admin, line } from '@highsea-tv/tokens'
 import {
   Badge,
   Button,
@@ -40,8 +40,8 @@ import {
   Text,
   toast,
   tokens,
+  useRegularWindow,
   useTheme,
-  useWindowAtLeast,
 } from '@highsea-tv/ui/native'
 import { useEffect, useState } from 'react'
 import { Linking, Platform, View } from 'react-native'
@@ -59,7 +59,7 @@ type Kind = (typeof IMPORT_LIST_KINDS)[number]
 
 const s = tokens.space
 /** The Trakt code's tracking: Tailwind's `tracking-widest`, 0.1em of the title's 20. */
-const CODE_TRACKING = 2
+const CODE_TRACKING = admin.lists.codeTracking
 const TOPICS = [LIST_TOPICS.lists]
 const OPTION_TOPICS = ['settings.updated', 'subtitles.updated']
 
@@ -184,8 +184,8 @@ export function ImportLists() {
   )
 }
 
-/** The row's profile select, from medium widths: at most 14rem, or 40% of the row. */
-const PROFILE_WIDTH = 224
+/** The row's profile select, in a regular window: at most 14rem, or 40% of the row. */
+const PROFILE_WIDTH = admin.lists.profileWidth
 
 function Row({
   list: l,
@@ -202,7 +202,7 @@ function Row({
 }) {
   const t = useT(messages)
   const { relative } = useRelative()
-  const medium = useWindowAtLeast(breakpoints.medium)
+  const medium = useRegularWindow()
   const update = useAction((c, body: ImportListInput) =>
     c.importLists.update({ params: { id: l.id }, body }),
   )
@@ -749,7 +749,7 @@ function Trakt({ status, reload }: { status: TraktStatus | undefined; reload: ()
             style={{
               paddingHorizontal: s['4'],
               paddingVertical: s['2'],
-              borderWidth: 1,
+              borderWidth: line.thin,
               borderColor: colors.line,
               borderRadius: tokens.radius.md,
               backgroundColor: colors.s2,

@@ -7,7 +7,7 @@
 import { createFormat } from '@highsea-tv/client/format'
 import { useT } from '@highsea-tv/i18n/react'
 import { useMedia } from '@highsea-tv/native/media'
-import type { ColorRole } from '@highsea-tv/tokens'
+import { adminText, type ColorRole } from '@highsea-tv/tokens'
 import {
   alpha,
   Button,
@@ -279,7 +279,7 @@ function SongLine({ song, current }: { song: Entry; current?: boolean }) {
           {t('songLine', { artist: song.album.artist.name, album: song.album.title })}
         </Text>
       </View>
-      <Text variant="mono" mono color="text-3" size={12}>
+      <Text variant="mono" mono color="text-3" size={adminText.figure.size}>
         {clock(song.duration)}
       </Text>
     </View>

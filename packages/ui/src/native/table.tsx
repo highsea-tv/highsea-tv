@@ -34,8 +34,16 @@
 // max-content width as its minimum (https://www.w3.org/TR/css-sizing-3/#valdef-width-max-content):
 // a badge's words or a one-line text would report less than they draw, and tables never squeeze
 // text into wrapping (admin.md › Tables). A cell held to a width (`maxWidth`) is as wide as its
-// content up to that width, where it wraps (max-width clamps a max-content width); one spanning
-// columns takes what it's given.
+// content up to that width, where it wraps (max-width clamps a max-content width).
+// A cell spanning columns (`span`): CSS gives a table cell no span of its own, since rows and
+// columns spanned come from the document language's attributes, which a View can't carry
+// (https://www.w3.org/TR/CSS22/tables.html#table-display). So the cell sits in its row's first
+// column and asks nothing of it, its content size-contained in the inline axis as a cut path's is,
+// and its content lays out across the table's own measured width, over the row's empty columns,
+// with the row's line under it (a release's reasons under its row, Movie detail). Its height is
+// its content's. ARIA's `aria-colspan` says the span (https://www.w3.org/TR/wai-aria-1.2/#aria-colspan).
+
+import { line, table } from '@highsea-tv/tokens'
 import {
   Children,
   type ComponentRef,
@@ -43,12 +51,15 @@ import {
   isValidElement,
   type ReactNode,
   type Ref,
+  useCallback,
   useContext,
+  useLayoutEffect,
   useMemo,
   useState,
   useSyncExternalStore,
 } from 'react'
 import { type LayoutChangeEvent, Platform, View, type ViewStyle } from 'react-native'
+import { visuallyHidden } from './hidden-heading.tsx'
 import { Text } from './text.tsx'
 import { tokens, useTheme } from './theme.tsx'
 import { Tooltip } from './tooltip.tsx'
@@ -60,11 +71,17 @@ const web = Platform.OS === 'web'
 const css = (display: string, extra?: object) =>
   (web ? { display, ...extra } : {}) as unknown as ViewStyle
 
-type RowState = { active: boolean; last: boolean }
-const RowContext = createContext<RowState>({ active: false, last: false })
+/**
+ * A row's hover or focus, whether it's the body's last, and its tint, which a cell spanning its
+ * columns takes over (`spans`), the row then painting none.
+ */
+type RowState = { active: boolean; last: boolean; tint: string; spans?: () => void }
+const RowContext = createContext<RowState>({ active: false, last: false, tint: 'transparent' })
 const LastContext = createContext(false)
 /** A virtual body's measure for the row it holds. */
 const MeasureContext = createContext<((e: LayoutChangeEvent) => void) | undefined>(undefined)
+/** The table's own width, which a cell spanning its columns lays out across. */
+const WidthContext = createContext(0)
 
 /**
  * Bodies longer than this draw only the rows near the screen. The admin's tables page on the
@@ -89,7 +106,7 @@ export function TableFrame({ children, label }: { children: ReactNode; label?: s
         minWidth: 0,
         overflow: 'hidden',
         borderRadius: tokens.radius.lg,
-        borderWidth: 1,
+        borderWidth: line.thin,
         borderColor: theme.colors.line,
         backgroundColor: theme.colors.s1,
       }}
@@ -111,7 +128,7 @@ export function TableToolbar({ children }: { children: ReactNode }) {
         gap: s['3'],
         paddingHorizontal: s['3'] + s['0.5'],
         paddingVertical: s['3'],
-        borderBottomWidth: 1,
+        borderBottomWidth: line.thin,
         borderBottomColor: theme.colors.line,
       }}
     >
@@ -165,7 +182,7 @@ export function Table({ children, label, labelledBy, minWidth }: TableProps) {
           { borderColor: theme.colors.line },
         ]}
       >
-        {children}
+        <WidthContext.Provider value={inner}>{children}</WidthContext.Provider>
       </View>
     </View>
   )
@@ -230,7 +247,10 @@ export function TableRow({ children, selected, testID }: TableRowProps) {
   const [hovered, setHovered] = useState(false)
   const [focused, setFocused] = useState(false)
   const active = hovered || focused
-  const state = useMemo(() => ({ active, last }), [active, last])
+  const tint = selected ? theme.colors['accent-soft'] : active ? theme.colors.s2 : 'transparent'
+  const [spanned, setSpanned] = useState(false)
+  const spans = useCallback(() => setSpanned(true), [])
+  const state = useMemo(() => ({ active, last, tint, spans }), [active, last, tint, spans])
   // react-native-web forwards pointer and focus events, which bubble as React's do
   // (react-native-web's modules/forwardedProps)
   const events = web
@@ -252,13 +272,7 @@ export function TableRow({ children, selected, testID }: TableRowProps) {
         style={[
           css('table-row'),
           !web ? { flexDirection: 'row', alignItems: 'center' } : null,
-          {
-            backgroundColor: selected
-              ? theme.colors['accent-soft']
-              : active
-                ? theme.colors.s2
-                : 'transparent',
-          },
+          { backgroundColor: spanned ? 'transparent' : tint },
           web ? ({ transition: 'background-color 120ms' } as unknown as ViewStyle) : null,
         ]}
       >
@@ -300,10 +314,10 @@ export function TableHead({ children, numeric, align, width, hidden }: TableHead
           textAlign: textAlign({ numeric, align }),
         }),
         {
-          height: 36,
+          height: table.head,
           width,
           paddingHorizontal: s['3'],
-          borderBottomWidth: 1,
+          borderBottomWidth: line.thin,
           borderBottomColor: theme.colors.line,
         },
         !web ? { flex: width ? undefined : 1, justifyContent: 'center' } : null,
@@ -311,10 +325,7 @@ export function TableHead({ children, numeric, align, width, hidden }: TableHead
     >
       {hidden ? (
         typeof children === 'string' ? (
-          <View
-            pointerEvents="none"
-            style={{ position: 'absolute', width: 1, height: 1, margin: -1, overflow: 'hidden' }}
-          >
+          <View pointerEvents="none" style={visuallyHidden}>
             <Text numberOfLines={1}>{children}</Text>
           </View>
         ) : null
@@ -354,7 +365,10 @@ export type TableCellProps = Align & {
    * https://www.w3.org/TR/css-overflow-3/#text-overflow).
    */
   truncate?: boolean | number
-  /** Spans this many columns. */
+  /**
+   * Spans this many columns, the row's whole width: its content wraps across the table, however
+   * wide (a release's reasons under its row). Only a row's one cell spans.
+   */
   span?: number
 }
 
@@ -372,7 +386,12 @@ export function TableCell({
   span,
 }: TableCellProps) {
   const theme = useTheme()
-  const { last } = useContext(RowContext)
+  const { last, tint, spans } = useContext(RowContext)
+  const across = useContext(WidthContext)
+  const spanning = Boolean(span && web)
+  useLayoutEffect(() => {
+    if (spanning) spans?.()
+  }, [spanning, spans])
   const ui = tokens.adminText.ui
   const figure = tokens.adminText.figure
   const most = typeof truncate === 'number' ? truncate : maxWidth
@@ -428,10 +447,45 @@ export function TableCell({
         {children}
       </View>
     )
+  if (spanning)
+    // across the table: see the file's header
+    return (
+      <View
+        role="cell"
+        {...({ 'aria-colspan': span } as object)}
+        style={[css('table-cell', { verticalAlign: 'top', whiteSpace: 'normal' }), { padding: 0 }]}
+      >
+        <View style={css('block', { contain: 'inline-size' })}>
+          <View
+            style={{
+              width: across > 0 ? across : undefined,
+              minHeight: tall ? tokens.density.row : tokens.density.rowSingle,
+              justifyContent: 'center',
+              paddingHorizontal: s['3'],
+              paddingVertical: s['2'],
+              borderBottomWidth: last ? 0 : line.thin,
+              borderBottomColor: theme.colors.line,
+              // a row's background paints behind its cells only, not the slots no cell takes
+              // (https://www.w3.org/TR/CSS22/tables.html#table-layers), so the content laid over
+              // them carries the row's tint, and the row paints none (a translucent tint twice
+              // over the first column would show)
+              backgroundColor: tint,
+            }}
+          >
+            {typeof children === 'string' ? (
+              <Text size={ui.size} leading={ui.leading} align={textAlign({ numeric, align })}>
+                {children}
+              </Text>
+            ) : (
+              children
+            )}
+          </View>
+        </View>
+      </View>
+    )
   return (
     <View
       role="cell"
-      {...(span && web ? ({ 'aria-colspan': span } as object) : null)}
       style={[
         css('table-cell', {
           verticalAlign: 'middle',
@@ -445,10 +499,10 @@ export function TableCell({
           maxWidth: most,
           paddingHorizontal: s['3'],
           paddingVertical: s['2'],
-          borderBottomWidth: last ? 0 : 1,
+          borderBottomWidth: last ? 0 : line.thin,
           borderBottomColor: theme.colors.line,
         },
-        !web ? { flex: 1, justifyContent: 'center' } : null,
+        !web ? { flex: span ?? 1, justifyContent: 'center' } : null,
       ]}
     >
       {/* one block, held to the cell's most: see the file's header */}
@@ -457,12 +511,10 @@ export function TableCell({
           { minWidth: 0, maxWidth: most === undefined ? undefined : most - s['3'] * 2 },
           fill
             ? css('flex', { contain: 'inline-size', minWidth: TRUNCATE_MIN })
-            : span
-              ? null
-              : // the rest never squeeze, or only to their width: see the file's header
-                most === undefined
-                ? css('flex', { minWidth: 'max-content' })
-                : css('flex', { width: 'max-content' }),
+            : // the rest never squeeze, or only to their width: see the file's header
+              most === undefined
+              ? css('flex', { minWidth: 'max-content' })
+              : css('flex', { width: 'max-content' }),
         ]}
       >
         {content}

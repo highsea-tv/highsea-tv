@@ -5,6 +5,7 @@
 // (../poster.tsx), and a row of them is Row's (../row.tsx). Poster hands it a collection's mosaic
 // as `artwork` and its Smart mark as `status`, which lift with the art (kit/collection-art.tsx).
 
+import { tvTiles } from '@highsea-tv/tokens'
 import { type ReactNode, type Ref, useEffect, useRef } from 'react'
 import { View } from 'react-native'
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated'
@@ -18,7 +19,7 @@ import { TRACK_SPRING } from './model.ts'
 const tv = tokens.tv
 
 /** A wide tile's width in units: Continue watching's stills (17u in the prototype). */
-export const WIDE_WIDTH = 17
+export const WIDE_WIDTH = tvTiles.wide
 
 export type TileSource = string | { uri: string; headers?: Record<string, string> } | null
 
@@ -127,8 +128,8 @@ export function TvTile({
             progress={progressBelow ? null : progress}
           />
           {progressBelow && progress !== null ? (
-            <View style={{ marginTop: 0.9 * u }}>
-              <ProgressBar value={progress * 100} height={0.25} />
+            <View style={{ marginTop: tv.space['4.5'] * u }}>
+              <ProgressBar value={progress * 100} height={tvTiles.progress} />
             </View>
           ) : null}
           <Text
@@ -137,7 +138,7 @@ export function TvTile({
             color={focused ? 'text' : 'text-2'}
             numberOfLines={1}
             align={round ? 'center' : undefined}
-            style={{ marginTop: 1 * u }}
+            style={{ marginTop: tv.space['5'] * u }}
           >
             {title}
           </Text>
@@ -234,7 +235,7 @@ function Art({
         ) : null}
         {progress !== null ? (
           <View style={{ position: 'absolute', left: '7%', right: '7%', bottom: '7%' }}>
-            <ProgressBar value={progress * 100} height={0.25} />
+            <ProgressBar value={progress * 100} height={tvTiles.progress} />
           </View>
         ) : null}
       </View>

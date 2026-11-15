@@ -1,4 +1,8 @@
 'use client'
+import type { SignInResult } from '@highsea-tv/api-contract'
+import { useT } from '@highsea-tv/i18n/react'
+import { ApiError } from '@highsea-tv/sdk'
+import { useAction, useQuery } from '@highsea-tv/sdk/react'
 // SPDX-License-Identifier: AGPL-3.0-only
 // A18 Login (docs/product/login.md), ported from the prototype. Username and password; then the
 // 6-digit code when the account has two-step verification on, or a recovery code; or setting it up
@@ -7,10 +11,7 @@
 // /api/v1/auth/oidc/callback, which lands on the dashboard or back here with `?error=`. Drawn
 // with the library's native renderer since D3 (one-client-platform-d.md): a form's submit is the
 // primary button and Enter in its fields (`onSubmitEditing`), as a native screen has no <form>.
-import type { SignInResult } from '@highsea-tv/api-contract'
-import { useT } from '@highsea-tv/i18n/react'
-import { ApiError } from '@highsea-tv/sdk'
-import { useAction, useQuery } from '@highsea-tv/sdk/react'
+import { admin, controlGeometry } from '@highsea-tv/tokens'
 import {
   Button,
   EmptyState,
@@ -135,10 +136,10 @@ export function Login({ next, oidcError }: { next?: string; oidcError?: string }
     return (
       <Card>
         <View aria-busy style={{ gap: s['4'] }}>
-          <Skeleton width={160} height={24} />
-          <Skeleton height={40} />
-          <Skeleton height={40} />
-          <Skeleton height={36} />
+          <Skeleton width={admin.skeleton.width.md} height={admin.skeleton.title} />
+          <Skeleton height={admin.skeleton.field} />
+          <Skeleton height={admin.skeleton.field} />
+          <Skeleton height={controlGeometry.md.height} />
         </View>
       </Card>
     )
@@ -167,7 +168,11 @@ export function Login({ next, oidcError }: { next?: string; oidcError?: string }
       <Card>
         <Heading title={t('oidc', { provider: server.auth.oidc?.name ?? '' })} />
         <View role="status" style={{ flexDirection: 'row', alignItems: 'center', gap: s['2'] }}>
-          <ActivityIndicator aria-hidden size={16} color={theme.colors['text-2']} />
+          <ActivityIndicator
+            aria-hidden
+            size={tokens.icon.size.sm}
+            color={theme.colors['text-2']}
+          />
           <Text variant="caption" color="text-2" style={{ flex: 1, minWidth: 0 }}>
             {t('oidcWait', { provider: server.auth.oidc?.name ?? '' })}
           </Text>

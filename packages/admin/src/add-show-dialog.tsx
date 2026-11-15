@@ -8,7 +8,6 @@
 import type { DiscoverSeries, ShowMonitor } from '@highsea-tv/api-contract'
 import { useT } from '@highsea-tv/i18n/react'
 import { useAction, useQuery } from '@highsea-tv/sdk/react'
-import { breakpoints } from '@highsea-tv/tokens'
 import {
   Button,
   Checkbox,
@@ -19,7 +18,7 @@ import {
   Text,
   toast,
   tokens,
-  useWindowAtLeast,
+  useRegularWindow,
 } from '@highsea-tv/ui/native'
 import { useState } from 'react'
 import { View } from 'react-native'
@@ -66,7 +65,7 @@ export function AddShowDialog({
   )
   // nothing to look for when nothing is monitored
   const searching = form.search && form.monitor !== 'none'
-  const two = useWindowAtLeast(breakpoints.medium)
+  const two = useRegularWindow()
 
   const close = (o: boolean) => {
     if (!o) add.reset()
@@ -196,5 +195,5 @@ export function AddShowDialog({
   )
 }
 
-/** Two fields side by side from medium up (the web's medium:grid-cols-2). */
+/** Two fields side by side in a regular window (the web's medium:grid-cols-2). */
 const HALF = { flex: 1, flexBasis: 0, minWidth: 0 } as const

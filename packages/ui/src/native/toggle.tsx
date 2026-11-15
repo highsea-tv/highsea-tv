@@ -6,6 +6,8 @@
 // the web's is (web/switch.tsx) and the prototype's phone shows it: a round 40 × 24 track in
 // `control-edge`, `accent-fill` when on, with an 18 thumb 3 in, before its words; the TV draws the
 // same at its rule's size. On touch the row's target reaches 44 through the hit area.
+
+import { controlGeometry, line, toggle } from '@highsea-tv/tokens'
 import type { ReactNode } from 'react'
 import { View } from 'react-native'
 import type { ToggleCommon } from '../shared/controls.ts'
@@ -54,7 +56,7 @@ function markBox(theme: Theme, m: ControlPoints, on: boolean, round: boolean) {
     width: box,
     height: box,
     borderRadius: round ? tokens.radius.pill : m.radius - m.inset,
-    borderWidth: on && !round ? 0 : 1,
+    borderWidth: on && !round ? 0 : line.thin,
     borderColor: theme.colors[on ? looks.toggleOn.fill : looks.toggleOff.fill],
     backgroundColor: on && !round ? theme.colors[looks.toggleOn.fill] : 'transparent',
     alignItems: 'center' as const,
@@ -204,13 +206,13 @@ function Track({ on, m }: { on: boolean; m: ControlPoints }) {
   const theme = useTheme()
   const looks = tokens.controls.looks
   const tv = theme.formFactor.input === 'tv'
-  const inset = tv ? m.inset : 3
-  const thumb = tv ? m.icon : 18
+  const inset = tv ? m.inset : controlGeometry.md.inset
+  const thumb = tv ? m.icon : toggle.thumb
   const height = thumb + inset * 2
   return (
     <View
       style={{
-        width: tv ? height * 2 - inset * 2 : 40,
+        width: tv ? height * 2 - inset * 2 : toggle.track,
         height,
         padding: inset,
         borderRadius: tokens.radius.pill,

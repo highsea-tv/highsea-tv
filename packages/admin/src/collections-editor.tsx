@@ -23,7 +23,7 @@ import type {
 import { COLLECTION_SORTS } from '@highsea-tv/api-contract'
 import { useT } from '@highsea-tv/i18n/react'
 import { useAction, useQuery } from '@highsea-tv/sdk/react'
-import { breakpoints } from '@highsea-tv/tokens'
+import { admin, line, webText } from '@highsea-tv/tokens'
 import {
   Badge,
   Button,
@@ -38,8 +38,8 @@ import {
   Textarea,
   toast,
   tokens,
+  useRegularWindow,
   useTheme,
-  useWindowAtLeast,
 } from '@highsea-tv/ui/native'
 import { type ReactElement, type ReactNode, useState } from 'react'
 import { View } from 'react-native'
@@ -183,9 +183,9 @@ function FieldGroup({
   )
 }
 
-/** Fields side by side from medium, each an equal share; stacked in a compact window. */
+/** Fields side by side in a regular window, each an equal share; stacked in a compact window. */
 function Columns({ children, gap = s['3'] }: { children: ReactElement[]; gap?: number }) {
-  const side = useWindowAtLeast(breakpoints.medium)
+  const side = useRegularWindow()
   return (
     <View style={{ flexDirection: side ? 'row' : 'column', gap, alignItems: 'flex-start' }}>
       {children.map((c) => (
@@ -201,7 +201,7 @@ function Columns({ children, gap = s['3'] }: { children: ReactElement[]; gap?: n
 }
 
 /** The result's column beside the form (the web's minmax(18rem, 22rem)). */
-const RESULT = { minWidth: 288, maxWidth: 352 }
+const RESULT = admin.collectionsEditor.result
 
 function Editor({ initial }: { initial: CollectionSummary | null }) {
   const t = useT(messages)
@@ -209,8 +209,7 @@ function Editor({ initial }: { initial: CollectionSummary | null }) {
   const theme = useTheme()
   const now = useNow()
   const router = useRouter()
-  const beside = useWindowAtLeast(breakpoints.expanded)
-  const medium = useWindowAtLeast(breakpoints.medium)
+  const regular = useRegularWindow()
   const [draft, setDraft] = useState<SmartCollectionInput>(() =>
     initial ? draftOf(initial) : blank(),
   )
@@ -262,25 +261,30 @@ function Editor({ initial }: { initial: CollectionSummary | null }) {
   return (
     <View
       style={{
-        flexDirection: beside ? 'row' : 'column',
-        alignItems: beside ? 'flex-start' : 'stretch',
+        flexDirection: regular ? 'row' : 'column',
+        alignItems: regular ? 'flex-start' : 'stretch',
         gap: s['6'],
       }}
     >
       <View
         role="form"
         aria-label={t('form')}
-        style={{ flex: beside ? 1 : undefined, minWidth: 0, gap: s['8'] }}
+        style={{ flex: regular ? 1 : undefined, minWidth: 0, gap: s['8'] }}
       >
         <View
           style={{
-            flexDirection: medium ? 'row' : 'column',
+            flexDirection: regular ? 'row' : 'column',
             alignItems: 'flex-start',
             gap: s['4'],
           }}
         >
           <View
-            style={{ gap: s['4'], flex: medium ? 1 : undefined, alignSelf: 'stretch', minWidth: 0 }}
+            style={{
+              gap: s['4'],
+              flex: regular ? 1 : undefined,
+              alignSelf: 'stretch',
+              minWidth: 0,
+            }}
           >
             <Field label={t('name')} error={show(errors.name)}>
               <Input
@@ -447,7 +451,7 @@ function Editor({ initial }: { initial: CollectionSummary | null }) {
             flexDirection: 'row',
             flexWrap: 'wrap',
             gap: s['2'],
-            borderTopWidth: 1,
+            borderTopWidth: line.thin,
             borderTopColor: theme.colors.line,
             paddingTop: s['4'],
           }}
@@ -479,9 +483,9 @@ function Editor({ initial }: { initial: CollectionSummary | null }) {
       <View
         style={[
           { minWidth: 0 },
-          beside ? { ...RESULT, flex: 1 } : null,
+          regular ? { ...RESULT, flex: 1 } : null,
           // it stays in view while the form scrolls (the web's sticky top-4)
-          beside ? ({ position: 'sticky', top: s['4'] } as object) : null,
+          regular ? ({ position: 'sticky', top: s['4'] } as object) : null,
         ]}
       >
         <Result result={result} />
@@ -493,7 +497,7 @@ function Editor({ initial }: { initial: CollectionSummary | null }) {
 // ---------------------------------------------------------------- artwork
 
 /** The artwork's column (the web's w-40) and its poster (w-28). */
-const ARTWORK = { column: 160, poster: 112 }
+const ARTWORK = admin.collectionsEditor.artwork
 
 function Artwork({
   draft,
@@ -541,7 +545,7 @@ function Artwork({
 // ---------------------------------------------------------------- result
 
 /** The result's posters: as many 64-wide columns as fit (the web's auto-fill minmax(4rem, 1fr)). */
-const THUMB = 64
+const THUMB = admin.collectionsEditor.cell
 
 function Result({ result }: { result: ReturnType<typeof usePreview> }) {
   const t = useT(messages)
@@ -558,7 +562,7 @@ function Result({ result }: { result: ReturnType<typeof usePreview> }) {
       style={{
         gap: s['3'],
         padding: s['4'],
-        borderWidth: 1,
+        borderWidth: line.thin,
         borderColor: theme.colors.line,
         borderRadius: tokens.radius.lg,
         backgroundColor: theme.colors.s1,
@@ -611,7 +615,7 @@ function Result({ result }: { result: ReturnType<typeof usePreview> }) {
                   dim={!m.playable}
                 />
                 {!m.playable && (
-                  <Text size={11} color="text-3" align="center" numberOfLines={1}>
+                  <Text size={webText.label.size} color="text-3" align="center" numberOfLines={1}>
                     {t('noFile')}
                   </Text>
                 )}
@@ -636,7 +640,7 @@ function Thumb({ src, alt, dim = false }: { src: string | null; alt: string; dim
   const style = {
     width: '100%',
     aspectRatio: w / h,
-    borderRadius: 4,
+    borderRadius: tokens.radius['2xs'],
     opacity: dim ? 0.4 : 1,
   } as const
   return src ? (
@@ -727,7 +731,7 @@ function TitlePicker({
     alignItems: 'center',
     gap: TEN,
     padding: SIX,
-    borderWidth: 1,
+    borderWidth: line.thin,
     borderColor: theme.colors.line,
     borderRadius: tokens.radius.md,
     backgroundColor: theme.colors.s2,

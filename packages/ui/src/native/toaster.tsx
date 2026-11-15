@@ -10,6 +10,7 @@
 
 import { useT } from '@highsea-tv/i18n/react'
 import type { ColorRole } from '@highsea-tv/tokens'
+import { line, overlay } from '@highsea-tv/tokens'
 import { type ReactNode, useEffect, useRef, useSyncExternalStore } from 'react'
 import { Platform, View, type ViewStyle } from 'react-native'
 import { announce } from './announce'
@@ -126,7 +127,7 @@ function ToastItem({ entry }: { entry: Entry }) {
           paddingHorizontal: tokens.space['3'] + tokens.space['0.5'],
           paddingVertical: tokens.space['3'],
           borderRadius: tokens.radius.md,
-          borderWidth: 1,
+          borderWidth: line.thin,
           borderColor: theme.colors['line-strong'],
           backgroundColor: theme.colors.s3,
           boxShadow: tokens.elevation[3].boxShadow,
@@ -136,15 +137,15 @@ function ToastItem({ entry }: { entry: Entry }) {
       <View
         aria-hidden
         style={{
-          width: 32,
-          height: 32,
-          borderRadius: 16,
+          width: tokens.icon.disc.sm,
+          height: tokens.icon.disc.sm,
+          borderRadius: tokens.radius.pill,
           alignItems: 'center',
           justifyContent: 'center',
           backgroundColor: theme.colors[mark.bg],
         }}
       >
-        <Icon name={mark.icon} size={16} color={mark.fg} />
+        <Icon name={mark.icon} size={tokens.icon.size.sm} color={mark.fg} />
       </View>
       <View style={{ flex: 1, minWidth: 0 }}>
         <Text size={form.size} leading={form.leading} weight={600}>
@@ -212,7 +213,7 @@ export function Toaster({ label = 'Notifications' }: { label?: string }) {
           bottom: 0,
           right: 0,
           left: compact ? 0 : undefined,
-          width: compact ? undefined : 420,
+          width: compact ? undefined : overlay.toaster,
           zIndex: 60,
           gap: tokens.space['2'],
           padding: compact ? tokens.space['4'] : tokens.space['6'],

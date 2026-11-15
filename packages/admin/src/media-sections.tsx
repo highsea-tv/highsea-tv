@@ -19,7 +19,7 @@ import { duration } from '@highsea-tv/core/format'
 import { useLocale, useT } from '@highsea-tv/i18n/react'
 import type { ApiError } from '@highsea-tv/sdk'
 import { type Query, useQuery } from '@highsea-tv/sdk/react'
-import { breakpoints } from '@highsea-tv/tokens'
+import { admin, line } from '@highsea-tv/tokens'
 import {
   Badge,
   Button,
@@ -39,8 +39,8 @@ import {
   SkeletonText,
   Text,
   tokens,
+  useRegularWindow,
   useTheme,
-  useWindowAtLeast,
 } from '@highsea-tv/ui/native'
 import { Fragment, type ReactNode, useState } from 'react'
 import { useWindowDimensions, View, type ViewStyle } from 'react-native'
@@ -92,7 +92,7 @@ const releasedBy = (day: string, now: number) => Date.parse(`${day.slice(0, 10)}
 /** The admin's ui type (13). */
 const ui = tokens.adminText.ui
 /** Running text's measure, the web's `max-w-[65ch]` at the body size. */
-const MEASURE = 600
+const MEASURE = admin.measure
 /** CSS grid through a View's style, which react-native-web writes as given. */
 const grid = (style: Record<string, unknown>) =>
   ({ display: 'grid', ...style }) as unknown as ViewStyle
@@ -204,12 +204,12 @@ export function MetadataError({
 
 // ---------------------------------------------------------------- summary
 
-/** The summary's poster column from medium (the web's 9rem), and its width below (w-32). */
-const SUMMARY_POSTER = { column: 144, compact: 128 }
+/** The summary's poster column in a regular window (the web's 9rem), and its width below (w-32). */
+const SUMMARY_POSTER = { column: admin.summaryPoster.beside, compact: admin.summaryPoster.above }
 
 /**
  * The summary card's frame (a movie's, a person's): edged in `line` on `s1`, the poster beside
- * the rest from medium and above it below. Shared with person.tsx.
+ * the rest in a regular window and above it below. Shared with person.tsx.
  */
 export function SummaryCard({
   label,
@@ -223,7 +223,7 @@ export function SummaryCard({
   children: ReactNode
 }) {
   const { colors } = useTheme()
-  const medium = useWindowAtLeast(breakpoints.medium)
+  const medium = useRegularWindow()
   return (
     <View
       role={label ? 'region' : undefined}
@@ -236,7 +236,7 @@ export function SummaryCard({
         gap: tokens.space['5'],
         padding: medium ? tokens.space['5'] : tokens.space['4'],
         borderRadius: tokens.radius.lg,
-        borderWidth: 1,
+        borderWidth: line.thin,
         borderColor: colors.line,
         backgroundColor: colors.s1,
       }}
@@ -321,7 +321,7 @@ export function MediaSummary({
             </Text>
           </>
         )}
-        {m.rating > 0 && <Rating value={m.rating} size={12} showValue />}
+        {m.rating > 0 && <Rating value={m.rating} size={tokens.icon.size['2xs']} showValue />}
       </View>
       {meta?.tagline && (
         <Text variant="body" color="text-2">
@@ -365,10 +365,10 @@ function PosterBlock({ width }: { width?: number }) {
 }
 
 export function SummarySkeleton() {
-  const medium = useWindowAtLeast(breakpoints.medium)
+  const medium = useRegularWindow()
   return (
     <View aria-busy style={{ flexDirection: medium ? 'row' : 'column', gap: tokens.space['5'] }}>
-      <View style={{ width: medium ? 160 : '100%' }}>
+      <View style={{ width: medium ? admin.mediaSections.posterColumn : '100%' }}>
         <PosterBlock />
       </View>
       <View style={{ flex: medium ? 1 : undefined }}>
@@ -481,7 +481,7 @@ export function MediaOverview({
   onAdd: (movies: DiscoverMovie[]) => void
 }) {
   const t = useT(messages)
-  const expanded = useWindowAtLeast(breakpoints.expanded)
+  const expanded = useRegularWindow()
   return (
     <View style={{ flexDirection: expanded ? 'row' : 'column', gap: tokens.space['8'] }}>
       <View style={{ flex: expanded ? 1 : undefined, minWidth: 0, gap: tokens.space['8'] }}>
@@ -499,7 +499,13 @@ export function MediaOverview({
           )}
         </Loadable>
       </View>
-      <View style={{ width: expanded ? 320 : undefined, minWidth: 0, gap: tokens.space['8'] }}>
+      <View
+        style={{
+          width: expanded ? admin.mediaSections.sideColumn : undefined,
+          minWidth: 0,
+          gap: tokens.space['8'],
+        }}
+      >
         {aside}
         {meta.status === 'success' && <About meta={meta.data} />}
       </View>
@@ -511,7 +517,7 @@ export function RowSkeleton() {
   return (
     <View style={{ flexDirection: 'row', gap: tokens.space['4'], overflow: 'hidden' }}>
       {[0, 1, 2, 3, 4, 5].map((i) => (
-        <PosterBlock key={i} width={112} />
+        <PosterBlock key={i} width={admin.mediaSections.posterBlock} />
       ))}
     </View>
   )
@@ -837,7 +843,7 @@ function About({ meta: m }: { meta: MovieMetadata }) {
           >
             {label}
           </Text>
-          <Icon name="external" size={12} />
+          <Icon name="external" size={tokens.icon.size['2xs']} />
         </View>
       )}
     </Press>
@@ -913,7 +919,7 @@ export function crewByDepartment(crew: Credit[]) {
 }
 
 /** A crew member's photo beside their name: 28 wide, the poster's shape, 4 round. */
-const CREW_PHOTO = { width: 28, radius: 4 }
+const CREW_PHOTO = { width: admin.mediaSections.crewPhoto.width, radius: tokens.radius['2xs'] }
 
 function CrewPhoto({ src }: { src: string | null }) {
   const { colors } = useTheme()
@@ -933,15 +939,14 @@ function CrewPhoto({ src }: { src: string | null }) {
         { alignItems: 'center', justifyContent: 'center', backgroundColor: colors.s2 },
       ]}
     >
-      <Icon name="user" size={14} color="text-3" />
+      <Icon name="user" size={tokens.icon.size.xs} color="text-3" />
     </View>
   )
 }
 
 export function CastAndCrew({ meta }: { meta: MetadataQuery }) {
   const t = useT(messages)
-  const medium = useWindowAtLeast(breakpoints.medium)
-  const expanded = useWindowAtLeast(breakpoints.expanded)
+  const regular = useRegularWindow()
   return (
     <Loadable query={meta} what={t('cast.what')} skeleton={<RowSkeleton />}>
       {(m) => {
@@ -983,7 +988,7 @@ export function CastAndCrew({ meta }: { meta: MetadataQuery }) {
                 <Heading>{t('crew')}</Heading>
                 <View
                   style={grid({
-                    gridTemplateColumns: `repeat(${expanded ? 3 : medium ? 2 : 1}, minmax(0, 1fr))`,
+                    gridTemplateColumns: `repeat(${regular ? 3 : 1}, minmax(0, 1fr))`,
                     gap: tokens.space['6'],
                   })}
                 >

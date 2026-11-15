@@ -27,7 +27,7 @@ import { percent } from '@highsea-tv/core/format'
 import { useLocale, useT } from '@highsea-tv/i18n/react'
 import { ApiError } from '@highsea-tv/sdk'
 import { useAction, useQuery } from '@highsea-tv/sdk/react'
-import { breakpoints } from '@highsea-tv/tokens'
+import { admin, line } from '@highsea-tv/tokens'
 import {
   Badge,
   type BadgeTone,
@@ -53,8 +53,8 @@ import {
   TitleCell,
   toast,
   tokens,
+  useRegularWindow,
   useTheme,
-  useWindowAtLeast,
 } from '@highsea-tv/ui/native'
 import { type ReactNode, useState } from 'react'
 import { View } from 'react-native'
@@ -135,7 +135,7 @@ function Failure({ children }: { children: string }) {
       style={{
         padding: sp['3'],
         borderRadius: tokens.radius.md,
-        borderWidth: 1,
+        borderWidth: line.thin,
         borderColor: theme.colors.line,
         backgroundColor: theme.colors.s2,
       }}
@@ -271,7 +271,7 @@ function WhatChanged({
               gap: sp['2'],
               padding: sp['3'],
               borderRadius: tokens.radius.md,
-              borderWidth: 1,
+              borderWidth: line.thin,
               borderColor: theme.colors.line,
               backgroundColor: theme.colors.s2,
             }}
@@ -307,7 +307,7 @@ function WhatChanged({
 }
 
 /** The web's list-disc's indent: the bullet in it, the note after. */
-const BULLET = 20
+const BULLET = admin.indexers.bullet
 
 function ChangeList({ changes }: { changes: CatalogStatus['changes'] }) {
   return (
@@ -338,7 +338,7 @@ function ChangeList({ changes }: { changes: CatalogStatus['changes'] }) {
 // ---------------------------------------------------------------- installed
 
 /** The health column's widest (the web's max-w-72). */
-const HEALTH_WIDTH = 288
+const HEALTH_WIDTH = admin.indexers.healthWidth
 
 function Installed({ onBrowse }: { onBrowse: () => void }) {
   const t = useT(messages)
@@ -536,8 +536,8 @@ function LocalTitle({ name, detail }: { name: string; detail: string }) {
 // ---------------------------------------------------------------- catalog
 
 /** The search field's width in a regular window (the web's w-64), and the language's (w-44). */
-const SEARCH_WIDTH = 256
-const LANGUAGE_WIDTH = 176
+const SEARCH_WIDTH = admin.indexers.searchWidth
+const LANGUAGE_WIDTH = admin.indexers.languageWidth
 
 /** `items` in rows of `per`, the last filled out so every card keeps its column's width. */
 function rowsOf<T>(items: readonly T[], per: number): (T | null)[][] {
@@ -553,9 +553,8 @@ function rowsOf<T>(items: readonly T[], per: number): (T | null)[][] {
 function Catalog() {
   const t = useT(messages)
   const languageName = useLanguageName()
-  const medium = useWindowAtLeast(breakpoints.medium)
-  const expanded = useWindowAtLeast(breakpoints.expanded)
-  const per = expanded ? 3 : medium ? 2 : 1
+  const regular = useRegularWindow()
+  const per = regular ? 3 : 1
   const catalog = useQuery('catalog:indexers', (c) => c.catalog.indexers(), [
     'catalog.updated',
     'indexers.updated',
@@ -598,7 +597,7 @@ function Catalog() {
             <View
               style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: sp['2'] }}
             >
-              <View style={{ width: medium ? SEARCH_WIDTH : '100%' }}>
+              <View style={{ width: regular ? SEARCH_WIDTH : '100%' }}>
                 <SearchField
                   label={t('catalog.search')}
                   placeholder={t('catalog.search')}
@@ -701,7 +700,7 @@ function CatalogCard({
         gap: sp['3'],
         padding: sp['4'],
         borderRadius: tokens.radius.lg,
-        borderWidth: 1,
+        borderWidth: line.thin,
         borderColor: theme.colors.line,
         backgroundColor: theme.colors.s1,
       }}
@@ -803,7 +802,7 @@ function seedingOf(text: ReturnType<typeof seedingText>): Indexer['seeding'] | u
 }
 
 /** The priority field's width (the web's w-28). */
-const PRIORITY_WIDTH = 112
+const PRIORITY_WIDTH = admin.indexers.priorityWidth
 
 /** Set up (add) or Edit: the definition's fields, plus the name, priority and seeding rule when
  * editing. Drawn per indexer or definition, so the form starts from its values. */
@@ -820,7 +819,7 @@ function SettingsForm({
 }) {
   const t = useT(messages)
   const tt = useT(tagsMessages)
-  const wide = useWindowAtLeast(breakpoints.medium)
+  const wide = useRegularWindow()
   const fields = d?.settings ?? []
   const [initial] = useState(() => initialValues(fields, indexer))
   const [values, setValues] = useState<Record<string, Value>>(initial)

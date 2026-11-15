@@ -122,21 +122,23 @@ function TvNotice({
         <View
           style={{
             flexDirection: 'row',
-            gap: 1.2 * u,
-            padding: 1.6 * u,
+            gap: tokens.tv.space['6'] * u,
+            padding: tokens.tv.space['8'] * u,
             borderRadius: radius,
             backgroundColor: focused ? theme.colors.s2 : theme.colors.s1,
           }}
         >
-          <View style={{ marginTop: 0.2 * u }}>
+          <View style={{ marginTop: tokens.icon.dropTv * u }}>
             <Icon
               name={icon}
               size={tokens.icon.sizeTv.max}
               color={warning ? 'badge-warning' : 'accent-text'}
             />
           </View>
-          <View style={{ flex: 1, minWidth: 0, gap: 0.6 * u }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 0.8 * u }}>
+          <View style={{ flex: 1, minWidth: 0, gap: tokens.tv.space['3'] * u }}>
+            <View
+              style={{ flexDirection: 'row', alignItems: 'center', gap: tokens.tv.space['4'] * u }}
+            >
               <Text variant="button" style={{ flexShrink: 1 }}>
                 {title}
               </Text>

@@ -1,4 +1,5 @@
 'use client'
+
 // SPDX-License-Identifier: AGPL-3.0-only
 // The widget registry's client half, ported from the prototype: one renderer per widget kind.
 // Each fills the size it's given, fetches its own data and shows its own loading, empty and error
@@ -38,6 +39,7 @@ import {
   widgetMessages,
 } from '@highsea-tv/personalization/widgets'
 import { type Query, useQuery } from '@highsea-tv/sdk/react'
+import { admin, line } from '@highsea-tv/tokens'
 import {
   Badge,
   Button,
@@ -65,6 +67,7 @@ import {
   useClip,
   useTheme,
   useWidth,
+  visuallyHidden,
   type WidgetEditorFrameProps,
   WidgetFrame,
 } from '@highsea-tv/ui/native'
@@ -119,23 +122,7 @@ const releaseDay = (day: string, locale: string) => shortDate(`${day}T12:00:00`,
 
 /** Read and not seen (the web's `sr-only`), inside a line of text. */
 function Unseen({ children }: { children: string }) {
-  return (
-    <Text
-      style={
-        {
-          position: 'absolute',
-          width: 1,
-          height: 1,
-          margin: -1,
-          overflow: 'hidden',
-          clip: 'rect(0 0 0 0)',
-          whiteSpace: 'nowrap',
-        } as object
-      }
-    >
-      {children}
-    </Text>
-  )
+  return <Text style={visuallyHidden}>{children}</Text>
 }
 
 /** The admin's ui type, 13. */
@@ -180,7 +167,7 @@ function Widget<T>({
         <View aria-busy style={{ gap: s['2'] + s['0.5'] }}>
           {skeleton ?? (
             <>
-              <Skeleton width={96} height={24} />
+              <Skeleton width={admin.skeleton.width.sm} height={admin.skeleton.title} />
               <SkeletonText lines={2} />
             </>
           )}
@@ -255,7 +242,13 @@ function More({ count, page, path }: { count: number; page: string; path: string
 const fill: ViewStyle = { minHeight: 0, flex: 1, overflow: 'hidden' }
 
 /** A health or release dot. */
-function Dot({ color, size = 6 }: { color: Parameters<typeof Icon>[0]['color']; size?: number }) {
+function Dot({
+  color,
+  size = admin.widgets.dot,
+}: {
+  color: Parameters<typeof Icon>[0]['color']
+  size?: number
+}) {
   const theme = useTheme()
   return (
     <View
@@ -309,7 +302,7 @@ function Rates({ down, up }: { down: ReactNode; up: ReactNode }) {
 /** The graph fills what the widget has left below the rates, 48 at least. */
 function Graph({ up, down }: { up: number[]; down: number[] }) {
   return (
-    <View style={{ flex: 1, minHeight: 48 }}>
+    <View style={{ flex: 1, minHeight: admin.widgets.graphMin }}>
       <Sparkline
         height={'100%' as unknown as number}
         series={[
@@ -438,11 +431,11 @@ function StorageOf({ folders, ...props }: WidgetProps & { folders: RootFolder[] 
         st.disks[0] && (
           <Tooltip content={st.disks[0].path}>
             <Text
-              size={12}
+              size={tokens.adminText.figure.size}
               leading={1.4}
               color="text-3"
               numberOfLines={1}
-              style={{ maxWidth: 160 }}
+              style={{ maxWidth: admin.widgets.metaMax }}
             >
               {st.disks[0].path}
             </Text>
@@ -458,7 +451,7 @@ function StorageOf({ folders, ...props }: WidgetProps & { folders: RootFolder[] 
         // of it, and the root folders on the disk with how many movies each holds
         const used = Math.max(0, disk.total - disk.free)
         const here = foldersOnDisk(folders, disk)
-        const item: ViewStyle = { flexDirection: 'row', alignItems: 'center', gap: 6 }
+        const item: ViewStyle = { flexDirection: 'row', alignItems: 'center', gap: s['1.5'] }
         return (
           <>
             <Stat value={free} unit={t('storage.free', { unit, total: bytes(disk.total) })} />
@@ -467,7 +460,7 @@ function StorageOf({ folders, ...props }: WidgetProps & { folders: RootFolder[] 
               aria-label={t('storage.bar', { percent: percent(used / Math.max(1, disk.total)) })}
               style={{
                 flexDirection: 'row',
-                height: 8,
+                height: admin.widgets.storageBar,
                 overflow: 'hidden',
                 borderRadius: tokens.radius.pill,
                 backgroundColor: theme.colors.s3,
@@ -484,7 +477,7 @@ function StorageOf({ folders, ...props }: WidgetProps & { folders: RootFolder[] 
               role="list"
               style={
                 tall
-                  ? { gap: 6 }
+                  ? { gap: s['1.5'] }
                   : { flexDirection: 'row', flexWrap: 'wrap', columnGap: s['3'], rowGap: s['1'] }
               }
             >
@@ -492,9 +485,9 @@ function StorageOf({ folders, ...props }: WidgetProps & { folders: RootFolder[] 
                 <View
                   aria-hidden
                   style={{
-                    width: 8,
-                    height: 8,
-                    borderRadius: 2,
+                    width: admin.widgets.legendSwatch,
+                    height: admin.widgets.legendSwatch,
+                    borderRadius: tokens.radius['3xs'],
                     backgroundColor: theme.colors.accent,
                   }}
                 />
@@ -507,7 +500,7 @@ function StorageOf({ folders, ...props }: WidgetProps & { folders: RootFolder[] 
               </View>
               {here.map((f) => (
                 <View key={f.id} role="listitem" style={[item, { minWidth: 0 }]}>
-                  <Icon name="folder" size={12} color="text-3" />
+                  <Icon name="folder" size={tokens.icon.size['2xs']} color="text-3" />
                   <Text
                     variant="caption"
                     mono
@@ -599,7 +592,7 @@ function IndexerList(props: WidgetProps) {
           <NoIndexers />
         ) : (
           <>
-            <View ref={clip.ref} role="list" style={[{ gap: 6 }, fill]}>
+            <View ref={clip.ref} role="list" style={[{ gap: s['1.5'] }, fill]}>
               {xs.map((x) => {
                 const left = x.backoffUntil ? (Date.parse(x.backoffUntil) - now) / 1000 : 0
                 return (
@@ -748,7 +741,7 @@ function UpcomingMovies(props: WidgetProps) {
                     minWidth: 0,
                   }}
                 >
-                  <View style={{ width: 64, alignItems: 'center' }}>
+                  <View style={{ width: admin.widgets.speedColumn, alignItems: 'center' }}>
                     <Badge dot={false} tone={i === 0 ? 'accent' : 'neutral'}>
                       {m.releaseDate ? releaseDay(m.releaseDate, locale) : '–'}
                     </Badge>
@@ -910,9 +903,9 @@ function QueueLive(props: WidgetProps) {
       }
       skeleton={
         <View style={{ gap: s['3'] }}>
-          <Skeleton width={256} height={28} />
+          <Skeleton width={admin.skeleton.width.xl} height={admin.skeleton.heading} />
           {[0, 1, 2].map((i) => (
-            <Skeleton key={i} height={40} />
+            <Skeleton key={i} height={admin.skeleton.field} />
           ))}
         </View>
       }
@@ -979,8 +972,8 @@ function QueueRows({ items, layout }: { items: QueueItem[]; layout: 'table' | 'm
               key={q.id}
               role="listitem"
               style={{
-                gap: 6,
-                borderTopWidth: 1,
+                gap: s['1.5'],
+                borderTopWidth: line.thin,
                 borderTopColor: theme.colors.line,
                 paddingHorizontal: PAD,
                 paddingVertical: s['2'] + s['0.5'],
@@ -1048,7 +1041,7 @@ function QueueRows({ items, layout }: { items: QueueItem[]; layout: 'table' | 'm
                 </TableCell>
                 {full ? <TableCell numeric>{bytes(q.size)}</TableCell> : null}
                 <TableCell>
-                  <View style={{ width: 160 }}>
+                  <View style={{ width: admin.widgets.progressColumn }}>
                     <ProgressBar
                       look="panel"
                       value={q.progress * 100}
@@ -1202,14 +1195,14 @@ function CalendarOf({ releases, ...props }: WidgetProps & { releases?: Movie[] }
   const weeks = Array.from({ length: Math.ceil((lead + days) / 7) }, (_, i) => i * 7 - lead + 1)
   const byDay = releasesByDay(releases ?? [], today.getFullYear(), today.getMonth())
   // the table's cells, 2 apart (the web's border-spacing-0.5)
-  const row: ViewStyle = { flexDirection: 'row', gap: 2 }
+  const row: ViewStyle = { flexDirection: 'row', gap: s['0.5'] }
   return (
     <Static {...props} kind="calendar" meta={month}>
       <View style={{ flex: 1, minHeight: 0, gap: s['2'] }}>
         <View
           role="table"
           aria-label={t('calendar.caption', { month })}
-          style={{ flex: 1, minHeight: 0, gap: 2 }}
+          style={{ flex: 1, minHeight: 0, gap: s['0.5'] }}
         >
           <View role="row" style={row}>
             {WEEKDAYS.map((d) => (
@@ -1225,7 +1218,11 @@ function CalendarOf({ releases, ...props }: WidgetProps & { releases?: Movie[] }
             ))}
           </View>
           {weeks.map((start) => (
-            <View key={start} role="row" style={[row, { flex: 1, minHeight: 28 }]}>
+            <View
+              key={start}
+              role="row"
+              style={[row, { flex: 1, minHeight: admin.widgets.calendarCell }]}
+            >
               {WEEKDAYS.map((d, i) => {
                 const day = start + i
                 const valid = day >= 1 && day <= days
@@ -1239,10 +1236,10 @@ function CalendarOf({ releases, ...props }: WidgetProps & { releases?: Movie[] }
                     style={{
                       flex: 1,
                       flexBasis: 0,
-                      minHeight: 28,
+                      minHeight: admin.widgets.calendarCell,
                       alignItems: 'center',
                       justifyContent: 'center',
-                      borderRadius: 6,
+                      borderRadius: tokens.radius.xs,
                       opacity: valid ? 1 : 0,
                       backgroundColor: isToday ? theme.colors.s3 : 'transparent',
                     }}
@@ -1256,8 +1253,8 @@ function CalendarOf({ releases, ...props }: WidgetProps & { releases?: Movie[] }
                       {titles ? <Unseen>{`: ${titles.join(', ')}`}</Unseen> : null}
                     </Fig>
                     {titles ? (
-                      <View style={{ position: 'absolute', bottom: 2 }}>
-                        <Dot color="accent" size={4} />
+                      <View style={{ position: 'absolute', bottom: s['0.5'] }}>
+                        <Dot color="accent" size={admin.widgets.dotSmall} />
                       </View>
                     ) : null}
                   </View>
@@ -1356,8 +1353,12 @@ function NowPlaying(props: WidgetProps) {
                   role="listitem"
                   style={{ flexDirection: 'row', alignItems: 'center', gap: s['3'] }}
                 >
-                  <View style={{ width: 32 }}>
-                    <Poster title={x.item.title} src={x.item.poster ?? undefined} width={32} />
+                  <View style={{ width: admin.widgets.poster }}>
+                    <Poster
+                      title={x.item.title}
+                      src={x.item.poster ?? undefined}
+                      width={admin.widgets.poster}
+                    />
                   </View>
                   <View style={{ flex: 1, minWidth: 0, gap: s['1'] }}>
                     <View

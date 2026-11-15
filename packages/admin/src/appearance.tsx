@@ -17,8 +17,8 @@ import { art, titles } from '@highsea-tv/fixtures'
 import { useLocale, useT } from '@highsea-tv/i18n/react'
 import { useAction, useQuery } from '@highsea-tv/sdk/react'
 import {
+  admin,
   type BuiltInThemeId,
-  breakpoints,
   builtInThemes,
   type ColorRole,
   createTheme,
@@ -26,11 +26,13 @@ import {
   defaultSoundPack,
   encodeTheme,
   formatHex,
+  line,
   nearestPassing,
   parseColor,
   SOUND_EVENTS,
   type SoundPack,
   type ThemeableRole,
+  wrapBasis,
 } from '@highsea-tv/tokens'
 import { type NativeTheme, nativeTokens, toNativeTheme } from '@highsea-tv/tokens/native'
 import {
@@ -52,8 +54,8 @@ import {
   ThemeProvider,
   toast,
   tokens,
+  useRegularWindow,
   useTheme,
-  useWindowAtLeast,
 } from '@highsea-tv/ui/native'
 import { useEffect, useMemo, useState } from 'react'
 import { View, type ViewStyle } from 'react-native'
@@ -68,17 +70,23 @@ import { Columns } from './settings-columns.tsx'
 const s = tokens.space
 const ui = tokens.adminText.ui
 const figure = tokens.adminText.figure
-/** The preview's column beside the identity's fields from expanded widths (the web's 16rem). */
-const PREVIEW_WIDTH = 256
-/** The editor's fields' column beside its sample from expanded widths (the web's 20rem). */
-const EDITOR_FIELDS_WIDTH = 320
+/** The preview's column beside the identity's fields in a regular window (the web's 16rem). */
+const PREVIEW_WIDTH = admin.appearance.previewWidth
+/** The editor's fields' column beside its sample in a regular window (the web's 20rem). */
+const EDITOR_FIELDS_WIDTH = admin.appearance.editorFieldsWidth
 /** The hex value's field beside the colour well (the web's w-32). */
-const HEX_WIDTH = 128
+const HEX_WIDTH = admin.appearance.hexWidth
 /** The code's field before Load wraps below it (the web's basis-48). */
-const CODE_BASIS = 192
+const CODE_BASIS = wrapBasis
 /** The preview's mark, and the sample's. */
-const PREVIEW_MARK = 28
-const SAMPLE_MARK = 22
+const PREVIEW_MARK = admin.appearance.previewMark
+const SAMPLE_MARK = admin.appearance.sampleMark
+/**
+ * The themes' grid, by its own width: as many cards as fit at `admin.appearance.themeMin` each
+ * (the mark, the name, its line and the swatches), at most three, so a name or "Default" never
+ * breaks (CSS Grid's auto-fill, https://www.w3.org/TR/css-grid-1/#auto-repeat).
+ */
+const THEME_COLUMNS = `repeat(auto-fill, minmax(max(${admin.appearance.themeMin}px, calc((100% - ${2 * tokens.space['2']}px) / 3)), 1fr))`
 const [POSTER_W, POSTER_H] = tokens.aspect.poster
 
 const hex = (c: string) => formatHex(parseColor(c)).slice(0, 7)
@@ -220,7 +228,7 @@ function Identity({
 }) {
   const t = useT(messages)
   const { colors } = useTheme()
-  const beside = useWindowAtLeast(breakpoints.expanded)
+  const beside = useRegularWindow()
   const [markError, setMarkError] = useState<string | null>(null)
   useEffect(
     () => (mark.kind === 'upload' ? () => URL.revokeObjectURL(mark.preview) : undefined),
@@ -298,12 +306,14 @@ function Identity({
               label={t('identity.useAccent')}
               hint={t('identity.useAccentHint')}
               checked={draft.accent !== null}
-              onCheckedChange={(on) => set({ accent: on ? '#8fbfb7' : null })}
+              onCheckedChange={(on) =>
+                set({ accent: on ? admin.appearance.suggestedAccent : null })
+              }
             />
             {draft.accent !== null ? (
               <View style={row}>
                 <ColorPair
-                  well={hex(audit ? draft.accent : '#8fbfb7')}
+                  well={hex(audit ? draft.accent : admin.appearance.suggestedAccent)}
                   value={draft.accent}
                   onWell={(accent) => set({ accent })}
                   onValue={(accent) => set({ accent })}
@@ -336,7 +346,7 @@ function Identity({
               gap: s['2'] + s['0.5'],
               padding: s['3'],
               borderRadius: tokens.radius.md,
-              borderWidth: 1,
+              borderWidth: line.thin,
               borderColor: colors.line,
               backgroundColor: colors.bg,
             }}
@@ -359,7 +369,7 @@ function Identity({
                 {draft.name || t('identity.placeholder')}
               </Text>
             </View>
-            <Icon name="chevron-down" size={14} color="text-3" />
+            <Icon name="chevron-down" size={tokens.icon.size.xs} color="text-3" />
           </View>
         </View>
       </View>
@@ -395,7 +405,7 @@ function Swatches({ theme }: { theme: NativeTheme | null }) {
             width: s['4'],
             height: s['4'],
             borderRadius: tokens.radius.pill,
-            borderWidth: 1,
+            borderWidth: line.thin,
             borderColor: colors['line-strong'],
             backgroundColor: theme.colors[r],
           }}
@@ -416,8 +426,6 @@ function Themes({
 }) {
   const t = useT(messages)
   const { colors } = useTheme()
-  const medium = useWindowAtLeast(breakpoints.medium)
-  const wide = useWindowAtLeast(breakpoints.wide)
   const [editing, setEditing] = useState<CustomTheme | null>(null)
   const remove = useAction((c, id: string) => c.appearance.deleteTheme({ params: { id } }))
   const all = useMemo(
@@ -431,7 +439,6 @@ function Themes({
     ],
     [themes],
   )
-  const columns = wide ? 3 : medium ? 2 : 1
   return (
     <Group title={t('themes.title')} description={t('themes.description')}>
       <View
@@ -440,7 +447,7 @@ function Themes({
         style={
           {
             display: 'grid',
-            gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
+            gridTemplateColumns: THEME_COLUMNS,
             gap: s['2'],
           } as unknown as ViewStyle
         }
@@ -466,7 +473,7 @@ function Themes({
                 alignItems: 'center',
                 gap: s['3'],
                 padding: s['3'],
-                borderWidth: 1,
+                borderWidth: line.thin,
                 borderRadius: tokens.radius.md,
                 borderColor: chosen ? colors.accent : colors.line,
                 backgroundColor: colors.s2,
@@ -494,7 +501,7 @@ function Themes({
               role="listitem"
               style={{
                 ...row,
-                borderTopWidth: 1,
+                borderTopWidth: line.thin,
                 borderColor: colors.line,
                 paddingTop: s['2'],
               }}
@@ -559,7 +566,7 @@ function Themes({
                 id: `theme-${Date.now().toString(36)}`,
                 name: '',
                 base: 'default',
-                accent: '#d6cfc2',
+                accent: tokens.themes.default.colors.accent,
               })
             }
           >
@@ -583,7 +590,7 @@ function ThemeEditor({
 }) {
   const t = useT(messages)
   const { colors } = useTheme()
-  const beside = useWindowAtLeast(breakpoints.expanded)
+  const beside = useRegularWindow()
   const [input, setInput] = useState(theme)
   const [code, setCode] = useState('')
   const [codeError, setCodeError] = useState<string | null>(null)
@@ -630,7 +637,7 @@ function ThemeEditor({
         gap: s['4'],
         padding: s['4'],
         borderRadius: tokens.radius.md,
-        borderWidth: 1,
+        borderWidth: line.thin,
         borderColor: colors['line-strong'],
         backgroundColor: colors.s2,
       }}
@@ -654,7 +661,7 @@ function ThemeEditor({
           <View style={{ flexDirection: 'row', gap: s['2'] }}>
             <ColorPair
               fill
-              well={hex(build ? input.accent : '#d6cfc2')}
+              well={hex(build ? input.accent : tokens.themes.default.colors.accent)}
               value={input.accent}
               onWell={(accent) => setInput({ ...input, accent, colors: undefined })}
               onValue={(accent) => setInput({ ...input, accent })}
@@ -667,7 +674,7 @@ function ThemeEditor({
           <View style={{ flexDirection: 'row', gap: s['2'] }}>
             <ColorWell
               aria-label={t('editor.quietColor')}
-              value={hex(build?.theme.colors['text-3'] ?? '#a2a2a7')}
+              value={hex(build?.theme.colors['text-3'] ?? tokens.themes.default.colors['text-3'])}
               onChange={(v) => setInput({ ...input, colors: { ...input.colors, 'text-3': v } })}
             />
             <Button

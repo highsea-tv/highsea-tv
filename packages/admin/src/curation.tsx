@@ -13,7 +13,7 @@ import {
   type SectionSummary,
 } from '@highsea-tv/api-contract'
 import { useAction, useQuery } from '@highsea-tv/sdk/react'
-import { breakpoints, type ColorRole } from '@highsea-tv/tokens'
+import { admin, type ColorRole, line } from '@highsea-tv/tokens'
 import {
   Badge,
   Button,
@@ -30,8 +30,8 @@ import {
   TitleLink,
   toast,
   tokens,
+  useRegularWindow,
   useTheme,
-  useWindowAtLeast,
 } from '@highsea-tv/ui/native'
 import { type ComponentRef, type ReactNode, useRef, useState } from 'react'
 import { View } from 'react-native'
@@ -133,7 +133,7 @@ function useCard() {
   const theme = useTheme()
   return {
     padding: s['4'],
-    borderWidth: 1,
+    borderWidth: line.thin,
     borderColor: theme.colors.line,
     borderRadius: tokens.radius.lg,
     backgroundColor: theme.colors.s1,
@@ -194,13 +194,13 @@ function Announcements() {
   )
 }
 
-/** The reach column's width in a medium window (the web's 12rem). */
-const REACH_WIDTH = 192
+/** The reach column's width in a regular window (the web's 12rem). */
+const REACH_WIDTH = admin.curation.reachWidth
 
 function AnnouncementRow({ a }: { a: AnnouncementSummary }) {
   const t = useCurationT()
   const card = useCard()
-  const wide = useWindowAtLeast(breakpoints.medium)
+  const wide = useRegularWindow()
   const people = usePeople()
   const audience = useAudienceSummary()
   const schedule = useScheduleSummary()
@@ -225,7 +225,7 @@ function AnnouncementRow({ a }: { a: AnnouncementSummary }) {
     >
       <View style={{ flexDirection: 'row', gap: s['3'], flex: wide ? 1 : undefined, minWidth: 0 }}>
         <View style={{ marginTop: s['0.5'] }}>
-          <Icon name={sev.icon} size={18} color={sev.tone} />
+          <Icon name={sev.icon} size={tokens.icon.size.md} color={sev.tone} />
         </View>
         <View style={{ flex: 1, minWidth: 0, gap: s['1'] }}>
           <TitleLine>
@@ -401,7 +401,7 @@ export function useSortMessages() {
 }
 
 /** A sample's poster: 36 wide (the web's w-9) at 2:3, with the small corner. */
-const SAMPLE_WIDTH = 36
+const SAMPLE_WIDTH = admin.curation.sampleWidth
 
 export function Thumb({
   title,
@@ -418,7 +418,12 @@ export function Thumb({
   fill?: ColorRole
 }) {
   const theme = useTheme()
-  const box = { width, aspectRatio: 2 / 3, borderRadius: 4, backgroundColor: theme.colors[fill] }
+  const box = {
+    width,
+    aspectRatio: 2 / 3,
+    borderRadius: tokens.radius['2xs'],
+    backgroundColor: theme.colors[fill],
+  }
   if (src)
     return (
       <Image
@@ -438,7 +443,7 @@ export function Thumb({
 
 function SectionRow({ f, handle }: { f: SectionSummary; handle: ReactNode }) {
   const t = useCurationT()
-  const wide = useWindowAtLeast(breakpoints.expanded)
+  const wide = useRegularWindow()
   const people = usePeople()
   const options = useRuleOptions()
   const audience = useAudienceSummary()

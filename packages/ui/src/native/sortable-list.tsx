@@ -14,6 +14,8 @@
 // react-native-web forwards `onKeyDown` and `focusable` to the element
 // (https://necolas.github.io/react-native-web/docs/view/), and focus goes back to the handle after
 // each move, as moving a node in the document drops it.
+
+import { dragHandle, line, sortableList } from '@highsea-tv/tokens'
 import { type ReactNode, useEffect, useRef, useState } from 'react'
 import { AccessibilityInfo, Animated, PanResponder, Platform, StyleSheet, View } from 'react-native'
 import { Icon } from './icon.tsx'
@@ -290,11 +292,11 @@ function SortableRow({
         if (e.nativeEvent.actionName === 'decrement' && index > 0) onMove(-1)
       }}
       // the handle is 28 drawn, as the web's size-7, with the touch target grown to 44 around it
-      hitSlop={8}
+      hitSlop={tokens.space['2']}
       style={{
-        width: 28,
-        height: 28,
-        borderRadius: 6,
+        width: dragHandle,
+        height: dragHandle,
+        borderRadius: tokens.radius.xs,
         alignItems: 'center',
         justifyContent: 'center',
         backgroundColor: lifted ? theme.colors['accent-soft'] : 'transparent',
@@ -312,14 +314,14 @@ function SortableRow({
       }}
       style={[
         {
-          minHeight: 56,
+          minHeight: sortableList.row,
           flexDirection: 'row',
           alignItems: 'center',
           gap: tokens.space['3'],
           paddingHorizontal: tokens.space['3'],
-          paddingVertical: 10,
+          paddingVertical: tokens.space['2.5'],
           borderRadius: tokens.radius.md,
-          borderWidth: 1,
+          borderWidth: line.thin,
           borderColor: theme.colors[lifted ? 'accent' : 'line'],
           backgroundColor: theme.colors.s1,
           zIndex: lifted ? 10 : 0,

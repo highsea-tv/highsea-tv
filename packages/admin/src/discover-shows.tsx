@@ -1,13 +1,14 @@
 'use client'
+import type { DiscoverSeries } from '@highsea-tv/api-contract'
+import { useT } from '@highsea-tv/i18n/react'
+import { useQuery } from '@highsea-tv/sdk/react'
 // SPDX-License-Identifier: AGPL-3.0-only
 // Discover's shows (docs/product/shows.md#discover), moved from the prototype with D3 of the one
 // client platform (one-client-platform-d.md, answer 5): a Movies and Shows choice beside the
 // search, and `/discover/shows` with TMDB's trending shows until you type, then results. A show in
 // the library opens its page; Add a show for the rest. Drawn only when the server serves shows
 // (serves.tsx): the routes are drafts the mock answers and the server answers 501.
-import type { DiscoverSeries } from '@highsea-tv/api-contract'
-import { useT } from '@highsea-tv/i18n/react'
-import { useQuery } from '@highsea-tv/sdk/react'
+import { admin } from '@highsea-tv/tokens'
 import {
   Button,
   EmptyState,
@@ -159,7 +160,7 @@ function Result({ show: s, onAdd }: { show: DiscoverSeries; onAdd: (s: DiscoverS
           <Text variant="caption" color="text-3">
             {String(s.year)}
           </Text>
-          {s.rating > 0 && <Rating value={s.rating} size={11} />}
+          {s.rating > 0 && <Rating value={s.rating} size={tokens.icon.size['2xs']} />}
         </View>
       </View>
       {s.inLibrary ? (
@@ -186,4 +187,9 @@ function Result({ show: s, onAdd }: { show: DiscoverSeries; onAdd: (s: DiscoverS
  * The search beside the choice: it takes the rest of the row up to the web's max-w-xl (576), and
  * a row of its own below 256 (the prototype's basis-64).
  */
-export const SEARCH = { flexGrow: 1, flexBasis: 256, minWidth: 0, maxWidth: 576 } as const
+export const SEARCH = {
+  flexGrow: 1,
+  flexBasis: admin.search.basis,
+  minWidth: 0,
+  maxWidth: admin.search.maxWidth,
+} as const

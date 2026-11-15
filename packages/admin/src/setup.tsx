@@ -17,7 +17,7 @@ import type { SetupDetected, SetupInput } from '@highsea-tv/api-contract'
 import { useT } from '@highsea-tv/i18n/react'
 import type { ApiError } from '@highsea-tv/sdk'
 import { useAction, useQuery } from '@highsea-tv/sdk/react'
-import { breakpoints } from '@highsea-tv/tokens'
+import { admin, line, lockup } from '@highsea-tv/tokens'
 import {
   Banner,
   Button,
@@ -39,8 +39,8 @@ import {
   Toaster,
   toast,
   tokens,
+  useRegularWindow,
   useTheme,
-  useWindowAtLeast,
 } from '@highsea-tv/ui/native'
 import { type ComponentRef, type ReactNode, useEffect, useRef, useState } from 'react'
 import { View } from 'react-native'
@@ -53,16 +53,16 @@ const s = tokens.space
 const ui = tokens.adminText.ui
 const form = tokens.adminText.form
 const mono = tokens.text.web.mono
-/** The steps' column from expanded up (the web's 13rem), and the page's widest (max-w-240). */
-const STEPS_WIDTH = 208
-const PAGE_WIDTH = 960
+/** The steps' column in a regular window (the web's 13rem), and the page's widest (max-w-240). */
+const STEPS_WIDTH = admin.sideColumn
+const PAGE_WIDTH = admin.setup.pageWidth
 /** The form's widest (the web's max-w-150). */
-const FORM_WIDTH = 600
-/** A Review line's label column from medium up (the web's 10rem). */
-const LABEL_WIDTH = 160
+const FORM_WIDTH = admin.measure
+/** A Review line's label column in a regular window (the web's 10rem). */
+const LABEL_WIDTH = admin.setup.labelWidth
 /** The folder picker's list (the web's h-64), and a folder's row (h-9). */
-const LIST_HEIGHT = 256
-const ROW_HEIGHT = 36
+const LIST_HEIGHT = admin.setup.listHeight
+const ROW_HEIGHT = admin.setup.rowHeight
 /** Words that wrap anywhere (the web's [overflow-wrap:anywhere]), for paths and addresses. */
 const ANYWHERE = { overflowWrap: 'anywhere' } as object
 
@@ -276,8 +276,7 @@ export function Setup() {
   const tShell = useT(shell)
   const loadPage = useLoad()
   const theme = useTheme()
-  const medium = useWindowAtLeast(breakpoints.medium)
-  const expanded = useWindowAtLeast(breakpoints.expanded)
+  const regular = useRegularWindow()
   const first = useRef(true)
   const complete = useAction((c, input: SetupInput) => c.setup.complete({ body: input }))
   const { step, reached, draft } = saved
@@ -420,12 +419,12 @@ export function Setup() {
           </Field>
           <View
             style={{
-              flexDirection: medium ? 'row' : 'column',
+              flexDirection: regular ? 'row' : 'column',
               alignItems: 'flex-start',
               gap: s['4'],
             }}
           >
-            <View style={medium ? { flex: 1, minWidth: 0 } : { alignSelf: 'stretch' }}>
+            <View style={regular ? { flex: 1, minWidth: 0 } : { alignSelf: 'stretch' }}>
               <Field
                 label={t('owner.password')}
                 hint={t('owner.passwordHint')}
@@ -440,7 +439,7 @@ export function Setup() {
                 />
               </Field>
             </View>
-            <View style={medium ? { flex: 1, minWidth: 0 } : { alignSelf: 'stretch' }}>
+            <View style={regular ? { flex: 1, minWidth: 0 } : { alignSelf: 'stretch' }}>
               <Field label={t('owner.confirm')} error={errors.confirm}>
                 <Input
                   secureTextEntry
@@ -508,14 +507,14 @@ export function Setup() {
     },
   }
   const current = body[id]
-  const gutter = medium ? s['6'] : s['4']
+  const gutter = regular ? s['6'] : s['4']
 
   return (
     // the window's height in CSS: Dimensions are 0 in the server render (auth-card.tsx says why)
     <View style={{ minHeight: '100vh' as never, backgroundColor: theme.colors.bg }}>
       <View
         style={{
-          minHeight: 56,
+          minHeight: admin.setup.header,
           flexDirection: 'row',
           flexWrap: 'wrap',
           alignItems: 'center',
@@ -529,11 +528,11 @@ export function Setup() {
           rowGap: s['1'],
           paddingHorizontal: gutter,
           paddingVertical: s['2'],
-          borderBottomWidth: 1,
+          borderBottomWidth: line.thin,
           borderBottomColor: theme.colors.line,
         }}
       >
-        <Lockup size={17} />
+        <Lockup size={lockup.size} />
         <Text variant="caption" color="text-3">
           {t('label')}
         </Text>
@@ -549,14 +548,14 @@ export function Setup() {
           width: '100%',
           maxWidth: PAGE_WIDTH,
           alignSelf: 'center',
-          flexDirection: expanded ? 'row' : 'column',
-          alignItems: expanded ? 'flex-start' : 'stretch',
-          gap: expanded ? s['10'] : s['6'],
+          flexDirection: regular ? 'row' : 'column',
+          alignItems: regular ? 'flex-start' : 'stretch',
+          gap: regular ? s['10'] : s['6'],
           paddingHorizontal: gutter,
-          paddingVertical: medium ? s['10'] : s['6'],
+          paddingVertical: regular ? s['10'] : s['6'],
         }}
       >
-        <View style={expanded ? { width: STEPS_WIDTH } : undefined}>
+        <View style={regular ? { width: STEPS_WIDTH } : undefined}>
           {detect.status === 'success' ? (
             <Stepper
               steps={steps.map((st) => ({ id: st, label: t(`step.${st}`) }))}
@@ -569,10 +568,10 @@ export function Setup() {
               doneLabel={t('steps.done')}
             />
           ) : (
-            <Skeleton height={expanded ? 160 : 96} />
+            <Skeleton height={regular ? admin.skeleton.panel : admin.skeleton.block} />
           )}
         </View>
-        <View role="main" style={{ flex: expanded ? 1 : undefined, minWidth: 0 }}>
+        <View role="main" style={{ flex: regular ? 1 : undefined, minWidth: 0 }}>
           {detect.status === 'error' ? (
             <EmptyState
               tone="error"
@@ -584,10 +583,10 @@ export function Setup() {
             </EmptyState>
           ) : detect.status === 'loading' || !saved.seeded ? (
             <View aria-busy style={{ maxWidth: FORM_WIDTH, gap: s['4'] }}>
-              <Skeleton width={256} height={32} />
-              <Skeleton height={20} />
+              <Skeleton width={admin.skeleton.width.xl} height={admin.skeleton.headingLarge} />
+              <Skeleton height={admin.skeleton.line} />
               {[0, 1, 2].map((i) => (
-                <Skeleton key={i} height={64} />
+                <Skeleton key={i} height={admin.skeleton.item} />
               ))}
             </View>
           ) : (
@@ -611,7 +610,7 @@ export function Setup() {
                   alignItems: 'center',
                   gap: s['2'],
                   paddingTop: s['5'],
-                  borderTopWidth: 1,
+                  borderTopWidth: line.thin,
                   borderTopColor: theme.colors.line,
                 }}
               >
@@ -672,7 +671,7 @@ function Review({
 }) {
   const t = useT(messages)
   const theme = useTheme()
-  const medium = useWindowAtLeast(breakpoints.medium)
+  const medium = useRegularWindow()
   const { draft, changed } = saved
   const pack = useQuery('starter-pack', (c) => c.setup.starterPack())
   const languages = useQuery('setup-languages', (c) => c.setup.languages())
@@ -885,7 +884,7 @@ function Review({
     <View
       role="list"
       style={{
-        borderWidth: 1,
+        borderWidth: line.thin,
         borderColor: theme.colors.line,
         borderRadius: tokens.radius.md,
         backgroundColor: theme.colors.s1,
@@ -903,7 +902,7 @@ function Review({
               gap: s['3'],
               paddingHorizontal: s['4'],
               paddingVertical: s['3'],
-              borderBottomWidth: i < rows.length - 1 ? 1 : 0,
+              borderBottomWidth: i < rows.length - 1 ? line.thin : 0,
               borderBottomColor: theme.colors.line,
             }}
           >
@@ -966,7 +965,7 @@ function Review({
                 style={{
                   gap: s['4'],
                   paddingTop: s['3'],
-                  borderTopWidth: 1,
+                  borderTopWidth: line.thin,
                   borderTopColor: theme.colors.line,
                 }}
               >
@@ -1119,7 +1118,7 @@ function PathPicker({
                     role="button"
                     onPress={() => setPath(c.to)}
                     style={({ hovered }) => ({
-                      borderRadius: 4,
+                      borderRadius: tokens.radius['2xs'],
                       paddingHorizontal: s['0.5'],
                       backgroundColor: hovered ? theme.colors.s4 : 'transparent',
                     })}
@@ -1139,7 +1138,7 @@ function PathPicker({
           style={{
             height: LIST_HEIGHT,
             overflow: 'hidden',
-            borderWidth: 1,
+            borderWidth: line.thin,
             borderColor: theme.colors.line,
             borderRadius: tokens.radius.md,
             backgroundColor: theme.colors.s2,
@@ -1216,11 +1215,11 @@ function FolderRow({
         backgroundColor: hovered ? theme.colors.s4 : 'transparent',
       })}
     >
-      <Icon name={icon} size={16} color="text-3" />
+      <Icon name={icon} size={tokens.icon.size.sm} color="text-3" />
       <Text mono size={mono.size} leading={mono.leading} numberOfLines={1} style={{ flex: 1 }}>
         {label}
       </Text>
-      {icon === 'folder' && <Icon name="chevron-right" size={14} color="text-3" />}
+      {icon === 'folder' && <Icon name="chevron-right" size={tokens.icon.size.xs} color="text-3" />}
     </Press>
   )
 }
@@ -1241,7 +1240,7 @@ function Indexers({
     return (
       <View aria-busy style={{ gap: s['2'] }}>
         {[0, 1, 2].map((i) => (
-          <Skeleton key={i} height={64} />
+          <Skeleton key={i} height={admin.skeleton.item} />
         ))}
       </View>
     )
@@ -1271,7 +1270,7 @@ function Indexers({
           role="listitem"
           style={{
             padding: s['3'],
-            borderWidth: 1,
+            borderWidth: line.thin,
             borderColor: theme.colors.line,
             borderRadius: tokens.radius.md,
             backgroundColor: theme.colors.s2,
@@ -1296,7 +1295,7 @@ function Indexers({
 /** The prototype's chips: the languages most libraries want, in its order. */
 const COMMON = ['en', 'es', 'fr', 'de', 'it', 'pt', 'nl', 'ja', 'ko', 'zh', 'ar', 'hi']
 /** The "more" select's widest (the web's max-w-56). */
-const MORE_WIDTH = 224
+const MORE_WIDTH = admin.setup.moreWidth
 
 function Languages({
   selected,
@@ -1309,7 +1308,7 @@ function Languages({
 }) {
   const t = useT(messages)
   const languages = useQuery('setup-languages', (c) => c.setup.languages())
-  if (languages.status === 'loading') return <Skeleton height={96} />
+  if (languages.status === 'loading') return <Skeleton height={admin.skeleton.block} />
   if (languages.status === 'error')
     return (
       <EmptyState
@@ -1332,7 +1331,7 @@ function Languages({
   return (
     <View style={{ gap: s['3'] }}>
       <View role="group" aria-label={t('subtitles.legend')} style={{ gap: s['2'] }}>
-        <Text size={form.size - 1} leading={form.leading} weight={500} color="text-2">
+        <Text size={tokens.adminText.ui.size} leading={form.leading} weight={500} color="text-2">
           {t('subtitles.legend')}
         </Text>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: s['2'] }}>
@@ -1368,8 +1367,8 @@ function Languages({
           role="alert"
           style={{ flexDirection: 'row', alignItems: 'flex-start', gap: s['1'] + s['0.5'] }}
         >
-          <View style={{ marginTop: 1 }}>
-            <Icon name="alert" size={14} color="badge-danger" />
+          <View style={{ marginTop: tokens.icon.drop }}>
+            <Icon name="alert" size={tokens.icon.size.xs} color="badge-danger" />
           </View>
           <Text variant="caption" color="badge-danger" style={{ flex: 1, minWidth: 0 }}>
             {error}
@@ -1397,7 +1396,7 @@ const remoteOptions = [
 /** The fields under a chosen card, in line with its words (the web's ps-7). */
 const UNDER_WORDS = s['6'] + s['1']
 /** The port field's width (the web's w-28). */
-const PORT_WIDTH = 112
+const PORT_WIDTH = admin.setup.portWidth
 
 function RemoteAccess({
   draft,
@@ -1420,7 +1419,7 @@ function RemoteAccess({
             style={{
               gap: s['3'],
               padding: s['3'],
-              borderWidth: 1,
+              borderWidth: line.thin,
               borderRadius: tokens.radius.md,
               borderColor: on ? theme.colors.accent : theme.colors.line,
               backgroundColor: on ? theme.colors.s2 : theme.colors.s1,

@@ -4,9 +4,9 @@
 // carries the tone. On the TV both are drawn in the TV's units at its own type (`pill` and
 // `quality`), as the TV prototype's pills and quality tags are: the phone's points times a unit
 // would draw them a screen tall.
-import type { ColorRole } from '@highsea-tv/tokens'
+import { badge, type ColorRole, line, tracking, tvText, webText } from '@highsea-tv/tokens'
 import { View } from 'react-native'
-import { GLASS } from './glass.ts'
+import { glassOf } from './glass.ts'
 import { Icon } from './icon.tsx'
 import type { IconName } from './icons.ts'
 import { OWN_SIZE } from './own-size.ts'
@@ -28,15 +28,25 @@ const tones: Record<BadgeTone, { bg: ColorRole; fg: ColorRole }> = {
  * The TV's pill, in units: the TV prototype's New mark (px-[0.6cqw] py-[0.1cqw]), its dot and
  * icon at the pill text's size.
  */
-const TV_BADGE = { padX: 0.6, padY: 0.1, gap: 0.4, dot: 0.4, icon: 0.95 }
+const TV_BADGE = {
+  padX: tokens.tv.space['3'],
+  padY: tokens.tv.space['0.5'],
+  gap: tokens.tv.space['2'],
+  dot: badge.dotTv,
+  icon: badge.iconTv,
+}
 /**
  * The TV's quality tag, in units: the TV prototype's QualityTag, the web's 20 tall, 6 in and 5
- * round on its 1080p screen (where 1u is 19.2), its text at the TV's `quality` with the 0.04em
- * tracking.
+ * round on its 1080p screen (where 1u is 19.2), on the TV's space and pill corner, its text at the
+ * TV's `quality` with the tag's tracking.
  */
-const TV_TAG = { height: 1.04, padX: 0.31, radius: 0.26, tracking: 0.03 }
+const TV_TAG = {
+  height: badge.tag.heightTv,
+  padX: tokens.tv.space['1.5'],
+  radius: tokens.tv.radius.pill,
+}
 /** The TV's age rating's inset, in units (the TV prototype's px-[0.4cqw]). */
-const TV_CERTIFICATION_PAD = 0.4
+const TV_CERTIFICATION_PAD = tokens.tv.space['2']
 
 export function Badge({
   children,
@@ -56,22 +66,26 @@ export function Badge({
   const t = tones[tone]
   const tv = theme.formFactor.input === 'tv'
   const u = theme.u
-  const dotSize = tv ? TV_BADGE.dot * u : 6
+  const dotSize = tv ? TV_BADGE.dot * u : badge.dot
   return (
     <View
       style={{
         flexDirection: 'row',
         alignItems: 'center',
         ...OWN_SIZE,
-        gap: tv ? TV_BADGE.gap * u : 6,
+        gap: tv ? TV_BADGE.gap * u : tokens.space['1.5'],
         paddingHorizontal: tv ? TV_BADGE.padX * u : tokens.space['2'],
         paddingVertical: tv ? TV_BADGE.padY * u : tokens.space['0.5'],
         borderRadius: tokens.radius.pill,
-        backgroundColor: overlay ? GLASS : theme.colors[t.bg],
+        backgroundColor: overlay ? glassOf(theme.colors) : theme.colors[t.bg],
       }}
     >
       {icon ? (
-        <Icon name={icon} size={tv ? TV_BADGE.icon : 12} color={overlay ? 'text' : t.fg} />
+        <Icon
+          name={icon}
+          size={tv ? TV_BADGE.icon : tokens.icon.size['2xs']}
+          color={overlay ? 'text' : t.fg}
+        />
       ) : (
         dot && (
           <View
@@ -103,22 +117,25 @@ export function QualityTag({ children, overlay = true }: { children: string; ove
   return (
     <View
       style={{
-        height: tv ? TV_TAG.height * u : 20,
+        height: tv ? TV_TAG.height * u : badge.tag.height,
         justifyContent: 'center',
-        paddingHorizontal: tv ? TV_TAG.padX * u : 6,
-        borderRadius: tv ? TV_TAG.radius * u : 5,
-        borderWidth: overlay ? 0 : 1,
+        paddingHorizontal: tv ? TV_TAG.padX * u : tokens.space['1.5'],
+        borderRadius: tv ? TV_TAG.radius * u : tokens.radius['2xs'],
+        borderWidth: overlay ? 0 : line.thin,
         borderColor: theme.colors['line-strong'],
-        backgroundColor: overlay ? GLASS : 'transparent',
+        backgroundColor: overlay ? glassOf(theme.colors) : 'transparent',
       }}
     >
       <Text
         variant={tv ? 'quality' : undefined}
-        size={tv ? undefined : 11}
+        size={tv ? undefined : webText.label.size}
         mono
         weight={600}
         color={overlay ? 'text' : 'text-2'}
-        style={{ textTransform: 'uppercase', letterSpacing: tv ? TV_TAG.tracking * u : 0.44 }}
+        style={{
+          textTransform: 'uppercase',
+          letterSpacing: tracking.tag * (tv ? tvText.quality.size * u : webText.label.size),
+        }}
       >
         {children}
       </Text>
@@ -143,7 +160,7 @@ export function Certification({ children }: { children: string }) {
     <View
       style={{
         ...OWN_SIZE,
-        borderWidth: 1,
+        borderWidth: line.thin,
         borderColor: theme.colors['text-3'],
         borderRadius: tv ? tokens.tv.radius.pill * u : tokens.radius.sm,
         paddingHorizontal: tv ? TV_CERTIFICATION_PAD * u : tokens.space['1'],

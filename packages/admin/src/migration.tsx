@@ -19,7 +19,6 @@ import {
 import { useT } from '@highsea-tv/i18n/react'
 import type { ApiError } from '@highsea-tv/sdk'
 import { useAction, useQuery } from '@highsea-tv/sdk/react'
-import { breakpoints } from '@highsea-tv/tokens'
 import {
   Badge,
   Button,
@@ -40,7 +39,7 @@ import {
   TextLink,
   toast,
   tokens,
-  useWindowAtLeast,
+  useRegularWindow,
 } from '@highsea-tv/ui/native'
 import { type ReactNode, useState } from 'react'
 import { View, type ViewStyle } from 'react-native'
@@ -77,9 +76,9 @@ export function Migration() {
 
 // ---------- shared parts
 
-/** Fields side by side from medium widths (the web's `grid items-start gap-4 medium:grid-cols-N`). */
+/** Fields side by side in a regular window (the web's `grid items-start gap-4 medium:grid-cols-N`). */
 function Columns({ count, children }: { count: number; children: ReactNode }) {
-  const medium = useWindowAtLeast(breakpoints.medium)
+  const medium = useRegularWindow()
   return (
     <View
       style={
@@ -139,7 +138,7 @@ function Item({ children }: { children: ReactNode }) {
 
 function Items({ children }: { children: ReactNode }) {
   return (
-    <View role="list" style={{ gap: 6 }}>
+    <View role="list" style={{ gap: tokens.space['1.5'] }}>
       {children}
     </View>
   )
@@ -180,7 +179,7 @@ function Mappings({
   onChange: (next: PathMapping[]) => void
 }) {
   const t = useT(messages)
-  const medium = useWindowAtLeast(breakpoints.medium)
+  const medium = useRegularWindow()
   const set = (i: number, patch: Partial<PathMapping>) =>
     onChange(value.map((m, j) => (j === i ? { ...m, ...patch } : m)))
   return (
@@ -477,7 +476,7 @@ function RadarrCard() {
             {t('radarr.tags', { tags: preview.tags, blocklist: preview.blocklist })}
           </Note>
           {(preview.kept.indexers.length > 0 || preview.kept.downloadClients.length > 0) && (
-            <Card role="region" label={t('radarr.kept.title')} gap={6}>
+            <Card role="region" label={t('radarr.kept.title')} gap={tokens.space['1.5']}>
               <Line weight={600} role="heading" aria-level={3}>
                 {t('radarr.kept.title')}
               </Line>

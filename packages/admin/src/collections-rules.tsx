@@ -19,7 +19,7 @@ import type {
 import type { T as Translate } from '@highsea-tv/i18n'
 import { useT } from '@highsea-tv/i18n/react'
 import { useQuery } from '@highsea-tv/sdk/react'
-import { breakpoints } from '@highsea-tv/tokens'
+import { admin, line } from '@highsea-tv/tokens'
 import {
   Button,
   Chip,
@@ -30,8 +30,8 @@ import {
   Select,
   Text,
   tokens,
+  useRegularWindow,
   useTheme,
-  useWindowAtLeast,
 } from '@highsea-tv/ui/native'
 import { type ReactNode, useState } from 'react'
 import { View } from 'react-native'
@@ -268,7 +268,7 @@ export function RuleBuilder({
   const box = (fill: 's1' | 's2') =>
     ({
       padding: s['3'],
-      borderWidth: 1,
+      borderWidth: line.thin,
       borderColor: theme.colors.line,
       borderRadius: tokens.radius.md,
       backgroundColor: theme.colors[fill],
@@ -323,7 +323,7 @@ export function RuleBuilder({
                   aria-label={t('group', { n: at + 1 })}
                   style={{
                     gap: s['2'],
-                    borderStartWidth: 2,
+                    borderStartWidth: line.thick,
                     borderStartColor: theme.colors.line,
                     paddingStart: s['3'],
                   }}
@@ -417,7 +417,7 @@ export function RuleBuilder({
 }
 
 /** Match's select (the web's w-24). */
-const MATCH_WIDTH = 96
+const MATCH_WIDTH = admin.collectionsRules.matchWidth
 
 function MatchLine({
   label,
@@ -456,8 +456,8 @@ function MatchLine({
   )
 }
 
-/** A condition's field and comparison columns from medium (the web's 12rem and 10rem). */
-const COLUMNS = { field: 192, op: 160 }
+/** A condition's field and comparison columns in a regular window (the web's 12rem and 10rem). */
+const COLUMNS = admin.collectionsRules.columns
 
 function ConditionRow({
   name,
@@ -475,7 +475,7 @@ function ConditionRow({
   onChange: (c: RuleCondition | null) => void
 }) {
   const t = useT(messages)
-  const side = useWindowAtLeast(breakpoints.medium)
+  const side = useRegularWindow()
   const info = fields.find((f) => f.field === c.field)
   const error = tried ? conditionError(c, t) : undefined
   const known = new Set(fields.map((f) => f.field))

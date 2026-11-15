@@ -8,6 +8,8 @@
 // (https://docs.expo.dev/versions/latest/sdk/video/#videoviewprops); the docs list neither for
 // tvOS, where the view only shows the film.
 import type { Playback } from '@highsea-tv/native/playback'
+import { player as playerSizes } from '@highsea-tv/tokens'
+import { tokens } from '@highsea-tv/ui'
 import { useEventListener } from 'expo'
 import { VideoAirPlayButton, VideoView } from 'expo-video'
 import { type ReactNode, useRef, useState } from 'react'
@@ -122,14 +124,19 @@ export function airPlayButton({
   return (
     <View
       accessibilityLabel={label}
-      style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}
+      style={{
+        width: tokens.targets.touch,
+        height: tokens.targets.touch,
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
     >
       <VideoAirPlayButton
         tint={tint}
         activeTint={activeTint}
         prioritizeVideoDevices
         onBeginPresentingRoutes={onOpen}
-        style={{ width: 28, height: 28 }}
+        style={{ width: playerSizes.icon.lg, height: playerSizes.icon.lg }}
       />
     </View>
   )

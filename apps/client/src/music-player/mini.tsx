@@ -6,6 +6,7 @@
 // Spotify's does, and short of it the player springs back. The drag is React Native's
 // PanResponder (https://reactnative.dev/docs/panresponder), as the library's SortableList's.
 import { useT } from '@highsea-tv/i18n/react'
+import { adminText, mobileText, player } from '@highsea-tv/tokens'
 import { alpha, Press, Text, tokens, useTheme } from '@highsea-tv/ui'
 import { router } from 'expo-router'
 import { useRef } from 'react'
@@ -96,10 +97,10 @@ export function MiniPlayer() {
         >
           <Cover uri={song.album.cover} size={space['10']} radius={space['1'] + space['0.5']} />
           <View style={{ flex: 1, minWidth: 0 }}>
-            <Text variant="body" weight={600} size={15} numberOfLines={1}>
+            <Text variant="body" weight={600} size={mobileText.subheadline.size} numberOfLines={1}>
               {song.title}
             </Text>
-            <Text variant="caption" color="text-2" size={13} numberOfLines={1}>
+            <Text variant="caption" color="text-2" size={adminText.ui.size} numberOfLines={1}>
               {song.album.artist.name}
             </Text>
           </View>
@@ -108,14 +109,14 @@ export function MiniPlayer() {
           icon={p.playing ? 'pause' : 'play'}
           label={p.playing ? t('pause') : t('play')}
           size={space['10'] + space['1']}
-          iconSize={22}
+          iconSize={player.icon.md}
           onPress={p.toggle}
         />
         <Transport
           icon="next"
           label={t('next')}
           size={space['10'] + space['1']}
-          iconSize={22}
+          iconSize={player.icon.md}
           disabled={!p.hasNext}
           onPress={p.next}
         />

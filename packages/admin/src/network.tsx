@@ -13,7 +13,6 @@
 import type { NetworkSettings, NetworkStatus } from '@highsea-tv/api-contract'
 import { useT } from '@highsea-tv/i18n/react'
 import { useAction, useQuery } from '@highsea-tv/sdk/react'
-import { breakpoints } from '@highsea-tv/tokens'
 import {
   Field,
   Input,
@@ -22,7 +21,7 @@ import {
   Text,
   toast,
   tokens,
-  useWindowAtLeast,
+  useRegularWindow,
 } from '@highsea-tv/ui/native'
 import { useState } from 'react'
 import { View, type ViewStyle } from 'react-native'
@@ -98,7 +97,7 @@ function Form({ loaded, reload }: { loaded: NetworkStatus; reload: () => void })
   }
   const dirty = JSON.stringify(v) !== JSON.stringify(initial)
   const name = info.data?.name ?? t('thisServer')
-  const medium = useWindowAtLeast(breakpoints.medium)
+  const medium = useRegularWindow()
 
   const submit = async () => {
     const port = v.httpsPort.trim()

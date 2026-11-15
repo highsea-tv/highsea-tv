@@ -16,11 +16,13 @@
 // keydown (exports/TextInput's handleKeyDown), so the field's keys are its own.
 
 import { useT } from '@highsea-tv/i18n/react'
+import { line, overlay } from '@highsea-tv/tokens'
 import { type ReactNode, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { Modal, Platform, TextInput, type TextStyle, useWindowDimensions, View } from 'react-native'
 import { Kbd } from './admin.tsx'
 import { commandScore } from './command-score.ts'
 import { family } from './fonts.ts'
+import { visuallyHidden } from './hidden-heading.tsx'
 import { Icon } from './icon.tsx'
 import type { IconName } from './icons.ts'
 import { uiMessages } from './messages.ts'
@@ -126,15 +128,15 @@ function revealOption(id: string) {
 
 /** Its sizes, the web renderer's: px-4 header, h-12 field, min-h-9 rows, p-1.5 list. */
 const SIZE = {
-  width: 560,
+  width: overlay.palette.width,
   margin: tokens.space['4'],
-  field: 48,
-  row: 36,
-  list: 360,
-  // 1.5 and 2.5 steps of the 4px base, which tokens.space doesn't name
-  listPad: 6,
-  rowPad: 10,
-  rowText: 13.5,
+  field: overlay.palette.field,
+  row: overlay.palette.row,
+  list: overlay.palette.list,
+  listPad: tokens.space['1.5'],
+  rowPad: tokens.space['2.5'],
+  // the web renderer's 13.5, on the admin's ui step (one-client-platform-e.md, answer 5 on E1's values)
+  rowText: tokens.adminText.ui.size,
 } as const
 
 export function CommandPalette({
@@ -250,10 +252,7 @@ export function CommandPalette({
             boxShadow: tokens.elevation[4].boxShadow,
           }}
         >
-          <View
-            pointerEvents="none"
-            style={{ position: 'absolute', width: 1, height: 1, margin: -1, overflow: 'hidden' }}
-          >
+          <View pointerEvents="none" style={visuallyHidden}>
             <Text accessibilityRole="header" aria-level={2} nativeID={titleId} numberOfLines={1}>
               {t('commandPalette')}
             </Text>
@@ -264,7 +263,7 @@ export function CommandPalette({
               alignItems: 'center',
               gap: SIZE.rowPad,
               paddingHorizontal: tokens.space['4'],
-              borderBottomWidth: 1,
+              borderBottomWidth: line.thin,
               borderBottomColor: theme.colors.line,
             }}
           >

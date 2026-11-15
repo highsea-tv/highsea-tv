@@ -74,7 +74,7 @@ function Result({ movie: m, onAdd }: { movie: DiscoverMovie; onAdd: (m: Discover
               {String(m.year)}
             </Text>
           )}
-          {m.rating > 0 && <Rating value={m.rating} size={11} />}
+          {m.rating > 0 && <Rating value={m.rating} size={tokens.icon.size['2xs']} />}
         </View>
       </View>
       {m.inLibrary ? (

@@ -1,4 +1,5 @@
 'use client'
+
 // SPDX-License-Identifier: AGPL-3.0-only
 // A3 Dashboard (admin.md#main-area; docs/product/dashboard.md), ported from the prototype. The
 // grid shows the person's own layout, or their role's default until they save one. Customize mode
@@ -18,6 +19,7 @@ import {
   widgetMessages,
 } from '@highsea-tv/personalization/widgets'
 import { useAction, useQuery } from '@highsea-tv/sdk/react'
+import { line } from '@highsea-tv/tokens'
 import {
   Button,
   EmptyState,
@@ -317,7 +319,7 @@ function AddRow({
         gap: tokens.space['3'],
         padding: tokens.space['3'],
         borderRadius: tokens.radius.md,
-        borderWidth: 1,
+        borderWidth: line.thin,
         borderColor: hovered ? theme.colors['line-strong'] : theme.colors.line,
         backgroundColor: hovered ? theme.colors.s4 : theme.colors.s2,
       })}
@@ -330,7 +332,7 @@ function AddRow({
           {description}
         </Text>
       </View>
-      <Icon name="add" size={16} color="text-3" />
+      <Icon name="add" size={tokens.icon.size.sm} color="text-3" />
     </Press>
   )
 }

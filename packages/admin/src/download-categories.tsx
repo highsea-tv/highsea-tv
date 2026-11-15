@@ -11,7 +11,6 @@ import type { TorrentCategory } from '@highsea-tv/api-contract'
 import { useT } from '@highsea-tv/i18n/react'
 import type { ApiError } from '@highsea-tv/sdk'
 import { useAction, useQuery } from '@highsea-tv/sdk/react'
-import { breakpoints } from '@highsea-tv/tokens'
 import {
   Badge,
   Button,
@@ -22,7 +21,7 @@ import {
   Text,
   toast,
   tokens,
-  useWindowAtLeast,
+  useRegularWindow,
 } from '@highsea-tv/ui/native'
 import { useState } from 'react'
 import { View } from 'react-native'
@@ -80,7 +79,7 @@ export function Categories() {
 
 function Category({ category: c, onRemove }: { category: TorrentCategory; onRemove: () => void }) {
   const t = useT(messages)
-  const medium = useWindowAtLeast(breakpoints.medium)
+  const medium = useRegularWindow()
   const inUse = c.torrents > 0
   return (
     <Card
@@ -98,7 +97,7 @@ function Category({ category: c, onRemove }: { category: TorrentCategory; onRemo
           {c.fixed && <Badge tone="neutral">{t('builtIn')}</Badge>}
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: s['2'], minWidth: 0 }}>
-          <Icon name="folder" size={16} color="text-3" />
+          <Icon name="folder" size={tokens.icon.size.sm} color="text-3" />
           <Text
             variant="mono"
             color="text-2"

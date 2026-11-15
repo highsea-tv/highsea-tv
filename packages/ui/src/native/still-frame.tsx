@@ -8,7 +8,7 @@
 import { aspect } from '@highsea-tv/tokens'
 import { StyleSheet, View } from 'react-native'
 import { Embed } from './embed'
-import { GLASS } from './glass.ts'
+import { glassOf } from './glass.ts'
 import { Image, type ImageSource } from './image.tsx'
 import { Text } from './text.tsx'
 import { tokens, useTheme } from './theme.tsx'
@@ -63,7 +63,7 @@ export function StillFrame({
             paddingHorizontal: tokens.space['4'],
             paddingVertical: tokens.space['3'],
             borderRadius: tokens.radius.md,
-            backgroundColor: GLASS,
+            backgroundColor: glassOf(theme.colors),
           }}
         >
           <Text variant="caption" color="text" style={{ textAlign: 'center' }}>

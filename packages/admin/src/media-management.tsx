@@ -46,7 +46,7 @@ import {
 } from '@highsea-tv/media/naming'
 import type { ApiError } from '@highsea-tv/sdk'
 import { useAction, useQuery } from '@highsea-tv/sdk/react'
-import { breakpoints } from '@highsea-tv/tokens'
+import { line } from '@highsea-tv/tokens'
 import {
   Badge,
   Button,
@@ -59,8 +59,8 @@ import {
   Text,
   toast,
   tokens,
+  useRegularWindow,
   useTheme,
-  useWindowAtLeast,
 } from '@highsea-tv/ui/native'
 import { type ReactNode, useState } from 'react'
 import { View, type ViewStyle } from 'react-native'
@@ -119,9 +119,9 @@ const draftOf = (s: MediaManagementSettings): Draft => ({
   recycleBinDays: String(s.recycleBinDays),
 })
 
-/** Two columns from medium widths, 16 apart (the web's `grid gap-4 medium:grid-cols-2`). */
+/** Two columns in a regular window, 16 apart (the web's `grid gap-4 medium:grid-cols-2`). */
 function Columns({ children }: { children: ReactNode }) {
-  const medium = useWindowAtLeast(breakpoints.medium)
+  const medium = useRegularWindow()
   return (
     <View
       style={
@@ -198,7 +198,7 @@ function Form({
 }) {
   const t = useT(messages)
   const theme = useTheme()
-  const medium = useWindowAtLeast(breakpoints.medium)
+  const medium = useRegularWindow()
   const initial = draftOf(loaded)
   const [v, setDraft] = useState(initial)
   const [errors, setErrors] = useState<Partial<Record<keyof Draft, string>>>({})
@@ -381,7 +381,7 @@ function Form({
           style={{
             gap: s['4'],
             paddingTop: s['4'],
-            borderTopWidth: 1,
+            borderTopWidth: line.thin,
             borderTopColor: theme.colors.line,
           }}
         >
@@ -514,7 +514,7 @@ function RootFolders() {
             <View
               style={{
                 padding: s['4'],
-                borderWidth: 1,
+                borderWidth: line.thin,
                 borderColor: theme.colors.line,
                 borderRadius: tokens.radius.md,
                 backgroundColor: theme.colors.s2,
@@ -563,7 +563,7 @@ function RootFolders() {
 }
 
 const NO_LANGUAGES = 'none'
-/** The languages select's width from medium widths (the web's `medium:w-56`). */
+/** The languages select's width in a regular window (the web's `medium:w-56`). */
 const LANGUAGES_WIDTH = s['16'] * 3 + s['8']
 
 function Folder({
@@ -578,7 +578,7 @@ function Folder({
   onSaved: () => void
 }) {
   const t = useT(messages)
-  const medium = useWindowAtLeast(breakpoints.medium)
+  const medium = useRegularWindow()
   const inUse = f.movies > 0
   const save = useAction((c, languageProfileId: string | null) =>
     c.rootFolders.update({ params: { id: f.id }, body: { languageProfileId } }),
@@ -598,7 +598,7 @@ function Folder({
     >
       <View style={{ flex: medium ? 1 : undefined, minWidth: 0, gap: s['1'] }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: s['2'], minWidth: 0 }}>
-          <Icon name="folder" size={16} color="text-3" />
+          <Icon name="folder" size={tokens.icon.size.sm} color="text-3" />
           <Text
             size={ui.size}
             leading={ui.leading}

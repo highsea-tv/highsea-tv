@@ -10,13 +10,14 @@
 // it as the prototype's padding kept it.
 
 import { useT } from '@highsea-tv/i18n/react'
-import { blur, web } from '@highsea-tv/tokens'
+import { adminText, blur, musicPlayer as sizes, web } from '@highsea-tv/tokens'
 import {
   alpha,
   Button,
   Press,
   ScrollView,
   Slider,
+  scrimOf,
   Text,
   tokens,
   useFormFactor,
@@ -46,7 +47,7 @@ const COVER_WIDE = space['12'] + space['2']
 /** The bar's height on a wide window: the prototype's medium:h-24. */
 const WIDE_HEIGHT = space['16'] + space['8']
 /** The queue's panel: the web renderer's SheetContent from the side (sm:max-w-sm). */
-const PANEL_WIDTH = 384
+const PANEL_WIDTH = sizes.queueWidth
 
 /** Only the web draws a blur behind the bar (react-native-web's backdropFilter), as the top bar's. */
 const BLUR =
@@ -104,7 +105,7 @@ export function MusicBar() {
       <Text
         variant="mono"
         mono
-        size={12}
+        size={adminText.figure.size}
         color="text-3"
         align="right"
         style={{ width: space['10'] }}
@@ -114,7 +115,13 @@ export function MusicBar() {
       <View style={{ flex: 1, minWidth: 0 }}>
         <SongWaveform song={song} position={p.position} playing={p.playing} height={space['8']} />
       </View>
-      <Text variant="mono" mono size={12} color="text-3" style={{ width: space['10'] }}>
+      <Text
+        variant="mono"
+        mono
+        size={adminText.figure.size}
+        color="text-3"
+        style={{ width: space['10'] }}
+      >
         {t('left', { time: clock(song.duration - p.position) })}
       </Text>
     </View>
@@ -245,7 +252,7 @@ function Controls({ wide }: { wide: boolean }) {
           icon="shuffle"
           label={t('shuffle')}
           size={ROUND}
-          iconSize={17}
+          iconSize={sizes.bar.skipIcon}
           tint="text-2"
           on={p.shuffle}
           onPress={p.toggleShuffle}
@@ -255,7 +262,7 @@ function Controls({ wide }: { wide: boolean }) {
         icon="previous"
         label={t('previous')}
         size={ROUND}
-        iconSize={18}
+        iconSize={sizes.bar.icon}
         tint="text-2"
         disabled={!p.hasPrevious}
         onPress={p.previous}
@@ -264,7 +271,7 @@ function Controls({ wide }: { wide: boolean }) {
         icon={p.playing ? 'pause' : 'play'}
         label={p.playing ? t('pause') : t('play')}
         size={space['10']}
-        iconSize={18}
+        iconSize={sizes.bar.icon}
         filled
         onPress={p.toggle}
       />
@@ -272,7 +279,7 @@ function Controls({ wide }: { wide: boolean }) {
         icon="next"
         label={t('next')}
         size={ROUND}
-        iconSize={18}
+        iconSize={sizes.bar.icon}
         tint="text-2"
         disabled={!p.hasNext}
         onPress={p.next}
@@ -282,7 +289,7 @@ function Controls({ wide }: { wide: boolean }) {
           icon={r.icon}
           label={r.label}
           size={ROUND}
-          iconSize={17}
+          iconSize={sizes.bar.skipIcon}
           tint="text-2"
           on={p.repeat !== 'off'}
           onPress={p.cycleRepeat}
@@ -306,7 +313,7 @@ function QueuePanel({ open, onClose }: { open: boolean; onClose: () => void }) {
           accessibilityElementsHidden
           importantForAccessibility="no"
           onPress={onClose}
-          style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)' }}
+          style={{ flex: 1, backgroundColor: scrimOf(50) }}
         >
           {null}
         </Press>

@@ -1,4 +1,13 @@
 'use client'
+import type {
+  SeriesDetail,
+  SeriesEpisode,
+  SeriesSeason,
+  SeriesUpdate,
+} from '@highsea-tv/api-contract'
+import { bytes } from '@highsea-tv/core/format'
+import { useLocale, useT } from '@highsea-tv/i18n/react'
+import { useAction, useQuery } from '@highsea-tv/sdk/react'
 // SPDX-License-Identifier: AGPL-3.0-only
 // A show's page (docs/product/shows.md#show-page), moved from the prototype with D3 of the one
 // client platform (one-client-platform-d.md, answer 5) and laid out as a movie's is: the summary
@@ -9,15 +18,7 @@
 //
 // Drawn only when the server serves shows (`Served`, serves.tsx), on the drafted `series` routes
 // the mock answers and the server answers 501.
-import type {
-  SeriesDetail,
-  SeriesEpisode,
-  SeriesSeason,
-  SeriesUpdate,
-} from '@highsea-tv/api-contract'
-import { bytes } from '@highsea-tv/core/format'
-import { useLocale, useT } from '@highsea-tv/i18n/react'
-import { useAction, useQuery } from '@highsea-tv/sdk/react'
+import { admin } from '@highsea-tv/tokens'
 import {
   Badge,
   Button,
@@ -489,17 +490,17 @@ function SeasonSection({
             <Table label={t('episodes.table', { season: season.title })}>
               <TableHeader>
                 <TableRow>
-                  <TableHead width={56} hidden>
+                  <TableHead width={admin.showDetail.monitoredColumn} hidden>
                     {t('monitored')}
                   </TableHead>
-                  <TableHead numeric width={40}>
+                  <TableHead numeric width={admin.showDetail.numberColumn}>
                     {t('col.number')}
                   </TableHead>
                   <TableHead>{t('col.title')}</TableHead>
                   <TableHead>{t('col.aired')}</TableHead>
                   <TableHead>{t('col.status')}</TableHead>
                   <TableHead>{t('col.file')}</TableHead>
-                  <TableHead width={48} hidden>
+                  <TableHead width={admin.showDetail.searchColumn} hidden>
                     {t('col.search')}
                   </TableHead>
                 </TableRow>
@@ -567,7 +568,13 @@ function EpisodeRow({
         </Text>
       </TableCell>
       <TableCell>
-        <View style={{ gap: s['1'], minWidth: 96, alignItems: 'flex-start' }}>
+        <View
+          style={{
+            gap: s['1'],
+            minWidth: admin.showDetail.statusMinWidth,
+            alignItems: 'flex-start',
+          }}
+        >
           <Badge tone={st.tone}>{t(st.label)}</Badge>
           {e.status === 'downloading' && (
             <View style={{ alignSelf: 'stretch' }}>
@@ -580,7 +587,7 @@ function EpisodeRow({
           )}
         </View>
       </TableCell>
-      <TableCell maxWidth={320}>
+      <TableCell maxWidth={admin.showDetail.titleMaxWidth}>
         <EpisodeFile episode={e} />
       </TableCell>
       <TableCell align="end">
@@ -806,4 +813,4 @@ function EditShowDialog({ show: sh, onClose }: { show: SeriesDetail; onClose: ()
 }
 
 /** A table cell's side padding (the web's px-3.5). */
-const CELL_X = 14
+const CELL_X = admin.table.cellX

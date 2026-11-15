@@ -17,13 +17,14 @@
 // (https://reactnative.dev/docs/view-style-props#backgroundimage).
 // Bloom is the glow behind the card with a pointer and on the TV, in the art's colour
 // (client/bloom.tsx).
-import { breakpoints, web } from '@highsea-tv/tokens'
+import { featuredCard, REGULAR_WIDTH, tvText, web } from '@highsea-tv/tokens'
 import { type ReactNode, type Ref, useEffect } from 'react'
 import { StyleSheet, useWindowDimensions, View } from 'react-native'
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
 import { alpha } from './alpha.ts'
 import { QualityTag } from './badge.tsx'
 import { Button } from './button.tsx'
+import { scrimOf } from './glass.ts'
 import { Image } from './image.tsx'
 import { Press } from './press.tsx'
 import { usePageGutter, usePosterWidth } from './row.tsx'
@@ -36,12 +37,12 @@ import type { TileSource } from './tv/tiles.tsx'
 const { space } = tokens
 
 /** The phone's card's share of the row (the prototype's w-[78%]), for `usePosterWidth`. */
-export const FEATURED_SHARE = 0.78
+export const FEATURED_SHARE = featuredCard.touchShare
 /** The gap between the phone's cards (the prototype's gap-3), for the Row's `itemGap`. */
 export const FEATURED_GAP = space['3']
 
 /** The TV's card's height and corner, in units. */
-const TV = { height: 40.5, radius: 1.4, inset: 2.8, words: 34, gap: 0.8 }
+const TV = { ...featuredCard.tv, gap: tokens.tv.space['4'] }
 
 /**
  * The pointer's card's height: the prototype's clamp(18rem, min(62svh, 42vw), 44rem), 42% of the
@@ -50,11 +51,10 @@ const TV = { height: 40.5, radius: 1.4, inset: 2.8, words: 34, gap: 0.8 }
  */
 const POINTER_HEIGHT = { min: 288, ofWindow: 0.62, ofMeasure: 0.42, max: 704 }
 /** The pointer's words' column (the prototype's max-w-[38rem]). */
-const POINTER_WORDS = 608
+const POINTER_WORDS = featuredCard.words
 
 /** The pointer's fades and the TV's (the prototypes' black at 0.7 and 0.6). */
-const SHADE =
-  'linear-gradient(90deg, rgba(0,0,0,0.7), transparent 55%), linear-gradient(0deg, rgba(0,0,0,0.6), transparent 45%)'
+const SHADE = `linear-gradient(90deg, ${scrimOf(70)}, transparent 55%), linear-gradient(0deg, ${scrimOf(60)}, transparent 45%)`
 
 /** The pointer's card at this window: its height, and where its words sit. */
 function usePointerCard() {
@@ -65,8 +65,8 @@ function usePointerCard() {
     h.max,
     Math.max(h.min, Math.min(h.ofWindow * window.height, h.ofMeasure * measure)),
   )
-  const medium = window.width >= breakpoints.medium
-  // the prototype's inset-x-5 bottom-5, and inset-x-10 bottom-9 from a medium window up
+  const medium = window.width >= REGULAR_WIDTH
+  // the prototype's inset-x-5 bottom-5, and inset-x-10 bottom-9 from a regular window up (768)
   const inset = medium ? space['10'] : space['5']
   const below = medium ? space['8'] + space['1'] : space['5']
   return { height, medium, inset, below, width: window.width }
@@ -547,7 +547,7 @@ export function FeaturedCardSkeleton() {
 }
 
 /** The pointer's title line: the prototype's clamp(3rem, 6vw, 5.5rem) tall, min(22rem, 70%) wide. */
-const POINTER_TITLE = { min: 48, ofWindow: 0.06, max: 88, width: 352 }
+const POINTER_TITLE = { ...featuredCard.title, ofWindow: 0.06 }
 
 function TouchFeaturedSkeleton() {
   const theme = useTheme()
@@ -636,10 +636,16 @@ function PointerFeaturedSkeleton() {
 }
 
 /** The tagline's lines' measure with a pointer (the prototype's max-w-[30rem]). */
-const POINTER_TAGLINE = 480
+const POINTER_TAGLINE = featuredCard.tagline
 
 /** The TV's lines, in units (tv/home.tsx's HomeSkeleton). */
-const TV_LINES = { title: 6, titleWidth: 22, titleRadius: 0.6, meta: 1.05, metaWidth: 16 }
+const TV_LINES = {
+  title: featuredCard.tv.skeletonTitle,
+  titleWidth: featuredCard.tv.skeletonTitleWidth,
+  titleRadius: tokens.tv.radius.md,
+  meta: tvText.meta.size,
+  metaWidth: featuredCard.tv.skeletonMetaWidth,
+}
 
 function TvFeaturedSkeleton() {
   const theme = useTheme()
@@ -665,10 +671,10 @@ function TvFeaturedSkeleton() {
         }}
       >
         <Skeleton height={l.title} width={l.titleWidth * u} radius={l.titleRadius * u} />
-        <View style={{ marginVertical: 0.15 * u }}>
+        <View style={{ marginVertical: TV.lineY * u }}>
           <Skeleton height={l.meta} width={l.metaWidth * u} />
         </View>
-        <View style={{ paddingVertical: 0.2 * u }}>
+        <View style={{ paddingVertical: tokens.tv.space['1'] * u }}>
           <SkeletonText lines={2} />
         </View>
       </View>

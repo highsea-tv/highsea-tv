@@ -4,6 +4,7 @@
 // Decorative: the figures beside it carry the values, so the graph is hidden from assistive
 // technology. New samples redraw in place, with no tween (admin.md#status-and-live-data).
 import type { ColorRole } from '@highsea-tv/tokens'
+import { sparkline } from '@highsea-tv/tokens'
 import { View } from 'react-native'
 import Svg, { G, Path } from 'react-native-svg'
 import { useTheme } from './theme.tsx'
@@ -13,7 +14,13 @@ export type SparkSeries = { values: number[]; color: ColorRole; fill?: boolean }
 const W = 100
 const H = 32
 
-export function Sparkline({ series, height = 48 }: { series: SparkSeries[]; height?: number }) {
+export function Sparkline({
+  series,
+  height = sparkline.height,
+}: {
+  series: SparkSeries[]
+  height?: number
+}) {
   const theme = useTheme()
   const max = Math.max(1, ...series.flatMap((s) => s.values))
   const path = (values: number[]) =>
@@ -45,7 +52,7 @@ export function Sparkline({ series, height = 48 }: { series: SparkSeries[]; heig
               d={path(s.values)}
               fill="none"
               stroke={theme.colors[s.color]}
-              strokeWidth={1.5}
+              strokeWidth={sparkline.stroke}
               vectorEffect="non-scaling-stroke"
               strokeLinejoin="round"
             />

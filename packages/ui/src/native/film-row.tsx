@@ -30,7 +30,7 @@
 //
 // The row knows nothing of servers, routes or sounds: the app hands it each film's artwork as
 // sources, what opening and playing a film do, and what a move sounds like, so any app draws one.
-import { web } from '@highsea-tv/tokens'
+import { art, filmRow, tvText, web } from '@highsea-tv/tokens'
 import { type ReactNode, type Ref, useCallback, useEffect, useRef, useState } from 'react'
 import { StyleSheet, useWindowDimensions, View, type ViewStyle } from 'react-native'
 import Animated, {
@@ -42,8 +42,10 @@ import Animated, {
   withSpring,
   withTiming,
 } from 'react-native-reanimated'
+import { alpha } from './alpha.ts'
 import { QualityTag } from './badge.tsx'
 import { focusVisible } from './dom'
+import { scrimOf } from './glass.ts'
 import { Image } from './image.tsx'
 import { brighten, HOVER_BRIGHTNESS, useLift } from './lift.ts'
 import { Poster } from './poster.tsx'
@@ -192,8 +194,8 @@ function pointerStrip(windowWidth: number, measured: number | null, gutter: numb
     EASE.map((a, i) => {
       const x = ((inset - gap) * i) / (EASE.length - 1)
       return side === 'start'
-        ? `rgba(0,0,0,${a}) ${x}px`
-        : `rgba(0,0,0,${1 - a}) calc(100% - ${inset - gap - x}px)`
+        ? `${alpha(art.black, a)} ${x}px`
+        : `${alpha(art.black, 1 - a)} calc(100% - ${inset - gap - x}px)`
     }).join(', ')
   // react-native-web writes a style it doesn't know as CSS (createReactDOMStyle)
   const fade = {
@@ -282,9 +284,9 @@ function TvForm<T extends RowFilm>({
   const note = noteOf?.(item)
   return (
     // a group named by its title, as Row's (an accessible view would hide the card inside it)
-    <View role="group" accessibilityLabel={title} style={{ gap: 0.8 * u }}>
+    <View role="group" accessibilityLabel={title} style={{ gap: tv.space['4'] * u }}>
       <SectionHeading title={title} suffix={suffix} inset={inset} />
-      <View style={{ paddingVertical: 1 * u, paddingLeft: inset }}>
+      <View style={{ paddingVertical: tv.space['5'] * u, paddingLeft: inset }}>
         <View style={{ height }}>
           <View
             pointerEvents="none"
@@ -340,7 +342,13 @@ function TvForm<T extends RowFilm>({
           </FocusGuide>
         </View>
       </View>
-      <View style={{ paddingLeft: inset, paddingTop: 0.4 * u, paddingBottom: 1.2 * u }}>
+      <View
+        style={{
+          paddingLeft: inset,
+          paddingTop: tv.space['2'] * u,
+          paddingBottom: tv.space['6'] * u,
+        }}
+      >
         <Described item={item} line={line} note={note} tags={quality?.(item)} width={wide} />
       </View>
     </View>
@@ -496,7 +504,11 @@ function Card<T extends RowFilm>({
   // the title where the prototypes have its logo, which no server has yet: the TV's at its 1.6,
   // the web's in the title type, inset as the prototype's inset-x-4 bottom-3.5
   const words = isTv
-    ? { left: 1.2 * u, right: 1.2 * u, bottom: 1.1 * u }
+    ? {
+        left: tv.space['6'] * u,
+        right: tv.space['6'] * u,
+        bottom: filmRow.tv.captionBottom * u,
+      }
     : {
         left: tokens.space['4'],
         right: tokens.space['4'],
@@ -537,13 +549,18 @@ function Card<T extends RowFilm>({
           style={[
             StyleSheet.absoluteFill,
             {
-              backgroundImage: 'linear-gradient(20deg, rgba(0,0,0,0.65), transparent 55%)',
+              backgroundImage: `linear-gradient(20deg, ${scrimOf(70)}, transparent 55%)`,
             },
           ]}
         />
         <View style={{ position: 'absolute', ...words }}>
           {isTv ? (
-            <Text size={1.6} weight={600} numberOfLines={2} style={{ lineHeight: 1.7 * u }}>
+            <Text
+              size={filmRow.tv.title}
+              weight={600}
+              numberOfLines={2}
+              style={{ lineHeight: filmRow.tv.titleLeading * u }}
+            >
               {item.title}
             </Text>
           ) : (
@@ -582,7 +599,7 @@ function Described({
   const theme = useTheme()
   const isTv = theme.formFactor.input === 'tv'
   const small = isTv ? 'meta' : 'body'
-  const space = isTv ? 0.5 * theme.u : tokens.space['1'] + tokens.space['0.5']
+  const space = isTv ? tv.space['2.5'] * theme.u : tokens.space['1.5']
   const quality = tags?.map((q) => <QualityTag key={q}>{q}</QualityTag>)
   // the TV's title and line are one text on one line, as the TV's prototype has them, so nothing
   // under it moves; its quality tags, when the app gives them, follow 1u after
@@ -600,7 +617,9 @@ function Described({
     <View style={{ width, maxWidth: '100%', gap: space }}>
       {isTv ? (
         quality?.length ? (
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 1 * theme.u }}>
+          <View
+            style={{ flexDirection: 'row', alignItems: 'center', gap: tv.space['5'] * theme.u }}
+          >
             {named}
             {quality}
           </View>
@@ -767,11 +786,11 @@ const SKELETON_TITLE = {
 }
 /** The TV's, in units (h-[1.2cqw] w-[12cqw], py-[0.2cqw]), and its description's lines. */
 const TV_SKELETON = {
-  title: 1.2,
-  titleWidth: 12,
-  describedTop: 0.6,
-  describedBottom: 1.4,
-  lineGap: 0.7,
+  title: filmRow.tv.skeletonTitle,
+  titleWidth: filmRow.tv.skeletonTitleWidth,
+  describedTop: tv.space['3'],
+  describedBottom: tv.space['7'],
+  lineGap: tv.space['3.5'],
 }
 
 function PointerRowSkeleton() {
@@ -846,11 +865,11 @@ function TvRowSkeleton() {
   const inset = tv.safe.x * u
   const s = TV_SKELETON
   return (
-    <View aria-hidden style={{ gap: 0.8 * u }}>
-      <View style={{ paddingHorizontal: inset, paddingVertical: 0.2 * u }}>
+    <View aria-hidden style={{ gap: tv.space['4'] * u }}>
+      <View style={{ paddingHorizontal: inset, paddingVertical: tv.space['1'] * u }}>
         <Skeleton height={s.title} width={s.titleWidth * u} />
       </View>
-      <View style={{ paddingVertical: 1 * u, paddingLeft: inset }}>
+      <View style={{ paddingVertical: tv.space['5'] * u, paddingLeft: inset }}>
         <View style={{ height }}>
           <Skeleton width={wide} height={height / u} radius={radius} />
           {Array.from({ length: AHEAD.tv }, (_, i) => i + 1).map((v) => (
@@ -879,9 +898,9 @@ function TvRowSkeleton() {
           paddingBottom: s.describedBottom * u,
         }}
       >
-        <Skeleton height={1.05} width="66%" />
-        <Skeleton height={1} />
-        <Skeleton height={1} width="60%" />
+        <Skeleton height={tvText.meta.size} width="66%" />
+        <Skeleton height={filmRow.tv.skeletonLine} />
+        <Skeleton height={filmRow.tv.skeletonLine} width="60%" />
       </View>
     </View>
   )

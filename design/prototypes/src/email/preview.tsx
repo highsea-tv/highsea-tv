@@ -85,7 +85,7 @@ export function EmailPreview() {
     // the controls are the library's native ones (one-client-platform-d.md, D3), in its theme
     <ThemeProvider>
       <main className="min-h-dvh bg-bg text-text">
-        <div className="mx-auto grid max-w-[1320px] gap-6 px-4 py-6 medium:px-6 expanded:grid-cols-[15rem_minmax(0,1fr)] expanded:py-8">
+        <div className="mx-auto grid max-w-[1320px] gap-6 px-4 py-6 regular:px-6 regular:grid-cols-[15rem_minmax(0,1fr)] regular:py-8">
           <header className="grid content-start gap-4">
             <div className="grid gap-1">
               <a href="./" className="justify-self-start text-caption text-text-3 hover:text-text">
@@ -97,7 +97,7 @@ export function EmailPreview() {
                 docs/product/emails.md
               </p>
             </div>
-            <div className="expanded:hidden">
+            <div className="regular:hidden">
               <Select
                 aria-label="Email"
                 value={id}
@@ -105,7 +105,7 @@ export function EmailPreview() {
                 options={sampleIds.map((s) => ({ value: s, label: sampleLabels[s] }))}
               />
             </div>
-            <nav aria-label="Emails" className="hidden expanded:block">
+            <nav aria-label="Emails" className="hidden regular:block">
               <ul className="grid gap-0.5">
                 {sampleIds.map((s, i) => (
                   <li key={s} className={i === 2 ? 'mt-3 border-line border-t pt-3' : undefined}>

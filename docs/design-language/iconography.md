@@ -12,10 +12,16 @@
 
 | Size | Use |
 | --- | --- |
+| 12 (`2xs`) | Beside a caption or inside a tag: a rating's stars, a done step's check |
+| 14 (`xs`) | Small controls (`controlGeometry.sm`) |
 | 16 | Inline with 13–14px text: admin nav, tables, small buttons |
 | 20 | Default buttons, inputs, menu items |
 | 24 | Mobile tab bar, toolbar actions |
 | 1.4–1.6u | TV buttons and the announcement pill |
+
+- **Discs.** An icon that stands for a message sits in a circle: `icon.disc.sm` (32) in a Banner, a toast and a small EmptyState, `md` (44) in a dense one (the admin's) and `lg` (56) in the clients'.
+- **Drop.** An icon beside text that may wrap sits on its first line, dropped by `icon.drop` (1px), or `icon.dropTv` (0.2u) on the TV.
+- Two TV icons stay under 1.4u as their components' own measures: the TV badge's (0.95u) and the acknowledgement card's announcement icon (1.1u).
 
 ## Custom glyphs
 
@@ -23,6 +29,7 @@ These are drawn to Lucide's rules (24 grid, 2px padding, the same stroke, round 
 
 - **Domain:** indexer (a list with a magnifier), seeding (an upward arrow growing as a sprout), subtitle sync (captions with a waveform over the text), catalog (tiles with a plus).
 - **Devices and owner tools use Lucide** too: `tv`, `smartphone` (phone), `laptop`, `key-round` (API keys), `palette` (themes), `scroll-text` (logs), `archive` (backups) and `file-input` (manual import).
+- **The player's skips use Lucide:** `rotate-ccw` (`replay`) and its clockwise twin `rotate-cw` (`forward`), so neither is mirrored.
 - **Media types use Lucide**, which covers them: `film` (movie), `tv` (series), `music`, `book`, `headphones` (audiobook), `podcast` and `monitor-play` (online video).
 
 Sources live in `design/assets/icons`. `@highsea-tv/ui` ships them with the Lucide subset through one `Icon` component, by semantic name (`<Icon name="seeding" />`), so a glyph can be redrawn or swapped without touching product code.

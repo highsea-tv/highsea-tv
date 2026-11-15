@@ -18,7 +18,7 @@ import { Accessibility, PointerSensor } from '@dnd-kit/dom'
 import { move as reorder } from '@dnd-kit/helpers'
 import { DragDropProvider } from '@dnd-kit/react'
 import { useSortable } from '@dnd-kit/react/sortable'
-import { springs, springToCss } from '@highsea-tv/tokens'
+import { dragHandle, line, springs, springToCss, webText, widget } from '@highsea-tv/tokens'
 import {
   type ReactNode,
   type PointerEvent as ReactPointerEvent,
@@ -468,12 +468,12 @@ function Sortable<T extends EditableItem>({
         pointerEvents="none"
         style={{
           position: 'absolute',
-          left: -1,
-          top: -1,
+          left: -line.thin,
+          top: -line.thin,
           width: px(span, resizing.col),
           height: px(item.rows, resizing.row),
           borderRadius: tokens.radius.md,
-          borderWidth: 1,
+          borderWidth: line.thin,
           borderStyle: 'dashed',
           borderColor: theme.colors.accent,
           backgroundColor: theme.colors['accent-soft'],
@@ -490,7 +490,7 @@ function Sortable<T extends EditableItem>({
             backgroundColor: theme.colors.accent,
           }}
         >
-          <Text size={11} leading={1.4} mono color="on-accent">
+          <Text size={webText.label.size} leading={1.4} mono color="on-accent">
             {`${span} × ${item.rows}`}
           </Text>
         </View>
@@ -524,12 +524,12 @@ function Sortable<T extends EditableItem>({
         onBlur={onHandleBlur}
         style={({ hovered }) => [
           {
-            width: 28,
-            height: 28,
+            width: dragHandle,
+            height: dragHandle,
             marginLeft: -(tokens.space['1'] + tokens.space['0.5']),
             alignItems: 'center',
             justifyContent: 'center',
-            borderRadius: 6,
+            borderRadius: tokens.radius.xs,
             backgroundColor: held
               ? theme.colors['accent-soft']
               : hovered
@@ -540,7 +540,11 @@ function Sortable<T extends EditableItem>({
         ]}
       >
         {({ hovered }) => (
-          <Icon name="drag" size={16} color={held ? 'accent-text' : hovered ? 'text' : 'text-3'} />
+          <Icon
+            name="drag"
+            size={tokens.icon.size.sm}
+            color={held ? 'accent-text' : hovered ? 'text' : 'text-3'}
+          />
         )}
       </Press>
     ),
@@ -556,8 +560,8 @@ function Sortable<T extends EditableItem>({
               right: 0,
               bottom: 0,
               zIndex: 10,
-              width: 24,
-              height: 24,
+              width: tokens.targets.pointer,
+              height: tokens.targets.pointer,
               padding: tokens.space['1'],
               alignItems: 'flex-end',
               justifyContent: 'flex-end',
@@ -567,11 +571,11 @@ function Sortable<T extends EditableItem>({
         >
           <View
             style={{
-              width: 12,
-              height: 12,
-              borderRightWidth: 2,
-              borderBottomWidth: 2,
-              borderBottomRightRadius: 5,
+              width: widget.resizeMark,
+              height: widget.resizeMark,
+              borderRightWidth: line.thick,
+              borderBottomWidth: line.thick,
+              borderBottomRightRadius: tokens.radius['2xs'],
               borderColor: theme.colors['text-3'],
             }}
           />

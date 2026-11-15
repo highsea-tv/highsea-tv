@@ -8,6 +8,8 @@
 // label as its accessibility label and the label's own text is hidden from VoiceOver, so it's read
 // once, on the input (React Native has no <label for>:
 // https://reactnative.dev/docs/accessibility#accessibilitylabel).
+
+import { line } from '@highsea-tv/tokens'
 import { type ComponentProps, createContext, type ReactNode, useContext, useState } from 'react'
 import { Platform, TextInput, type TextStyle, View, type ViewStyle } from 'react-native'
 import type { ControlSize, FieldCommon } from '../shared/controls.ts'
@@ -96,8 +98,8 @@ export function Field({
 }
 
 /** The field look's box: fill, edge and corner, by state. */
-/** The field look's edge (one-place-exceptions.json: no border width in the tokens yet). */
-const EDGE = 1
+/** The field look's edge: a thin line (elevation.md › Lines). */
+const EDGE = line.thin
 
 export function fieldBox(theme: Theme, m: ControlPoints, focused: boolean, invalid: boolean) {
   const looks = tokens.controls.looks

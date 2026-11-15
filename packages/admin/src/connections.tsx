@@ -22,7 +22,7 @@ import {
 import type { T as Translate } from '@highsea-tv/i18n'
 import { useT } from '@highsea-tv/i18n/react'
 import { useAction, useClient, useQuery } from '@highsea-tv/sdk/react'
-import { breakpoints } from '@highsea-tv/tokens'
+import { admin } from '@highsea-tv/tokens'
 import {
   Badge,
   Button,
@@ -37,7 +37,7 @@ import {
   Text,
   toast,
   tokens,
-  useWindowAtLeast,
+  useRegularWindow,
 } from '@highsea-tv/ui/native'
 import { type ReactNode, useEffect, useState } from 'react'
 import { View, type ViewStyle } from 'react-native'
@@ -212,18 +212,21 @@ const inputOf = (c: Connection): ConnectionInput => ({
 
 const s = tokens.space
 
-/** The kinds' grid: two columns, three from medium widths, five from wide. */
+/**
+ * The kinds' grid, by its own width: as many columns as fit at `admin.connections.kindMin` each,
+ * at most five, so a kind's name never breaks (CSS Grid's auto-fill,
+ * https://www.w3.org/TR/css-grid-1/#auto-repeat). Two on a phone, five at 1440 as before.
+ */
+const KIND_COLUMNS = `repeat(auto-fill, minmax(max(${admin.connections.kindMin}px, calc((100% - ${4 * s['2']}px) / 5)), 1fr))`
+
 function KindGrid({ children }: { children: ReactNode }) {
-  const medium = useWindowAtLeast(breakpoints.medium)
-  const wide = useWindowAtLeast(breakpoints.wide)
-  const columns = wide ? 5 : medium ? 3 : 2
   return (
     <View
       role="list"
       style={
         {
           display: 'grid',
-          gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
+          gridTemplateColumns: KIND_COLUMNS,
           gap: s['2'],
         } as unknown as ViewStyle
       }
@@ -324,7 +327,7 @@ function Row({
 }) {
   const t = useT(messages)
   const { relative } = useRelative()
-  const medium = useWindowAtLeast(breakpoints.medium)
+  const medium = useRegularWindow()
   const update = useAction((client, body: ConnectionInput) =>
     client.connections.update({ params: { id: c.id }, body }),
   )
@@ -794,7 +797,7 @@ function ThisBrowser() {
   const client = useClient()
   const mine = useQuery('push-subscriptions', (c) => c.pushSubscriptions.list(), TOPICS)
   const remove = useAction((c, id: string) => c.pushSubscriptions.remove({ params: { id } }))
-  const medium = useWindowAtLeast(breakpoints.medium)
+  const medium = useRegularWindow()
   const [support, setSupport] = useState<Support>('checking')
   const [busy, setBusy] = useState(false)
   // only the browser knows; checked after hydration so the server's render matches

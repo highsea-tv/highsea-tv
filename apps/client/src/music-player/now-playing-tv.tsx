@@ -10,6 +10,7 @@
 // tvos's (@highsea-tv/ui/tv's Focusable, FocusGuide and useRemote).
 import { useT } from '@highsea-tv/i18n/react'
 import { useMedia } from '@highsea-tv/native/media'
+import { art, musicPlayer as sizes } from '@highsea-tv/tokens'
 import {
   alpha,
   Button,
@@ -17,6 +18,7 @@ import {
   type IconName,
   Menu,
   PlayingBars,
+  scrimOf,
   Text,
   tokens,
   useTheme,
@@ -45,11 +47,19 @@ const tv = tokens.tv
 /** Left and Right on the TV's scrubber, in seconds: further than a pointer's, as the film's is. */
 const TV_SEEK_S = 10
 /** The head's stop for a cover: its height in units, the cover inside it, the bars beside it. */
-const STOP = { height: 2.6, cover: 2, gap: 0.7 } as const
+const STOP = { height: tv.head.stop, cover: sizes.tv.headCover, gap: tv.space['3.5'] } as const
 /** The prototype's sizes, in units: the cover's column, the title, the round controls, Up next's covers. */
-const SIZES = { cover: 24, gap: 4, title: 3, round: 3.6, play: 5, upNext: 9, bars: 96 } as const
+const SIZES = {
+  cover: sizes.tv.cover,
+  gap: tv.space['20'],
+  title: sizes.tv.title,
+  round: sizes.tv.round,
+  play: sizes.tv.play,
+  upNext: sizes.tv.upNext,
+  bars: 96,
+} as const
 /** The blurred cover behind it all: the prototype's blur-[3cqw] and brightness-[0.45]. */
-const BACKDROP = { blur: 3, dim: 0.55, scale: 1.1 } as const
+const BACKDROP = { blur: 3, dim: 0.55, scale: art.backdropScale } as const
 
 /** Now playing in the head, before the bell, while music is queued: the cover and the playing mark. */
 export function NowPlayingStop({ here, disabled }: { here: boolean; disabled?: boolean }) {
@@ -79,8 +89,8 @@ export function NowPlayingStop({ here, disabled }: { here: boolean; disabled?: b
             flexDirection: 'row',
             alignItems: 'center',
             gap: STOP.gap * u,
-            paddingStart: 0.3 * u,
-            paddingEnd: 1 * u,
+            paddingStart: tv.space['1.5'] * u,
+            paddingEnd: tv.space['5'] * u,
             borderRadius: h / 2,
             backgroundColor: focused ? theme.colors.text : alpha(theme.colors.text, 0.12),
           }}
@@ -102,7 +112,11 @@ export function NowPlayingStop({ here, disabled }: { here: boolean; disabled?: b
               />
             ) : null}
           </View>
-          <PlayingBars playing={p.playing} size={1.2 * u} color={focused ? 'bg' : 'text'} />
+          <PlayingBars
+            playing={p.playing}
+            size={sizes.tv.bars * u}
+            color={focused ? 'bg' : 'text'}
+          />
         </View>
       )}
     </Focusable>
@@ -195,17 +209,17 @@ function Round({
         >
           <Icon
             name={icon}
-            size={big ? 2 : 1.6}
+            size={big ? sizes.tv.bigIcon : tokens.icon.sizeTv.max}
             color={focused ? 'bg' : on ? 'accent-text' : 'text'}
           />
           {on ? (
             <View
               style={{
                 position: 'absolute',
-                bottom: 0.3 * u,
-                width: 0.3 * u,
-                height: 0.3 * u,
-                borderRadius: 0.15 * u,
+                bottom: tv.space['1.5'] * u,
+                width: sizes.tv.dot * u,
+                height: sizes.tv.dot * u,
+                borderRadius: tokens.radius.pill,
                 backgroundColor: theme.colors[focused ? 'bg' : 'accent-text'],
               }}
             />
@@ -271,8 +285,8 @@ function Playing() {
             borderRadius: tv.radius.poster * u,
             overflow: 'hidden',
             backgroundColor: theme.colors.s1,
-            transform: [{ scale: p.playing ? 1 : 0.9 }],
-            boxShadow: `0 ${1.5 * u}px ${4 * u}px rgba(0,0,0,0.5)`,
+            transform: [{ scale: p.playing ? 1 : sizes.tv.pausedScale }],
+            boxShadow: `0 ${1.5 * u}px ${4 * u}px ${scrimOf(50)}`,
           }}
         >
           {song.album.cover ? (
@@ -283,8 +297,8 @@ function Playing() {
             />
           ) : null}
         </View>
-        <View style={{ flex: 1, minWidth: 0, gap: 1.6 * u }}>
-          <View style={{ gap: 0.4 * u }}>
+        <View style={{ flex: 1, minWidth: 0, gap: tv.space['8'] * u }}>
+          <View style={{ gap: tv.space['2'] * u }}>
             <Text variant="eyebrow" color="text-3" numberOfLines={1}>
               {song.album.title}
             </Text>
@@ -301,7 +315,7 @@ function Playing() {
               {song.album.artist.name}
             </Text>
           </View>
-          <View style={{ gap: 0.6 * u }}>
+          <View style={{ gap: tv.space['3'] * u }}>
             {/* Left and Right stay here, to seek; OK plays and pauses */}
             <FocusGuide trapFocusLeft trapFocusRight>
               {/* biome-ignore lint/a11y/useValidAriaRole: React Native's accessibilityRole, not ARIA */}
@@ -309,7 +323,7 @@ function Playing() {
                 role="adjustable"
                 label={t('position', { title: song.title })}
                 lift="none"
-                radius={0.6 * u}
+                radius={tv.radius.md * u}
                 onPress={p.toggle}
                 onFocus={() => setOnScrubber(true)}
                 onBlur={() => setOnScrubber(false)}
@@ -323,8 +337,8 @@ function Playing() {
                       }),
                     }}
                     style={{
-                      padding: 0.6 * u,
-                      borderRadius: 0.6 * u,
+                      padding: tv.space['3'] * u,
+                      borderRadius: tv.radius.md * u,
                       backgroundColor: focused ? alpha(theme.colors.text, 0.12) : 'transparent',
                     }}
                   >
@@ -335,19 +349,19 @@ function Playing() {
                       duration={song.duration}
                       playing={p.playing}
                       bar={{ count: SIZES.bars, gap: 0.25 * u }}
-                      height={5 * u}
+                      height={sizes.tv.play * u}
                     />
                     {/* the playhead shows while the scrubber has focus, so Left and Right read as moving it */}
                     {focused ? (
                       <View
                         style={{
                           position: 'absolute',
-                          top: 0.2 * u,
-                          bottom: 0.2 * u,
+                          top: tv.space['1'] * u,
+                          bottom: tv.space['1'] * u,
                           left: `${fraction * 100}%`,
-                          marginLeft: 0.6 * u - 0.1 * u,
-                          width: 0.2 * u,
-                          borderRadius: 0.1 * u,
+                          marginLeft: tv.space['3'] * u - tv.space['0.5'] * u,
+                          width: sizes.tv.markWidth * u,
+                          borderRadius: tokens.radius.pill,
                           backgroundColor: theme.colors.text,
                         }}
                       />
@@ -360,7 +374,7 @@ function Playing() {
               style={{
                 flexDirection: 'row',
                 justifyContent: 'space-between',
-                paddingHorizontal: 0.6 * u,
+                paddingHorizontal: tv.space['3'] * u,
               }}
             >
               <Text variant="meta" color="text-2" mono>
@@ -371,7 +385,7 @@ function Playing() {
               </Text>
             </View>
           </View>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 1.2 * u }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: tv.space['6'] * u }}>
             <Round icon="shuffle" label={t('shuffle')} on={p.shuffle} onPress={p.toggleShuffle} />
             <Round
               icon="previous"
@@ -389,7 +403,13 @@ function Playing() {
             />
             <Round icon="next" label={t('next')} disabled={!p.hasNext} onPress={p.next} />
             <Round icon={r.icon} label={r.label} on={p.repeat !== 'off'} onPress={p.cycleRepeat} />
-            <View style={{ flexDirection: 'row', gap: 0.8 * u, marginStart: 1 * u }}>
+            <View
+              style={{
+                flexDirection: 'row',
+                gap: tv.space['4'] * u,
+                marginStart: tv.space['5'] * u,
+              }}
+            >
               <Button icon="music" onPress={() => goTo(albumPath(song.album.id))}>
                 {t('album')}
               </Button>
@@ -431,14 +451,21 @@ function UpNext() {
     )
   const at = (key: string) => musicPlayer.get().queue.findIndex((e) => e.key === key)
   return (
-    <View accessibilityLabel={t('upNext')} style={{ gap: 0.8 * u, paddingBottom: tv.safe.y * u }}>
+    <View
+      accessibilityLabel={t('upNext')}
+      style={{ gap: tv.space['4'] * u, paddingBottom: tv.safe.y * u }}
+    >
       <Text variant="eyebrow" color="text-3" style={pad}>
         {from ? t('upNextFrom', { from }) : t('upNext')}
       </Text>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ ...pad, gap: 1.2 * u, paddingVertical: 0.4 * u }}
+        contentContainerStyle={{
+          ...pad,
+          gap: tv.space['6'] * u,
+          paddingVertical: tv.space['2'] * u,
+        }}
       >
         {p.upNext.slice(0, 10).map((song) => (
           <UpNextSong
@@ -500,7 +527,7 @@ function UpNextSong({
       onLongPress={onMenu}
     >
       {(focused) => (
-        <View style={{ gap: 0.5 * u }}>
+        <View style={{ gap: tv.space['2.5'] * u }}>
           <View
             style={{
               width,

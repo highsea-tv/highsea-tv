@@ -5,11 +5,16 @@
 // with React Native's View and Image (https://reactnative.dev/docs/image), which react-native-web
 // writes as a `div` with the picture as its background and an `<img>` for the browser's own
 // loading (https://necolas.github.io/react-native-web/docs/image/).
-import { Image, tokens, useTheme } from '@highsea-tv/ui/native'
+import { art, line } from '@highsea-tv/tokens'
+import { alpha, Image, tokens, useTheme } from '@highsea-tv/ui/native'
 import { View } from 'react-native'
 
-/** The web's inset hairline over the art (`inset 0 0 0 1px rgb(255 255 255 / 0.04)`). */
-const HAIRLINE = 'inset 0 0 0 1px rgba(255, 255, 255, 0.04)'
+/**
+ * The web's inset hairline over the art: the art's edge (`art.edge`, `text` at 0.04), a thin line
+ * wide.
+ */
+const hairline = (colors: Record<'text', string>) =>
+  `inset 0 0 0 ${line.thin}px ${alpha(colors[art.edge.role], art.edge.alpha)}`
 const FILL = { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 } as const
 
 export function CollectionArt({
@@ -45,20 +50,26 @@ export function CollectionArt({
           <Image source={{ uri: src }} alt="" contentFit="cover" style={FILL} />
         ) : null
       ) : (
-        <View style={{ flex: 1, flexDirection: 'row', flexWrap: 'wrap', gap: 1 }}>
+        <View style={{ flex: 1, flexDirection: 'row', flexWrap: 'wrap', gap: line.thin }}>
           {[0, 1, 2, 3].map((i) => (
             <Image
               key={i}
               source={{ uri: mosaic[i % mosaic.length] }}
               alt=""
               contentFit="cover"
-              style={{ width: (width - 1) / 2, height: ((width * h) / w - 1) / 2 }}
+              style={{
+                width: (width - line.thin) / 2,
+                height: ((width * h) / w - line.thin) / 2,
+              }}
             />
           ))}
         </View>
       )}
       {/* the hairline over the art, as the web's inset shadow */}
-      <View pointerEvents="none" style={[FILL, { borderRadius: radius, boxShadow: HAIRLINE }]} />
+      <View
+        pointerEvents="none"
+        style={[FILL, { borderRadius: radius, boxShadow: hairline(theme.colors) }]}
+      />
     </View>
   )
 }

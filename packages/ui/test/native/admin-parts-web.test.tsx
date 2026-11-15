@@ -116,6 +116,34 @@ describe('the admin’s table', () => {
     expect(lastCell.style.borderBottomWidth).toBe('0px')
   })
 
+  test('a cell spanning the columns says so and carries its row’s tint across them', () => {
+    render(
+      <Table label="Releases">
+        <TableHeader>
+          <TableRow>
+            <TableHead>Release</TableHead>
+            <TableHead numeric>Score</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          <TableRow testID="reasons" selected>
+            <TableCell span={2}>Matches target WEB 2160p</TableCell>
+          </TableRow>
+        </TableBody>
+      </Table>,
+    )
+    const row = screen.getByTestId('reasons')
+    const cell = screen.getByRole('cell')
+    expect(cell.getAttribute('aria-colspan')).toBe('2')
+    // the row paints nothing, so the first column isn't tinted twice
+    // react-native-web writes `transparent` as rgba(0, 0, 0, 0.00)
+    expect(row.style.backgroundColor).toMatch(/^rgba\(0, 0, 0, 0(\.0+)?\)$/)
+    const across = cell.firstElementChild?.firstElementChild as HTMLElement
+    expect(across.style.backgroundColor).not.toMatch(/^rgba\(0, 0, 0, 0(\.0+)?\)$/)
+    expect(across.style.backgroundColor).not.toBe('')
+    expect(across.textContent).toBe('Matches target WEB 2160p')
+  })
+
   const PATH =
     '/data/media/movies-4k/Ultra HD Blu-ray remuxes from the original discs/Sintel (2010)'
   const pathTable = () => (

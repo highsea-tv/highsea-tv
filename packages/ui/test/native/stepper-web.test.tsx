@@ -17,7 +17,7 @@ const testing = await import('@testing-library/react')
 const { act, cleanup, fireEvent, screen } = testing
 const { ThemeProvider } = await import('../../src/native/theme.tsx')
 const { Stepper } = await import('../../src/native/stepper.tsx')
-const { breakpoints } = await import('@highsea-tv/tokens')
+const { REGULAR_WIDTH } = await import('@highsea-tv/tokens')
 
 const render = (ui: ReactNode) =>
   testing.render(ui, {
@@ -66,8 +66,8 @@ const stepper = (current: number, reached: number, onSelect = (_: number) => {})
 )
 
 describe('Stepper', () => {
-  test('below expanded: the step counted from 1, its name and a bar', () => {
-    widen(breakpoints.expanded - 1)
+  test('in a compact window: the step counted from 1, its name and a bar', () => {
+    widen(REGULAR_WIDTH - 1)
     render(stepper(1, 1))
     expect(screen.getByRole('navigation', { name: 'Setup steps' })).toBeTruthy()
     expect(screen.getByText('Step 2 of 3', { exact: false }).textContent).toBe(
@@ -77,8 +77,8 @@ describe('Stepper', () => {
     expect(screen.queryByRole('list')).toBeNull()
   })
 
-  test('from expanded up: the current step, finished steps as buttons, later ones text', () => {
-    widen(breakpoints.expanded)
+  test('in a regular window: the current step, finished steps as buttons, later ones text', () => {
+    widen(REGULAR_WIDTH)
     const picked: number[] = []
     render(stepper(1, 1, (i) => picked.push(i)))
     const items = screen.getAllByRole('listitem')
@@ -93,7 +93,7 @@ describe('Stepper', () => {
   })
 
   test('a step reached beyond the current one is a button without “done”', () => {
-    widen(breakpoints.expanded)
+    widen(REGULAR_WIDTH)
     render(stepper(0, 2))
     expect(screen.getByRole('button', { name: 'Folders, done' })).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Review' })).toBeTruthy()

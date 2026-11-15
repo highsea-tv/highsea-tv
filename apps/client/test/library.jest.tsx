@@ -9,7 +9,16 @@ import { SEED } from '@highsea-tv/mock/films'
 import { act, cleanup, fireEvent, screen, within } from '@testing-library/react-native'
 import { router } from 'expo-router'
 import { StyleSheet } from 'react-native'
-import { acknowledge, flush, fresh, rewrite, server, signedIn } from './mock.ts'
+import {
+  acknowledge,
+  flush,
+  fresh,
+  phoneWindow,
+  pointerWindow,
+  rewrite,
+  server,
+  signedIn,
+} from './mock.ts'
 
 // the phone, unless a test asks for a pointer's window
 jest.mock('../src/form-factor', () => ({
@@ -88,6 +97,7 @@ beforeEach(() => {
 })
 afterEach(async () => {
   await cleanup()
+  phoneWindow()
   delete (globalThis as { __formFactor?: string }).__formFactor
 })
 
@@ -424,9 +434,7 @@ describe('the Library on the phone', () => {
 })
 
 describe('Movies and Collections with a pointer', () => {
-  beforeEach(() => {
-    ;(globalThis as { __formFactor?: string }).__formFactor = 'regular-pointer'
-  })
+  beforeEach(pointerWindow)
 
   test('Movies has its selects and the index; sorting by year hides the index', async () => {
     const r = await at('/movies')

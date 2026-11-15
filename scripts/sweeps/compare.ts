@@ -678,14 +678,18 @@ try {
   if (prototypes?.pid) process.kill(-prototypes.pid, 'SIGTERM')
 }
 
-// the earlier run's server shot of each pair, by the pair's name and width (its number may differ)
+// the earlier run's server shot of each pair, by the pair's name and width (its number may differ):
+// the same number first, since names repeat (Discover's and a movie's Search, two Historys)
 const slug = (name: string) => name.replaceAll(/[^\w]+/g, '-')
 if (before) {
   const files = readdirSync(before)
   for (const d of done)
     for (const w of WIDTHS) {
       const end = `-${slug(d.pair.name)}-${w}-server.png`
-      const found = files.find((f) => /^\d{3}-/.test(f) && f.slice(3) === end)
+      const same = `${String(d.index).padStart(3, '0')}${end}`
+      const found = files.includes(same)
+        ? same
+        : files.find((f) => /^\d{3}-/.test(f) && f.slice(3) === end)
       if (!found) continue
       const file = `${String(d.index).padStart(3, '0')}-${slug(d.pair.name)}-${w}-before.png`
       copyFileSync(join(before, found), join(out, file))

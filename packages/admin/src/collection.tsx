@@ -8,8 +8,8 @@
 
 import type { DiscoverMovie } from '@highsea-tv/api-contract'
 import { useT } from '@highsea-tv/i18n/react'
-import { breakpoints } from '@highsea-tv/tokens'
-import { Image, Poster, Text, tokens, useTheme, useWindowAtLeast } from '@highsea-tv/ui/native'
+import { admin, line } from '@highsea-tv/tokens'
+import { Image, Poster, Text, tokens, useRegularWindow, useTheme } from '@highsea-tv/ui/native'
 import { type ReactNode, useState } from 'react'
 import { View } from 'react-native'
 import { AddMovieDialog } from './add-dialog.tsx'
@@ -78,9 +78,9 @@ function CollectionById({ id }: { id: number }) {
 }
 
 /** The overview's measure (the web's max-w-[65ch] at the body's 15). */
-const MEASURE = 600
-/** The poster's column from medium (the web's 9rem), and its width in a compact window (w-32). */
-const POSTER = { beside: 144, above: 128 }
+const MEASURE = admin.measure
+/** The poster's column in a regular window (the web's 9rem), and its width in a compact window (w-32). */
+const POSTER = { beside: admin.summaryPoster.beside, above: admin.summaryPoster.above }
 const FILL = { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 } as const
 
 /** The media page's summary card: the backdrop faint behind, the poster, and the words beside it. */
@@ -98,7 +98,7 @@ function Summary({
   children: ReactNode
 }) {
   const theme = useTheme()
-  const beside = useWindowAtLeast(breakpoints.medium)
+  const beside = useRegularWindow()
   const s = tokens.space
   return (
     <View
@@ -111,7 +111,7 @@ function Summary({
         alignItems: 'flex-start',
         gap: s['5'],
         padding: beside ? s['5'] : s['4'],
-        borderWidth: 1,
+        borderWidth: line.thin,
         borderColor: theme.colors.line,
         borderRadius: tokens.radius.lg,
         backgroundColor: theme.colors.s1,

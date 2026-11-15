@@ -14,13 +14,15 @@
 //   and from the library only its providers (one-client-platform.md, the admin's exception).
 // - parts: a component exported under the same name by more than one module of the client code and
 //   the library (apps/client/src, ui's native renderer, @highsea-tv/client and @highsea-tv/native).
-// - values: in the one drawing (apps/client/src and ui's native renderer), a literal colour, or a
+// - values: in the one drawing (apps/client/src, ui's native renderer, the admin's screens in
+//   packages/admin/src and the guides' components in apps/docs/components), a literal colour, or a
 //   literal number for a size, space or corner where the tokens should be, written in place or in
 //   a constant of the file. 0 and percentages pass.
 // The code is read with Babel's parser (@babel/parser, the one Metro reads it with), so comments,
 // strings and types are never mistaken for code.
-// Exceptions are in one-place-exceptions.json, each with its reason and the part of the plan that
-// removes it (null for one that stays), and a screens or values exception with how many it
+// Exceptions are in one-place-exceptions.json, each with a reason that never expires, `"until":
+// null`: since part E (one-client-platform-e.md › E1) one naming the part that would remove it
+// fails, so a part can't end with one open. A screens or values exception says how many it
 // excuses, so a new one still fails. One that matches nothing fails too, so the list can't rot.
 // `bun run one-place` prints what fails by rule and exits 1 if anything does.
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
@@ -67,8 +69,14 @@ const PARTS = [
   'packages/native/src',
   'apps/client/src',
 ]
-/** The one drawing, where colours, sizes and corners come from the tokens. */
-const VALUES = ['apps/client/src', 'packages/ui/src/native', 'packages/ui/src/shared']
+/** The one drawing, where colours, sizes and corners come from the tokens: the admin and the guides too. */
+const VALUES = [
+  'apps/client/src',
+  'packages/ui/src/native',
+  'packages/ui/src/shared',
+  'packages/admin/src',
+  'apps/docs/components',
+]
 
 /**
  * Platform extensions, which Metro picks a module by
@@ -381,8 +389,8 @@ type Exception = {
   /** How many files or literals a screens or values exception excuses, so a new one still fails. */
   count?: number
   reason: string
-  /** The part that removes it, or null for one that stays, its reason saying why. */
-  until: Part | null
+  /** Always null: it stays, its reason saying why. A part (A to E) that would remove it fails. */
+  until: null
   line: number
   used: number
 }
@@ -540,8 +548,13 @@ export function readExceptions(root: string, findings: Finding[]) {
       bad(line, `${String(e.rule)} isn't a rule: screens, parts or values`)
     else if (!string(e.path)) bad(line, 'an exception names its path or glob')
     else if (!string(e.reason)) bad(line, `${e.path} has no reason`)
-    else if (!('until' in e) || (e.until !== null && !PARTS_OF_PLAN.has(String(e.until))))
-      bad(line, `${e.path}'s until is the part that removes it, A to E, or null if it stays`)
+    else if (!('until' in e) || e.until !== null)
+      bad(
+        line,
+        PARTS_OF_PLAN.has(String(e.until))
+          ? `${e.path} is open until part ${String(e.until)}: move its values onto the tokens, or give it a reason that never expires and "until": null`
+          : `${e.path}'s until is null, for an exception that stays`,
+      )
     else if (e.rule === 'parts' && !string(e.name)) bad(line, `${e.path} names no component`)
     else if (
       e.rule === 'parts'

@@ -12,7 +12,7 @@
 import type { SecurityInput, SecuritySettings } from '@highsea-tv/api-contract'
 import { useT } from '@highsea-tv/i18n/react'
 import { useAction, useQuery } from '@highsea-tv/sdk/react'
-import { breakpoints } from '@highsea-tv/tokens'
+import { admin } from '@highsea-tv/tokens'
 import {
   Button,
   Field,
@@ -23,7 +23,7 @@ import {
   Text,
   toast,
   tokens,
-  useWindowAtLeast,
+  useRegularWindow,
 } from '@highsea-tv/ui/native'
 import { type ReactNode, useState } from 'react'
 import { View, type ViewStyle } from 'react-native'
@@ -33,9 +33,9 @@ import { AreaPage, Group, SaveBar } from './settings.tsx'
 
 const s = tokens.space
 
-/** Two columns from medium widths, as the web's `medium:grid-cols-2`. */
+/** Two columns in a regular window, as the web's `medium:grid-cols-2`. */
 function Columns({ children }: { children: ReactNode }) {
-  const medium = useWindowAtLeast(breakpoints.medium)
+  const medium = useRegularWindow()
   return (
     <View
       style={
@@ -126,7 +126,7 @@ export function Security() {
 
 function Form({ loaded, reload }: { loaded: SecuritySettings; reload: () => void }) {
   const t = useT(messages)
-  const medium = useWindowAtLeast(breakpoints.medium)
+  const medium = useRegularWindow()
   const network = useQuery('settings:network', (c) => c.settings.network(), ['settings.updated'])
   const initial = draftOf(loaded)
   const [v, setDraft] = useState(initial)
@@ -190,7 +190,7 @@ function Form({ loaded, reload }: { loaded: SecuritySettings; reload: () => void
           onCheckedChange={(passkeys) => set({ passkeys })}
         />
         <Field label={t('sessionDays')} hint={t('sessionDaysHint')} error={errors.sessionDays}>
-          <View style={{ maxWidth: medium ? 192 : undefined }}>
+          <View style={{ maxWidth: medium ? admin.security.fieldWidth : undefined }}>
             <Select
               aria-label={t('sessionDays')}
               value={String(v.sessionDays)}
@@ -324,7 +324,7 @@ function FieldError({ children }: { children: string }) {
       style={{ flexDirection: 'row', gap: s['2'], alignItems: 'center' }}
       accessibilityLiveRegion="polite"
     >
-      <Icon name="alert" size={14} color="badge-danger" />
+      <Icon name="alert" size={tokens.icon.size.xs} color="badge-danger" />
       <Text variant="caption" color="badge-danger">
         {children}
       </Text>

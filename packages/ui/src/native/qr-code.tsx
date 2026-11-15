@@ -5,7 +5,9 @@
 // asks for: the default theme's text and background, whatever the theme.
 import { create, type QRCodeErrorCorrectionLevel } from 'qrcode'
 import { useMemo } from 'react'
+import { Platform } from 'react-native'
 import Svg, { Path, Rect } from 'react-native-svg'
+import { svgName } from './icon.tsx'
 import { tokens } from './theme.tsx'
 
 const QUIET = 4
@@ -39,9 +41,10 @@ export function QrCode({
       width={size}
       height={size}
       viewBox={`${-QUIET} ${-QUIET} ${box} ${box}`}
-      accessible
-      accessibilityRole="image"
-      accessibilityLabel={label}
+      // named in each platform's terms: on the web react-native-svg hands React Native's
+      // accessibility props to the `<svg>` as they are, so it takes ARIA's there (svgName)
+      {...svgName(label)}
+      {...(Platform.OS === 'web' ? null : { accessibilityRole: 'image' as const })}
     >
       <Rect x={-QUIET} y={-QUIET} width={box} height={box} rx={1.5} fill={LIGHT} />
       <Path d={d} fill={DARK} />

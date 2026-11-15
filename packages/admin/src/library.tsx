@@ -1,4 +1,15 @@
 'use client'
+import {
+  type BulkInput,
+  LIST_TOPICS,
+  MOVIE_SORTS,
+  type MoviePage,
+  type MovieStatus,
+  type RuleCondition,
+} from '@highsea-tv/api-contract'
+import { shortDate } from '@highsea-tv/core/format'
+import { useLocale, useT } from '@highsea-tv/i18n/react'
+import { useAction, useQuery } from '@highsea-tv/sdk/react'
 // SPDX-License-Identifier: AGPL-3.0-only
 // A5 Movies library (docs/product/movies.md#library-a5), ported from the prototype. Grid or table
 // in one frame, status tabs with counts, a title filter and a sort. The table selects rows for
@@ -17,17 +28,7 @@
 // - bulk Search is shown but disabled while no indexer is enabled (checkpoint 4 plan, decision 2);
 //   with one, it queues a search for each movie (checkpoint 5).
 // Drawn with the library's native renderer since D2 (one-client-platform-d.md).
-import {
-  type BulkInput,
-  LIST_TOPICS,
-  MOVIE_SORTS,
-  type MoviePage,
-  type MovieStatus,
-  type RuleCondition,
-} from '@highsea-tv/api-contract'
-import { shortDate } from '@highsea-tv/core/format'
-import { useLocale, useT } from '@highsea-tv/i18n/react'
-import { useAction, useQuery } from '@highsea-tv/sdk/react'
+import { admin, line } from '@highsea-tv/tokens'
 import {
   Badge,
   Button,
@@ -386,7 +387,7 @@ export function MoviesLibrary() {
                       flexWrap: 'wrap',
                       alignItems: 'center',
                       gap: tokens.space['2'],
-                      borderBottomWidth: 1,
+                      borderBottomWidth: line.thin,
                       borderBottomColor: colors.line,
                       backgroundColor: colors['accent-soft'],
                       paddingHorizontal: CELL_X,
@@ -486,7 +487,7 @@ export function MoviesLibrary() {
                   <Table label={t('title')}>
                     <TableHeader>
                       <TableRow>
-                        <TableHead width={40}>
+                        <TableHead width={admin.table.checkColumn}>
                           <Checkbox
                             label={t('col.selectAll')}
                             hideLabel
@@ -613,7 +614,7 @@ export function MoviesLibrary() {
 }
 
 /** A table cell's side padding (the web's px-3.5), which the toolbars and the grid share. */
-const CELL_X = 14
+const CELL_X = admin.table.cellX
 /** The title filter's width (the web's w-48), and the tag and sort selects' (w-36). */
-const FILTER_WIDTH = 192
-const SELECT_WIDTH = 144
+const FILTER_WIDTH = admin.filterWidth
+const SELECT_WIDTH = admin.selectWidth

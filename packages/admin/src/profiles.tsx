@@ -12,7 +12,6 @@ import { bytes } from '@highsea-tv/core/format'
 import { useLocale, useT } from '@highsea-tv/i18n/react'
 import { describeFormat } from '@highsea-tv/quality/browser'
 import { useQuery } from '@highsea-tv/sdk/react'
-import { breakpoints } from '@highsea-tv/tokens'
 import {
   Badge,
   Button,
@@ -28,7 +27,8 @@ import {
   TitleLink,
   Tooltip,
   tokens,
-  useWindowAtLeast,
+  useRegularWindow,
+  visuallyHidden,
 } from '@highsea-tv/ui/native'
 import { useState } from 'react'
 import { View, type ViewStyle } from 'react-native'
@@ -42,16 +42,11 @@ import { Card, Cards, Line, Note } from './settings-card.tsx'
 const s = tokens.space
 const figure = tokens.adminText.figure
 
-/** Read, never seen (the web's `sr-only`): the cutoff's badge says which it is only in words. */
-const READ_ONLY_TEXT = {
-  position: 'absolute',
-  width: 1,
-  height: 1,
-  margin: -1,
-  overflow: 'hidden',
-  clip: 'rect(0 0 0 0)',
-  whiteSpace: 'nowrap',
-} as object
+/**
+ * Read, never seen (the library's visually hidden style, the web's `sr-only`): the cutoff's badge
+ * says which it is only in words.
+ */
+const READ_ONLY_TEXT = visuallyHidden
 
 /**
  * A preset the catalog doesn't have yet: shown but inert, its wrapper taking focus so the tooltip
@@ -80,7 +75,7 @@ const presets = [
 export function Profiles() {
   const t = useT(messages)
   const locale = useLocale()
-  const medium = useWindowAtLeast(breakpoints.medium)
+  const medium = useRegularWindow()
   const shows = useServes('shows')
   const profiles = useQuery('settings:profiles', (c) => c.quality.profiles(), ['settings.updated'])
   const formats = useQuery('settings:formats', (c) => c.quality.customFormats(), [
@@ -203,7 +198,7 @@ function ProfileCards({
   usage?: ProfileUsage[]
 }) {
   const t = useT(messages)
-  const medium = useWindowAtLeast(breakpoints.medium)
+  const medium = useRegularWindow()
   return (
     <Cards>
       {ps.map((p) => (

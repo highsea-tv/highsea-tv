@@ -9,7 +9,7 @@ import { COLLECTION_TOPICS, type CollectionSummary } from '@highsea-tv/api-contr
 import { useT } from '@highsea-tv/i18n/react'
 import { ApiError } from '@highsea-tv/sdk'
 import { useAction, useQuery } from '@highsea-tv/sdk/react'
-import { breakpoints } from '@highsea-tv/tokens'
+import { admin, line } from '@highsea-tv/tokens'
 import {
   Badge,
   Button,
@@ -19,8 +19,8 @@ import {
   Text,
   toast,
   tokens,
+  useRegularWindow,
   useTheme,
-  useWindowAtLeast,
 } from '@highsea-tv/ui/native'
 import { useState } from 'react'
 import { View } from 'react-native'
@@ -95,7 +95,7 @@ export function Collections() {
 }
 
 /** The poster's width in a row (the web's w-14). */
-const ART = 56
+const ART = admin.collections.art
 
 function CollectionRow({ c }: { c: CollectionSummary }) {
   const t = useT(messages)
@@ -105,8 +105,8 @@ function CollectionRow({ c }: { c: CollectionSummary }) {
   const holds = useHolds()
   const remove = useAction((api) => api.collections.remove({ params: { id: c.id } }))
   const [confirm, setConfirm] = useState(false)
-  // the actions beside the words from medium; under them, at the end, in a compact window
-  const beside = useWindowAtLeast(breakpoints.medium)
+  // the actions beside the words in a regular window; under them, at the end, in a compact window
+  const beside = useRegularWindow()
   const actions = (
     <View
       style={{
@@ -142,13 +142,13 @@ function CollectionRow({ c }: { c: CollectionSummary }) {
         alignItems: beside ? 'center' : 'flex-start',
         columnGap: s['4'],
         padding: s['4'],
-        borderWidth: 1,
+        borderWidth: line.thin,
         borderColor: theme.colors.line,
         borderRadius: tokens.radius.lg,
         backgroundColor: theme.colors.s1,
       }}
     >
-      <CollectionArt poster={c.artwork} mosaic={c.mosaic} width={ART} radius={6} />
+      <CollectionArt poster={c.artwork} mosaic={c.mosaic} width={ART} radius={tokens.radius.xs} />
       <View style={{ flex: 1, minWidth: 0, gap: s['3'] }}>
         <View style={{ gap: s['1'], minWidth: 0 }}>
           <View

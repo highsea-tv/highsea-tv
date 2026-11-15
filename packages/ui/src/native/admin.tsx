@@ -8,10 +8,21 @@
 // A link is a Press with `href`, which react-native-web writes as an `<a>` (its View's `href`,
 // https://necolas.github.io/react-native-web/docs/view/#href), so a browser can open it in a new
 // tab and the host's router can take the click; `onPress` runs as well.
-import { breakpoints, type ColorRole } from '@highsea-tv/tokens'
+import {
+  type ColorRole,
+  line,
+  REGULAR_WIDTH,
+  searchTrigger,
+  serverCard,
+  sidebar,
+  statusBar,
+  webText,
+  wrapBasis,
+} from '@highsea-tv/tokens'
 import { type ReactNode, useState, useSyncExternalStore } from 'react'
 import { Dimensions, View } from 'react-native'
 import { alpha } from './alpha.ts'
+import { visuallyHidden } from './hidden-heading.tsx'
 import { Icon } from './icon.tsx'
 import type { IconName } from './icons.ts'
 import { Image } from './image.tsx'
@@ -19,6 +30,7 @@ import { OWN_SIZE } from './own-size.ts'
 import { Press } from './press.tsx'
 import { Text } from './text.tsx'
 import { tokens, useControl, useTheme } from './theme.tsx'
+import { webTitle } from './web-title.ts'
 
 const ui = tokens.adminText.ui
 const s = tokens.space
@@ -44,6 +56,14 @@ export function useWindowAtLeast(width: number): boolean {
     () => Dimensions.get('window').width >= width,
     () => true,
   )
+}
+
+/**
+ * Whether the window is regular: at least the form-factor rule's one split (`REGULAR_WIDTH`, 768,
+ * spacing-layout.md), where every client and the admin leave their compact layout.
+ */
+export function useRegularWindow(): boolean {
+  return useWindowAtLeast(REGULAR_WIDTH)
 }
 
 // ---------------------------------------------------------------- the sidebar
@@ -78,7 +98,7 @@ export function Sidebar({ header, footer, children, inSheet, label = 'Main' }: S
               paddingVertical: s['4'],
               gap: s['0.5'],
               backgroundColor: theme.colors.s1,
-              borderRightWidth: 1,
+              borderRightWidth: line.thin,
               borderRightColor: theme.colors.line,
               overflow: 'hidden',
             }
@@ -120,7 +140,7 @@ export function NavGroups({ groups }: { groups: ReactNode[] }) {
               ? {
                   marginTop: s['2'] + s['0.5'],
                   paddingTop: s['2'] + s['0.5'],
-                  borderTopWidth: 1,
+                  borderTopWidth: line.thin,
                   borderTopColor: theme.colors.line,
                 }
               : null),
@@ -162,7 +182,7 @@ export function NavItem({ icon, label, href, onPress, count, active }: NavItemPr
           alignItems: 'center',
           gap: s['2'] + s['0.5'],
           paddingHorizontal: s['2'] + s['0.5'],
-          paddingVertical: 7,
+          paddingVertical: sidebar.itemY,
           borderRadius: tokens.radius.sm,
           backgroundColor: active
             ? alpha(theme.colors.text, 0.06)
@@ -174,7 +194,7 @@ export function NavItem({ icon, label, href, onPress, count, active }: NavItemPr
         {({ hovered }) => (
           <>
             <View style={{ opacity: active ? 1 : 0.85 }}>
-              <Icon name={icon} size={16} color={active ? 'accent' : 'text-2'} />
+              <Icon name={icon} size={tokens.icon.size.sm} color={active ? 'accent' : 'text-2'} />
             </View>
             <Text
               size={ui.size}
@@ -187,7 +207,7 @@ export function NavItem({ icon, label, href, onPress, count, active }: NavItemPr
               {label}
             </Text>
             {count === undefined ? null : (
-              <Text size={11} mono color="text-3" aria-hidden>
+              <Text size={webText.label.size} mono color="text-3" aria-hidden>
                 {count.toLocaleString()}
               </Text>
             )}
@@ -226,7 +246,7 @@ export function ServerCard({ name, detail, status, statusLabel }: ServerCardProp
         alignItems: 'center',
         gap: s['2'] + s['0.5'],
         padding: s['2'] + s['0.5'],
-        borderWidth: 1,
+        borderWidth: line.thin,
         borderColor: theme.colors.line,
         borderRadius: tokens.radius.md,
         backgroundColor: theme.colors.s2,
@@ -250,7 +270,7 @@ export function ServerCard({ name, detail, status, statusLabel }: ServerCardProp
             {`: ${statusLabel ?? STATUS_WORD[status]}`}
           </Text>
         </Text>
-        <Text size={11} leading={1.4} color="text-3" numberOfLines={1}>
+        <Text size={webText.label.size} leading={1.4} color="text-3" numberOfLines={1}>
           {detail}
         </Text>
       </View>
@@ -258,14 +278,12 @@ export function ServerCard({ name, detail, status, statusLabel }: ServerCardProp
   )
 }
 
-/** Read, never seen: the web's `sr-only` (https://www.w3.org/WAI/WCAG22/Techniques/css/C7). */
-const HIDDEN_TEXT = {
-  position: 'absolute',
-  width: 1,
-  height: 1,
-  overflow: 'hidden',
-  opacity: 0,
-} as const
+/**
+ * Read, never seen: the library's one visually hidden style (the web's `sr-only`,
+ * https://www.w3.org/WAI/WCAG22/Techniques/css/C7), and transparent, since a nested Text on iOS
+ * and Android takes no layout styles.
+ */
+const HIDDEN_TEXT = { ...visuallyHidden, opacity: 0 }
 
 // ---------------------------------------------------------------- the page's top row
 
@@ -295,7 +313,7 @@ export function SearchTrigger({
       slop={{ height: m.height, width: wide ? undefined : m.height }}
       style={({ hovered }) => ({
         height: m.height,
-        width: wide ? 320 : m.height,
+        width: wide ? searchTrigger.width : m.height,
         maxWidth: wide ? '32vw' : undefined,
         flexShrink: 0,
         flexDirection: 'row',
@@ -303,7 +321,7 @@ export function SearchTrigger({
         justifyContent: wide ? 'flex-start' : 'center',
         gap: s['2'],
         paddingHorizontal: wide ? s['3'] : 0,
-        borderWidth: 1,
+        borderWidth: line.thin,
         borderColor: hovered ? theme.colors['line-strong'] : theme.colors.line,
         borderRadius: m.radius,
         backgroundColor: theme.colors.s1,
@@ -311,7 +329,7 @@ export function SearchTrigger({
     >
       {({ hovered }) => (
         <>
-          <Icon name="search" size={16} color={hovered ? 'text-2' : 'text-3'} />
+          <Icon name="search" size={tokens.icon.size.sm} color={hovered ? 'text-2' : 'text-3'} />
           {wide ? (
             <Text
               size={m.text}
@@ -329,8 +347,8 @@ export function SearchTrigger({
   )
 }
 
-/** Its corner, as the web's Kbd (`rounded-[5px]`). */
-const KBD_RADIUS = 5
+/** Its corner, as the web's Kbd (`rounded-[5px]`, onto `radius.2xs`). */
+const KBD_RADIUS = tokens.radius['2xs']
 
 /** A keyboard hint: mono 11 in a `line-strong` outline, hidden from screen readers (the label says it). */
 export function Kbd({ children }: { children: string }) {
@@ -344,12 +362,12 @@ export function Kbd({ children }: { children: string }) {
         paddingHorizontal: s['1'] + s['0.5'],
         alignItems: 'center',
         justifyContent: 'center',
-        borderWidth: 1,
+        borderWidth: line.thin,
         borderColor: theme.colors['line-strong'],
         borderRadius: KBD_RADIUS,
       }}
     >
-      <Text size={11} leading={1} mono color="text-3">
+      <Text size={webText.label.size} leading={1} mono color="text-3">
         {children}
       </Text>
     </View>
@@ -403,7 +421,7 @@ export function PageHeader({ title, description, search, actions, start }: PageH
     >
       {start}
       {/* a 160 basis: the actions wrap to a second row before the title truncates */}
-      <View style={{ flexGrow: 1, flexShrink: 1, flexBasis: 160, minWidth: 0 }}>
+      <View style={{ flexGrow: 1, flexShrink: 1, flexBasis: statusBar.itemBasis, minWidth: 0 }}>
         <Text variant="heading" role="heading" aria-level={1} numberOfLines={1}>
           {title}
         </Text>
@@ -460,7 +478,7 @@ export function StatusBar({
         paddingHorizontal: s['4'],
         overflow: 'hidden',
         backgroundColor: theme.colors.s1,
-        borderTopWidth: 1,
+        borderTopWidth: line.thin,
         borderTopColor: theme.colors.line,
       }}
     >
@@ -476,22 +494,22 @@ const itemDot: Record<'success' | 'warning' | 'danger' | 'neutral', ColorRole> =
   neutral: 'text-3',
 }
 
-/** The widths below which a low-priority item goes: the web's medium (600) and expanded (1024). */
-const HIDE_BELOW = { medium: breakpoints.medium, expanded: breakpoints.expanded } as const
-
 export type StatusItemProps = {
   children: string
   /** A dot before the text, which says the status too. */
   dot?: keyof typeof itemDot
   /** Pushes this item and the ones after it to the end. */
   end?: boolean
-  /** Hidden in a window narrower than this: resources go first, then the version. */
-  hideBelow?: keyof typeof HIDE_BELOW
+  /**
+   * Hidden in a compact window, narrower than the form-factor rule's one split (`REGULAR_WIDTH`,
+   * 768): the version and the resources.
+   */
+  hideCompact?: boolean
 }
 
-export function StatusItem({ children, dot, end, hideBelow }: StatusItemProps) {
+export function StatusItem({ children, dot, end, hideCompact }: StatusItemProps) {
   const theme = useTheme()
-  const shown = useWindowAtLeast(hideBelow ? HIDE_BELOW[hideBelow] : 0)
+  const shown = useWindowAtLeast(hideCompact ? REGULAR_WIDTH : 0)
   if (!shown) return null
   return (
     <View
@@ -515,7 +533,7 @@ export function StatusItem({ children, dot, end, hideBelow }: StatusItemProps) {
           }}
         />
       ) : null}
-      <Text size={11} mono color="text-3" numberOfLines={1} style={{ minWidth: 0 }}>
+      <Text size={webText.label.size} mono color="text-3" numberOfLines={1} style={{ minWidth: 0 }}>
         {children}
       </Text>
     </View>
@@ -564,7 +582,7 @@ export function Panel({
       style={{
         gap: gap ?? (group ? s['4'] : s['3']),
         padding: group && wide ? s['5'] : s['4'],
-        borderWidth: 1,
+        borderWidth: line.thin,
         borderColor: theme.colors.line,
         borderRadius: tokens.radius.lg,
         backgroundColor: theme.colors.s1,
@@ -610,7 +628,7 @@ export type StatProps = {
 
 /** A figure in a panel or widget: 26 semibold with the display tracking, a caption under it. */
 export function Stat({ value, unit, caption }: StatProps) {
-  const size = 26
+  const size = serverCard.mark
   return (
     <View style={{ minWidth: 0, gap: s['1'] }}>
       <Text
@@ -779,7 +797,7 @@ export function Figure({
       mono
       color={color}
       numberOfLines={1}
-      {...(title ? ({ title } as object) : null)}
+      {...({ ref: webTitle(title) } as object)}
     >
       {children}
     </Text>
@@ -824,7 +842,11 @@ export function Attribution({ logo, href, notice }: AttributionProps) {
           style={{ height, width: (height * logo.width) / logo.height }}
         />
       </Press>
-      <Text variant="caption" color="text-3" style={{ flexGrow: 1, flexShrink: 1, flexBasis: 192 }}>
+      <Text
+        variant="caption"
+        color="text-3"
+        style={{ flexGrow: 1, flexShrink: 1, flexBasis: wrapBasis }}
+      >
         {notice}
       </Text>
     </View>

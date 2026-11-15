@@ -102,9 +102,23 @@ jobs:
       # (https://github.com/actions/cache#creating-a-cache-key). `autoclean` drops the .debs that
       # can no longer be downloaded, so the cache doesn't grow (apt-get(8)). Each step has its own
       # time limit, so a stalled mirror fails in minutes and names the step.
+      #
+      # The image lists its mirrors in /etc/apt/apt-mirrors.txt, Azure's first and
+      # archive.ubuntu.com and security.ubuntu.com after it (images/ubuntu/scripts/build/
+      # configure-apt-sources.sh in actions/runner-images), and apt's mirror method falls back
+      # through that list for each file (apt-transport-mirror(1)). When Azure's name doesn't
+      # resolve, each file waits about 20 s on DNS before falling back, and the index's four files
+      # used up the step's 3 minutes on every attempt (the jobs' logs, 2026-11-11: "Temporary
+      # failure resolving 'azure.archive.ubuntu.com'"). So the name is looked up once first, and
+      # when it doesn't resolve its line comes off the list and apt goes straight to the others.
       - name: The apt index
         timeout-minutes: 3
-        run: sudo apt-get update
+        run: |
+          if ! timeout 10 getent hosts azure.archive.ubuntu.com > /dev/null; then
+            echo "::warning::azure.archive.ubuntu.com doesn't resolve; using the image's other mirrors"
+            sudo sed -i '/azure\.archive\.ubuntu\.com/d' /etc/apt/apt-mirrors.txt
+          fi
+          sudo apt-get update
       - name: The apt packages' versions
         id: apt
         run: |

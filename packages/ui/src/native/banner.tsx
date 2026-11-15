@@ -8,10 +8,10 @@
 // which take the body's style. It's a region named by its title, as the web's <section> is.
 
 import { useT } from '@highsea-tv/i18n/react'
-import { adminText, breakpoints, type ColorRole } from '@highsea-tv/tokens'
+import { adminText, type ColorRole, line } from '@highsea-tv/tokens'
 import type { ReactNode } from 'react'
 import { View } from 'react-native'
-import { useWindowAtLeast } from './admin.tsx'
+import { useRegularWindow } from './admin.tsx'
 import { alpha } from './alpha.ts'
 import { Button } from './button.tsx'
 import { Icon, type IconName } from './icon.tsx'
@@ -82,11 +82,12 @@ export function Banner({
 }) {
   const theme = useTheme()
   const t = useT(uiMessages)
-  const medium = useWindowAtLeast(breakpoints.medium)
-  const line = Math.round(UI.size * UI.leading * theme.u)
+  const medium = useRegularWindow()
+  const textLine = Math.round(UI.size * UI.leading * theme.u)
   const look = TONES[tone]
   const bar = variant === 'bar'
-  // a bar's actions sit beside its words from a medium window up (the web's medium:flex)
+  // a bar's actions sit beside its words from a regular window up (the web's medium:flex, on the
+  // form-factor rule's 768)
   const beside = bar && medium
   const actions =
     action || onAcknowledge ? (
@@ -119,15 +120,15 @@ export function Banner({
         paddingVertical: bar ? tokens.space['3'] : tokens.space['4'],
         borderRadius: bar ? tokens.radius.md : tokens.radius.lg,
         backgroundColor: theme.colors.s1,
-        borderWidth: 1,
+        borderWidth: line.thin,
         borderColor: look.edge ? alpha(theme.colors[look.edge], look.edgeAlpha) : theme.colors.line,
       }}
     >
       <View
         aria-hidden
         style={{
-          width: 32,
-          height: 32,
+          width: tokens.icon.disc.sm,
+          height: tokens.icon.disc.sm,
           borderRadius: tokens.radius.pill,
           alignItems: 'center',
           justifyContent: 'center',
@@ -153,11 +154,11 @@ export function Banner({
             paddingVertical: tokens.space['1'],
           }}
         >
-          <Text size={UI.size} style={{ lineHeight: line }} weight={600}>
+          <Text size={UI.size} style={{ lineHeight: textLine }} weight={600}>
             {title}
           </Text>
           {children ? (
-            <Text size={UI.size} style={{ lineHeight: line }} color="text-2">
+            <Text size={UI.size} style={{ lineHeight: textLine }} color="text-2">
               {children}
             </Text>
           ) : null}
@@ -165,7 +166,7 @@ export function Banner({
         {actions}
       </View>
       {onDismiss && !onAcknowledge ? (
-        <View style={{ marginEnd: -6 }}>
+        <View style={{ marginEnd: -tokens.space['1.5'] }}>
           <Button
             variant="ghost"
             size="sm"
