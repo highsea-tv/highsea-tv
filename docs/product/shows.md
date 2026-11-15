@@ -1,7 +1,7 @@
 # Shows: the library, a show's page and Add a show
 
 - **Platforms:** Admin (`apps/server`), compact and regular windows.
-- **Screen:** `packages/admin/src/shows-library.tsx`, `show-detail.tsx`, `discover-shows.tsx` and `add-show-dialog.tsx`. The prototype draws them; `apps/server` routes them with the TV series phase.
+- **Screen:** `packages/admin/src/shows-library.tsx`, `show-detail.tsx`, `discover-shows.tsx` and `add-show-dialog.tsx`. They're drawn only when public info's `sources` lists shows (`serves.tsx`), on the drafted `series` contract group (`/api/v1/series`, ADR 0061's D3 section), so the prototype's mock shows them; `apps/server` answers that group 501 and has no `/shows` page until the TV series phase.
 - **Prototype:** `#/admin/shows`, `#/admin/shows/the-lantern-keepers` (and `/files`), `#/admin/discover/shows`. Drawn in stage 6 of [prototype-gaps.md](../plans/prototype-gaps.md#stage-6-shows-in-the-admin) for the TV series phase, which builds it.
 - **Reference:** [movies.md](movies.md), which these pages are laid out as, and Sonarr's series index, series page and Add New Series.
 

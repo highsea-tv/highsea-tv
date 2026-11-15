@@ -396,8 +396,9 @@ try {
       // 8c: the profile, format and size editors (the seeded HD 1080p and x265 presets)
       { name: 'settings:profiles:edit', path: '/settings/profiles/qp-hd' },
       {
-        // A row grouped through its menu, as the Torznab entry does: an open Radix menu hides the
-        // page behind it with aria-hidden, which axe reads as hidden focusable content
+        // A row grouped through its menu, as the Torznab entry does: choosing closes the menu, which
+        // floats on react-native-web's Modal (aria-modal, focus kept inside), so the page is swept
+        // as it is after the choice
         name: 'settings:profiles:edit:grouped',
         path: '/settings/profiles/qp-hd',
         act: async (p) => {
@@ -769,8 +770,8 @@ try {
   await sweep(
     [
       { name: 'web:home', path: '/web/' },
-      // no menus left open: an open Radix menu hides the page behind it with aria-hidden, which axe
-      // reads as hidden focusable content (as settings:profiles:edit:grouped says)
+      // no menus left open: an open menu floats on react-native-web's Modal, aria-modal with focus
+      // kept inside, so axe and the keyboard walk would read the menu rather than the page
       { name: 'web:library', path: '/web/library' },
       { name: 'web:collections', path: '/web/collections' },
       { name: 'web:collection', path: `/web/collections/${handPicked.id}` },

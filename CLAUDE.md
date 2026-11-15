@@ -72,4 +72,4 @@ The repeated workflows are project skills in `.claude/skills/`: the gate loop (`
 - **Next.js:** a custom server can't use `output: 'standalone'`; set your own headers before calling Next's handler; hosts that draw the library build with `--webpack`.
 - **ffmpeg** is needed by the subtitle sync and playback tests; without it they skip and say so.
 - **Docker behind a TLS-inspecting proxy:** `docker build --secret id=ca,src=/path/ca.crt .`
-- **Tailwind** is left only in the guides and the prototypes' own chrome; everything else draws with the library's React Native parts.
+- **Tailwind** is left only in the guides' Fumadocs frame and the prototypes' own chrome; everything else draws with the library's React Native parts, the guides' callouts, cards and figures included.

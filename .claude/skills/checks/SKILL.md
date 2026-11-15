@@ -41,6 +41,9 @@ The quick checks, then:
 bun run smoke       # the platform under Node, as production runs it
 bun run licenses    # every dependency compatible with AGPL-3.0
 bun run audit       # high or critical advisories; dated exceptions in scripts/audit-exceptions.json
+bun run one-place   # nothing defined in two places
+bun scripts/controls.ts   # no screen draws a control of its own
+bun scripts/bundles.ts    # each of the client's four bundles carries only its own renderer
 ```
 
 Then the sweeps (`scripts/sweeps/README.md`). Run them in the background and wait for their notifications rather than polling. The prototypes' three build and serve the prototypes themselves (about 5½ minutes together on a 12-core Mac); nothing needs starting first.
@@ -72,7 +75,7 @@ Don't report these as failures. Do report anything else.
 
 - A toast caught mid-fade fails contrast (`pages.ts` waits for animations to avoid it).
 - In `server.ts` with `SWEEP_DEV=1`, a page that calls `notFound()` can throw "Failed to execute 'measure' on 'Performance' … negative time stamp" in development, and Next's dev overlay then shows up as a keyboard stop (vercel/next.js#86060). Production builds don't have it.
-- The keyboard sweep once had a hidden focus stop on `/web/settings/devices` (1440) and `/web/settings/home` (390) that a re-run didn't repeat. On 2026-10-28 the same finding (one stop, `hidden: span ""`, a Radix focus guard) was traced to the announcement dialog still mounted in its exit animation; `acknowledge` in `scripts/sweeps/lib.ts` now waits for the dialog itself to unmount. If it comes back, find the cause rather than re-running until it passes.
+- The keyboard sweep once had a hidden focus stop on `/web/settings/devices` (1440) and `/web/settings/home` (390) that a re-run didn't repeat. On 2026-10-28 the same finding (one stop, `hidden: span ""`, a focus guard of the web renderer's dialog, which went in D3) was traced to the announcement dialog still mounted in its exit animation; `acknowledge` in `scripts/sweeps/lib.ts` now waits for the dialog itself to unmount. If it comes back, find the cause rather than re-running until it passes.
 - The tests that need ffmpeg or `unar` skip and say so when those are missing. Report the skip count.
 
 ## Reporting

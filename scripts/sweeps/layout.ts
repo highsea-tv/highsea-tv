@@ -101,7 +101,7 @@ export const TOLERANCE = 4
 
 /**
  * How much more than the tolerance a text's own width and height may differ, as a share of itself:
- * none. With iOS kerning as the browser does (ui-native's Text leaves `letterSpacing` unset without
+ * none. With iOS kerning as the browser does (the library's Text leaves `letterSpacing` unset without
  * tracking) and the same font and size, the run of 2026-11-03 measured every matched text within
  * 1.33 points of the web's width (0.5% of it) and 0.33 of its height on the iPhone, and within 0.86
  * (1.2%) and 1.00 on the Apple TV (iOS rounds a text's frame up to a whole pixel, one point at the
