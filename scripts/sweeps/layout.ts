@@ -883,7 +883,10 @@ export const ANCHORS: Record<Screen, (t: Target) => Anchor[]> = {
       : tvLike(t)
         ? { kinds: ['action'], name: /^a z$/, says: 'the A–Z sort' }
         : { kinds: ['text'], name: /^\d+ movies$/, says: 'Movies’ count' },
-    { kinds: ['action'], name: /^tears of steel 2012$/, says: 'Tears of Steel’s poster' },
+    // a poster the first screen draws: since D3 a long grid draws only what's near the screen
+    // (packages/ui's Virtual), so a film far down the alphabet isn't in the tree, and the count
+    // above it must be in the same capture
+    { kinds: ['action'], name: /^big buck bunny 2008$/, says: 'Big Buck Bunny’s poster' },
   ],
   collections: (t) => [
     tvLike(t)
@@ -939,7 +942,14 @@ export const ANCHORS: Record<Screen, (t: Target) => Anchor[]> = {
     { kinds: ['text'], name: /^saltmarsh$/, says: 'the show’s title' },
     { kinds: ['action'], name: /^season 1\b/, says: 'its first season' },
   ],
-  music: () => [{ kinds: ['action'], name: /^sintel original score\b/, says: 'Sintel’s score' }],
+  // the first album, as Movies' first poster (D3's virtual grid)
+  music: () => [
+    {
+      kinds: ['action'],
+      name: /^big buck bunny original score\b/,
+      says: 'Big Buck Bunny’s score',
+    },
+  ],
   songs: (t) => [
     // the TV's Songs draws no count: its first song instead
     tvLike(t)
@@ -1170,7 +1180,22 @@ export const stepsFor = (target: Target, screens: readonly Screen[]) =>
  * themselves: uitest's Layout.swift captures once two snapshots' frames are the same.
  */
 export const settleFor = (screen: Screen, target: Target) =>
-  screen === 'player' && tvLike(target) ? HIDE_MS + 1000 : 0
+  !tvLike(target)
+    ? 0
+    : screen === 'player'
+      ? HIDE_MS + 1000
+      : screen === 'songs'
+        ? SONGS_FOCUS_MS
+        : 0
+
+/**
+ * On the TV, Songs' first focus lands on Music's first tab, and the list takes it once its 383
+ * rows are laid out (the first load focuses the grid). Two still snapshots of its 430 nodes can
+ * come before that move, and the capture then holds the tab's lift and not the row's (the run of
+ * 2026-11-15: the device's tree had Albums lifted, its picture taken after had the row). A judgement
+ * of the time the move takes, with room.
+ */
+const SONGS_FOCUS_MS = 3000
 
 /**
  * The iPhone 17 Pro's safe area in points, which the web's compact-touch emulates so both lay out

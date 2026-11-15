@@ -152,7 +152,12 @@ function TouchEpisode(props: EpisodeRowProps) {
             </Text>
           </View>
         </Press>
-        <Mark {...props} />
+        {/* in a view of its own, which follows the row's centring: off the web a button keeps its
+            own size by `alignSelf: 'flex-start'` (./own-size.ts), which would set it at the
+            row's top beside the still */}
+        <View>
+          <Mark {...props} />
+        </View>
       </View>
       {synopsis ? (
         <Text variant="body" color="text-2" numberOfLines={2}>
