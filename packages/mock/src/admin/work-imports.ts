@@ -72,6 +72,7 @@ export function importAnswers(kit: AdminKit): Answers {
           match: { tmdbId: m.tmdbId, title: m.title, year: m.year },
           matchedBy: 'name',
           parts: [],
+          check: null,
           inLibrary: true,
           skip: tw('work.inLibrary'),
         }
@@ -95,6 +96,7 @@ export function importAnswers(kit: AdminKit): Answers {
           match: { tmdbId: d.tmdbId, title: d.title, year: d.year },
           matchedBy: 'search',
           parts: [],
+          check: null,
           inLibrary: false,
           skip: null,
         }
@@ -109,6 +111,7 @@ export function importAnswers(kit: AdminKit): Answers {
       match: null,
       matchedBy: null,
       parts: [],
+      check: null,
       inLibrary: false,
       skip: tw('work.noMatch'),
     }

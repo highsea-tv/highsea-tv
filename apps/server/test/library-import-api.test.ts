@@ -84,6 +84,7 @@ describe.skipIf(!hasFfmpeg)('library import over the API', () => {
         match: { tmdbId: SINTEL, title: 'Sintel', year: 2010 },
         matchedBy: 'search',
         parts: [],
+        check: null,
         inLibrary: false,
         skip: null,
       },

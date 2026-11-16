@@ -143,7 +143,8 @@ export function LibraryImport({ root: initialRoot = '' }: { root?: string }) {
       .scan({ body: { root: folder } })
       .then((xs) => {
         setScanned(folder)
-        setRows(xs.map((x) => ({ ...x, selected: !x.skip && x.match !== null })))
+        // a match to check (an NFO naming another film) waits for the owner to tick it
+        setRows(xs.map((x) => ({ ...x, selected: !x.skip && !x.check && x.match !== null })))
       })
       .catch((e: Error) => setError(errorReason(e) === 'no-tmdb-key' ? t('noKey') : e.message))
       .finally(() => setScanning(false))
@@ -368,7 +369,11 @@ export function LibraryImport({ root: initialRoot = '' }: { root?: string }) {
                                 : r.match.title
                               : '—'}
                           </Text>
-                          {r.match && r.matchedBy === 'nfo' ? (
+                          {r.check && !r.skip ? (
+                            <Text variant="caption" color="badge-warning">
+                              {r.check}
+                            </Text>
+                          ) : r.match && r.matchedBy === 'nfo' ? (
                             <Text variant="caption" color="text-3">
                               {t('fromNfo')}
                             </Text>

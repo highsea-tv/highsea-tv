@@ -51,13 +51,13 @@ When you add a root folder, at setup or here, highsea looks inside it straight a
 
 A film is added where it is, with nothing moved or renamed, when its match is sure:
 
-- the folder has a `movie.nfo`, or an NFO named after the film's file, with the film's TMDB or IMDb ID in it, as Radarr, Kodi and Jellyfin write them;
+- the folder has a `movie.nfo`, or an NFO named after the film's file, with the film's TMDB or IMDb ID in it, as Radarr, Kodi and Jellyfin write them, and the folder's name agrees with that film;
 - the folder's name has the film's ID in it, such as `Sintel {tmdb-45745}` or `{imdb-tt1727587}`;
 - or TMDB has a film with the folder's title and year, such as `Sintel (2010)`.
 
 A film split into parts, such as `Movie Name-cd1.avi` and `Movie Name-cd2.avi`, is one film. Videos in `Featurettes`, `Extras`, `Screenshots`, `Proof`, `Plex Versions` and the other extras folders are never taken for the film, and nor is a file named `sample` or `trailer`.
 
-Anything less certain, such as a folder with no year, waits for you. The root folder's row then says how many, for example "2 folders need a match in Library import". Use **Import what's already here** to check those matches and import them. highsea doesn't search for a waiting folder again until it changes. A downloads folder inside a root folder is left alone.
+Anything less certain waits for you: a folder with no year, for example, or one whose NFO names a different film from its name, such as `Blair Witch (2016)` with an NFO for The Blair Witch Project (1999). An app can write an NFO for the wrong film, so highsea doesn't take one that disagrees with its folder. The root folder's row then says how many, for example "2 folders need a match in Library import". Use **Import what's already here** to check those matches and import them. highsea doesn't search for a waiting folder again until it changes. A downloads folder inside a root folder is left alone.
 
 ## Subtitle languages for films added here
 
@@ -67,7 +67,7 @@ Each root folder has a **Subtitle languages for movies added here** setting. Fil
 
 **Import what's already here** opens the library import in Activity for that folder, for films that need a match, or to import them renamed. highsea reads each folder inside it as one film, by its name: `Title (Year)`, or with a `{tmdb-…}` or `{imdb-…}` ID in the name. It matches each on TMDB, with highsea's key or yours (see [Metadata](/settings/general/metadata/)).
 
-A match read from the folder's NFO says **From the folder's NFO**, and a film in parts says how many, such as **One film in 2 parts**. A folder with no film in it says so, and one holding several films says "This folder holds 2 films. Library import takes one film per folder.": give each film a folder of its own to import them.
+A match read from the folder's NFO says **From the folder's NFO**. When the NFO names a different film from the folder's name, the row says which film it names and offers the match from the name instead, unticked: check it, or pick another, before you import it. A film in parts says how many, such as **One film in 2 parts**. A folder with no film in it says so, and one holding several films says "This folder holds 2 films. Library import takes one film per folder.": give each film a folder of its own to import them.
 
 You choose a quality profile, and whether to **Rename to my format**, which names folders and files with the [naming formats](/settings/media-management/naming/); otherwise nothing is moved or renamed. A folder highsea only reads has no **Rename to my format**. A folder with no match on TMDB says so: add `{tmdb-…}` with the film's TMDB ID to the folder's name and look again. [Activity](/activity/) has more on importing.
 

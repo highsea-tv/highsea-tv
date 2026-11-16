@@ -18,6 +18,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { schema } from '@highsea-tv/db'
 import { eq } from 'drizzle-orm'
+import { nfoDisagrees } from '../../src/movies/library-import.ts'
 import { type Clips, hasFfmpeg, makeClips } from '../clips.ts'
 import { METROPOLIS, NOSFERATU, reason, SINTEL, setup } from './helpers.ts'
 
@@ -154,15 +155,20 @@ describe('every write path refuses a folder highsea only reads', () => {
 describe('Library import reads a real library', () => {
   test('NFOs match for sure with no search; parts, several films and none', async () => {
     const s = await start({
-      // Radarr's movie.nfo, in a folder whose name says nothing
-      'Old Film Folder': {
+      // Radarr's movie.nfo, in a folder named without a year
+      Metropolis: {
         'film.mkv': 'not a film',
         'movie.nfo': '<movie><tmdbid>19</tmdbid><imdbid>tt0017136</imdbid></movie>',
       },
       // Kodi's form, named after the video
-      'Another Folder': {
+      'Nosferatu (1922)': {
         'Nosferatu.1922.mkv': 'not a film',
         'Nosferatu.1922.nfo': '<movie><uniqueid type="tmdb" default="true">653</uniqueid></movie>',
+      },
+      // an NFO an app wrote for another film: the name's id is offered, and it waits for a check
+      'Nosferatu Again (1922) [tmdb-653]': {
+        'Nosferatu.mkv': 'not a film',
+        'movie.nfo': '<movie><tmdbid>19</tmdbid></movie>',
       },
       'Movie Name (1999)': { 'Movie Name-cd1.avi': 'part one', 'Movie Name-cd2.avi': 'part two' },
       'Two Films': { 'First.Film.2010.mkv': 'a film', 'Second.Film.2011.mkv': 'a film' },
@@ -177,8 +183,24 @@ describe('Library import reads a real library', () => {
     s.fetch.requests.length = 0
     const found = await s.movies.libraryImport.scan(s.library)
     const by = Object.fromEntries(found.map((c) => [c.name, c]))
-    expect(by['Old Film Folder']).toMatchObject({ match: { tmdbId: METROPOLIS }, matchedBy: 'nfo' })
-    expect(by['Another Folder']).toMatchObject({ match: { tmdbId: NOSFERATU }, matchedBy: 'nfo' })
+    expect(by.Metropolis).toMatchObject({
+      match: { tmdbId: METROPOLIS },
+      matchedBy: 'nfo',
+      check: null,
+    })
+    expect(by['Nosferatu (1922)']).toMatchObject({
+      match: { tmdbId: NOSFERATU },
+      matchedBy: 'nfo',
+      check: null,
+    })
+    expect(by['Nosferatu Again (1922) [tmdb-653]']).toMatchObject({
+      match: { tmdbId: NOSFERATU },
+      matchedBy: 'name',
+      skip: null,
+    })
+    expect(by['Nosferatu Again (1922) [tmdb-653]']?.check).toMatch(
+      /^Its NFO names Metropolis \(1927\), which isn’t the film the folder’s name says\./,
+    )
     // the NFOs' films were fetched by id, never searched for
     expect(s.fetch.requests.filter((r) => r.includes('/search/')).length).toBeLessThanOrEqual(2)
     expect(by['Movie Name (1999)']).toMatchObject({
@@ -201,6 +223,56 @@ describe('Library import reads a real library', () => {
       match: { tmdbId: SINTEL },
       matchedBy: 'search',
     })
+  })
+})
+
+describe('an NFO that names another film than its folder', () => {
+  const film = (tmdbId: number, title: string, year: number | null, originalTitle = title) => ({
+    tmdbId,
+    title,
+    originalTitle,
+    year,
+  })
+
+  // the names and NFOs an owner's library really held (HT-22's read-only run, 2026-11-16)
+  test('wrong NFOs are caught: another year, another title, another id', () => {
+    expect(nfoDisagrees('Blair Witch (2016)', film(2667, 'The Blair Witch Project', 1999))).toMatch(
+      /^Its NFO names The Blair Witch Project \(1999\)/,
+    )
+    expect(nfoDisagrees('The King (2019)', film(420818, 'The Lion King', 2019))).not.toBeNull()
+    expect(
+      nfoDisagrees('The Circle (2017)', film(343668, 'Kingsman: The Golden Circle', 2017)),
+    ).not.toBeNull()
+    expect(nfoDisagrees('The Way (2010)', film(46528, 'The Warrior’s Way', 2010))).not.toBeNull()
+    expect(
+      nfoDisagrees('Colony (2026) [tmdb-1375646]', film(1316092, '“Wuthering Heights”', 2026)),
+    ).not.toBeNull()
+  })
+
+  test('the spellings folder names use agree: apostrophes, &, numerals, Vol., a longer title', () => {
+    for (const [name, title, year] of [
+      ['Oceans Eleven (2001)', 'Ocean’s Eleven', 2001],
+      ['Starsky and Hutch (2004)', 'Starsky & Hutch', 2004],
+      ['Frozen 2 (2019)', 'Frozen II', 2019],
+      ['Alien³ (1992)', 'Alien³', 1992],
+      ['Guardians of the Galaxy Volume 3 (2023)', 'Guardians of the Galaxy Vol. 3', 2023],
+      ['The Lion King 2 (1998)', 'The Lion King II: Simba’s Pride', 1998],
+      [
+        'Pirates of the Caribbean - At Worlds End (2007)',
+        'Pirates of the Caribbean: At World’s End',
+        2007,
+      ],
+      ['Sintel (2011)', 'Sintel', 2010],
+    ] as const)
+      expect(nfoDisagrees(name, film(1, title, year))).toBeNull()
+    // the original title counts, and an id in the name that's the NFO's own
+    expect(
+      nfoDisagrees(
+        'Sen to Chihiro (2001)',
+        film(129, 'Spirited Away', 2001, 'Sen to Chihiro no Kamikakushi'),
+      ),
+    ).toBeNull()
+    expect(nfoDisagrees('Colony (2026) [tmdb-1375646]', film(1375646, 'Colony', 2026))).toBeNull()
   })
 })
 

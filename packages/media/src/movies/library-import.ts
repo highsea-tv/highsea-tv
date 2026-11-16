@@ -73,6 +73,8 @@ export type LibraryCandidate = {
   matchedBy: 'nfo' | 'name' | 'search' | null
   /** The files of a film in parts, the first part first; empty for a film in one file. */
   parts: string[]
+  /** Why the match needs the owner's check before it's imported (an NFO naming another film). */
+  check: string | null
 }
 
 export type LibraryImportItem = { folder: string; tmdbId: number }
@@ -110,11 +112,74 @@ const Payload = z.object({
   items: z.array(z.object({ folder: z.string(), tmdbId: z.number().int().positive() })),
 })
 
-/** A folder's match, and whether it's sure enough to add without asking. */
+/**
+ * A folder's match, whether it's sure enough to add without asking, and why the owner should
+ * check it first when it isn't (an NFO naming another film than the folder does).
+ */
 type Matched = {
   match: LibraryCandidate['match']
   sure: boolean
   by: LibraryCandidate['matchedBy']
+  check?: string | null
+}
+
+/** Roman numerals and spellings a folder name and TMDB's title write differently. */
+const SAME_WORD: Record<string, string> = {
+  ii: '2',
+  iii: '3',
+  iv: '4',
+  v: '5',
+  vi: '6',
+  vii: '7',
+  viii: '8',
+  ix: '9',
+  x: '10',
+  volume: 'vol',
+}
+
+/** A title's words, folded as folder names write them: no apostrophes, `&` as and, no `the`. */
+function titleWords(s: string): string[] {
+  const words = s
+    .toLowerCase()
+    .normalize('NFKD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/&/g, ' and ')
+    .replace(/³/g, ' 3 ')
+    .replace(/²/g, ' 2 ')
+    .replace(/['’‘]/g, '')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .split(' ')
+    .filter(Boolean)
+    .map((w) => SAME_WORD[w] ?? w)
+  return ['the', 'a', 'an'].includes(words[0] ?? '') ? words.slice(1) : words
+}
+
+const startsWith = (a: string[], b: string[]) =>
+  a.length <= b.length && a.every((w, i) => b[i] === w)
+
+/**
+ * Why an NFO's film isn't the one its folder names, or null when they agree (Phase 5 A1, ADR
+ * 0063): an id in the folder's name that isn't the NFO's, a year more than one off (Radarr's
+ * allowance), or a title where neither TMDB's title nor its original title starts the folder's,
+ * or the folder's starts it. A folder whose name says nothing agrees. Real libraries hold NFOs an
+ * app wrote for the wrong film; such a folder waits for the owner to check it.
+ */
+export function nfoDisagrees(
+  name: string,
+  film: { tmdbId: number; title: string; originalTitle: string; year: number | null },
+): string | null {
+  const parsed = parse(name)
+  const named = `${film.title}${film.year ? ` (${film.year})` : ''}`
+  const why = `Its NFO names ${named}, which isn’t the film the folder’s name says. Check the match before importing it.`
+  if (parsed.ids.tmdb) return parsed.ids.tmdb === film.tmdbId ? null : why
+  if (parsed.year && film.year && Math.abs(parsed.year - film.year) > 1) return why
+  const folder = titleWords(parsed.title ?? '')
+  if (folder.length === 0) return null
+  const agrees = [film.title, film.originalTitle].some((t) => {
+    const words = titleWords(t)
+    return startsWith(folder, words) || startsWith(words, folder)
+  })
+  return agrees ? null : why
 }
 
 /** What a folder holds, and why it can't be imported as one film; null when it can. */
@@ -226,6 +291,14 @@ export function createLibraryImport(
       title: m.title,
       year: m.year,
     })
+    // an NFO's film is sure when the folder's name agrees with it; a name's own id always is
+    const found = (
+      m: { id: number; title: string; originalTitle: string; year: number | null },
+      by: 'nfo' | 'name',
+    ): Matched => {
+      const check = by === 'nfo' ? nfoDisagrees(name, { ...m, tmdbId: m.id }) : null
+      return { match: toMatch(m), sure: check === null, by, check }
+    }
     const byIds = async (
       ids: { tmdb: number | null; imdb: string | null },
       by: 'nfo' | 'name',
@@ -235,33 +308,44 @@ export function createLibraryImport(
           if ((e as AppError).code === 'not-found') return null
           throw e
         })
-        if (m) return { match: toMatch(m), sure: true, by }
+        if (m) return found(m, by)
       }
       if (ids.imdb) {
         const m = await metadata.discover.findByImdb(ids.imdb)
-        if (m) return { match: toMatch(m), sure: true, by }
+        if (m) return found(m, by)
       }
       return null
     }
-    // the NFO the owner's other app wrote names the film for sure, then an id in the name
+    // the NFO the owner's other app wrote names the film, when the folder's name agrees with it;
+    // then an id in the name
     const fromNfo = nfo ? await byIds(nfo, 'nfo') : null
-    if (fromNfo) return fromNfo
-    const fromName = await byIds(
-      { tmdb: parsed.ids.tmdb ?? null, imdb: parsed.ids.imdb ?? null },
-      'name',
-    )
-    if (fromName) return fromName
-    if (!parsed.title) return { match: null, sure: false, by: null }
-    // TMDB's search ignores case; one spelling keeps the requests (and the recordings) the same
-    const page = await metadata.discover.search(parsed.title.toLowerCase())
-    const best = bestMatch(page.results, parsed.title, parsed.year)
-    if (!best) return { match: null, sure: false, by: null }
-    const want = plain(parsed.title)
-    const sure =
-      parsed.year !== null &&
-      best.year === parsed.year &&
-      (plain(best.title) === want || plain(best.originalTitle) === want)
-    return { match: toMatch(best), sure, by: 'search' }
+    if (fromNfo?.sure) return fromNfo
+    const fromFolder = await byName()
+    // an NFO that disagrees with its folder: the name's match is offered, and it waits either way
+    if (fromNfo)
+      return fromFolder.match
+        ? { ...fromFolder, sure: false, check: fromNfo.check }
+        : { ...fromNfo, sure: false }
+    return fromFolder
+
+    async function byName(): Promise<Matched> {
+      const fromName = await byIds(
+        { tmdb: parsed.ids.tmdb ?? null, imdb: parsed.ids.imdb ?? null },
+        'name',
+      )
+      if (fromName) return fromName
+      if (!parsed.title) return { match: null, sure: false, by: null }
+      // TMDB's search ignores case; one spelling keeps the requests (and the recordings) the same
+      const page = await metadata.discover.search(parsed.title.toLowerCase())
+      const best = bestMatch(page.results, parsed.title, parsed.year)
+      if (!best) return { match: null, sure: false, by: null }
+      const want = plain(parsed.title)
+      const sure =
+        parsed.year !== null &&
+        best.year === parsed.year &&
+        (plain(best.title) === want || plain(best.originalTitle) === want)
+      return { match: toMatch(best), sure, by: 'search' }
+    }
   }
 
   /**
@@ -300,9 +384,15 @@ export function createLibraryImport(
       let match: LibraryCandidate['match'] = null
       let matchedBy: LibraryCandidate['matchedBy'] = null
       let matchProblem: string | null = null
+      let check: string | null = null
       try {
         // a folder that isn't one film isn't searched for
-        if (!folderProblem) ({ match, by: matchedBy } = await matchFor(name, nfo))
+        if (!folderProblem) {
+          const found = await matchFor(name, nfo)
+          match = found.match
+          matchedBy = found.by
+          check = found.check ?? null
+        }
       } catch (e) {
         // no key: nothing can be matched, so the whole scan says so
         if ((e as { details?: { reason?: string } }).details?.reason === 'no-tmdb-key') throw e
@@ -325,6 +415,7 @@ export function createLibraryImport(
         match,
         matchedBy,
         parts: film.kind === 'film' ? film.parts.map((f) => f.path) : [],
+        check,
         inLibrary,
         skip: folderProblem
           ? folderProblem

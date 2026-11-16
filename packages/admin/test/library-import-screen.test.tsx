@@ -72,6 +72,7 @@ const candidate = (name: string, extra: Record<string, unknown> = {}) => ({
   match: null,
   matchedBy: null,
   parts: [],
+  check: null,
   inLibrary: false,
   skip: null,
   ...extra,
@@ -141,6 +142,13 @@ async function api(url: string, init: RequestInit = {}): Promise<Response> {
           skip: 'This folder holds 2 films. Library import takes one film per folder.',
         }),
         candidate('Mystery Film', { skip: 'No match on TMDB. Pick the movie to import it.' }),
+        // an NFO naming another film: the name's match is offered, unticked, with the reason
+        candidate('The Circle (2017)', {
+          match: { tmdbId: 339988, title: 'The Circle', year: 2017 },
+          matchedBy: 'search',
+          check:
+            'Its NFO names Kingsman: The Golden Circle (2017), which isn’t the film the folder’s name says. Check the match before importing it.',
+        }),
         candidate('Metropolis (1927)', {
           match: { tmdbId: 19, title: 'Metropolis', year: 1927 },
           inLibrary: true,
@@ -228,6 +236,12 @@ describe('A17 Library import', () => {
     expect(
       two.getByRole('checkbox', { name: 'Import Two Films' }).getAttribute('aria-disabled'),
     ).toBe('true')
+    // an NFO that disagrees with its folder: the reason shows, and it waits to be ticked
+    const circle = within(page.getByRole('row', { name: /The Circle \(2017\)/ }))
+    expect(circle.getByText(/Its NFO names Kingsman: The Golden Circle \(2017\)/)).toBeTruthy()
+    const tick = circle.getByRole('checkbox', { name: 'Import The Circle (2017)' })
+    expect(tick.getAttribute('aria-checked')).toBe('false')
+    expect(tick.getAttribute('aria-disabled')).not.toBe('true')
   })
 
   test('a folder highsea only reads keeps its names: no Rename to my format (ADR 0063)', async () => {

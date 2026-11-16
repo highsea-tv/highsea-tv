@@ -11584,6 +11584,12 @@
               "type": "string"
             }
           },
+          "check": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "inLibrary": {
             "type": "boolean"
           },
@@ -11603,6 +11609,7 @@
           "match",
           "matchedBy",
           "parts",
+          "check",
           "inLibrary",
           "skip"
         ]
