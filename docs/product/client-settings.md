@@ -1,7 +1,8 @@
 # Client settings, profile and You
 
 - **Platforms:** Web and desktop, mobile, TV (settings); mobile and web (profile and downloads).
-- **Prototype:** settings at `#/web/settings`, `#/mobile/you/{section}`, `#/tv/settings` (C7); the profile at `#/mobile/you` and `#/web/profile`, downloads at `#/mobile/offline` and `#/web/downloads` (C8, reference fidelity; core fidelity since checkpoint 4.0b, with `?app=desktop` for the desktop app's).
+- **Screen:** `apps/client/src/app/(in)/settings.tsx` (the sections' list and words in `@highsea-tv/client/prefs`, the account's parts in `apps/client/src/account/`), the profile `(in)/profile.tsx`, downloads `(in)/downloads.tsx` and `(in)/offline.tsx`, and Who's watching `(in)/who/`.
+- **Prototype:** settings at `#/web/settings`, `#/mobile/settings`, `#/tv/settings` (C7; `#/mobile/you` is an alias of `#/mobile/settings`), with the client's mock export in the frames since B2; the profile at `#/mobile/you` and `#/web/profile`, downloads at `#/mobile/offline` and `#/web/downloads` (C8, reference fidelity; core fidelity since checkpoint 4.0b, with `?app=desktop` for the desktop app's).
 - **Roadmap:** [Phase 2 › C7, C8](../roadmap.md#phase-2-design-prototypes-gate-user-sign-off), [Personalization](../roadmap.md#personalization-highseapersonalization). The server's side is [appearance.md](appearance.md).
 
 ## Purpose
@@ -10,15 +11,15 @@ What a person can change for themselves: how this device looks and sounds, what 
 
 ## Entry points
 
-- Web: the avatar menu › **Account** (profile) and **Settings**. Mobile: the **You** tab, and the avatar on every tab's header. TV: **Settings** in the global navigation.
+- Web: the avatar menu › **Account** (profile) and **Settings**. Mobile: the **You** tab, and the avatar on every tab's header. TV: the account at the end of the head (its avatar) opens **Settings**; the head is the TV's global navigation ([client-home.md › TV](client-home.md#tv-locked)).
 
 ## Layout
 
-The same six sections everywhere: **Theme**, **Sounds**, **Home screen**, **Servers**, **Your devices**, **About**.
+One screen by the form-factor rule, with the same seven sections in the same order everywhere (`settingsSections` in `@highsea-tv/client/prefs`): **Theme**, **Sounds**, **Playback**, **Home screen**, **Servers**, **Your devices**, **About**, each a row of its own card with its icon and hint.
 
-- **Web:** "Settings", then the sections as a list beside the chosen one (from medium); on a phone-width window, the list alone, each section its own page with a way back.
-- **Mobile (You tab):** the person (initial, name, "@ines · owner of Harbor"); the six sections as a grouped list; then **Downloads** and **Sign out of Harbor**. Each section is a screen of its own with "‹ You".
-- **TV:** "Settings" and the sections down the left; the chosen one on the right. Moving down the list shows each section; **Right** enters it, **Left** returns.
+- **Pointer, regular window:** "Settings", then the sections as a list beside the chosen one.
+- **Touch, and a pointer in a compact window (the phone's You tab):** the person (initial, name, "@ines · owner of Harbor"); the sections as a grouped list; then **Downloads** and **Sign out of Harbor**. Each section is a screen of its own (`?section=`) with a way back.
+- **TV:** its own composition under the head: "Settings" and the sections down the left, each shown on the right as focus reaches its name, with its hint above it; **Right** enters it, **Left** returns, and **Up** from the list reaches the head. Playback's choices are rows of chips, and Home's rows move by Up and Down. The section asked for (or the first) takes focus as the screen opens, and only then; picking a choice keeps focus on it.
 
 | Section | What's in it |
 | --- | --- |

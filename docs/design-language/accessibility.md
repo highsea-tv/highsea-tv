@@ -44,7 +44,7 @@
 
 ## Robust
 
-- Use native semantics first. Radix primitives on web, and platform accessibility APIs on native.
+- Use native semantics first. Every surface draws the library's React Native parts, which give each control its role, name and state through React Native's accessibility props: on the phone and the TV the platform's accessibility APIs read them, and on the web react-native-web writes them as the matching HTML elements and ARIA attributes ([react-native-web › Accessibility](https://necolas.github.io/react-native-web/docs/accessibility/)). Where the web needs more, the library adds it in its `.web` files (a dialog's focus trap, `aria-selected`, a `title` the web keeps).
 - The TV web build exposes the focused item to the platform screen reader (for example, VoiceOver on tvOS, TalkBack on Android TV) with its title and state.
 - Live regions announce queue changes politely, and only for user-initiated actions.
 
@@ -54,6 +54,11 @@ Sound never carries meaning on its own (see [sound](sound.md#accessibility)). It
 
 ## Verification
 
-- **Tokens:** every built-in theme passes the contrast policy in CI.
-- **Components:** axe is clean, in the three themes, for every screen of the client's web build (apps/client's `export:web`), which draws each component through the same React Native renderer as the phone and the TV. The sweeps (scripts/sweeps) take the build on in one-client-platform.md's part E; until then the prototypes' sweeps stand in. Keyboard-only and D-pad walkthroughs are part of component review.
+- **Tokens:** every built-in theme passes the contrast policy, and every control's edge and chosen state reaches 3:1 on every surface, in the tokens' tests in CI. `scripts/controls.ts` fails when a screen draws a control of its own or gives a library control its own size, corner or colour.
+- **Components and screens:** the sweeps (`scripts/sweeps`, [their README](../../scripts/sweeps/README.md)) run in a real browser before every checkpoint report:
+  - `pages.ts` runs axe, overflow and the controls' row check on every prototype route at its platform's widths, in the three themes, every data state, 200% text and reduced motion. The prototypes' client frames hold the client's mock web export, so this is the client's own drawing;
+  - `keyboard.ts` tabs through every page, and every stop must show its focus; `dpad.ts` checks that every TV stop is reachable by the arrows;
+  - `server.ts` sweeps the server's production build: every admin page signed out and signed in, and the client's web export at `/web`, with axe, the keyboard walk and React's warnings;
+  - `docs.ts` sweeps every page of the guides' static export at 1440 and 390, with axe, overflow and the keyboard walk, and checks with scripts off that each picture is there with its alt text.
+- **The devices:** `tv.ts` walks the Apple TV build with the remote and every stop must be reached, `phone.ts` signs in and plays on the iPhone simulator by the labels VoiceOver reads, and `layout.ts` checks that each screen is the same on the web, the iPhone and the Apple TV.
 - **Phase 2 prototypes:** each flow is tested keyboard-only, with reduced motion, and at 200% text.

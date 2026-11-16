@@ -1,6 +1,7 @@
 # Curation: announcements and featured sections
 
-- **Platforms:** Admin (`apps/server`), every breakpoint. What it composes shows on every client.
+- **Platforms:** Admin (`apps/server`), compact and regular windows. What it composes shows on every client.
+- **Screen:** `packages/admin/src/curation.tsx`, `curation-announcement.tsx`, `curation-section.tsx`, `curation-preview.tsx` and `curation-frame.tsx` (the preview's frame, `apps/server/app/curation-frame/`).
 - **Prototype:** `#/admin/curation` (announcements), `#/admin/curation/featured` (featured sections), `#/admin/curation/announcements/{id|new}` and `#/admin/curation/featured/{id|new}` (the composers) (A11).
 - **Roadmap:** [Phase 2 › A11](../roadmap.md#phase-2-design-prototypes-gate-user-sign-off), [Curation](../roadmap.md#curation-highseacuration). The clients' side is [client-home.md](client-home.md#announcements).
 
@@ -28,7 +29,7 @@ What the household sees first, decided by the owner: announcements (movie night,
 
 ### The composers
 
-Two columns from expanded (the form at 22–28rem, the preview beside it and sticky); stacked below expanded, preview second.
+Two columns in a regular window (the form at 22–28rem, the preview beside it and sticky); stacked in a compact one, preview second.
 
 - **Announcement:**
   - **Title** (80 characters) and **Message** (markdown: `**bold**`, `_italic_`, `[links](https://…)`);

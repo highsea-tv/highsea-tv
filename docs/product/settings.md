@@ -1,6 +1,7 @@
 # Settings
 
-- **Platforms:** Admin, every breakpoint.
+- **Platforms:** Admin, compact and regular windows.
+- **Screen:** `packages/admin/src/settings.tsx` (the index and the area's frame, the areas in `settings-areas.ts`), each area its own file (`general.tsx`, `media-management.tsx`, `quality-editors.tsx`, `profiles.tsx`, `lists.tsx`, `connections.tsx`, `download-client.tsx`, `network.tsx`, `security.tsx`, `backups.tsx`, `migration.tsx`, `tag-settings.tsx`), at `apps/server/app/(admin)/settings/`.
 - **Prototype:** `#/admin/settings` (the index) and `#/admin/settings/{area}` (A15, reference fidelity; Appearance and Users and devices are core, in [appearance.md](appearance.md) and [users-devices.md](users-devices.md)).
   - *Since [prototype-gaps.md](../plans/prototype-gaps.md)'s stage 5 (2026-11-01):* General, Media management (with Root folders and Tags), Import lists, Connections and Migration draw what the built admin does, as the table's *As built* notes describe, and work against the mock: lists check and Trakt's device code is approved on the second poll; a connection's Test fails when its settings say "wrong"; a TMDB key shorter than 16 characters is refused; Migration's runs follow the simulated clock. Two differences remain: **Import what's already here** opens Manual import, which has no library mode in the prototype, and **This browser** adds the browser by the name its user agent gives, without asking it for notifications.
   - *Since stage 6 (2026-11-01), every kind, drawn ahead of the server:* the prototype's Settings cover shows and music too. `apps/server` doesn't have them yet; the server's TV series phase builds them from here.

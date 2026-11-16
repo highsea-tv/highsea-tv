@@ -1,7 +1,8 @@
 # Client item detail
 
 - **Platforms:** Web and desktop, mobile, TV.
-- **Prototype:** `#/web/movies/4`, `#/mobile/movies/4`, `#/tv/movies/4` (C4). The address is the title's TMDB id, the same as the admin's ([ADR 0014](../adr/0014-universal-media-pages.md)).
+- **Screen:** `apps/client/src/app/(in)/movies/[id].tsx` (a show's is `shows/[id].tsx`, a person's `people/[id].tsx`), with its parts in `apps/client/src/detail/`.
+- **Prototype:** `#/web/movies/4`, `#/mobile/movies/4`, `#/tv/movies/4` (C4); since B2 the prototype's frames hold the client's mock web export ([one-client-platform.md](../plans/one-client-platform.md)). The address is the title's TMDB id, the same as the admin's ([ADR 0014](../adr/0014-universal-media-pages.md)).
 - **Roadmap:** [Phase 2 › C4](../roadmap.md#phase-2-design-prototypes-gate-user-sign-off). The admin's media page is [media-pages.md](media-pages.md); this is the household's view of the same title.
 
 ## Purpose
@@ -10,23 +11,20 @@ Decide to watch, and how: Play or Resume, with the version, audio and subtitles 
 
 ## Entry points
 
-- Posters on Home and Library, stills in More like this; **More info** on the web's featured card and **Details** on the TV's hero.
+- Posters on Home and Library, stills in More like this; **More info** on the pointer's featured card, and OK on the TV's featured card.
 - **An episode** (prototype-gaps stage 2, 2026-11-01) opens its show's page at it, `/shows/{id}/episodes/{episode}`: the episode's season chosen and its row scrolled into view (on the TV, focused). Search's episodes and Continue watching's **Go to the show** use it.
 
 ## Layout
 
-- **Web:**
-  - a backdrop header (68% of the viewport from medium) behind the translucent top bar: the title, meta (year, runtime, genres, rating, quality tags), the synopsis, "Directed by", then **Play** or **Resume**, **Play from the start** and "8 min left" when started, and the progress bar;
-  - **Watch with:** Version (a select when there are several, otherwise the version's description), Audio, Subtitles (Off first), in three columns from medium, and "Remembered for this movie, on all your devices.";
-  - **Cast:** portraits with the name and character, up to twelve, in a wrapping grid;
-  - **More like this:** 16:9 stills, as Continue watching's, on a film's page and a show's alike (the owner's answer 10, prototype-gaps stage 4).
-- **Mobile:** the backdrop across the top with **Back** over it (glass); the title (28pt), meta, **Resume · 8 min left** across the width (48pt), **Play from the start**, the synopsis, "Directed by"; Watch with as stacked fields; Cast and More like this as rows.
-- **TV:** the ambient backdrop (the artwork blurred 2.6u and dimmed); the poster (13u) beside the title (3.6u), meta, synopsis and "Directed by"; actions **Resume · 8 min left**, **From the start**, **Audio and subtitles**; the current picks in one line ("4K · English · 5.1 · Subtitles off"); Cast (the name and character under each portrait) and More like this (title and year under each poster) as rows below, scrolled into view by focus; the server identity scrolls away with the page.
-- **TV Audio and subtitles:** a panel from the right (32u): Version (when several), Audio, Subtitles, "Back closes. Saved for this movie." It's an isolated focus region; picking subtitles closes it.
+One screen by the form-factor rule ([spacing-layout.md](../design-language/spacing-layout.md)), with three compositions. Every one has the film's art, its title, the meta line, **Play** or **Resume** (its progress above it) as the one strong action, the rest as round actions named by their icons (**From the start** while resuming, **Audio and subtitles**, **Mark as watched**, **Trailer** where there is one), three lines of synopsis, "Starring" and "Directed by", and the picks it plays with. Then **More like this**, the collection it's in, **Cast and crew** (each opening the person's page), and **About**, **Information**, and **Languages and quality** as cards.
+
+- **Pointer (web and desktop):** the art full bleed under the top bar, which turns to glass as the page scrolls; the words low on the left; Play or Resume beside the round actions, **Play from the start** named in full; Audio and subtitles in a popover hung from its button (Version when there are several, Audio, Subtitles with Off first, and "Remembered for this movie, on all your devices.").
+- **Compact touch (phone):** the art across the top with **Back** over it (glass) and the words below it; Play across the width; the actions as a row of named circles; Audio and subtitles in a sheet; Download under Play.
+- **TV:** its own composition: the art sharp across the first screen and past it, the server's head over it (Down from the head reaches the actions), Play taking focus; the picks in one line ("4K · English · 5.1 · Subtitles off"); the rows below as the TV's, scrolled into view by focus. **Audio and subtitles** is a dialog at the right: Version (when several), Audio, Subtitles, "Back closes. Saved for this movie." It's an isolated focus region, and Back closes it before it leaves the page.
 
 ### Download
 
-Checkpoint 4.0b, on mobile and in the desktop app (not in a browser, which can't keep films; `?app=desktop` in the prototype). It sits under Play on mobile, across the width beside **More**, and under the actions on the desktop. One button that becomes where the download has got to:
+Checkpoint 4.0b, on mobile and in the desktop app (not in a browser, which can't keep films; `?app=desktop` in the prototype). It sits under Play across the width on the phone, and after the round actions in the desktop app. One button that becomes where the download has got to:
 
 - **Download** ("Downloading {title} · To this phone." or "this computer"), at the Quality chosen in Offline;
 - **Waiting to download** (another is downloading) or **Waiting for Wi-Fi**, with **Cancel**;
@@ -38,10 +36,11 @@ The list of every download is [client-settings.md › Offline](client-settings.m
 
 ### Mark as watched
 
-Phase 4's answer 9. On web and mobile, **More** (an icon button after the play actions) opens a menu with **Mark as watched**, or **Mark as unwatched** once it's watched. On TV, holding OK on the actions for 0.6 s opens the same choice in a small dialog (Back closes it); a shorter press still plays. Under the picks, "Hold OK for more" (and "Watched ·" before it once it is).
+Phase 4's answer 9. **Mark as watched** is a round action beside Play on every form factor, **Mark as unwatched** once it's watched; the round actions replaced the web's and phone's More menu and the TV's hold of OK on a film's page. On the TV the picks line starts "Watched ·" once it is.
 
 - Watched means played to the end, for this person only. Marking it watched removes it from Continue watching; marking it unwatched starts it from the beginning next time ("It plays from the start next time.").
 - The toast says "{title} marked as watched" or "marked as unwatched".
+- The TV's episodes and the music player keep the hold of OK for their menus ([below](#stage-4-of-the-prototypes-gaps-2026-11-01)).
 
 ### Trailer
 
@@ -50,7 +49,7 @@ On the web, in the desktop app and on the phone, not on the TV until the server 
 ### Shows, people and soundtracks (prototype-gaps stage 3, 2026-11-01)
 
 - **A show's page has the film page's round buttons** beside Play: From the start (of the episode Play plays), **Trailer** when the show has one, **Audio and subtitles** (the show's languages, picked once and applied to every episode; the TV's panel says "Back closes. Saved for every episode."), **Mark show as watched**, drawn on its own so it stays when no episode is left, and in the desktop app and on the phone, **Download** for that episode.
-- **Download for episodes, seasons and albums** (the screens 4.6 builds): an episode's row has a download icon with the progress ring, each season **Download season** beside Mark season as watched, and an album Download beside Play and Shuffle. The phone's stays in the prototype as 4.6's design; `apps/mobile` hides it until 4.6.
+- **Download for episodes, seasons and albums** (the screens 4.6 builds): an episode's row has a download icon with the progress ring, each season **Download season** beside Mark season as watched, and an album Download beside Play and Shuffle. The phone's stays in the prototype as 4.6's design; the client hides it until 4.6.
 - **Soundtrack:** a film whose score is an album here has a **Soundtrack** line in Information, the album's title as a link to it. On the TV it's a stop of its own inside the card.
 - **Their music:** a person who is also an artist here has **Their music** on their page, opening the artist page, as the artist page has **Their films and shows**. It sits under the facts on the web, under the biography on the phone, and as a button under the facts on the TV, between the head and the first row.
 
@@ -72,9 +71,9 @@ On the web, in the desktop app and on the phone, not on the TV until the server 
 ## Interactions
 
 - **Play / Resume** opens the player (C5); **Play from the start** opens it at 0.
-- **Watch with** saves as it changes, per person and title; the player starts with these picks.
-- **Download** and **More** as above.
-- **TV:** focus starts on Play; **Down** reaches Cast, then More like this; **Up** from a row returns to the actions; Back closes the panel, then goes back.
+- **Audio and subtitles** saves as it changes, per person and title; the player starts with these picks.
+- **Download** and **Mark as watched** as above.
+- **TV:** focus starts on Play; **Down** reaches the rows in order (More like this, the collection, Cast and crew, then the cards); **Up** from the first row returns to the actions, and from the actions to the head; Back closes the dialog, then goes back.
 - **Sound:** TV only.
 
 ## Copy
@@ -83,7 +82,7 @@ On the web, in the desktop app and on the phone, not on the TV until the server 
 | --- | --- |
 | Resume | Resume · {n} min left (mobile, TV); Resume, then "{n} min left" beside it (web) |
 | Start over | Play from the start (web, mobile) · From the start (TV) |
-| Watch with | Remembered for this movie, on all your devices. |
+| Audio and subtitles | Remembered for this movie, on all your devices. (pointer and touch) · Back closes. Saved for this movie. (TV) |
 | Not found | That title isn't on this server. · It may have been removed. |
 
 ## Data
@@ -102,11 +101,11 @@ Through `@highsea-tv/sdk` (the contract is `@highsea-tv/api-contract`'s `library
 ## Decisions
 
 - **Picks are per title and per person,** and follow you across devices, so subtitles turned on at the TV are on at the phone too. Whether the version should follow you as well is an open question.
-- **Cast isn't linked on the clients.** People pages are an admin tool for now ([media-pages.md](media-pages.md)); the household browses titles.
+- ~~**Cast isn't linked on the clients.**~~ Cast and crew link to the person's page on every client (prototype-gaps stage 3, 2026-11-01): what they're in here, and Their music when they're also an artist.
 - **Related titles must be playable here.** Recommendations of things the server doesn't have belong in requests (later).
 
 ## Open questions
 
 - **Version per device:** should the version pick be per device class (TV prefers 4K, phone prefers 1080p) rather than per title?
 - ~~**Trailers on the clients:** the admin embeds them on click; should clients too?~~ Yes on the web, the desktop app and the phone, through YouTube's privacy-enhanced embed (a WebView on the phone); the TV waits for trailer files ([the owner's answers at B1's review](../plans/one-client-platform-b.md#the-owners-answers-at-b1s-review)).
-- ~~**Mark as watched / unwatched:** in a More menu (web, mobile) and a long-press of OK (TV)?~~ Yes ([Phase 4's answer 9](../plans/phase-4-clients.md#the-owners-answers)); prototyped at 4.0b, [above](#mark-as-watched).
+- ~~**Mark as watched / unwatched:** in a More menu (web, mobile) and a long-press of OK (TV)?~~ Yes ([Phase 4's answer 9](../plans/phase-4-clients.md#the-owners-answers)), prototyped at 4.0b; as built it's a round action on every form factor, [above](#mark-as-watched).

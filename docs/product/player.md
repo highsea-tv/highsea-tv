@@ -1,6 +1,7 @@
 # Player chrome
 
 - **Platforms:** Web and desktop, mobile, TV.
+- **Screen:** `apps/client/src/app/play/[id]/index.tsx` and `start.tsx` (an episode's under `play/episode/[id]/`), which draw `apps/client/src/player/screen.tsx`: `pointer.tsx`, `touch.tsx` and `tv.tsx` by the form factor's input, with the decisions in `parts.tsx`. The music player is `apps/client/src/music-player/`, mounted once by the shell.
 - **Prototype:** `#/web/play/4`, `#/mobile/play/4`, `#/tv/play/4` (C5); `…/play/4/start` plays from the start. There's no real video in Phase 2: a still stands in for the frame and the position runs on a timer.
 - **Roadmap:** [Phase 2 › C5](../roadmap.md#phase-2-design-prototypes-gate-user-sign-off). Streaming is Phase 4 (`stream`).
 
@@ -18,7 +19,7 @@ Everything around the picture: where you are and moving through it, sound and su
 
 - **Top:** Back (to the item page), the title and the version's description ("4K · HEVC · 2.4 GB"), the version tag at the right.
 - **Centre:** a large Play while paused (a pointer target only; the transport's Play is the accessible one).
-- **Bottom:** the scrubber with a **trickplay** frame and time over the pointer, and at the position while the scrubber's keys move it (until a second after the last press); Play/Pause, back 10 s, forward 10 s, Mute (from the medium breakpoint up) with the **Volume** slider opening beside it on hover or focus, "4:12 / 12:00", then **Audio and subtitles**, **Picture in picture** (where the browser has it) and **Full screen** at the right, which reads **Exit full screen** while it is (prototype-gaps stage 4, 2026-11-01).
+- **Bottom:** the scrubber with a **trickplay** frame and time over the pointer, and at the position while the scrubber's keys move it (until a second after the last press); Play/Pause, back 10 s, forward 10 s, Mute (in a regular window) with the **Volume** slider opening beside it on hover or focus, "4:12 / 12:00", then **Audio and subtitles**, **Picture in picture** (where the browser has it) and **Full screen** at the right, which reads **Exit full screen** while it is (prototype-gaps stage 4, 2026-11-01).
 - **Speed** (the web and desktop, prototype-gaps stage 4): a group at the end of the Audio and subtitles panel, 0.5×, 0.75×, Normal, 1.25×, 1.5× and 2×, for this play only.
 - **Picture in picture** (checkpoint 4.2b): the film plays in the browser's own window, through the [Picture-in-Picture API](https://developer.mozilla.org/en-US/docs/Web/API/Picture-in-Picture_API). The button is left out where the browser hasn't got the API (Firefox has its own toggle on the video). While it's out, the frame shows the icon, "Playing in picture in picture" and **Back to this tab**; the chrome stays.
 - **Audio and subtitles panel** (right, 22rem, glass): Version (when several), Audio, Subtitles (Off first), then **Subtitle timing** when subtitles are on: − and + in 50 ms steps, the offset ("+100 ms", "On time"), **Reset**, the **live preview line**, and "Subtitles appear 100 ms later. Saved for this movie."
@@ -55,7 +56,7 @@ Two bars on one time axis, speech above and the subtitle below, and the subtitle
 
 ### The stream's states (checkpoint 4.0b)
 
-Prototyped on all three platforms; the prototype's toolbar picks one under **Stream** on a player, or `?stream=` opens one (`preparing`, `buffering`, `failed`, `stopped`, `next-up`). They're drawn once, in `src/client/stream-states.tsx`, and each platform passes its own buttons, so TV's take the D-pad.
+Prototyped on all three platforms; the prototype's toolbar picks one under **Stream** on a player, or `?stream=` opens one (`preparing`, `buffering`, `failed`, `stopped`, `next-up`). They're drawn once, in the prototype's `src/client/stream-states.tsx` and the client's `player/parts.tsx`, and each form factor passes its own buttons, so the TV's take the D-pad.
 
 - **Getting it ready:** the first play of a transcode, while its first segments are made. A glass card over the frame with a spinner, "Getting it ready" and "Making the first minute for your connection." The chrome stays and the position holds.
 - **Buffering:** the spinner alone, in a glass circle, with the chrome showing and the position held. In the product it shows only after the wait passes a short delay (1 s), so a brief stall shows nothing; screen readers hear "Buffering".
@@ -73,10 +74,11 @@ Prototyped on all three platforms; the prototype's toolbar picks one under **Str
 - **Skip credits:** during the credits once Next up has been cancelled, or when nothing comes next, **Skip credits** brings Next up back, or ends the episode.
 - The tracks panel says "Saved for this episode."
 - Both show only while the stream is normal, never over the stream's other states or the tracks panel.
+- **As built (part E3, 2026-11-15):** the client's episode player has the show's title line, Next episode and Season {n} starts, and "Saved for this episode." **Skip intro** and **Skip credits** aren't built yet: the contract carries the `intro` marks (`api-contract`'s `kinds.ts`), and the buttons come with the TV series phase, which finds the marks on the server.
 
 ### The music player (prototype-gaps stage 3, 2026-11-01)
 
-What stage 2 drew (the bar on the web and desktop, the mini player and Now playing on the phone, Now playing in the TV's head) gains:
+What stage 2 drew (the bar on the web and desktop, the mini player and Now playing on the phone, Now playing in the TV's head) gains the items below. As built (B3 of the one client platform) it's `apps/client/src/music-player/`, mounted once above the routes so music plays on from page to page, only on a server that serves music; on the TV, Play/Pause on the remote plays and pauses it from anywhere but the film player.
 
 - **The queue:** **Playing from** (the album, artist, playlist, Songs, a search or a single song's album, as a link), the song playing, then **Up next**, each with **Remove** and played from there, and **Clear**. On the web and desktop it's a panel from the bar's queue button; on the phone the sheet from Now playing, reordered by its handles; on the TV a row under the controls, where Remove moves focus to a neighbour.
 - **Shuffle and Repeat** on every Now playing. Repeat goes off, the queue, then this song ("Repeat: off", "Repeat: the queue", "Repeat: this song"), pressed while on.
@@ -84,7 +86,7 @@ What stage 2 drew (the bar on the web and desktop, the mini player and Now playi
 - **A song's ⋯ menu** on album, artist, Songs and playlist pages: **Play next**, **Add to queue**, **Add to playlist…**, then **Go to the album** and **Go to the artist** where the page isn't already that, and on a playlist's page **Remove from this playlist**. An album's header has the same menu for the whole album. On the TV it's holding OK on a song, or on the album's Play.
 - **The artist page's Play** becomes Pause while the artist plays, on the phone as on the web.
 - **AirPlay** on the phone's Now playing, as on its film player.
-- **Icons:** ui-web and ui-native gain `repeat`, `repeat-one` and `queue` (Lucide's Repeat, Repeat1 and ListMusic), for the owner's approval.
+- **Icons:** `@highsea-tv/ui`'s icon set has `repeat`, `repeat-one` and `queue` (Lucide's Repeat, Repeat1 and ListMusic).
 
 ## Interactions
 
@@ -96,7 +98,7 @@ What stage 2 drew (the bar on the web and desktop, the mini player and Now playi
 | Close panel / leave | Esc closes the panel, then leaves | Back | Back closes the panel, hides the chrome, then leaves |
 | Full screen | F, or the button (Exit full screen while it is) | Always | Always |
 | Picture in picture | The button, where the browser has it | — | — |
-| Mute | M, or the button from the medium breakpoint | The device's buttons | The TV's volume |
+| Mute | M, or the button in a regular window | The device's buttons | The TV's volume |
 | Volume | The slider beside Mute, on hover or focus | The device's buttons | The TV's volume |
 | Speed | The Speed group in the panel | — | — |
 
@@ -135,7 +137,7 @@ What stage 2 drew (the bar on the web and desktop, the mini player and Now playi
 - **A preview line, not a test clip.** Moving a bar under a cue shows the direction at once; replaying a line of dialogue is the product's job when real video exists.
 - **No skip intro** until intro detection exists (decided here, as the plan asked). Superseded on 2026-11-01 by prototype-gaps stage 2: episodes carry the server's intro and credits marks, so the buttons only show where a mark exists.
 - **Mobile is landscape,** like every phone video player; portrait playback isn't designed.
-- **Picture in picture is a button on the web** (approved by the owner on 2026-10-27, at the start of 4.2b): Chromium and Safari otherwise offer it only from a menu. To leave it room at 390, Mute shows from the medium breakpoint up; phones and tablets have their own volume buttons, and M still mutes.
+- **Picture in picture is a button on the web** (approved by the owner on 2026-10-27, at the start of 4.2b): Chromium and Safari otherwise offer it only from a menu. To leave it room at 390, Mute shows only in a regular window; phones and tablets have their own volume buttons, and M still mutes.
 - **AirPlay is iOS's own picker** (expo-video's `VideoAirPlayButton`), not a list highsea draws: iOS knows the screens and asks for codes. Added on the owner's answer 9 of 2026-10-29 ([phase-4-checkpoint-5.md](../plans/phase-4-checkpoint-5.md#the-owners-answers)).
 - **TV keeps Left and Right for seeking** while the scrubber has focus, and moves focus only with Down, so a press of the arrows never leaves the scrubber by surprise.
 

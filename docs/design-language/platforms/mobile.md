@@ -1,6 +1,6 @@
 # Mobile
 
-Mobile clients run on iOS and Android, built with Expo and React Native ([ADR 0008](../../adr/0008-clients-react-everywhere.md)). Sizes below are in points (pt / dp).
+Mobile clients run on iOS and Android. The phone is one of `apps/client`'s form factors, compact with touch ([ADR 0061](../../adr/0061-one-client-platform.md)): one Expo project on React Native ([ADR 0008](../../adr/0008-clients-react-everywhere.md)) draws the same screens for the phone, the TV and the web, laid out by the form-factor rule. The iPhone build is `tv.highsea.mobile`; Android comes from the same project in checkpoint 4.5c. The prototypes' phone frame holds the client's mock export (`#/mobile/…`). Sizes below are in points (pt / dp).
 
 ## Home: Tabs + carousel
 
@@ -22,15 +22,18 @@ This layout is locked in [direction.md](../../brand/direction.md#layouts). From 
 
 ## Layout
 
-- **Gutters:** 16pt left and right. Rows scroll edge to edge, with the first item aligned to the gutter.
-- **Row gaps:** 8pt between posters, and 24pt between rows (title included).
+- **Gutters:** 16pt left and right (`mobile.gutter`). Rows scroll edge to edge, with the first item aligned to the gutter.
+- **Row gaps:** 8pt between posters (`mobile.posterGap`), and 24pt between rows, title included (`mobile.rowGap`). The form-factor rule's `compact-touch` layout holds these three and the posters' share (`formFactorLayouts` in `form-factor.ts`).
 - **Safe areas:** content respects the platform's safe-area insets. The tab bar sits above the home indicator, and content scrolls under the status bar with a `bg` scrim.
 - **Posters:**
   - about 30% of the screen width in rows, so about three visible plus a peek;
   - about 78% of the width in the featured carousel.
-- **Home's other rows** (the prototype's, kept when B1 moved Home to apps/client): Continue watching cards are 62% of the row, and still rows 46%, so two show with a peek. These are values in `apps/client/src/home/sizes.ts` (`HOME`), with no token yet (part E).
-- **A person's page** (B1): the round portrait is centred with the words under it; the biography is 15pt on a 1.45 line, cut at four lines with More. The section headings over its rows are 17pt. Neither size is a token yet (part E).
-- **Music's pages** (B3): an album's cover and an artist's mosaic are 62% of the width inside the gutters; the artist under an album's title is 17pt, the meta lines under a title 13pt, an artist's name 28pt, and a song's cover has a 6pt corner. These are values in `apps/client/src/music/sizes.ts` (`MUSIC`), with no token yet (part E).
+- **Home's other rows** (the prototype's, kept when B1 moved Home to apps/client): Continue watching cards are 62% of the row, and still rows 46%, so two show with a peek (`HOME` in `apps/client/src/home/sizes.ts`).
+- **A person's page** (B1): the round portrait is centred with the words under it; the biography is 15pt on a 1.45 line, cut at four lines with More (`PHONE_PERSON` in `apps/client/src/detail/layout.ts`). The section headings over its rows, as on a film's page, are iOS's Headline, `mobileText.headline` (17pt semibold, the library's `PHONE_SECTION_TITLE`).
+- **Music's pages** (B3): an album's cover and an artist's mosaic are 62% of the width inside the gutters; the artist under an album's title is 17pt, the meta lines under a title 13pt, an artist's name 28pt, and a song's cover has a 6pt corner (`MUSIC` in `apps/client/src/music/sizes.ts`).
+- **The players** (B2 and B3): the film player's title and Now playing's artist are `mobileText.headline`, and the mini player's title `mobileText.subheadline` (15pt).
+
+The shares and sizes in `HOME`, `PHONE_PERSON` and `MUSIC` are each screen's own measures, named once beside it; part E's value table left them there, as its rule keeps a measure one screen uses in that screen's group.
 
 ## Touch
 

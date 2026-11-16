@@ -1,0 +1,102 @@
+diff --git a/ios/VideoView.swift b/ios/VideoView.swift
+index 152c74e72c65a447e01e468b137ea8d193771faf..57f571c3f9bfa464ad1c27f1c20b9a80ca27e4f8 100644
+--- a/ios/VideoView.swift
++++ b/ios/VideoView.swift
+@@ -11,9 +11,20 @@ public final class VideoView: ExpoView, AVPlayerViewControllerDelegate {
+ 
+   weak var player: VideoPlayer? {
+     didSet {
++      #if os(tvOS)
++      let previousController = playerViewController
++      #endif
+       if playerViewControllerWrapper.setPlayer(player) {
+         removeFirstFrameObserver()
+         addFirstFrameObserver()
++        #if os(tvOS)
++        // highsea: the wrapper made a new controller, so it becomes the child instead
++        if previousController.parent != nil {
++          previousController.willMove(toParent: nil)
++          previousController.removeFromParent()
++        }
++        attachPlayerViewController()
++        #endif
+       }
+     }
+   }
+@@ -76,6 +87,8 @@ public final class VideoView: ExpoView, AVPlayerViewControllerDelegate {
+       // remove the view controller from its superview,
+       // and present the view controller normally
+       self.wasPlaying = self.player?.isPlaying == true
++      // highsea: a child view controller can't be presented, so it leaves its parent first
++      self.detachPlayerViewController()
+       self.playerViewController.view.removeFromSuperview()
+       self.reactViewController().present(self.playerViewController, animated: true)
+       self.onFullscreenEnter()
+@@ -116,6 +129,8 @@ public final class VideoView: ExpoView, AVPlayerViewControllerDelegate {
+     // Reset the bounds of the view controller and add it back to our view
+     self.playerViewControllerWrapper.layoutControllerView()
+     self.playerViewControllerWrapper.view.addSubview(self.playerViewController.view)
++    // highsea: and back as a child once it's inline again
++    self.attachPlayerViewController()
+     // End the appearance transition
+     self.playerViewController.endAppearanceTransition()
+     // Ensure playing state is preserved
+@@ -171,9 +186,58 @@ public final class VideoView: ExpoView, AVPlayerViewControllerDelegate {
+     #if !os(tvOS)
+     playerViewController.beginAppearanceTransition(self.window != nil, animated: true)
+     playerViewController.endAppearanceTransition()
++    #else
++    // highsea: on tvOS the player view controller joins the view controller hierarchy while its
++    // view is on screen, and leaves it when it isn't
++    if self.window != nil && !isFullscreen {
++      attachPlayerViewController()
++    } else if self.window == nil {
++      detachPlayerViewController()
++    }
+     #endif
+   }
+ 
++  #if os(tvOS)
++  // highsea: the player view controller is added as a child of the view controller that holds this
++  // view, as UIKit's view controller containment asks of a view controller whose view is embedded
++  // in another's: addChild(_:), the view in the hierarchy, then didMove(toParent:)
++  // (https://developer.apple.com/documentation/uikit/creating-a-custom-container-view-controller,
++  // https://developer.apple.com/documentation/uikit/uiviewcontroller/addchild(_:)). Without it the
++  // controller stands outside the focus environments' tree: its view takes focus on tvOS, and the
++  // app's own focus updates, requested from its root view, can't take focus back, since UIKit
++  // honours setNeedsFocusUpdate() only from an environment that contains the focused item
++  // (https://developer.apple.com/documentation/uikit/uifocusenvironment/setneedsfocusupdate()).
++  // Upstream issue to file; drop this patch once expo-video does the same.
++  private func attachPlayerViewController() {
++    guard self.window != nil, let parent = self.reactViewController() else {
++      return
++    }
++    let controller = playerViewController
++    if controller.parent === parent {
++      return
++    }
++    if controller.parent != nil {
++      controller.willMove(toParent: nil)
++      controller.removeFromParent()
++    }
++    parent.addChild(controller)
++    controller.didMove(toParent: parent)
++    // highsea: and with no controls of its own the view only shows the film, so it takes no user
++    // interaction and the focus engine passes it by, which a parent's alone doesn't make it do
++    // (https://developer.apple.com/documentation/uikit/about-focus-interactions-for-apple-tv)
++    controller.view.isUserInteractionEnabled = controller.showsPlaybackControls
++  }
++
++  private func detachPlayerViewController() {
++    let controller = playerViewController
++    guard controller.parent != nil else {
++      return
++    }
++    controller.willMove(toParent: nil)
++    controller.removeFromParent()
++  }
++  #endif
++
+   public override func safeAreaInsetsDidChange() {
+     super.safeAreaInsetsDidChange()
+     playerViewControllerWrapper.refreshSafeAreaInsets()

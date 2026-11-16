@@ -1,6 +1,7 @@
 # Manual import
 
-- **Platforms:** Admin, every breakpoint.
+- **Platforms:** Admin, compact and regular windows.
+- **Screen:** `packages/admin/src/import.tsx`, `library-import.tsx` and `import-versions.tsx`, at `apps/server/app/(admin)/activity/import/`.
 - **Prototype:** `#/admin/activity/import` (A17, reference fidelity).
 - **Built:** checkpoint 6a, 2026-10-20: `/activity/import` in `apps/server` (`src/admin/import.tsx`), on the import pipeline in `@highsea-tv/media/movies` ([ADR 0039](../adr/0039-importing.md)). What real data changed is marked *As built*.
 - **Roadmap:** [Phase 2 › A17](../roadmap.md#phase-2-design-prototypes-gate-user-sign-off), the movies pipeline's import step ([movies.md](movies.md)).

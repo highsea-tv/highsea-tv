@@ -3,7 +3,7 @@
 - **Status:** v1.0, signed off 2026-10-16 ([roadmap](../roadmap.md)).
 - **Builds on:** the locked brand direction, [Abyss Neutral (Bone)](../brand/direction.md) ([ADR 0013](../adr/0013-brand-direction-abyss-neutral.md)).
 
-These documents turn the brand direction into rules that designers and engineers can apply on every surface. `@highsea-tv/tokens`, `@highsea-tv/ui`, `@highsea-tv/ui` and every app implement what is written here. If code and docs disagree, one of them is a bug.
+These documents turn the brand direction into rules that designers and engineers can apply on every surface. `@highsea-tv/tokens`, the library `@highsea-tv/ui` and every app drawn with it (the one client, the admin and the guides' parts) implement what is written here. If code and docs disagree, one of them is a bug.
 
 ## How to read these docs
 
@@ -18,7 +18,7 @@ These documents turn the brand direction into rules that designers and engineers
 | [Principles](principles.md) | The ideas every decision is checked against |
 | [Color](color.md) | Semantic roles, status meanings, contrast policy, data viz, theming |
 | [Typography](typography.md) | Families, weights, scales per platform, figures, truncation |
-| [Spacing and layout](spacing-layout.md) | Spacing scale, radii, breakpoints, grids per platform |
+| [Spacing and layout](spacing-layout.md) | Spacing scale, radii, the width classes, grids per platform, the scrollbar |
 | [Elevation and blur](elevation.md) | Surface ladder, shadows, blur, scrims over artwork |
 | [Iconography](iconography.md) | Lucide base set, sizes, custom glyphs |
 | [Motion](motion.md) | Springs, durations, choreography, reduced motion |
@@ -28,7 +28,7 @@ These documents turn the brand direction into rules that designers and engineers
 | **Platform guides** | |
 | [TV (10-foot)](platforms/tv.md) | Safe area, type in screen units, the spatial focus model, remote keys |
 | [Mobile](platforms/mobile.md) | Tabs + carousel home, touch targets, safe areas |
-| [Desktop and web clients](platforms/desktop-web.md) | Pointer and keyboard adaptation (designed in Phase 2) |
+| [Desktop and web clients](platforms/desktop-web.md) | Pointer and keyboard adaptation, the desktop app's window |
 | [Admin](platforms/admin.md) | Sidebar + widgets, density, tables, status |
 
 ## Changing these docs

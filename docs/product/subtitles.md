@@ -1,6 +1,7 @@
 # Subtitles
 
-- **Platforms:** Admin (`apps/server`), every breakpoint.
+- **Platforms:** Admin (`apps/server`), compact and regular windows.
+- **Screen:** `packages/admin/src/subtitles.tsx`, at `apps/server/app/(admin)/subtitles/`.
 - **Prototype:** `#/admin/subtitles` (A10). A movie's subtitles are its page's Subtitles tab ([movies.md](movies.md#movie-detail-a6)).
 - **Roadmap:** [Phase 2 › A10](../roadmap.md#phase-2-design-prototypes-gate-user-sign-off), [Subtitles, first class](../roadmap.md#subtitles-first-class-highseasubtitles).
 
@@ -17,7 +18,7 @@ Subtitles are first class: highsea finds them for every movie it imports, scores
 ## Layout
 
 - `PageHeader`: "Subtitles", one line of description.
-- **Stats** card: synced today, waiting to sync, average correction (ms), average confidence. Four across from medium, two on compact.
+- **Stats** card: synced today, waiting to sync, average correction (ms), average confidence. Four across in a regular window, two in a compact one.
 - Tabs (line): **Wanted** (count), **Providers**, **Languages**, **Scoring and sync**, at `/subtitles`, `/subtitles/providers`, `/subtitles/languages` and `/subtitles/scoring`. Settings' Subtitles card and `/settings/subtitles` open Providers.
 - **Wanted:** a `TableFrame`. Toolbar: "12 movies missing a language" and **Search all**. Columns: movie (path under it), the missing languages as badges, **Search**. Pages of 50, by title, with **Show more** (checkpoint 7a).
 - **Providers:** OpenSubtitles.com, Subdl and SubSource (checkpoint 7a). Columns: provider, account (the username or a masked key, "Needs an account", or "Not needed"), requests left today (a bar and "184/200"; warning tone under 10%; a dash when the provider doesn't say), an Enabled switch, and **Edit** for the owner. Under the table: "Subtitles provided by OpenSubtitles.com", as its terms ask of free keys.
@@ -43,7 +44,7 @@ Subtitles are first class: highsea finds them for every movie it imports, scores
 - **Search** (row) does the same for one movie.
 - **Profiles:** order is preference. Each language has a drag handle, as the dashboard's widgets do: drag it, or press Space on it, move it with Up and Down, and Space again to drop it (Escape cancels); Remove also clears the cutoff if it pointed at that language. Save validates a name and at least one language.
 - **Settings** save together, so a half-edited form never applies.
-- **Keyboard:** every control is native or Radix; no drag.
+- **Keyboard:** every control is the library's; no drag.
 - **Sound:** none.
 
 ## Copy

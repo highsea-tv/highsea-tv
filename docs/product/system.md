@@ -1,6 +1,7 @@
 # System
 
-- **Platforms:** Admin, every breakpoint.
+- **Platforms:** Admin, compact and regular windows.
+- **Screen:** `packages/admin/src/system.tsx`, at `apps/server/app/(admin)/system/`.
 - **Prototype:** `#/admin/system` and `#/admin/system/{health|tasks|logs|events|backups|updates}` (A16, reference fidelity).
 - **Roadmap:** [Phase 2 › A16](../roadmap.md#phase-2-design-prototypes-gate-user-sign-off), [Admin UI routes](../roadmap.md#admin-ui-routes-built-to-match-the-phase-2-prototypes) (`/system`). Health appears only here and on the sidebar's server card ([admin.md](../design-language/platforms/admin.md)).
 

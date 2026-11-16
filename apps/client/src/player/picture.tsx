@@ -57,8 +57,10 @@ export function usePicture(
   const picture = tv ? (
     // AVPlayerViewController's view takes focus on tvOS even without its controls, and would
     // catch Left and Right from the scrubber and OK after them. The focus engine skips views that
-    // don't take user interaction (Apple's "Supporting focus within your app"), which pointerEvents
-    // none sets; collapsable keeps the wrapper from being flattened away
+    // don't take user interaction (Apple's "Supporting focus within your app"). pointerEvents none
+    // sets that on this wrapper only, not on the controller's own view, so the expo-video patch
+    // (patches/expo-video@58.0.11.patch) turns it off there and makes the controller a child view
+    // controller (ADR 0059, 2026-11-15); collapsable keeps the wrapper from being flattened away
     <View pointerEvents="none" collapsable={false} style={{ position: 'absolute', inset: 0 }}>
       <VideoView player={player} nativeControls={false} contentFit="contain" style={{ flex: 1 }} />
     </View>

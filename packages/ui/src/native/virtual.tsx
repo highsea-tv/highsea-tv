@@ -290,9 +290,15 @@ export function useVirtual({
           fail?: () => void,
         ) => void
       } | null
+      // the inner view's instance (getInnerViewRef): the New Architecture's measureLayout takes a
+      // native component's ref and returns without calling back for a node handle, which is what
+      // getInnerViewNode gives on the phone and the TV (findNodeHandle), so the list's start would
+      // stay 0 there and draw a screen's worth more than the web (react-native's
+      // ReactNativeElement.measureLayout; https://reactnative.dev/docs/the-new-architecture/layout-measurements).
+      // react-native-web's ScrollView returns its inner view for both.
       const inner = (
-        source.node as unknown as { getInnerViewNode?: () => unknown } | null
-      )?.getInnerViewNode?.()
+        source.node as unknown as { getInnerViewRef?: () => unknown } | null
+      )?.getInnerViewRef?.()
       if (!node?.measureLayout || !inner) return
       node.measureLayout(
         inner,
