@@ -57,13 +57,13 @@ const ui = tokens.adminText.ui
 
 /** Columns in a regular window (the web's `medium:grid-cols-N`), one below. */
 function Columns({ count = 2, children }: { count?: number; children: ReactNode }) {
-  const medium = useRegularWindow()
+  const regular = useRegularWindow()
   return (
     <View
       style={
         {
           display: 'grid',
-          gridTemplateColumns: medium ? `repeat(${count}, minmax(0, 1fr))` : 'minmax(0, 1fr)',
+          gridTemplateColumns: regular ? `repeat(${count}, minmax(0, 1fr))` : 'minmax(0, 1fr)',
           gap: s['4'],
         } as unknown as ViewStyle
       }
@@ -285,7 +285,7 @@ const marks: Record<VpnCheck['result'], { icon: IconName; tone: ColorRole }> = {
 function StatusGroup({ status: v }: { status: VpnStatus }) {
   const t = useT(messages)
   const theme = useTheme()
-  const medium = useRegularWindow()
+  const regular = useRegularWindow()
   const { now, relative } = useRelative()
   const check = useAction((c) => c.vpn.check())
   const reconnect = useAction((c) => c.vpn.reconnect())
@@ -328,12 +328,12 @@ function StatusGroup({ status: v }: { status: VpnStatus }) {
             const m = marks[c.result]
             const detail = (
               <Text
-                variant={medium ? undefined : 'caption'}
-                size={medium ? ui.size : undefined}
-                leading={medium ? ui.leading : undefined}
+                variant={regular ? undefined : 'caption'}
+                size={regular ? ui.size : undefined}
+                leading={regular ? ui.leading : undefined}
                 color="text-2"
               >
-                <Text size={medium ? ui.size : undefined} color="text">
+                <Text size={regular ? ui.size : undefined} color="text">
                   {c.title}
                 </Text>
                 {c.detail ? ` · ${c.detail}` : c.title.endsWith('.') ? '' : '.'}
@@ -360,7 +360,7 @@ function StatusGroup({ status: v }: { status: VpnStatus }) {
                     label={t(`mark.${c.result}`)}
                   />
                 </View>
-                {medium ? (
+                {regular ? (
                   <>
                     <Text
                       size={ui.size}
@@ -492,7 +492,7 @@ function ConnectionGroup({
 }) {
   const t = useT(messages)
   const theme = useTheme()
-  const medium = useRegularWindow()
+  const regular = useRegularWindow()
   return (
     <Group title={t('connection.title')} description={t('connection.description')}>
       <View
@@ -501,7 +501,7 @@ function ConnectionGroup({
         style={
           {
             display: 'grid',
-            gridTemplateColumns: medium ? 'repeat(2, minmax(0, 1fr))' : 'minmax(0, 1fr)',
+            gridTemplateColumns: regular ? 'repeat(2, minmax(0, 1fr))' : 'minmax(0, 1fr)',
             gap: s['2'],
           } as unknown as ViewStyle
         }

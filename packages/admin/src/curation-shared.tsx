@@ -214,8 +214,8 @@ export function ChoiceWell({
   columns?: 1 | 2
 }) {
   const theme = useTheme()
-  const medium = useRegularWindow()
-  const two = columns === 2 && medium
+  const regular = useRegularWindow()
+  const two = columns === 2 && regular
   return (
     <View
       style={{

@@ -223,7 +223,7 @@ export function SummaryCard({
   children: ReactNode
 }) {
   const { colors } = useTheme()
-  const medium = useRegularWindow()
+  const regular = useRegularWindow()
   return (
     <View
       role={label ? 'region' : undefined}
@@ -231,10 +231,10 @@ export function SummaryCard({
       style={{
         position: 'relative',
         overflow: 'hidden',
-        flexDirection: medium ? 'row' : 'column',
+        flexDirection: regular ? 'row' : 'column',
         alignItems: 'flex-start',
         gap: tokens.space['5'],
-        padding: medium ? tokens.space['5'] : tokens.space['4'],
+        padding: regular ? tokens.space['5'] : tokens.space['4'],
         borderRadius: tokens.radius.lg,
         borderWidth: line.thin,
         borderColor: colors.line,
@@ -249,10 +249,10 @@ export function SummaryCard({
           style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, opacity: 0.15 }}
         />
       ) : null}
-      <View style={{ width: medium ? SUMMARY_POSTER.column : SUMMARY_POSTER.compact }}>
-        {poster(medium ? SUMMARY_POSTER.column : SUMMARY_POSTER.compact)}
+      <View style={{ width: regular ? SUMMARY_POSTER.column : SUMMARY_POSTER.compact }}>
+        {poster(regular ? SUMMARY_POSTER.column : SUMMARY_POSTER.compact)}
       </View>
-      <View style={{ flex: medium ? 1 : undefined, minWidth: 0, gap: tokens.space['3'] }}>
+      <View style={{ flex: regular ? 1 : undefined, minWidth: 0, gap: tokens.space['3'] }}>
         {children}
       </View>
     </View>
@@ -365,13 +365,13 @@ function PosterBlock({ width }: { width?: number }) {
 }
 
 export function SummarySkeleton() {
-  const medium = useRegularWindow()
+  const regular = useRegularWindow()
   return (
-    <View aria-busy style={{ flexDirection: medium ? 'row' : 'column', gap: tokens.space['5'] }}>
-      <View style={{ width: medium ? admin.mediaSections.posterColumn : '100%' }}>
+    <View aria-busy style={{ flexDirection: regular ? 'row' : 'column', gap: tokens.space['5'] }}>
+      <View style={{ width: regular ? admin.mediaSections.posterColumn : '100%' }}>
         <PosterBlock />
       </View>
-      <View style={{ flex: medium ? 1 : undefined }}>
+      <View style={{ flex: regular ? 1 : undefined }}>
         <SkeletonText lines={4} />
       </View>
     </View>
@@ -481,10 +481,10 @@ export function MediaOverview({
   onAdd: (movies: DiscoverMovie[]) => void
 }) {
   const t = useT(messages)
-  const expanded = useRegularWindow()
+  const regular = useRegularWindow()
   return (
-    <View style={{ flexDirection: expanded ? 'row' : 'column', gap: tokens.space['8'] }}>
-      <View style={{ flex: expanded ? 1 : undefined, minWidth: 0, gap: tokens.space['8'] }}>
+    <View style={{ flexDirection: regular ? 'row' : 'column', gap: tokens.space['8'] }}>
+      <View style={{ flex: regular ? 1 : undefined, minWidth: 0, gap: tokens.space['8'] }}>
         {main}
         <Loadable query={meta} what={t('details')} skeleton={<RowSkeleton />}>
           {(md) => (
@@ -501,7 +501,7 @@ export function MediaOverview({
       </View>
       <View
         style={{
-          width: expanded ? admin.mediaSections.sideColumn : undefined,
+          width: regular ? admin.mediaSections.sideColumn : undefined,
           minWidth: 0,
           gap: tokens.space['8'],
         }}

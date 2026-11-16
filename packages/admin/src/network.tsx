@@ -97,7 +97,7 @@ function Form({ loaded, reload }: { loaded: NetworkStatus; reload: () => void })
   }
   const dirty = JSON.stringify(v) !== JSON.stringify(initial)
   const name = info.data?.name ?? t('thisServer')
-  const medium = useRegularWindow()
+  const regular = useRegularWindow()
 
   const submit = async () => {
     const port = v.httpsPort.trim()
@@ -168,7 +168,7 @@ function Form({ loaded, reload }: { loaded: NetworkStatus; reload: () => void })
               style={
                 {
                   display: 'grid',
-                  gridTemplateColumns: medium ? 'repeat(2, minmax(0, 1fr))' : 'minmax(0, 1fr)',
+                  gridTemplateColumns: regular ? 'repeat(2, minmax(0, 1fr))' : 'minmax(0, 1fr)',
                   gap: s['4'],
                 } as unknown as ViewStyle
               }

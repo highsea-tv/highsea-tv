@@ -131,11 +131,11 @@ export function FormGrid({ children }: { children: ReactNode }) {
 
 /** One of a FormGrid's cells: the whole row, or half of it in a regular window. */
 export function Cell({ half = false, children }: { half?: boolean; children: ReactNode }) {
-  const medium = useRegularWindow()
+  const regular = useRegularWindow()
   return (
     <View
       style={
-        half && medium
+        half && regular
           ? { flexGrow: 1, flexBasis: 0, minWidth: '40%' }
           : { width: '100%', minWidth: 0 }
       }
@@ -159,7 +159,7 @@ export function CheckGroup({
   children: ReactNode
 }) {
   const theme = useTheme()
-  const medium = useRegularWindow()
+  const regular = useRegularWindow()
   return (
     <View role="group" aria-label={legend} style={{ gap: s['2'] }}>
       {/* the legend: the group is named by it, so it's read once, as the group's name */}
@@ -177,7 +177,7 @@ export function CheckGroup({
         style={
           {
             display: 'grid',
-            gridTemplateColumns: medium ? 'repeat(2, minmax(0, 1fr))' : 'minmax(0, 1fr)',
+            gridTemplateColumns: regular ? 'repeat(2, minmax(0, 1fr))' : 'minmax(0, 1fr)',
             gap: s['2'],
             padding: s['3'],
             borderWidth: line.thin,

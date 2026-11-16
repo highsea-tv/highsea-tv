@@ -3,7 +3,7 @@
 // soft disc, the title and body, an action, and Dismiss, or the owner's Got it when it must be
 // acknowledged. Drawn at the web's measures: the `ui` size (13), a 32 disc with a 16 icon, and the
 // small ghost Dismiss. `card` (the default) sits in the home feed; `bar` spans the top of an
-// admin page, with its actions beside the words from a medium window up. Colour is never the only
+// admin page, with its actions beside the words from a regular window up. Colour is never the only
 // signal: each tone has its own icon. The body is text, or runs of it (inline links and bold),
 // which take the body's style. It's a region named by its title, as the web's <section> is.
 
@@ -82,13 +82,13 @@ export function Banner({
 }) {
   const theme = useTheme()
   const t = useT(uiMessages)
-  const medium = useRegularWindow()
+  const regular = useRegularWindow()
   const textLine = Math.round(UI.size * UI.leading * theme.u)
   const look = TONES[tone]
   const bar = variant === 'bar'
   // a bar's actions sit beside its words from a regular window up (the web's medium:flex, on the
   // form-factor rule's 768)
-  const beside = bar && medium
+  const beside = bar && regular
   const actions =
     action || onAcknowledge ? (
       <View

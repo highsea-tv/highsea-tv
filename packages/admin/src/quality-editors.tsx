@@ -198,12 +198,12 @@ function NumberInput({
 
 /** Fields side by side: `columns` in a regular window, one above another below (16 apart). */
 function Columns({ columns, children }: { columns: string; children: ReactNode }) {
-  const medium = useRegularWindow()
+  const regular = useRegularWindow()
   return (
     <View
       style={grid({
         display: 'grid',
-        gridTemplateColumns: medium ? columns : 'minmax(0, 1fr)',
+        gridTemplateColumns: regular ? columns : 'minmax(0, 1fr)',
         alignItems: 'start',
         gap: s['4'],
       })}
@@ -1070,7 +1070,7 @@ function ConditionValue({
 }) {
   const t = useT(messages)
   const languageOptions = useLanguageOptions()
-  const medium = useRegularWindow()
+  const regular = useRegularWindow()
   switch (c.kind) {
     case 'title':
     case 'edition':
@@ -1092,7 +1092,7 @@ function ConditionValue({
         <View
           style={grid({
             display: 'grid',
-            gridTemplateColumns: medium ? 'minmax(0, 1fr) auto' : 'minmax(0, 1fr)',
+            gridTemplateColumns: regular ? 'minmax(0, 1fr) auto' : 'minmax(0, 1fr)',
             alignItems: 'end',
             gap: s['3'],
           })}

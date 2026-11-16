@@ -35,13 +35,13 @@ const s = tokens.space
 
 /** Two columns in a regular window, as the web's `medium:grid-cols-2`. */
 function Columns({ children }: { children: ReactNode }) {
-  const medium = useRegularWindow()
+  const regular = useRegularWindow()
   return (
     <View
       style={
         {
           display: 'grid',
-          gridTemplateColumns: medium ? 'repeat(2, minmax(0, 1fr))' : 'minmax(0, 1fr)',
+          gridTemplateColumns: regular ? 'repeat(2, minmax(0, 1fr))' : 'minmax(0, 1fr)',
           gap: s['4'],
         } as unknown as ViewStyle
       }
@@ -126,7 +126,7 @@ export function Security() {
 
 function Form({ loaded, reload }: { loaded: SecuritySettings; reload: () => void }) {
   const t = useT(messages)
-  const medium = useRegularWindow()
+  const regular = useRegularWindow()
   const network = useQuery('settings:network', (c) => c.settings.network(), ['settings.updated'])
   const initial = draftOf(loaded)
   const [v, setDraft] = useState(initial)
@@ -190,7 +190,7 @@ function Form({ loaded, reload }: { loaded: SecuritySettings; reload: () => void
           onCheckedChange={(passkeys) => set({ passkeys })}
         />
         <Field label={t('sessionDays')} hint={t('sessionDaysHint')} error={errors.sessionDays}>
-          <View style={{ maxWidth: medium ? admin.security.fieldWidth : undefined }}>
+          <View style={{ maxWidth: regular ? admin.security.fieldWidth : undefined }}>
             <Select
               aria-label={t('sessionDays')}
               value={String(v.sessionDays)}

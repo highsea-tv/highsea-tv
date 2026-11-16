@@ -75,7 +75,7 @@ const presets = [
 export function Profiles() {
   const t = useT(messages)
   const locale = useLocale()
-  const medium = useRegularWindow()
+  const regular = useRegularWindow()
   const shows = useServes('shows')
   const profiles = useQuery('settings:profiles', (c) => c.quality.profiles(), ['settings.updated'])
   const formats = useQuery('settings:formats', (c) => c.quality.customFormats(), [
@@ -166,7 +166,7 @@ export function Profiles() {
           style={
             {
               display: 'grid',
-              gridTemplateColumns: medium ? 'repeat(3, minmax(0, 1fr))' : 'minmax(0, 1fr)',
+              gridTemplateColumns: regular ? 'repeat(3, minmax(0, 1fr))' : 'minmax(0, 1fr)',
               gap: s['2'],
             } as unknown as ViewStyle
           }
@@ -198,16 +198,16 @@ function ProfileCards({
   usage?: ProfileUsage[]
 }) {
   const t = useT(messages)
-  const medium = useRegularWindow()
+  const regular = useRegularWindow()
   return (
     <Cards>
       {ps.map((p) => (
         <Card
           key={p.id}
           gap={s['2']}
-          style={medium ? { flexDirection: 'row', alignItems: 'center', gap: s['2'] } : undefined}
+          style={regular ? { flexDirection: 'row', alignItems: 'center', gap: s['2'] } : undefined}
         >
-          <View style={{ flex: medium ? 1 : undefined, minWidth: 0, gap: s['1'] }}>
+          <View style={{ flex: regular ? 1 : undefined, minWidth: 0, gap: s['1'] }}>
             <Line weight={600}>{p.name}</Line>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: s['1'] }}>
               {p.items
@@ -245,7 +245,7 @@ function ProfileCards({
               </Note>
             ) : null}
           </View>
-          <View style={{ alignSelf: medium ? 'center' : 'flex-start' }}>
+          <View style={{ alignSelf: regular ? 'center' : 'flex-start' }}>
             <Button
               size="sm"
               icon="edit"

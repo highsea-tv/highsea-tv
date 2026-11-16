@@ -34,7 +34,7 @@ const s = tokens.space
 export function TagSettings() {
   const t = useT(messages)
   const theme = useTheme()
-  const medium = useRegularWindow()
+  const regular = useRegularWindow()
   const tags = useTags()
   const [renaming, setRenaming] = useState<Tag | null>(null)
   const [removing, setRemoving] = useState<Tag | null>(null)
@@ -64,12 +64,12 @@ export function TagSettings() {
                     key={tag.id}
                     gap={s['2']}
                     style={
-                      medium
+                      regular
                         ? { flexDirection: 'row', alignItems: 'center', gap: s['2'] }
                         : undefined
                     }
                   >
-                    <View style={{ flex: medium ? 1 : undefined, minWidth: 0, gap: s['1'] }}>
+                    <View style={{ flex: regular ? 1 : undefined, minWidth: 0, gap: s['1'] }}>
                       <Line weight={500} style={WRAP_ANYWHERE}>
                         {tag.label}
                       </Line>

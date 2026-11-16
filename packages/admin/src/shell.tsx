@@ -459,7 +459,7 @@ export function AdminShell({ role: initialRole, children }: { role: Role; childr
   const page = useScrollSource(false, { ref: scroller })
   const [skipFocused, setSkipFocused] = useState(false)
   const { colors } = useTheme()
-  const medium = useRegularWindow()
+  const regular = useRegularWindow()
   const togglePalette = useCallback(() => setPalette((o) => !o), [])
   useCommandPaletteShortcut(togglePalette)
   const onClick = useClientLinks()
@@ -538,8 +538,8 @@ export function AdminShell({ role: initialRole, children }: { role: Role; childr
                   NO_OUTLINE,
                   {
                     gap: tokens.space['5'],
-                    paddingHorizontal: medium ? tokens.density.mainPadding : tokens.space['4'],
-                    paddingVertical: medium ? tokens.density.mainPadding : tokens.space['4'],
+                    paddingHorizontal: regular ? tokens.density.mainPadding : tokens.space['4'],
+                    paddingVertical: regular ? tokens.density.mainPadding : tokens.space['4'],
                   },
                 ]}
               >
