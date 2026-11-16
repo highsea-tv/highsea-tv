@@ -331,14 +331,21 @@ describe.skipIf(!hasFfmpeg)('HLS with ffmpeg', () => {
     toSdr: false,
   })
   /**
-   * Runs read the clip at five times real time (`-readrate`, https://ffmpeg.org/ffmpeg.html#Advanced-options),
-   * so a run still holds its slot while a test looks: at full speed the clip is done at once.
+   * A transcode's picture is drawn at five times real time, so a run still holds its slot while a
+   * test looks: at full speed the clip is done at once. `realtime=speed=5` ends the picture's
+   * filters (https://ffmpeg.org/ffmpeg-filters.html#realtime_002c-arealtime) and sleeps by the
+   * frames' own times, alike in every ffmpeg from 6.1 on. A copy has no filters and holds no slot,
+   * so it runs at full speed.
+   *
+   * Not `-readrate 5`: since ffmpeg 8.0 a reader that falls 0.3 s behind (as it does while x264
+   * starts) slows to `-readrate_catchup` until it catches up, but sleeps the film's time rather
+   * than the clock's, so at 5 it never catches up and reads at about real time
+   * (fftools/ffmpeg_demux.c, `readrate_sleep`): 9.0 took 40 s to copy this clip, not 8.
    */
   const slowed: Spawn = (command, args) => {
-    const at = args.indexOf('-i')
-    return nodeSpawn(command, [...args.slice(0, at), '-readrate', '5', ...args.slice(at)], {
-      stdio: ['ignore', 'ignore', 'pipe'],
-    })
+    const at = args.indexOf('-vf') + 1
+    const slow = at ? args.with(at, `${args[at]},realtime=speed=5`) : args
+    return nodeSpawn(command, slow, { stdio: ['ignore', 'ignore', 'pipe'] })
   }
   /** Another set of transcodes in the same cache, with Settings › Playback’s limits. */
   const limited = (limits: Partial<Limits>, o: Partial<TranscodesOptions> = {}) =>

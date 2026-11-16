@@ -6,7 +6,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, test } from 'bun:test
 import { copyFileSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { hasFfmpeg, makeClips } from '@highsea-tv/media/testing'
+import { hasFfmpeg, makeClipsAsync } from '@highsea-tv/media/testing'
 import { createApi } from '../src/api/app.ts'
 import { addMember, bootRuntime, cleanup, clientFor, failure, withOwner } from './helpers.ts'
 
@@ -15,9 +15,11 @@ afterEach(cleanup)
 const SINTEL = 45745
 let clipDir: string
 let main: string
-beforeAll(() => {
+// without blocking: a sync spawn here once hung CI for 24 minutes (Bun's lost sync-spawn exit,
+// oven-sh/bun#47257, in Bun 1.4.0 to 1.4.3)
+beforeAll(async () => {
   clipDir = mkdtempSync(join(tmpdir(), 'highsea-library-api-clips-'))
-  if (hasFfmpeg) main = makeClips(clipDir).main
+  if (hasFfmpeg) main = (await makeClipsAsync(clipDir)).main
 })
 afterAll(() => rmSync(clipDir, { recursive: true, force: true }))
 
