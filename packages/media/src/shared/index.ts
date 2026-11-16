@@ -11,7 +11,8 @@
 //   media.customFormats() / .get / .add / .save / .remove
 //   media.qualitySizes() / .save
 //   (language profiles are @highsea-tv/subtitles/shared's, since checkpoint 7)
-//   media.rootFolders.list / find / add / setLanguageProfile / remove
+//   media.rootFolders.list / find / add / setLanguageProfile / setReadOnly / remove,
+//     readOnlyAt / assertWritable (ADR 0063: nothing is written under a folder highsea only reads)
 //   media.tags.list / add / rename / remove, check, ofItems, apply   tags (checkpoint 8c)
 //   media.mediaManagement.get / save       the `mediaManagement` settings row: naming and importing
 //   media.history.write / forItem / list   what happened to each title, cursor-paged on (date, id)
@@ -85,7 +86,10 @@ export {
   blockedMessage,
   DANGEROUS_EXTENSIONS,
   EXECUTABLE_EXTENSIONS,
+  EXTRA_FOLDERS,
+  type FolderFilm,
   type FoundFile,
+  filmIn,
   findBlocked,
   isBlocked,
   isVideo,
@@ -93,6 +97,7 @@ export {
   minimumRuntimeSeconds,
   sampleReason,
   skipBeforeProbe,
+  stackPart,
   VIDEO_EXTENSIONS,
   vetFiles,
 } from './files.ts'
@@ -131,7 +136,16 @@ export {
   type NamingOptions,
   titleThe,
 } from './naming.ts'
-export { movieNfo, type NfoMovie, nfoPath, writeArtwork, writeNfo } from './nfo.ts'
+export {
+  idsFromNfo,
+  movieNfo,
+  type NfoIds,
+  type NfoMovie,
+  nfoPath,
+  readFolderNfo,
+  writeArtwork,
+  writeNfo,
+} from './nfo.ts'
 export { type Dir, defaultDir, pageRows, SORTS, type Sort } from './paging.ts'
 export { checkPath, isWithin, outsideRoots, realOrParent } from './paths.ts'
 export {
@@ -164,8 +178,12 @@ export {
   type FiledCounts,
   normalizeFolder,
   ROOT_WAITING_KEY,
+  type RootFolderInput,
   type RootFolders,
   type RootWaiting,
+  readOnlyRefusal,
+  type WriteAccess,
+  writeAccess,
 } from './root-folders.ts'
 export { matchScore } from './search.ts'
 export {

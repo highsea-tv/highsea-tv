@@ -332,7 +332,7 @@ function useLibraryOptions() {
     const [quality, language, folders] = await Promise.all([
       c.quality.profiles(),
       c.subtitles.languageProfiles(),
-      c.rootFolders.list(),
+      c.rootFolders.list({ query: { kind: 'movies' } }),
     ])
     return { quality, language, folders }
   })

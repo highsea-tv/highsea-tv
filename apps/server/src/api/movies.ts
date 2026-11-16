@@ -5,6 +5,7 @@
 // `/movies/{id}`, in the contract's order. Every change goes in the audit log, as other write
 // routes do.
 import { routes } from '@highsea-tv/api-contract'
+import { AppError } from '@highsea-tv/core'
 import type { OpenAPIHono } from '@hono/zod-openapi'
 import type { Context } from 'hono'
 import { actor, type Env, me } from './guard.ts'
@@ -102,27 +103,49 @@ export function registerMovies(app: OpenAPIHono<Env>) {
   // ---------------------------------------------------------------- root folders
 
   app.openapi(routes.rootFolders.list, (c) =>
-    c.json(c.get('runtime').media.rootFolders.list(), 200),
+    c.json(c.get('runtime').media.rootFolders.list(c.req.valid('query').kind), 200),
   )
 
   app.openapi(routes.rootFolders.add, (c) => {
-    const folder = c.get('runtime').media.rootFolders.add(c.req.valid('json').path)
+    const runtime = c.get('runtime')
+    const folder = runtime.media.rootFolders.add(c.req.valid('json'))
     audit(c, 'rootfolder.added', { type: 'rootfolder', id: folder.id })
     // Settings › Media management and Storage's folders refetch on it
-    c.get('runtime').events.emit({ topic: 'settings.updated' })
-    // what's already there: the scan adds the sure matches, the rest wait for Library import
-    c.get('runtime').movies.libraryScan.queue(folder.path)
+    runtime.events.emit({ topic: 'settings.updated' })
+    // what's already there: the scan adds the sure matches, the rest wait for Library import.
+    // Shows' and music's folders are kept for parts B and D
+    if (folder.kind === 'movies') runtime.movies.libraryScan.queue(folder.path)
     return c.json(folder, 201)
   })
 
   app.openapi(routes.rootFolders.update, (c) => {
     const { id } = c.req.valid('param')
-    const folder = c
-      .get('runtime')
-      .media.rootFolders.setLanguageProfile(id, c.req.valid('json').languageProfileId)
+    const body = c.req.valid('json')
+    const folders = c.get('runtime').media.rootFolders
+    let folder = folders.list().find((f) => f.id === id)
+    if (body.languageProfileId !== undefined)
+      folder = folders.setLanguageProfile(id, body.languageProfileId)
+    if (body.readOnly !== undefined) folder = folders.setReadOnly(id, body.readOnly)
+    if (!folder) throw new AppError('not-found', 'That root folder doesn’t exist.')
     audit(c, 'rootfolder.updated', { type: 'rootfolder', id })
     c.get('runtime').events.emit({ topic: 'settings.updated' })
     return c.json(folder, 200)
+  })
+
+  app.openapi(routes.rootFolders.scan, (c) => {
+    const { id } = c.req.valid('param')
+    const runtime = c.get('runtime')
+    const folder = runtime.media.rootFolders.list().find((f) => f.id === id)
+    if (!folder) throw new AppError('not-found', 'That root folder doesn’t exist.')
+    if (folder.kind !== 'movies')
+      throw new AppError(
+        'conflict',
+        `highsea reads ${folder.kind === 'shows' ? 'shows' : 'music'} from a later release. The folder is kept until then.`,
+        { reason: 'not-yet' },
+      )
+    runtime.movies.libraryScan.queue(folder.path)
+    audit(c, 'rootfolder.scanned', { type: 'rootfolder', id })
+    return c.body(null, 204)
   })
 
   app.openapi(routes.rootFolders.remove, (c) => {

@@ -384,13 +384,13 @@ export function createSearch(
     const others = same.filter((t) => t !== replaced && t !== clash)
     const track = { ...flags, format: processed.format }
     // another provider's track keeps the plain name; this one takes its provider's (Use keeps both)
-    const path = sidecarPath(
-      file.path,
-      track,
-      others.some((t) => t.path === sidecarPath(file.path, { ...track, format: t.format }))
-        ? titleFor(result.provider)
-        : undefined,
+    const beside = (title?: string) => tracks.place(file.path, sidecarPath(file.path, track, title))
+    const path = others.some(
+      (t) =>
+        t.path === tracks.place(file.path, sidecarPath(file.path, { ...track, format: t.format })),
     )
+      ? beside(titleFor(result.provider))
+      : beside()
     await tracks.write(path, processed.text)
     if (replaced && replaced.path !== path) await tracks.unlink(replaced.path)
     if (clash && clash.path !== path) await tracks.unlink(clash.path)

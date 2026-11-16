@@ -40,7 +40,16 @@ export const SetupInput = z
       displayName: z.string().max(100),
       password: z.string().max(256),
     }),
-    folders: z.object({ movies: z.string().max(4096), downloads: z.string().max(4096) }),
+    /**
+     * The movies and downloads folders, and the shows' and music's when Review found them (Phase 5
+     * A1): each becomes a root folder of its kind, kept for when the server has shows and music.
+     */
+    folders: z.object({
+      movies: z.string().max(4096),
+      downloads: z.string().max(4096),
+      shows: z.string().max(4096).optional(),
+      music: z.string().max(4096).optional(),
+    }),
     remoteAccess: RemoteAccessInput,
     /** Remembered for when highsea cloud exists. Off when omitted. */
     cloudLink: z.boolean().optional(),
@@ -83,8 +92,18 @@ export const SetupDetected = z
   .object({
     /** The host's name as a server name; null when the container's hostname is only its id. */
     serverName: z.string().nullable(),
-    /** A movies and a downloads folder under the media root, or null when setup asks. */
-    folders: z.object({ movies: z.string(), downloads: z.string() }).nullable(),
+    /**
+     * A movies and a downloads folder under the media root, or null when setup asks; with the
+     * shows' and music's folders beside the movies' when they're there (Phase 5 A1), else null.
+     */
+    folders: z
+      .object({
+        movies: z.string(),
+        downloads: z.string(),
+        shows: z.string().nullable(),
+        music: z.string().nullable(),
+      })
+      .nullable(),
     /** The address apps on the network use, `host:port`; null in a bridge network. */
     address: z.string().nullable().openapi({ example: '192.168.1.20:3000' }),
     /** The graphics chip whose check passed, or null for the processor. */

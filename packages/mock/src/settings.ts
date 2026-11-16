@@ -131,6 +131,8 @@ export type RootFolderRow = {
   waiting: number
   /** The subtitle languages a movie added here takes. */
   languageProfileId: string | null
+  /** highsea only reads it (ADR 0063); left out, it manages it. */
+  readOnly?: boolean
 }
 
 /** A tag, and how many movies carry it (the mock's movies don't carry their tags yet). */

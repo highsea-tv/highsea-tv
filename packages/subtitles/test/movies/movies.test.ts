@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { afterEach, describe, expect, test } from 'bun:test'
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { gunzipSync } from 'node:zlib'
 import { schema } from '@highsea-tv/db'
@@ -555,5 +555,57 @@ describe('stats', () => {
       avgOffsetMs: 0,
       avgConfidence: 0,
     })
+  })
+})
+
+describe('a film highsea only reads (ADR 0063)', () => {
+  /** Every file under the films' folder, to show nothing there changed. */
+  const listing = (dir: string) =>
+    readdirSync(dir, { recursive: true, withFileTypes: true })
+      .map((e) => join(e.parentPath, e.name))
+      .sort()
+
+  test('a downloaded subtitle is kept in the data folder, served from there', async () => {
+    t = setup()
+    const m = t.movie()
+    t.media.rootFolders.add({ path: t.dir, readOnly: true })
+    const before = listing(t.dir)
+    const [r] = (await t.subtitles.search(SINTEL.tmdbId, 'en')).filter((x) => !x.forced && !x.hi)
+    const track = await t.subtitles.download(SINTEL.tmdbId, must(r).id)
+    expect(track.path.startsWith(`${t.heldDir}/`)).toBe(true)
+    expect(track.path.endsWith('Sintel (2010) Bluray-1080p.en.srt')).toBe(true)
+    expect(existsSync(track.path)).toBe(true)
+    expect(listing(t.dir)).toEqual(before)
+    expect(m.folder.startsWith(t.dir)).toBe(true)
+  })
+
+  test('the owner’s own sidecars, beside the film and in Subs, are kept and never deleted', async () => {
+    t = setup({ generate: false })
+    const m = t.movie()
+    const srt = '1\n00:00:01,000 --> 00:00:02,000\nHi\n'
+    writeFileSync(join(m.folder, 'Sintel (2010) Bluray-1080p.en.srt'), srt)
+    mkdirSync(join(m.folder, 'Subs'))
+    writeFileSync(join(m.folder, 'Subs', 'French.srt'), srt)
+    t.media.rootFolders.add({ path: t.dir, readOnly: true })
+    const before = listing(t.dir)
+    await t.subtitles.hooks.afterImport?.({
+      fileId: m.fileId,
+      itemId: m.itemId,
+      path: m.path,
+      sourceFolder: m.folder,
+      inPlace: true,
+    })
+    expect(
+      t
+        .rows()
+        .map((r) => r.path)
+        .sort(),
+    ).toEqual([
+      join(m.folder, 'Sintel (2010) Bluray-1080p.en.srt'),
+      join(m.folder, 'Subs', 'French.srt'),
+    ])
+    const [row] = t.rows()
+    expect(await reason(() => t.subtitles.delete(must(row).id))).toBe('conflict:read-only')
+    expect(listing(t.dir)).toEqual(before)
   })
 })

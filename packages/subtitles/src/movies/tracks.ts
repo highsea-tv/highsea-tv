@@ -3,9 +3,12 @@
 // the streams inside the file, read from the import's probe (`media_files.media_info`). Embedded
 // streams count toward the profile, image ones included (owner's answer 14), and aren't extracted.
 // Sidecars are written to a temporary name beside the video and renamed into place, so a crash
-// never leaves half a file.
+// never leaves half a file. A film under a folder highsea only reads (ADR 0063) keeps its new
+// sidecars in the data folder instead (`place`), and nothing under that folder is written or
+// deleted: `write` and `unlink` refuse it.
+import { createHash } from 'node:crypto'
 import { promises as fsp } from 'node:fs'
-import { basename } from 'node:path'
+import { basename, dirname, join } from 'node:path'
 import { gunzipSync } from 'node:zlib'
 import { AppError } from '@highsea-tv/core'
 import { schema } from '@highsea-tv/db'
@@ -183,8 +186,27 @@ export function createTracks(deps: SubtitlesDeps) {
     return filesOf(it.id).flatMap((f) => rowsOf(f.id).map((r) => view(r, it.tmdbId)))
   }
 
+  /**
+   * Where a new sidecar for `videoPath` goes: `beside` (its name beside the video), or, when highsea
+   * only reads the video's folder, the same name in a folder of its own under `heldDir`, one per
+   * film folder. Playback and the editors read a track by its stored path, so it's served as if it
+   * were beside the film.
+   */
+  function place(videoPath: string, beside: string): string {
+    if (!deps.media.rootFolders.readOnlyAt(videoPath)) return beside
+    if (!deps.heldDir)
+      throw new AppError('conflict', 'highsea has nowhere to keep this film’s subtitles.', {
+        reason: 'read-only',
+      })
+    const key = createHash('sha256').update(dirname(videoPath)).digest('hex').slice(0, 16)
+    return join(deps.heldDir, key, basename(beside))
+  }
+
   /** Writes a sidecar: a temporary name beside it, then a rename. */
   async function write(path: string, data: string | Uint8Array): Promise<void> {
+    deps.media.rootFolders.assertWritable(path, 'write subtitles')
+    if (deps.heldDir && path.startsWith(`${deps.heldDir}/`))
+      await fs.mkdir(dirname(path), { recursive: true })
     const tmp = `${path}.highsea-tmp`
     await fs.writeFile(tmp, data)
     try {
@@ -197,6 +219,7 @@ export function createTracks(deps: SubtitlesDeps) {
 
   /** Removes a sidecar from disk; one already gone is fine. */
   async function unlink(path: string): Promise<void> {
+    deps.media.rootFolders.assertWritable(path, 'delete files')
     await fs.unlink(path).catch((e: NodeJS.ErrnoException) => {
       if (e.code !== 'ENOENT') throw e
     })
@@ -218,6 +241,7 @@ export function createTracks(deps: SubtitlesDeps) {
     present,
     view,
     forItem,
+    place,
     write,
     unlink,
     originalOf,

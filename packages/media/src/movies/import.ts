@@ -248,7 +248,7 @@ export function createImports(ctx: Ctx, deps: { media: Media; library: Library }
   const copying = new Map<string, { fallback: 'cross-device' | 'not-supported'; since: number }>()
 
   const roots = () => [
-    ...media.rootFolders.list().map((r) => r.path),
+    ...media.rootFolders.list('movies').map((r) => r.path),
     ...(options.downloadDirs?.() ?? []),
   ]
 
@@ -505,6 +505,17 @@ export function createImports(ctx: Ctx, deps: { media: Media; library: Library }
         'The profile doesn’t want it.'
       return failed(row, 'blocked', why, { ...history, quality })
     }
+
+    // A folder highsea only reads takes nothing from downloads (ADR 0063): the owner's other app
+    // still files its movies there.
+    const readOnlyRoot = media.rootFolders.readOnlyAt(row.path)
+    if (readOnlyRoot)
+      return failed(
+        row,
+        'blocked',
+        `highsea only reads ${readOnlyRoot}, so it doesn’t import into it. Switch the folder to managed in Settings › Media management to import there.`,
+        { ...history, quality },
+      )
 
     // Step 5, name.
     const naming: NamingFile = {
@@ -816,7 +827,8 @@ export function createImports(ctx: Ctx, deps: { media: Media; library: Library }
     const release = parse(sourceTitle)
     const quality = qualityFor(release, info, null)
     const meta = library.internal.cached(row.tmdbId)
-    if (args.rename) {
+    // a folder highsea only reads is never renamed in (ADR 0063); Library import refuses first
+    if (args.rename && !media.rootFolders.readOnlyAt(path)) {
       const settings = { ...media.mediaManagement.get(), rename: true }
       const name = targetName(
         settings,
@@ -834,6 +846,7 @@ export function createImports(ctx: Ctx, deps: { media: Media; library: Library }
       )
       const dest = checkPath(join(dirname(path), name), allowed)
       if (dest !== path && !(await fsp.stat(dest).catch(() => null))) {
+        media.rootFolders.assertWritable(path, 'rename files')
         await fsp.rename(path, dest)
         path = dest
       }

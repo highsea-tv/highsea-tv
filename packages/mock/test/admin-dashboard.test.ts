@@ -121,10 +121,13 @@ describe('what the widgets read', () => {
     parse(routes.vpn.status, await c.vpn.status())
     parse(routes.tags.list, await c.tags.list())
 
-    const folders = await c.rootFolders.list()
+    const folders = await c.rootFolders.list({ query: { kind: 'movies' } })
     parse(routes.rootFolders.list, folders)
     expect(folders.length).toBeGreaterThan(0)
     expect(folders.every((f) => f.path.startsWith('/data/media/movies'))).toBe(true)
+    // every kind's, without one
+    const all = await c.rootFolders.list()
+    expect(new Set(all.map((f) => f.kind))).toEqual(new Set(['movies', 'shows', 'music']))
 
     const profiles = await c.quality.profiles()
     parse(routes.quality.profiles, profiles)

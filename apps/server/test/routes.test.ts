@@ -98,7 +98,11 @@ describe('setup’s detection and Review (4.3c)', () => {
   test('detect answers before setup, with an empty /data getting highsea’s layout, then closes', async () => {
     const { app, anon, runtime } = await start()
     const found = await anon.setup.detect()
-    expect(found.folders).toEqual((await anon.setup.defaults()).folders)
+    expect(found.folders).toEqual({
+      ...(await anon.setup.defaults()).folders,
+      shows: null,
+      music: null,
+    })
     expect(found.graphics).toBeNull()
     expect((await finish(app, {})).status).toBe(200)
     expect(runtime.setupComplete()).toBe(true)

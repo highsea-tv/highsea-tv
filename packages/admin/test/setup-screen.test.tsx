@@ -26,7 +26,12 @@ const failure = (code: string, message: string, status: number, details?: unknow
 
 const FOUND: SetupDetected = {
   serverName: 'Harbor',
-  folders: { movies: '/data/media/movies', downloads: '/data/downloads' },
+  folders: {
+    movies: '/data/media/movies',
+    downloads: '/data/downloads',
+    shows: null,
+    music: null,
+  },
   address: '192.168.1.20:3000',
   graphics: { name: 'Intel UHD Graphics 770', path: 'vaapi' },
 }

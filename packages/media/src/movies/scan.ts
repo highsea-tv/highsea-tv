@@ -20,7 +20,7 @@ import { basename, dirname, extname, join, relative, sep } from 'node:path'
 import { schema } from '@highsea-tv/db'
 import { eq } from 'drizzle-orm'
 import { writeFileFacts } from '../shared/file-facts.ts'
-import { type FoundFile, isVideo, listFiles } from '../shared/files.ts'
+import { type FoundFile, isVideo, listFiles, stackPart } from '../shared/files.ts'
 import type { Media } from '../shared/index.ts'
 import type { ItemRow } from '../shared/map.ts'
 import { isWithin } from '../shared/paths.ts'
@@ -126,7 +126,22 @@ export function createLibraryScan(
     if (row) announce(events, [row.tmdbId])
   }
 
-  async function addedFile(row: ItemRow, found: FoundFile): Promise<boolean> {
+  async function addedFile(
+    row: ItemRow,
+    found: FoundFile,
+    known: readonly string[],
+  ): Promise<boolean> {
+    // a later part of a film in parts (`-cd2`) whose first part is the film's file: the same film
+    const part = stackPart(found.path)
+    if (
+      part &&
+      part.part > 1 &&
+      known.some((k) => {
+        const first = stackPart(k)
+        return dirname(k) === dirname(found.path) && first?.name === part.name && first.part === 1
+      })
+    )
+      return false
     const meta = library.internal.cached(row.tmdbId)
     const p = await imports.internal.probed(found, row.path, meta)
     if (p.skip !== null) {
@@ -163,7 +178,8 @@ export function createLibraryScan(
       removed: 0,
       unreadable: [],
     }
-    const roots = media.rootFolders.list().map((r) => r.path)
+    // shows' and music's folders are read from parts B and D (Phase 5)
+    const roots = media.rootFolders.list('movies').map((r) => r.path)
     const scopes = folder ? (roots.some((r) => isWithin(r, folder)) ? [folder] : []) : roots
     const settings = media.mediaManagement.get()
     for (const scope of scopes) {
@@ -217,7 +233,7 @@ export function createLibraryScan(
       for (const f of fresh) {
         const row = owner(movies, f.path)
         if (row) {
-          if (await addedFile(row, f)) result.added++
+          if (await addedFile(row, f, [...knownPaths])) result.added++
           continue
         }
         const rel = relative(root, f.path).split(sep)

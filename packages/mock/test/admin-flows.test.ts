@@ -46,7 +46,12 @@ describe('setup', () => {
     const c = anonymous()
     const found = await c.setup.detect()
     expect(shaped(routes.setup.detect, found)).toEqual(found)
-    expect(found.folders).toEqual({ movies: '/data/media/movies', downloads: '/data/downloads' })
+    expect(found.folders).toEqual({
+      movies: '/data/media/movies',
+      downloads: '/data/downloads',
+      shows: '/data/media/tv',
+      music: '/data/media/music',
+    })
     expect(found.graphics?.path).toBe('vaapi')
     expect((await c.setup.defaults()).dataDir).toBe('/data')
   })

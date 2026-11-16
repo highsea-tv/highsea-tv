@@ -48,6 +48,8 @@ export const qualityMessages = defineMessages({
   'media.invalid': 'That setting isn’t valid. Check it and try again.',
   'media.recycleBin': 'Use a full path for the recycle bin, starting with /.',
   'folders.unknown': 'There’s no such root folder.',
+  'folders.notYet':
+    'highsea reads shows and music from a later release. The folder is kept until then.',
 })
 
 const t = createT(qualityMessages)
@@ -62,12 +64,15 @@ export function rootFolderOf(f: ReturnType<Ctx['api']['rootFolders']['list']>[nu
   return {
     id: f.id,
     path: f.path,
+    kind: f.kind,
     free: f.free,
     total: f.total,
     // the mock's seeded filesystem has every folder under /data on one disk, `data`
     device: f.accessible && f.path.startsWith('/data/') ? 'data' : null,
     accessible: f.accessible,
-    movies: f.titles,
+    readOnly: f.readOnly ?? false,
+    mountedReadOnly: false,
+    movies: f.kind === 'movies' ? f.titles : 0,
     languageProfileId: f.languageProfileId,
     waiting: f.waiting,
   }
@@ -309,14 +314,24 @@ export function qualityAnswers({ emit }: AdminKit): Answers {
     },
 
     rootFolders: {
-      add: ({ body }, ctx) => rootFolderOf(ctx.api.rootFolders.add(body.path, 'movies')),
+      add: ({ body }, ctx) =>
+        rootFolderOf(
+          ctx.api.rootFolders.add(body.path, body.kind ?? 'movies', body.readOnly ?? false),
+        ),
       update: ({ params, body }, ctx) => {
         const s = ctx.srv.state
-        if (!s.settings.rootFolders.some((f) => f.id === params.id && f.kind === 'movies'))
+        if (!s.settings.rootFolders.some((f) => f.id === params.id))
           throw refuse('not-found', t('folders.unknown'))
         ctx.api.rootFolders.update(params.id, body)
-        const f = ctx.api.rootFolders.list('movies').find((x) => x.id === params.id)
+        const f = ctx.api.rootFolders.list().find((x) => x.id === params.id)
         return rootFolderOf(f as NonNullable<typeof f>)
+      },
+      scan: ({ params }, ctx) => {
+        const f = ctx.api.rootFolders.list().find((x) => x.id === params.id)
+        if (!f) throw refuse('not-found', t('folders.unknown'))
+        if (f.kind !== 'movies')
+          throw refuse('conflict', t('folders.notYet'), { reason: 'not-yet' })
+        ctx.api.rootFolders.scan(params.id)
       },
       remove: ({ params }, ctx) => {
         ctx.api.rootFolders.remove(params.id)

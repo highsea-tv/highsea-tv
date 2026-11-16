@@ -114,6 +114,8 @@ describe('setup', () => {
     expect(detectFolders(c)).toEqual({
       movies: join(c.dataDir, 'movies'),
       downloads: join(c.dataDir, 'downloads'),
+      shows: null,
+      music: null,
     })
     // TRaSH's layout first, matched without regard to case; torrents for downloads
     rmSync(join(c.dataDir, 'movies'), { recursive: true })
@@ -123,6 +125,15 @@ describe('setup', () => {
     expect(detectFolders(c)).toEqual({
       movies: join(c.dataDir, 'Media', 'Movies'),
       downloads: join(c.dataDir, 'torrents'),
+      shows: null,
+      music: null,
+    })
+    // shows and music beside the movies (Phase 5 A1), TRaSH's names first
+    mkdirSync(join(c.dataDir, 'Media', 'TV'))
+    mkdirSync(join(c.dataDir, 'Media', 'Music'))
+    expect(detectFolders(c)).toMatchObject({
+      shows: join(c.dataDir, 'Media', 'TV'),
+      music: join(c.dataDir, 'Media', 'Music'),
     })
     // movies without downloads: downloads goes beside them
     rmSync(join(c.dataDir, 'torrents'), { recursive: true })
@@ -135,7 +146,7 @@ describe('setup', () => {
     rmSync(join(c.dataDir, 'tv'), { recursive: true })
     mkdirSync(join(c.dataDir, 'lost+found'))
     mkdirSync(join(c.dataDir, 'transcodes'))
-    expect(detectFolders(c)).toEqual(setupDefaults(c).folders)
+    expect(detectFolders(c)).toEqual({ ...setupDefaults(c).folders, shows: null, music: null })
   })
 
   test('the address apps use: the published URL, the LAN address, or null in a bridge', () => {

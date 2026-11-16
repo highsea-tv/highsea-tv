@@ -84,14 +84,18 @@ export function flowsAnswers(kit: AdminKit): Answers {
         folders: { movies: '/data/media/movies', downloads: '/data/downloads' },
         serverName: 'highsea',
       }),
-      // the mock's own detection, in the contract's shape: its folders without shows and music,
-      // and its path's name as the server's
+      // the mock's own detection, in the contract's shape, and its path's name as the server's
       detect: (_, ctx): SetupDetected => {
         const found = ctx.api.setup.detect()
         return {
           serverName: found.serverName,
           folders: found.folders?.movies
-            ? { movies: found.folders.movies, downloads: found.folders.downloads }
+            ? {
+                movies: found.folders.movies,
+                downloads: found.folders.downloads,
+                shows: found.folders.shows,
+                music: found.folders.music,
+              }
             : null,
           address: found.address,
           graphics: found.graphics && {

@@ -125,7 +125,11 @@ export function LibraryImport({ root: initialRoot = '' }: { root?: string }) {
   const [scanning, setScanning] = useState(false)
   const [rename, setRename] = useState(false)
   const [profileId, setProfileId] = useState('')
-  const roots = useQuery('import:library:roots', (c) => c.rootFolders.list(), ['settings.updated'])
+  const roots = useQuery(
+    'import:library:roots',
+    (c) => c.rootFolders.list({ query: { kind: 'movies' } }),
+    ['settings.updated'],
+  )
   const profiles = useQuery('import:library:profiles', (c) => c.quality.profiles())
   const status = useQuery('import:library:status', (c) => c.libraryImport.status(), [
     LIBRARY_IMPORT_TOPIC,

@@ -105,10 +105,13 @@ const movie = (id: number, title: string, releaseDate: string | null, labels = [
 const folder = (id: string, path: string, total: number | null, movies: number, waiting = 0) => ({
   id,
   path,
+  kind: 'movies' as const,
   free: total === null ? null : total / 2,
   total,
   device: total === null ? null : 'sda1',
   accessible: total !== null,
+  readOnly: false,
+  mountedReadOnly: false,
   movies,
   languageProfileId: null as string | null,
   waiting,
