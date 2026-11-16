@@ -80,7 +80,8 @@ type Remote = SetupInput['remoteAccess']['kind']
 type Draft = {
   serverName: string
   owner: { displayName: string; username: string; password: string; confirm: string }
-  folders: { movies: string; downloads: string }
+  /** Shows' and music's are optional, '' for none (Phase 5 A1): kept for when the server has them. */
+  folders: { movies: string; downloads: string; shows: string; music: string }
   /** The owner's own TMDB key, as typed. Never stored. */
   metadataKey: string
   /** Starter-pack definition ids to add at Finish. */
@@ -109,7 +110,7 @@ type Saved = {
 const blank: Draft = {
   serverName: '',
   owner: { displayName: '', username: '', password: '', confirm: '' },
-  folders: { movies: '', downloads: '' },
+  folders: { movies: '', downloads: '', shows: '', music: '' },
   metadataKey: '',
   indexers: [],
   subtitleLanguages: [],
@@ -198,6 +199,11 @@ function folderErrors(d: Draft, t: T): Errors {
   if (!d.folders.movies) e.movies = t('folders.moviesMissing')
   if (!d.folders.downloads) e.downloads = t('folders.downloadsMissing')
   if (d.folders.movies && d.folders.movies === d.folders.downloads) e.downloads = t('folders.same')
+  for (const key of ['shows', 'music'] as const) {
+    const p = d.folders[key]
+    if (p && (p === d.folders.movies || p === d.folders.downloads))
+      e[key] = t('folders.sameAsOthers')
+  }
   return e
 }
 
@@ -226,6 +232,8 @@ const FIELDS: Record<string, [StepId | Line, string]> = {
   password: ['owner', 'password'],
   'folders.movies': ['folders', 'movies'],
   'folders.downloads': ['folders', 'downloads'],
+  'folders.shows': ['folders', 'shows'],
+  'folders.music': ['folders', 'music'],
   subtitleLanguages: ['subtitles', 'languages'],
   timeZone: ['timeZone', 'timeZone'],
   address: ['address', 'address'],
@@ -240,7 +248,12 @@ const toInput = (d: Draft): SetupInput => ({
     username: d.owner.username,
     password: d.owner.password,
   },
-  folders: d.folders,
+  folders: {
+    movies: d.folders.movies,
+    downloads: d.folders.downloads,
+    ...(d.folders.shows ? { shows: d.folders.shows } : {}),
+    ...(d.folders.music ? { music: d.folders.music } : {}),
+  },
   indexers: d.indexers,
   subtitleLanguages: d.subtitleLanguages,
   remoteAccess:
@@ -303,7 +316,14 @@ export function Setup() {
       draft: {
         ...s.draft,
         serverName: s.draft.serverName || (found.serverName ?? ''),
-        folders: found.folders ?? s.draft.folders,
+        folders: found.folders
+          ? {
+              movies: found.folders.movies,
+              downloads: found.folders.downloads,
+              shows: found.folders.shows ?? '',
+              music: found.folders.music ?? '',
+            }
+          : s.draft.folders,
         indexers: pack.status === 'success' ? pack.data.map((d) => d.id) : [],
         subtitleLanguages:
           languages.status === 'success' ? browserLanguages(languages.data) : ['en'],
@@ -730,6 +750,8 @@ function Review({
         <View>
           {monoText(movies)}
           {monoText(downloads)}
+          {draft.folders.shows ? monoText(draft.folders.shows) : null}
+          {draft.folders.music ? monoText(draft.folders.music) : null}
         </View>
       ),
       note:
@@ -981,6 +1003,10 @@ function Review({
 
 // ---------------------------------------------------------------- folders
 
+/** Movies' and downloads' are needed; shows' and music's are kept for later (Phase 5 A1). */
+const FOLDER_KEYS = ['movies', 'downloads', 'shows', 'music'] as const
+type FolderKey = (typeof FOLDER_KEYS)[number]
+
 function Folders({
   draft,
   errors,
@@ -993,17 +1019,22 @@ function Folders({
   root: string
 }) {
   const t = useT(messages)
-  const [picking, setPicking] = useState<'movies' | 'downloads' | null>(null)
+  const [picking, setPicking] = useState<FolderKey | null>(null)
   const { movies, downloads } = draft.folders
   const check = useQuery(`hardlinks:${movies}:${downloads}`, (c) =>
     c.setup.checkHardlinks({ query: { a: downloads, b: movies } }),
   )
-  const set = (key: 'movies' | 'downloads', path: string) =>
+  const set = (key: FolderKey, path: string) =>
     update({ folders: { ...draft.folders, [key]: path } })
   return (
     <>
-      {(['movies', 'downloads'] as const).map((key) => (
-        <Field key={key} label={t(`folders.${key}`)} error={errors[key]}>
+      {FOLDER_KEYS.map((key) => (
+        <Field
+          key={key}
+          label={t(`folders.${key}`)}
+          hint={key === 'shows' || key === 'music' ? t('folders.laterHint') : undefined}
+          error={errors[key]}
+        >
           <View style={{ flexDirection: 'row', gap: s['2'] }}>
             <View style={{ flex: 1, minWidth: 0 }}>
               <Input
@@ -1029,7 +1060,7 @@ function Folders({
       )}
       <PathPicker
         open={picking !== null}
-        title={picking === 'downloads' ? t('picker.downloads') : t('picker.movies')}
+        title={t(`picker.${picking ?? 'movies'}`)}
         root={root}
         start={picking ? draft.folders[picking] || root : root}
         onClose={() => setPicking(null)}

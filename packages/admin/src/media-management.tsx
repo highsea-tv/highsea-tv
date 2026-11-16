@@ -32,6 +32,7 @@ import {
   COLON_REPLACEMENTS,
   type EpisodeNaming,
   type LanguageProfile,
+  type LibraryKind,
   type MediaManagementSettings,
   MULTI_EPISODE_STYLES,
   type RootFolder,
@@ -491,6 +492,14 @@ function EpisodeNamingGroup({
   )
 }
 
+/** Each kind's section: its icon, and the placeholder of its Add field (the stage-6 prototype). */
+const KIND: Record<LibraryKind, { icon: 'movie' | 'series' | 'music'; placeholder: string }> = {
+  movies: { icon: 'movie', placeholder: '/data/media/movies' },
+  shows: { icon: 'series', placeholder: '/data/media/tv' },
+  music: { icon: 'music', placeholder: '/data/media/music' },
+}
+const KINDS = ['movies', 'shows', 'music'] as const satisfies readonly LibraryKind[]
+
 function RootFolders() {
   const t = useT(messages)
   const theme = useTheme()
@@ -509,40 +518,73 @@ function RootFolders() {
         <Note>{t('folders.description')}</Note>
       </View>
       <Loadable query={folders} what={t('folders.what')}>
-        {(fs) =>
-          fs.length === 0 ? (
-            <View
-              style={{
-                padding: s['4'],
-                borderWidth: line.thin,
-                borderColor: theme.colors.line,
-                borderRadius: tokens.radius.md,
-                backgroundColor: theme.colors.s2,
-              }}
-            >
-              <Note style={{ textAlign: 'center' }}>{t('folders.none')}</Note>
-            </View>
-          ) : (
-            <Cards label={t('folders.title')}>
-              {fs.map((f) => (
-                <Folder
-                  key={f.id}
-                  folder={f}
-                  languages={languages.data ?? []}
-                  onRemove={() => setRemoving(f)}
-                  onSaved={folders.refetch}
-                />
-              ))}
-            </Cards>
-          )
-        }
+        {(fs) => (
+          <View style={{ gap: s['5'] }}>
+            {KINDS.map((kind, i) => {
+              const mine = fs.filter((f) => f.kind === kind)
+              return (
+                <View
+                  key={kind}
+                  style={[
+                    { gap: s['3'] },
+                    i > 0 && {
+                      borderTopWidth: line.thin,
+                      borderColor: theme.colors.line,
+                      paddingTop: s['5'],
+                    },
+                  ]}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: s['2'] }}>
+                    <Icon name={KIND[kind].icon} size={tokens.icon.size.sm} color="text-3" />
+                    <Text
+                      size={ui.size}
+                      leading={ui.leading}
+                      weight={600}
+                      role="heading"
+                      aria-level={4}
+                    >
+                      {t(`folders.kind.${kind}`)}
+                    </Text>
+                  </View>
+                  {/* shows' and music's folders are kept for parts B and D (Phase 5) */}
+                  {kind !== 'movies' ? <Note>{t(`folders.later.${kind}`)}</Note> : null}
+                  {mine.length === 0 ? (
+                    <View
+                      style={{
+                        padding: s['4'],
+                        borderWidth: line.thin,
+                        borderColor: theme.colors.line,
+                        borderRadius: tokens.radius.md,
+                        backgroundColor: theme.colors.s2,
+                      }}
+                    >
+                      <Note style={{ textAlign: 'center' }}>{t(`folders.none.${kind}`)}</Note>
+                    </View>
+                  ) : (
+                    <Cards label={t('folders.list', { kind: t(`folders.kind.${kind}`) })}>
+                      {mine.map((f) => (
+                        <Folder
+                          key={f.id}
+                          folder={f}
+                          languages={languages.data ?? []}
+                          onRemove={() => setRemoving(f)}
+                          onSaved={folders.refetch}
+                        />
+                      ))}
+                    </Cards>
+                  )}
+                  <AddFolder kind={kind} onAdded={folders.refetch} />
+                </View>
+              )
+            })}
+          </View>
+        )}
       </Loadable>
-      <AddFolder onAdded={folders.refetch} />
       <ConfirmDialog
         open={!!removing}
         onClose={() => setRemoving(null)}
         title={t('folders.removeTitle', { path: removing?.path ?? '' })}
-        description={t('folders.removeBody')}
+        description={t(`folders.removeBody.${removing?.kind ?? 'movies'}`)}
         confirmLabel={t('folders.removeConfirm')}
         cancelLabel={t('folders.keep')}
         destructive
@@ -579,10 +621,15 @@ function Folder({
 }) {
   const t = useT(messages)
   const medium = useRegularWindow()
+  const movies = f.kind === 'movies'
   const inUse = f.movies > 0
   const save = useAction((c, languageProfileId: string | null) =>
     c.rootFolders.update({ params: { id: f.id }, body: { languageProfileId } }),
   )
+  const setReadOnly = useAction((c, readOnly: boolean) =>
+    c.rootFolders.update({ params: { id: f.id }, body: { readOnly } }),
+  )
+  const scan = useAction((c) => c.rootFolders.scan({ params: { id: f.id } }))
   const setLanguages = (v: string) =>
     save.run(v === NO_LANGUAGES ? null : v).then(
       () => {
@@ -591,13 +638,31 @@ function Folder({
       },
       (e: Error) => toast.error(t('folders.languagesFailed'), { description: e.message }),
     )
+  const toggleReadOnly = (readOnly: boolean) =>
+    setReadOnly.run(readOnly).then(
+      () => {
+        toast.success(
+          t(readOnly ? 'folders.readOnlySaved' : 'folders.managedSaved', { path: f.path }),
+        )
+        onSaved()
+      },
+      (e: Error) => toast.error(t('folders.readOnlyFailed'), { description: e.message }),
+    )
   return (
     <Card
       gap={s['2']}
       style={medium ? { flexDirection: 'row', alignItems: 'center', gap: s['2'] } : undefined}
     >
       <View style={{ flex: medium ? 1 : undefined, minWidth: 0, gap: s['1'] }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: s['2'], minWidth: 0 }}>
+        <View
+          style={{
+            flexDirection: 'row',
+            flexWrap: 'wrap',
+            alignItems: 'center',
+            gap: s['2'],
+            minWidth: 0,
+          }}
+        >
           <Icon name="folder" size={tokens.icon.size.sm} color="text-3" />
           <Text
             size={ui.size}
@@ -607,6 +672,7 @@ function Folder({
           >
             {f.path}
           </Text>
+          {f.readOnly ? <Badge tone="info">{t('folders.readOnlyBadge')}</Badge> : null}
           {f.accessible ? null : <Badge tone="warning">{t('folders.unreadable')}</Badge>}
         </View>
         <Note>
@@ -614,7 +680,7 @@ function Folder({
             f.free !== null && f.total !== null
               ? t('folders.free', { free: bytes(f.free), total: bytes(f.total) })
               : null,
-            t('folders.movies', { count: f.movies }),
+            movies ? t('folders.movies', { count: f.movies }) : null,
             // the library scan's new folders it couldn't match surely (4.1a's review)
             f.waiting > 0 ? t('folders.waiting', { count: f.waiting }) : null,
           ]
@@ -622,34 +688,77 @@ function Folder({
             .join(' · ')}
         </Note>
         {inUse ? <Note>{t('folders.inUse', { count: f.movies })}</Note> : null}
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: s['2'] }}>
-          <Text variant="caption" color="text-3" aria-hidden>
-            {t('folders.languages')}
-          </Text>
-          <View style={medium ? { width: LANGUAGES_WIDTH } : { width: '100%' }}>
-            <Select
-              aria-label={t('folders.languagesLabel', { path: f.path })}
-              value={f.languageProfileId ?? NO_LANGUAGES}
-              disabled={save.pending}
-              onValueChange={setLanguages}
-              options={[
-                { value: NO_LANGUAGES, label: t('folders.languagesNone') },
-                ...languages.map((p) => ({ value: p.id, label: p.name })),
-              ]}
-            />
+        {/* ADR 0063: the owner's other apps manage it, and highsea only reads it */}
+        <Switch
+          label={t('folders.readOnly')}
+          hint={
+            f.mountedReadOnly
+              ? t('folders.mountedReadOnly')
+              : f.readOnly
+                ? t(`folders.readOnlyHint.${f.kind}`)
+                : t('folders.managedHint')
+          }
+          checked={f.readOnly}
+          disabled={setReadOnly.pending || f.mountedReadOnly}
+          onCheckedChange={toggleReadOnly}
+        />
+        {movies ? (
+          <View
+            style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: s['2'] }}
+          >
+            <Text variant="caption" color="text-3" aria-hidden>
+              {t('folders.languages')}
+            </Text>
+            <View style={medium ? { width: LANGUAGES_WIDTH } : { width: '100%' }}>
+              <Select
+                aria-label={t('folders.languagesLabel', { path: f.path })}
+                value={f.languageProfileId ?? NO_LANGUAGES}
+                disabled={save.pending}
+                onValueChange={setLanguages}
+                options={[
+                  { value: NO_LANGUAGES, label: t('folders.languagesNone') },
+                  ...languages.map((p) => ({ value: p.id, label: p.name })),
+                ]}
+              />
+            </View>
           </View>
-        </View>
+        ) : null}
       </View>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: s['2'] }}>
-        <Button
-          size="sm"
-          variant="ghost"
-          icon="import"
-          href={`/activity/import?mode=library&root=${encodeURIComponent(f.path)}`}
-          accessibilityLabel={t('folders.importExistingLabel', { path: f.path })}
-        >
-          {t('folders.importExisting')}
-        </Button>
+        {movies ? (
+          <Button
+            size="sm"
+            variant="ghost"
+            icon="refresh"
+            loading={scan.pending}
+            disabled={!f.accessible}
+            accessibilityLabel={t('folders.scanLabel', { path: f.path })}
+            onPress={() =>
+              scan.run().then(
+                () =>
+                  toast({
+                    title: t('folders.scanning', { path: f.path }),
+                    description: t('folders.scanningBody'),
+                  }),
+                (e: Error) => toast.error(t('folders.scanFailed'), { description: e.message }),
+              )
+            }
+          >
+            {t('folders.scan')}
+          </Button>
+        ) : null}
+        {/* Library import matches movies only until the server has shows and music */}
+        {movies ? (
+          <Button
+            size="sm"
+            variant="ghost"
+            icon="import"
+            href={`/activity/import?mode=library&root=${encodeURIComponent(f.path)}`}
+            accessibilityLabel={t('folders.importExistingLabel', { path: f.path })}
+          >
+            {t('folders.importExisting')}
+          </Button>
+        ) : null}
         <Button
           size="sm"
           variant="danger"
@@ -666,18 +775,20 @@ function Folder({
   )
 }
 
-function AddFolder({ onAdded }: { onAdded: () => void }) {
+function AddFolder({ kind, onAdded }: { kind: LibraryKind; onAdded: () => void }) {
   const t = useT(messages)
   const [path, setPath] = useState('')
+  const [readOnly, setReadOnly] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const add = useAction((c, p: string) => c.rootFolders.add({ body: { path: p } }))
+  const add = useAction((c, p: string) => c.rootFolders.add({ body: { path: p, kind, readOnly } }))
 
   const submit = async () => {
     const p = path.trim()
     if (!p) return setError(t('add.missing'))
     if (!p.startsWith('/')) return setError(t('add.notAbsolute'))
+    let added: RootFolder
     try {
-      await add.run(p)
+      added = await add.run(p)
     } catch (err) {
       const reason = errorReason(err)
       return setError(
@@ -685,41 +796,66 @@ function AddFolder({ onAdded }: { onAdded: () => void }) {
           ? t('add.notAbsolute')
           : reason === 'not-found'
             ? t('add.notFound')
-            : reason === 'not-writable'
-              ? t('add.notWritable')
-              : (err as ApiError).code === 'conflict'
-                ? t('add.conflict')
-                : (err as Error).message,
+            : reason === 'not-readable'
+              ? t('add.notReadable')
+              : reason === 'not-writable'
+                ? t('add.notWritable')
+                : (err as ApiError).code === 'conflict'
+                  ? t('add.conflict')
+                  : (err as Error).message,
       )
     }
     setPath('')
+    setReadOnly(false)
     setError(null)
-    toast.success(t('add.added', { path: p }), { description: t('add.addedScanning') })
+    toast.success(t('add.added', { path: p }), {
+      description:
+        kind !== 'movies'
+          ? t(`folders.later.${kind}`)
+          : added.readOnly
+            ? t('add.addedReadOnly')
+            : t('add.addedScanning'),
+    })
     onAdded()
   }
 
   return (
-    <Field label={t('add.label')} hint={t('add.hint')} error={error ?? undefined}>
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: s['2'] }}>
-        <View style={{ flexGrow: 1, flexShrink: 1, flexBasis: s['12'] * 4, minWidth: 0 }}>
-          <Input
-            value={path}
-            icon="folder"
-            mono
-            placeholder={t('add.placeholder')}
-            spellCheck={false}
-            autoCapitalize="none"
-            onChangeText={(v) => {
-              setError(null)
-              setPath(v)
-            }}
-            onSubmitEditing={submit}
-          />
+    <View style={{ gap: s['2'] }}>
+      <Field
+        label={t(`add.label.${kind}`)}
+        hint={readOnly ? t('add.hintReadOnly') : t('add.hint')}
+        error={error ?? undefined}
+      >
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: s['2'] }}>
+          <View style={{ flexGrow: 1, flexShrink: 1, flexBasis: s['12'] * 4, minWidth: 0 }}>
+            <Input
+              value={path}
+              icon="folder"
+              mono
+              placeholder={KIND[kind].placeholder}
+              spellCheck={false}
+              autoCapitalize="none"
+              onChangeText={(v) => {
+                setError(null)
+                setPath(v)
+              }}
+              onSubmitEditing={submit}
+            />
+          </View>
+          <Button icon="add" loading={add.pending} onPress={submit}>
+            {t('add.submit')}
+          </Button>
         </View>
-        <Button icon="add" loading={add.pending} onPress={submit}>
-          {t('add.submit')}
-        </Button>
-      </View>
-    </Field>
+      </Field>
+      <Switch
+        label={t('add.readOnly')}
+        hint={t('add.readOnlyHint')}
+        checked={readOnly}
+        onCheckedChange={(v) => {
+          setError(null)
+          setReadOnly(v)
+        }}
+      />
+    </View>
   )
 }

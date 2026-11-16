@@ -183,12 +183,14 @@ export function LibraryImport({ root: initialRoot = '' }: { root?: string }) {
     run
       .run({
         items: chosen.map((r) => ({ folder: r.folder, tmdbId: r.match?.tmdbId as number })),
-        rename,
+        rename: rename && !readOnly,
         ...(profileId ? { qualityProfileId: profileId } : {}),
       })
       .catch((e: Error) => toast.error(t('fail.run'), { description: e.message }))
 
   const rootOptions = (roots.data ?? []).map((r) => ({ value: r.path, label: r.path }))
+  // a folder highsea only reads keeps its names (ADR 0063): no Rename to my format
+  const readOnly = !!roots.data?.find((r) => r.path === scanned)?.readOnly
   const profileOptions = (profiles.data ?? []).map((p) => ({ value: p.id, label: p.name }))
   const ui = tokens.adminText.ui
 
@@ -267,9 +269,11 @@ export function LibraryImport({ root: initialRoot = '' }: { root?: string }) {
         ) : (
           <TableFrame>
             <TableToolbar>
-              <Checkbox label={t('rename')} checked={rename} onCheckedChange={setRename} />
+              {readOnly ? null : (
+                <Checkbox label={t('rename')} checked={rename} onCheckedChange={setRename} />
+              )}
               <Text variant="caption" color="text-3">
-                {rename ? t('renameBody') : t('keepBody')}
+                {readOnly ? t('readOnlyBody') : rename ? t('renameBody') : t('keepBody')}
               </Text>
               <View
                 style={{
@@ -348,6 +352,10 @@ export function LibraryImport({ root: initialRoot = '' }: { root?: string }) {
                             <Text variant="caption" color="text-3">
                               {r.skip}
                             </Text>
+                          ) : r.parts.length > 1 ? (
+                            <Text variant="caption" color="text-3">
+                              {t('parts', { count: r.parts.length })}
+                            </Text>
                           ) : null}
                         </View>
                       </TableCell>
@@ -360,6 +368,11 @@ export function LibraryImport({ root: initialRoot = '' }: { root?: string }) {
                                 : r.match.title
                               : '—'}
                           </Text>
+                          {r.match && r.matchedBy === 'nfo' ? (
+                            <Text variant="caption" color="text-3">
+                              {t('fromNfo')}
+                            </Text>
+                          ) : null}
                         </View>
                       </TableCell>
                       <TableCell>

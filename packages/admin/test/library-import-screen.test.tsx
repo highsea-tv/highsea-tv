@@ -56,7 +56,12 @@ const idle = {
 }
 
 type Req = { method: string; path: string; body: unknown }
-let state: { status: Record<string, unknown>; requests: Req[]; noKey: boolean }
+let state: {
+  status: Record<string, unknown>
+  requests: Req[]
+  noKey: boolean
+  readOnly?: boolean
+}
 
 const candidate = (name: string, extra: Record<string, unknown> = {}) => ({
   folder: `${ROOT}/${name}`,
@@ -65,6 +70,8 @@ const candidate = (name: string, extra: Record<string, unknown> = {}) => ({
   size: 2_000_000_000,
   quality: 'Bluray-1080p',
   match: null,
+  matchedBy: null,
+  parts: [],
   inLibrary: false,
   skip: null,
   ...extra,
@@ -89,6 +96,9 @@ async function api(url: string, init: RequestInit = {}): Promise<Response> {
           total: 2e12,
           movies: 0,
           device: null,
+          kind: 'movies',
+          readOnly: !!state.readOnly,
+          mountedReadOnly: false,
         },
       ])
     case 'GET /api/v1/qualityprofiles':
@@ -111,7 +121,25 @@ async function api(url: string, init: RequestInit = {}): Promise<Response> {
           503,
         )
       return json([
-        candidate('Sintel (2010)', { match: { tmdbId: 45745, title: 'Sintel', year: 2010 } }),
+        candidate('Sintel (2010)', {
+          match: { tmdbId: 45745, title: 'Sintel', year: 2010 },
+          matchedBy: 'nfo',
+        }),
+        candidate('Movie Name (1999)', {
+          file: `${ROOT}/Movie Name (1999)/Movie Name-cd1.avi`,
+          match: { tmdbId: 1, title: 'Movie Name', year: 1999 },
+          matchedBy: 'search',
+          parts: [
+            `${ROOT}/Movie Name (1999)/Movie Name-cd1.avi`,
+            `${ROOT}/Movie Name (1999)/Movie Name-cd2.avi`,
+          ],
+        }),
+        candidate('Two Films', {
+          file: null,
+          size: 0,
+          quality: null,
+          skip: 'This folder holds 2 films. Library import takes one film per folder.',
+        }),
         candidate('Mystery Film', { skip: 'No match on TMDB. Pick the movie to import it.' }),
         candidate('Metropolis (1927)', {
           match: { tmdbId: 19, title: 'Metropolis', year: 1927 },
@@ -189,6 +217,29 @@ describe('A17 Library import', () => {
 
     const metropolis = within(page.getByRole('row', { name: /Metropolis \(1927\)/ }))
     expect(metropolis.getByText('In the library')).toBeTruthy()
+
+    // Phase 5 A1: the NFO's match, a film in parts, and a folder of several films
+    expect(sintel.getByText('From the folder’s NFO')).toBeTruthy()
+    const parts = within(page.getByRole('row', { name: /Movie Name \(1999\)/ }))
+    expect(parts.getByText('One film in 2 parts')).toBeTruthy()
+    expect(parts.queryByText('From the folder’s NFO')).toBeNull()
+    const two = within(page.getByRole('row', { name: /Two Films/ }))
+    expect(two.getByText(/holds 2 films\. Library import takes one film per folder/)).toBeTruthy()
+    expect(
+      two.getByRole('checkbox', { name: 'Import Two Films' }).getAttribute('aria-disabled'),
+    ).toBe('true')
+  })
+
+  test('a folder highsea only reads keeps its names: no Rename to my format (ADR 0063)', async () => {
+    state.readOnly = true
+    const { user, page } = await open(<LibraryImport root={ROOT} />)
+    expect(page.queryByRole('checkbox', { name: 'Rename to my format' })).toBeNull()
+    expect(
+      page.getByText(/only reads this folder, so nothing in it is moved or renamed/),
+    ).toBeTruthy()
+    await user.click(page.getByRole('button', { name: 'Import 2 movies' }))
+    await settle()
+    expect(requested('POST', '/api/v1/import/library')[0]?.body).toMatchObject({ rename: false })
   })
 
   test('Import sends the checked folders, Rename to my format and the profile; progress shows', async () => {
@@ -197,10 +248,13 @@ describe('A17 Library import', () => {
     await user.click(page.getByRole('checkbox', { name: 'Rename to my format' }))
     expect(page.getByText(/Folders and files take the naming formats/)).toBeTruthy()
 
-    await user.click(page.getByRole('button', { name: 'Import 1 movie' }))
+    await user.click(page.getByRole('button', { name: 'Import 2 movies' }))
     await settle()
     expect(requested('POST', '/api/v1/import/library')[0]?.body).toEqual({
-      items: [{ folder: `${ROOT}/Sintel (2010)`, tmdbId: 45745 }],
+      items: [
+        { folder: `${ROOT}/Sintel (2010)`, tmdbId: 45745 },
+        { folder: `${ROOT}/Movie Name (1999)`, tmdbId: 1 },
+      ],
       rename: true,
     })
   })
@@ -211,9 +265,9 @@ describe('A17 Library import', () => {
     const progress = within(page.getByRole('region', { name: 'Importing' }))
     expect(progress.getByText('A library import is running.')).toBeTruthy()
     expect(progress.getByText('1 of 4 done')).toBeTruthy()
-    expect(page.getByRole('button', { name: 'Import 1 movie' }).getAttribute('aria-disabled')).toBe(
-      'true',
-    )
+    expect(
+      page.getByRole('button', { name: 'Import 2 movies' }).getAttribute('aria-disabled'),
+    ).toBe('true')
   })
 
   test('without a TMDB key it says where to add one', async () => {

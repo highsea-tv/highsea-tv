@@ -220,7 +220,16 @@ async function api(url: string, init: RequestInit = {}): Promise<Response> {
         return failure('invalid', '/nowhere doesn’t exist.', 400, { reason: 'not-found' })
       if (body.path === '/data/media/movies/inner')
         return failure('conflict', 'Inside a root folder.', 409)
-      state.folders = [...state.folders, folder('rf9', body.path, 4e12, 0)]
+      if (body.path === '/volume1/data/media/locked' && !body.readOnly)
+        return failure('invalid', 'Can’t write.', 400, { reason: 'not-writable' })
+      state.folders = [
+        ...state.folders,
+        {
+          ...folder('rf9', body.path, 4e12, 0),
+          kind: body.kind ?? 'movies',
+          readOnly: !!body.readOnly,
+        },
+      ]
       return json(state.folders.at(-1), 201)
     case 'GET /api/v1/qualityprofiles':
       return json([
@@ -317,6 +326,12 @@ async function api(url: string, init: RequestInit = {}): Promise<Response> {
         ],
       })
   }
+  if (method === 'PATCH' && path.startsWith('/api/v1/rootfolders/')) {
+    const id = path.split('/').pop()
+    state.folders = state.folders.map((f) => (f.id === id ? { ...f, ...body } : f))
+    return json(state.folders.find((f) => f.id === id))
+  }
+  if (method === 'POST' && /^\/api\/v1\/rootfolders\/[^/]+\/scan$/.test(path)) return noContent()
   if (method === 'DELETE' && path.startsWith('/api/v1/rootfolders/')) {
     const id = path.split('/').pop()
     state.folders = state.folders.filter((f) => f.id !== id)
@@ -467,7 +482,7 @@ describe('Settings › Media management › root folders', () => {
   test('each folder with its space, device and movies; one in use can’t be removed', async () => {
     state.folders.push(folder('rf2', '/mnt/old', null, 0))
     const { page } = await open(<MediaManagement />)
-    const list = page.getByRole('list', { name: 'Root folders' })
+    const list = page.getByRole('list', { name: 'Movies folders' })
     expect(within(list).getByText('1.0 TB free of 2.0 TB · 3 movies')).toBeTruthy()
     expect(within(list).getByText('Can’t be read now')).toBeTruthy()
     const inUse = page.getByRole('button', { name: 'Remove /data/media/movies' })
@@ -478,7 +493,7 @@ describe('Settings › Media management › root folders', () => {
   test('a folder says how many of the scan’s new folders wait for a match (4.1a’s review)', async () => {
     state.folders.push(folder('rf2', '/data/media/more', 2e12, 4, 2))
     const { page } = await open(<MediaManagement />)
-    const list = page.getByRole('list', { name: 'Root folders' })
+    const list = page.getByRole('list', { name: 'Movies folders' })
     expect(
       within(list).getByText(
         '1.0 TB free of 2.0 TB · 4 movies · 2 folders need a match in Library import',
@@ -501,29 +516,80 @@ describe('Settings › Media management › root folders', () => {
 
   test('adding checks the path; the server’s reasons read as plain sentences', async () => {
     const { user, page } = await open(<MediaManagement />)
-    const field = page.getByLabelText('Add a root folder')
+    const field = page.getByLabelText('Add a Movies folder')
+    // Movies' section comes first, so its Add folder is the first
+    const add = () =>
+      user.click(page.getAllByRole('button', { name: 'Add folder' })[0] as HTMLElement)
     await user.type(field, 'relative/path')
-    await user.click(page.getByRole('button', { name: 'Add folder' }))
+    await add()
     expect(page.getByText('Use the full path, starting with /.')).toBeTruthy()
     expect(requested('POST', '/api/v1/rootfolders')).toHaveLength(0)
 
     await user.clear(field)
     await user.type(field, '/nowhere')
-    await user.click(page.getByRole('button', { name: 'Add folder' }))
+    await add()
     await settle()
     expect(page.getByText('That folder doesn’t exist on the server.')).toBeTruthy()
 
     await user.clear(field)
     await user.type(field, '/data/media/movies/inner')
-    await user.click(page.getByRole('button', { name: 'Add folder' }))
+    await add()
     await settle()
     expect(page.getByText(/a root folder already, or inside or around one/)).toBeTruthy()
 
     await user.clear(field)
     await user.type(field, '/data/media/films')
-    await user.click(page.getByRole('button', { name: 'Add folder' }))
+    await add()
     await settle()
     expect(page.getByText('/data/media/films')).toBeTruthy()
+    expect(requested('POST', '/api/v1/rootfolders').at(-1)?.body).toEqual({
+      path: '/data/media/films',
+      kind: 'movies',
+      readOnly: false,
+    })
+  })
+
+  test('one kind per section; shows’ and music’s folders wait for those parts', async () => {
+    const { page } = await open(<MediaManagement />)
+    for (const kind of ['Movies', 'Shows', 'Music'])
+      expect(page.getByRole('heading', { name: kind })).toBeTruthy()
+    expect(page.getByText('No Shows folders yet. Add the folder your shows live in.')).toBeTruthy()
+    expect(page.getByText('No Music folders yet. Add the folder your music lives in.')).toBeTruthy()
+    expect(page.getByText(/reads them once it has shows/)).toBeTruthy()
+    expect(page.getByPlaceholderText('/data/media/tv')).toBeTruthy()
+    expect(page.getByPlaceholderText('/data/media/music')).toBeTruthy()
+  })
+
+  test('a library another app manages is added read-only, and can be switched (ADR 0063)', async () => {
+    const { user, page } = await open(<MediaManagement />)
+    const field = page.getByLabelText('Add a Movies folder')
+    await user.type(field, '/volume1/data/media/locked')
+    const add = page.getAllByRole('button', { name: 'Add folder' })[0] as HTMLElement
+    await user.click(add)
+    await settle()
+    expect(page.getByText(/turn on Only read it/)).toBeTruthy()
+    await user.click(page.getAllByRole('switch', { name: 'Only read it' })[0] as HTMLElement)
+    await user.click(add)
+    await settle()
+    expect(requested('POST', '/api/v1/rootfolders').at(-1)?.body).toEqual({
+      path: '/volume1/data/media/locked',
+      kind: 'movies',
+      readOnly: true,
+    })
+    const list = page.getByRole('list', { name: 'Movies folders' })
+    expect(within(list).getByText('Only read')).toBeTruthy()
+    const only = within(list).getAllByRole('switch', { name: 'Only read this folder' })
+    expect(only.map((s) => s.getAttribute('aria-checked'))).toEqual(['false', 'true'])
+    await user.click(only[1] as HTMLElement)
+    await settle()
+    expect(requested('PATCH', '/api/v1/rootfolders/rf9').at(-1)?.body).toEqual({ readOnly: false })
+  })
+
+  test('Scan now looks through a folder again', async () => {
+    const { user, page } = await open(<MediaManagement />)
+    await user.click(page.getByRole('button', { name: 'Scan /data/media/movies now' }))
+    await settle()
+    expect(requested('POST', '/api/v1/rootfolders/rf1/scan')).toHaveLength(1)
   })
 
   test('removing an unused folder asks first', async () => {
