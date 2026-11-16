@@ -4,5 +4,11 @@
     "package": "zod",
     "until": "2026-11-29",
     "reason": "Zod through 4.6.5: memory exhausted by a large array against an array schema without a length limit. highsea's own packages pin zod 4.6.7, which has the fix (4.6.6). The one older zod is 3.25.76, which only Expo's CLI uses (@expo/cli 58.1.17 requires ^3.25.76, and no 3.x release has the fix): a build tool that runs on a developer's Mac and in CI, is never in the app's bundle or the server image, and doesn't validate input from the internet. Look again when Expo's CLI moves to a fixed zod."
+  },
+  {
+    "advisory": "GHSA-mfr8-8qww-v76h",
+    "package": "next",
+    "until": "2026-12-16",
+    "reason": "Next.js 16.3.0 through 16.4.4: a 'use cache' function that reads a root param and is called both directly and through unstable_cache() can, in a race on a cold start, hand one root param's cached data to requests for another. highsea pins next 16.4.1 (apps/server and apps/docs), but its code has no 'use cache', no unstable_cache() and no cacheComponents, so the affected path never runs. The fix is in 16.4.5 (2026-11-03), which isn't two weeks old on 2026-11-16, so it can't be pinned yet. Look again when a fixed release can be pinned (16.4.5 from 2026-11-17), and move to it then."
   }
 ]
