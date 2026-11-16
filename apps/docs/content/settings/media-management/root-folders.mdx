@@ -1,6 +1,6 @@
 ---
 title: Root folders
-description: The folders your films are filed under, adding and removing one, its subtitle languages, and importing what's already in it.
+description: The folders your films, shows and music are filed under, adding and removing one, a library highsea only reads, its subtitle languages, and importing what's already in it.
 ---
 
 {/* SPDX-License-Identifier: AGPL-3.0-only */}
@@ -10,26 +10,40 @@ description: The folders your films are filed under, adding and removing one, it
     library-import-messages.ts.
   - The checks on a new root folder: packages/media/src/shared/settings.ts.
   - Films found in a root folder: packages/media/src/movies/scan.ts and library-import.ts (addNew).
+  - Folders highsea only reads: packages/media/src/shared/root-folders.ts (assertWritable), and
+    subtitles' place for them, packages/subtitles/src/movies/tracks.ts.
 */}
 
-Written for highsea 0.2.0-beta.3.
+Written for highsea 0.4.0.
 
-A root folder is a folder your films are filed under, such as `/data/media/movies`. Each film gets a folder of its own inside one. Setup adds your first; most servers need only one.
+A root folder is a folder your library is filed under, such as `/data/media/movies`. Each film gets a folder of its own inside one. Setup adds the movies' folder, and the shows' and music's when it finds them beside it; most servers need one of each.
 
-Root folders are listed under **Importing** on **Settings › Media management**. Each shows its free space, how many films are filed under it, how many folders need a match (see below), and **Can't be read now** when the disk isn't there. Changes to root folders save as soon as you make them.
+Root folders are listed under **Importing** on **Settings › Media management**, in three groups: **Movies**, **Shows** and **Music**. highsea keeps the shows' and music's folders and reads them once it has shows and music; until then only the movies' are scanned. Each folder shows its free space, how many films are filed under it, how many folders need a match (see below), **Only read** when highsea only reads it, and **Can't be read now** when the disk isn't there. Changes to root folders save as soon as you make them.
 
-![Two root folders, /data/films with no films and /data/movies with 7, each with its free space, its subtitle languages, Import what's already here and Remove, and the Add a root folder field below](/images/admin/settings-media-management/root-folders.png)
+![Root folders in three groups. Under Movies, /data/films marked Only read with its switch on, and two managed folders with their films, each with Scan now, Import what's already here and Remove. Under Shows, /data/tv. Under Music, none yet. Each group ends with its Add folder field and Only read it](/images/admin/settings-media-management/root-folders.png)
 
 ## Add a root folder
 
-Type the folder's full path under **Add a root folder** and choose **Add folder**. The path is a folder on the server, as highsea sees it inside its container, not on the device you're browsing from. highsea checks that:
+Type the folder's full path under **Add a Movies folder**, **Add a Shows folder** or **Add a Music folder** and choose **Add folder**. The path is a folder on the server, as highsea sees it inside its container, not on the device you're browsing from. highsea checks that:
 
 - the path is a full one, starting with `/`;
 - the folder exists;
-- highsea can write to it;
+- highsea can write to it, unless you turn on **Only read it** (see below);
 - it isn't a root folder already, or inside or around one.
 
 Put it on the same disk as your downloads, so imports can use hardlinks. [Folders and hardlinks](/recommended-setup/#folders-and-hardlinks) explains why.
+
+## A library another app manages
+
+If Radarr, Sonarr or another app already files your films, highsea can play them without changing them. Turn on **Only read it** when you add the folder, or **Only read this folder** on a folder already there. highsea then:
+
+- finds films added to the folder and plays them, as with any root folder;
+- never renames, moves or deletes anything in it, and never imports a download into it: a download for a film filed there waits in Activity with the reason;
+- keeps subtitles it downloads for those films in its own data folder, beside its database, instead of beside the film. Subtitles already beside the film, or in a `Subs` folder, are used and never deleted.
+
+**System** lists each folder highsea only reads, as a note rather than a problem. Turn **Only read this folder** off when you want highsea to manage the folder.
+
+The safest way is to give highsea the folder read-only, so nothing it does can change it: mount it with `:ro` in Docker (see [Docker](/install/docker/#a-library-another-app-manages)), or choose **Another app does** when [installing the Synology package](/install/synology/#install-the-package). highsea then sees the folder can't be written to, adds it as **Only read** by itself, and says "It's mounted read-only, so highsea only reads it." A folder highsea can't write to can't be switched to managed until it's mounted read-write.
 
 ## Films already in the folder
 
@@ -37,8 +51,11 @@ When you add a root folder, at setup or here, highsea looks inside it straight a
 
 A film is added where it is, with nothing moved or renamed, when its match is sure:
 
+- the folder has a `movie.nfo`, or an NFO named after the film's file, with the film's TMDB or IMDb ID in it, as Radarr, Kodi and Jellyfin write them;
 - the folder's name has the film's ID in it, such as `Sintel {tmdb-45745}` or `{imdb-tt1727587}`;
 - or TMDB has a film with the folder's title and year, such as `Sintel (2010)`.
+
+A film split into parts, such as `Movie Name-cd1.avi` and `Movie Name-cd2.avi`, is one film. Videos in `Featurettes`, `Extras`, `Screenshots`, `Proof`, `Plex Versions` and the other extras folders are never taken for the film, and nor is a file named `sample` or `trailer`.
 
 Anything less certain, such as a folder with no year, waits for you. The root folder's row then says how many, for example "2 folders need a match in Library import". Use **Import what's already here** to check those matches and import them. highsea doesn't search for a waiting folder again until it changes. A downloads folder inside a root folder is left alone.
 
@@ -50,7 +67,13 @@ Each root folder has a **Subtitle languages for movies added here** setting. Fil
 
 **Import what's already here** opens the library import in Activity for that folder, for films that need a match, or to import them renamed. highsea reads each folder inside it as one film, by its name: `Title (Year)`, or with a `{tmdb-…}` or `{imdb-…}` ID in the name. It matches each on TMDB, with highsea's key or yours (see [Metadata](/settings/general/metadata/)).
 
-You choose a quality profile, and whether to **Rename to my format**, which names folders and files with the [naming formats](/settings/media-management/naming/); otherwise nothing is moved or renamed. A folder with no match on TMDB says so: add `{tmdb-…}` with the film's TMDB ID to the folder's name and look again. [Activity](/activity/) has more on importing.
+A match read from the folder's NFO says **From the folder's NFO**, and a film in parts says how many, such as **One film in 2 parts**. A folder with no film in it says so, and one holding several films says "This folder holds 2 films. Library import takes one film per folder.": give each film a folder of its own to import them.
+
+You choose a quality profile, and whether to **Rename to my format**, which names folders and files with the [naming formats](/settings/media-management/naming/); otherwise nothing is moved or renamed. A folder highsea only reads has no **Rename to my format**. A folder with no match on TMDB says so: add `{tmdb-…}` with the film's TMDB ID to the folder's name and look again. [Activity](/activity/) has more on importing.
+
+## Scan now
+
+**Scan now** looks through a movies' folder straight away, instead of waiting for the next scan, and adds the films it can match for sure.
 
 ## Remove a root folder
 

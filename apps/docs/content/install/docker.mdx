@@ -100,6 +100,19 @@ There's nothing else to set. highsea takes your time zone from your browser duri
 
 The `latest` tag is the newest stable release. To choose when you move to a new version, use a version number instead, such as `ghcr.io/highsea-tv/highsea:0.1.0`. [Upgrade](/upgrade/) explains both.
 
+### A library another app manages
+
+If Radarr, Sonarr or another app files your films and you want highsea only to read them, mount the media folder again, read-only, below the data folder:
+
+```yaml
+    volumes:
+      - ./config:/config
+      - /srv/data:/data
+      - /srv/data/media:/data/media:ro
+```
+
+Downloads still go to `/data/downloads`, which highsea can write to. highsea can't change anything under `/data/media`, and setup adds its folders as ones highsea only reads. [Root folders](/settings/media-management/root-folders/#a-library-another-app-manages) says what that changes.
+
 ## Start highsea
 
 From the folder with `compose.yaml`:

@@ -663,15 +663,28 @@ function Folder({
             minWidth: 0,
           }}
         >
-          <Icon name="folder" size={tokens.icon.size.sm} color="text-3" />
-          <Text
-            size={ui.size}
-            leading={ui.leading}
-            mono
-            style={[{ flexShrink: 1, minWidth: 0 }, WRAP_ANYWHERE]}
+          {/* the icon stays with the path; the badges wrap below a long one */}
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: s['2'],
+              flexShrink: 1,
+              minWidth: 0,
+            }}
           >
-            {f.path}
-          </Text>
+            <View style={{ flexShrink: 0 }}>
+              <Icon name="folder" size={tokens.icon.size.sm} color="text-3" />
+            </View>
+            <Text
+              size={ui.size}
+              leading={ui.leading}
+              mono
+              style={[{ flexShrink: 1, minWidth: 0 }, WRAP_ANYWHERE]}
+            >
+              {f.path}
+            </Text>
+          </View>
           {f.readOnly ? <Badge tone="info">{t('folders.readOnlyBadge')}</Badge> : null}
           {f.accessible ? null : <Badge tone="warning">{t('folders.unreadable')}</Badge>}
         </View>
