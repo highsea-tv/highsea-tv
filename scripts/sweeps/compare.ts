@@ -3,29 +3,38 @@
 // state beside the server's, at 1440 and 390 in the default theme, for the owner to compare by eye;
 // since 4.2a, the web client's screens too, as the seeded user sees them.
 // Boots the seeded server (seeded.ts) from the production build, captures setup before an owner
-// exists, then seeds it and captures the rest; the prototypes come from `bun run prototypes`,
-// started here if nothing answers on :4500. Writes the pairs, index.html (side by side) and
+// exists, then seeds it and captures the rest. Writes the pairs, index.html (side by side) and
 // checklist.md (the same order, one box a pair) to a folder outside the repository.
+// The prototypes are this checkout's, built and served by lib.ts's servePrototypes (on
+// SWEEP_PROTOTYPES_PORT, 4510; SWEEP_BASE uses a running `bun run prototypes` instead). Since B3
+// the prototype's client routes (`/web/...`) are apps/client's mock export, which the prototype
+// draws no screen of its own for: their side signs the client in as Theo on its Choose a server,
+// as layout.ts does (lib.ts's signInClient), and opens the route inside it (openInClient).
 // Usage: bun scripts/sweeps/compare.ts [folder] [--before <folder>]
 //   COMPARE_DEV=1: Next's dev server, no build. COMPARE_ONLY=<regex>: only the pairs whose screen
 //   and name match ("A16 System status"). --before: an earlier run's folder (from a checkout of the
 //   last commit, say), whose server shots join each pair as a third column, "Before": a screen moved
 //   beside its old self (one-client-platform-d.md › The checks).
-import { type ChildProcess, execFileSync, spawn } from 'node:child_process'
+import { execFileSync } from 'node:child_process'
 import { copyFileSync, mkdirSync, mkdtempSync, readdirSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { SETTINGS_SECTIONS } from '@highsea-tv/client/prefs'
 import type { BrowserContext, Page } from 'playwright-core'
+import { clientPathOf } from '../../design/prototypes/src/chrome/client.ts'
 import {
   acknowledge,
-  BASE,
+  clientUrl,
   heightFor,
   launch,
+  openInClient,
   pool,
   ROOT,
   screenUrl,
+  servePrototypes,
+  settle,
   settleAnimations,
+  signInClient,
 } from './lib.ts'
 import { boot, seed } from './seeded.ts'
 
@@ -49,6 +58,8 @@ type Side = {
   act?: (page: Page) => Promise<void>
   /** The setup draft, for the step it opens on. */
   setup?: string
+  /** A client route's side stops at this step of the sign-in rather than signing in. */
+  until?: 'connect' | 'sign-in'
 }
 type Pair = {
   /** The matrix's row (phase-3-checkpoint-9.md › The full review against the prototypes). */
@@ -464,7 +475,9 @@ function pairs(ids: Awaited<ReturnType<typeof seed>>): {
     ],
     // the one client's web export (one-client-platform-c.md, C1), as Theo, a user: the prototype's
     // frames hold the same client on its mock, so both sides take the client's routes; the
-    // prototype's ids are its mock's
+    // prototype's ids are its mock's. The mock's accounts all open on its first profile, Ines
+    // (packages/mock/src/profiles.ts), so the prototype's avatar and profile say Ines over Theo's
+    // account
     web: [
       { screen: 'C2 Home', name: 'web home', ...both('/web', '/web/') },
       { screen: 'C3 Library', name: 'web library', ...both('/web/library', '/web/library') },
@@ -483,7 +496,7 @@ function pairs(ids: Awaited<ReturnType<typeof seed>>): {
         name: 'web smart collection',
         ...both('/web/collections/sc-2010s', `/web/collections/${ids.decade.id}`),
       },
-      { screen: 'C4 Item', name: 'web movie', ...both('/web/movies/4', '/web/movies/45745') },
+      { screen: 'C4 Item', name: 'web movie', ...both('/web/movies/10000', '/web/movies/45745') },
       {
         screen: 'C4 Item',
         name: 'web movie not here',
@@ -511,14 +524,7 @@ const webSignedOut: Pair[] = [
   {
     screen: 'C1 Connect',
     name: 'web sign in',
-    prototype: {
-      path: '/web/connect',
-      act: (p) =>
-        p
-          .getByRole('button', { name: /Harbor/ })
-          .first()
-          .click(),
-    },
+    prototype: { path: '/web/connect', until: 'sign-in' },
     server: { path: '/web/' },
     note: 'The web uses the server it came from: no choosing or adding servers (the owner’s answer 3).',
   },
@@ -552,9 +558,22 @@ async function capturePrototype(side: Side, width: number, file: string) {
       localStorage.clear()
       if (setup) localStorage.setItem('highsea-proto:setup', setup)
     }, side.setup ?? '')
-    await page.goto(screenUrl(side.path))
-    await page.waitForTimeout(1500)
-    await acknowledge(page)
+    const client = clientPathOf(side.path)
+    if (client === null) {
+      await page.goto(screenUrl(side.path))
+      await page.waitForTimeout(1500)
+      await acknowledge(page)
+    } else {
+      // the client's own screen, signed in as the server's side is (Theo), or stopped at the
+      // sign-in's step the pair is of
+      await page.goto(clientUrl('/web/connect', 'web'))
+      const signedIn = await signInClient(page, 'web', {
+        at: async (step) => step !== side.until,
+      })
+      if (signedIn) await openInClient(page, client)
+      await settle(page, { quiet: 600, max: 4000 })
+      await acknowledge(page)
+    }
     await side.act?.(page)
     await page.waitForTimeout(400)
     await settleAnimations(page)
@@ -626,20 +645,8 @@ async function capture(all: Pair[], context: () => Promise<BrowserContext>, base
   })
 }
 
-// the prototypes, unless they're already up
-let prototypes: ChildProcess | null = null
-const up = () =>
-  fetch(`${BASE}/index.html`).then(
-    (r) => r.ok,
-    () => false,
-  )
-if (!(await up())) {
-  prototypes = spawn('bun', ['run', 'prototypes'], { cwd: ROOT, stdio: 'ignore', detached: true })
-  for (let i = 0; !(await up()); i++) {
-    if (i > 60) throw new Error(`The prototypes didn’t start on ${BASE}`)
-    await Bun.sleep(500)
-  }
-}
+// the prototypes, this checkout's build (or SWEEP_BASE's)
+const stopPrototypes = await servePrototypes()
 
 const production = process.env.COMPARE_DEV !== '1'
 if (production)
@@ -675,7 +682,7 @@ try {
 } finally {
   await browser.close()
   await server.stop()
-  if (prototypes?.pid) process.kill(-prototypes.pid, 'SIGTERM')
+  stopPrototypes()
 }
 
 // the earlier run's server shot of each pair, by the pair's name and width (its number may differ):
