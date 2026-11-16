@@ -546,8 +546,15 @@ try {
         act: async (p) => {
           // a backup to restore, then the dialog that explains the restart
           await p.getByRole('button', { name: 'Back up now' }).click()
-          // the "Backup made" toast would sit under the dialog's overlay, which axe misreads
-          await p.getByRole('button', { name: 'Dismiss' }).click()
+          // the "Backup made" toast would sit under the dialog's overlay, which axe misreads. Its
+          // own Dismiss, in the toaster's region: the seeded announcement's banner, on every admin
+          // page (admin-shell.md), has a Dismiss too (HT-26)
+          await p
+            .getByRole('region', { name: 'Notifications' })
+            .getByRole('status')
+            .filter({ hasText: 'Backup made' })
+            .getByRole('button', { name: 'Dismiss' })
+            .click()
           await p
             .getByRole('button', { name: /^Restore the backup from/ })
             .first()
