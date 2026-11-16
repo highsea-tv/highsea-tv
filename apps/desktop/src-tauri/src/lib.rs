@@ -115,6 +115,14 @@ fn server_leave(servers: State<'_, Servers>) {
     servers.set_current(None);
 }
 
+/// Servers found nearby, each with its public info: one answering where a known server was takes
+/// its address, and a known server left with none is forgotten (servers.rs's `seen`). Answers the
+/// ids forgotten.
+#[tauri::command]
+fn servers_seen(servers: State<'_, Servers>, found: Vec<servers::Seen>) -> Vec<String> {
+    servers.seen(&found)
+}
+
 #[tauri::command]
 fn server_forget(servers: State<'_, Servers>, id: String) {
     servers.forget(&id);
@@ -281,6 +289,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             app_device,
             servers_list,
+            servers_seen,
             server_current,
             server_add,
             server_info,
