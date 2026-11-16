@@ -27,6 +27,8 @@ final class DpadWalk: XCTestCase {
     let name: String
     let entry: [XCUIRemote.Button]
     var deep = false
+    /** Walked signed out only, so only when named: the app opens on it without a sign-in. */
+    var signedOut = false
   }
 
   /** WALK_SCREENS (comma-separated names) picks some; all by default. */
@@ -41,18 +43,24 @@ final class DpadWalk: XCTestCase {
     Screen(name: "settings", entry: [.up, .right, .right, .right, .right, .select], deep: true),
     // paused, so the chrome and Audio and subtitles stay up while the walk takes its time
     Screen(name: "player", entry: [.select, .playPause], deep: true),
+    // signed out, a TV that knows a server opens on its sign-in by code: Use a password, Another
+    // server and Forget this server at the foot (HT-17)
+    Screen(name: "signin", entry: [], signedOut: true),
   ]
+
+  /** The screens WALK_SCREENS names, or every one walked signed in. */
+  static func picked() -> [Screen] {
+    let names = ProcessInfo.processInfo.environment["WALK_SCREENS"]?
+      .split(separator: ",").map(String.init)
+    return screens.filter { names == nil ? !$0.signedOut : names!.contains($0.name) }
+  }
 
   override func setUp() {
     continueAfterFailure = true
   }
 
   func testEveryStopIsReachable() {
-    let picked = ProcessInfo.processInfo.environment["WALK_SCREENS"]?
-      .split(separator: ",").map(String.init)
-    for screen in Self.screens where picked == nil || picked!.contains(screen.name) {
-      walk(screen)
-    }
+    for screen in Self.picked() { walk(screen) }
   }
 
   /**
@@ -61,9 +69,7 @@ final class DpadWalk: XCTestCase {
    * walk. Prints `WALK <screen>: entry lands, n stops, at <stop>`.
    */
   func testEntries() {
-    let picked = ProcessInfo.processInfo.environment["WALK_SCREENS"]?
-      .split(separator: ",").map(String.init)
-    for screen in Self.screens where picked == nil || picked!.contains(screen.name) {
+    for screen in Self.picked() {
       start(screen)
       let here = stops()
       guard let at = focused() else {
@@ -71,7 +77,7 @@ final class DpadWalk: XCTestCase {
         XCTFail("\(screen.name): entry left nothing focused")
         continue
       }
-      if screen.name != "home" && here == home {
+      if screen.name != "home" && !screen.signedOut && here == home {
         print("WALK \(screen.name): its entry stayed on Home")
         XCTFail("\(screen.name): its entry stayed on Home")
         continue
@@ -170,7 +176,7 @@ final class DpadWalk: XCTestCase {
   }()
 
   private func walk(_ screen: Screen) {
-    let home: Set<String> = screen.name == "home" ? [] : self.home
+    let home: Set<String> = screen.name == "home" || screen.signedOut ? [] : self.home
     start(screen)
     guard let first = focused() else {
       XCTFail("\(screen.name): nothing focused at first")

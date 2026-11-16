@@ -1,6 +1,6 @@
 # 0061. One client platform: every client and its prototype in one Expo project, drawn once in React Native
 
-- **Status:** Proposed
+- **Status:** Accepted (2026-11-15, when the owner signed off part E of the one client platform)
 - **Date:** 2026-11-03
 
 Scoped in [one-client-platform.md](../plans/one-client-platform.md) and approved with the owner's answers of 2026-11-02. This records part A, the foundation. It stays Proposed until the owner signs off part A, and parts B to E add dated sections as they land.

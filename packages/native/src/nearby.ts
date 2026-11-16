@@ -35,7 +35,7 @@ function firstAsk(): boolean {
 }
 
 export function useNearby() {
-  const { probe, nearby: source } = useServers()
+  const { probe, nearby: source, seen } = useServers()
   const [found, setFound] = useState<Nearby[]>([])
   const [lan, setLan] = useState<LocalNetwork>('looking')
   const [settled, setSettled] = useState(false)
@@ -97,6 +97,11 @@ export function useNearby() {
       stop()
     }
   }, [round])
+
+  // a server answering where a known one was takes its address (../servers.tsx's `seen`)
+  useEffect(() => {
+    if (found.length > 0) void seen?.(found)
+  }, [found, seen])
 
   // no answer within the minute: it's a refusal after all
   useEffect(() => {

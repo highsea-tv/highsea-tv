@@ -7,7 +7,14 @@
 // mode gives it the prototypes' mock server and its stand-in for Bonjour, so the same screens run
 // with no server at all (one-client-platform.md › The prototypes are the clients).
 import { type PublicInfo, routes } from '@highsea-tv/api-contract'
-import { addressesOf, forget, type Known, type Nearby, remember } from '@highsea-tv/client/servers'
+import {
+  addressesOf,
+  claim,
+  forget,
+  type Known,
+  type Nearby,
+  remember,
+} from '@highsea-tv/client/servers'
 import {
   createServerConnection,
   type Fetch,
@@ -107,6 +114,12 @@ export type ServersValue = {
   /** Drops this device's token for the current server, and leaves it known. */
   signedOut: () => Promise<void>
   remove: (id: string) => Promise<void>
+  /**
+   * Servers found answering nearby: where one answers at an address a known server listed, that
+   * address is the new one's, and a known server left with none is forgotten (`claim`). The
+   * desktop app keeps its list in Rust and leaves it out.
+   */
+  seen?: (found: readonly Nearby[]) => Promise<void>
   /** Asks an address for a server's public info, through this app's fetch. */
   probe: (base: string) => Promise<PublicInfo | null>
   /** Where nearby servers come from when it isn't Bonjour. */
@@ -194,6 +207,13 @@ export function ServersProvider({
     setStored(next)
   }, [])
 
+  // the tokens of servers no longer known, which no address of theirs can use
+  const dropTokens = useCallback(async (ids: readonly string[]) => {
+    if (ids.length === 0) return
+    for (const id of ids) await dropToken(id)
+    setTokens((t) => Object.fromEntries(Object.entries(t).filter(([id]) => !ids.includes(id))))
+  }, [])
+
   const currentKnown = stored?.servers.find((k) => k.id === stored.current) ?? null
   const token = currentKnown ? tokens[currentKnown.id] : undefined
   // a server listed as signed in: by this device's token, or on the web by the cookie, which the
@@ -244,7 +264,9 @@ export function ServersProvider({
           addresses: addressesOf(info, base),
           lastSeen: Date.now(),
         }
+        const { gone } = claim(s.servers, known)
         write({ current: known.id, servers: remember(s.servers, known) })
+        await dropTokens(gone)
         return known
       },
       async use(id) {
@@ -271,10 +293,22 @@ export function ServersProvider({
         setTokens(({ [id]: _, ...rest }) => rest)
         write({ current: s.current === id ? null : s.current, servers: forget(s.servers, id) })
       },
+      async seen(found) {
+        let list = s.servers
+        const gone: string[] = []
+        for (const n of found) {
+          const next = claim(list, { id: n.info.id, addresses: addressesOf(n.info, n.base) })
+          list = next.list
+          gone.push(...next.gone)
+        }
+        if (list === s.servers) return
+        write({ current: s.current && gone.includes(s.current) ? null : s.current, servers: list })
+        await dropTokens(gone)
+      },
       probe: (base) => publicInfoAt(base, 4000, fetcher),
       nearby,
     }
-  }, [stored, signedInAt, current, write, fetcher, nearby])
+  }, [stored, signedInAt, current, write, dropTokens, fetcher, nearby])
 
   return <ServersContext.Provider value={value}>{children}</ServersContext.Provider>
 }
