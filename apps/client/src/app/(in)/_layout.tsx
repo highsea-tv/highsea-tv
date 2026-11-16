@@ -181,6 +181,8 @@ function ShellBody() {
   const [overlay, setOverlay] = useState<ShellClaim<true>>(null)
   // how far the page under the chrome has scrolled: the head follows it, the bar turns to glass
   const scroll = useRef(new Animated.Value(0)).current
+  // the TV's head, laid over a page, scrolls away with it
+  const headAway = useMemo(() => away(scroll), [scroll])
   const asks = useMemo(() => ({ setDown, setOverlay, scroll }), [scroll])
   const [scrolled, setScrolled] = useState(false)
   useEffect(() => {
@@ -238,7 +240,18 @@ function ShellBody() {
     return (
       <Asks value={asks}>
         <View style={{ flex: 1, backgroundColor: theme.colors.bg }}>
-          {over || who ? null : head}
+          {/* one head in one place, as the pointer's bar: laid over the page when it asks (raised
+              above it, scrolling away with it) and in the flow otherwise. Moved between two
+              parents, React would mount it afresh as a page claims the overlay, and take the
+              focus on it with it */}
+          {who ? null : (
+            <Animated.View
+              pointerEvents="box-none"
+              style={over ? [OVER_BAR, { transform: [{ translateY: headAway }] }] : undefined}
+            >
+              {head}
+            </Animated.View>
+          )}
           <HeadGoal.Provider value={goal}>
             <View
               // hidden while an announcement must be acknowledged: nothing in it takes focus or
@@ -250,16 +263,6 @@ function ShellBody() {
               {content}
             </View>
           </HeadGoal.Provider>
-          {over && head && !who ? (
-            <Over>
-              <Animated.View
-                pointerEvents="box-none"
-                style={{ transform: [{ translateY: away(scroll) }] }}
-              >
-                {head}
-              </Animated.View>
-            </Over>
-          ) : null}
           {acknowledge ? <TvAnnouncement item={acknowledge} /> : null}
           <MusicPlayerMount />
           <NoteRegion />
@@ -312,17 +315,8 @@ const STUCK = space['2']
 const away = (scroll: Animated.Value) =>
   scroll.interpolate({ inputRange: [0, 1], outputRange: [0, -1], extrapolateLeft: 'clamp' })
 
-/** The pointer's bar over a page that lays the chrome over it: Over's place, above the page. */
+/** The pointer's bar or the TV's head over a page that lays the chrome over it, above the page. */
 const OVER_BAR = { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 1 } as const
-
-/** The head or the top bar laid over the page, which starts at the screen's top under it. */
-function Over({ children }: { children: ReactNode }) {
-  return (
-    <View pointerEvents="box-none" style={{ position: 'absolute', top: 0, left: 0, right: 0 }}>
-      {children}
-    </View>
-  )
-}
 
 /** The phone's tab bar, as the prototype draws it: s1, a line above, the accent on the current tab. */
 function TabBar() {
