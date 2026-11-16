@@ -12,7 +12,7 @@ highsea is a self-hosted replacement for the *ARR suite (Radarr, Sonarr, Prowlar
 
 ## Now
 
-The one client platform ([plan](docs/plans/one-client-platform.md)) is signed off (2026-11-15), part E with it. Work lands on `next`, with CI by branch ([its plan](docs/plans/next-branch.md)). As docs/status.md has it, prototype-gaps' stage 7, 4.5c and 4.6 come next. The TV sign-in's two bugs, E3's follow-up, are fixed and wait for the owner (HT-17). Keep this section to a few lines; the history goes in docs/status.md.
+The one client platform ([plan](docs/plans/one-client-platform.md)) is signed off (2026-11-15), part E with it. Work lands on `next`, with CI by branch ([its plan](docs/plans/next-branch.md)). As docs/status.md has it, prototype-gaps' stage 7, 4.5c and 4.6 come next. The TV sign-in's two bugs, E3's follow-up, are fixed (HT-17, merged 2026-11-15); the desktop app's list gets the same rule (HT-18). Keep this section to a few lines; the history goes in docs/status.md.
 
 ## Rules from the owner
 
