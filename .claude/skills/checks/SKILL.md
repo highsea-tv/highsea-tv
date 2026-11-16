@@ -76,6 +76,7 @@ Don't report these as failures. Do report anything else.
 - A toast caught mid-fade fails contrast (`pages.ts` waits for animations to avoid it).
 - In `server.ts` with `SWEEP_DEV=1`, a page that calls `notFound()` can throw "Failed to execute 'measure' on 'Performance' … negative time stamp" in development, and Next's dev overlay then shows up as a keyboard stop (vercel/next.js#86060). Production builds don't have it.
 - The keyboard sweep once had a hidden focus stop on `/web/settings/devices` (1440) and `/web/settings/home` (390) that a re-run didn't repeat. On 2026-10-28 the same finding (one stop, `hidden: span ""`, a focus guard of the web renderer's dialog, which went in D3) was traced to the announcement dialog still mounted in its exit animation; `acknowledge` in `scripts/sweeps/lib.ts` now waits for the dialog itself to unmount. If it comes back, find the cause rather than re-running until it passes.
+- At E3, `server.ts` once failed axe's `aria-allowed-attr` on Indexers' What changed while device builds ran beside it: react-native-web's Modal is `aria-modal` before it's `role="dialog"`. Since HT-19 `axe()` in `scripts/sweeps/lib.ts` waits for every dialog's role first (`dialogsReady`), so it shouldn't come back under load; if it does, find the cause rather than re-running until it passes.
 - The tests that need ffmpeg or `unar` skip and say so when those are missing. Report the skip count.
 
 ## Reporting
