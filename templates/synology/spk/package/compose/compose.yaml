@@ -16,6 +16,9 @@ services:
       - /var/packages/highsea/var/config:/config
       # the shared folder chosen at install, through the link DSM makes for the package
       - ${HIGHSEA_DATA}:/data
+      # its media folder again, read-only, when the install wizard was told another app manages the
+      # films (ADR 0063); otherwise an empty folder, read-only, where highsea never looks
+      - ${HIGHSEA_MEDIA}:${HIGHSEA_MEDIA_AT}:ro
       # the graphics chip's folder, or an empty one on a model without it (Synology's Docker
       # won't start a container whose bind mount is missing)
       - ${HIGHSEA_DRI}:/dev/dri

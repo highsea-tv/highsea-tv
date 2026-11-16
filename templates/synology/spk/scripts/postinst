@@ -1,9 +1,10 @@
 #!/bin/sh
 # SPDX-License-Identifier: AGPL-3.0-only
 # highsea's config folder, kept across upgrades and uninstalls, and the shared folder chosen at
-# install, for the next upgrade's preinst.
+# install and whether highsea only reads its media folder, for the next upgrade's preinst.
 . "$(dirname "$0")/common"
 mkdir -p "$SYNOPKG_PKGVAR/config"
 share=$(sed -n "s|^HIGHSEA_DATA='/var/packages/highsea/shares/\(.*\)'$|\1|p" "$SYNOPKG_PKGDEST/compose/.env")
-echo "share=$share" > "$SETTINGS"
+library=$(sed -n 's/^HIGHSEA_LIBRARY=//p' "$SYNOPKG_PKGDEST/compose/.env")
+printf 'share=%s\nlibrary=%s\n' "$share" "$library" > "$SETTINGS"
 exit 0

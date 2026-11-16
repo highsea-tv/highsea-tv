@@ -241,6 +241,41 @@ describe('preinst', () => {
     expect(r.env).toContain("HIGHSEA_DATA='/var/packages/highsea/shares/highsea-test'\n")
   })
 
+  test('highsea manages the films unless told otherwise; the extra mount is an empty folder', () => {
+    const r = preinst({ SYNOPKG_PKG_STATUS: 'INSTALL', wizard_data_share: 'data' })
+    expect(r.env).toContain('HIGHSEA_LIBRARY=managed\n')
+    expect(r.env).toContain("HIGHSEA_MEDIA='/var/packages/highsea/target/compose/no-graphics'\n")
+    expect(r.env).toContain('HIGHSEA_MEDIA_AT=/run/highsea-unused\n')
+  })
+
+  test('another app manages them: the media folder is mounted over /data/media read-only (ADR 0063)', () => {
+    const r = preinst({
+      SYNOPKG_PKG_STATUS: 'INSTALL',
+      wizard_data_share: 'data',
+      wizard_library_managed: 'false',
+      wizard_library_read_only: 'true',
+    })
+    expect(r.status).toBe(0)
+    expect(r.env).toContain('HIGHSEA_LIBRARY=read-only\n')
+    expect(r.env).toContain("HIGHSEA_MEDIA='/var/packages/highsea/shares/data/media'\n")
+    expect(r.env).toContain('HIGHSEA_MEDIA_AT=/data/media\n')
+    const compose = readFileSync(join(SOURCE, 'package/compose/compose.yaml'), 'utf8')
+    expect(compose).toContain('- ${HIGHSEA_MEDIA}:${HIGHSEA_MEDIA_AT}:ro')
+  })
+
+  test('an upgrade keeps the choice made at install', () => {
+    const r = preinst(
+      { SYNOPKG_PKG_STATUS: 'UPGRADE', wizard_data_share: 'highsea' },
+      'share=data\nlibrary=read-only\n',
+    )
+    expect(r.env).toContain('HIGHSEA_LIBRARY=read-only\n')
+    expect(r.env).toContain("HIGHSEA_MEDIA='/var/packages/highsea/shares/data/media'\n")
+    // an install from before the choice was managed
+    expect(
+      preinst({ SYNOPKG_PKG_STATUS: 'UPGRADE', wizard_data_share: 'highsea' }, 'share=data\n').env,
+    ).toContain('HIGHSEA_LIBRARY=managed\n')
+  })
+
   test('stops with a message when no folder was chosen', () => {
     const r = preinst({ SYNOPKG_PKG_STATUS: 'INSTALL' })
     expect(r.status).toBe(1)
