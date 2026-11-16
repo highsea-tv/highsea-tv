@@ -6,7 +6,7 @@
 // approve; the mock approves it after PAIRING_APPROVAL_MS. A code that runs out is replaced.
 import { act, cleanup, fireEvent, screen, within } from '@testing-library/react-native'
 import { router } from 'expo-router'
-import { BackHandler, Platform, TVEventControl } from 'react-native'
+import { BackHandler, Platform, StyleSheet, TVEventControl } from 'react-native'
 import { flush, fresh, open, rewrite, sent, server, store, words } from './mock.ts'
 
 jest.mock('../src/form-factor', () => ({ formFactorOverride: () => 'tv' }))
@@ -68,6 +68,31 @@ describe('the gate on the TV', () => {
     const r = await open()
     expect(r.getPathname()).toBe('/sign-in')
     expect(screen.getByRole('header', { name: 'Sign in with your phone' })).toBeTruthy()
+  })
+
+  test('Forget this server is under a focus guide across the screen, so Down reaches it', async () => {
+    // tvOS moves focus only to what lies in the direction pressed; the foot's button is centred,
+    // away from Use a password and Another server, so each sits in a guide that hands focus on
+    await open()
+    await fireEvent.press(screen.getByLabelText(/^Harbor,/))
+    await flush()
+    // react-native-tvos's TVFocusGuideView draws a View with the guide's props
+    const guideOf = (name: string) => {
+      let n = screen.getByRole('button', { name }).parent
+      while (n && n.props.autoFocus === undefined) n = n.parent
+      return n
+    }
+    const foot = guideOf('Forget this server')
+    expect(foot?.props).toMatchObject({ autoFocus: true })
+    expect(StyleSheet.flatten(foot?.props.style)).toMatchObject({
+      position: 'absolute',
+      left: 0,
+      right: 0,
+    })
+    // the actions' row, which Up from the foot comes back to
+    const row = guideOf('Use a password')
+    expect(row?.props.autoFocus).toBe(true)
+    expect(guideOf('Another server')).toBe(row)
   })
 
   test('Use a password opens the TV keyboard', async () => {
