@@ -120,6 +120,13 @@
       "when": 1793178482755,
       "tag": "0016_now_playing",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "6",
+      "when": 1794812136347,
+      "tag": "0017_read_only_libraries",
+      "breakpoints": true
     }
   ]
 }

@@ -248,7 +248,7 @@ export function dashboardAnswers({ wall, wallMs, userOf }: AdminKit): Answers {
     rootFolders: {
       // the movies' folders, as the server lists them; the mock's seeded filesystem has every
       // folder under /data on one disk, `data`, and the rest unreadable
-      list: (_, ctx) => ctx.api.rootFolders.list('movies').map(rootFolderOf),
+      list: ({ query }, ctx) => ctx.api.rootFolders.list(query.kind).map(rootFolderOf),
     },
 
     quality: {

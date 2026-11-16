@@ -14,6 +14,11 @@ export type SubtitlesDeps = AccountsDeps & {
   media: Media
   /** The filesystem calls sidecars use; a test fails a rename through it. */
   fs?: SidecarFs
+  /**
+   * Where a film's subtitles are kept when highsea only reads its folder (ADR 0063): in the data
+   * folder, served as if they were beside the film. The runtime's `subtitles` folder in its data.
+   */
+  heldDir?: string
   /** Runs the sync engine: the runtime's worker pool; in this thread when absent. */
   sync?: (task: SyncTask, signal: AbortSignal) => Promise<SyncOutcome>
 }

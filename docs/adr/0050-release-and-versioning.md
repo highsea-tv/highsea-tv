@@ -173,3 +173,7 @@ The TV app carries the release's version as the phone does: its `app.config.ts` 
 ## 2026-11-06: work lands on `next` (next-branch.md)
 
 Work now collects on `next`, and `main` changes only through the owner's merge of `next` into it, by a pull request that runs every job ([ADR 0062](0062-next-branch-and-ci-by-branch.md)). Releases still come from `main`, and `release.yml` still fails unless it runs there; it calls `ci.yml` and `e2e.yml` whole, as before. The docs still deploy from `main` (the 2026-10-23 section), so a guide goes out when `next` reaches `main`, not when a part is committed. `next` gets Vercel's previews like any other branch ([Vercel: Git deployments](https://vercel.com/docs/deployments/git)). A push to `main` now runs only `ci.yml`'s `check`: the pull request from `next` ran everything on the same result.
+
+## 2026-11-15: a stable release at each part of Phase 5 (Phase 5 A1)
+
+Phase 5 puts highsea in the owner's real use on their NAS, updated through Package Center as owners' NASes are. Each part's sign-off is followed by a stable release (0.4.0 for A1, then 0.5.0 and on), each on the owner's separate word as before; nothing in this section publishes, tags or runs the workflow by itself. Before a release, the build is tried on the NAS from a local image, as 4.3c and part D did, with the owner's permission for each test install. The workflow and its gates are unchanged.

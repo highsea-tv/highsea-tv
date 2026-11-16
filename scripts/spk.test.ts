@@ -241,6 +241,48 @@ describe('preinst', () => {
     expect(r.env).toContain("HIGHSEA_DATA='/var/packages/highsea/shares/highsea-test'\n")
   })
 
+  test('highsea manages the films unless told otherwise; the extra mount is an empty folder', () => {
+    const r = preinst({ SYNOPKG_PKG_STATUS: 'INSTALL', wizard_data_share: 'data' })
+    expect(r.env).toContain('HIGHSEA_LIBRARY=managed\n')
+    expect(r.env).toContain("HIGHSEA_MEDIA='/var/packages/highsea/target/compose/no-graphics'\n")
+    expect(r.env).toContain('HIGHSEA_MEDIA_AT=/run/highsea-unused\n')
+    // highsea's own files go in the shared folder itself, as before
+    expect(r.env).toContain('HIGHSEA_WORK=\n')
+  })
+
+  test('another app manages them: the media folder is mounted over /data/media read-only (ADR 0063)', () => {
+    const r = preinst({
+      SYNOPKG_PKG_STATUS: 'INSTALL',
+      wizard_data_share: 'data',
+      wizard_library_managed: 'false',
+      wizard_library_read_only: 'true',
+    })
+    expect(r.status).toBe(0)
+    expect(r.env).toContain('HIGHSEA_LIBRARY=read-only\n')
+    expect(r.env).toContain("HIGHSEA_MEDIA='/var/packages/highsea/shares/data/media'\n")
+    expect(r.env).toContain('HIGHSEA_MEDIA_AT=/data/media\n')
+    const compose = readFileSync(join(SOURCE, 'package/compose/compose.yaml'), 'utf8')
+    // Compose's variables, not a template string's
+    expect(compose).toContain(['- $', '{HIGHSEA_MEDIA}:$', '{HIGHSEA_MEDIA_AT}:ro'].join(''))
+    // the shared folder is that app's stack's too, so highsea keeps what it makes in its own folder
+    // (2026-11-16, after the owner's NAS test found its previews at the top of their share)
+    expect(r.env).toContain('HIGHSEA_WORK=/data/highsea\n')
+    expect(compose).toContain(['HIGHSEA_WORK_DIR: $', '{HIGHSEA_WORK:-}'].join(''))
+  })
+
+  test('an upgrade keeps the choice made at install', () => {
+    const r = preinst(
+      { SYNOPKG_PKG_STATUS: 'UPGRADE', wizard_data_share: 'highsea' },
+      'share=data\nlibrary=read-only\n',
+    )
+    expect(r.env).toContain('HIGHSEA_LIBRARY=read-only\n')
+    expect(r.env).toContain("HIGHSEA_MEDIA='/var/packages/highsea/shares/data/media'\n")
+    // an install from before the choice was managed
+    expect(
+      preinst({ SYNOPKG_PKG_STATUS: 'UPGRADE', wizard_data_share: 'highsea' }, 'share=data\n').env,
+    ).toContain('HIGHSEA_LIBRARY=managed\n')
+  })
+
   test('stops with a message when no folder was chosen', () => {
     const r = preinst({ SYNOPKG_PKG_STATUS: 'INSTALL' })
     expect(r.status).toBe(1)

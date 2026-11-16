@@ -2496,11 +2496,25 @@
               },
               "downloads": {
                 "type": "string"
+              },
+              "shows": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "music": {
+                "type": [
+                  "string",
+                  "null"
+                ]
               }
             },
             "required": [
               "movies",
-              "downloads"
+              "downloads",
+              "shows",
+              "music"
             ]
           },
           "address": {
@@ -2998,6 +3012,14 @@
                 "maxLength": 4096
               },
               "downloads": {
+                "type": "string",
+                "maxLength": 4096
+              },
+              "shows": {
+                "type": "string",
+                "maxLength": 4096
+              },
+              "music": {
                 "type": "string",
                 "maxLength": 4096
               }
@@ -6363,6 +6385,9 @@
             "type": "string",
             "example": "/data/media/movies"
           },
+          "kind": {
+            "$ref": "#/components/schemas/LibraryKind"
+          },
           "free": {
             "type": [
               "number",
@@ -6384,6 +6409,12 @@
           "accessible": {
             "type": "boolean"
           },
+          "readOnly": {
+            "type": "boolean"
+          },
+          "mountedReadOnly": {
+            "type": "boolean"
+          },
           "movies": {
             "type": "integer"
           },
@@ -6401,13 +6432,24 @@
         "required": [
           "id",
           "path",
+          "kind",
           "free",
           "total",
           "device",
           "accessible",
+          "readOnly",
+          "mountedReadOnly",
           "movies",
           "languageProfileId",
           "waiting"
+        ]
+      },
+      "LibraryKind": {
+        "type": "string",
+        "enum": [
+          "movies",
+          "shows",
+          "music"
         ]
       },
       "QualityProfile": {
@@ -11524,6 +11566,30 @@
               "year"
             ]
           },
+          "matchedBy": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "nfo",
+              "name",
+              "search",
+              null
+            ]
+          },
+          "parts": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "check": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "inLibrary": {
             "type": "boolean"
           },
@@ -11541,6 +11607,9 @@
           "size",
           "quality",
           "match",
+          "matchedBy",
+          "parts",
+          "check",
           "inLibrary",
           "skip"
         ]
@@ -25883,7 +25952,8 @@
         "tags": [
           "Root folders"
         ],
-        "summary": "The folders movies are filed under, with free space and device",
+        "summary": "The folders the libraries are filed under, with free space and device",
+        "description": "Every kind’s, or one kind’s with `kind`.",
         "x-highsea-access": "staff",
         "security": [
           {
@@ -25891,6 +25961,16 @@
           },
           {
             "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/LibraryKind"
+            },
+            "required": false,
+            "name": "kind",
+            "in": "query"
           }
         ],
         "responses": {
@@ -25903,6 +25983,16 @@
                   "items": {
                     "$ref": "#/components/schemas/RootFolder"
                   }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
                 }
               }
             }
@@ -25934,7 +26024,7 @@
           "Root folders"
         ],
         "summary": "Add a root folder",
-        "description": "The path must be absolute, exist and be writable by the server (400, with `details.reason` `not-absolute`, `not-found` or `not-writable`). 409 when it’s already a root folder, or inside or around one.",
+        "description": "The path must be absolute, exist and be readable by the server, and writable unless `readOnly` (400, with `details.reason` `not-absolute`, `not-found`, `not-readable` or `not-writable`). A folder mounted read-only is added read-only. `kind` is `movies` when left out. 409 when it’s already a root folder, or inside or around one.",
         "x-highsea-access": "staff",
         "security": [
           {
@@ -25955,6 +26045,12 @@
                     "type": "string",
                     "minLength": 1,
                     "maxLength": 4096
+                  },
+                  "kind": {
+                    "$ref": "#/components/schemas/LibraryKind"
+                  },
+                  "readOnly": {
+                    "type": "boolean"
                   }
                 },
                 "required": [
@@ -26023,8 +26119,8 @@
         "tags": [
           "Root folders"
         ],
-        "summary": "Set a root folder’s default subtitle language profile",
-        "description": "Null for none. Movies already filed there keep theirs. 404 (`unknown-language-profile`) for a profile that doesn’t exist.",
+        "summary": "Set a root folder’s default subtitle language profile, or whether highsea only reads it",
+        "description": "`languageProfileId` null for none; movies already filed there keep theirs (404 `unknown-language-profile` for a profile that doesn’t exist). `readOnly` false switches a folder to managed (ADR 0063): 400 `not-writable`, or `mounted-read-only` while it’s mounted read-only.",
         "x-highsea-access": "staff",
         "security": [
           {
@@ -26058,11 +26154,11 @@
                     ],
                     "minLength": 1,
                     "maxLength": 64
+                  },
+                  "readOnly": {
+                    "type": "boolean"
                   }
-                },
-                "required": [
-                  "languageProfileId"
-                ]
+                }
               }
             }
           }
@@ -26126,6 +26222,79 @@
         ],
         "summary": "Remove a root folder",
         "description": "Nothing on disk changes. 409 (`in-use`) while titles of any type are filed under it, with `details.counts` by type.",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Done"
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/rootfolders/{id}/scan": {
+      "post": {
+        "tags": [
+          "Root folders"
+        ],
+        "summary": "Scan a root folder now",
+        "description": "Queues the library scan of the folder: new folders it matches surely are added where they are, and the rest wait in Library import. For when watching can’t see changes, as on a network share. 409 (`not-yet`) for a shows or music folder, which the server reads from a later release.",
         "x-highsea-access": "staff",
         "security": [
           {

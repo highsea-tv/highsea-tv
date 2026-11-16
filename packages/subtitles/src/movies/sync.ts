@@ -80,7 +80,14 @@ export function createSync(
       removeHi: row.hiRemoved,
       shift: moved ? undefined : (ms, anchor) => applyCorrection(correction, ms, anchor) + nudgeMs,
     })
-    await tracks.write(row.path, text)
+    // an owner's own sidecar under a folder highsea only reads: the synced copy is kept in the data
+    // folder, and the track points there from now on (ADR 0063)
+    let path = row.path
+    if (media.rootFolders.readOnlyAt(path)) {
+      path = tracks.place(tracks.file(row.mediaFileId)?.path ?? path, path)
+      set(row.id, { path })
+    }
+    await tracks.write(path, text)
   }
 
   const set = (id: string, values: Partial<TrackRow>) =>

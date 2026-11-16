@@ -20,7 +20,7 @@ export default {
     {
       name: 'root-folders',
       path: '/settings/media',
-      height: 1600,
+      height: 2400,
       crop: (p) =>
         p.getByRole('heading', { name: 'Root folders', exact: true }).locator('xpath=../..'),
     },

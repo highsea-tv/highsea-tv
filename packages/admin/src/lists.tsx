@@ -75,7 +75,7 @@ function useOptions() {
     'import-lists:options',
     async (c): Promise<Options> => {
       const [folders, quality, language] = await Promise.all([
-        c.rootFolders.list(),
+        c.rootFolders.list({ query: { kind: 'movies' } }),
         c.quality.profiles(),
         c.subtitles.languageProfiles(),
       ])

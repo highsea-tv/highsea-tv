@@ -8,10 +8,18 @@
 
 saved="${SYNOPKG_PKGDEST_VOL:-/volume1}/@appdata/highsea/package.conf"
 share=""
+library=""
 if [ "$SYNOPKG_PKG_STATUS" = UPGRADE ] && [ -r "$saved" ]; then
   share=$(sed -n 's/^share=//p' "$saved")
+  library=$(sed -n 's/^library=//p' "$saved")
 fi
 [ -n "$share" ] || share="${wizard_data_share:-}"
+# the wizard's choice (Phase 5 A1, ADR 0063): a singleselect's options reach the script as their
+# keys, true or false (DSM 7.0 Developer Guide, WIZARD_UIFILES)
+if [ -z "$library" ]; then
+  library=managed
+  [ "${wizard_library_read_only:-false}" = true ] && library=read-only
+fi
 if [ -z "$share" ]; then
   say "Choose a shared folder for highsea's films."
   exit 1
@@ -31,8 +39,30 @@ for node in /dev/dri/renderD*; do
   break
 done
 
+# read-only: the shared folder's media folder is mounted again over /data/media, read-only, so the
+# kernel refuses every write there (EROFS) and highsea only reads it; downloads stay writable.
+# Managed: Compose can't leave a mount out by a variable, so the empty folder is mounted read-only
+# somewhere highsea never looks.
+# The shared folder then belongs to that app's stack too, so what highsea makes (its downloads,
+# previews and transcodes) goes in one folder of its own, `highsea`, which highsea creates: DSM
+# grants the shared folder's permission only after postinst (the data-share worker's timing is
+# FROM_ENABLE_TO_POSTUNINST, https://help.synology.com/developer-guide/resource_acquisition/data_share.html).
+if [ "$library" = read-only ]; then
+  media="/var/packages/highsea/shares/$share/media"
+  media_at=/data/media
+  work=/data/highsea
+else
+  media=/var/packages/highsea/target/compose/no-graphics
+  media_at=/run/highsea-unused
+  work=
+fi
+
 cat > "$SYNOPKG_PKGINST_TEMP_DIR/compose/.env" <<ENV
 HIGHSEA_DATA='/var/packages/highsea/shares/$share'
+HIGHSEA_LIBRARY=$library
+HIGHSEA_MEDIA='$media'
+HIGHSEA_MEDIA_AT=$media_at
+HIGHSEA_WORK=$work
 HIGHSEA_DRI=$dri
 HIGHSEA_RENDER_GID=$gid
 HIGHSEA_HOSTNAME=$(hostname -s 2>/dev/null || hostname)

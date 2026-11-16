@@ -11,6 +11,7 @@ import {
   readdirSync,
   renameSync,
   rmSync,
+  writeFileSync,
 } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -60,7 +61,7 @@ describe.skipIf(!hasFfmpeg)('importing an existing library', () => {
     })
     const found = await s.movies.libraryImport.scan(s.root)
     expect(found.map((c) => [c.name, c.match?.tmdbId ?? null, c.skip])).toEqual([
-      ['Empty (2000)', null, 'No video file in the folder.'],
+      ['Empty (2000)', null, 'No film in this folder.'],
       ['Metropolis {tmdb-19}', METROPOLIS, null],
       ['Nosferatu (1922)', NOSFERATU, null],
       ['Sintel (2010)', SINTEL, null],
@@ -252,7 +253,9 @@ describe('the library import’s checks', () => {
   test('without a TMDB key nothing can be matched', async () => {
     const s = await setup({ key: false })
     cleanups.push(s.cleanup)
+    // a folder with a film in it: one with none isn't matched, so it needs no key
     mkdirSync(join(s.folder.path, 'Sintel (2010)'))
+    writeFileSync(join(s.folder.path, 'Sintel (2010)', 'Sintel.2010.mkv'), 'not a film')
     expect(await reason(() => s.movies.libraryImport.scan(s.folder.path))).toBe(
       'unavailable:no-tmdb-key',
     )

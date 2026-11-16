@@ -82,6 +82,9 @@ describe.skipIf(!hasFfmpeg)('library import over the API', () => {
         size: expect.any(Number),
         quality: 'Bluray-1080p',
         match: { tmdbId: SINTEL, title: 'Sintel', year: 2010 },
+        matchedBy: 'search',
+        parts: [],
+        check: null,
         inLibrary: false,
         skip: null,
       },
@@ -135,7 +138,7 @@ describe('library import’s access', () => {
     })
     // an empty folder has nothing to match, so it scans without TMDB
     expect(await ownerApi.libraryImport.scan({ body: { root } })).toMatchObject([
-      { name: 'Sintel (2010)', file: null, skip: 'No video file in the folder.' },
+      { name: 'Sintel (2010)', file: null, skip: 'No film in this folder.' },
     ])
   })
 })

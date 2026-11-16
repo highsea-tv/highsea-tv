@@ -33,8 +33,24 @@ export const LibraryCandidate = z
         year: z.number().int().nullable(),
       })
       .nullable(),
+    /**
+     * How it was matched (Phase 5 A1): the id in its NFO, the id in its name, TMDB's search, or
+     * not at all. A name's id is sure, and an NFO's when the folder's name agrees with it.
+     */
+    matchedBy: z.enum(['nfo', 'name', 'search']).nullable(),
+    /** A film in parts (`-cd1`, `- Part 2`): its files, the first part first; empty otherwise. */
+    parts: z.array(z.string()),
+    /**
+     * Why the match needs a check before it's imported, or null: its NFO names another film than
+     * the folder's name (an id, a year or a title that disagree). The match offered is then the
+     * name's, and the library scan leaves the folder waiting.
+     */
+    check: z.string().nullable(),
     inLibrary: z.boolean(),
-    /** Why it can't be imported as it stands, or null. */
+    /**
+     * Why it can't be imported as it stands, or null: no film in the folder, several films in it,
+     * already in the library, or no match.
+     */
     skip: z.string().nullable(),
   })
   .openapi('LibraryCandidate')
@@ -50,7 +66,10 @@ export const LibraryImportRunInput = z
       )
       .min(1)
       .max(2000),
-    /** Rename to my format: the folder and the file take the naming formats. Off by default. */
+    /**
+     * Rename to my format: the folder and the file take the naming formats. Off by default; 409
+     * `read-only` under a folder highsea only reads (ADR 0063).
+     */
     rename: z.boolean().optional(),
     /** The movies' quality profile; the first profile when left out. */
     qualityProfileId: z.string().min(1).max(64).optional(),

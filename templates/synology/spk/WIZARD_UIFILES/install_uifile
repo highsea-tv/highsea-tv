@@ -24,6 +24,27 @@
     ]
   },
   {
+    "step_title": "Who manages your films",
+    "items": [
+      {
+        "type": "singleselect",
+        "desc": "If Radarr, Sonarr or another app already files your films in the shared folder's media folder, highsea can leave them as they are: it finds what's added there and plays it, but doesn't rename, delete or import anything into media. Downloads still go to the shared folder's downloads folder.",
+        "subitems": [
+          {
+            "key": "wizard_library_managed",
+            "desc": "highsea manages them",
+            "defaultValue": true
+          },
+          {
+            "key": "wizard_library_read_only",
+            "desc": "Another app does; highsea only reads the media folder",
+            "defaultValue": false
+          }
+        ]
+      }
+    ]
+  },
+  {
     "step_title": "Before you start",
     "items": [
       {

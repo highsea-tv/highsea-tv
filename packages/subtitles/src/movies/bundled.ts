@@ -164,7 +164,9 @@ export function createBundled(
       data = processed.text
     } else data = new Uint8Array(await fs.readFile(entry.path))
 
-    const path = inPlace ? entry.path : sidecarPath(file.path, { ...t, format })
+    const path = inPlace
+      ? entry.path
+      : tracks.place(file.path, sidecarPath(file.path, { ...t, format }))
     if (!inPlace) {
       await tracks.write(path, data)
       if (ext === 'idx') {
@@ -205,11 +207,18 @@ export function createBundled(
     return true
   }
 
-  /** The sidecars a file adopted in place already has: those named after it. */
+  /**
+   * The sidecars a file adopted in place already has: those named after it beside it, and those in
+   * its folder's `Subs` (Phase 5 A1: a release keeps its subtitles there, and a film's folder holds
+   * one film).
+   */
   async function besideInPlace(file: ImportedFile): Promise<SubtitleFsEntry[]> {
     const base = basename(file.path, extname(file.path))
-    return (await list(dirname(file.path))).filter(
-      (e) => dirname(e.path) === dirname(file.path) && e.name.startsWith(`${base}.`),
+    const folder = dirname(file.path)
+    return (await list(folder)).filter((e) =>
+      dirname(e.path) === folder
+        ? e.name.startsWith(`${base}.`)
+        : dirname(dirname(e.path)) === folder,
     )
   }
 

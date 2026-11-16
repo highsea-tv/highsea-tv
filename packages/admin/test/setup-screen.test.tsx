@@ -26,7 +26,12 @@ const failure = (code: string, message: string, status: number, details?: unknow
 
 const FOUND: SetupDetected = {
   serverName: 'Harbor',
-  folders: { movies: '/data/media/movies', downloads: '/data/downloads' },
+  folders: {
+    movies: '/data/media/movies',
+    downloads: '/data/downloads',
+    shows: null,
+    music: null,
+  },
   address: '192.168.1.20:3000',
   graphics: { name: 'Intel UHD Graphics 770', path: 'vaapi' },
 }
@@ -208,7 +213,7 @@ describe('setup with everything found', () => {
     expect(sent()).toEqual({
       serverName: 'Harbor',
       owner: { displayName: 'Ana Lima', username: 'ana', password: 'correct horse battery' },
-      folders: FOUND.folders,
+      folders: { movies: '/data/media/movies', downloads: '/data/downloads' },
       indexers: ['internet-archive'],
       subtitleLanguages: ['en'],
       remoteAccess: { kind: 'local-only' },
@@ -220,6 +225,29 @@ describe('setup with everything found', () => {
     expect(localStorage.getItem('highsea:setup')).toBeNull()
     // a fresh load of the dashboard, so the server sees the owner's new session
     expect(state.loaded).toEqual(['/'])
+  })
+
+  test('shows’ and music’s folders found beside the movies’ are listed and sent (Phase 5 A1)', async () => {
+    state.detected = {
+      ...FOUND,
+      folders: {
+        movies: '/data/media/movies',
+        downloads: '/data/downloads',
+        shows: '/data/media/tv',
+        music: '/data/media/music',
+      },
+    }
+    const { user, page } = await toReview()
+    expect(page.getByText('/data/media/tv')).toBeTruthy()
+    expect(page.getByText('/data/media/music')).toBeTruthy()
+    await user.click(page.getByRole('button', { name: 'Finish setup' }))
+    await settle()
+    expect(sent()?.folders).toEqual({
+      movies: '/data/media/movies',
+      downloads: '/data/downloads',
+      shows: '/data/media/tv',
+      music: '/data/media/music',
+    })
   })
 })
 

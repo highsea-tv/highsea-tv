@@ -129,8 +129,11 @@ export function librarySettingsApi(
         d.requireStaff()
         return folders().filter((f) => !kind || f.kind === kind)
       },
-      /** Checks the folder exists and the server can write to it, as the server does. */
-      add: (input: string, kind: LibraryKind = 'movies') => {
+      /**
+       * Checks the folder exists and the server can write to it, as the server does, unless it's
+       * added as a folder highsea only reads. `/data/readonly…` is one highsea can't write to.
+       */
+      add: (input: string, kind: LibraryKind = 'movies', readOnly = false) => {
         d.requireStaff()
         const path = input.trim().replace(/\/+$/, '')
         if (!path.startsWith('/'))
@@ -141,10 +144,13 @@ export function librarySettingsApi(
           throw d.fail(400, 'invalid', 'That folder doesn’t exist on the server.', {
             reason: 'not-found',
           })
-        if (path.startsWith('/data/readonly'))
-          throw d.fail(400, 'invalid', 'highsea can’t write to that folder.', {
-            reason: 'not-writable',
-          })
+        if (path.startsWith('/data/readonly') && !readOnly)
+          throw d.fail(
+            400,
+            'invalid',
+            'highsea can’t write to that folder. Check its permissions, or add it as a folder highsea only reads.',
+            { reason: 'not-writable' },
+          )
         if (
           s.rootFolders.some(
             (f) =>
@@ -163,16 +169,25 @@ export function librarySettingsApi(
           artists: 0,
           waiting: 0,
           languageProfileId: null,
+          readOnly,
         }
         s.rootFolders.push(folder)
         announce()
         return folder
       },
-      update: (id: string, patch: { languageProfileId: string | null }) => {
+      update: (id: string, patch: { languageProfileId?: string | null; readOnly?: boolean }) => {
         d.requireStaff()
         const f = s.rootFolders.find((x) => x.id === id)
         if (!f) throw d.fail(404, 'not-found', 'There’s no such root folder.')
-        f.languageProfileId = patch.languageProfileId
+        if (patch.readOnly === false && f.path.startsWith('/data/readonly'))
+          throw d.fail(
+            400,
+            'invalid',
+            `highsea can’t write to ${f.path}, so it can’t manage it. Check its permissions.`,
+            { reason: 'not-writable' },
+          )
+        if (patch.languageProfileId !== undefined) f.languageProfileId = patch.languageProfileId
+        if (patch.readOnly !== undefined) f.readOnly = patch.readOnly
         announce()
         return folders().find((x) => x.id === id)
       },

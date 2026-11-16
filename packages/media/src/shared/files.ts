@@ -81,8 +81,13 @@ export function vetFiles(paths: readonly string[]): string | null {
   return found ? blockedMessage(basename(found)) : null
 }
 
-/** Jellyfin's extras folders, lowercased. */
-const EXTRA_FOLDERS = new Set([
+/**
+ * Jellyfin's extras folders, lowercased (https://jellyfin.org/docs/general/server/media/movies/),
+ * and what the owner's library showed beside them on 2026-11-15 (Phase 5 A1): `Extra`, scene
+ * releases' `Screenshots` and `Proof`, and `Plex Versions`, the folder Plex's Optimize writes its
+ * copies to. Videos in them are never the film.
+ */
+export const EXTRA_FOLDERS: ReadonlySet<string> = new Set([
   'behind the scenes',
   'deleted scenes',
   'interviews',
@@ -94,13 +99,20 @@ const EXTRA_FOLDERS = new Set([
   'other',
   'extras',
   'trailers',
+  'theme-music',
+  'backdrops',
+  'extra',
+  'screenshots',
+  'proof',
+  'plex versions',
 ])
 /**
  * Jellyfin's extras suffixes, before the extension: `trailer` and `sample` after `-`, `.`, `_` or
  * a space, the rest after `-` only (Jellyfin's NamingOptions), so "The Big Short.mkv" is the film.
+ * A file named only `trailer` or `sample` is one too, as NamingOptions' file-name rules have it.
  */
 const EXTRA_SUFFIX =
-  /(?:[-._ ](?:trailer|sample)|-(?:scene|clip|interview|behindthescenes|deleted|deletedscene|featurette|short|other|extra))$/i
+  /(?:(?:^|[-._ ])(?:trailer|sample)|-(?:scene|clip|interview|behindthescenes|deleted|deletedscene|featurette|short|other|extra))$/i
 
 /** Why a file is skipped before it's probed, or null. `root` is the folder being imported. */
 export function skipBeforeProbe(path: string, root: string): string | null {
@@ -172,4 +184,65 @@ export async function listFiles(folder: string, limit = 10_000): Promise<FoundFi
   }
   await walk(folder)
   return out
+}
+
+// ------------------------------------------------------------ what a film's folder holds (Phase 5 A1)
+
+/**
+ * A part of a film split into files, as Jellyfin stacks them: `cd`, `dvd`, `part`, `pt`, `disc` or
+ * `disk`, after a space, dot, dash or underscore, then a number or a to d, the separator between
+ * optional (https://jellyfin.org/docs/general/server/media/movies/, Multiple Parts):
+ * `Movie Name-cd1.mkv`, `Movie Name - Part 2.mkv`, `Movie Name.disc.b.mkv`.
+ */
+const STACK_PART =
+  /^(.*?)(?:[ ._-]+|(?<=[\])}]))[([]?(?:cd|dvd|part|pt|disc|disk)[ ._-]*([0-9]+|[a-d])[)\]]?$/i
+
+/** The stack a file belongs to and its part's number, or null for a file that's whole. */
+export function stackPart(path: string): { name: string; part: number } | null {
+  const m = STACK_PART.exec(basename(path, extname(path)))
+  if (!m?.[1] || !m[2]) return null
+  const p = m[2].toLowerCase()
+  const part = /^[a-d]$/.test(p) ? p.charCodeAt(0) - 96 : Number(p)
+  return { name: m[1].toLowerCase(), part }
+}
+
+/**
+ * What a folder's videos (extras and samples by name already left out) say it holds:
+ * - none, with the archive left in it if there's one (a `.rar` in the library stays as it is);
+ * - one film: the largest video, or every part of a stack in order, the first part first;
+ * - several films: videos of a film's size whose titles differ, which Library import can't match
+ *   as one.
+ * Two videos of one title are one film's copies; the largest is the film, as before.
+ */
+export type FolderFilm =
+  | { kind: 'film'; main: FoundFile; parts: FoundFile[] }
+  | { kind: 'none'; archive: string | null }
+  | { kind: 'several'; count: number }
+
+export function filmIn(
+  videos: readonly FoundFile[],
+  others: readonly string[],
+  /** A video's title, folded so two spellings of one compare equal. */
+  titleOf: (path: string) => string,
+): FolderFilm {
+  if (videos.length === 0) {
+    const archive = others.find((p) => ['.rar', '.zip', '.7z'].includes(ext(p))) ?? null
+    return { kind: 'none', archive: archive ? basename(archive) : null }
+  }
+  const bySize = [...videos].sort((a, b) => b.size - a.size)
+  if (videos.length > 1) {
+    const stacked = videos.map((v) => ({ v, s: stackPart(v.path) }))
+    const names = new Set(stacked.map((x) => x.s?.name ?? null))
+    const numbers = new Set(stacked.map((x) => x.s?.part))
+    if (names.size === 1 && !names.has(null) && numbers.size === videos.length) {
+      const parts = stacked.sort((a, b) => (a.s?.part ?? 0) - (b.s?.part ?? 0)).map((x) => x.v)
+      return { kind: 'film', main: parts[0] as FoundFile, parts }
+    }
+    // a video under a quarter of the largest is a sample or a trailer by its size, not another film
+    // (a judgement call: Radarr tells samples by their runtime once probed, which comes later)
+    const largest = bySize[0]?.size ?? 0
+    const titles = new Set(videos.filter((v) => v.size * 4 >= largest).map((v) => titleOf(v.path)))
+    if (titles.size > 1) return { kind: 'several', count: titles.size }
+  }
+  return { kind: 'film', main: bySize[0] as FoundFile, parts: [] }
 }

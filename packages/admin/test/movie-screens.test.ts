@@ -23,10 +23,13 @@ import {
 const folder = (path: string): RootFolder => ({
   id: path,
   path,
+  kind: 'movies',
   free: null,
   total: null,
   device: null,
   accessible: true,
+  readOnly: false,
+  mountedReadOnly: false,
   movies: 0,
   languageProfileId: null,
   waiting: 0,

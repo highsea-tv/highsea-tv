@@ -12,6 +12,13 @@ export const configSchema = z.object({
   configDir: z.string().min(1),
   /** `/data`: the single media root, so hardlinks work. */
   dataDir: z.string().min(1),
+  /**
+   * highsea's own folder for what it makes (`HIGHSEA_WORK_DIR`): images, scrub previews, transcodes,
+   * the hardware check's clip, and the downloads folder setup suggests. The data folder unless set.
+   * The Synology package sets `/data/highsea` when another app manages the library, so a shared
+   * folder that belongs to that app's stack gets one folder of highsea's (ADR 0063, 2026-11-16).
+   */
+  workDir: z.string().min(1).optional(),
   host: z.string().min(1),
   port,
   /** LAN discovery (ADR 0020). */
@@ -62,6 +69,10 @@ export const configSchema = z.object({
 
 export type Config = z.infer<typeof configSchema>
 
+/** highsea's own folder: `HIGHSEA_WORK_DIR`, or the data folder. */
+export const workDir = (config: Pick<Config, 'dataDir' | 'workDir'>) =>
+  config.workDir ?? config.dataDir
+
 /** Where highsea publishes its catalog: GitHub Pages on the organisation's custom domain. */
 export const CATALOG_URL = 'https://catalog.highsea.tv'
 
@@ -69,6 +80,7 @@ export function loadConfig(env: Record<string, string | undefined> = process.env
   const parsed = configSchema.safeParse({
     configDir: env.HIGHSEA_CONFIG_DIR ?? '/config',
     dataDir: env.HIGHSEA_DATA_DIR ?? '/data',
+    workDir: env.HIGHSEA_WORK_DIR?.trim() || undefined,
     host: env.HOST ?? '0.0.0.0',
     port: env.PORT ?? 3000,
     discoveryPort: env.HIGHSEA_DISCOVERY_PORT ?? 7368,

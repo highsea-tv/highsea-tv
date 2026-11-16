@@ -190,7 +190,10 @@ export async function seed(
   // collection's Spider-Man (969681) stay out, for the pages' not-added state.
   await api('PUT', '/settings/metadata', { key: 'sweep-tmdb-key', region: 'US' }, token)
   mkdirSync(join(dataDir, 'films'), { recursive: true })
-  await api('POST', '/rootfolders', { path: join(dataDir, 'films') }, token)
+  // one highsea only reads, and a shows' folder (Phase 5 A1), for Media management's root folders
+  await api('POST', '/rootfolders', { path: join(dataDir, 'films'), readOnly: true }, token)
+  mkdirSync(join(dataDir, 'tv'), { recursive: true })
+  await api('POST', '/rootfolders', { path: join(dataDir, 'tv'), kind: 'shows' }, token)
   const movies = join(dataDir, 'movies')
   // a root folder with a long path, for the tables' truncation (HT-3)
   const remuxes = join(dataDir, 'movies-4k', 'Ultra HD Blu-ray remuxes from the original discs')

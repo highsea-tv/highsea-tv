@@ -77,7 +77,7 @@ export function AddMovieDialog({
     async (c): Promise<AddOptions | null> => {
       if (!open) return null
       const [folders, quality, language, prefs, indexers] = await Promise.all([
-        c.rootFolders.list(),
+        c.rootFolders.list({ query: { kind: 'movies' } }),
         c.quality.profiles(),
         c.subtitles.languageProfiles(),
         c.preferences.get(),

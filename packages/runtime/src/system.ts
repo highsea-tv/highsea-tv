@@ -176,12 +176,13 @@ const gb = (n: number) => `${(n / 1e9).toFixed(n < 1e10 ? 1 : 0)} GB`
  * that's all but full an error. Each disk is reported once, under the first folder on it.
  */
 export function folderIssues(
-  folders: { label: string; path: string }[],
+  /** `readOnly`: a folder highsea only reads (ADR 0063), which needn't be writable. */
+  folders: { label: string; path: string; readOnly?: boolean }[],
   fs: FolderFs = { statSync, statfsSync, accessSync },
 ): Omit<HealthIssue, 'source' | 'since'>[] {
   const out: Omit<HealthIssue, 'source' | 'since'>[] = []
   const seen = new Set<number>()
-  for (const { label, path } of folders) {
+  for (const { label, path, readOnly } of folders) {
     let dev: number
     try {
       dev = fs.statSync(path).dev
@@ -193,15 +194,22 @@ export function folderIssues(
       })
       continue
     }
-    try {
-      fs.accessSync(path, constants.W_OK)
-    } catch {
+    if (readOnly)
       out.push({
-        id: `folder-read-only:${path}`,
-        level: 'error',
-        message: `highsea can’t write to the ${label} folder ${path}. Check that it isn’t mounted read-only, and that highsea’s user owns it: whoever owns /data, unless PUID and PGID choose another.`,
+        id: `folder-reads-only:${path}`,
+        level: 'notice',
+        message: `highsea only reads the ${label} folder ${path}. It finds what’s added there and plays it, but doesn’t rename, delete or import anything into it. Switch it to managed in Settings › Media management when you want highsea to.`,
       })
-    }
+    else
+      try {
+        fs.accessSync(path, constants.W_OK)
+      } catch {
+        out.push({
+          id: `folder-read-only:${path}`,
+          level: 'error',
+          message: `highsea can’t write to the ${label} folder ${path}. Check that it isn’t mounted read-only, and that highsea’s user owns it: whoever owns /data, unless PUID and PGID choose another.`,
+        })
+      }
     if (seen.has(dev)) continue
     seen.add(dev)
     try {

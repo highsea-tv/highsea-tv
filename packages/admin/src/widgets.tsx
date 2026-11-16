@@ -406,10 +406,11 @@ function Storage(props: WidgetProps) {
 
 /** With the library: the root folders on the disk, as what uses it. */
 function StorageWithFolders(props: WidgetProps) {
-  const folders = useQuery('widget:storage-folders', (c) => c.rootFolders.list(), [
-    'settings.updated',
-    MEDIA_TOPICS.movies,
-  ])
+  const folders = useQuery(
+    'widget:storage-folders',
+    (c) => c.rootFolders.list({ query: { kind: 'movies' } }),
+    ['settings.updated', MEDIA_TOPICS.movies],
+  )
   return <StorageOf {...props} folders={folders.data ?? []} />
 }
 

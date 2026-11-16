@@ -70,6 +70,9 @@ export function importAnswers(kit: AdminKit): Answers {
           size: file?.size ?? 0,
           quality: m.quality[0] ?? null,
           match: { tmdbId: m.tmdbId, title: m.title, year: m.year },
+          matchedBy: 'name',
+          parts: [],
+          check: null,
           inLibrary: true,
           skip: tw('work.inLibrary'),
         }
@@ -91,6 +94,9 @@ export function importAnswers(kit: AdminKit): Answers {
           size: Math.round(8.2 * GB),
           quality: 'Bluray-1080p',
           match: { tmdbId: d.tmdbId, title: d.title, year: d.year },
+          matchedBy: 'search',
+          parts: [],
+          check: null,
           inLibrary: false,
           skip: null,
         }
@@ -103,6 +109,9 @@ export function importAnswers(kit: AdminKit): Answers {
       size: Math.round(2.2 * GB),
       quality: null,
       match: null,
+      matchedBy: null,
+      parts: [],
+      check: null,
       inLibrary: false,
       skip: tw('work.noMatch'),
     }

@@ -113,7 +113,7 @@ import {
 } from './backups.ts'
 import { type BrowseListing, browse } from './browse.ts'
 import { createCollectionLibrary } from './collection-library.ts'
-import type { Config } from './config.ts'
+import { type Config, workDir } from './config.ts'
 import { type ContainerNetwork, detectContainerNetwork } from './container-network.ts'
 import { createCurationLibrary } from './curation-library.ts'
 import { scheduleFileFacts } from './file-facts.ts'
@@ -139,6 +139,7 @@ import {
   ADDRESS_KEY,
   type AdvertisedAddress,
   checkSetup,
+  type DetectedFolders,
   detectAddress,
   detectFolders,
   detectServerName,
@@ -263,7 +264,7 @@ export type HealthReport = {
 /** What setup found by itself (install-simplicity.md B); null where setup asks or guesses. */
 export type SetupDetected = {
   serverName: string | null
-  folders: MediaFolders | null
+  folders: DetectedFolders | null
   address: string | null
   graphics: { name: string; path: AccelPath } | null
 }
@@ -642,7 +643,7 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
     events,
     sealer,
     fetch: options.fetch ?? globalThis.fetch,
-    imagesDir: join(config.dataDir, 'images'),
+    imagesDir: join(workDir(config), 'images'),
     builtInKey: config.tmdbKey,
   })
   metadata.jobs.schedule(clock.now())
@@ -748,6 +749,8 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
     events,
     media,
     fetch: options.subtitles?.fetch ?? outside,
+    // a film's subtitles when highsea only reads its folder (ADR 0063)
+    heldDir: join(config.configDir, 'subtitles'),
     userAgent: `highsea v${version}`,
     openSubtitlesKey:
       options.subtitles?.openSubtitlesKey !== undefined
@@ -773,7 +776,7 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
     jobs,
     clock,
     logger,
-    root: join(config.dataDir, 'trickplay'),
+    root: join(workDir(config), 'trickplay'),
     ffmpeg: ffmpegBinary(),
   })
   const movies = createMovies(
@@ -812,7 +815,7 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
   // HLS made on demand (4.1b, ADR 0051): one folder per play session in the data folder's
   // `transcodes/`, emptied on boot, since no session outlives the process
   const transcodes = createTranscodes({
-    root: join(config.dataDir, 'transcodes'),
+    root: join(workDir(config), 'transcodes'),
     ffmpeg: ffmpegBinary(),
     ffprobe: ffprobeBinary(),
     logger: logger.child('stream'),
@@ -829,7 +832,7 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
     clock,
     events,
     logger,
-    dataDir: config.dataDir,
+    dataDir: workDir(config),
     ffmpeg: ffmpegBinary(),
     settings: () => playbackSettings.get(),
     host: options.hardware,
@@ -847,9 +850,9 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
     clock,
     events,
     logger,
-    dataDir: config.dataDir,
+    dataDir: workDir(config),
     transcodes,
-    trickplayRoot: join(config.dataDir, 'trickplay'),
+    trickplayRoot: join(workDir(config), 'trickplay'),
     shared: () => [...media.rootFolders.list().map((f) => f.path), folders().downloads],
     streaming: () => playback.sessions().length > 0,
     hardware,
@@ -910,7 +913,8 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
     watch: options.watch,
     log: logger.child('watch'),
   })
-  const syncWatch = () => watch.sync(media.rootFolders.list().map((f) => f.path))
+  // shows' and music's folders are watched once the server reads them (parts B and D)
+  const syncWatch = () => watch.sync(media.rootFolders.list('movies').map((f) => f.path))
   syncWatch()
   // root folders added or removed announce `settings.updated` (the root folder routes)
   const stopWatchSync = events.subscribe((e) => {
@@ -1372,14 +1376,28 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
       // the contract checked their shape; the owner's locale when the step sent them
       if (md.language !== undefined || md.region !== undefined)
         metadata.settings.update({ language: md.language, region: md.region })
-      // setup's movies folder is the first root folder (setup.ts › MediaFolders); saveSetup made it
+      // setup's movies folder is the first root folder (setup.ts › MediaFolders); saveSetup made it.
+      // One mounted read-only is added as a folder highsea only reads (ADR 0063). Shows' and
+      // music's are kept as root folders of their kind, for parts B and D
       const folder = resolve(input.folders.movies)
-      try {
-        if (!media.rootFolders.list().some((f) => f.path === folder)) media.rootFolders.add(folder)
-        syncWatch()
-      } catch (e) {
-        log.warn('couldn’t add the movies folder as a root folder', { error: (e as Error).message })
+      const kinds = [
+        ['movies', folder],
+        ['shows', input.folders.shows],
+        ['music', input.folders.music],
+      ] as const
+      for (const [kind, path] of kinds) {
+        if (!path?.trim()) continue
+        try {
+          if (!media.rootFolders.find(resolve(path)))
+            media.rootFolders.add({ path: resolve(path), kind })
+        } catch (e) {
+          log.warn('couldn’t add a folder from setup as a root folder', {
+            kind,
+            error: (e as Error).message,
+          })
+        }
       }
+      syncWatch()
       if (key)
         try {
           await metadata.settings.setKey(key)
@@ -1444,9 +1462,11 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
         addresses: { local: localAddresses(config.port), public: network.externalUrl() },
         ...resources.now(),
         disks: disks([
-          ...media.rootFolders
-            .list()
-            .map((f) => ({ label: 'Movies', path: f.path, movies: movies.get(f.path) ?? 0 })),
+          ...media.rootFolders.list().map((f) => ({
+            label: f.kind === 'movies' ? 'Movies' : f.kind === 'shows' ? 'Shows' : 'Music',
+            path: f.path,
+            movies: movies.get(f.path) ?? 0,
+          })),
           { label: 'Downloads', path: folders().downloads, downloads: downloaded },
           { label: 'Media', path: config.dataDir },
           { label: 'Config', path: config.configDir },
@@ -1550,7 +1570,11 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
         })
       if (isSetupComplete(db)) {
         const library = [
-          ...media.rootFolders.list().map((f) => ({ label: 'movies', path: f.path })),
+          ...media.rootFolders.list().map((f) => ({
+            label: f.kind,
+            path: f.path,
+            readOnly: f.readOnly,
+          })),
           { label: 'downloads', path: folders().downloads },
         ]
         for (const i of folderIssues(library))
@@ -1559,7 +1583,13 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
       // imports that had to copy, and before the first one, what the hardlink check found at start
       const copied = new Set(movies.copying().map((c) => c.root))
       if (isSetupComplete(db))
-        for (const i of linkCheck(media.rootFolders.list().map((f) => f.path)))
+        for (const i of linkCheck(
+          // a folder highsea only reads takes no imports, so hardlinks don't matter there
+          media.rootFolders
+            .list('movies')
+            .filter((f) => !f.readOnly)
+            .map((f) => f.path),
+        ))
           if (!copied.has(i.id.slice('copying:'.length)))
             out.push({ ...i, source: 'Import', since: startedAt })
       for (const c of movies.copying())

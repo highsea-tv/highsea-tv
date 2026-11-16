@@ -238,18 +238,35 @@ export const MoviePage = z
   })
   .openapi('MoviePage')
 
-/** A folder movies are filed under. Free space, size and device are read when asked. */
+/**
+ * What a root folder holds (prototype-gaps.md's stage 6): one kind each. From Phase 5 A1, shows'
+ * and music's folders are kept, and used once the server has shows (part B) and music (part D).
+ */
+export const LibraryKind = z.enum(['movies', 'shows', 'music']).openapi('LibraryKind')
+
+/** A folder a library is filed under. Free space, size and device are read when asked. */
 export const RootFolder = z
   .object({
     id: z.string(),
     path: z.string().openapi({ example: '/data/media/movies' }),
+    kind: LibraryKind,
     /** Bytes; null when the folder can't be read now (unmounted, gone). */
     free: z.number().nullable(),
     total: z.number().nullable(),
     /** The filesystem it's on (Storage's "what uses it" groups by it); null when unreadable. */
     device: z.string().nullable(),
-    /** Whether the folder exists and the server can write to it now. */
+    /**
+     * Whether the folder exists and highsea can use it now: read it, and write to it unless it
+     * only reads it.
+     */
     accessible: z.boolean(),
+    /**
+     * highsea only reads it (ADR 0063): nothing under it is written, renamed or deleted, and
+     * imports from downloads into it are refused. The owner's choice, or a read-only mount.
+     */
+    readOnly: z.boolean(),
+    /** It's mounted read-only, so it can't be switched to managed until it's mounted read-write. */
+    mountedReadOnly: z.boolean(),
     /** Library movies filed under it. */
     movies: z.number().int(),
     /**
@@ -468,11 +485,13 @@ export const rootFolders = {
     method: 'get',
     path: ROOT_FOLDERS,
     tags: ['Root folders'],
-    summary: 'The folders movies are filed under, with free space and device',
+    summary: 'The folders the libraries are filed under, with free space and device',
+    description: 'Every kind’s, or one kind’s with `kind`.',
     ...access('staff'),
+    request: { query: z.object({ kind: LibraryKind.optional() }) },
     responses: {
       200: json(z.array(RootFolder), 'Folders'),
-      ...errors('unauthorized', 'forbidden'),
+      ...errors('invalid', 'unauthorized', 'forbidden'),
     },
   }),
   add: createRoute({
@@ -481,9 +500,17 @@ export const rootFolders = {
     tags: ['Root folders'],
     summary: 'Add a root folder',
     description:
-      'The path must be absolute, exist and be writable by the server (400, with `details.reason` `not-absolute`, `not-found` or `not-writable`). 409 when it’s already a root folder, or inside or around one.',
+      'The path must be absolute, exist and be readable by the server, and writable unless `readOnly` (400, with `details.reason` `not-absolute`, `not-found`, `not-readable` or `not-writable`). A folder mounted read-only is added read-only. `kind` is `movies` when left out. 409 when it’s already a root folder, or inside or around one.',
     ...access('staff'),
-    request: { ...body(z.object({ path: z.string().min(1).max(4096) })) },
+    request: {
+      ...body(
+        z.object({
+          path: z.string().min(1).max(4096),
+          kind: LibraryKind.optional(),
+          readOnly: z.boolean().optional(),
+        }),
+      ),
+    },
     responses: {
       201: json(RootFolder, 'Added'),
       ...errors('invalid', 'unauthorized', 'forbidden', 'conflict'),
@@ -493,17 +520,41 @@ export const rootFolders = {
     method: 'patch',
     path: `${ROOT_FOLDERS}/{id}`,
     tags: ['Root folders'],
-    summary: 'Set a root folder’s default subtitle language profile',
+    summary:
+      'Set a root folder’s default subtitle language profile, or whether highsea only reads it',
     description:
-      'Null for none. Movies already filed there keep theirs. 404 (`unknown-language-profile`) for a profile that doesn’t exist.',
+      '`languageProfileId` null for none; movies already filed there keep theirs (404 `unknown-language-profile` for a profile that doesn’t exist). `readOnly` false switches a folder to managed (ADR 0063): 400 `not-writable`, or `mounted-read-only` while it’s mounted read-only.',
     ...access('staff'),
     request: {
       params: IdParam,
-      ...body(z.object({ languageProfileId: z.string().min(1).max(64).nullable() })),
+      ...body(
+        z
+          .object({
+            languageProfileId: z.string().min(1).max(64).nullable().optional(),
+            readOnly: z.boolean().optional(),
+          })
+          .refine((b) => b.languageProfileId !== undefined || b.readOnly !== undefined, {
+            message: 'Send languageProfileId or readOnly.',
+          }),
+      ),
     },
     responses: {
       200: json(RootFolder, 'Saved'),
       ...errors('invalid', 'unauthorized', 'forbidden', 'not-found'),
+    },
+  }),
+  scan: createRoute({
+    method: 'post',
+    path: `${ROOT_FOLDERS}/{id}/scan`,
+    tags: ['Root folders'],
+    summary: 'Scan a root folder now',
+    description:
+      'Queues the library scan of the folder: new folders it matches surely are added where they are, and the rest wait in Library import. For when watching can’t see changes, as on a network share. 409 (`not-yet`) for a shows or music folder, which the server reads from a later release.',
+    ...access('staff'),
+    request: { params: IdParam },
+    responses: {
+      ...noContent,
+      ...errors('unauthorized', 'forbidden', 'not-found', 'conflict'),
     },
   }),
   remove: createRoute({
@@ -532,3 +583,4 @@ export type BulkResult = z.infer<typeof BulkResult>
 export type MovieListQuery = z.infer<typeof MovieListQuery>
 export type MoviePage = z.infer<typeof MoviePage>
 export type RootFolder = z.infer<typeof RootFolder>
+export type LibraryKind = z.infer<typeof LibraryKind>
