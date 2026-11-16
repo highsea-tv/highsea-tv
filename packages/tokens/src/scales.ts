@@ -190,4 +190,4 @@ export const scrollbar = {
 
 export const mobile = { gutter: 16, posterGap: 8, rowGap: 24 } as const
 
-export const web = { gutter: 24, margin: { compact: 32, wide: 64 }, maxWidth: 1680 } as const
+export const web = { margin: { wide: 64 }, maxWidth: 1680 } as const
