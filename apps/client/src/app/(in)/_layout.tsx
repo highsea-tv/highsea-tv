@@ -37,6 +37,7 @@ import {
   Icon,
   type IconName,
   Mark,
+  NewDot,
   Press,
   Text,
   tokens,
@@ -734,30 +735,6 @@ function BarEnd() {
       />
       <AccountMenu />
     </View>
-  )
-}
-
-/** The bell's dot while an announcement is new: the prototype's, on the button's top end corner. */
-const DOT = space['2'] + space['0.5']
-const DOT_AT = space['1'] + space['0.5']
-
-function NewDot() {
-  const theme = useTheme()
-  return (
-    <View
-      pointerEvents="none"
-      style={{
-        position: 'absolute',
-        top: DOT_AT,
-        end: DOT_AT,
-        width: DOT,
-        height: DOT,
-        borderRadius: tokens.radius.pill,
-        borderWidth: space['0.5'],
-        borderColor: theme.colors.bg,
-        backgroundColor: theme.colors.accent,
-      }}
-    />
   )
 }
 
