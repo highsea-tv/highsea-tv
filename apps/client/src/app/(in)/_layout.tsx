@@ -82,6 +82,7 @@ import {
   TvAnnouncement,
   useHereAnnouncements,
 } from '../../shell/announcements.tsx'
+import { PointerShortcuts } from '../../shell/shortcuts.tsx'
 
 const { space } = tokens
 
@@ -283,6 +284,8 @@ function ShellBody() {
         <MusicPlayerMount />
         <NoteRegion />
         {offline ? null : <ShellAnnouncements />}
+        {/* `/` and `?`, while a page is on view */}
+        {offline || who ? null : <PointerShortcuts />}
       </View>
     </Asks>
   )
