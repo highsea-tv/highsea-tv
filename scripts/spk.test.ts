@@ -260,7 +260,8 @@ describe('preinst', () => {
     expect(r.env).toContain("HIGHSEA_MEDIA='/var/packages/highsea/shares/data/media'\n")
     expect(r.env).toContain('HIGHSEA_MEDIA_AT=/data/media\n')
     const compose = readFileSync(join(SOURCE, 'package/compose/compose.yaml'), 'utf8')
-    expect(compose).toContain('- ${HIGHSEA_MEDIA}:${HIGHSEA_MEDIA_AT}:ro')
+    // Compose's variables, not a template string's
+    expect(compose).toContain(['- $', '{HIGHSEA_MEDIA}:$', '{HIGHSEA_MEDIA_AT}:ro'].join(''))
   })
 
   test('an upgrade keeps the choice made at install', () => {
