@@ -1,6 +1,6 @@
 # Phase 5: highsea in real use
 
-- **Status:** Scoped on 2026-11-15 (HT-21) and approved with [the owner's answers](#the-owners-answers) of 2026-11-15: every recommendation for questions 1 to 13, and one change, profiles built in A2 (question 14). Nothing is built. Questions 15 to 17 follow from that change and wait for the owner; part A1 can start, since they touch only A2.
+- **Status:** Scoped on 2026-11-15 (HT-21) and approved with [the owner's answers](#the-owners-answers) of 2026-11-15: every recommendation for questions 1 to 13, one change, profiles built in A2 (question 14), and every recommendation for questions 15 to 17, which follow from that change. A1 is being built (HT-22); nothing else is.
 - **Asked for by the owner on 2026-11-15:** "I'd like to start planning the next phase. I'd like to start moving on from the prototyping phase sooner than later and begin getting an actual server running with real movies, shows, and music so we can begin testing against a real use case."
 - **Gate:** the one client platform was signed off on 2026-11-15, part E with it, and the TV sign-in's two bugs are fixed (HT-17). This phase follows it. Prototyping takes a back seat: everything here is built against the owner's real library, and only what has no design at all is prototyped first.
 
@@ -137,12 +137,12 @@ Nothing yet.
 Built on the owner's change to question 14, so each person's Continue watching is their own from the start on the Apple TV. The design is drawn and the contract drafted; A2b serves it.
 
 - **The model** (new ADR 0068): a `profiles` table under each account (name, tone, a PIN kept only as a hash, `main` for the account's own), at most `MAX_PROFILES` (6). The account's own profile is made for every existing account in the migration, and for each new account when it's made.
-- **Watch state per profile** (ADR 0054's dated section): `watch_positions`, `watch_history` and `playback_prefs` gain a profile id beside the user id, part of their keys and indexes; every read and write takes the profile watching now. What's already recorded goes to the account's own profile ([question 15](#open-questions-for-the-owner)).
-- **The profile watching now:** kept on the session or device token, not on the account, so a TV can watch as one person while a phone watches as another ([question 16](#open-questions-for-the-owner)). `choose` sets it; a new session starts on the account's own profile, or on the device's last choice.
+- **Watch state per profile** (ADR 0054's dated section): `watch_positions`, `watch_history` and `playback_prefs` gain a profile id beside the user id, part of their keys and indexes; every read and write takes the profile watching now. What's already recorded goes to each account's own profile ([answer 15](#the-owners-answers)).
+- **The profile watching now:** kept per device, on the session or device token, not on the account, so the Apple TV can watch as one person while a phone watches as another ([answer 16](#the-owners-answers)). `choose` sets it; a new session starts on the account's own profile, or on the device's last choice. The list of profiles, their names and PINs stay the account's and are seen on every app. client-settings.md's Switch profile says so: it read that switching on one app "is seen on the others", and now says switching changes only that app.
 - **PINs:** four digits, hashed as passwords are (ADR 0023), never sent to an app; five wrong in a row rest choosing for a minute, as the contract's `choose` says (429 with `retryAfter`). The audit log records a profile added, deleted or its PIN changed.
 - **What reads watch state learns profiles:** Home's rows and Continue watching (`packages/runtime/src/home-rows.ts`), Remove from Continue watching, Next up, the films' and episodes' Watched marks, smart collections' watch rules (`collection-query.ts`, ADR 0049), Now playing and its history (`now-playing.ts`, which shows the profile's name beside the account's), the playback started notification, and Trakt's watchlist (stays the account's). Preferences in layers (ADR 0027) gain a profile layer only for what the drafted design has per profile: Home; a profile's theme and sound stay the device's.
 - **Serving the drafts:** the `profiles` group is served and loses `draft()`; public info's `sources` lists `profiles`, so Who's watching, Switch profile and the TV's profile screens draw from real data; `bun run openapi` refreshes `openapi.json`.
-- **Not in A2b:** kids' profiles and ratings limits per profile ([question 17](#open-questions-for-the-owner)); profiles in the admin beyond Now playing and Users' profile count.
+- **Not in A2b:** kids' profiles and ratings limits per profile ([answer 17](#the-owners-answers)): every profile sees the whole library, and a kids' profile is scoped later if the household asks; profiles in the admin beyond Now playing and Users' profile count.
 - **Touches:** `packages/db/src/schema/` (a `profiles` table; the three watch tables' keys; `bun run generate`, with the migration moving existing rows to each account's own profile), `packages/auth` (the profile on the session and device token, PIN hashing and its limit), `packages/media/src/shared/watch.ts` and `watching.ts`, `packages/runtime/src/home-rows.ts`, `now-playing.ts`, `collection-query.ts` and `notify.ts`, `packages/personalization` (Home per profile), `apps/server/src/api/` (the profiles routes, `drafts.ts`), `packages/api-contract/src/profiles.ts` (drafts made real), `packages/admin`'s Now playing and Users, `apps/client/src/profiles/` and `@highsea-tv/client/data` on real data; the specs client-settings.md and users-devices.md; the guides `apps/docs/content/watch/` (profiles) and the admin's Users.
 - **Tests:** the migration moving existing watch state to each account's own profile; two profiles on one account with separate Continue watching, Next up and Watched; a phone and a TV on one account watching as different profiles at once; PIN checked, never returned, rested after five wrong; the account's own profile refused for delete; deleting a profile removes its watch state; smart collections' watch rules per profile; the client's Who's watching against the server in the end-to-end run, and the TV's walk through Who's watching on the simulator.
 
@@ -224,7 +224,7 @@ Built only when the owner decides to move shows from Sonarr to highsea ([answer 
   - **0065, music on the server** (D): the model, tags first, MusicBrainz and the Cover Art Archive, audio playback, `expo-audio`.
   - **0066, client error reports** (A2): what the clients send, only to their own server, and where the owner sees it.
   - **0067, intro and credits markers** (C2): chapters, then chromaprint across a season, and the owner's corrections.
-  - **0068, profiles** (A2b): profiles under an account, watch state per profile, the profile watching now on the session, PINs hashed and rested.
+  - **0068, profiles** (A2b): profiles under an account, watch state per profile, the profile watching now kept per device on the session, PINs hashed and rested.
 - **Dated sections:** 0012 (shows and music in the item model, B and D), 0036 (the `shows` and `music` subpaths), 0039 (reading NFOs, A1; episodes and tracks imported, B and D), 0041 (the Sonarr importer, C1), 0045 (automation for episodes, C1), 0023 (the profile on a session and device token, A2b), 0027 (Home per profile, A2b), 0047 (client reports beside crash reports, A2), 0049 (watch rules per profile, A2b), 0050 (releases at each part, A1; TestFlight uploads, A2), 0051 and 0052 (audio, D), 0054 (per profile, A2b; episodes, B), 0057 (the package's read-only media, A1), 0059 (TestFlight, A2) and 0061 (the drafts served, A2b, B and D).
 
 ## Risks
@@ -310,7 +310,7 @@ Built only when the owner decides to move shows from Sonarr to highsea ([answer 
 
 On 2026-11-15, reviewing this scope, the owner made 1 change:
 
-1. **Profiles are built in A2** (question 14), so each person's Continue watching is their own from the start on the Apple TV: [Profiles (A2b)](#profiles-a2b), with ADR 0068, and A2 built in two batches. Questions 15 to 17 follow from it.
+1. **Profiles are built in A2** (question 14), so each person's Continue watching is their own from the start on the Apple TV: [Profiles (A2b)](#profiles-a2b), with ADR 0068, and A2 built in two batches. Questions 15 to 17 follow from it, and the owner answered them the same day.
 
 ## The owner's answers
 
@@ -330,3 +330,9 @@ On 2026-11-15 the owner took every recommendation for questions 1 to 13, and cha
 12. **Music in the admin is prototyped first** in D.
 13. **Stage 7 of prototype-gaps.md folds into D;** 4.5c waits for an Android device; 4.6 comes after this phase; the gap analysis stays the backlog, reordered by the findings.
 14. **Changed by the owner:** profiles (Who's watching) are built in A2, so each person's Continue watching is their own from the start on the Apple TV.
+
+On 2026-11-15 the owner then took every recommendation for questions 15 to 17, which follow from the change to 14:
+
+15. **The watch state already recorded goes to each account's own profile** in A2b's migration.
+16. **The profile watching now is kept per device,** on the session or device token, so the Apple TV and a phone can watch as different people at once on one account. client-settings.md's Switch profile is changed to match.
+17. **Kids' profiles are left out of A2,** and scoped later if the household asks.
