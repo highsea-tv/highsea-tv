@@ -1,0 +1,33 @@
+# 0063. Libraries highsea only reads: read-only root folders, one check before every write
+
+- **Status:** Accepted
+- **Date:** 2026-11-15
+
+## Context
+
+Phase 5 puts highsea on the owner's NAS beside the stack that already manages their library: Radarr, Sonarr and Lidarr file the media, qBittorrent downloads, and that stays so until the owner switches a kind over ([phase-5-real-use.md](../plans/phase-5-real-use.md), question 3). highsea has to find and play 1,398 films it must never change.
+
+Until now every root folder was one highsea managed: `checkPath` refused a folder highsea couldn't write to, and imports, Rename to my format, subtitles beside the film, NFOs, deletes and the recycle bin all wrote under root folders, each in its own code. A rule in each of those places would be easy to miss in the next one, and the owner's library is live.
+
+Root folders also had no kind. The stage-6 prototype (prototype-gaps.md) drew Settings › Media management with Movies, Shows and Music folders, and Phase 5's parts B and D need shows' and music's folders; setup should find them beside the movies' from A1 on.
+
+The alternatives were a global "read-only mode" (too coarse: the owner wants to move one kind at a time) and relying on the mount alone (a read-only mount makes writes fail with `EROFS`, which highsea would report as errors rather than as a decision).
+
+## Decision
+
+- **Root folders gain `kind`** (`movies`, `shows` or `music`) **and `readOnly`** (`packages/db` migration `0017_read_only_libraries`). The contract's `RootFolder` carries both, and `mountedReadOnly` when the mount itself refuses writes; `GET /rootfolders` takes `?kind=`, `POST` takes `kind` and `readOnly`, `PATCH` switches `readOnly`, and `POST /rootfolders/{id}/scan` scans one folder now. Shows' and music's folders are kept, and listed, until the server has shows and music; everything for movies asks for `kind: 'movies'`.
+- **A folder highsea can't write to is added only read-only.** `writeAccess(path)` in `packages/media/src/shared/root-folders.ts` checks with `access(2)`'s `W_OK` ([Node: fs.access](https://nodejs.org/api/fs.html#fsaccesspath-mode-callback)); `EROFS`, "Read-only file system" ([access(2)](https://man7.org/linux/man-pages/man2/access.2.html)), means it's mounted read-only, and such a folder is added read-only by itself and can't be switched to managed. Any other refusal is `not-writable` unless the owner asked for read-only.
+- **One check before every write: `rootFolders.assertWritable(path, what)`.** It refuses with `conflict` and reason `read-only`, saying "highsea only reads X, so it doesn't {what} there." The import pipeline (`movies/import.ts`) blocks an import from downloads into such a folder with that reason before naming anything; Library import's Rename to my format, the adopt's rename, and subtitles' writes and deletes (`subtitles/movies/tracks.ts`) all go through it.
+- **Subtitles for a film highsea only reads are kept in the data folder**, under `<config>/subtitles/<sha256 of the film's folder>/`, with the name they'd have beside the film, and served from their stored path as any other track. The owner's own sidecars, beside the film or in a `Subs` folder, are recorded as before and never deleted.
+- **The scan and watching work as before** on read-only folders: they only read. A film is adopted where it is, with no rename.
+- **Health says which folders highsea only reads**, as a notice, not a problem (`folder-reads-only:`), and the free-space and hardlink checks leave them out.
+- **The Synology package's wizard asks who manages the films** (`templates/synology/spk/`): another app's choice mounts the shared folder's `media` folder again over `/data/media` with `:ro` ("You can use the `readonly` or `ro` option to prevent the container from writing to the mount", [Docker: Bind mounts](https://docs.docker.com/engine/storage/bind-mounts/)), so the kernel is the first guard and `assertWritable` the second. ADR 0057's dated section of 2026-11-15 has the details.
+- **The admin**: Settings › Media management lists folders by kind with **Only read it** when adding and **Only read this folder** on each, a mounted one says so; Library import has no Rename to my format under such a folder.
+
+## Consequences
+
+- A mistake in a new write path is caught by one function, and its tests (`packages/media/test/movies/read-only.test.ts`) assert every path refused; a write path added later must call it.
+- Moving a kind to highsea is switching its folder to managed, once the mount is read-write; nothing else changes.
+- Subtitles kept in the data folder are part of highsea's data, so they're in its backups but not beside the film for other players; switching the folder to managed doesn't move them (left for when the owner switches a kind, Phase 5's later parts).
+- NFOs and artwork aren't written to read-only folders; highsea doesn't write them for films yet, so nothing is lost now.
+- Shows' and music's root folders exist before their libraries do; their scan answers `409 not-yet` until parts B and D.
