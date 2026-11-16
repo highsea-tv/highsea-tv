@@ -200,7 +200,7 @@ const REACH_WIDTH = admin.curation.reachWidth
 function AnnouncementRow({ a }: { a: AnnouncementSummary }) {
   const t = useCurationT()
   const card = useCard()
-  const wide = useRegularWindow()
+  const regular = useRegularWindow()
   const people = usePeople()
   const audience = useAudienceSummary()
   const schedule = useScheduleSummary()
@@ -217,13 +217,15 @@ function AnnouncementRow({ a }: { a: AnnouncementSummary }) {
       style={[
         card,
         {
-          flexDirection: wide ? 'row' : 'column',
-          alignItems: wide ? 'center' : 'stretch',
+          flexDirection: regular ? 'row' : 'column',
+          alignItems: regular ? 'center' : 'stretch',
           gap: s['3'],
         },
       ]}
     >
-      <View style={{ flexDirection: 'row', gap: s['3'], flex: wide ? 1 : undefined, minWidth: 0 }}>
+      <View
+        style={{ flexDirection: 'row', gap: s['3'], flex: regular ? 1 : undefined, minWidth: 0 }}
+      >
         <View style={{ marginTop: s['0.5'] }}>
           <Icon name={sev.icon} size={tokens.icon.size.md} color={sev.tone} />
         </View>
@@ -243,7 +245,7 @@ function AnnouncementRow({ a }: { a: AnnouncementSummary }) {
           </Caption>
         </View>
       </View>
-      <View style={{ gap: s['1'], width: wide ? REACH_WIDTH : undefined }}>
+      <View style={{ gap: s['1'], width: regular ? REACH_WIDTH : undefined }}>
         {a.status === 'draft' || a.status === 'scheduled' ? (
           <Caption>{t('notShown')}</Caption>
         ) : (
@@ -262,8 +264,8 @@ function AnnouncementRow({ a }: { a: AnnouncementSummary }) {
         )}
       </View>
       <View
-        // centred in a wide card's row with the rest; at the end of a narrow card's column
-        style={{ flexDirection: 'row', gap: s['1'], alignSelf: wide ? undefined : 'flex-end' }}
+        // centred in the card's row in a regular window; at the end of its column in a compact one
+        style={{ flexDirection: 'row', gap: s['1'], alignSelf: regular ? undefined : 'flex-end' }}
       >
         <Button
           size="sm"
@@ -443,7 +445,7 @@ export function Thumb({
 
 function SectionRow({ f, handle }: { f: SectionSummary; handle: ReactNode }) {
   const t = useCurationT()
-  const wide = useRegularWindow()
+  const regular = useRegularWindow()
   const people = usePeople()
   const options = useRuleOptions()
   const audience = useAudienceSummary()
@@ -451,7 +453,7 @@ function SectionRow({ f, handle }: { f: SectionSummary; handle: ReactNode }) {
   const remove = useAction((c) => c.curation.removeSection({ params: { id: f.id } }))
   const [confirm, setConfirm] = useState(false)
   const about = (
-    <View style={{ flex: wide ? 1 : undefined, minWidth: 0, gap: s['1'] }}>
+    <View style={{ flex: regular ? 1 : undefined, minWidth: 0, gap: s['1'] }}>
       <TitleLine>
         <TitleLink href={sectionPath(f.id)} weight={500}>
           {f.title}
@@ -485,7 +487,7 @@ function SectionRow({ f, handle }: { f: SectionSummary; handle: ReactNode }) {
     </View>
   )
   const actions = (
-    <View style={{ flexDirection: 'row', gap: s['1'], alignSelf: wide ? 'center' : 'flex-end' }}>
+    <View style={{ flexDirection: 'row', gap: s['1'], alignSelf: regular ? 'center' : 'flex-end' }}>
       <Button
         size="sm"
         icon="edit"
@@ -509,13 +511,13 @@ function SectionRow({ f, handle }: { f: SectionSummary; handle: ReactNode }) {
       style={{
         flex: 1,
         flexDirection: 'row',
-        alignItems: wide ? 'center' : 'flex-start',
+        alignItems: regular ? 'center' : 'flex-start',
         gap: s['3'],
         minWidth: 0,
       }}
     >
       {handle}
-      {wide ? (
+      {regular ? (
         <>
           {about}
           {samples}

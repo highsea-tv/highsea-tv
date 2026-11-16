@@ -78,13 +78,13 @@ export function Migration() {
 
 /** Fields side by side in a regular window (the web's `grid items-start gap-4 medium:grid-cols-N`). */
 function Columns({ count, children }: { count: number; children: ReactNode }) {
-  const medium = useRegularWindow()
+  const regular = useRegularWindow()
   return (
     <View
       style={
         {
           display: 'grid',
-          gridTemplateColumns: medium ? `repeat(${count}, minmax(0, 1fr))` : 'minmax(0, 1fr)',
+          gridTemplateColumns: regular ? `repeat(${count}, minmax(0, 1fr))` : 'minmax(0, 1fr)',
           alignItems: 'start',
           gap: sp['4'],
         } as unknown as ViewStyle
@@ -179,7 +179,7 @@ function Mappings({
   onChange: (next: PathMapping[]) => void
 }) {
   const t = useT(messages)
-  const medium = useRegularWindow()
+  const regular = useRegularWindow()
   const set = (i: number, patch: Partial<PathMapping>) =>
     onChange(value.map((m, j) => (j === i ? { ...m, ...patch } : m)))
   return (
@@ -200,7 +200,9 @@ function Mappings({
           style={
             {
               display: 'grid',
-              gridTemplateColumns: medium ? 'minmax(0, 1fr) minmax(0, 1fr) auto' : 'minmax(0, 1fr)',
+              gridTemplateColumns: regular
+                ? 'minmax(0, 1fr) minmax(0, 1fr) auto'
+                : 'minmax(0, 1fr)',
               alignItems: 'end',
               gap: sp['2'],
             } as unknown as ViewStyle

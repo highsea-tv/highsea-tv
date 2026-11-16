@@ -107,6 +107,19 @@ const headY = () => {
   return Number(t?.translateY)
 }
 
+/** Whether the TV's head is laid over the page (the shell's OVER_BAR), not in its flow. */
+const laidOver = () => {
+  try {
+    above(
+      screen.getByLabelText('Main') as never,
+      (s) => s.position === 'absolute' && s.zIndex === 1,
+    )
+    return true
+  } catch {
+    return false
+  }
+}
+
 /** The top bar's own style: the row that holds the bell, with its line under it. */
 const bar = () =>
   above(screen.getByRole('button', { name: /^Alerts/ }) as never, (s) => 'borderBottomColor' in s)
@@ -136,6 +149,24 @@ describe('the chrome over a page', () => {
     await act(() => router.back())
     await flush(500)
     expect(headY()).toBe(-420)
+  })
+
+  test('on the TV, the head stays mounted as a page lays the chrome over it', async () => {
+    await under('tv')
+    // Search lays nothing over itself: the head is in the page's flow
+    await act(() => router.navigate('/search' as never))
+    await flush(500)
+    const head = screen.getByLabelText('Main')
+    expect(laidOver()).toBe(false)
+    await act(() => router.navigate('/under-chrome' as never))
+    await flush(500)
+    // the same element, not one mounted afresh: the focus on it stays with it
+    expect(screen.getByLabelText('Main')).toBe(head)
+    expect(laidOver()).toBe(true)
+    await act(() => router.navigate('/search' as never))
+    await flush(500)
+    expect(laidOver()).toBe(false)
+    expect(screen.getByLabelText('Main')).toBe(head)
   })
 
   test('with a pointer, the top bar stays, clear until the page scrolls under it, then glass', async () => {

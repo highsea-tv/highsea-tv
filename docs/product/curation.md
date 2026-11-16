@@ -36,7 +36,7 @@ Two columns in a regular window (the form at 22–28rem, the preview beside it a
   - **Image** (none, or a backdrop from the library), shown with the dialog and on the TV's screen;
   - **Add a button**: a label and a link (https), shown on banners, cards and dialogs (not on TV, which can't follow a link);
   - **How important**: Info, Notice, Warning, Critical (segmented). Warnings and critical ones take their tone in banners;
-  - **Where it shows**: **Everyone has to acknowledge it** (a switch: it becomes a dialog with only **Got it**, and on TV a screen of its own before Home), then **Banner** (web, desktop, the admin), **Home card** (phones), **Toast** (web and desktop, once). The TV always shows the newest as a pill;
+  - **Where it shows**: **Everyone has to acknowledge it** (a switch: it becomes a dialog with only **Got it**, and on TV a screen of its own before Home), then **Banner** (the admin), **Home card** (phones), **Toast** (web and desktop, once). On the web, the desktop app and the TV, every live announcement is listed in Alerts, with a dot on the bell while one is new, whatever the placements;
   - **Who sees it**: Everyone, **Roles** (Owners, Admins, Users), **People** (each person), or **Apps** (TVs; Phones and tablets; Web and desktop; The admin);
   - **When**: **Start now** or **Start later** (a date and time); **No end** or **End at**;
   - **Publish** (or **Schedule** when it starts later, **Save changes** when it's live), **Save as draft**, **Cancel**.
@@ -101,7 +101,7 @@ Two columns in a regular window (the form at 22–28rem, the preview beside it a
 
 - **Status comes from the schedule.** Only a draft is a stored state; scheduled, live and ended are read from the dates, so an announcement goes out and comes down on its own.
 - **Acknowledgement and the dialog are one choice.** A dismissable dialog is just a banner that blocks, so "Everyone has to acknowledge it" is the only way to get a dialog, and it always comes with one.
-- **The TV shows a pill, whatever the placements.** A TV has no banner or card slot; the newest announcement is a pill on Home, and acknowledge-required ones get their own screen.
+- **The web, the desktop app and the TV list them in Alerts, whatever the placements.** The owner replaced the web's banner and the TV's strip with Alerts on 2026-10-30, and kept that on 2026-11-15 rather than drawing banners and a TV pill: Alerts' bell has a dot while one is new and opens every live one. Acknowledge-required ones are still a dialog, and on the TV a screen of their own; the web and desktop still show a toast once. The preview draws the bell and its dot on the web and the TV.
 - **The preview runs the real client screens,** in a frame against a copy of the server, rather than a drawing of them, so it can't drift from what people see. It's inert so a TV's focus or a dialog can't escape into the admin.
 - **The preview shows the draft alone.** The point is the draft; the full stack of announcements is on the clients themselves.
 - **"Reach" counts people, not devices,** and only accepted accounts: invites don't count until they join.

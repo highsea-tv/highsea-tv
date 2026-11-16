@@ -121,13 +121,13 @@ const draftOf = (s: MediaManagementSettings): Draft => ({
 
 /** Two columns in a regular window, 16 apart (the web's `grid gap-4 medium:grid-cols-2`). */
 function Columns({ children }: { children: ReactNode }) {
-  const medium = useRegularWindow()
+  const regular = useRegularWindow()
   return (
     <View
       style={
         {
           display: 'grid',
-          gridTemplateColumns: medium ? 'repeat(2, minmax(0, 1fr))' : 'minmax(0, 1fr)',
+          gridTemplateColumns: regular ? 'repeat(2, minmax(0, 1fr))' : 'minmax(0, 1fr)',
           gap: s['4'],
         } as unknown as ViewStyle
       }
@@ -198,7 +198,7 @@ function Form({
 }) {
   const t = useT(messages)
   const theme = useTheme()
-  const medium = useRegularWindow()
+  const regular = useRegularWindow()
   const initial = draftOf(loaded)
   const [v, setDraft] = useState(initial)
   const [errors, setErrors] = useState<Partial<Record<keyof Draft, string>>>({})
@@ -365,7 +365,7 @@ function Form({
               onChangeText={(recycleBin) => set({ recycleBin })}
             />
           </Field>
-          <View style={medium ? ({ gridColumnStart: 2 } as unknown as ViewStyle) : undefined}>
+          <View style={regular ? ({ gridColumnStart: 2 } as unknown as ViewStyle) : undefined}>
             <Field label={t('days')} hint={t('daysHint')} error={errors.recycleBinDays}>
               <Input
                 inputMode="numeric"
@@ -578,7 +578,7 @@ function Folder({
   onSaved: () => void
 }) {
   const t = useT(messages)
-  const medium = useRegularWindow()
+  const regular = useRegularWindow()
   const inUse = f.movies > 0
   const save = useAction((c, languageProfileId: string | null) =>
     c.rootFolders.update({ params: { id: f.id }, body: { languageProfileId } }),
@@ -594,9 +594,9 @@ function Folder({
   return (
     <Card
       gap={s['2']}
-      style={medium ? { flexDirection: 'row', alignItems: 'center', gap: s['2'] } : undefined}
+      style={regular ? { flexDirection: 'row', alignItems: 'center', gap: s['2'] } : undefined}
     >
-      <View style={{ flex: medium ? 1 : undefined, minWidth: 0, gap: s['1'] }}>
+      <View style={{ flex: regular ? 1 : undefined, minWidth: 0, gap: s['1'] }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: s['2'], minWidth: 0 }}>
           <Icon name="folder" size={tokens.icon.size.sm} color="text-3" />
           <Text
@@ -626,7 +626,7 @@ function Folder({
           <Text variant="caption" color="text-3" aria-hidden>
             {t('folders.languages')}
           </Text>
-          <View style={medium ? { width: LANGUAGES_WIDTH } : { width: '100%' }}>
+          <View style={regular ? { width: LANGUAGES_WIDTH } : { width: '100%' }}>
             <Select
               aria-label={t('folders.languagesLabel', { path: f.path })}
               value={f.languageProfileId ?? NO_LANGUAGES}

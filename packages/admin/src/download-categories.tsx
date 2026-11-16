@@ -79,17 +79,17 @@ export function Categories() {
 
 function Category({ category: c, onRemove }: { category: TorrentCategory; onRemove: () => void }) {
   const t = useT(messages)
-  const medium = useRegularWindow()
+  const regular = useRegularWindow()
   const inUse = c.torrents > 0
   return (
     <Card
       gap={s['2']}
       style={{
-        flexDirection: medium ? 'row' : 'column',
-        alignItems: medium ? 'center' : 'stretch',
+        flexDirection: regular ? 'row' : 'column',
+        alignItems: regular ? 'center' : 'stretch',
       }}
     >
-      <View style={{ flex: medium ? 1 : undefined, minWidth: 0, gap: s['1'] }}>
+      <View style={{ flex: regular ? 1 : undefined, minWidth: 0, gap: s['1'] }}>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: s['2'] }}>
           <Text size={ui.size} leading={ui.leading} weight={500}>
             {c.name}
@@ -113,7 +113,7 @@ function Category({ category: c, onRemove }: { category: TorrentCategory; onRemo
         </Text>
       </View>
       {!c.fixed && (
-        <View style={{ alignSelf: medium ? 'center' : 'flex-start' }}>
+        <View style={{ alignSelf: regular ? 'center' : 'flex-start' }}>
           <Button
             size="sm"
             variant="danger"

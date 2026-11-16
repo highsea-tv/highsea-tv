@@ -819,7 +819,7 @@ function SettingsForm({
 }) {
   const t = useT(messages)
   const tt = useT(tagsMessages)
-  const wide = useRegularWindow()
+  const regular = useRegularWindow()
   const fields = d?.settings ?? []
   const [initial] = useState(() => initialValues(fields, indexer))
   const [values, setValues] = useState<Record<string, Value>>(initial)
@@ -892,7 +892,7 @@ function SettingsForm({
       : t('form.editTitle', { name: indexer?.name ?? '' })
   /** Enter in a field submits, as the web's form does. */
   const typed = { onSubmitEditing: submit, autoComplete: 'off', autoCorrect: false } as const
-  const seedField = { flex: wide ? 1 : undefined, minWidth: 0 } as const
+  const seedField = { flex: regular ? 1 : undefined, minWidth: 0 } as const
 
   return (
     <Dialog
@@ -946,7 +946,7 @@ function SettingsForm({
                 {t('form.seeding')}
               </Text>
               <Note>{t('form.seedingHint')}</Note>
-              <View style={{ flexDirection: wide ? 'row' : 'column', gap: sp['4'] }}>
+              <View style={{ flexDirection: regular ? 'row' : 'column', gap: sp['4'] }}>
                 <View style={seedField}>
                   <Field
                     label={t('form.seedRatio')}

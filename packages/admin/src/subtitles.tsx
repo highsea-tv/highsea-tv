@@ -762,7 +762,7 @@ function ProfileEditor({
   onDone: () => void
 }) {
   const t = useT(messages)
-  const wide = useRegularWindow()
+  const regular = useRegularWindow()
   const [draft, setDraft] = useState(profile)
   const [touched, setTouched] = useState(false)
   const save = useAction((c, p: ProfileDraft) => {
@@ -858,7 +858,7 @@ function ProfileEditor({
               />
             )
             // a regular window: one row; a compact one: the name and remove, the selects under
-            return wide ? (
+            return regular ? (
               <>
                 {handle}
                 {words}
@@ -899,8 +899,8 @@ function ProfileEditor({
           </View>
         )}
       </View>
-      <View style={{ flexDirection: wide ? 'row' : 'column', gap: sp['4'] }}>
-        <View style={{ flex: wide ? 1 : undefined, minWidth: 0 }}>
+      <View style={{ flexDirection: regular ? 'row' : 'column', gap: sp['4'] }}>
+        <View style={{ flex: regular ? 1 : undefined, minWidth: 0 }}>
           <Field label={t('profile.cutoffLabel')} hint={t('profile.cutoffHint')}>
             <Select
               value={draft.cutoff ?? 'none'}
@@ -912,7 +912,7 @@ function ProfileEditor({
             />
           </Field>
         </View>
-        <View style={{ flex: wide ? 1 : undefined, minWidth: 0 }}>
+        <View style={{ flex: regular ? 1 : undefined, minWidth: 0 }}>
           <Field label={t('profile.minScoreLabel')} hint={t('profile.minScoreHint')}>
             <Input
               inputMode="numeric"

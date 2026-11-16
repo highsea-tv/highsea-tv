@@ -49,6 +49,7 @@ The pairs today:
 | [`packages/native/src/polyfills`](../../packages/native/src/polyfills.ts) | FormatJS's Intl polyfills for Hermes | nothing: browsers have Intl |
 | [`src/fonts`](src/fonts.ts) | Geist is embedded at build time (expo-font's plugin) | `useFonts` loads it, since config plugins don't run on the web ([Fonts](https://docs.expo.dev/develop/user-interface/fonts/)) |
 | [`src/form-factor`](src/form-factor.ts) | never framed | the prototype frame's input (`?ff=`) from the address |
+| [`src/shell/page-keys`](src/shell/page-keys.ts) | no keyboard for the shell's shortcuts: nothing listens | a `keydown` listener on the document for `/` and `?` |
 | [`packages/native/src/playback`](../../packages/native/src/playback.ts) | the player's engine on expo-video | the `<video>` with hls.js (in its own chunk) or Safari's native HLS, since expo-video's web player only sets the `<video>`'s `src`; what both share is `playback-shared.ts` |
 | [`packages/ui/src/native/dom`](../../packages/ui/src/native/dom.ts) | every focus shows the ring; the platform presses on its own keys; `hitSlop` is the hit area | the ring only at `:focus-visible`, Space presses checkboxes, radios, switches and tabs, and Press draws the hit area as a layer, since react-native-web drops `hitSlop` |
 | [`packages/ui/src/native/scrollbar`](../../packages/ui/src/native/scrollbar.tsx) | the platform's own indicator | ScrollView's bar drawn over the scroller, in PageScrollbar's measures |

@@ -327,7 +327,7 @@ function Row({
 }) {
   const t = useT(messages)
   const { relative } = useRelative()
-  const medium = useRegularWindow()
+  const regular = useRegularWindow()
   const update = useAction((client, body: ConnectionInput) =>
     client.connections.update({ params: { id: c.id }, body }),
   )
@@ -348,8 +348,8 @@ function Row({
     <Card>
       <View
         style={{
-          flexDirection: medium ? 'row' : 'column',
-          alignItems: medium ? 'center' : 'flex-start',
+          flexDirection: regular ? 'row' : 'column',
+          alignItems: regular ? 'center' : 'flex-start',
           gap: s['3'],
         }}
       >
@@ -361,7 +361,7 @@ function Row({
           onCheckedChange={(enabled) => change({ enabled })}
         />
         <View
-          style={{ flex: medium ? 1 : undefined, alignSelf: 'stretch', minWidth: 0, gap: s['1'] }}
+          style={{ flex: regular ? 1 : undefined, alignSelf: 'stretch', minWidth: 0, gap: s['1'] }}
         >
           <Line style={WRAP_ANYWHERE}>
             {c.name} <Text color="text-3">· {t(`kind.${c.kind}`)}</Text>
@@ -797,7 +797,7 @@ function ThisBrowser() {
   const client = useClient()
   const mine = useQuery('push-subscriptions', (c) => c.pushSubscriptions.list(), TOPICS)
   const remove = useAction((c, id: string) => c.pushSubscriptions.remove({ params: { id } }))
-  const medium = useRegularWindow()
+  const regular = useRegularWindow()
   const [support, setSupport] = useState<Support>('checking')
   const [busy, setBusy] = useState(false)
   // only the browser knows; checked after hydration so the server's render matches
@@ -861,10 +861,12 @@ function ThisBrowser() {
                   key={sub.id}
                   gap={s['2']}
                   style={
-                    medium ? { flexDirection: 'row', alignItems: 'center', gap: s['2'] } : undefined
+                    regular
+                      ? { flexDirection: 'row', alignItems: 'center', gap: s['2'] }
+                      : undefined
                   }
                 >
-                  <View style={{ flex: medium ? 1 : undefined, minWidth: 0, gap: s['0.5'] }}>
+                  <View style={{ flex: regular ? 1 : undefined, minWidth: 0, gap: s['0.5'] }}>
                     <Line style={WRAP_ANYWHERE}>{sub.label}</Line>
                     <Note style={WRAP_ANYWHERE}>
                       {sub.service} · {t('push.added', { ago: relative(sub.createdAt) })}
