@@ -45,7 +45,7 @@ bun run server          # the server in development, http://localhost:3000 (data
 bun run web             # the client's Expo dev server, http://localhost:3200/, proxying to bun run server
 bun run prototypes      # the prototypes, http://localhost:4500
 bun run docs            # the guides (apps/docs), http://localhost:3100
-bun run --cwd apps/desktop dev   # the desktop app; checks add --config '{"identifier":"tv.highsea.desktop.test"}'
+bun run --cwd apps/desktop dev   # the desktop app; checks add --config '{"identifier":"tv.highsea.desktop.test"}' (its own data and keychain service)
 bun run --cwd apps/client ios    # the client on the iPhone simulator (`tv` for the Apple TV)
 
 bun run pin hono zod    # versions old enough to pin

@@ -268,7 +268,9 @@ pub fn run() {
         })
         .setup(|app| {
             let file = app.path().app_data_dir()?.join("servers.json");
-            app.manage(Servers::new(file, Arc::new(keychain::Keychain)));
+            // the tokens under the app's identifier, as its data folder is (keychain.rs)
+            let tokens = keychain::Keychain::new(&app.config().identifier);
+            app.manage(Servers::new(file, Arc::new(tokens)));
             app.manage(Streams::default());
             app.manage(Pending::default());
 
