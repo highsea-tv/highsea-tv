@@ -117,7 +117,7 @@ export type ServersValue = {
   /**
    * Servers found answering nearby: where one answers at an address a known server listed, that
    * address is the new one's, and a known server left with none is forgotten (`claim`). The
-   * desktop app keeps its list in Rust and leaves it out.
+   * desktop app keeps its list in Rust, which does the same (apps/client/src/desktop/tauri.tsx).
    */
   seen?: (found: readonly Nearby[]) => Promise<void>
   /** Asks an address for a server's public info, through this app's fetch. */

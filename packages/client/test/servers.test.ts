@@ -6,6 +6,7 @@ import {
   claim,
   codeFrom,
   forget,
+  type Known,
   looksLikeCode,
   looksLocal,
   normalCode,
@@ -14,6 +15,7 @@ import {
   showCode,
   tokenKey,
 } from '../src/servers/index.ts'
+import cases from './claim-cases.json'
 
 describe('servers', () => {
   test('typed addresses get the scheme a home server or a domain needs', () => {
@@ -76,6 +78,13 @@ describe('servers', () => {
     // remembered, the new server is listed once, first
     const after = remember([old, other], { ...fresh, lastSeen: 2 })
     expect(after.map((k) => k.id)).toEqual(['new', 'attic'])
+  })
+
+  // the same cases run against the desktop app's claim() in Rust (servers.rs), so the two keep one rule
+  test.each(cases)('claim: $name', ({ list, server, after, gone }) => {
+    const out = claim(list as Known[], server as Pick<Known, 'id' | 'addresses'>)
+    expect(out.gone).toEqual(gone)
+    expect(out.list.map((k) => [k.id, k.addresses.map((a) => a.url)])).toEqual(after)
   })
 
   test('keychain keys are safe for SecureStore', () => {

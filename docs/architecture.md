@@ -78,7 +78,7 @@ HIGHSEA_SUBTITLES_FAKE=1 bun run server    # the subtitle providers are fakes: n
 HIGHSEA_LISTS_FAKE=1 bun run server        # Trakt and generic lists are fakes; Trakt's device code is approved at once
 HIGHSEA_PLAYBACK_TRY=1 bun run server      # also serves /stream/try, the playback test page (never in the image's defaults)
 HIGHSEA_HARDWARE_NONE=1 bun run server     # no graphics chip is looked for (the sweeps and the guides' screenshots set it)
-bun run --cwd apps/desktop dev   # the desktop app around the client's desktop export (Rust from rust-toolchain.toml); checks add --config '{"identifier":"tv.highsea.desktop.test"}'
+bun run --cwd apps/desktop dev   # the desktop app around the client's desktop export (Rust from rust-toolchain.toml); checks add --config '{"identifier":"tv.highsea.desktop.test"}', which keeps its own data folder and keychain service (keychain.rs)
 bun run web             # the client's Expo dev server for the web, http://localhost:3200/ (the base URL is production-only), proxying /api and /stream to bun run server
 bun run prototypes      # the Phase 2 prototypes, http://localhost:4500
 bun run one-place       # fails when a component, screen or value is defined in two places (exceptions in scripts/one-place-exceptions.json)

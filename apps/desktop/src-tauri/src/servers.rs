@@ -122,6 +122,57 @@ pub fn addresses_of(info: &serde_json::Value, reached: &str) -> Vec<Address> {
     out
 }
 
+/// An address without its trailing slashes, to compare two by.
+fn bare(url: &str) -> &str {
+    url.trim_end_matches('/')
+}
+
+/// An address answers for one server at a time: `connect` takes a server that answers with another
+/// id as not this one, as the SDK's ServerConnection does (packages/sdk/src/connection.ts). So the
+/// addresses server `id` answers at leave every other entry, and an entry left with none is gone,
+/// as when a server is set up afresh where another was (the owner's decision of 2026-11-15). An old
+/// server still reached at another address, its remote one, stays with that. Answers the list and
+/// the ids dropped, whose tokens go too.
+///
+/// The phone's and TV's `claim()` in packages/client/src/servers/index.ts is the same rule; both
+/// run the cases in packages/client/test/claim-cases.json, so neither changes alone.
+pub fn claim(
+    list: &[KnownServer],
+    id: &str,
+    addresses: &[Address],
+) -> (Vec<KnownServer>, Vec<String>) {
+    let mut out = Vec::with_capacity(list.len());
+    let mut gone = Vec::new();
+    for k in list {
+        if k.id == id {
+            out.push(k.clone());
+            continue;
+        }
+        let left: Vec<Address> = k
+            .addresses
+            .iter()
+            .filter(|a| !addresses.iter().any(|b| bare(&b.url) == bare(&a.url)))
+            .cloned()
+            .collect();
+        if left.is_empty() && !k.addresses.is_empty() {
+            gone.push(k.id.clone());
+        } else {
+            out.push(KnownServer {
+                addresses: left,
+                ..k.clone()
+            });
+        }
+    }
+    (out, gone)
+}
+
+/// A server found answering nearby: its public info and the address it answered at.
+#[derive(Clone, Debug, Deserialize)]
+pub struct Seen {
+    pub info: serde_json::Value,
+    pub base: String,
+}
+
 impl Servers {
     pub fn new(file: PathBuf, tokens: Arc<dyn Tokens>) -> Self {
         let known = std::fs::read(&file)
@@ -172,12 +223,28 @@ impl Servers {
         self.current.lock().unwrap().clone()
     }
 
-    /// Adds or updates a server from its public info, keeping the addresses it already had.
+    /// Drops the servers `claim` left with no address: their tokens, and the server in use if it's
+    /// one of them.
+    fn drop_gone(&self, gone: &[String]) {
+        for id in gone {
+            self.tokens.delete(id);
+        }
+        let mut current = self.current.lock().unwrap();
+        if current.as_ref().is_some_and(|c| gone.contains(&c.id)) {
+            *current = None;
+        }
+    }
+
+    /// Adds or updates a server from its public info, keeping the addresses it already had and
+    /// taking the ones it answers at from any other entry (`claim`).
     pub fn remember(&self, info: &serde_json::Value, reached: &str, now: u64) -> KnownServer {
         let id = info["id"].as_str().unwrap_or_default().to_owned();
         let name = info["name"].as_str().unwrap_or("highsea").to_owned();
         let mut known = self.known.lock().unwrap();
         let fresh = addresses_of(info, reached);
+        let (rest, gone) = claim(&known, &id, &fresh);
+        *known = rest;
+        self.drop_gone(&gone);
         let server = match known.iter_mut().find(|s| s.id == id) {
             Some(s) => {
                 s.name = name;
@@ -202,6 +269,29 @@ impl Servers {
         };
         self.save(&known);
         server
+    }
+
+    /// Servers found answering nearby: where one answers at an address a known server listed, that
+    /// address is the new one's, and a known server left with none is forgotten (`claim`), so
+    /// Choose a server lists each once before anyone picks one. Answers the ids forgotten.
+    pub fn seen(&self, found: &[Seen]) -> Vec<String> {
+        let mut known = self.known.lock().unwrap();
+        let mut list = known.clone();
+        let mut gone = Vec::new();
+        for f in found {
+            let Some(id) = f.info["id"].as_str() else {
+                continue;
+            };
+            let (next, dropped) = claim(&list, id, &addresses_of(&f.info, &f.base));
+            list = next;
+            gone.extend(dropped);
+        }
+        if list != *known {
+            *known = list;
+            self.save(&known);
+        }
+        self.drop_gone(&gone);
+        gone
     }
 
     pub fn forget(&self, id: &str) {
@@ -342,6 +432,115 @@ mod tests {
         assert_eq!(list[0].server.name, "Harbour");
         assert_eq!(list[0].server.addresses.len(), 3);
         assert!(!list[0].signed_in);
+    }
+
+    /// The cases the phone's and TV's claim() runs too (packages/client/test/servers.test.ts).
+    #[test]
+    fn claims_as_the_client_does() {
+        #[derive(Deserialize)]
+        struct Case {
+            name: String,
+            list: Vec<KnownServer>,
+            server: Claimed,
+            after: Vec<(String, Vec<String>)>,
+            gone: Vec<String>,
+        }
+        #[derive(Deserialize)]
+        struct Claimed {
+            id: String,
+            addresses: Vec<Address>,
+        }
+        let cases: Vec<Case> = serde_json::from_str(include_str!(
+            "../../../../packages/client/test/claim-cases.json"
+        ))
+        .unwrap();
+        assert!(!cases.is_empty());
+        for c in cases {
+            let (list, gone) = claim(&c.list, &c.server.id, &c.server.addresses);
+            let after: Vec<(String, Vec<String>)> = list
+                .into_iter()
+                .map(|k| (k.id, k.addresses.into_iter().map(|a| a.url).collect()))
+                .collect();
+            assert_eq!(after, c.after, "{}", c.name);
+            assert_eq!(gone, c.gone, "{}", c.name);
+        }
+    }
+
+    /// A server set up afresh where a known one was: listed once, the old entry and its token gone.
+    #[test]
+    fn a_new_server_at_a_known_address_replaces_it() {
+        let dir = tempfile::tempdir().unwrap();
+        let file = dir.path().join("servers.json");
+        let tokens = Arc::new(Memory::default());
+        let servers = Servers::new(file.clone(), tokens.clone());
+        let at = "http://192.168.1.20:3460";
+        servers.remember(
+            &json!({ "id": "srv_old", "name": "Harbor", "localAddresses": [at] }),
+            at,
+            1,
+        );
+        tokens.set("srv_old", "old-token").unwrap();
+        servers.set_current(Some(Current {
+            id: "srv_old".into(),
+            name: "Harbor".into(),
+            base: at.into(),
+            kind: "local".into(),
+        }));
+        // one still reached at its remote address keeps that one, and its token
+        servers.remember(
+            &json!({ "id": "srv_far", "name": "Attic", "localAddresses": [at], "publicUrl": "https://attic.example.net" }),
+            at,
+            1,
+        );
+        tokens.set("srv_far", "far-token").unwrap();
+
+        servers.remember(
+            &json!({ "id": "srv_new", "name": "Harbor", "localAddresses": [format!("{at}/")] }),
+            at,
+            2,
+        );
+        let list = Servers::new(file, Arc::new(Memory::default())).list();
+        let ids: Vec<&str> = list.iter().map(|s| s.server.id.as_str()).collect();
+        assert_eq!(ids, ["srv_far", "srv_new"]);
+        assert_eq!(
+            list[0].server.addresses,
+            [Address {
+                url: "https://attic.example.net".into(),
+                kind: "remote".into()
+            }]
+        );
+        assert_eq!(tokens.get("srv_old"), None);
+        assert_eq!(tokens.get("srv_far").as_deref(), Some("far-token"));
+        assert_eq!(servers.current(), None);
+    }
+
+    /// Discovery hands what it finds to `seen`, so the list is right before anyone picks one.
+    #[test]
+    fn a_server_seen_at_a_known_address_replaces_it() {
+        let dir = tempfile::tempdir().unwrap();
+        let file = dir.path().join("servers.json");
+        let tokens = Arc::new(Memory::default());
+        let servers = Servers::new(file.clone(), tokens.clone());
+        let at = "http://192.168.1.20:3460";
+        servers.remember(&json!({ "id": "srv_old", "name": "Harbor" }), at, 1);
+        servers.remember(
+            &json!({ "id": "srv_attic", "name": "Attic" }),
+            "http://10.0.0.9:3000",
+            1,
+        );
+        tokens.set("srv_old", "old-token").unwrap();
+
+        let fresh = Seen {
+            info: json!({ "id": "srv_new", "name": "Harbor", "localAddresses": [at] }),
+            base: at.into(),
+        };
+        assert_eq!(servers.seen(std::slice::from_ref(&fresh)), ["srv_old"]);
+        assert_eq!(tokens.get("srv_old"), None);
+        let list = Servers::new(file.clone(), Arc::new(Memory::default())).list();
+        let ids: Vec<&str> = list.iter().map(|s| s.server.id.as_str()).collect();
+        assert_eq!(ids, ["srv_attic"]);
+        // seen again: nothing more to drop
+        assert!(servers.seen(&[fresh]).is_empty());
     }
 
     #[test]
