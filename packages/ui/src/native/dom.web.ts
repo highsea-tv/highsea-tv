@@ -6,6 +6,12 @@
 // - Space presses a checkbox, a radio, a switch, a tab, an option and a menu's items, as
 //   WAI-ARIA's patterns give those roles (https://www.w3.org/WAI/ARIA/apg/patterns/), where
 //   react-native-web presses on Space only for a button (PressResponder.js, `isValidKeyPress`);
+// - Enter follows a link that isn't an `<a href>`: react-native-web draws `role="link"` as a div
+//   unless it's given an `href` (exports/View/index.js), and its PressResponder leaves Enter on any
+//   `role="link"` to the browser's own click (PressResponder.js, `isNativeInteractiveElement`),
+//   which a browser gives an `<a href>` only (https://html.spec.whatwg.org/multipage/links.html#links-created-by-a-and-area-elements),
+//   so the link would never open from the keyboard; Enter opens a link (WAI-ARIA's link pattern,
+//   https://www.w3.org/WAI/ARIA/apg/patterns/link/), on its press, as a browser follows one;
 // - it drops `hitSlop`, so Press draws touch's hit area as a layer;
 // - a pointer's row is one Tab stop whose arrows move along it, as ui-web's CarouselRow
 //   (carousel.tsx): Left and Right move between items, Home and End to its ends, and at either
@@ -14,6 +20,7 @@
 // - a floating panel's choice that leaves the screen holds back the focus react-native-web's
 //   Modal gives back when it closes (holdFocusReturn).
 import type {
+  enterFollows as nativeEnterFollows,
   focusedElement as nativeFocusedElement,
   FOCUS_RING as nativeFocusRing,
   focusVisible as nativeFocusVisible,
@@ -49,6 +56,13 @@ export const focusVisible: typeof nativeFocusVisible = (target) => {
 
 export const spaceActivates: typeof nativeSpaceActivates = (key, role) =>
   (key === ' ' || key === 'Spacebar') && SPACE_ROLES.has(role)
+
+export const enterFollows: typeof nativeEnterFollows = (key, role, element) => {
+  if (key !== 'Enter' || role !== 'link') return false
+  const el = element as { tagName?: string; hasAttribute?: (name: string) => boolean } | null
+  // an `<a href>` the browser follows itself, and react-native-web presses it on that click
+  return !(el?.tagName === 'A' && el.hasAttribute?.('href'))
+}
 
 export const HIT_LAYER: typeof nativeHitLayer = true
 

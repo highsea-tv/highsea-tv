@@ -19,7 +19,9 @@
 // - keys: its PressResponder presses on Enter for any element and on Space only for a button
 //   (modules/usePressEvents/PressResponder.js, `isValidKeyPress`), so Press presses on Space for
 //   the roles whose key it is too (./dom.web.ts), on its release as browsers press a button, and
-//   once however long the key is held (`repeat` keydowns are ignored);
+//   once however long the key is held (`repeat` keydowns are ignored); and Enter follows a link
+//   drawn without an `href`, which react-native-web leaves to a click the browser never sends
+//   (./dom.web.ts, `enterFollows`), once as the key goes down;
 // - the hit area: it drops `hitSlop` (View's forwarded props leave it out), so on the web a
 //   transparent layer reaches past the control by the same insets, and a press on it bubbles to
 //   the control's own element (onPress fires on the DOM's `click`);
@@ -37,7 +39,7 @@ import {
   type ViewStyle,
 } from 'react-native'
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated'
-import { FOCUS_RING, focusVisible, HIT_LAYER, spaceActivates } from './dom'
+import { enterFollows, FOCUS_RING, focusVisible, HIT_LAYER, spaceActivates } from './dom'
 import { hitSlopFor } from './metrics.ts'
 import { tokens, useMotionReduced, useTheme } from './theme.tsx'
 
@@ -165,6 +167,15 @@ export function Press({
         onBlur?.(e)
       }}
       onKeyDown={(e) => {
+        // the link's own key, not one from a control inside it
+        const own = (e.nativeEvent as { target?: unknown }).target === e.currentTarget
+        if (
+          own &&
+          !props.disabled &&
+          !e.nativeEvent.repeat &&
+          enterFollows(e.nativeEvent.key, String(role), e.currentTarget)
+        )
+          press(e as unknown as Parameters<typeof press>[0])
         if (!props.disabled && spaceActivates(e.nativeEvent.key, String(role))) {
           // the page doesn't scroll; a held key's repeats don't press again
           e.preventDefault()
