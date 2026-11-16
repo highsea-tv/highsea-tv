@@ -28,6 +28,7 @@ Development keeps its database and files in `.dev/` at the repo root. The API's 
 | --- | --- | --- |
 | `HIGHSEA_CONFIG_DIR` | `/config` | Database, `secret.key`, backups |
 | `HIGHSEA_DATA_DIR` | `/data` | The media root |
+| `HIGHSEA_WORK_DIR` | the data folder | What highsea makes: images, previews, transcodes, and the downloads setup suggests ([ADR 0063](../../docs/adr/0063-libraries-highsea-only-reads.md)) |
 | `PORT`, `HOST` | `3000`, `0.0.0.0` | |
 | `HIGHSEA_DISCOVERY_PORT` | `7368` | LAN discovery, UDP ([ADR 0020](../../docs/adr/0020-discovery-port.md)) |
 | `HIGHSEA_PUBLIC_URL` | | The address people use from outside |

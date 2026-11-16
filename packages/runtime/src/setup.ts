@@ -11,7 +11,7 @@ import { dirname, join, resolve, sep } from 'node:path'
 import { AppError, type Clock, type EventBus } from '@highsea-tv/core'
 import { type Db, readSetting, writeSetting } from '@highsea-tv/db'
 import { defaultNetworkSettings, type NetworkSettings, PRIVATE_RANGES } from '@highsea-tv/network'
-import type { Config } from './config.ts'
+import { type Config, workDir } from './config.ts'
 import {
   type ContainerNetworkInput,
   DOCKER_INTERFACE,
@@ -75,7 +75,7 @@ export function setupDefaults(config: Config) {
     dataDir,
     folders: {
       movies: join(dataDir, 'media', 'movies'),
-      downloads: join(dataDir, 'downloads'),
+      downloads: join(resolve(workDir(config)), 'downloads'),
     } as MediaFolders,
     serverName: 'highsea',
   }
@@ -138,11 +138,19 @@ function findFolder(root: string, parts: string[]): string | null {
  */
 export function detectFolders(config: Config): DetectedFolders | null {
   const root = resolve(config.dataDir)
+  // highsea's own folder when it's set apart (ADR 0063, 2026-11-16): another app's stack shares the
+  // data folder, so its downloads are that app's, and highsea's go in its own folder
+  const own = config.workDir ? resolve(config.workDir) : null
   let entries: string[] = []
   try {
-    // ext4's lost+found and highsea's own transcode cache (ADR 0051) say nothing about the library
+    // ext4's lost+found, highsea's own transcode cache (ADR 0051) and its own folder say nothing
+    // about the library
     entries = readdirSync(root).filter(
-      (name) => !name.startsWith('.') && name !== 'lost+found' && name !== 'transcodes',
+      (name) =>
+        !name.startsWith('.') &&
+        name !== 'lost+found' &&
+        name !== 'transcodes' &&
+        join(root, name) !== own,
     )
   } catch {
     // not there yet: Docker makes the mount point, and setup the folders
@@ -150,7 +158,9 @@ export function detectFolders(config: Config): DetectedFolders | null {
   if (!entries.length) return { ...setupDefaults(config).folders, shows: null, music: null }
   const movies = MOVIE_FOLDERS.map((p) => findFolder(root, p)).find(Boolean)
   if (!movies) return null
-  const downloads = DOWNLOAD_FOLDERS.map((p) => findFolder(root, p)).find(Boolean)
+  const downloads = own
+    ? join(own, 'downloads')
+    : DOWNLOAD_FOLDERS.map((p) => findFolder(root, p)).find(Boolean)
   return {
     movies,
     downloads: downloads ?? join(root, 'downloads'),

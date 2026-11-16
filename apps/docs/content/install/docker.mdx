@@ -111,7 +111,14 @@ If Radarr, Sonarr or another app files your films and you want highsea only to r
       - /srv/data/media:/data/media:ro
 ```
 
-Downloads still go to `/data/downloads`, which highsea can write to. highsea can't change anything under `/data/media`, and setup adds its folders as ones highsea only reads. [Root folders](/settings/media-management/root-folders/#a-library-another-app-manages) says what that changes.
+When the data folder is that app's stack's too, give highsea a folder of its own for what it makes, so nothing lands beside the other app's folders:
+
+```yaml
+    environment:
+      HIGHSEA_WORK_DIR: /data/highsea
+```
+
+highsea creates it and keeps its downloads, scrub previews, transcodes and artwork there; setup suggests `/data/highsea/downloads` for downloads. Without it, downloads go to `/data/downloads`, which highsea can write to. highsea can't change anything under `/data/media`, and setup adds its folders as ones highsea only reads. [Root folders](/settings/media-management/root-folders/#a-library-another-app-manages) says what that changes.
 
 ## Start highsea
 

@@ -11,6 +11,10 @@ services:
     container_name: highsea
     # the NAS's own name, which setup offers as the server's (a container's is its id otherwise)
     hostname: ${HIGHSEA_HOSTNAME:-highsea}
+    environment:
+      # highsea's own folder in the shared folder when another app manages the films (ADR 0063,
+      # 2026-11-16); empty otherwise, which is the shared folder itself
+      HIGHSEA_WORK_DIR: ${HIGHSEA_WORK:-}
     volumes:
       # kept on uninstall unless the uninstall wizard is told to delete it
       - /var/packages/highsea/var/config:/config

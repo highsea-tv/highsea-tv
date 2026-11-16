@@ -113,7 +113,7 @@ import {
 } from './backups.ts'
 import { type BrowseListing, browse } from './browse.ts'
 import { createCollectionLibrary } from './collection-library.ts'
-import type { Config } from './config.ts'
+import { type Config, workDir } from './config.ts'
 import { type ContainerNetwork, detectContainerNetwork } from './container-network.ts'
 import { createCurationLibrary } from './curation-library.ts'
 import { scheduleFileFacts } from './file-facts.ts'
@@ -643,7 +643,7 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
     events,
     sealer,
     fetch: options.fetch ?? globalThis.fetch,
-    imagesDir: join(config.dataDir, 'images'),
+    imagesDir: join(workDir(config), 'images'),
     builtInKey: config.tmdbKey,
   })
   metadata.jobs.schedule(clock.now())
@@ -776,7 +776,7 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
     jobs,
     clock,
     logger,
-    root: join(config.dataDir, 'trickplay'),
+    root: join(workDir(config), 'trickplay'),
     ffmpeg: ffmpegBinary(),
   })
   const movies = createMovies(
@@ -815,7 +815,7 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
   // HLS made on demand (4.1b, ADR 0051): one folder per play session in the data folder's
   // `transcodes/`, emptied on boot, since no session outlives the process
   const transcodes = createTranscodes({
-    root: join(config.dataDir, 'transcodes'),
+    root: join(workDir(config), 'transcodes'),
     ffmpeg: ffmpegBinary(),
     ffprobe: ffprobeBinary(),
     logger: logger.child('stream'),
@@ -832,7 +832,7 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
     clock,
     events,
     logger,
-    dataDir: config.dataDir,
+    dataDir: workDir(config),
     ffmpeg: ffmpegBinary(),
     settings: () => playbackSettings.get(),
     host: options.hardware,
@@ -850,9 +850,9 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
     clock,
     events,
     logger,
-    dataDir: config.dataDir,
+    dataDir: workDir(config),
     transcodes,
-    trickplayRoot: join(config.dataDir, 'trickplay'),
+    trickplayRoot: join(workDir(config), 'trickplay'),
     shared: () => [...media.rootFolders.list().map((f) => f.path), folders().downloads],
     streaming: () => playback.sessions().length > 0,
     hardware,

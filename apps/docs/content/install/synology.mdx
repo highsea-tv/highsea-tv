@@ -45,7 +45,7 @@ highsea has its own package source, which lists the package in Package Center an
 
 Container Manager then downloads highsea's image and starts it, which can take a few minutes. When Package Center shows highsea as running, choose **Open**, or open `http://<your NAS's address>:3000`, and [run setup](#run-setup).
 
-The package runs highsea as its own DSM user, `highsea`, and gives that user read and write access to the shared folder you chose. When another app manages your films, the package gives highsea the `media` folder read-only, so nothing highsea does can change it; downloads still go to the shared folder's `downloads` folder. The `media` folder must be there before you install. Setup then adds its folders as ones highsea only reads; [Root folders](/settings/media-management/root-folders/#a-library-another-app-manages) says what that changes. An update keeps the choice. It finds the graphics chip and DSM's mDNS service by itself, so there's nothing else to choose. highsea's settings, database and backups live in the package's own folder on the volume.
+The package runs highsea as its own DSM user, `highsea`, and gives that user read and write access to the shared folder you chose. When another app manages your films, the package gives highsea the `media` folder read-only, so nothing highsea does can change it, and highsea keeps everything it makes in a `highsea` folder of its own in the shared folder: its downloads, scrub previews and transcodes. The other app's `downloads` folder is left to it. The `media` folder must be there before you install. Setup then adds its folders as ones highsea only reads; [Root folders](/settings/media-management/root-folders/#a-library-another-app-manages) says what that changes. An update keeps the choice. It finds the graphics chip and DSM's mDNS service by itself, so there's nothing else to choose. highsea's settings, database and backups live in the package's own folder on the volume.
 
 If highsea already runs as a Container Manager project you made, stop and delete that project first: both use port 3000, and the package says so if the port is taken. The package starts with its own settings.
 
@@ -59,7 +59,7 @@ Each stable release on [GitHub](https://github.com/highsea-tv/highsea-tv/release
 
 ### Uninstall
 
-Choose **Uninstall** in Package Center. Your films and the shared folder are kept. highsea's settings, database and backups are kept too, so installing again carries on where it left off, unless you tick **Also delete highsea's settings, database and backups**. To remove the package source as well, select it in **Settings › Package Sources** and choose **Delete**.
+Choose **Uninstall** in Package Center. Your films and the shared folder are kept, with the `highsea` folder in it if another app manages your films; delete that folder in File Station if you won't install highsea again. highsea's settings, database and backups are kept too, so installing again carries on where it left off, unless you tick **Also delete highsea's settings, database and backups**. To remove the package source as well, select it in **Settings › Package Sources** and choose **Delete**.
 
 ## Before you start
 

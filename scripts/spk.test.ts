@@ -246,6 +246,8 @@ describe('preinst', () => {
     expect(r.env).toContain('HIGHSEA_LIBRARY=managed\n')
     expect(r.env).toContain("HIGHSEA_MEDIA='/var/packages/highsea/target/compose/no-graphics'\n")
     expect(r.env).toContain('HIGHSEA_MEDIA_AT=/run/highsea-unused\n')
+    // highsea's own files go in the shared folder itself, as before
+    expect(r.env).toContain('HIGHSEA_WORK=\n')
   })
 
   test('another app manages them: the media folder is mounted over /data/media read-only (ADR 0063)', () => {
@@ -262,6 +264,10 @@ describe('preinst', () => {
     const compose = readFileSync(join(SOURCE, 'package/compose/compose.yaml'), 'utf8')
     // Compose's variables, not a template string's
     expect(compose).toContain(['- $', '{HIGHSEA_MEDIA}:$', '{HIGHSEA_MEDIA_AT}:ro'].join(''))
+    // the shared folder is that app's stack's too, so highsea keeps what it makes in its own folder
+    // (2026-11-16, after the owner's NAS test found its previews at the top of their share)
+    expect(r.env).toContain('HIGHSEA_WORK=/data/highsea\n')
+    expect(compose).toContain(['HIGHSEA_WORK_DIR: $', '{HIGHSEA_WORK:-}'].join(''))
   })
 
   test('an upgrade keeps the choice made at install', () => {
