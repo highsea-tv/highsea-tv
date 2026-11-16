@@ -146,10 +146,11 @@ export const curation = defineMessages({
   acknowledge: 'Everyone has to acknowledge it',
   acknowledgeHint:
     'It opens as a dialog with only Got it, and on TV as a screen of its own before Home. Use it for things people must not miss.',
-  'hint.banner': 'Above the page on the web, desktop and the admin.',
+  'hint.banner': 'Above the page in the admin.',
   'hint.card': 'A card under the header on phones.',
   'hint.toast': 'A short notice on the web and desktop, once.',
-  tvPill: 'On TV, the newest announcement shows as a pill at the top of Home.',
+  alertsHint:
+    'On the web, desktop and TV, every live announcement is listed in Alerts, with a dot on the bell while it’s new.',
   'error.title': 'Give it a title. It’s the first thing people read.',
   'error.placements': 'Choose at least one place to show it.',
   'error.cta': 'The button needs a label and a full link, starting with https://.',
@@ -239,6 +240,8 @@ export const curation = defineMessages({
   'preview.unseen': '{name} isn’t in the audience on {place}, so {what} doesn’t show there.',
   'preview.loading': 'Drawing the preview…',
   'preview.empty': 'Nothing on this home screen yet.',
+  'preview.alerts': 'Alerts',
+  'preview.alertsNew': 'Alerts, {count, plural, one {# new} other {# new}}',
   'row.continue': 'Continue watching',
   'row.recent': 'Recently added',
   play: 'Play',

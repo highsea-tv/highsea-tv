@@ -16,6 +16,12 @@ export const focusVisible = (_target: unknown): boolean => true
 /** Whether a key press on a control of this role presses it, beyond what the platform does. */
 export const spaceActivates = (_key: string, _role: string): boolean => false
 
+/**
+ * Whether Enter on this element, a control of this role, follows it as a link, beyond what the
+ * platform does.
+ */
+export const enterFollows = (_key: string, _role: string, _element: unknown): boolean => false
+
 /** Whether Press draws its hit area as a layer rather than through `hitSlop`. */
 export const HIT_LAYER: boolean = false
 

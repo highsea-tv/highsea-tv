@@ -3,9 +3,11 @@
 // The inside of the client preview's frame (A11; checkpoint 8c). The prototype frames the clients'
 // real home screens (C2); the apps come in Phase 4, so the server draws a plain home of its own
 // from what `POST /curation/preview` returned: the hero, Continue watching, the rows and
-// spotlights, and the draft announcement where that kind of app shows it. A frame of its own
+// spotlights, and the draft announcement where that kind of app shows it: on phones its card, on
+// the web and the TV Alerts' bell with its dot (the owner's 2026-10-30 call, kept on 2026-11-15:
+// neither draws banners or a pill), and the dialog and toast where they show. A frame of its own
 // gives it the app's width, so the design system's breakpoints apply as on the device. The admin
-// draws it with the clients' own parts (FeaturedCard, Row, Poster, Banner) on the native
+// draws it with the clients' own parts (FeaturedCard, Row, Poster, Banner, NewDot) on the native
 // renderer. The admin sends the preview over postMessage, from its own origin only
 // (https://developer.mozilla.org/en-US/docs/Web/API/Window/postMessage#security_concerns); the
 // frame fetches nothing.
@@ -18,6 +20,7 @@ import {
   FeaturedCard,
   Image,
   Lockup,
+  NewDot,
   Poster,
   pointerItemWidth,
   Row,
@@ -76,7 +79,7 @@ export function PreviewFrame() {
   }, [state])
 
   if (!state) return null
-  return <Home {...state} />
+  return <PreviewHome {...state} />
 }
 
 /** The page's gutter: 16 in a compact window, 64 in a regular one (the web's px-4 and px-16). */
@@ -85,20 +88,17 @@ function useGutter() {
   return regular ? sp['16'] : sp['4']
 }
 
-function Home({ preview, platform }: FrameMessage) {
+/** The frame's home for one kind of app (exported for its test). */
+export function PreviewHome({ preview, platform }: FrameMessage) {
   const t = useCurationT()
   const theme = useTheme()
   const gutter = useGutter()
   const shows = (a: ClientAnnouncement, p: ClientAnnouncement['placements'][number]) =>
     !a.seen && a.placements.includes(p)
   const announcements = preview.announcements
-  const top =
-    platform === 'web'
-      ? announcements.filter((a) => shows(a, 'banner'))
-      : platform === 'mobile'
-        ? announcements.filter((a) => shows(a, 'card'))
-        : []
-  const pill = platform === 'tv' ? announcements.find((a) => !a.seen) : undefined
+  const top = platform === 'mobile' ? announcements.filter((a) => shows(a, 'card')) : []
+  // the web's and the TV's Alerts list every live one, with a dot on the bell while any is new
+  const fresh = platform === 'mobile' ? 0 : announcements.filter((a) => !a.seen).length
   const modal = announcements.find((a) => shows(a, 'modal'))
   const toastOne = platform === 'web' ? announcements.find((a) => shows(a, 'toast')) : undefined
   const ui = tokens.adminText.ui
@@ -126,22 +126,17 @@ function Home({ preview, platform }: FrameMessage) {
         }}
       >
         <Lockup size={platform === 'tv' ? lockup.tv : lockup.size} />
-        {pill && (
-          <View
-            style={{
-              marginStart: 'auto',
-              minWidth: 0,
-              flexDirection: 'row',
-              alignItems: 'center',
-              paddingHorizontal: sp['3'],
-              paddingVertical: sp['1'] + sp['0.5'],
-              borderRadius: tokens.radius.pill,
-              backgroundColor: `color-mix(in srgb, ${theme.colors.s2} 80%, transparent)`,
-            }}
-          >
-            <Text variant="caption" weight={600} numberOfLines={1}>
-              {pill.title}
-            </Text>
+        {platform !== 'mobile' && (
+          <View style={{ marginStart: 'auto' }}>
+            <Button
+              variant="ghost"
+              iconOnly
+              icon="notification"
+              accessibilityLabel={
+                fresh ? t('preview.alertsNew', { count: fresh }) : t('preview.alerts')
+              }
+            />
+            {fresh > 0 ? <NewDot /> : null}
           </View>
         )}
       </View>
@@ -152,7 +147,7 @@ function Home({ preview, platform }: FrameMessage) {
               key={a.id}
               title={a.title}
               tone={tone(a)}
-              variant={platform === 'mobile' ? 'card' : 'bar'}
+              variant="card"
               onDismiss={a.acknowledgement === 'dismiss' ? noop : undefined}
               onAcknowledge={a.acknowledgement === 'require' ? noop : undefined}
               acknowledgeLabel={t('gotIt')}

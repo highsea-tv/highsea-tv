@@ -430,7 +430,7 @@ function CatalogSettingsGroup() {
   const [extraError, setExtraError] = useState<string | null>(null)
   const [removing, setRemoving] = useState<string | null>(null)
   const theme = useTheme()
-  const medium = useRegularWindow()
+  const regular = useRegularWindow()
 
   const change = (patch: CatalogSettingsPatch) =>
     save.run(patch).then(
@@ -564,12 +564,12 @@ function CatalogSettingsGroup() {
                 </Field>
                 <View
                   style={{
-                    flexDirection: medium ? 'row' : 'column',
+                    flexDirection: regular ? 'row' : 'column',
                     alignItems: 'flex-start',
                     gap: sp['3'],
                   }}
                 >
-                  <View style={medium ? { width: KEY_ID_WIDTH } : { alignSelf: 'stretch' }}>
+                  <View style={regular ? { width: KEY_ID_WIDTH } : { alignSelf: 'stretch' }}>
                     <Field label={t('catalog.keyIdLabel')}>
                       <Input
                         value={extra.keyId}
@@ -582,7 +582,7 @@ function CatalogSettingsGroup() {
                       />
                     </Field>
                   </View>
-                  <View style={medium ? { flex: 1, minWidth: 0 } : { alignSelf: 'stretch' }}>
+                  <View style={regular ? { flex: 1, minWidth: 0 } : { alignSelf: 'stretch' }}>
                     <Field
                       label={t('catalog.publicKey')}
                       hint={t('catalog.publicKeyHint')}
@@ -670,11 +670,11 @@ function Diagnostics({
   owner,
 }: Part & { metrics: MetricsSettings; setMetrics: (m: MetricsSettings) => void }) {
   const t = useT(messages)
-  const medium = useRegularWindow()
+  const regular = useRegularWindow()
   return (
     <Group title={t('diagnostics.title')} description={t('diagnostics.description')}>
       <Field label={t('diagnostics.logLevel')} hint={t('diagnostics.logLevelHint')}>
-        <View style={medium ? { maxWidth: LOG_LEVEL_WIDTH } : undefined}>
+        <View style={regular ? { maxWidth: LOG_LEVEL_WIDTH } : undefined}>
           <Select
             value={value.logLevel}
             disabled={!owner}

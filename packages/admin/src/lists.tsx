@@ -202,7 +202,7 @@ function Row({
 }) {
   const t = useT(messages)
   const { relative } = useRelative()
-  const medium = useRegularWindow()
+  const regular = useRegularWindow()
   const update = useAction((c, body: ImportListInput) =>
     c.importLists.update({ params: { id: l.id }, body }),
   )
@@ -216,12 +216,12 @@ function Row({
     <Card>
       <View
         style={{
-          flexDirection: medium ? 'row' : 'column',
-          alignItems: medium ? 'center' : 'stretch',
+          flexDirection: regular ? 'row' : 'column',
+          alignItems: regular ? 'center' : 'stretch',
           gap: s['3'],
         }}
       >
-        <View style={{ alignSelf: medium ? 'center' : 'flex-start' }}>
+        <View style={{ alignSelf: regular ? 'center' : 'flex-start' }}>
           <Switch
             label={t('enabled', { name: l.name })}
             hideLabel
@@ -230,14 +230,14 @@ function Row({
             onCheckedChange={(enabled) => change({ enabled })}
           />
         </View>
-        <View style={{ flex: medium ? 1 : undefined, minWidth: 0, gap: s['0.5'] }}>
+        <View style={{ flex: regular ? 1 : undefined, minWidth: 0, gap: s['0.5'] }}>
           <Line style={WRAP_ANYWHERE}>{l.name}</Line>
           <Note>
             {kindLabel(t, l.settings)} · {t('items', { count: l.items })} ·{' '}
             {l.searchOnAdd ? t('searches') : t('noSearch')}
           </Note>
         </View>
-        <View style={medium ? { width: PROFILE_WIDTH, maxWidth: '40%' } : undefined}>
+        <View style={regular ? { width: PROFILE_WIDTH, maxWidth: '40%' } : undefined}>
           <Select
             aria-label={t('profile', { name: l.name })}
             value={l.qualityProfileId}

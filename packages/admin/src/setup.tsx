@@ -691,7 +691,7 @@ function Review({
 }) {
   const t = useT(messages)
   const theme = useTheme()
-  const medium = useRegularWindow()
+  const regular = useRegularWindow()
   const { draft, changed } = saved
   const pack = useQuery('starter-pack', (c) => c.setup.starterPack())
   const languages = useQuery('setup-languages', (c) => c.setup.languages())
@@ -933,17 +933,17 @@ function Review({
                 style={{
                   flex: 1,
                   minWidth: 0,
-                  flexDirection: medium ? 'row' : 'column',
+                  flexDirection: regular ? 'row' : 'column',
                   columnGap: s['3'],
                   rowGap: s['0.5'],
                 }}
               >
-                <View style={medium ? { width: LABEL_WIDTH, paddingTop: s['0.5'] } : undefined}>
+                <View style={regular ? { width: LABEL_WIDTH, paddingTop: s['0.5'] } : undefined}>
                   <Text variant="caption" color="text-3">
                     {r.label}
                   </Text>
                 </View>
-                <View style={{ flex: medium ? 1 : undefined, minWidth: 0 }}>
+                <View style={{ flex: regular ? 1 : undefined, minWidth: 0 }}>
                   {typeof r.value === 'string' ? (
                     <Text size={ui.size} leading={ui.leading}>
                       {r.value}

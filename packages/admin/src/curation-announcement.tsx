@@ -273,7 +273,7 @@ function Composer({ initial }: { initial: Announcement | null }) {
                     }
                   />
                 )),
-                <Hint key="tv">{t('tvPill')}</Hint>,
+                <Hint key="alerts">{t('alertsHint')}</Hint>,
               ]}
             </ChoiceWell>
             <GroupError>{show(errors.placements)}</GroupError>

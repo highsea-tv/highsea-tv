@@ -915,7 +915,7 @@ function Devices() {
 function Keys() {
   const t = useT(messages)
   const theme = useTheme()
-  const medium = useRegularWindow()
+  const regular = useRegularWindow()
   // the owner sees everyone's keys, so any key that acts on the server can be revoked; an admin
   // sees their own
   const keys = useQuery('settings:keys', (c) => c.apiKeys.list(), ['users.updated'])
@@ -954,12 +954,12 @@ function Keys() {
                   {
                     gap: s['2'],
                     padding: s['4'],
-                    flexDirection: medium ? 'row' : 'column',
-                    alignItems: medium ? 'center' : 'stretch',
+                    flexDirection: regular ? 'row' : 'column',
+                    alignItems: regular ? 'center' : 'stretch',
                   },
                 ]}
               >
-                <View style={{ flex: medium ? 1 : undefined, minWidth: 0, gap: s['1'] }}>
+                <View style={{ flex: regular ? 1 : undefined, minWidth: 0, gap: s['1'] }}>
                   <View
                     style={{
                       flexDirection: 'row',

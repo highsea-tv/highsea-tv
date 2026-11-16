@@ -327,7 +327,7 @@ function HardwareGroup({
   const now = useNow()
   const theme = useTheme()
   const reduced = useMotionReduced()
-  const medium = useRegularWindow()
+  const regular = useRegularWindow()
   const label = (id: AccelerationPath) => t(`path.${id}`)
   const found = status.paths.some((p) => !p.unavailable)
   const inUse = status.inUse
@@ -478,9 +478,9 @@ function HardwareGroup({
                     <Note>{t('uncheckedLine', { line: t(`path.${p.id}.line`) })}</Note>
                   ) : null}
                 </View>
-                {medium ? null : action}
+                {regular ? null : action}
               </View>
-              {medium ? action : null}
+              {regular ? action : null}
             </View>
           )
         })}

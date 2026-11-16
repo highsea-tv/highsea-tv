@@ -23,7 +23,7 @@
 
 - **Arrows:** full arrow-key navigation using the [TV spatial focus model](tv.md#spatial-focus-model) inside content regions. Tab and Shift-Tab move between regions (nav, hero, each row).
 - **Focus ring:** the same 2px `focus` ring with a 2px offset as in [accessibility](../accessibility.md#operable).
-- **Shortcuts:** in the player, Space plays or pauses, ← and → seek, `M` mutes, `F` toggles fullscreen and Esc leaves it (`usePageInput`, `apps/client/src/player/picture.web.tsx`). `/` to focus search and `?` to list the shortcuts are designed but not built yet.
+- **Shortcuts:** in the player, Space plays or pauses, ← and → seek, `M` mutes, `F` toggles fullscreen and Esc leaves it (`usePageInput`, `apps/client/src/player/picture.web.tsx`). Outside the player, `/` opens Search with its field focused and `?` lists the shortcuts in the library's Dialog, with Close; neither fires while typing in a field, with Ctrl, ⌘ or Alt held, or while a dialog is open (`apps/client/src/shell/shortcuts.tsx`, the owner's decision of 2026-11-15).
 
 ## Desktop app specifics
 
