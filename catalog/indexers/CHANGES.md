@@ -2,7 +2,7 @@
 
 Newest first. Each version's notes appear in the server's What changed dialog.
 
-## 2026.11.4
+## 2026.11.16
 
 - highsea 0.4.0 is out. System › Updates has its notes.
 
