@@ -10,5 +10,11 @@
     "package": "next",
     "until": "2026-12-16",
     "reason": "Next.js 16.3.0 through 16.4.4: a 'use cache' function that reads a root param and is called both directly and through unstable_cache() can, in a race on a cold start, hand one root param's cached data to requests for another. highsea pins next 16.4.1 (apps/server and apps/docs), but its code has no 'use cache', no unstable_cache() and no cacheComponents, so the affected path never runs. The fix is in 16.4.5 (2026-11-03), which isn't two weeks old on 2026-11-16, so it can't be pinned yet. Look again when a fixed release can be pinned (16.4.5 from 2026-11-17), and move to it then."
+  },
+  {
+    "advisory": "GHSA-fc5q-39xc-vjpf",
+    "package": "picomatch",
+    "until": "2026-12-17",
+    "reason": "Picomatch through 4.0.7: a single-branch repeated extglob such as +(*) or +(*a) skips analyzeRepeatedExtglob and compiles to a regular expression that backtracks exponentially, so an attacker who can supply the glob pattern can block the event loop. highsea resolves picomatch 4.0.7 and 2.3.2 only through build and test tools (Expo's CLI and Metro config, Metro's file map, Jest, React Native's codegen, @parcel/watcher, Vite and tinyglobby, Fumadocs, anymatch), which reach the server image as peers of expo, never as the server's own dependencies, and which the running server never loads; Next's compiled copy compiles only the image patterns in next.config, and highsea sets none. No highsea code imports picomatch, micromatch, anymatch or minimatch, so no pattern ever comes from a request, a setting or a file name. The advisory names no fixed release, and 4.0.7 is the latest on 2026-11-17. Look again when a fixed release can be pinned."
   }
 ]
