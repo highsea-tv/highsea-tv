@@ -57,6 +57,7 @@ One gated part. It's small, but it changes how every later change lands, so it's
   - **Applied by the coordinator after the Accept, on 2026-11-06:** the `full-ci` label, and the rulesets `next` (a pull request, `check`, no force-push) and `main` (the same, with `playback`, `leak` and both `image` matrix checks), each bypassed by organisation admins. The coordinator's memory is updated. Still to prove: the first push to `next` running every job (running for `a5b68ae` at the sign-off), a pull request with `full-ci`, the pull request from `next` into `main` reporting the image checks by the names `main` requires, and a release run.
 - **`check` stopped hanging and stalling, on 2026-11-06 (HT-8):** the first push to `next` (run 42309034028) hung in `apps/server/test/stream-hls.test.ts` for four hours. The cause is Bun's issue #47257: Bun 1.4.0 to 1.4.3 can lose a sync spawn's exit, and the call never returns; CI pins 1.4.2, and 1.4.4 has the fix. The tests' ffmpeg, ffprobe and unar calls now have a 30 s limit (`TOOL_LIMIT` in `@highsea-tv/media/testing`), the HLS file makes its clip without blocking and always cleans up, and every job in `ci.yml`, `desktop.yml` and `native.yml` has a `timeout-minutes` from its history (`check` 40, its tests 25). The apt step keeps its .debs in the Actions cache, since the Azure mirror sometimes sends them at about 40 kB/s.
 - **Bun 1.4.4, on 2026-11-15 (HT-16), by the owner's decision:** the same Bun bug hung `check` again, in `apps/server/test/library-import-api.test.ts` for 24 minutes on two of three attempts of PR #18 (run 43769100418), after its `beforeAll` made clips with a sync spawn. `TOOL_LIMIT` didn't end it: the test's 5 s timeout killed ffmpeg first, and the lost exit left the call waiting. Every workflow and the Dockerfile now pin Bun 1.4.4, which has the fix, and that file's clips are made without blocking. ADR 0002's 2026-11-15 section has the detail. Merged by the owner into `next` on 2026-11-15 (HT-16, pull request #19).
+- **`check` skipped on a pull request of internal docs alone, on 2026-11-17 (HT-29), asked for by the owner** after pull request #32 ran the whole of `check`. `ci.yml`'s new `changes` job decides, and `check` keeps its name, so the `next` and `main` rulesets still find it; the heavy jobs don't need `check` and are unchanged. ADR 0062's 2026-11-17 section records it. Checked with `actionlint`, by replaying the job's script on earlier pull requests (#23 and #24 skip; #28, #29 and #32 run `check`, #32 because `catalog/keys/README.md` is outside the list), and by this change's own pull request, which runs `changes` and then `check`.
 
 ## The branch (A)
 
@@ -70,7 +71,7 @@ Each job falls in one of two tiers:
 
 | Tier | Jobs | When it runs |
 | --- | --- | --- |
-| Fast | `ci.yml`'s `check` (lint, types, the Bun tests, the platform under Node, licences, the dependency check, the client exports, the admin's and the docs' builds), and `catalog.yml` when the catalog changes | every pull request, and every push to `next` or `main` |
+| Fast | `ci.yml`'s `check` (lint, types, the Bun tests, the platform under Node, licences, the dependency check, the client exports, the admin's and the docs' builds), and `catalog.yml` when the catalog changes | every pull request that changes more than the internal docs (since 2026-11-17), and every push to `next` or `main` |
 | Heavy | `ci.yml`'s `playback`, `leak` and `image`; `e2e.yml`; `desktop.yml`; `native.yml` | a push to `next`, a pull request into `main`, a pull request with the `full-ci` label, and a release |
 
 - **How:**
@@ -85,6 +86,7 @@ Each job falls in one of two tiers:
   - `ci.yml`'s heavy jobs get the same condition, and `check` has none.
   - The condition is written once, in a comment at the top of each workflow, with its reason.
 - **Pushes to `next`:** the existing `cancel-in-progress` means that when the owner accepts three tasks in a row, only the last push's heavy run finishes. That's one full run for the round instead of three.
+- **A pull request that changes only the internal docs** (`docs/**`, `.claude/**`, `README.md`, `CLAUDE.md`, the list `paths-ignore` gives pushes) skips `check`, since 2026-11-17. A first job, `changes`, lists the pull request's files with `git diff --name-only` from where it branched to its head, and `check`'s `if:` skips it when every file is on the list. A job skipped by its `if:` reports success, so the required check isn't left pending as a path filter would leave it ([Troubleshooting required status checks › Handling skipped but required checks](https://docs.github.com/en/pull-requests/how-tos/merge-and-close-pull-requests/troubleshooting-required-status-checks#handling-skipped-but-required-checks)). A job whose `needs` failed is skipped too, and would pass the same way, so `check` also runs when `changes` fails (`!cancelled()`, [Expressions › Status check functions](https://docs.github.com/en/actions/reference/workflows-and-actions/expressions#status-check-functions)). Any event but `pull_request` runs `check` as before.
 - **A push to `main`** runs only `check` (answer 3): the pull request from `next` already ran everything on the same result, and a release runs it all again.
 - **`release.yml`** keeps calling `ci.yml` and `e2e.yml` through `workflow_call`. The tier condition lets a called run through whole, since its event is `workflow_dispatch`, not `pull_request`.
 - **Checked by:** `actionlint` on the workflows. Then one pull request into `next` that runs only `check`, the same pull request with `full-ci` added that runs everything, and the first push to `next` that runs everything.
@@ -108,6 +110,7 @@ GitHub rulesets, which public repositories have on GitHub Free ([About rulesets]
 ## ADRs
 
 - **New: 0062, the `next` branch and CI by branch.** It covers the two branches, the two tiers, the label, the rulesets, and why this was chosen over a merge queue.
+- **Dated section: 0062,** "2026-11-17: a pull request of internal docs alone skips `check`" (HT-29).
 - **Dated section: 0050,** "2026-11-06: work lands on `next`". Releases and the docs still come from `main`, which now changes only through a merge from `next`.
 
 ## Risks
