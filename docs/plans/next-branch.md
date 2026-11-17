@@ -157,3 +157,5 @@ On 2026-11-06 the owner took every recommendation for questions 1 to 7:
 5. Rulesets on `next` and `main`, which the organisation's admins can bypass.
 6. `next`, not a merge queue.
 7. Built now, between rounds: the work branch pushed, HT-1 to HT-3 and HT-5 accepted into it, renamed `next` and the workflows changed, then HT-4.
+
+<!-- HT-29 probe: a docs-only pull request; closed unmerged -->
