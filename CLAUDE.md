@@ -12,7 +12,7 @@ highsea is a self-hosted replacement for the *ARR suite (Radarr, Sonarr, Prowlar
 
 ## Now
 
-The one client platform ([plan](docs/plans/one-client-platform.md)) is signed off (2026-11-15), part E with it. Work lands on `next`, with CI by branch ([its plan](docs/plans/next-branch.md)). Phase 5, highsea in real use on the owner's NAS with their films, shows and music, is approved ([plan](docs/plans/phase-5-real-use.md), the owner's answers of 2026-11-15, with profiles in A2); it takes in prototype-gaps' stage 7, and 4.5c and 4.6 follow it. A1 is built (HT-22) and released as 0.4.0 (2026-11-17); its stretch of real use on the NAS comes next, then A2. Keep this section to a few lines; the history goes in docs/status.md.
+The one client platform ([plan](docs/plans/one-client-platform.md)) is signed off (2026-11-15), part E with it. Work lands on `next`, with CI by branch ([its plan](docs/plans/next-branch.md)). Phase 5, highsea in real use on the owner's NAS with their films, shows and music, is approved ([plan](docs/plans/phase-5-real-use.md), the owner's answers of 2026-11-15, with profiles in A2); it takes in prototype-gaps' stage 7, and 4.5c and 4.6 follow it. A1 is built (HT-22) and released as 0.4.1 (2026-11-17), installed on the NAS from Package Center; its stretch of real use has started, with findings in the plan's log, then A2. Keep this section to a few lines; the history goes in docs/status.md.
 
 ## Rules from the owner
 
