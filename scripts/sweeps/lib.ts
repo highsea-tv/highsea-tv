@@ -6,7 +6,7 @@ import { execFileSync, spawn } from 'node:child_process'
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { availableParallelism, tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { type Browser, chromium, type Page } from 'playwright-core'
+import { type Browser, chromium, type LaunchOptions, type Page } from 'playwright-core'
 import {
   type ClientPlatform,
   clientPathOf,
@@ -162,10 +162,14 @@ export const routeUrl = (route: string, query = '') => {
 
 /**
  * Chromium from Playwright's own download (`bunx playwright-core install chromium`), or the one at
- * CHROMIUM_PATH.
+ * CHROMIUM_PATH, with any of Playwright's launch options
+ * (https://playwright.dev/docs/api/class-browsertype#browser-type-launch).
  */
-export const launch = (): Promise<Browser> =>
-  chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {})
+export const launch = (options: LaunchOptions = {}): Promise<Browser> =>
+  chromium.launch({
+    ...options,
+    ...(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {}),
+  })
 
 /**
  * Waits until the page stops changing: no DOM mutation for `quiet` ms, or `max` ms at most. The quiet
