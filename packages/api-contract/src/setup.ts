@@ -49,6 +49,18 @@ export const SetupInput = z
       downloads: z.string().max(4096),
       shows: z.string().max(4096).optional(),
       music: z.string().max(4096).optional(),
+      /**
+       * Which library folders highsea only reads, as chosen on Review (ADR 0063, 2026-11-17). A
+       * kind left out is read-only when its folder already holds something, so another app's
+       * library is never renamed or moved by a setup nobody looked at.
+       */
+      readOnly: z
+        .object({
+          movies: z.boolean().optional(),
+          shows: z.boolean().optional(),
+          music: z.boolean().optional(),
+        })
+        .optional(),
     }),
     remoteAccess: RemoteAccessInput,
     /** Remembered for when highsea cloud exists. Off when omitted. */
@@ -102,6 +114,13 @@ export const SetupDetected = z
         downloads: z.string(),
         shows: z.string().nullable(),
         music: z.string().nullable(),
+        /**
+         * The folders highsea suggests it only reads: those that already hold something (ADR 0063,
+         * 2026-11-17). Left out, each is managed.
+         */
+        readOnly: z
+          .object({ movies: z.boolean(), shows: z.boolean(), music: z.boolean() })
+          .optional(),
       })
       .nullable(),
     /** The address apps on the network use, `host:port`; null in a bridge network. */

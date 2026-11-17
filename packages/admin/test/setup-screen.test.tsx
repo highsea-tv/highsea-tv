@@ -5,7 +5,7 @@
 // field; and progress across a reload.
 import './dom.ts'
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
-import type { SetupDetected } from '@highsea-tv/api-contract'
+import type { SetupDetected, SetupInput } from '@highsea-tv/api-contract'
 
 const { act, cleanup, render, within } = await import('@testing-library/react')
 const { default: userEvent } = await import('@testing-library/user-event')
@@ -213,7 +213,11 @@ describe('setup with everything found', () => {
     expect(sent()).toEqual({
       serverName: 'Harbor',
       owner: { displayName: 'Ana Lima', username: 'ana', password: 'correct horse battery' },
-      folders: { movies: '/data/media/movies', downloads: '/data/downloads' },
+      folders: {
+        movies: '/data/media/movies',
+        downloads: '/data/downloads',
+        readOnly: { movies: false },
+      },
       indexers: ['internet-archive'],
       subtitleLanguages: ['en'],
       remoteAccess: { kind: 'local-only' },
@@ -247,11 +251,68 @@ describe('setup with everything found', () => {
       downloads: '/data/downloads',
       shows: '/data/media/tv',
       music: '/data/media/music',
+      readOnly: { movies: false, shows: false, music: false },
     })
   })
 })
 
 // ---------------------------------------------------------------- Review's editors
+
+describe('setup’s read-only libraries (ADR 0063, 2026-11-17)', () => {
+  test('a folder that already holds films is only read unless the owner says otherwise', async () => {
+    state.detected = {
+      ...FOUND,
+      folders: {
+        movies: '/data/media/movies',
+        downloads: '/data/downloads',
+        shows: '/data/media/tv',
+        music: null,
+        readOnly: { movies: true, shows: false, music: false },
+      },
+    }
+    const { user, page } = await toReview()
+    // Review marks it as Settings does
+    expect(page.getAllByText('Only read')).toHaveLength(1)
+    await user.click(page.getByRole('button', { name: 'Change folders' }))
+    await settle()
+    const movies = page.getAllByRole('switch', { name: /another app manages/ })
+    expect(movies).toHaveLength(2)
+    expect(movies[0]?.getAttribute('aria-checked')).toBe('true')
+    expect(movies[1]?.getAttribute('aria-checked')).toBe('false')
+    // Finish as it stands: the films are only read
+    await user.click(page.getByRole('button', { name: 'Finish setup' }))
+    await settle()
+    expect((sent()?.folders as SetupInput['folders'] | undefined)?.readOnly).toEqual({
+      movies: true,
+      shows: false,
+    })
+  })
+
+  test('the owner can let highsea manage a folder that holds films', async () => {
+    state.detected = {
+      ...FOUND,
+      folders: {
+        movies: '/data/media/movies',
+        downloads: '/data/downloads',
+        shows: null,
+        music: null,
+        readOnly: { movies: true, shows: false, music: false },
+      },
+    }
+    const { user, page } = await toReview()
+    await user.click(page.getByRole('button', { name: 'Change folders' }))
+    await settle()
+    await user.click(page.getByRole('switch', { name: /another app manages/ }))
+    expect(page.getByText('highsea manages it: imports, renames and deletes go here.')).toBeTruthy()
+    await user.click(page.getByRole('button', { name: 'Done with folders' }))
+    expect(page.queryByText('Only read')).toBeNull()
+    await user.click(page.getByRole('button', { name: 'Finish setup' }))
+    await settle()
+    expect((sent()?.folders as SetupInput['folders'] | undefined)?.readOnly).toEqual({
+      movies: false,
+    })
+  })
+})
 
 describe('setup’s Review editors', () => {
   test('a line opens in place, checks on Done, and loses its note once changed', async () => {

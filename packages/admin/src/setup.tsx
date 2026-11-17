@@ -19,6 +19,7 @@ import type { ApiError } from '@highsea-tv/sdk'
 import { useAction, useQuery } from '@highsea-tv/sdk/react'
 import { admin, line, lockup } from '@highsea-tv/tokens'
 import {
+  Badge,
   Banner,
   Button,
   Checkbox,
@@ -35,6 +36,7 @@ import {
   Select,
   Skeleton,
   Stepper,
+  Switch,
   Text,
   Toaster,
   toast,
@@ -77,11 +79,29 @@ const stepsFor = (found: SetupDetected): StepId[] => [
 
 type Remote = SetupInput['remoteAccess']['kind']
 
+/** The folders that become the library's root folders, each managed or only read. */
+const LIBRARY_KEYS = ['movies', 'shows', 'music'] as const
+type LibraryKey = (typeof LIBRARY_KEYS)[number]
+/**
+ * When highsea found no folders, the owner points at ones it didn't recognise, most likely a
+ * library already there: only reading them is the safe start (ADR 0063, 2026-11-17).
+ */
+const ALL_READ_ONLY: Record<LibraryKey, boolean> = { movies: true, shows: true, music: true }
+
 type Draft = {
   serverName: string
   owner: { displayName: string; username: string; password: string; confirm: string }
-  /** Shows' and music's are optional, '' for none (Phase 5 A1): kept for when the server has them. */
-  folders: { movies: string; downloads: string; shows: string; music: string }
+  /**
+   * Shows' and music's are optional, '' for none (Phase 5 A1): kept for when the server has them.
+   * `readOnly` is which library folders highsea only reads (ADR 0063, 2026-11-17).
+   */
+  folders: {
+    movies: string
+    downloads: string
+    shows: string
+    music: string
+    readOnly: Record<LibraryKey, boolean>
+  }
   /** The owner's own TMDB key, as typed. Never stored. */
   metadataKey: string
   /** Starter-pack definition ids to add at Finish. */
@@ -110,7 +130,7 @@ type Saved = {
 const blank: Draft = {
   serverName: '',
   owner: { displayName: '', username: '', password: '', confirm: '' },
-  folders: { movies: '', downloads: '', shows: '', music: '' },
+  folders: { movies: '', downloads: '', shows: '', music: '', readOnly: ALL_READ_ONLY },
   metadataKey: '',
   indexers: [],
   subtitleLanguages: [],
@@ -133,7 +153,13 @@ function load(): Saved | null {
     if (typeof kept.step !== 'string') return null
     return {
       ...kept,
-      draft: { ...blank, ...kept.draft, owner: { ...blank.owner, ...kept.draft.owner } },
+      draft: {
+        ...blank,
+        ...kept.draft,
+        owner: { ...blank.owner, ...kept.draft.owner },
+        // a draft kept before the read-only choice: the safe start
+        folders: { ...blank.folders, ...kept.draft.folders },
+      },
     }
   } catch {
     return null
@@ -253,6 +279,11 @@ const toInput = (d: Draft): SetupInput => ({
     downloads: d.folders.downloads,
     ...(d.folders.shows ? { shows: d.folders.shows } : {}),
     ...(d.folders.music ? { music: d.folders.music } : {}),
+    readOnly: {
+      movies: d.folders.readOnly.movies,
+      ...(d.folders.shows ? { shows: d.folders.readOnly.shows } : {}),
+      ...(d.folders.music ? { music: d.folders.readOnly.music } : {}),
+    },
   },
   indexers: d.indexers,
   subtitleLanguages: d.subtitleLanguages,
@@ -322,6 +353,8 @@ export function Setup() {
               downloads: found.folders.downloads,
               shows: found.folders.shows ?? '',
               music: found.folders.music ?? '',
+              // what highsea suggests: only reading the folders that already hold something
+              readOnly: found.folders.readOnly ?? { movies: false, shows: false, music: false },
             }
           : s.draft.folders,
         indexers: pack.status === 'success' ? pack.data.map((d) => d.id) : [],
@@ -713,6 +746,16 @@ function Review({
       {text}
     </Text>
   )
+  // a library folder, with Settings' badge when highsea only reads it (ADR 0063, 2026-11-17)
+  const libraryText = (key: LibraryKey) =>
+    draft.folders.readOnly[key] ? (
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: s['2'] }}>
+        {monoText(draft.folders[key])}
+        <Badge tone="info">{t('folders.readOnlyBadge')}</Badge>
+      </View>
+    ) : (
+      monoText(draft.folders[key])
+    )
 
   type Row = {
     id: string
@@ -748,10 +791,10 @@ function Review({
       label: t('review.folders'),
       value: (
         <View>
-          {monoText(movies)}
+          {libraryText('movies')}
           {monoText(downloads)}
-          {draft.folders.shows ? monoText(draft.folders.shows) : null}
-          {draft.folders.music ? monoText(draft.folders.music) : null}
+          {draft.folders.shows ? libraryText('shows') : null}
+          {draft.folders.music ? libraryText('music') : null}
         </View>
       ),
       note:
@@ -1026,6 +1069,10 @@ function Folders({
   )
   const set = (key: FolderKey, path: string) =>
     update({ folders: { ...draft.folders, [key]: path } })
+  const setReadOnly = (key: LibraryKey, readOnly: boolean) =>
+    update({
+      folders: { ...draft.folders, readOnly: { ...draft.folders.readOnly, [key]: readOnly } },
+    })
   return (
     <>
       {FOLDER_KEYS.map((key) => (
@@ -1048,6 +1095,21 @@ function Folders({
             </View>
             <Button onPress={() => setPicking(key)}>{t('folders.browse')}</Button>
           </View>
+          {/* ADR 0063, 2026-11-17: another app's library, which highsea only reads */}
+          {key !== 'downloads' && draft.folders[key] ? (
+            <View style={{ marginTop: s['2'] }}>
+              <Switch
+                label={t('folders.readOnly')}
+                hint={
+                  draft.folders.readOnly[key]
+                    ? t(`folders.readOnlyHint.${key}`)
+                    : t('folders.managedHint')
+                }
+                checked={draft.folders.readOnly[key]}
+                onCheckedChange={(v) => setReadOnly(key, v)}
+              />
+            </View>
+          ) : null}
         </Field>
       ))}
       {movies && downloads && movies !== downloads && check.status === 'success' && (

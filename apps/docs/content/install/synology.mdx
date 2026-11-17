@@ -42,9 +42,11 @@ highsea has its own package source, which lists the package in Package Center an
 6. On **Your shared folder**, choose the shared folder that holds your films, shows and music from the list of the NAS's shared folders, or keep **highsea, a new shared folder**.
 7. Read **Before you start**, check the summary, and choose **Done**.
 
+![The package's first step, Your shared folder, with its list open: highsea first, then the NAS's shared folders apps, data, docker, homes, share and web](/images/synology-package-wizard.png)
+
 Container Manager then downloads highsea's image and starts it, which can take a few minutes. When Package Center shows highsea as running, choose **Open**, or open `http://<your NAS's address>:3000`, and [run setup](#run-setup).
 
-The package runs highsea as its own DSM user, `highsea`, and gives that user read and write access to the shared folder you chose, which highsea sees as `/data`. The package doesn't look inside it: setup, and later **Settings › Media management**, choose which folders hold your films, shows and music, however they're laid out. Adding a folder moves and renames nothing. When Radarr, Sonarr or another app already files a library folder, turn on **Only read this folder** for it in **Settings › Media management** before highsea downloads anything; [Root folders](/settings/media-management/root-folders/#a-library-another-app-manages) says what that changes. What highsea makes itself, such as scrub previews and transcodes, goes in a `highsea` folder in the shared folder. The package finds the graphics chip and DSM's mDNS service by itself, so there's nothing else to choose. highsea's settings, database and backups live in the package's own folder on the volume.
+The package runs highsea as its own DSM user, `highsea`, and gives that user read and write access to the shared folder you chose, which highsea sees as `/data`. The package doesn't look inside it: setup, and later **Settings › Media management**, choose which folders hold your films, shows and music, however they're laid out. Adding a folder moves and renames nothing. Setup marks a library folder that already holds something as **Only read**, so a library Radarr, Sonarr or another app files is left as it is unless you choose otherwise; [Root folders](/settings/media-management/root-folders/#a-library-another-app-manages) says what that changes. What highsea makes itself, such as scrub previews and transcodes, goes in a `highsea` folder in the shared folder. The package finds the graphics chip and DSM's mDNS service by itself, so there's nothing else to choose. highsea's settings, database and backups live in the package's own folder on the volume.
 
 If highsea already runs as a Container Manager project you made, stop and delete that project first: both use port 3000, and the package says so if the port is taken. The package starts with its own settings.
 
@@ -123,7 +125,7 @@ The `/run/dbus` line lets highsea announce itself through DSM's own mDNS service
 
 Open `http://<your NAS's address>:3000`. highsea opens its setup; [Install with Docker › Run setup](/install/docker/#run-setup) walks through each step.
 
-Setup finds `/data/media/movies` and `/data/downloads` inside the container, or makes them in an empty `data` folder, so it asks only for the owner account. On Review, **Address on your network** is the address you opened setup at, since the project uses a bridge network: check it's the NAS's address.
+Setup finds `/data/media/movies` and `/data/downloads` inside the container, or makes them in an empty `data` folder, so it asks only for the owner account. On Review, **Folders** marks each library folder that already holds something as **Only read**; choose **Change** to let highsea manage one. Also on Review, **Address on your network** is the address you opened setup at, since the project uses a bridge network: check it's the NAS's address.
 
 Apps on your network find highsea by its broadcast on port 7368 and by mDNS. If one doesn't, give it the NAS's address.
 

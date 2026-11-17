@@ -100,5 +100,5 @@ The package's wizard asks for one thing, the shared folder that holds the librar
 
 Consequences:
 
-- A library another app files is protected by highsea's own check (`assertWritable`), not the kernel, until the owner turns on **Only read this folder**: setup adds what it finds as managed. Adding a folder moves and renames nothing, but downloads and subtitles could land in it before then. Setup offering **Only read it** is left for later.
+- A library another app files is protected by highsea's own check (`assertWritable`), not the kernel. Setup adds a library folder that already holds something as one highsea only reads unless the owner turns that off on Review (ADR 0063's section of this date), so finishing setup without a look leaves another app's files as they are.
 - An install of 0.4.0 that highsea managed kept its previews and transcodes at the share's top; after this update they're made again in `/data/highsea`, and the old ones can be deleted. `package.conf`'s `library=` from 0.4.0 is ignored.
