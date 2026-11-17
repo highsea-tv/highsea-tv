@@ -136,6 +136,20 @@ function walk(dir: string, base: string): Entry[] {
   return entries
 }
 
+/**
+ * The wizards. install_uifile.sh writes the install wizard and, run as upgrade_uifile.sh, the
+ * upgrade wizard with the current choices, so one script is packed under both names (DSM 7
+ * Developer Guide, WIZARD_UIFILES: each runs before its action).
+ */
+function wizards(): Entry[] {
+  const entries = walk(join(SOURCE, 'WIZARD_UIFILES'), 'WIZARD_UIFILES/')
+  const install = entries.find((e) => e.name === 'WIZARD_UIFILES/install_uifile.sh')
+  if (!install) throw new Error('WIZARD_UIFILES/install_uifile.sh is missing.')
+  return [...entries, { ...install, name: 'WIZARD_UIFILES/upgrade_uifile.sh' }].sort((a, b) =>
+    a.name.localeCompare(b.name),
+  )
+}
+
 /** The compose project, with the image pinned to this release, as package.tgz. */
 export function packageTgz(version: string, mtime: number): Buffer {
   const entries = walk(join(SOURCE, 'package'), '').map((e) =>
@@ -167,7 +181,7 @@ export function spk(
     { name: 'conf', mode: 0o755 },
     ...walk(join(SOURCE, 'conf'), 'conf/'),
     { name: 'WIZARD_UIFILES', mode: 0o755 },
-    ...walk(join(SOURCE, 'WIZARD_UIFILES'), 'WIZARD_UIFILES/'),
+    ...wizards(),
     { name: 'PACKAGE_ICON.PNG', mode: 0o644, body: readFileSync(join(SOURCE, 'PACKAGE_ICON.PNG')) },
     { name: 'PACKAGE_ICON_256.PNG', mode: 0o644, body: readFileSync(ICON_256) },
   ]

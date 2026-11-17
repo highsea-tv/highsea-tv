@@ -19,6 +19,8 @@ description: Install highsea's package from its package source in Package Center
     https://kb.synology.com/en-global/DSM/tutorial/How_to_install_applications_with_Package_Center
   - The package source: apps/packages (packages.highsea.tv). Tried on DSM 7.4.1 on 2026-10-29:
     adding it, installing from Community, and Update.
+  - The shared folder list and the update wizard: ADR 0057's section of 2026-11-17, tried on a
+    DS1520+ on 2026-11-16 (install, update to another shared folder, and an update refused).
 */}
 
 Written for highsea 0.2.0 on DSM 7.2 or later with Container Manager, and checked on DSM 7.4.1.
@@ -37,15 +39,14 @@ highsea has its own package source, which lists the package in Package Center an
 3. Type `highsea` as the **Name** and `https://packages.highsea.tv` as the **Location**, then choose **OK** twice.
 4. Choose **Community** in Package Center's sidebar, find **highsea**, and choose **Install**.
 5. DSM says the package isn't from Synology. Choose **Agree** to carry on.
-6. On **Where your films go**, type the name of the shared folder your films are in, or keep `highsea` to make a new shared folder.
-7. On **Who manages your films**, keep **highsea manages them**, or choose **Another app does; highsea only reads the media folder** when Radarr, Sonarr or another app already files your films in the shared folder's `media` folder.
-8. Read **Before you start**, check the summary, and choose **Done**.
+6. On **Your shared folder**, choose the shared folder that holds your films, shows and music from the list of the NAS's shared folders, or keep **highsea, a new shared folder**.
+7. Read **Before you start**, check the summary, and choose **Done**.
 
-![The package's first step, Where your films go, asking for a shared folder with highsea filled in](/images/synology-package-wizard.png)
+![The package's first step, Your shared folder, with its list open: highsea first, then the NAS's shared folders apps, data, docker, homes, share and web](/images/synology-package-wizard.png)
 
 Container Manager then downloads highsea's image and starts it, which can take a few minutes. When Package Center shows highsea as running, choose **Open**, or open `http://<your NAS's address>:3000`, and [run setup](#run-setup).
 
-The package runs highsea as its own DSM user, `highsea`, and gives that user read and write access to the shared folder you chose. When another app manages your films, the package gives highsea the `media` folder read-only, so nothing highsea does can change it, and highsea keeps everything it makes in a `highsea` folder of its own in the shared folder: its downloads, scrub previews and transcodes. The other app's `downloads` folder is left to it. The `media` folder must be there before you install. Setup then adds its folders as ones highsea only reads; [Root folders](/settings/media-management/root-folders/#a-library-another-app-manages) says what that changes. An update keeps the choice. It finds the graphics chip and DSM's mDNS service by itself, so there's nothing else to choose. highsea's settings, database and backups live in the package's own folder on the volume.
+The package runs highsea as its own DSM user, `highsea`, and gives that user read and write access to the shared folder you chose, which highsea sees as `/data`. The package doesn't look inside it: setup, and later **Settings › Media management**, choose which folders hold your films, shows and music, however they're laid out. Adding a folder moves and renames nothing. Setup marks a library folder that already holds something as **Only read**, so a library Radarr, Sonarr or another app files is left as it is unless you choose otherwise; [Root folders](/settings/media-management/root-folders/#a-library-another-app-manages) says what that changes. What highsea makes itself, such as scrub previews and transcodes, goes in a `highsea` folder in the shared folder. The package finds the graphics chip and DSM's mDNS service by itself, so there's nothing else to choose. highsea's settings, database and backups live in the package's own folder on the volume.
 
 If highsea already runs as a Container Manager project you made, stop and delete that project first: both use port 3000, and the package says so if the port is taken. The package starts with its own settings.
 
@@ -53,13 +54,15 @@ If highsea already runs as a Container Manager project you made, stop and delete
 
 When a new version is out, Package Center shows **Update** on highsea, under **Installed**, and notifies you if its notifications are on. Package Center checks its sources from time to time, so an update can take a while to show. To have it update highsea by itself, turn that on in **Settings › Auto-update**. The shared folder and highsea's settings are kept.
 
+An update you start from Package Center shows **Your shared folder** again, with the one highsea uses now first in the list. Keep it, or choose another to move highsea there. highsea's library and downloads folders keep their paths under `/data`, so check them in **Settings › Media management** after the update. The shared folder used before keeps highsea's access until you remove it in **Control Panel › Shared Folder › Edit › Permissions**. If the shared folder you chose won't do, Package Center says why and leaves highsea as it was.
+
 ### Without the package source
 
 Each stable release on [GitHub](https://github.com/highsea-tv/highsea-tv/releases) also has the package under **Assets**, named like `highsea-0.2.0-0001.spk`. Download it, choose **Manual Install** in Package Center, choose the file, and carry on from step 5. Package Center doesn't tell you about updates to a package installed this way: install the newer release's `.spk` the same way.
 
 ### Uninstall
 
-Choose **Uninstall** in Package Center. Your films and the shared folder are kept, with the `highsea` folder in it if another app manages your films; delete that folder in File Station if you won't install highsea again. highsea's settings, database and backups are kept too, so installing again carries on where it left off, unless you tick **Also delete highsea's settings, database and backups**. To remove the package source as well, select it in **Settings › Package Sources** and choose **Delete**.
+Choose **Uninstall** in Package Center. Your films and the shared folder are kept, with the `highsea` folder in it; delete that folder in File Station if you won't install highsea again. highsea's settings, database and backups are kept too, so installing again carries on where it left off, unless you tick **Also delete highsea's settings, database and backups**. To remove the package source as well, select it in **Settings › Package Sources** and choose **Delete**.
 
 ## Before you start
 
@@ -122,7 +125,7 @@ The `/run/dbus` line lets highsea announce itself through DSM's own mDNS service
 
 Open `http://<your NAS's address>:3000`. highsea opens its setup; [Install with Docker › Run setup](/install/docker/#run-setup) walks through each step.
 
-Setup finds `/data/media/movies` and `/data/downloads` inside the container, or makes them in an empty `data` folder, so it asks only for the owner account. On Review, **Address on your network** is the address you opened setup at, since the project uses a bridge network: check it's the NAS's address.
+Setup finds `/data/media/movies` and `/data/downloads` inside the container, or makes them in an empty `data` folder, so it asks only for the owner account. On Review, **Folders** marks each library folder that already holds something as **Only read**; choose **Change** to let highsea manage one. Also on Review, **Address on your network** is the address you opened setup at, since the project uses a bridge network: check it's the NAS's address.
 
 Apps on your network find highsea by its broadcast on port 7368 and by mDNS. If one doesn't, give it the NAS's address.
 

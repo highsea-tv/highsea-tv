@@ -43,7 +43,7 @@ If Radarr, Sonarr or another app already files your films, highsea can play them
 
 **System** lists each folder highsea only reads, as a note rather than a problem. Turn **Only read this folder** off when you want highsea to manage the folder.
 
-The safest way is to give highsea the folder read-only, so nothing it does can change it: mount it with `:ro` in Docker (see [Docker](/install/docker/#a-library-another-app-manages)), or choose **Another app does** when [installing the Synology package](/install/synology/#install-the-package). highsea then sees the folder can't be written to, adds it as **Only read** by itself, and says "It's mounted read-only, so highsea only reads it." A folder highsea can't write to can't be switched to managed until it's mounted read-write.
+The safest way is to give highsea the folder read-only, so nothing it does can change it: mount it with `:ro` in Docker (see [Docker](/install/docker/#a-library-another-app-manages)). highsea then sees the folder can't be written to, adds it as **Only read** by itself, and says "It's mounted read-only, so highsea only reads it." A folder highsea can't write to can't be switched to managed until it's mounted read-write. The [Synology package](/install/synology/#install-the-package) gives highsea read and write access to its whole shared folder, so there highsea's own check is what keeps it out. Setup adds a library folder that already holds something as **Only read** unless you turned that off on Review, and you turn it on here for a folder you add later.
 
 ## Films already in the folder
 

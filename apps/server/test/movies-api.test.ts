@@ -2,7 +2,7 @@
 // The checkpoint 4 routes through the SDK, as the admin and the apps call them, on TMDB's
 // recordings (ADR 0029): each route's happy path, and who may not.
 import { afterEach, describe, expect, test } from 'bun:test'
-import { mkdirSync } from 'node:fs'
+import { mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { Runtime } from '@highsea-tv/runtime'
 import { createApi } from '../src/api/app.ts'
@@ -135,6 +135,43 @@ describe('metadata settings and the setup key step', () => {
     expect((await failure(anon.setup.checkMetadataKey({ body: { key: 'a-good-key' } }))).code).toBe(
       'not-found',
     )
+  })
+
+  test('setup only reads a library folder that already holds something, unless told otherwise', async () => {
+    // ADR 0063, 2026-11-17: another app's films, and an empty folder for shows
+    const runtime = await bootRuntime()
+    const app = createApi(runtime)
+    const defaults = await clientFor(app).setup.defaults()
+    const root = runtime.config.dataDir
+    const movies = join(root, 'media', 'movies')
+    const shows = join(root, 'media', 'tv')
+    const music = join(root, 'media', 'music')
+    mkdirSync(join(movies, 'Arrival (2016)'), { recursive: true })
+    writeFileSync(join(movies, 'Arrival (2016)', 'Arrival (2016).mkv'), 'film')
+    mkdirSync(shows, { recursive: true })
+    mkdirSync(join(music, 'Low'), { recursive: true })
+    const res = await app.request(`${ORIGIN}/api/v1/setup`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', origin: ORIGIN },
+      body: JSON.stringify({
+        serverName: 'Harbor',
+        owner: OWNER,
+        // music held something, but the owner chose to let highsea manage it
+        folders: {
+          movies,
+          downloads: defaults.folders.downloads,
+          shows,
+          music,
+          readOnly: { music: false },
+        },
+        remoteAccess: { kind: 'local-only' },
+      }),
+    })
+    expect(res.status).toBe(200)
+    const kinds = Object.fromEntries(
+      runtime.media.rootFolders.list().map((f) => [f.kind, f.readOnly]),
+    )
+    expect(kinds).toEqual({ movies: true, shows: false, music: false })
   })
 
   test('public info has the movies source and TMDB’s notice', async () => {

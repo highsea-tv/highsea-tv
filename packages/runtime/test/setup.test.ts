@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { afterEach, describe, expect, test } from 'bun:test'
-import { mkdirSync, mkdtempSync, rmSync, symlinkSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { AppError } from '@highsea-tv/core'
@@ -116,6 +116,7 @@ describe('setup', () => {
       downloads: join(c.dataDir, 'downloads'),
       shows: null,
       music: null,
+      readOnly: { movies: false, shows: false, music: false },
     })
     // TRaSH's layout first, matched without regard to case; torrents for downloads
     rmSync(join(c.dataDir, 'movies'), { recursive: true })
@@ -127,6 +128,7 @@ describe('setup', () => {
       downloads: join(c.dataDir, 'torrents'),
       shows: null,
       music: null,
+      readOnly: { movies: false, shows: false, music: false },
     })
     // shows and music beside the movies (Phase 5 A1), TRaSH's names first
     mkdirSync(join(c.dataDir, 'Media', 'TV'))
@@ -138,6 +140,12 @@ describe('setup', () => {
     // movies without downloads: downloads goes beside them
     rmSync(join(c.dataDir, 'torrents'), { recursive: true })
     expect(detectFolders(c)?.downloads).toBe(join(c.dataDir, 'downloads'))
+    // a folder that already holds something is suggested as one highsea only reads; Synology's
+    // @eaDir and hidden files don't count (ADR 0063, 2026-11-17)
+    mkdirSync(join(c.dataDir, 'Media', 'Movies', '@eaDir'))
+    writeFileSync(join(c.dataDir, 'Media', 'Music', '.DS_Store'), '')
+    mkdirSync(join(c.dataDir, 'Media', 'TV', 'Severance (2022)'))
+    expect(detectFolders(c)?.readOnly).toEqual({ movies: false, shows: true, music: false })
     // other folders and no movies: the owner points at them
     rmSync(join(c.dataDir, 'Media'), { recursive: true })
     mkdirSync(join(c.dataDir, 'tv'))
@@ -146,7 +154,12 @@ describe('setup', () => {
     rmSync(join(c.dataDir, 'tv'), { recursive: true })
     mkdirSync(join(c.dataDir, 'lost+found'))
     mkdirSync(join(c.dataDir, 'transcodes'))
-    expect(detectFolders(c)).toEqual({ ...setupDefaults(c).folders, shows: null, music: null })
+    expect(detectFolders(c)).toEqual({
+      ...setupDefaults(c).folders,
+      shows: null,
+      music: null,
+      readOnly: { movies: false, shows: false, music: false },
+    })
   })
 
   test('a work folder of its own: downloads go in it, and it isn’t the library (ADR 0063)', () => {
@@ -165,13 +178,19 @@ describe('setup', () => {
       downloads: join(own, 'downloads'),
       shows: null,
       music: null,
+      readOnly: { movies: false, shows: false, music: false },
     })
     expect(setupDefaults(c).folders.downloads).toBe(join(own, 'downloads'))
     // a share with only highsea's own folder in it is empty: highsea's own layout
     rmSync(join(c.dataDir, 'movies'), { recursive: true })
     rmSync(join(c.dataDir, 'downloads'), { recursive: true })
     mkdirSync(own)
-    expect(detectFolders(c)).toEqual({ ...setupDefaults(c).folders, shows: null, music: null })
+    expect(detectFolders(c)).toEqual({
+      ...setupDefaults(c).folders,
+      shows: null,
+      music: null,
+      readOnly: { movies: false, shows: false, music: false },
+    })
     // unset or blank, it's the data folder, as before
     expect(
       loadConfig({ HIGHSEA_DATA_DIR: c.dataDir, HIGHSEA_WORK_DIR: ' ' }).workDir,
