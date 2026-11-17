@@ -1,45 +1,10 @@
 #!/bin/sh
 # SPDX-License-Identifier: AGPL-3.0-only
 # Writes the compose project's .env into the unpacked package, before Container Manager creates the
-# project from it. An install takes the wizard's choices. An upgrade takes the upgrade wizard's,
-# which shows the current ones (WIZARD_UIFILES/install_uifile.sh, packed as upgrade_uifile.sh too),
-# and keeps what postinst saved when no wizard ran: postinst saves it in the package's var folder
-# (@appdata, kept across upgrades); /var/packages/highsea/var isn't linked while the new version's
-# preinst runs, so it's read from the volume.
+# project from it, from the shared folder common's choose() reads and checks.
 . "$(dirname "$0")/common"
 
-saved="${SYNOPKG_PKGDEST_VOL:-/volume1}/@appdata/highsea/package.conf"
-share=""
-library=""
-# a singleselect's options reach the script as their keys, true or false (WIZARD_UIFILES 7.2.2:
-# "their keys will be set in the script environment variables with true, false, or text values")
-if [ "$SYNOPKG_PKG_STATUS" = UPGRADE ]; then
-  if [ "${wizard_upgrade_managed:-}" = true ] || [ "${wizard_upgrade_read_only:-}" = true ]; then
-    share="${wizard_data_share:-}"
-    library=managed
-    [ "${wizard_upgrade_read_only:-false}" = true ] && library=read-only
-  elif [ -r "$saved" ]; then
-    share=$(sed -n 's/^share=//p' "$saved")
-    library=$(sed -n 's/^library=//p' "$saved")
-  fi
-fi
-[ -n "$share" ] || share="${wizard_data_share:-}"
-# the install wizard's choice (Phase 5 A1, ADR 0063); an install from before the choice is managed
-if [ -z "$library" ]; then
-  library=managed
-  [ "${wizard_library_read_only:-false}" = true ] && library=read-only
-fi
-if [ -z "$share" ]; then
-  say "Choose a shared folder for highsea."
-  exit 1
-fi
-# a shared folder's name, which the .env quotes: no slash, quote, backslash, dollar or backtick
-case "$share" in
-  */* | *[\"\\\'\$\`]* | .* | @* | \#*)
-    say "highsea can't use the shared folder $share. Choose another."
-    exit 1
-    ;;
-esac
+choose || exit 1
 
 if [ "$SYNOPKG_PKG_STATUS" = INSTALL ] && listening 3000; then
   say "Something on this NAS already uses port 3000. If it's highsea in Container Manager, stop and delete that project first, then install the package again."
@@ -55,30 +20,8 @@ for node in /dev/dri/renderD*; do
   break
 done
 
-# read-only: the shared folder's media folder is mounted again over /data/media, read-only, so the
-# kernel refuses every write there (EROFS) and highsea only reads it; downloads stay writable.
-# Managed: Compose can't leave a mount out by a variable, so the empty folder is mounted read-only
-# somewhere highsea never looks.
-# The shared folder then belongs to that app's stack too, so what highsea makes (its downloads,
-# previews and transcodes) goes in one folder of its own, `highsea`, which highsea creates: DSM
-# grants the shared folder's permission only after postinst (the data-share worker's timing is
-# FROM_ENABLE_TO_POSTUNINST, https://help.synology.com/developer-guide/resource_acquisition/data_share.html).
-if [ "$library" = read-only ]; then
-  media="/var/packages/highsea/shares/$share/media"
-  media_at=/data/media
-  work=/data/highsea
-else
-  media=/var/packages/highsea/target/compose/no-graphics
-  media_at=/run/highsea-unused
-  work=
-fi
-
 cat > "$SYNOPKG_PKGINST_TEMP_DIR/compose/.env" <<ENV
 HIGHSEA_DATA='/var/packages/highsea/shares/$share'
-HIGHSEA_LIBRARY=$library
-HIGHSEA_MEDIA='$media'
-HIGHSEA_MEDIA_AT=$media_at
-HIGHSEA_WORK=$work
 HIGHSEA_DRI=$dri
 HIGHSEA_RENDER_GID=$gid
 HIGHSEA_HOSTNAME=$(hostname -s 2>/dev/null || hostname)

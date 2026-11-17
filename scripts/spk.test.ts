@@ -237,16 +237,10 @@ describe('spk', () => {
   ]
   const shareItem = (steps: Step[]) => steps[0]?.items[0]
   const shareList = (steps: Step[]) => shareItem(steps)?.subitems?.[0]?.store?.data ?? []
-  const choices = (steps: Step[]) =>
-    Object.fromEntries((steps[1]?.items[0]?.subitems ?? []).map((s) => [s.key, s.defaultValue]))
-
   test("install: a dropdown of the volumes' shared folders, a new highsea first", () => {
     const steps = wizard('install_uifile.sh', NAS)
-    expect(steps.map((s) => s.step_title)).toEqual([
-      'Your shared folder',
-      'Who manages your library',
-      'Before you start',
-    ])
+    // only the shared folder: the library's folders in it are chosen in setup and Settings
+    expect(steps.map((s) => s.step_title)).toEqual(['Your shared folder', 'Before you start'])
     expect(shareItem(steps)?.type).toBe('combobox')
     expect(shareItem(steps)?.subitems?.[0]).toMatchObject({
       key: 'wizard_data_share',
@@ -262,7 +256,6 @@ describe('spk', () => {
       ['my films', 'my films'],
       ['video', 'video'],
     ])
-    expect(choices(steps)).toEqual({ wizard_library_managed: true, wizard_library_read_only: false })
     for (const step of steps) expect(JSON.stringify(step)).not.toContain('!')
   })
 
@@ -273,26 +266,26 @@ describe('spk', () => {
     ])
   })
 
-  test('install again after an uninstall that kept the settings: the choices made before', () => {
+  test('install again after an uninstall that kept the settings: the folder chosen before', () => {
+    // an install of 0.4.0 saved who managed the library too, which is no longer asked
     const steps = wizard('install_uifile.sh', NAS, {
       at: 'kept',
       conf: 'share=data\nlibrary=read-only\n',
     })
     expect(shareList(steps)[0]).toEqual(['data (as before)', 'data'])
     expect(shareList(steps).filter(([, v]) => v === 'data')).toHaveLength(1)
-    expect(choices(steps)).toEqual({ wizard_library_managed: false, wizard_library_read_only: true })
+    expect(shareItem(steps)?.subitems?.[0]?.key).toBe('wizard_data_share')
   })
 
-  test('upgrade: the current choices, under keys of its own, and what changes', () => {
-    const steps = wizard('upgrade_uifile.sh', NAS, {
-      at: 'installed',
-      conf: 'share=data\nlibrary=read-only\n',
-    })
+  test('upgrade: the current folder, under a key of its own, and what changes', () => {
+    const steps = wizard('upgrade_uifile.sh', NAS, { at: 'installed', conf: 'share=data\n' })
     expect(shareList(steps)[0]).toEqual(['data (now)', 'data'])
-    expect(shareItem(steps)?.subitems?.[0]?.defaultValue).toBe('data')
-    expect(choices(steps)).toEqual({ wizard_upgrade_managed: false, wizard_upgrade_read_only: true })
-    expect(steps[2]?.step_title).toBe('What changes')
-    expect(steps[2]?.items[0]?.desc).toContain('Control Panel')
+    expect(shareItem(steps)?.subitems?.[0]).toMatchObject({
+      key: 'wizard_upgrade_share',
+      defaultValue: 'data',
+    })
+    expect(steps.map((s) => s.step_title)).toEqual(['Your shared folder', 'What changes'])
+    expect(steps[1]?.items[0]?.desc).toContain('Control Panel')
   })
 
   test('a name the .env could not quote is left out', () => {
@@ -326,15 +319,18 @@ describe('manifestOf', () => {
 })
 
 describe('preinst', () => {
-  /** preinst in a folder of its own, run with DSM's variables, after an install saved `saved`. */
-  function preinst(env: Record<string, string>, saved?: string) {
+  /**
+   * preinst (or another script) in a folder of its own, run with DSM's variables, after an install
+   * saved `saved`.
+   */
+  function preinst(env: Record<string, string>, saved?: string, script = 'preinst') {
     const dir = temp()
     mkdirSync(join(dir, 'unpacked/compose'), { recursive: true })
     mkdirSync(join(dir, 'volume1/@appdata/highsea'), { recursive: true })
     if (saved) writeFileSync(join(dir, 'volume1/@appdata/highsea/package.conf'), saved)
     const log = join(dir, 'message')
     writeFileSync(log, '')
-    const result = spawnSync('sh', [join(SOURCE, 'scripts/preinst')], {
+    const result = spawnSync('sh', [join(SOURCE, 'scripts', script)], {
       env: {
         PATH: process.env.PATH ?? '/usr/bin:/bin',
         SYNOPKG_PKGINST_TEMP_DIR: join(dir, 'unpacked'),
@@ -369,73 +365,43 @@ describe('preinst', () => {
     expect(r.env).toContain("HIGHSEA_DATA='/var/packages/highsea/shares/highsea-test'\n")
   })
 
-  test('highsea manages the films unless told otherwise; the extra mount is an empty folder', () => {
-    const r = preinst({ SYNOPKG_PKG_STATUS: 'INSTALL', wizard_data_share: 'data' })
-    expect(r.env).toContain('HIGHSEA_LIBRARY=managed\n')
-    expect(r.env).toContain("HIGHSEA_MEDIA='/var/packages/highsea/target/compose/no-graphics'\n")
-    expect(r.env).toContain('HIGHSEA_MEDIA_AT=/run/highsea-unused\n')
-    // highsea's own files go in the shared folder itself, as before
-    expect(r.env).toContain('HIGHSEA_WORK=\n')
-  })
-
-  test('another app manages them: the media folder is mounted over /data/media read-only (ADR 0063)', () => {
+  test('mounts only the shared folder; highsea keeps what it makes in a folder of its own', () => {
+    // which folders hold the library, and whether highsea only reads them, is chosen in setup and
+    // Settings, so the package assumes no folder in the share (ADR 0057, 2026-11-17)
     const r = preinst({
       SYNOPKG_PKG_STATUS: 'INSTALL',
       wizard_data_share: 'data',
-      wizard_library_managed: 'false',
       wizard_library_read_only: 'true',
     })
     expect(r.status).toBe(0)
-    expect(r.env).toContain('HIGHSEA_LIBRARY=read-only\n')
-    expect(r.env).toContain("HIGHSEA_MEDIA='/var/packages/highsea/shares/data/media'\n")
-    expect(r.env).toContain('HIGHSEA_MEDIA_AT=/data/media\n')
+    expect(r.env).not.toContain('MEDIA')
+    expect(r.env).not.toContain('LIBRARY')
     const compose = readFileSync(join(SOURCE, 'package/compose/compose.yaml'), 'utf8')
-    // Compose's variables, not a template string's
-    expect(compose).toContain(['- $', '{HIGHSEA_MEDIA}:$', '{HIGHSEA_MEDIA_AT}:ro'].join(''))
-    // the shared folder is that app's stack's too, so highsea keeps what it makes in its own folder
-    // (2026-11-16, after the owner's NAS test found its previews at the top of their share)
-    expect(r.env).toContain('HIGHSEA_WORK=/data/highsea\n')
-    expect(compose).toContain(['HIGHSEA_WORK_DIR: $', '{HIGHSEA_WORK:-}'].join(''))
+    expect(compose).not.toContain('media')
+    expect(compose).toContain('HIGHSEA_WORK_DIR: /data/highsea\n')
+    expect(compose).toContain(['- $', '{HIGHSEA_DATA}:/data\n'].join(''))
   })
 
-  test('an upgrade keeps the choice made at install', () => {
+  test('an upgrade keeps the folder saved by 0.4.0, which saved who managed the library too', () => {
     const r = preinst(
       { SYNOPKG_PKG_STATUS: 'UPGRADE', wizard_data_share: 'highsea' },
       'share=data\nlibrary=read-only\n',
     )
-    expect(r.env).toContain('HIGHSEA_LIBRARY=read-only\n')
-    expect(r.env).toContain("HIGHSEA_MEDIA='/var/packages/highsea/shares/data/media'\n")
-    // an install from before the choice was managed
-    expect(
-      preinst({ SYNOPKG_PKG_STATUS: 'UPGRADE', wizard_data_share: 'highsea' }, 'share=data\n').env,
-    ).toContain('HIGHSEA_LIBRARY=managed\n')
+    expect(r.status).toBe(0)
+    expect(r.env).toContain("HIGHSEA_DATA='/var/packages/highsea/shares/data'\n")
   })
 
-  test('an upgrade through the upgrade wizard takes what was chosen there', () => {
+  test('an upgrade through the upgrade wizard takes the folder chosen there', () => {
     const r = preinst(
       {
         SYNOPKG_PKG_STATUS: 'UPGRADE',
-        wizard_data_share: 'video',
-        wizard_upgrade_managed: 'true',
-        wizard_upgrade_read_only: 'false',
+        wizard_data_share: 'highsea',
+        wizard_upgrade_share: 'video',
       },
-      'share=data\nlibrary=read-only\n',
+      'share=data\n',
     )
     expect(r.status).toBe(0)
     expect(r.env).toContain("HIGHSEA_DATA='/var/packages/highsea/shares/video'\n")
-    expect(r.env).toContain('HIGHSEA_LIBRARY=managed\n')
-    expect(r.env).toContain('HIGHSEA_WORK=\n')
-    const ro = preinst(
-      {
-        SYNOPKG_PKG_STATUS: 'UPGRADE',
-        wizard_data_share: 'data',
-        wizard_upgrade_managed: 'false',
-        wizard_upgrade_read_only: 'true',
-      },
-      'share=data\nlibrary=managed\n',
-    )
-    expect(ro.env).toContain('HIGHSEA_LIBRARY=read-only\n')
-    expect(ro.env).toContain("HIGHSEA_MEDIA='/var/packages/highsea/shares/data/media'\n")
   })
 
   test('stops with a message when no folder was chosen', () => {
@@ -443,6 +409,21 @@ describe('preinst', () => {
     expect(r.status).toBe(1)
     expect(r.message).toContain('Choose a shared folder for highsea.')
     expect(r.env).toBe('')
+  })
+
+  test("preupgrade checks the upgrade wizard's folder before the old version is uninstalled", () => {
+    // DSM aborts the upgrade when preupgrade fails; a preinst that fails then leaves no package
+    // (the NAS test of 2026-11-16)
+    const env = { SYNOPKG_PKG_STATUS: 'UPGRADE', wizard_upgrade_share: "it's" }
+    const refused = preinst(env, 'share=data\n', 'preupgrade')
+    expect(refused.status).toBe(1)
+    expect(refused.message).toContain("highsea can't use the shared folder it's.")
+    // it writes nothing; preinst does
+    expect(refused.env).toBe('')
+    const fine = preinst({ ...env, wizard_upgrade_share: 'highsea' }, 'share=data\n', 'preupgrade')
+    expect(fine.status).toBe(0)
+    expect(fine.message).toBe('')
+    expect(fine.env).toBe('')
   })
 
   test('stops with a message for a name the .env could not quote', () => {

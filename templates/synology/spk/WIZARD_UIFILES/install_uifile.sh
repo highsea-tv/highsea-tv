@@ -24,13 +24,15 @@ esac
 # What was chosen before: the installed package's settings, or the ones an uninstall kept
 # (postinst writes them; postuninst deletes them only when told to).
 share=""
-library=""
 for conf in "$root/var/packages/highsea/var/package.conf" "$root"/volume*/@appdata/highsea/package.conf; do
   [ -r "$conf" ] || continue
   share=$(sed -n 's/^share=//p' "$conf")
-  library=$(sed -n 's/^library=//p' "$conf")
   break
 done
+
+# The upgrade wizard's key is its own, so preinst can tell an upgrade someone chose in Package
+# Center from one with no wizard, which still has the install wizard's default.
+if [ "$upgrade" = true ]; then key=wizard_upgrade_share; else key=wizard_data_share; fi
 
 # The shared folders: the volumes' top folders, without DSM's own (@appstore, #snapshot) and
 # without names the compose project's .env can't quote.
@@ -70,7 +72,10 @@ done <<NAMES
 $shares
 NAMES
 
-intro="highsea keeps everything in one shared folder: its downloads, and the films, shows and music it manages, so imports are hardlinks rather than copies. In highsea's setup and in Settings, you choose the library's and the downloads' folders inside it. highsea gets read and write access to this shared folder."
+# Only the shared folder: which folders in it hold the library, and whether highsea manages each one
+# or only reads it, are chosen in highsea's setup and Settings, since every library is laid out its
+# own way.
+intro="highsea gets read and write access to one shared folder, the one that holds your films, shows and music. Its downloads go there too, so imports are hardlinks rather than copies. In highsea's setup and in Settings, you choose the library's folders inside it, and whether highsea manages each one or only reads it. What highsea makes itself, such as previews and transcodes, goes in a highsea folder inside it."
 if [ -n "$shares" ]; then
   folder=$(cat <<JSON
       {
@@ -78,7 +83,7 @@ if [ -n "$shares" ]; then
         "desc": "$intro",
         "subitems": [
           {
-            "key": "wizard_data_share",
+            "key": "$key",
             "desc": "Shared folder",
             "defaultValue": "$first",
             "editable": false,
@@ -100,7 +105,7 @@ else
         "desc": "$intro Type the name of a shared folder, or keep highsea to make a new one.",
         "subitems": [
           {
-            "key": "wizard_data_share",
+            "key": "$key",
             "desc": "Shared folder",
             "defaultValue": "$first",
             "validator": {
@@ -117,20 +122,9 @@ JSON
 )
 fi
 
-# Who manages the library (Phase 5 A1, ADR 0063). The upgrade wizard's keys are its own, so
-# preinst can tell an upgrade someone chose in Package Center from one with no wizard.
-if [ "$upgrade" = true ]; then
-  managed_key=wizard_upgrade_managed
-  read_only_key=wizard_upgrade_read_only
-else
-  managed_key=wizard_library_managed
-  read_only_key=wizard_library_read_only
-fi
-if [ "$library" = read-only ]; then read_only=true; managed=false; else read_only=false; managed=true; fi
-
 if [ "$upgrade" = true ]; then
   last_title="What changes"
-  last="highsea's settings, database and backups are kept. If you chose another shared folder, the library's and the downloads' folders in highsea keep their paths, such as /data/media/movies: check them in Settings › Media management after the update. The shared folder used before keeps highsea's access until you remove it in Control Panel › Shared Folder › Edit › Permissions.<br><br>The guide: <a href='https://docs.highsea.tv/install/synology/' target='_blank'>docs.highsea.tv/install/synology</a>"
+  last="highsea's settings, database and backups are kept. If you chose another shared folder, the library's and the downloads' folders in highsea keep their paths under /data: check them in Settings › Media management after the update. The shared folder used before keeps highsea's access until you remove it in Control Panel › Shared Folder › Edit › Permissions.<br><br>The guide: <a href='https://docs.highsea.tv/install/synology/' target='_blank'>docs.highsea.tv/install/synology</a>"
 else
   last_title="Before you start"
   last="Container Manager downloads highsea's image and starts it, which can take a few minutes; you can follow it in Container Manager. Then open highsea at port 3000 of this NAS, for example http://your-nas:3000, and set it up there. highsea finds the graphics chip by itself.<br><br>The guide: <a href='https://docs.highsea.tv/install/synology/' target='_blank'>docs.highsea.tv/install/synology</a>"
@@ -143,19 +137,6 @@ cat > "${SYNOPKG_TEMP_LOGFILE:-/dev/stdout}" <<JSON
     "invalid_next_disabled": true,
     "items": [
 $folder
-    ]
-  },
-  {
-    "step_title": "Who manages your library",
-    "items": [
-      {
-        "type": "singleselect",
-        "desc": "If Radarr, Sonarr or another app already files your library in the shared folder's media folder, highsea can leave it as it is: it finds what's added there and plays it, but doesn't rename, delete or import anything into media. Downloads go to a highsea folder of its own in the shared folder.",
-        "subitems": [
-          { "key": "$managed_key", "desc": "highsea manages it", "defaultValue": $managed },
-          { "key": "$read_only_key", "desc": "Another app does; highsea only reads the media folder", "defaultValue": $read_only }
-        ]
-      }
     ]
   },
   {
