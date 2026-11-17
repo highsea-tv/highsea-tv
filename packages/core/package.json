@@ -10,7 +10,9 @@
     "./fetch": "./src/fetch.ts",
     "./events": "./src/events.ts",
     "./errors": "./src/errors.ts",
-    "./timers": "./src/timers.ts"
+    "./timers": "./src/timers.ts",
+    "./children": "./src/children.ts",
+    "./testing": "./src/testing.ts"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json"

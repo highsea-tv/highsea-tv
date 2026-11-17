@@ -40,6 +40,7 @@ bun run typecheck       # every workspace, plus scripts/
 bun run test            # everything (Bun's runner, each file isolated; never a bare `bun test`)
 bun run smoke           # the platform under Node, as production runs it
 bun run one-place       # fails when a component, screen or value is defined in two places
+bun run clean           # removes build output and stale highsea-* temp folders, says what it freed (--docker: the build cache too)
 
 bun run server          # the server in development, http://localhost:3000 (data in .dev/)
 bun run web             # the client's Expo dev server, http://localhost:3200/, proxying to bun run server

@@ -144,6 +144,9 @@ export async function setup() {
     runJobs,
     cleanup: async () => {
       movies.close()
+      // the jobs still running finish first, as at the runtime's shutdown: one that wrote into the
+      // folder after it was removed made it again and left it in the temp folder
+      await jobs.drain()
       await engine.close()
       rmSync(dir, { recursive: true, force: true })
     },

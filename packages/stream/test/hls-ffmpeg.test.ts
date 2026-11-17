@@ -4,7 +4,7 @@
 // demand from a keyframe, on the film's own timeline whichever run made them, a run paused when
 // it's far enough ahead, a transcode's keyframes every 6 s, WebVTT from an embedded track, a
 // failure's log, and trickplay's sheets.
-import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
+import { afterAll, afterEach, beforeAll, describe, expect, test } from 'bun:test'
 import { execFileSync, spawn as nodeSpawn } from 'node:child_process'
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -27,6 +27,19 @@ import {
 } from '../src/hls/index.ts'
 import { pgsBox } from '../src/testing/index.ts'
 import { makeTrickplay } from '../src/trickplay/index.ts'
+
+/**
+ * Sets of transcodes a test opens, closed after it whether it passes or not: a test that fails
+ * before its own `close()` would leave its runs, paused ones among them, going.
+ */
+const opened: { close(): Promise<void> }[] = []
+const closedAfter = <T extends { close(): Promise<void> }>(set: T) => {
+  opened.push(set)
+  return set
+}
+afterEach(async () => {
+  await Promise.all(opened.splice(0).map((s) => s.close()))
+})
 
 const ffmpeg = process.env.HIGHSEA_FFMPEG || 'ffmpeg'
 const ffprobe = process.env.HIGHSEA_FFPROBE || 'ffprobe'
@@ -349,17 +362,19 @@ describe.skipIf(!hasFfmpeg)('HLS with ffmpeg', () => {
   }
   /** Another set of transcodes in the same cache, with Settings › Playback’s limits. */
   const limited = (limits: Partial<Limits>, o: Partial<TranscodesOptions> = {}) =>
-    createTranscodes({
-      root: join(dir, 'limited'),
-      ffmpeg,
-      ffprobe,
-      spawn: slowed,
-      logger: { info: () => {}, warn: () => {}, error: () => {} },
-      aheadSeconds: 8,
-      farSeconds: 6,
-      limits: () => ({ maxTranscodes: 1, cacheBytes: null, preset: 'speed', ...limits }),
-      ...o,
-    })
+    closedAfter(
+      createTranscodes({
+        root: join(dir, 'limited'),
+        ffmpeg,
+        ffprobe,
+        spawn: slowed,
+        logger: { info: () => {}, warn: () => {}, error: () => {} },
+        aheadSeconds: 8,
+        farSeconds: 6,
+        limits: () => ({ maxTranscodes: 1, cacheBytes: null, preset: 'speed', ...limits }),
+        ...o,
+      }),
+    )
 
   test('past the transcode limit a transcode waits for a slot; a direct stream doesn’t count', async () => {
     const set = limited({ maxTranscodes: 1 })
@@ -682,14 +697,16 @@ describe.skipIf(!hasFfmpeg)('hardware and tone mapping, with ffmpeg (4.3b)', () 
   afterAll(() => rmSync(dir, { recursive: true, force: true }))
 
   const make = (hardware: () => Hardware) =>
-    createTranscodes({
-      root: join(dir, 'transcodes'),
-      ffmpeg,
-      ffprobe,
-      logger: { info: () => {}, warn: () => {}, error: () => {} },
-      hardware,
-      onHardwareFailure: (path) => failures.push(path),
-    })
+    closedAfter(
+      createTranscodes({
+        root: join(dir, 'transcodes'),
+        ffmpeg,
+        ffprobe,
+        logger: { info: () => {}, warn: () => {}, error: () => {} },
+        hardware,
+        onHardwareFailure: (path) => failures.push(path),
+      }),
+    )
 
   const source = (burnIn: HlsSource['burnIn'] = null): HlsSource => ({
     input: hdr,

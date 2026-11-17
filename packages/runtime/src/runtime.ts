@@ -839,7 +839,7 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
   })
   // what the host has, looked at in the background, so boot doesn't wait on ffmpeg; then each
   // path found without a check is checked, so a new install uses its chip with nothing to press
-  void hardware
+  const lookingAtHardware = hardware
     .start()
     .then(() => hardware.checkNew())
     .catch((e: Error) =>
@@ -1644,6 +1644,9 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
           log.error('a shutdown step failed', { error: (e as Error).message })
         }
       }
+      // what the hardware check runs is stopped, and waited for, before the data folder can go
+      hardware.stop()
+      await lookingAtHardware
       await vpn.stop()
       stopWatching()
       stopWatchSync()

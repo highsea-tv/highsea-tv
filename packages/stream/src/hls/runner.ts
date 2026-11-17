@@ -34,6 +34,7 @@ import { type ChildProcess, execFile, spawn as nodeSpawn } from 'node:child_proc
 import { existsSync } from 'node:fs'
 import { copyFile, mkdir, readdir, rm, stat } from 'node:fs/promises'
 import { join } from 'node:path'
+import { endWithProcess } from '@highsea-tv/core/children'
 import { unref } from '@highsea-tv/core/timers'
 import type { PlaybackDecision } from '../decision/index.ts'
 import { type Accel, type AccelPath, toneMapOn } from '../hardware/index.ts'
@@ -528,7 +529,8 @@ function createTranscode(id: string, source: HlsSource, ctx: Context) {
       accel,
       toneMap,
     }
-    const child = spawn(options.ffmpeg, runArgs(input))
+    // killed if this process ends first: a paused run would otherwise outlive it, stopped
+    const child = endWithProcess(spawn(options.ffmpeg, runArgs(input)))
     const r: Run = {
       child,
       first: s.first,

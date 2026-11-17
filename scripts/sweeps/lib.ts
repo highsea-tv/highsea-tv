@@ -15,6 +15,7 @@ import {
   PHONE_SCREEN,
   TV_SCREEN,
 } from '../../design/prototypes/src/chrome/client.ts'
+import { atExit } from './ending.ts'
 
 export const ROOT = join(import.meta.dir, '..', '..')
 
@@ -59,6 +60,17 @@ export async function servePrototypes(): Promise<() => void> {
   if (process.env.SWEEP_BASE) return () => {}
   const cwd = join(ROOT, 'design/prototypes')
   const out = mkdtempSync(join(tmpdir(), 'highsea-prototypes-'))
+  // stopped and removed however the run ends (ending.ts), a failed build included
+  let preview: ReturnType<typeof spawn> | undefined
+  const stop = () => {
+    // the preview may already have gone (ESRCH from its group's kill): nothing left to stop
+    try {
+      if (preview?.pid) process.kill(-preview.pid, 'SIGTERM')
+    } catch {}
+    preview = undefined
+    rmSync(out, { recursive: true, force: true })
+  }
+  const forget = atExit(stop)
   execFileSync('bunx', ['vite', 'build', '--outDir', out, '--emptyOutDir', '--logLevel', 'warn'], {
     cwd,
     stdio: 'inherit',
@@ -66,7 +78,7 @@ export async function servePrototypes(): Promise<() => void> {
   const port = process.env.SWEEP_PROTOTYPES_PORT ?? '4510'
   // Vite's own binary, not bunx: bunx starts it in a process group of its own, which the stop
   // below can't reach, and the server outlives the sweep
-  const preview = spawn(
+  preview = spawn(
     join(cwd, 'node_modules/.bin/vite'),
     ['preview', '--outDir', out, '--port', port, '--strictPort'],
     { cwd, stdio: 'ignore', detached: true },
@@ -82,8 +94,8 @@ export async function servePrototypes(): Promise<() => void> {
     await Bun.sleep(250)
   }
   return () => {
-    if (preview.pid) process.kill(-preview.pid, 'SIGTERM')
-    rmSync(out, { recursive: true, force: true })
+    forget()
+    stop()
   }
 }
 

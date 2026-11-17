@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { cpSync, mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
-import { tmpdir } from 'node:os'
+import { cpSync, mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { createEventBus, createFakeClock, type ServerEvent, silentLogger } from '@highsea-tv/core'
+import { testFolder } from '@highsea-tv/core/testing'
 import { type Db, migrate, openDatabase } from '@highsea-tv/db'
 import { createJobQueue } from '@highsea-tv/jobs'
 import { stringify } from 'yaml'
@@ -31,7 +31,8 @@ export function definition(id: string, patch: Record<string, unknown> = {}) {
   }
 }
 
-export const tmp = (prefix: string) => mkdtempSync(join(tmpdir(), `highsea-${prefix}-`))
+/** A temp folder, removed after the file's tests (@highsea-tv/core/testing). */
+export const tmp = (prefix: string) => testFolder(prefix)
 
 /** A catalog source tree: definitions, CHANGES.md with one entry per version given. */
 export function sources(defs: object[], versions: string[], beta: object[] = []) {

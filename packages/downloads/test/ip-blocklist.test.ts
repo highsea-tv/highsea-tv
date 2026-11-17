@@ -4,11 +4,11 @@
 // list leaving the one in use alone, files confined to the config folder, and a changed setting
 // picked up straight away.
 import { describe, expect, test } from 'bun:test'
-import { existsSync, mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
-import { tmpdir } from 'node:os'
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { gzipSync } from 'node:zlib'
 import { createEventBus, createFakeClock, silentLogger } from '@highsea-tv/core'
+import { testFolder } from '@highsea-tv/core/testing'
 import { migrate, openDatabase, schema, writeSetting } from '@highsea-tv/db'
 import { createJobQueue } from '@highsea-tv/jobs'
 import type { RangeSet } from '@highsea-tv/torrent'
@@ -32,7 +32,7 @@ function world(options: { configDir?: string; db?: ReturnType<typeof openDatabas
   const clock = createFakeClock()
   const events = createEventBus({ now: () => clock.now() })
   const jobs = createJobQueue({ db, clock, events })
-  const configDir = options.configDir ?? mkdtempSync(join(tmpdir(), 'highsea-config-'))
+  const configDir = options.configDir ?? testFolder('config')
   let current: RangeSet | null = null
   let fetches = 0
   let answer: () => Response = () => new Response(gzipSync(Buffer.from(LIST)))
