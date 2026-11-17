@@ -4,12 +4,12 @@
 
 import { createHash, randomBytes } from 'node:crypto'
 import dgram from 'node:dgram'
-import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
+import { mkdirSync, writeFileSync } from 'node:fs'
 import http from 'node:http'
 import { type AddressInfo, isIP } from 'node:net'
-import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { silentLogger } from '@highsea-tv/core'
+import { testFolder } from '@highsea-tv/core/testing'
 import { unref } from '@highsea-tv/core/timers'
 import { migrate, openDatabase } from '@highsea-tv/db'
 import bencode from 'bencode'
@@ -19,8 +19,9 @@ import type { UdpSend } from '../src/udp.ts'
 
 export const sha1 = (d: Uint8Array) => createHash('sha1').update(d).digest('hex')
 
+/** A temp folder, removed after the file's tests (@highsea-tv/core/testing). */
 export function tempDir(name = 'torrent') {
-  return mkdtempSync(join(tmpdir(), `highsea-${name}-`))
+  return testFolder(name)
 }
 
 export type TestFile = { path: string; data: Uint8Array }

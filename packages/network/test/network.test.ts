@@ -2,10 +2,10 @@
 import { describe, expect, test } from 'bun:test'
 import { createSocket } from 'node:dgram'
 import { EventEmitter } from 'node:events'
-import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
-import { tmpdir } from 'node:os'
+import { mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { PassThrough } from 'node:stream'
+import { testFolder } from '@highsea-tv/core/testing'
 import {
   avahiResponder,
   type Child,
@@ -189,7 +189,7 @@ describe('mDNS', () => {
 })
 
 describe('built-in TLS certificate', () => {
-  const dir = () => mkdtempSync(join(tmpdir(), 'highsea-tls-'))
+  const dir = () => testFolder('tls')
 
   test('says where to put the files when they’re missing', () => {
     const config = dir()

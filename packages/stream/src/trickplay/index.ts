@@ -10,6 +10,7 @@ import { spawn } from 'node:child_process'
 import { mkdir, readdir, rename, rm } from 'node:fs/promises'
 import { setPriority } from 'node:os'
 import { join } from 'node:path'
+import { endWithProcess } from '@highsea-tv/core/children'
 
 export const TRICKPLAY = { interval: 10, width: 320, columns: 10, rows: 10 } as const
 
@@ -79,11 +80,13 @@ export async function makeTrickplay(options: {
   await mkdir(work, { recursive: true })
   try {
     await new Promise<void>((resolve, reject) => {
-      const child = spawn(options.ffmpeg, trickplayArgs(options.input, options.index, work), {
-        stdio: ['ignore', 'ignore', 'pipe'],
-        windowsHide: true,
-        signal: options.signal,
-      })
+      const child = endWithProcess(
+        spawn(options.ffmpeg, trickplayArgs(options.input, options.index, work), {
+          stdio: ['ignore', 'ignore', 'pipe'],
+          windowsHide: true,
+          signal: options.signal,
+        }),
+      )
       if (child.pid)
         try {
           setPriority(child.pid, LOW)

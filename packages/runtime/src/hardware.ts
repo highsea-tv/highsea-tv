@@ -19,6 +19,7 @@ import { join } from 'node:path'
 import type { PathStatus, PlaybackSettings } from '@highsea-tv/api-contract'
 import { PLAYBACK_SETTINGS_TOPICS } from '@highsea-tv/api-contract'
 import { AppError, type Clock, type EventBus, type Logger } from '@highsea-tv/core'
+import { endWithProcess } from '@highsea-tv/core/children'
 import { type Db, readSetting, writeSetting } from '@highsea-tv/db'
 import {
   type Accel,
@@ -69,7 +70,8 @@ export type Host = {
   dri: () => string[]
   /** Each PCI device's vendor and class from sysfs (`0x10de`, `0x030000`); none off Linux. */
   pci: () => { vendor: string; class: string }[]
-  run: (command: string, args: string[], timeoutMs: number) => Promise<Ran>
+  /** Runs a command; `signal` stops it (the runtime's shutdown). */
+  run: (command: string, args: string[], timeoutMs: number, signal?: AbortSignal) => Promise<Ran>
 }
 
 /** A Linux host with no GPU, whose every command fails: tests that aren't about hardware. */
@@ -102,13 +104,15 @@ export const realHost = (): Host => ({
       return []
     }
   },
-  run: (command, args, timeoutMs) =>
+  run: (command, args, timeoutMs, signal) =>
     new Promise((resolve) => {
       const started = performance.now()
-      execFile(
+      // `signal` kills it (https://nodejs.org/api/child_process.html#child_processexecfilefile-args-options-callback),
+      // and it's killed if this process ends first (@highsea-tv/core/children)
+      const child = execFile(
         command,
         args,
-        { timeout: timeoutMs, maxBuffer: 16 * 1024 * 1024, windowsHide: true },
+        { timeout: timeoutMs, maxBuffer: 16 * 1024 * 1024, windowsHide: true, signal },
         (error, stdout, stderr) =>
           resolve({
             code: error ? (typeof error.code === 'number' ? error.code : null) : 0,
@@ -118,6 +122,7 @@ export const realHost = (): Host => ({
             ms: performance.now() - started,
           }),
       )
+      endWithProcess(child)
     }),
 })
 
@@ -162,7 +167,14 @@ export function createHardware(deps: {
   host?: Host
 }) {
   const { db, clock, events, ffmpeg } = deps
-  const host = deps.host ?? realHost()
+  // stop() aborts what's running, so nothing outlives the runtime's shutdown: an ffmpeg making the
+  // check's clip would otherwise go on writing into the data folder
+  const stopping = new AbortController()
+  const given = deps.host ?? realHost()
+  const host: Host = {
+    ...given,
+    run: (command, args, timeoutMs) => given.run(command, args, timeoutMs, stopping.signal),
+  }
   const log = deps.logger.child('hardware')
   const t = hardwareT()
   const changed = () => events.emit({ topic: PLAYBACK_SETTINGS_TOPICS.updated, ids: [] })
@@ -184,8 +196,11 @@ export function createHardware(deps: {
   const checking = new Set<AccelPath>()
 
   const stored = () => readSetting<Partial<Record<AccelPath, Stored>>>(db, HARDWARE_KEY, {})
-  const keep = (path: AccelPath, check: Stored) =>
+  /** Keeps a path's check; one cut short by stop() is no answer, so it isn't kept. */
+  const keep = (path: AccelPath, check: Stored) => {
+    if (stopping.signal.aborted) return
     writeSetting(db, HARDWARE_KEY, { ...stored(), [path]: check }, clock.now())
+  }
   /** A path's check, unless it ran on another device or driver. */
   const checkOf = (path: AccelPath): Stored | null => {
     const s = stored()[path]
@@ -292,6 +307,7 @@ export function createHardware(deps: {
     const dir = join(deps.dataDir, 'hardware')
     const path = join(dir, 'check-hdr10.mkv')
     if (existsSync(path)) return path
+    if (stopping.signal.aborted) return null
     mkdirSync(dir, { recursive: true })
     const part = join(dir, 'check-hdr10.part.mkv')
     const made = await host.run(ffmpeg, clipArgs(part), 5 * 60_000)
@@ -550,6 +566,8 @@ export function createHardware(deps: {
         : [],
     inUse: () => current().accel?.path ?? null,
     failedPlaying,
+    /** Stops what's running, for shutdown; a check cut short keeps nothing. */
+    stop: () => stopping.abort(),
   }
 }
 

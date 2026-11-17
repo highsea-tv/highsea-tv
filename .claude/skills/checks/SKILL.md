@@ -58,7 +58,15 @@ bun scripts/sweeps/playback.ts             # the web player in Chromium and Fire
 bun scripts/sweeps/docs.ts                 # builds the guides, then every page of the export on :3170
 ```
 
-If the work touched packaging, also run `docker compose -f docker/compose.dev.yaml up --build`, then `HIGHSEA_IMAGE=highsea:dev bun scripts/e2e/run.ts` and `bun scripts/image.ts size highsea:dev` (it reports the size; there is no budget since 2026-11-05) and `bun scripts/image.ts hardware highsea:dev`.
+If the work touched packaging, also run `docker compose -f docker/compose.dev.yaml up --build`, then `HIGHSEA_IMAGE=highsea:dev bun scripts/e2e/run.ts` and `bun scripts/image.ts size highsea:dev` (it reports the size; there is no budget since 2026-11-05) and `bun scripts/image.ts hardware highsea:dev`. After the end-to-end run, `bun run clean --docker` prunes Docker's build cache and dangling images (containers, tagged images and volumes stay; the `ht8` container among them).
+
+## Afterwards (every mode)
+
+```sh
+bun run clean       # build output, and highsea-* temp folders nothing has changed in for an hour; says what it freed
+```
+
+A task's worker runs it before `herdr-task ready`, so a finished worktree keeps only its source and `node_modules`. It never touches `.dev`, `node_modules` (unless `--deps`), `/Volumes` or anything outside the checkout and the temp folder ([architecture.md § Commands](../../../docs/architecture.md#commands), Disk). Report the line it ends with.
 
 ## What CI runs, by branch
 

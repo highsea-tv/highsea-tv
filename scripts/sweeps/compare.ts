@@ -22,6 +22,7 @@ import { join } from 'node:path'
 import { SETTINGS_SECTIONS } from '@highsea-tv/client/prefs'
 import type { BrowserContext, Page } from 'playwright-core'
 import { clientPathOf } from '../../design/prototypes/src/chrome/client.ts'
+import { keepLatestRun } from './ending.ts'
 import {
   acknowledge,
   clientUrl,
@@ -762,6 +763,10 @@ ${WIDTHS.map((w) => {
 
 const failed = done.filter((d) => d.problems.length)
 console.log(`${done.length} pairs in ${out} (index.html, checklist.md)`)
+// this run's sheet stays for the person to look at; earlier runs' go, but not the one compared with
+if (!folder)
+  for (const dir of keepLatestRun('highsea-compare-', out, 'index.html', before ? [before] : []))
+    console.log(`removed an earlier run's sheet, ${dir}`)
 for (const d of failed)
   console.log(`not captured: ${d.pair.screen} ${d.pair.name}: ${d.problems.join('; ')}`)
 process.exit(0)
