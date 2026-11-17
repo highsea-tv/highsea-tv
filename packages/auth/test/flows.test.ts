@@ -146,6 +146,28 @@ describe('password sign-in', () => {
     expect(entry?.action).toBe('auth.sign-in-failed')
     expect(JSON.stringify(entry)).not.toContain('wrong password')
   })
+
+  // HT-36: the owner's sign-in failed because setup's username had a typo. The answer is the same
+  // either way (OWASP), so the audit log is where the owner tells the two apart
+  test('the audit log tells an unknown username from a wrong password, the answer doesn’t', async () => {
+    const { auth } = await withOwner()
+    // an iPhone's keyboard: a capital first letter and autocomplete's trailing space still match
+    signedIn(await auth.signIn.password({ ...OWNER, username: 'Ines ', device: tv }, meta))
+    const answers = []
+    for (const username of ['Inés', 'ines'])
+      answers.push(
+        await failure(() => auth.signIn.password({ username, password: 'wrong password' }, meta)),
+      )
+    expect(answers[0]).toEqual(answers[1])
+    const failed = auth
+      .audit({})
+      .items.filter((e) => e.action === 'auth.sign-in-failed')
+      .map((e) => e.detail)
+    expect(failed).toEqual([
+      { username: 'ines', reason: 'password' },
+      { username: 'inés', reason: 'unknown-user' },
+    ])
+  })
 })
 
 describe('two-step verification', () => {
