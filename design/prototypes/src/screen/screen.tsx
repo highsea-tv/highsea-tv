@@ -5,8 +5,6 @@
 
 import { createClient, type Mock } from '@highsea-tv/mock/client'
 import { applyPreview } from '@highsea-tv/mock/server'
-import { UIProvider } from '@highsea-tv/ui'
-import { MotionConfig } from 'motion/react'
 import {
   createContext,
   type ReactNode,
@@ -21,14 +19,7 @@ import { type BaseLocationHook, Router, useLocation } from 'wouter'
 import { navigate, useHashLocation } from 'wouter/use-hash-location'
 import { ClientProvider } from '../mock/hooks.tsx'
 import { inFrame, isMessage, post } from '../proto/bridge.ts'
-import {
-  loadState,
-  type Platform,
-  type ProtoState,
-  platformOf,
-  stateFromParams,
-  type TimeMode,
-} from '../proto/state.ts'
+import { loadState, type ProtoState, stateFromParams, type TimeMode } from '../proto/state.ts'
 import { Routes } from '../routes.tsx'
 import { applyEnvironment } from './environment.ts'
 
@@ -36,6 +27,7 @@ const speeds: Record<TimeMode, number> = { play: 1, pause: 0, fast: 10 }
 
 const ProtoContext = createContext<ProtoState | null>(null)
 const MockContext = createContext<Mock | null>(null)
+const LatencyContext = createContext<number | undefined>(undefined)
 
 /** The mock the screen answers from, for the admin's shared screens' transport (admin/shared.tsx). */
 export function useMock(): Mock {
@@ -44,26 +36,16 @@ export function useMock(): Mock {
   return mock
 }
 
+/** The screen's simulated latency per call, for the admin's transport (undefined: the mock's own). */
+export function useLatency(): number | undefined {
+  return useContext(LatencyContext)
+}
+
 /** The toolbar state, for the few screens that show prototype-only affordances. */
 export function useProto(): ProtoState {
   const state = useContext(ProtoContext)
   if (!state) throw new Error('useProto needs a ScreenApp')
   return state
-}
-
-function Platformed({ state, children }: { state: ProtoState; children: ReactNode }) {
-  const [location] = useLocation()
-  const platform: Platform = platformOf(location) ?? 'admin'
-  return (
-    <UIProvider
-      // admin plays the same pack 6 dB down (admin.md#sound)
-      sound={{ enabled: state.sound[platform], volume: platform === 'admin' ? 0.5 : 1 }}
-    >
-      <MotionConfig reducedMotion={state.reducedMotion ? 'always' : 'user'}>
-        {children}
-      </MotionConfig>
-    </UIProvider>
-  )
 }
 
 export type ScreenAppProps = {
@@ -96,14 +78,14 @@ export function ScreenApp({
   return (
     <ProtoContext.Provider value={state}>
       <MockContext.Provider value={mock}>
-        <ClientProvider client={client}>
-          <Router hook={hook}>
-            <Platformed state={state}>
+        <LatencyContext.Provider value={latency}>
+          <ClientProvider client={client}>
+            <Router hook={hook}>
               <Routes />
               {children}
-            </Platformed>
-          </Router>
-        </ClientProvider>
+            </Router>
+          </ClientProvider>
+        </LatencyContext.Provider>
       </MockContext.Provider>
     </ProtoContext.Provider>
   )

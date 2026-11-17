@@ -1,6 +1,7 @@
 # Client search
 
 - **Platforms:** Web and desktop, mobile, TV.
+- **Screen:** `apps/client/src/app/(in)/search.tsx`, with its parts in `apps/client/src/search/`.
 - **Prototype:** `#/web/search`, `#/mobile/search`, `#/tv/search` (C6, reference fidelity); a collection at `#/{platform}/collections/{id}`.
 - **Roadmap:** [Phase 2 › C6](../roadmap.md#phase-2-design-prototypes-gate-user-sign-off).
 
@@ -13,6 +14,8 @@ Find something on the server by what you remember: part of a title, a genre, a c
 - Web: **Search** in the top bar (an icon on a phone-width window). Mobile: the **Search** tab. TV: **Search** in the global navigation.
 
 ## Layout
+
+One screen by the form-factor rule, in two compositions, since the TV's is a different screen: touch and a pointer share one page laid out by the form factor, and the TV has its keyboard and results side by side. The text is in the address as it settles (`/search?q=…`), so a search can be linked, and Back from a result finds it as it was. As built (part E3, 2026-11-15) the client shows Movies, Collections and People, with Shows and Episodes on a server that serves shows; Artists, Albums and Songs come with the music phase's search, and kinds no client shows yet are skipped.
 
 Results come in a **section per kind**, the best-matching kind first: **Movies**, **Shows**, **Episodes**, **People**, **Collections**, **Artists**, **Albums** and **Songs** (shows, episodes and music since prototype-gaps stage 2, 2026-11-01). Each section is headed by its kind (and, on web and mobile, its count).
 

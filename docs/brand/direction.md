@@ -81,6 +81,7 @@ The TV uses the same styles scaled for 10-foot viewing. The design-language docs
 ## Shape
 
 - **Radii:**
+  - 2, 4 and 6 (the smallest parts: a swatch, a tag or key cap, a handle), added below the others with the owner's sign-off of 2026-11-10 (one-client-platform-e.md, E1);
   - 8 (small controls);
   - 12 (default);
   - 16 (large cards);

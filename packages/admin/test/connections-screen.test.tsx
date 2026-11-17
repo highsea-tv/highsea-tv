@@ -26,7 +26,8 @@ const { act, cleanup, render, within } = await import('@testing-library/react')
 const { default: userEvent } = await import('@testing-library/user-event')
 const { createClient } = await import('@highsea-tv/sdk')
 const { ClientProvider } = await import('@highsea-tv/sdk/react')
-const { TooltipProvider } = await import('@highsea-tv/ui')
+const { shown } = await import('./modal.ts')
+const { ThemeProvider } = await import('@highsea-tv/ui/native')
 const { Connections } = await import('../src/connections.tsx')
 
 const json = (body: unknown, status = 200) =>
@@ -139,9 +140,9 @@ async function open() {
   await act(async () => {
     render(
       <ClientProvider client={client}>
-        <TooltipProvider>
+        <ThemeProvider>
           <Connections />
-        </TooltipProvider>
+        </ThemeProvider>
       </ClientProvider>,
     )
   })
@@ -182,6 +183,7 @@ describe('Settings › Connections', () => {
     const { user, page } = await open()
     await user.click(page.getByRole('button', { name: 'Email' }))
     await settle()
+    shown()
     const dialog = within(page.getByRole('dialog'))
     expect(dialog.getByText('highsea <media@example.org>')).toBeTruthy()
   })
@@ -190,6 +192,7 @@ describe('Settings › Connections', () => {
     const { user, page } = await open()
     await user.click(page.getByRole('button', { name: 'Discord' }))
     await settle()
+    shown()
     const dialog = within(page.getByRole('dialog'))
     expect(dialog.getByText('Add a Discord connection')).toBeTruthy()
     // the address is needed
@@ -227,6 +230,7 @@ describe('Settings › Connections', () => {
     const { user, page } = await open()
     await user.click(page.getByRole('button', { name: 'Edit Phone' }))
     await settle()
+    shown()
     const dialog = within(page.getByRole('dialog'))
     expect(dialog.getByText('Saved. Type a new one to change it.')).toBeTruthy()
     await user.clear(dialog.getByLabelText('Topic'))

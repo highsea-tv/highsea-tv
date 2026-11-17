@@ -342,9 +342,22 @@ export const customFormats = sqliteTable('custom_formats', {
 })
 
 /** The folders movies are filed under. Free space and the device are read live. */
+/**
+ * What a root folder holds (prototype-gaps.md's stage 6, Phase 5 A1): one kind each. Shows' and
+ * music's folders are kept from A1 and used from parts B and D.
+ */
+export const LIBRARY_KINDS = ['movies', 'shows', 'music'] as const
+export type LibraryKind = (typeof LIBRARY_KINDS)[number]
+
 export const rootFolders = sqliteTable('root_folders', {
   id: text('id').primaryKey(),
   path: text('path').notNull().unique(),
+  kind: text('kind', { enum: LIBRARY_KINDS }).notNull().default('movies'),
+  /**
+   * highsea only reads this folder (ADR 0063): the owner said so when adding it, or it was mounted
+   * read-only. Nothing is written, renamed or deleted under it until it's switched to managed.
+   */
+  readOnly: integer('read_only', { mode: 'boolean' }).notNull().default(false),
   /** The language profile a movie added here takes when nothing else is chosen (checkpoint 8c). */
   languageProfileId: text('language_profile_id'),
   createdAt: integer('created_at').notNull(),

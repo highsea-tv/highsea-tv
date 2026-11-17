@@ -11,7 +11,9 @@ const { act, cleanup, render, within } = await import('@testing-library/react')
 const { default: userEvent } = await import('@testing-library/user-event')
 const { createClient } = await import('@highsea-tv/sdk')
 const { ClientProvider } = await import('@highsea-tv/sdk/react')
-const { TooltipProvider } = await import('@highsea-tv/ui')
+const { ThemeProvider } = await import('@highsea-tv/ui/native')
+const { NavigationProvider } = await import('../src/navigation.tsx')
+const { shown } = await import('./modal.ts')
 const { Setup } = await import('../src/setup.tsx')
 const { metadataLocale } = await import('../src/metadata-locale.ts')
 
@@ -24,7 +26,12 @@ const failure = (code: string, message: string, status: number, details?: unknow
 
 const FOUND: SetupDetected = {
   serverName: 'Harbor',
-  folders: { movies: '/data/media/movies', downloads: '/data/downloads' },
+  folders: {
+    movies: '/data/media/movies',
+    downloads: '/data/downloads',
+    shows: null,
+    music: null,
+  },
   address: '192.168.1.20:3000',
   graphics: { name: 'Intel UHD Graphics 770', path: 'vaapi' },
 }
@@ -34,6 +41,8 @@ let state: {
   detectFails: boolean
   /** What POST /setup answers, when not the server's name. */
   complete: Response | null
+  /** The paths loaded afresh (after Finish). */
+  loaded: string[]
   requests: { method: string; path: string; body: unknown }[]
 }
 
@@ -99,7 +108,7 @@ async function api(url: string, init: RequestInit = {}): Promise<Response> {
 
 beforeEach(() => {
   localStorage.clear()
-  state = { detected: FOUND, detectFails: false, complete: null, requests: [] }
+  state = { detected: FOUND, detectFails: false, complete: null, requests: [], loaded: [] }
 })
 afterEach(() => cleanup())
 
@@ -113,9 +122,18 @@ async function open() {
   await act(async () => {
     render(
       <ClientProvider client={client}>
-        <TooltipProvider>
-          <Setup />
-        </TooltipProvider>
+        <ThemeProvider>
+          <NavigationProvider
+            value={{
+              router: { push: () => {}, replace: () => {} },
+              pathname: '/setup',
+              searchParams: new URLSearchParams(),
+              load: (path) => state.loaded.push(path),
+            }}
+          >
+            <Setup />
+          </NavigationProvider>
+        </ThemeProvider>
       </ClientProvider>,
     )
   })
@@ -195,7 +213,7 @@ describe('setup with everything found', () => {
     expect(sent()).toEqual({
       serverName: 'Harbor',
       owner: { displayName: 'Ana Lima', username: 'ana', password: 'correct horse battery' },
-      folders: FOUND.folders,
+      folders: { movies: '/data/media/movies', downloads: '/data/downloads' },
       indexers: ['internet-archive'],
       subtitleLanguages: ['en'],
       remoteAccess: { kind: 'local-only' },
@@ -205,6 +223,31 @@ describe('setup with everything found', () => {
       address: '192.168.1.20:3000',
     })
     expect(localStorage.getItem('highsea:setup')).toBeNull()
+    // a fresh load of the dashboard, so the server sees the owner's new session
+    expect(state.loaded).toEqual(['/'])
+  })
+
+  test('shows’ and music’s folders found beside the movies’ are listed and sent (Phase 5 A1)', async () => {
+    state.detected = {
+      ...FOUND,
+      folders: {
+        movies: '/data/media/movies',
+        downloads: '/data/downloads',
+        shows: '/data/media/tv',
+        music: '/data/media/music',
+      },
+    }
+    const { user, page } = await toReview()
+    expect(page.getByText('/data/media/tv')).toBeTruthy()
+    expect(page.getByText('/data/media/music')).toBeTruthy()
+    await user.click(page.getByRole('button', { name: 'Finish setup' }))
+    await settle()
+    expect(sent()?.folders).toEqual({
+      movies: '/data/media/movies',
+      downloads: '/data/downloads',
+      shows: '/data/media/tv',
+      music: '/data/media/music',
+    })
   })
 })
 
@@ -338,6 +381,7 @@ describe('setup with nothing found', () => {
     expect(page.getByText('Pick a folder for movies.')).toBeTruthy()
     await user.click(page.getAllByRole('button', { name: 'Browse' })[0] as HTMLElement)
     await settle()
+    shown()
     const picker = page.getByRole('dialog', { name: 'Choose the movies folder' })
     await user.click(within(picker).getByRole('button', { name: 'films' }))
     await settle()
@@ -345,6 +389,8 @@ describe('setup with nothing found', () => {
       within(picker).getByText('No folders inside. Use this one, or go up a level.'),
     ).toBeTruthy()
     await user.click(within(picker).getByRole('button', { name: 'Use this folder' }))
+    // the picker's fade out ends, as its fade in did
+    shown()
     await user.type(page.getByLabelText('Downloads folder'), '/data/torrents')
     await settle()
     expect(page.getByText('Imports will be copied')).toBeTruthy()

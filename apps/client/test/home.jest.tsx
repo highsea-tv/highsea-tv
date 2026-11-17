@@ -7,7 +7,16 @@
 // drawn. Home and Alerts that can't load say so, with Try again; pull to refresh ends.
 import { act, cleanup, fireEvent, screen, within } from '@testing-library/react-native'
 import { router } from 'expo-router'
-import { flush, fresh, rewrite, sent, server, signedIn } from './mock.ts'
+import {
+  flush,
+  fresh,
+  phoneWindow,
+  pointerWindow,
+  rewrite,
+  sent,
+  server,
+  signedIn,
+} from './mock.ts'
 
 // the phone, unless a test asks for a pointer's window
 jest.mock('../src/form-factor', () => ({
@@ -73,6 +82,7 @@ require('react-native-gesture-handler/jestSetup')
 beforeEach(fresh)
 afterEach(async () => {
   await cleanup()
+  phoneWindow()
   delete (globalThis as { __formFactor?: string }).__formFactor
   delete (globalThis as { __emptyRows?: boolean }).__emptyRows
   delete (globalThis as { __holdHome?: boolean }).__holdHome
@@ -129,9 +139,7 @@ const busy = () => {
   return find(screen.root)
 }
 
-const pointer = () => {
-  ;(globalThis as { __formFactor?: string }).__formFactor = 'regular-pointer'
-}
+const pointer = pointerWindow
 
 /** Signs in and acknowledges the announcement Home opens with. */
 async function home() {

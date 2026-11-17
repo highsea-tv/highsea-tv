@@ -6,11 +6,15 @@
 # app on a simulator, runs this, and checks the server saw the film played. Elements are found by
 # the labels VoiceOver reads, from the client's i18n catalogs (apps/client and @highsea-tv/client)
 # (https://docs.maestro.dev/api-reference/selectors).
+# SERVER, USERNAME and PASSWORD are parameters: phone.ts passes them with -e. A value in `env` is a
+# constant, which wins over a parameter of the same name, so each is the parameter with its
+# default after `||`, as Maestro's docs set a default (Parameters and constants › Setting default
+# values, https://docs.maestro.dev/maestro-flows/flow-control-and-logic/parameters-and-constants).
 appId: tv.highsea.mobile
 env:
-  SERVER: http://localhost:3160
-  USERNAME: theo
-  PASSWORD: theo theo theo
+  SERVER: ${SERVER || "http://localhost:3160"}
+  USERNAME: ${USERNAME || "theo"}
+  PASSWORD: ${PASSWORD || "theo theo theo"}
 ---
 - launchApp:
     clearState: true

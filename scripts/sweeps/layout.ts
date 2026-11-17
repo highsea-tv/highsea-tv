@@ -101,7 +101,7 @@ export const TOLERANCE = 4
 
 /**
  * How much more than the tolerance a text's own width and height may differ, as a share of itself:
- * none. With iOS kerning as the browser does (ui-native's Text leaves `letterSpacing` unset without
+ * none. With iOS kerning as the browser does (the library's Text leaves `letterSpacing` unset without
  * tracking) and the same font and size, the run of 2026-11-03 measured every matched text within
  * 1.33 points of the web's width (0.5% of it) and 0.33 of its height on the iPhone, and within 0.86
  * (1.2%) and 1.00 on the Apple TV (iOS rounds a text's frame up to a whole pixel, one point at the
@@ -883,7 +883,10 @@ export const ANCHORS: Record<Screen, (t: Target) => Anchor[]> = {
       : tvLike(t)
         ? { kinds: ['action'], name: /^a z$/, says: 'the A–Z sort' }
         : { kinds: ['text'], name: /^\d+ movies$/, says: 'Movies’ count' },
-    { kinds: ['action'], name: /^tears of steel 2012$/, says: 'Tears of Steel’s poster' },
+    // a poster the first screen draws: since D3 a long grid draws only what's near the screen
+    // (packages/ui's Virtual), so a film far down the alphabet isn't in the tree, and the count
+    // above it must be in the same capture
+    { kinds: ['action'], name: /^big buck bunny 2008$/, says: 'Big Buck Bunny’s poster' },
   ],
   collections: (t) => [
     tvLike(t)
@@ -939,7 +942,14 @@ export const ANCHORS: Record<Screen, (t: Target) => Anchor[]> = {
     { kinds: ['text'], name: /^saltmarsh$/, says: 'the show’s title' },
     { kinds: ['action'], name: /^season 1\b/, says: 'its first season' },
   ],
-  music: () => [{ kinds: ['action'], name: /^sintel original score\b/, says: 'Sintel’s score' }],
+  // the first album, as Movies' first poster (D3's virtual grid)
+  music: () => [
+    {
+      kinds: ['action'],
+      name: /^big buck bunny original score\b/,
+      says: 'Big Buck Bunny’s score',
+    },
+  ],
   songs: (t) => [
     // the TV's Songs draws no count: its first song instead
     tvLike(t)
@@ -1170,7 +1180,22 @@ export const stepsFor = (target: Target, screens: readonly Screen[]) =>
  * themselves: uitest's Layout.swift captures once two snapshots' frames are the same.
  */
 export const settleFor = (screen: Screen, target: Target) =>
-  screen === 'player' && tvLike(target) ? HIDE_MS + 1000 : 0
+  !tvLike(target)
+    ? 0
+    : screen === 'player'
+      ? HIDE_MS + 1000
+      : screen === 'songs'
+        ? SONGS_FOCUS_MS
+        : 0
+
+/**
+ * On the TV, Songs' first focus lands on Music's first tab, and the list takes it once its 383
+ * rows are laid out (the first load focuses the grid). Two still snapshots of its 430 nodes can
+ * come before that move, and the capture then holds the tab's lift and not the row's (the run of
+ * 2026-11-15: the device's tree had Albums lifted, its picture taken after had the row). A judgement
+ * of the time the move takes, with room.
+ */
+const SONGS_FOCUS_MS = 3000
 
 /**
  * The iPhone 17 Pro's safe area in points, which the web's compact-touch emulates so both lay out
@@ -1407,9 +1432,16 @@ if (import.meta.main) {
 
   // ---- the web, from one build of the prototypes
   if (plan.targets.includes('web')) {
-    const { servePrototypes, clientUrl, launch, settle, settleAnimations } = await import(
-      './lib.ts'
-    )
+    const {
+      accountStop,
+      clientUrl,
+      launch,
+      openInClient,
+      servePrototypes,
+      settle,
+      settleAnimations,
+      signInClient,
+    } = await import('./lib.ts')
     // one export for the whole run: made here, then held (HIGHSEA_CLIENT_EXPORT=0, client-export.ts),
     // so an edit to the client while the run builds can't make the preview export again past
     // servePrototypes' wait
@@ -1475,90 +1507,29 @@ if (import.meta.main) {
           const want = new Set(screens)
           const last = screens[screens.length - 1] as Screen
           await page.goto(clientUrl(`/${form.platform}/connect`, form.platform))
-          // discovery has finished when Looking… turns into Look again on the phone and with a
-          // pointer, and into the count of servers that answered on the TV, whose Look again is
-          // always there (apps/client's connect.tsx); Layout.swift waits for the same
-          await (form.target === 'tv'
-            ? page.getByText(/^\d+ answered\. /)
-            : page.getByRole('button', { name: 'Look again' })
-          )
-            .first()
-            .waitFor({ timeout: 30_000 })
-          const harbor = page.getByRole('button', { name: /^Harbor/ }).first()
-          if (want.has('connect')) await take('connect')
-          if (last === 'connect') continue
-          await harbor.click()
+          const signedIn = await signInClient(page, form.platform, {
+            log,
+            at: async (step) => {
+              if (want.has(step)) await take(step)
+              return last !== step
+            },
+          })
+          if (!signedIn) continue
           const tv = form.target === 'tv'
-          const signIn = tv
-            ? page.getByText('Sign in with your phone', { exact: true })
-            : page.locator('input[type=password]')
-          await signIn.first().waitFor({ timeout: 20_000 })
-          if (want.has('sign-in')) await take('sign-in')
-          if (last === 'sign-in') continue
-          if (!tv) {
-            await page.getByRole('textbox', { name: 'Username' }).fill('theo')
-            await page.locator('input[type=password]').fill('theo theo theo')
-            await page.getByRole('button', { name: 'Sign in', exact: true }).click()
-          }
-          const settings =
-            form.target === 'compact-touch'
-              ? page.locator('[role=tab][aria-label="You"]')
-              : tv
-                ? page.locator('[aria-label$=", settings"]')
-                : // with a pointer the avatar is the account menu (B2's account/menu.tsx)
-                  page.locator('[aria-label$=": profile and settings"]')
-          // the TV's opening asks Who's watching? once it's signed in (B3's profiles, which the
-          // mock serves): the profile last here has the focus, and OK picks it, as a person would
-          if (tv) {
-            const opening = page.getByRole('button', { name: /, Last here/ }).first()
-            if (
-              await opening.waitFor({ timeout: 30_000 }).then(
-                () => true,
-                () => false,
-              )
-            ) {
-              await page.waitForTimeout(500)
-              await page.keyboard.press('Enter')
-              log('tv: picked the profile last here at the opening')
-            }
-          }
-          // the TV's code is approved by the mock after 8 seconds (PAIRING_APPROVAL_MS)
-          const gotIt = page.getByRole('button', { name: 'Got it', exact: true }).first()
-          await settings.first().or(gotIt).first().waitFor({ timeout: 40_000 })
-          // the owner's announcement that must be acknowledged (seed.ts's an-new-address) comes
-          // over the shell once its list has loaded, and on the TV hides it: Got it, as
-          // Layout.swift does, so Home and the destinations are captured as they are under it
-          if (
-            await gotIt.waitFor({ timeout: 8_000 }).then(
-              () => true,
-              () => false,
-            )
-          ) {
-            await gotIt.click()
-            log(`${form.target}: acknowledged the owner’s announcement`)
-          }
-          await settings.first().waitFor({ timeout: 20_000 })
+          const settings = accountStop(page, form.platform)
           if (want.has('shell')) await take('shell')
           if (last === 'shell') continue
-          // B1's destinations, each opened by its address inside the running client, as a link
-          // opens one on the devices: pushed onto the history with a popstate, which React
-          // Navigation's web linking follows (https://reactnavigation.org/docs/web-support/). A
-          // page load would start the mock again, with its own person signed in rather than Theo
+          // B1's destinations, each opened by its address inside the running client (lib.ts's
+          // openInClient)
           for (const screen of SCREENS) {
             const route = ROUTES[screen]
             if (!route || !want.has(screen) || !appliesTo(screen, form.target)) continue
-            await page.evaluate((path) => {
-              history.pushState(null, '', path)
-              dispatchEvent(new PopStateEvent('popstate', { state: null }))
-            }, `/web${route}`)
+            await openInClient(page, route)
             await take(screen)
           }
           if (last !== 'settings') continue
           // back Home, since the player and Connect a device draw over the shell
-          await page.evaluate(() => {
-            history.pushState(null, '', '/web/')
-            dispatchEvent(new PopStateEvent('popstate', { state: null }))
-          })
+          await openInClient(page, '/')
           await settings.first().waitFor({ timeout: 20_000 })
           await settings.first().click()
           // with a pointer the avatar opens the account menu, which has Settings

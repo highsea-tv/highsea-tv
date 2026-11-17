@@ -28,9 +28,12 @@ const srtTime = (ms: number) => {
 /**
  * Starts the server on `port`, with discovery on the next port and the fake indexer on the one after.
  * `production` runs the production build in apps/server/.next (`next build` first), as the image
- * does; otherwise Next's dev server.
+ * does; otherwise Next's dev server. `lan` listens on every interface rather than loopback alone:
+ * the server advertises itself over Bonjour on the machine's network interfaces (ciao skips
+ * loopback), so a client that finds it by discovery, as the Apple TV does, resolves the machine's
+ * LAN address and reaches the server only if it listens there.
  */
-export async function boot(port: number, { production = false } = {}) {
+export async function boot(port: number, { production = false, lan = false } = {}) {
   // localhost: Next's dev server serves its dev resources to that origin only (allowedDevOrigins)
   const base = `http://localhost:${port}`
 
@@ -59,7 +62,7 @@ export async function boot(port: number, { production = false } = {}) {
       // seed here is signed with the development key, and nothing reaches the network
       ...(production ? { HIGHSEA_CATALOG_URL: 'off', HIGHSEA_CATALOG_DEV_KEY: '1' } : {}),
       PORT: String(port),
-      HOST: '127.0.0.1',
+      HOST: lan ? '0.0.0.0' : '127.0.0.1',
       HIGHSEA_CONFIG_DIR: join(dir, 'config'),
       HIGHSEA_DATA_DIR: dataDir,
       HIGHSEA_DISCOVERY_PORT: String(port + 1),
@@ -187,15 +190,26 @@ export async function seed(
   // collection's Spider-Man (969681) stay out, for the pages' not-added state.
   await api('PUT', '/settings/metadata', { key: 'sweep-tmdb-key', region: 'US' }, token)
   mkdirSync(join(dataDir, 'films'), { recursive: true })
-  await api('POST', '/rootfolders', { path: join(dataDir, 'films') }, token)
+  // one highsea only reads, and a shows' folder (Phase 5 A1), for Media management's root folders
+  await api('POST', '/rootfolders', { path: join(dataDir, 'films'), readOnly: true }, token)
+  mkdirSync(join(dataDir, 'tv'), { recursive: true })
+  await api('POST', '/rootfolders', { path: join(dataDir, 'tv'), kind: 'shows' }, token)
   const movies = join(dataDir, 'movies')
-  const add = (tmdbId: number, versions = [{ label: '1080p', qualityProfileId: 'qp-hd' }]) =>
+  // a root folder with a long path, for the tables' truncation (HT-3)
+  const remuxes = join(dataDir, 'movies-4k', 'Ultra HD Blu-ray remuxes from the original discs')
+  mkdirSync(remuxes, { recursive: true })
+  await api('POST', '/rootfolders', { path: remuxes }, token)
+  const add = (
+    tmdbId: number,
+    versions = [{ label: '1080p', qualityProfileId: 'qp-hd' }],
+    rootFolder = movies,
+  ) =>
     api(
       'POST',
       '/movies',
       {
         tmdbId,
-        rootFolder: movies,
+        rootFolder,
         monitored: true,
         minimumAvailability: 'released',
         versions,
@@ -208,7 +222,9 @@ export async function seed(
     { label: '4K HDR', qualityProfileId: 'qp-uhd' },
     { label: '1080p', qualityProfileId: 'qp-hd' },
   ])
-  for (const id of [10378, 133701, 9761, 653, 832, 1117898]) await add(id)
+  // Elephants Dream in the long root folder
+  for (const id of [10378, 133701, 9761, 653, 832, 1117898])
+    await add(id, undefined, id === 9761 ? remuxes : movies)
   await api('PATCH', '/movies/832', { monitored: false }, token)
   // 8c: tags, one on Sintel, for the library's filter, the movie's Tags and Settings › Tags
   const kids = await api<{ id: string }>('POST', '/tags', { label: 'Kids' }, token)

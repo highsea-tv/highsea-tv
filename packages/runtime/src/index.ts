@@ -4,6 +4,7 @@
 export * from './automation.ts'
 export * from './backups.ts'
 export * from './config.ts'
+export * from './container-network.ts'
 export * from './crashes.ts'
 export * from './hardware.ts'
 export * from './logs.ts'

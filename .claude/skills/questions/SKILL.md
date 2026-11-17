@@ -27,7 +27,7 @@ In the plan, below the open questions:
 - **`## The owner's changes`**, when there were any: `On YYYY-MM-DD, reviewing this scope, the owner made N changes:`, then a numbered list. Each item says what changed and links the section it affects.
 - **`## The owner's answers`**: `On YYYY-MM-DD the owner took every recommendation for questions 1 to N except …`, then a numbered list that answers each in a line. Mark a changed one `**Changed by the owner:**`.
 - Rewrite the body of the plan to match the answers. Leave the open questions as they were asked, so the history reads.
-- Update `CLAUDE.md`'s "Where things stand" line to say the plan was approved with the owner's answers of that date.
+- Update the plan's line in `docs/status.md` to say the plan was approved with the owner's answers of that date.
 - Use today's date (absolute, never "today").
 
 Then report what changed in a few lines, and stop. Don't start building unless the owner said to.

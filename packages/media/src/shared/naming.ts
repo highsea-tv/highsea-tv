@@ -18,7 +18,6 @@ import {
   type MediaInfo,
   videoCodecName,
 } from './probe.ts'
-import type { ColonReplacement } from './settings.ts'
 
 export type NamingMovie = {
   title: string
@@ -41,6 +40,19 @@ export type NamingFile = {
   /** The release name it came from, which decides between `x264` and `h264`. */
   sceneName?: string | null
 }
+
+/**
+ * What Radarr's "Colon Replacement" offers (FileNameBuilder.cs, `ColonReplacementFormat`); `smart`
+ * is its default: "Movie: Title" becomes "Movie - Title" and "12:30" becomes "12-30".
+ */
+export const COLON_REPLACEMENTS = [
+  'delete',
+  'dash',
+  'space-dash',
+  'space-dash-space',
+  'smart',
+] as const
+export type ColonReplacement = (typeof COLON_REPLACEMENTS)[number]
 
 export type NamingOptions = { colonReplacement?: ColonReplacement }
 

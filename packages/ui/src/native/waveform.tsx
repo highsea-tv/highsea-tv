@@ -15,6 +15,8 @@
 // › Using the native driver), one looping value each bar reads at its own phase, so React doesn't
 // render twenty times a second as the prototype's style writes avoided. `transformOrigin` grows
 // the bars from their foot (https://reactnative.dev/docs/transforms#transform-origin).
+
+import { waveform, webText } from '@highsea-tv/tokens'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Animated, Easing, type LayoutChangeEvent, Platform, View } from 'react-native'
 import { alpha } from './alpha.ts'
@@ -237,7 +239,7 @@ export function Waveform({
             zIndex: 1,
           }}
         >
-          <Text variant="mono" mono size={11}>
+          <Text variant="mono" mono size={webText.label.size}>
             {timeAt(hover * duration)}
           </Text>
         </View>
@@ -260,7 +262,7 @@ const PLAYING = [
  */
 export function PlayingBars({
   playing,
-  size = 14,
+  size = tokens.icon.size.xs,
   color = 'text',
 }: {
   playing: boolean
@@ -275,7 +277,7 @@ export function PlayingBars({
     useLoop(live, PLAYING[1]?.ms ?? 1040),
     useLoop(live, PLAYING[2]?.ms ?? 880),
   ]
-  const w = Math.max(2, Math.round(size * 0.2))
+  const w = Math.max(waveform.barMin, Math.round(size * 0.2))
   return (
     <View
       accessibilityElementsHidden

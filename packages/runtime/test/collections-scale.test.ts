@@ -23,6 +23,10 @@ const BUDGET_MS = 600
 
 let library: CollectionLibrary
 
+// Seeding 100,000 rows takes under 4 s on an idle machine and more on a busy CI one, past
+// bun:test's default 5,000 ms (https://bun.com/docs/test/runtime-behavior#test-timeouts), so the
+// setup alone gets room through beforeAll's timeout (https://bun.com/reference/bun/test/beforeAll);
+// the budgets the tests measure stay as they are.
 beforeAll(() => {
   const { db, raw } = openDatabase(':memory:')
   migrate(raw)
@@ -98,7 +102,7 @@ beforeAll(() => {
   }
   raw.exec('COMMIT')
   raw.exec('ANALYZE')
-})
+}, 60_000)
 
 /** Timed once warm: the first run fills SQLite's page cache from a fresh database. */
 const timed = <T>(fn: () => T): { ms: number; result: T } => {

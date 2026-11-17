@@ -6,8 +6,8 @@
 // approve; the mock approves it after PAIRING_APPROVAL_MS. A code that runs out is replaced.
 import { act, cleanup, fireEvent, screen, within } from '@testing-library/react-native'
 import { router } from 'expo-router'
-import { BackHandler, Platform, TVEventControl } from 'react-native'
-import { flush, fresh, open, rewrite, sent, server, words } from './mock.ts'
+import { BackHandler, Platform, StyleSheet, TVEventControl } from 'react-native'
+import { flush, fresh, open, rewrite, sent, server, store, words } from './mock.ts'
 
 jest.mock('../src/form-factor', () => ({ formFactorOverride: () => 'tv' }))
 jest.mock('../src/transport.ts', () => require('./mock.ts').transportModule())
@@ -68,6 +68,31 @@ describe('the gate on the TV', () => {
     const r = await open()
     expect(r.getPathname()).toBe('/sign-in')
     expect(screen.getByRole('header', { name: 'Sign in with your phone' })).toBeTruthy()
+  })
+
+  test('Forget this server is under a focus guide across the screen, so Down reaches it', async () => {
+    // tvOS moves focus only to what lies in the direction pressed; the foot's button is centred,
+    // away from Use a password and Another server, so each sits in a guide that hands focus on
+    await open()
+    await fireEvent.press(screen.getByLabelText(/^Harbor,/))
+    await flush()
+    // react-native-tvos's TVFocusGuideView draws a View with the guide's props
+    const guideOf = (name: string) => {
+      let n = screen.getByRole('button', { name }).parent
+      while (n && n.props.autoFocus === undefined) n = n.parent
+      return n
+    }
+    const foot = guideOf('Forget this server')
+    expect(foot?.props).toMatchObject({ autoFocus: true })
+    expect(StyleSheet.flatten(foot?.props.style)).toMatchObject({
+      position: 'absolute',
+      left: 0,
+      right: 0,
+    })
+    // the actions' row, which Up from the foot comes back to
+    const row = guideOf('Use a password')
+    expect(row?.props.autoFocus).toBe(true)
+    expect(guideOf('Another server')).toBe(row)
   })
 
   test('Use a password opens the TV keyboard', async () => {
@@ -309,6 +334,57 @@ describe('the TV’s sign-in by password', () => {
 })
 
 describe('known servers on the TV', () => {
+  test('a new server at a known one’s address replaces it, so Harbor is listed once', async () => {
+    // a server this TV signed in to, whose address now answers with a fresh server's id (the
+    // owner's decision of 2026-11-15: an address answers for one server at a time)
+    // the store's mock is made when the app first loads it, so it's loaded before it's filled
+    require(require('node:path').resolve(__dirname, '../../../packages/native/src/server-store.ts'))
+    const s = store()
+    s.saveStored({
+      current: null,
+      servers: [
+        {
+          id: 'srv-before',
+          name: 'Harbor',
+          addresses: [{ url: 'http://192.168.1.20:3000', kind: 'local' }],
+          lastSeen: 1,
+        },
+      ],
+    })
+    await s.writeToken('srv-before', 'token-before')
+    await open()
+    await flush(5_000)
+    expect(screen.getAllByLabelText(/^Harbor,/)).toHaveLength(1)
+    const kept = await s.loadStored()
+    expect(kept.servers.map((k) => (k as { id: string }).id)).not.toContain('srv-before')
+    expect(await s.readToken('srv-before')).toBeNull()
+  })
+
+  test('signed in to the old one, Another server lists the new Harbor once, and it gives a code', async () => {
+    require(require('node:path').resolve(__dirname, '../../../packages/native/src/server-store.ts'))
+    const s = store()
+    s.saveStored({
+      current: 'srv-before',
+      servers: [
+        {
+          id: 'srv-before',
+          name: 'Harbor',
+          addresses: [{ url: 'http://192.168.1.20:3000', kind: 'local' }],
+          lastSeen: 1,
+        },
+      ],
+    })
+    const r = await open()
+    await fireEvent.press(screen.getByText('Another server'))
+    await flush(5_000)
+    expect(r.getPathname()).toBe('/connect')
+    expect(screen.getAllByLabelText(/^Harbor,/)).toHaveLength(1)
+    await fireEvent.press(screen.getByLabelText(/^Harbor,/))
+    await flush()
+    expect(r.getPathname()).toBe('/sign-in')
+    expect(screen.getByText('Waiting for approval. The code works for 10 minutes.')).toBeTruthy()
+  })
+
   test('one that isn’t set up any more isn’t opened, and the words say where', async () => {
     const r = await signedIn()
     await act(() => router.push('/connect'))

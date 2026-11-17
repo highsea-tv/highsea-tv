@@ -4,11 +4,13 @@
 // stage 6). Both shapes are the same height, the control's height and its inset either side, so a
 // list mixing films and songs keeps its rows even. The thumbnail is decorative: the title names the
 // row. Artwork is decoded at display size by expo-image (https://docs.expo.dev/versions/latest/sdk/image/).
-import { Image } from 'expo-image'
+
 import type { ReactNode } from 'react'
 import { View } from 'react-native'
+import { Image } from './image.tsx'
 import { Text } from './text.tsx'
 import { tokens, useControl, useTheme } from './theme.tsx'
+import { Tooltip } from './tooltip.tsx'
 
 export type TitleCellProps = {
   title: ReactNode
@@ -27,7 +29,16 @@ export function TitleCell({ title, detail, art, aspect = 'poster' }: TitleCellPr
   const m = useControl()
   const height = m.height + m.inset * 2
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: m.fieldPad, minWidth: 0 }}>
+    <View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: m.fieldPad,
+        // shrinks in a cell cut to fit (TableCell's truncate): a View doesn't by default
+        flexShrink: 1,
+        minWidth: 0,
+      }}
+    >
       {art === undefined ? null : (
         <View
           style={{
@@ -53,9 +64,11 @@ export function TitleCell({ title, detail, art, aspect = 'poster' }: TitleCellPr
       <View style={{ flex: 1, minWidth: 0 }}>
         <Text numberOfLines={1}>{title}</Text>
         {detail ? (
-          <Text variant="caption" mono color="text-3" numberOfLines={1}>
-            {detail}
-          </Text>
+          <Tooltip content={detail} whenTruncated>
+            <Text variant="caption" mono color="text-3" numberOfLines={1}>
+              {detail}
+            </Text>
+          </Tooltip>
         ) : null}
       </View>
     </View>

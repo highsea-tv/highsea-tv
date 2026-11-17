@@ -307,7 +307,7 @@ const nearby: NearbySource = (listener) => {
  * The token stays on the Rust side, which keeps it from a sign-in's answer, drops it on sign-out
  * and when the server refuses it (proxy.rs), so signing in and out here only reads the list again.
  */
-function DesktopServers({ children }: { children: ReactNode }) {
+export function DesktopServers({ children }: { children: ReactNode }) {
   const [known, setKnown] = useState<AppServer[] | null>(null)
   const [currentId, setCurrentId] = useState<string | null>(null)
   const [round, setRound] = useState(0)
@@ -384,6 +384,16 @@ function DesktopServers({ children }: { children: ReactNode }) {
         await invoke('server_forget', { id })
         await refresh()
         setCurrentId((c) => (c === id ? null : c))
+      },
+      // a server answering where a known one was takes its address, on the Rust side as on the
+      // phone (servers.rs's `seen`, the client's `claim`): the entries left with none are gone
+      async seen(found) {
+        const gone = await invoke<string[]>('servers_seen', {
+          found: found.map(({ info, base }) => ({ info, base })),
+        }).catch(() => [] as string[])
+        if (gone.length === 0) return
+        await refresh()
+        setCurrentId((c) => (c && gone.includes(c) ? null : c))
       },
       probe: infoAt,
       nearby,

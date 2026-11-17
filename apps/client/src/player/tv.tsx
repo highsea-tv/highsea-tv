@@ -24,7 +24,18 @@ import {
 import { useT } from '@highsea-tv/i18n/react'
 import { useMedia } from '@highsea-tv/native/media'
 import type { Playback } from '@highsea-tv/native/playback'
-import { alpha, Button, family, Icon, Text, tokens, useTheme } from '@highsea-tv/ui'
+import { art, line, player, tvText } from '@highsea-tv/tokens'
+import {
+  alpha,
+  Button,
+  family,
+  glassOf,
+  Icon,
+  scrimOf,
+  Text,
+  tokens,
+  useTheme,
+} from '@highsea-tv/ui'
 import {
   Focusable,
   FocusGuide,
@@ -42,7 +53,6 @@ import { playerScreenMessages as messages } from './messages.ts'
 import {
   CueLine,
   clock,
-  GLASS,
   NudgePreview,
   nextHeading,
   type PlayerModel,
@@ -55,6 +65,7 @@ import {
 import { usePicture } from './picture'
 
 const tv = tokens.tv
+const ptv = player.tv
 
 /** The player's own picks as the film page's TvTracks takes them: a pick changes this play. */
 function watchWithOf(p: Playback): WatchWith | null {
@@ -90,7 +101,7 @@ function Timing({ p }: { p: Playback }) {
     </Text>
   )
   return (
-    <View accessibilityLabel={t('timing')} style={{ gap: 0.6 * u }}>
+    <View accessibilityLabel={t('timing')} style={{ gap: tv.space['3'] * u }}>
       <Text variant="eyebrow" color="text-3" accessibilityRole="header">
         {t('timing')}
       </Text>
@@ -107,23 +118,23 @@ function Timing({ p }: { p: Playback }) {
               role="adjustable"
               label={t('timingLabel', { ms: NUDGE_MS })}
               lift="none"
-              radius={0.5 * u}
+              radius={tv.radius.button * u}
               onFocus={() => setFocused(true)}
               onBlur={() => setFocused(false)}
               style={{
                 flexDirection: 'row',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                paddingHorizontal: 1 * u,
-                paddingVertical: 0.7 * u,
+                paddingHorizontal: tv.space['5'] * u,
+                paddingVertical: tv.space['3.5'] * u,
                 backgroundColor: alpha(theme.colors.text, 0.12),
               }}
             >
-              <Icon name="chevron-left" size={1.2} />
+              <Icon name="chevron-left" size={tokens.icon.sizeTv.min} />
               <Text variant="button" style={{ fontFamily: family(400, 'mono') }}>
                 {playerText.offsetLabel(p.offsetMs)}
               </Text>
-              <Icon name="chevron-right" size={1.2} />
+              <Icon name="chevron-right" size={tokens.icon.sizeTv.min} />
             </Focusable>
           </FocusGuide>
           <NudgePreview offsetMs={p.offsetMs} />
@@ -195,12 +206,12 @@ function TvNextUp({ m }: { m: PlayerModel }) {
   const box = {
     position: 'absolute',
     right: tv.safe.x * u,
-    bottom: 14 * u,
-    width: (next.kind === 'choices' ? 46 : 30) * u,
-    gap: 1 * u,
-    padding: 1.4 * u,
-    borderRadius: 1 * u,
-    borderWidth: 1,
+    bottom: ptv.nextBottom * u,
+    width: (next.kind === 'choices' ? ptv.nextChoices : ptv.next) * u,
+    gap: tv.space['5'] * u,
+    padding: tv.space['7'] * u,
+    borderRadius: tv.radius.panel * u,
+    borderWidth: line.thin,
     borderColor: theme.colors.line,
     backgroundColor: alpha(theme.colors.bg, 0.8),
     boxShadow: tokens.elevation[4].boxShadow,
@@ -211,7 +222,7 @@ function TvNextUp({ m }: { m: PlayerModel }) {
         <Text variant="eyebrow" color="text-2" accessibilityRole="header">
           {t('moreLike')}
         </Text>
-        <View style={{ flexDirection: 'row', gap: 1 * u }}>
+        <View style={{ flexDirection: 'row', gap: tv.space['5'] * u }}>
           {next.items.map((item, i) => (
             <Focusable
               key={item.id}
@@ -219,18 +230,18 @@ function TvNextUp({ m }: { m: PlayerModel }) {
               role="button"
               label={item.title}
               lift="none"
-              radius={0.4 * u}
+              radius={tv.radius.sm * u}
               onPress={() => m.play(item.id)}
               style={{ flex: 1, minWidth: 0 }}
             >
               {(focused) => (
-                <View style={{ gap: 0.6 * u }}>
+                <View style={{ gap: tv.space['3'] * u }}>
                   <Image
                     source={media(item.art.backdrop)}
                     style={{
                       width: '100%',
                       aspectRatio: 16 / 9,
-                      borderRadius: 0.4 * u,
+                      borderRadius: tv.radius.sm * u,
                       backgroundColor: theme.colors.s2,
                     }}
                     contentFit="cover"
@@ -252,18 +263,18 @@ function TvNextUp({ m }: { m: PlayerModel }) {
     )
   return (
     <Ask style={box}>
-      <View style={{ flexDirection: 'row', gap: 1 * u, alignItems: 'center' }}>
+      <View style={{ flexDirection: 'row', gap: tv.space['5'] * u, alignItems: 'center' }}>
         <Image
           source={next.still ? media(next.still) : undefined}
           style={{
-            width: 10 * u,
+            width: ptv.upNextStill * u,
             aspectRatio: 16 / 9,
-            borderRadius: 0.4 * u,
+            borderRadius: tv.radius.sm * u,
             backgroundColor: theme.colors.s2,
           }}
           contentFit="cover"
         />
-        <View style={{ flex: 1, minWidth: 0, gap: 0.2 * u }}>
+        <View style={{ flex: 1, minWidth: 0, gap: tv.space['1'] * u }}>
           <Text variant="eyebrow" color="text-2" accessibilityRole="header">
             {nextHeading(t, next)}
           </Text>
@@ -277,7 +288,7 @@ function TvNextUp({ m }: { m: PlayerModel }) {
           </Text>
         </View>
       </View>
-      <View style={{ flexDirection: 'row', gap: 1 * u }}>
+      <View style={{ flexDirection: 'row', gap: tv.space['5'] * u }}>
         <Button ref={first} variant="primary" icon="play" onPress={() => m.play(next.id)}>
           {t('playNow')}
         </Button>
@@ -378,7 +389,7 @@ export function TvPlayer({
   const w = panel ? watchWithOf(p) : null
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#000' }}>
+    <View style={{ flex: 1, backgroundColor: art.black }}>
       {picture}
       <View
         accessibilityRole="header"
@@ -398,15 +409,15 @@ export function TvPlayer({
               opacity: shown,
               flexDirection: 'row',
               alignItems: 'flex-start',
-              gap: 1.2 * u,
+              gap: tv.space['6'] * u,
               paddingHorizontal: safeX,
               paddingTop: safeY,
-              paddingBottom: 4 * u,
-              backgroundImage: 'linear-gradient(180deg, rgba(0,0,0,0.7), transparent)',
+              paddingBottom: tv.space['20'] * u,
+              backgroundImage: `linear-gradient(180deg, ${scrimOf(70)}, transparent)`,
             }}
           >
-            <View style={{ flex: 1, gap: 0.3 * u }}>
-              <Text size={2.2} weight={600} numberOfLines={1}>
+            <View style={{ flex: 1, gap: tv.space['1.5'] * u }}>
+              <Text size={tvText.title.size} weight={600} numberOfLines={1}>
                 {titleLines(d).title}
               </Text>
               {v || titleLines(d).line ? (
@@ -418,10 +429,10 @@ export function TvPlayer({
             {v ? (
               <View
                 style={{
-                  paddingHorizontal: 0.5 * u,
-                  paddingVertical: 0.15 * u,
-                  borderRadius: 0.3 * u,
-                  backgroundColor: GLASS,
+                  paddingHorizontal: tv.space['2.5'] * u,
+                  paddingVertical: ptv.chipY * u,
+                  borderRadius: tv.radius.pill * u,
+                  backgroundColor: glassOf(theme.colors),
                 }}
               >
                 <Text variant="quality">{v.label}</Text>
@@ -437,17 +448,17 @@ export function TvPlayer({
                 position: 'absolute',
                 top: '50%',
                 left: '50%',
-                width: 6 * u,
-                height: 6 * u,
-                marginLeft: -3 * u,
-                marginTop: -3 * u,
-                borderRadius: 3 * u,
+                width: ptv.play * u,
+                height: ptv.play * u,
+                marginLeft: (-ptv.play / 2) * u,
+                marginTop: (-ptv.play / 2) * u,
+                borderRadius: tokens.radius.pill,
                 alignItems: 'center',
                 justifyContent: 'center',
-                backgroundColor: GLASS,
+                backgroundColor: glassOf(theme.colors),
               }}
             >
-              <Icon name="play" size={2.6} />
+              <Icon name="play" size={ptv.playIcon} />
             </View>
           ) : null}
           <View
@@ -456,12 +467,12 @@ export function TvPlayer({
               left: 0,
               right: 0,
               bottom: 0,
-              gap: 1.2 * u,
+              gap: tv.space['6'] * u,
               paddingHorizontal: safeX,
-              paddingTop: 6 * u,
+              paddingTop: ptv.fade * u,
               paddingBottom: safeY,
               backgroundImage: chrome
-                ? 'linear-gradient(180deg, transparent, rgba(0,0,0,0.8))'
+                ? `linear-gradient(180deg, transparent, ${scrimOf(80)})`
                 : undefined,
             }}
           >
@@ -471,9 +482,9 @@ export function TvPlayer({
                   pointerEvents="none"
                   style={{
                     position: 'absolute',
-                    bottom: 1.6 * u,
+                    bottom: tv.space['8'] * u,
                     left: `${fraction * 100}%`,
-                    marginLeft: -7 * u,
+                    marginLeft: (-ptv.preview / 2) * u,
                   }}
                 >
                   <Preview
@@ -481,7 +492,7 @@ export function TvPlayer({
                     versionId={versionId}
                     manifest={m.manifest}
                     seconds={position}
-                    width={14 * u}
+                    width={ptv.preview * u}
                   />
                 </View>
               ) : null}
@@ -505,7 +516,7 @@ export function TvPlayer({
                     setOnScrubber(false)
                     setScrubAt(0)
                   }}
-                  style={{ height: 1.6 * u, justifyContent: 'center' }}
+                  style={{ height: ptv.scrubberHit * u, justifyContent: 'center' }}
                 >
                   {(focused) => (
                     <View
@@ -514,8 +525,8 @@ export function TvPlayer({
                       }}
                       style={{
                         opacity: shown,
-                        height: (focused ? 0.8 : 0.5) * u,
-                        borderRadius: 0.4 * u,
+                        height: (focused ? ptv.trackFocused : ptv.track) * u,
+                        borderRadius: tv.radius.sm * u,
                         backgroundColor: alpha(theme.colors.text, 0.25),
                       }}
                     >
@@ -523,7 +534,7 @@ export function TvPlayer({
                         style={{
                           width: `${fraction * 100}%`,
                           height: '100%',
-                          borderRadius: 0.4 * u,
+                          borderRadius: tv.radius.sm * u,
                           backgroundColor: theme.colors['accent-fill'],
                         }}
                       />
@@ -533,11 +544,11 @@ export function TvPlayer({
                             position: 'absolute',
                             left: `${fraction * 100}%`,
                             top: '50%',
-                            width: 1.4 * u,
-                            height: 1.4 * u,
-                            marginLeft: -0.7 * u,
-                            marginTop: -0.7 * u,
-                            borderRadius: 0.7 * u,
+                            width: ptv.thumb * u,
+                            height: ptv.thumb * u,
+                            marginLeft: (-ptv.thumb / 2) * u,
+                            marginTop: (-ptv.thumb / 2) * u,
+                            borderRadius: tokens.radius.pill,
                             backgroundColor: theme.colors.text,
                           }}
                         />
@@ -560,7 +571,12 @@ export function TvPlayer({
               </View>
             </View>
             <View
-              style={{ opacity: shown, flexDirection: 'row', alignItems: 'center', gap: 1 * u }}
+              style={{
+                opacity: shown,
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: tv.space['5'] * u,
+              }}
             >
               <Button
                 variant="overlay"
@@ -576,7 +592,7 @@ export function TvPlayer({
               <View
                 accessibilityElementsHidden
                 importantForAccessibility="no-hide-descendants"
-                style={{ marginLeft: 'auto', flexDirection: 'row', gap: 1.6 * u }}
+                style={{ marginLeft: 'auto', flexDirection: 'row', gap: tv.space['8'] * u }}
               >
                 {[
                   t('legendSeek', { seconds: SEEK_S }),

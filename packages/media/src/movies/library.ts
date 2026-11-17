@@ -405,8 +405,8 @@ export function createLibrary(ctx: Ctx, media: Media) {
   }
 
   function requireFolder(path: string) {
-    const folder = media.rootFolders.find(path)
-    if (!folder) throw invalid('Pick one of the root folders.', 'unknown-root-folder')
+    const folder = media.rootFolders.find(path, 'movies')
+    if (!folder) throw invalid('Pick one of the movies’ root folders.', 'unknown-root-folder')
     return folder.path
   }
 

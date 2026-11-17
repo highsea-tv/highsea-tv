@@ -7,7 +7,8 @@
 import type { ClientAnnouncement } from '@highsea-tv/api-contract'
 import { CURATION_TOPICS } from '@highsea-tv/api-contract'
 import { useAction, useQuery } from '@highsea-tv/sdk/react'
-import { Banner, type BannerTone, toast } from '@highsea-tv/ui'
+import { Banner, type BannerTone, toast, tokens } from '@highsea-tv/ui/native'
+import { View } from 'react-native'
 import { useCurationT } from './curation-shared.tsx'
 import { Cta, Inline } from './inline.tsx'
 
@@ -25,10 +26,9 @@ export function AnnouncementBanners() {
   const seen = useAction((c, id: string) => c.announcements.seen({ params: { id } }))
   const banners = (active.data ?? []).filter((a) => !a.seen && a.placements.includes('banner'))
   if (!banners.length) return null
-  // one column at the page's width: an auto column would grow to a banner's widest word and
-  // buttons at 200% text, past a phone's edge
+  // one column at the page's width, each banner kept to it
   return (
-    <div className="grid grid-cols-[minmax(0,1fr)] gap-2">
+    <View style={{ gap: tokens.space['2'], minWidth: 0 }}>
       {banners.map((a) => {
         const done = () =>
           seen.run(a.id).catch((e: Error) => toast.error(t('failed'), { description: e.message }))
@@ -37,15 +37,16 @@ export function AnnouncementBanners() {
             key={a.id}
             title={a.title}
             tone={tone(a)}
+            variant="bar"
             onDismiss={a.acknowledgement === 'dismiss' ? done : undefined}
             onAcknowledge={a.acknowledgement === 'require' ? done : undefined}
             acknowledgeLabel={t('gotIt')}
             action={a.cta ? <Cta cta={a.cta} /> : undefined}
           >
-            <Inline text={a.body} />
+            <Inline text={a.body} size={tokens.adminText.ui.size} />
           </Banner>
         )
       })}
-    </div>
+    </View>
   )
 }

@@ -1,10 +1,25 @@
 # SPDX-License-Identifier: AGPL-3.0-only
-# Every push and pull request: lint, types, tests (Bun), the platform under Node, the license
-# audit, the dependency check, the admin's build, highsea connects' leak test, the web player in
-# Chromium and Firefox (phase-4-checkpoint-2.md › Tests, 4.2b), and the image on
-# both platforms: built, booted healthy, inside its size budget, with its labels and attestations.
-# Nothing is pushed (phase-3-checkpoint-9.md › Images: "CI builds both platforms … and pushes
-# nothing").
+# Two tiers (ADR 0062, next-branch.md › CI by branch). The fast one, `check`, runs on every pull
+# request and every push to next or main: lint, types, tests (Bun), the platform under Node, the
+# license audit, the dependency check, the client's exports, the admin's and the docs' builds. The
+# heavy one: highsea connects' leak test, the web player in Chromium and Firefox
+# (phase-4-checkpoint-2.md › Tests, 4.2b), and the image on both platforms: built, booted healthy,
+# with its labels and attestations. Nothing is pushed (phase-3-checkpoint-9.md › Images: "CI
+# builds both platforms … and pushes nothing").
+#
+# The heavy jobs share one condition, `&heavy` on `playback` below: they run on a push to next, a
+# pull request into main, a pull request with the `full-ci` label, and a release (called from
+# release.yml, whose event is workflow_dispatch, since a called workflow's `github` context is its
+# caller's). A push to main runs only `check`: the pull request from next already ran everything
+# on the same result, and a release runs it all again (the owner's answer 3). A job its `if:` skips
+# reports success, so the condition never leaves a required check pending
+# (https://docs.github.com/en/pull-requests/how-tos/merge-and-close-pull-requests/troubleshooting-required-status-checks#handling-skipped-but-required-checks).
+# `github.base_ref` is a pull request's base branch, and the label is in
+# `github.event.pull_request.labels`, matched with `contains()` over the names
+# (https://docs.github.com/en/actions/reference/workflows-and-actions/expressions#contains,
+# https://docs.github.com/en/actions/reference/workflows-and-actions/contexts#github-context). It's
+# written once and repeated with YAML aliases
+# (https://docs.github.com/en/actions/reference/workflows-and-actions/reusing-workflow-configurations#yaml-anchors-and-aliases).
 #
 # Each action is pinned to a full commit SHA, with its version beside it, as GitHub's security
 # guidance advises: a tag can be moved, a commit can't
@@ -14,25 +29,31 @@ name: CI
 # The internal docs and the notes for Claude change nothing that's built or tested, so a push that
 # only touches them runs nothing (https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#onpushpull_requestpull_request_targetpathspaths-ignore).
 # The guides in apps/docs are built and tested here, so they're not left out.
+#
+# A pull request has no path filter: next and main require `check`, and a workflow its paths skip
+# leaves its required checks pending, which blocks the merge (troubleshooting-required-status-checks,
+# above). So a pull request that changes only the internal docs runs `check` too.
+#
+# `labeled` joins the default types (opened, synchronize, reopened), so adding `full-ci` to an open
+# pull request starts the heavy jobs
+# (https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#pull_request).
+# Any other label starts a run too, and cancels the one in progress (the concurrency group below);
+# `check` runs again rather than being skipped, so a skipped run can't stand in for a failed one.
 on:
   push:
-    branches: [main]
+    branches: [next, main]
     paths-ignore:
       - 'docs/**'
       - '.claude/**'
       - 'README.md'
       - 'CLAUDE.md'
   pull_request:
-    paths-ignore:
-      - 'docs/**'
-      - '.claude/**'
-      - 'README.md'
-      - 'CLAUDE.md'
+    types: [opened, synchronize, reopened, labeled]
   # the release runs it whole before building anything (release.yml)
   workflow_call:
 
 # a called workflow's `github` context is its caller's, so `github.workflow` keeps a release's run apart
-# from a push to main's, and neither cancels the other
+# from a push's, and neither cancels the other
 # (https://docs.github.com/en/actions/reference/workflows-and-actions/reusing-workflow-configurations)
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
@@ -44,11 +65,16 @@ permissions:
 jobs:
   check:
     runs-on: ubuntu-24.04
+    # Without a limit a job may run for 360 minutes, GitHub's default
+    # (https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#jobsjob_idtimeout-minutes);
+    # a hung test once held this one for four hours. Its last 30 runs took 7 to 26 minutes,
+    # leaving out the apt stalls the step below now avoids (HT-8, 2026-11-06).
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
-          bun-version: 1.4.2
+          bun-version: 1.4.4
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version-file: .nvmrc
@@ -60,14 +86,66 @@ jobs:
           key: bun-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('bun.lock') }}
           restore-keys: bun-${{ runner.os }}-${{ runner.arch }}-
       - run: bun install --frozen-lockfile
-      # ffprobe and unar, so the probing and extraction tests run instead of skipping (ADR 0039)
+      # ffprobe and unar, so the probing and extraction tests run instead of skipping (ADR 0039).
+      #
+      # Their .debs are kept between runs. The index downloads in a second, but on some runs
+      # azure.archive.ubuntu.com, the image's mirror, sent the 66 MB of packages at about 40 kB/s,
+      # and the step took 20 to 29 minutes instead of 20 seconds (the jobs' logs, 2026-11-06;
+      # the mirror's history in https://github.com/actions/runner-images/issues/7048). The image
+      # already bounds apt's retries and its 15 s connection timeout (images/ubuntu/scripts/build/
+      # configure-apt.sh in actions/runner-images), and a slow transfer trips neither, so a
+      # further apt setting wouldn't help: not downloading does. apt uses a .deb already in
+      # Dir::Cache::Archives when it matches the index (apt.conf(5), DIRECTORIES), so the cache is
+      # that folder, keyed by the exact versions `apt-get install -s` would install (apt-get(8)):
+      # the key changes only when Ubuntu updates one of the packages, and then the older cache is
+      # restored through `restore-keys` and only what changed is downloaded
+      # (https://github.com/actions/cache#creating-a-cache-key). `autoclean` drops the .debs that
+      # can no longer be downloaded, so the cache doesn't grow (apt-get(8)). Each step has its own
+      # time limit, so a stalled mirror fails in minutes and names the step.
+      #
+      # The image lists its mirrors in /etc/apt/apt-mirrors.txt, Azure's first and
+      # archive.ubuntu.com and security.ubuntu.com after it (images/ubuntu/scripts/build/
+      # configure-apt-sources.sh in actions/runner-images), and apt's mirror method falls back
+      # through that list for each file (apt-transport-mirror(1)). When Azure's name doesn't
+      # resolve, each file waits about 20 s on DNS before falling back, and the index's four files
+      # used up the step's 3 minutes on every attempt (the jobs' logs, 2026-11-11: "Temporary
+      # failure resolving 'azure.archive.ubuntu.com'"). So the name is looked up once first, and
+      # when it doesn't resolve its line comes off the list and apt goes straight to the others.
+      - name: The apt index
+        timeout-minutes: 3
+        run: |
+          if ! timeout 10 getent hosts azure.archive.ubuntu.com > /dev/null; then
+            echo "::warning::azure.archive.ubuntu.com doesn't resolve; using the image's other mirrors"
+            sudo sed -i '/azure\.archive\.ubuntu\.com/d' /etc/apt/apt-mirrors.txt
+          fi
+          sudo apt-get update
+      - name: The apt packages' versions
+        id: apt
+        run: |
+          versions=$(apt-get install -s --no-install-recommends ffmpeg unar | grep '^Inst ' | sha256sum | cut -c1-16)
+          echo "key=apt-${RUNNER_OS}-${RUNNER_ARCH}-ffmpeg-unar-${versions}" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: ~/apt-archives
+          key: ${{ steps.apt.outputs.key }}
+          restore-keys: apt-${{ runner.os }}-${{ runner.arch }}-ffmpeg-unar-
       - name: ffmpeg and unar
-        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg unar
+        timeout-minutes: 8
+        run: |
+          archives="$HOME/apt-archives"
+          mkdir -p "$archives/partial"
+          sudo apt-get install -y --no-install-recommends -o Dir::Cache::Archives="$archives" ffmpeg unar
+          sudo apt-get autoclean -o Dir::Cache::Archives="$archives"
+          # apt's lock and partial downloads are root's; the cache saves the .debs as the runner
+          sudo rm -rf "$archives/lock" "$archives/partial"
+          sudo chown -R "$(id -u):$(id -g)" "$archives"
       - name: Lint
         run: bun run lint
       - name: Types
         run: bun run typecheck
+      # its own limit, so a hang names this step; the last 30 runs took 5 to 16 minutes
       - name: Tests (Bun)
+        timeout-minutes: 25
         run: bun run test
       - name: The platform under Node (better-sqlite3, workers, API)
         run: bun run smoke
@@ -106,13 +184,19 @@ jobs:
   # libraries are what Firefox decodes H.264 and AAC with on Linux
   # (https://support.mozilla.org/kb/html5-audio-and-video-firefox)
   playback:
+    # the heavy tier's condition (the header above)
+    if: &heavy >-
+      (github.event_name == 'pull_request'
+        && (github.base_ref == 'main' || contains(github.event.pull_request.labels.*.name, 'full-ci')))
+      || (github.event_name == 'push' && github.ref == 'refs/heads/next')
+      || (github.event_name != 'pull_request' && github.event_name != 'push')
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
-          bun-version: 1.4.2
+          bun-version: 1.4.4
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version-file: .nvmrc
@@ -134,12 +218,15 @@ jobs:
   # highsea connects' kill switch on a real kernel: the runner's kernel has WireGuard, and sudo
   # gives the test the root it needs to make a network namespace and a second peer
   leak:
+    if: *heavy
     runs-on: ubuntu-24.04
+    # its last 30 runs took under 1.5 minutes (the default limit is 360, the check job's note)
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
-          bun-version: 1.4.2
+          bun-version: 1.4.4
       # the test's connections run under Node, as highsea does: Bun reports a route's EHOSTUNREACH
       # as ECONNREFUSED (packages/vpn/test/leak.test.ts)
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
@@ -161,6 +248,7 @@ jobs:
   # Its cache has a scope per platform, so the two don't overwrite each other
   # (https://docs.docker.com/build/cache/backends/gha/#scope).
   image:
+    if: *heavy
     strategy:
       fail-fast: false
       matrix:
@@ -170,22 +258,27 @@ jobs:
           - platform: linux/arm64
             runner: ubuntu-24.04-arm
     runs-on: ${{ matrix.runner }}
-    env:
-      # set from the first slim builds (2026-10-22: amd64 1907 MB, arm64 1836 MB), about 5% above the
-      # larger; raising it needs a reason here.
-      # 2026-10-23, 2000 to 2200 (checkpoint 4.0a): Debian trixie adds 139 MB on amd64 and 180 MB on
-      # arm64 to the same packages (arm64 measured at 2078 MB in all). ffmpeg 7.1 brings LLVM 19 and
-      # Mesa's Gallium, and unar's libgnustep-base1.31 declares `Depends: dpkg-dev`, which brings
-      # Perl, binutils and make (apt-cache show libgnustep-base1.31)
-      # 2026-10-28, 2200 to 2300 (checkpoint 4.3b, the owner's answer 3): the hardware drivers on
-      # amd64, about 134 MB measured in a trixie container: Intel's media driver (42 MB), libmfx-gen
-      # (8.7 MB), libvpl and Mesa's VAAPI driver, and Mesa's Vulkan drivers (83 MB) for libplacebo
-      IMAGE_BUDGET_MB: 2300
+    # its last 30 runs took up to 12 minutes on either platform (the default limit is 360, the
+    # check job's note)
+    timeout-minutes: 30
+    # the size budget's history, kept for the record:
+    # set from the first slim builds (2026-10-22: amd64 1907 MB, arm64 1836 MB), about 5% above the
+    # larger; raising it needs a reason here.
+    # 2026-10-23, 2000 to 2200 (checkpoint 4.0a): Debian trixie adds 139 MB on amd64 and 180 MB on
+    # arm64 to the same packages (arm64 measured at 2078 MB in all). ffmpeg 7.1 brings LLVM 19 and
+    # Mesa's Gallium, and unar's libgnustep-base1.31 declares `Depends: dpkg-dev`, which brings
+    # Perl, binutils and make (apt-cache show libgnustep-base1.31)
+    # 2026-10-28, 2200 to 2300 (checkpoint 4.3b, the owner's answer 3): the hardware drivers on
+    # amd64, about 134 MB measured in a trixie container: Intel's media driver (42 MB), libmfx-gen
+    # (8.7 MB), libvpl and Mesa's VAAPI driver, and Mesa's Vulkan drivers (83 MB) for libplacebo
+    # 2026-11-05 (one-client-platform-d.md, D2's answer 2): the owner removed the size gate. The
+    # image was 2,883 MB with the admin on React Native (expo-image 138 MB, lucide-react-native,
+    # hermes-compiler); the step below reports the size and its largest folders, and fails on nothing
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
-          bun-version: 1.4.2
+          bun-version: 1.4.4
       - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
       - name: The image's version and dates
         id: meta
@@ -222,7 +315,7 @@ jobs:
           docker stop highsea
           test "$(docker inspect --format '{{.State.ExitCode}}' highsea)" = 0
       - name: Its size and largest folders
-        run: bun scripts/image.ts size highsea:ci "$IMAGE_BUDGET_MB"
+        run: bun scripts/image.ts size highsea:ci
       - name: Its hardware encoders, filters and drivers
         run: bun scripts/image.ts hardware highsea:ci
       - name: The user its entrypoint runs highsea as

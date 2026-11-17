@@ -9,8 +9,18 @@
 import { SEEK_S, titleLines } from '@highsea-tv/client/player'
 import { useT } from '@highsea-tv/i18n/react'
 import type { Playback } from '@highsea-tv/native/playback'
-import { blur } from '@highsea-tv/tokens'
-import { alpha, Button, Icon, QualityTag, Text, tokens, useTheme } from '@highsea-tv/ui'
+import { art, blur, line, player } from '@highsea-tv/tokens'
+import {
+  alpha,
+  Button,
+  glassOf,
+  Icon,
+  QualityTag,
+  scrimOf,
+  Text,
+  tokens,
+  useTheme,
+} from '@highsea-tv/ui'
 import { useState } from 'react'
 import { type LayoutChangeEvent, Platform, ScrollView, View } from 'react-native'
 import {
@@ -23,7 +33,6 @@ import { playerScreenMessages as messages } from './messages.ts'
 import {
   CueLine,
   clock,
-  GLASS,
   NextUpCard,
   type PlayerModel,
   Round,
@@ -63,14 +72,25 @@ function Volume({ c }: { c: MediaControls }) {
       onMoveShouldSetResponder={() => true}
       onResponderGrant={(e) => set(e.nativeEvent.locationX)}
       onResponderMove={(e) => set(e.nativeEvent.locationX)}
-      style={{ width: 80, height: 24, marginHorizontal: space['2'], justifyContent: 'center' }}
+      style={{
+        width: player.volume.width,
+        height: tokens.targets.pointer,
+        marginHorizontal: space['2'],
+        justifyContent: 'center',
+      }}
     >
-      <View style={{ height: 6, borderRadius: 3, backgroundColor: alpha(theme.colors.text, 0.25) }}>
+      <View
+        style={{
+          height: player.volume.track,
+          borderRadius: tokens.radius.pill,
+          backgroundColor: alpha(theme.colors.text, 0.25),
+        }}
+      >
         <View
           style={{
             width: `${level * 100}%`,
-            height: 6,
-            borderRadius: 3,
+            height: player.volume.track,
+            borderRadius: tokens.radius.pill,
             backgroundColor: theme.colors.text,
           }}
         />
@@ -136,7 +156,7 @@ export function PointerPlayer({
 
   const gutter = regular ? space['8'] : space['4']
   return (
-    <View style={{ flex: 1, overflow: 'hidden', backgroundColor: '#000' }}>
+    <View style={{ flex: 1, overflow: 'hidden', backgroundColor: art.black }}>
       {picture}
       <View
         accessibilityRole="header"
@@ -151,10 +171,10 @@ export function PointerPlayer({
             alignItems: 'center',
             justifyContent: 'center',
             gap: space['4'],
-            backgroundColor: '#000',
+            backgroundColor: art.black,
           }}
         >
-          <Icon name="picture-in-picture" size={40} color="text-2" />
+          <Icon name="picture-in-picture" size={player.pictureIcon} color="text-2" />
           <Text variant="body" color="text-2">
             {t('pipShowing')}
           </Text>
@@ -186,9 +206,9 @@ export function PointerPlayer({
             alignItems: 'center',
             gap: space['3'],
             paddingHorizontal: gutter,
-            paddingTop: windowChrome === 'bar' ? TITLE_BAR_HEIGHT + 16 : 16,
+            paddingTop: windowChrome === 'bar' ? TITLE_BAR_HEIGHT + space['4'] : space['4'],
             paddingBottom: space['4'],
-            backgroundImage: 'linear-gradient(180deg, rgba(0,0,0,0.7), transparent)',
+            backgroundImage: `linear-gradient(180deg, ${scrimOf(70)}, transparent)`,
           }}
         >
           {windowChrome === 'mac' ? <View style={{ width: TRAFFIC_LIGHT_ROOM }} /> : null}
@@ -221,16 +241,22 @@ export function PointerPlayer({
               position: 'absolute',
               top: '50%',
               left: '50%',
-              marginTop: -40,
-              marginLeft: -40,
-              width: 80,
-              height: 80,
-              borderRadius: 40,
+              marginTop: -player.round.xl / 2,
+              marginLeft: -player.round.xl / 2,
+              width: player.round.xl,
+              height: player.round.xl,
+              borderRadius: tokens.radius.pill,
               overflow: 'hidden',
-              backgroundColor: GLASS,
+              backgroundColor: glassOf(theme.colors),
             }}
           >
-            <Round icon="play" label={t('play')} size={80} iconSize={34} onPress={p.toggle} />
+            <Round
+              icon="play"
+              label={t('play')}
+              size={player.round.xl}
+              iconSize={player.icon.xl}
+              onPress={p.toggle}
+            />
           </View>
         ) : null}
 
@@ -244,7 +270,7 @@ export function PointerPlayer({
             paddingHorizontal: gutter,
             paddingTop: space['16'],
             paddingBottom: space['4'],
-            backgroundImage: 'linear-gradient(180deg, transparent, rgba(0,0,0,0.75))',
+            backgroundImage: `linear-gradient(180deg, transparent, ${scrimOf(80)})`,
           }}
         >
           <Scrubber p={p} id={id} manifest={m.manifest} onDrag={wake} hover />
@@ -261,9 +287,8 @@ export function PointerPlayer({
               onPress={() => p.seekBy(-SEEK_S)}
             />
             <Round
-              icon="replay"
+              icon="forward"
               iconSize={tokens.icon.size.md}
-              flip
               label={t('forwardBy', { seconds: SEEK_S })}
               onPress={() => p.seekBy(SEEK_S)}
             />
@@ -332,8 +357,8 @@ export function PointerPlayer({
             bottom: 0,
             right: 0,
             width: '100%',
-            maxWidth: 352,
-            borderStartWidth: 1,
+            maxWidth: player.panel.width,
+            borderStartWidth: line.thin,
             borderColor: theme.colors.line,
             backgroundColor: alpha(theme.colors.bg, 0.8),
             zIndex: 20,
@@ -346,7 +371,7 @@ export function PointerPlayer({
               alignItems: 'center',
               justifyContent: 'space-between',
               paddingHorizontal: space['5'],
-              paddingTop: windowChrome === 'bar' ? TITLE_BAR_HEIGHT + 16 : 16,
+              paddingTop: windowChrome === 'bar' ? TITLE_BAR_HEIGHT + space['4'] : space['4'],
               paddingBottom: space['2'],
             }}
           >

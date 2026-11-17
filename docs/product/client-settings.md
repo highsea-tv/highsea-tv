@@ -1,7 +1,8 @@
 # Client settings, profile and You
 
 - **Platforms:** Web and desktop, mobile, TV (settings); mobile and web (profile and downloads).
-- **Prototype:** settings at `#/web/settings`, `#/mobile/you/{section}`, `#/tv/settings` (C7); the profile at `#/mobile/you` and `#/web/profile`, downloads at `#/mobile/offline` and `#/web/downloads` (C8, reference fidelity; core fidelity since checkpoint 4.0b, with `?app=desktop` for the desktop app's).
+- **Screen:** `apps/client/src/app/(in)/settings.tsx` (the sections' list and words in `@highsea-tv/client/prefs`, the account's parts in `apps/client/src/account/`), the profile `(in)/profile.tsx`, downloads `(in)/downloads.tsx` and `(in)/offline.tsx`, and Who's watching `(in)/who/`.
+- **Prototype:** settings at `#/web/settings`, `#/mobile/settings`, `#/tv/settings` (C7; `#/mobile/you` is an alias of `#/mobile/settings`), with the client's mock export in the frames since B2; the profile at `#/mobile/you` and `#/web/profile`, downloads at `#/mobile/offline` and `#/web/downloads` (C8, reference fidelity; core fidelity since checkpoint 4.0b, with `?app=desktop` for the desktop app's).
 - **Roadmap:** [Phase 2 › C7, C8](../roadmap.md#phase-2-design-prototypes-gate-user-sign-off), [Personalization](../roadmap.md#personalization-highseapersonalization). The server's side is [appearance.md](appearance.md).
 
 ## Purpose
@@ -10,15 +11,15 @@ What a person can change for themselves: how this device looks and sounds, what 
 
 ## Entry points
 
-- Web: the avatar menu › **Account** (profile) and **Settings**. Mobile: the **You** tab, and the avatar on every tab's header. TV: **Settings** in the global navigation.
+- Web: the avatar menu › **Account** (profile) and **Settings**. Mobile: the **You** tab, and the avatar on every tab's header. TV: the account at the end of the head (its avatar) opens **Settings**; the head is the TV's global navigation ([client-home.md › TV](client-home.md#tv-locked)).
 
 ## Layout
 
-The same six sections everywhere: **Theme**, **Sounds**, **Home screen**, **Servers**, **Your devices**, **About**.
+One screen by the form-factor rule, with the same seven sections in the same order everywhere (`settingsSections` in `@highsea-tv/client/prefs`): **Theme**, **Sounds**, **Playback**, **Home screen**, **Servers**, **Your devices**, **About**, each a row of its own card with its icon and hint.
 
-- **Web:** "Settings", then the sections as a list beside the chosen one (from medium); on a phone-width window, the list alone, each section its own page with a way back.
-- **Mobile (You tab):** the person (initial, name, "@ines · owner of Harbor"); the six sections as a grouped list; then **Downloads** and **Sign out of Harbor**. Each section is a screen of its own with "‹ You".
-- **TV:** "Settings" and the sections down the left; the chosen one on the right. Moving down the list shows each section; **Right** enters it, **Left** returns.
+- **Pointer, regular window:** "Settings", then the sections as a list beside the chosen one.
+- **Touch, and a pointer in a compact window (the phone's You tab):** the person (initial, name, "@ines · owner of Harbor"); the sections as a grouped list; then **Downloads** and **Sign out of Harbor**. Each section is a screen of its own (`?section=`) with a way back.
+- **TV:** its own composition under the head: "Settings" and the sections down the left, each shown on the right as focus reaches its name, with its hint above it; **Right** enters it, **Left** returns, and **Up** from the list reaches the head. Playback's choices are rows of chips, and Home's rows move by Up and Down. The section asked for (or the first) takes focus as the screen opens, and only then; picking a choice keeps focus on it.
 
 | Section | What's in it |
 | --- | --- |
@@ -66,7 +67,7 @@ Under the themes, off by default (Phase 4's answer 9). Turned on, the theme this
 
 - **Playback** is a section in every app's Settings, the TV's in the same order: **Audio language** and **Subtitle language** (with **Only when the audio isn't in my language**), **Play the next episode automatically** (on), **Skip intros automatically** (off), and **Quality at home** and **Quality away from home** (Original, or a bitrate cap). They're the person's own, in ADR 0027's layers; the server's Settings › Playback is unchanged.
 - **Offline and Downloads** group episodes under their show and season, and songs under their album, each group with its size and **Remove**. The copy says "films, episodes and music".
-- **Switch profile** (the owner's answer 5): the web's account menu and the phone's You have it when the account has more than one profile. On the web and desktop it opens **Who's watching?** as the TV draws it, on its own page (`/who`): each profile's circle in its colour with its initial and name, a lock when it has a PIN, and "Watching now" under the current one, with **Cancel**. Choosing one with a PIN asks "Enter {name}'s PIN" in one four-digit field; a wrong one says "That isn't {name}'s PIN. Try again.", and five in a row rest it for a minute ("Too many tries. Try again in a minute."), as the TV's pad does. **Someone else** goes back. Then Home, as the new profile. On the phone (the owner, 2026-11-01) it's a sheet over You instead (`/you/who`), as phones switch accounts: **Switch profile**, then a row per profile with its circle and name, "Watching now" and a check on the current one and a lock on one with a PIN; the PIN is asked in the same sheet, titled "Enter {name}'s PIN". Profiles are the account's and kept by the server, so switching on one app is seen on the others. Adding and deleting profiles stays on the TV for now.
+- **Switch profile** (the owner's answer 5): the web's account menu and the phone's You have it when the account has more than one profile. On the web and desktop it opens **Who's watching?** as the TV draws it, on its own page (`/who`): each profile's circle in its colour with its initial and name, a lock when it has a PIN, and "Watching now" under the current one, with **Cancel**. Choosing one with a PIN asks "Enter {name}'s PIN" in one four-digit field; a wrong one says "That isn't {name}'s PIN. Try again.", and five in a row rest it for a minute ("Too many tries. Try again in a minute."), as the TV's pad does. **Someone else** goes back. Then Home, as the new profile. On the phone (the owner, 2026-11-01) it's a sheet over You instead (`/you/who`), as phones switch accounts: **Switch profile**, then a row per profile with its circle and name, "Watching now" and a check on the current one and a lock on one with a PIN; the PIN is asked in the same sheet, titled "Enter {name}'s PIN". Profiles are the account's and kept by the server, so the same list is seen on every app, but the profile watching now is kept per device (the owner, 2026-11-15, Phase 5's answer 16): switching on one app changes only that app, so the TV and a phone can watch as different people at once. Adding and deleting profiles stays on the TV for now.
 - **The profile's name and colour** replace the hard-coded "Ines" in the account menu's button and label, the phone's header and You, and the web's Account page. A profile that isn't the account's own says "A profile on @ines's account" under its name.
 - **The server's name** is read from the server everywhere a client or the admin names it ("Sign out of {server}", "Nothing on {server} matches", Search's hint, Get the apps, the restore dialog, Discovery's label, the theme sample), and "this server" until it's known. The remembered servers name this one by its current name.
 

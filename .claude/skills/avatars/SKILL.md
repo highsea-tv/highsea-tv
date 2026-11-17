@@ -10,7 +10,7 @@ Google Flow has no API, so this skill drives its web app in the **built-in brows
 
 https://flow.google.com/project/40b0eb7a-6871-430c-8566-7734bf2959ae
 
-Kept avatars go in `design/assets/avatars/<collection>/<slug>.jpg` (Flow's originals are 1024 × 1024 JPEGs), listed in `design/assets/avatars/manifest.json`. They aren't wired into any app yet: today every app draws a person's initial on their colour (`TvAvatar` in the prototypes, `Avatar` in ui-native). Choosing a picture on a profile is a product change that needs a prototype and the owner's approval first.
+Kept avatars go in `design/assets/avatars/<collection>/<slug>.jpg` (Flow's originals are 1024 × 1024 JPEGs), listed in `design/assets/avatars/manifest.json`. They aren't wired into any app yet: today every app draws a person's initial on their colour (`@highsea-tv/ui`'s `Avatar`, in every client and its prototype). Choosing a picture on a profile is a product change that needs a prototype and the owner's approval first.
 
 ## Before you start
 

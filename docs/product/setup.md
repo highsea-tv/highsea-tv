@@ -1,6 +1,7 @@
 # Setup
 
-- **Platforms:** Admin (`apps/server`), every breakpoint. It runs before any account exists, so it has no shell.
+- **Platforms:** Admin (`apps/server`), compact and regular windows. It runs before any account exists, so it has no shell.
+- **Screen:** `packages/admin/src/setup.tsx`, at `apps/server/app/setup/`; no shell.
 - **Prototype:** `#/admin/setup` (flow A2).
   - *Since [prototype-gaps.md](../plans/prototype-gaps.md)'s stage 6 (2026-11-01), drawn ahead of the server:* `setup.detect` finds a folder for each kind under `/data` (`movies`, `shows` and `music`, from `media/movies`, `media/tv` and `media/music`), and null for a kind it doesn't find. Review's Folders line lists each folder on its own line, and a kind with none reads "None. Add one later in Media management." Folders is still a step only when highsea found none: it asks for a folder for each kind, at least one ("A folder for each kind you keep, at least one. Leave the others empty."), with downloads apart from all of them and each kind in its own folder. The hardlink check uses the first media folder. `SetupInput.folders` is `{ movies, shows, music, downloads }`, with `''` for none. `apps/server`'s `setup.detect` finds movies only until the TV series phase.
 - **Roadmap:** [Phase 2 › A2](../roadmap.md#phase-2-design-prototypes-gate-user-sign-off), [Admin UI routes › Setup and access](../roadmap.md#admin-ui-routes-built-to-match-the-phase-2-prototypes), [Connectivity](../roadmap.md#connectivity-local-and-remote-highseanetwork--sdk), [Indexers and the independent catalog](../roadmap.md#indexers-and-the-independent-catalog), [Subtitles](../roadmap.md#subtitles-first-class-highseasubtitles).
@@ -19,8 +20,8 @@ Takes a freshly started server to a working one in a few minutes: a name, the ow
 
 - **Header** (56px, `line` border below): the lockup, "Setup" in `text-3`, and **Start over** on the right once you've passed the first step.
 - **Body** (max 960px, centered):
-  - **Stepper** on the left at expanded and wide: an ordered list of the 9 steps. The current step is highlighted; finished steps show a check and are buttons, so you can go back.
-  - Below expanded the stepper collapses to "Step 4 of 9 · Media folders" and a progress bar above the form.
+  - **Stepper** on the left in a regular window: an ordered list of the 9 steps. The current step is highlighted; finished steps show a check and are buttons, so you can go back.
+  - In a compact window the stepper collapses to "Step 4 of 9 · Media folders" and a progress bar above the form.
   - **Form** (max 600px): the step's heading and one-line explanation, its fields, then a footer with **Back** (from step 2) and **Continue** (or **Finish setup** on the last step).
 - **Steps:**
 
@@ -40,7 +41,7 @@ Takes a freshly started server to a working one in a few minutes: a name, the ow
 
 - **Path picker** (a dialog from **Browse**): the server's folders, not this device's. Breadcrumbs at the top (each segment is a button), "Up one level", the folders in the current one, then **Cancel** and **Use this folder**.
 - **Hardlink check** (step 3): a banner under the folders. Success when both are on the same disk; a warning when they're not, explaining the cost and how to avoid it.
-- **Responsive:** one column below expanded, with the compact stepper above the form. Fields stay full width; radio cards stack. Nothing scrolls sideways at 390px.
+- **Responsive:** one column in a compact window, with the compact stepper above the form. Fields stay full width; radio cards stack. Nothing scrolls sideways at 390px.
 
 ## States
 

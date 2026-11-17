@@ -8,6 +8,8 @@
 // (https://docs.expo.dev/versions/latest/sdk/video/#videoviewprops); the docs list neither for
 // tvOS, where the view only shows the film.
 import type { Playback } from '@highsea-tv/native/playback'
+import { player as playerSizes } from '@highsea-tv/tokens'
+import { tokens } from '@highsea-tv/ui'
 import { useEventListener } from 'expo'
 import { VideoAirPlayButton, VideoView } from 'expo-video'
 import { type ReactNode, useRef, useState } from 'react'
@@ -55,8 +57,10 @@ export function usePicture(
   const picture = tv ? (
     // AVPlayerViewController's view takes focus on tvOS even without its controls, and would
     // catch Left and Right from the scrubber and OK after them. The focus engine skips views that
-    // don't take user interaction (Apple's "Supporting focus within your app"), which pointerEvents
-    // none sets; collapsable keeps the wrapper from being flattened away
+    // don't take user interaction (Apple's "Supporting focus within your app"). pointerEvents none
+    // sets that on this wrapper only, not on the controller's own view, so the expo-video patch
+    // (patches/expo-video@58.0.11.patch) turns it off there and makes the controller a child view
+    // controller (ADR 0059, 2026-11-15); collapsable keeps the wrapper from being flattened away
     <View pointerEvents="none" collapsable={false} style={{ position: 'absolute', inset: 0 }}>
       <VideoView player={player} nativeControls={false} contentFit="contain" style={{ flex: 1 }} />
     </View>
@@ -122,14 +126,19 @@ export function airPlayButton({
   return (
     <View
       accessibilityLabel={label}
-      style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}
+      style={{
+        width: tokens.targets.touch,
+        height: tokens.targets.touch,
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
     >
       <VideoAirPlayButton
         tint={tint}
         activeTint={activeTint}
         prioritizeVideoDevices
         onBeginPresentingRoutes={onOpen}
-        style={{ width: 28, height: 28 }}
+        style={{ width: playerSizes.icon.lg, height: playerSizes.icon.lg }}
       />
     </View>
   )

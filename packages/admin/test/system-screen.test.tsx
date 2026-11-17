@@ -8,6 +8,7 @@
 import './dom.ts'
 import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test'
 import type { ReactNode } from 'react'
+import { shown } from './modal.ts'
 
 mock.module('../src/navigation.tsx', () => ({
   useRouter: () => ({ push: () => {} }),
@@ -29,7 +30,6 @@ const { act, cleanup, render, within } = await import('@testing-library/react')
 const { default: userEvent } = await import('@testing-library/user-event')
 const { createClient } = await import('@highsea-tv/sdk')
 const { ClientProvider } = await import('@highsea-tv/sdk/react')
-const { TooltipProvider } = await import('@highsea-tv/ui')
 const { ThemeProvider } = await import('@highsea-tv/ui/native')
 const { System } = await import('../src/system.tsx')
 const { widgetRenderers } = await import('../src/widgets.tsx')
@@ -290,9 +290,7 @@ async function open(ui: ReactNode) {
   await act(async () => {
     render(
       <ClientProvider client={client}>
-        <ThemeProvider>
-          <TooltipProvider>{ui}</TooltipProvider>
-        </ThemeProvider>
+        <ThemeProvider>{ui}</ThemeProvider>
       </ClientProvider>,
     )
   })
@@ -478,7 +476,9 @@ describe('System › Backups', () => {
         name: /^Delete the backup from/,
       })[1] as HTMLElement,
     )
-    const dialog = page.getByRole('alertdialog')
+    // the native ConfirmDialog is a dialog, named by its title
+    shown()
+    const dialog = page.getByRole('dialog')
     await user.click(within(dialog).getByRole('button', { name: 'Delete backup' }))
     await settle()
     expect(
@@ -493,7 +493,8 @@ describe('System › Backups', () => {
     await user.click(
       page.getAllByRole('button', { name: /^Restore the backup from/ })[0] as HTMLElement,
     )
-    const dialog = page.getByRole('alertdialog')
+    shown()
+    const dialog = page.getByRole('dialog')
     expect(within(dialog).getByText(/anything since is lost/)).toBeTruthy()
     await user.click(within(dialog).getByRole('button', { name: 'Restore and restart' }))
     await settle()
@@ -569,11 +570,10 @@ describe('the Queue widget', () => {
     expect(page.getByText('3 items · 1.0 MB/s')).toBeTruthy()
     expect(page.getByRole('tab', { name: /All/ }).textContent).toContain('3')
     expect(page.getByText('Import blocked')).toBeTruthy()
-    // the reason is the row's title in the table, its line when stacked
-    expect(
-      page.queryByText('No video file in the download') ??
-        document.querySelector('[title="No video file in the download"]'),
-    ).toBeTruthy()
+    // the reason is the title's tooltip in the table (shown as focus comes in), its line when stacked
+    if (!page.queryByText('No video file in the download'))
+      act(() => page.getByRole('link', { name: 'Movie 2' }).focus())
+    expect(page.getByText('No video file in the download')).toBeTruthy()
     expect(page.getByRole('progressbar', { name: 'Movie 1 progress' })).toBeTruthy()
 
     await user.click(page.getByRole('tab', { name: /Issues/ }))

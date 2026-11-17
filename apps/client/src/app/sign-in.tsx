@@ -19,6 +19,16 @@
 // then `pollPairing` every `interval` seconds until a phone approves it or the code runs out, when
 // a new one is asked for), with a password on the on-screen keys as the fallback.
 //
+// On the TV, the remote reaches Forget this server from the actions above it, and back. tvOS's
+// focus engine moves only to what lies in the direction pressed, and when nothing does, focus
+// stays (Apple, "Adding user-focusable elements to a tvOS app",
+// https://developer.apple.com/documentation/uikit/adding-user-focusable-elements-to-a-tvos-app);
+// the foot's button is centred while Use a password and Another server sit at the left, so Down
+// found nothing. A focus guide is the documented way to send focus to what isn't in line
+// (UIFocusGuide, https://developer.apple.com/documentation/uikit/uifocusguide; react-native-
+// tvos's TVFocusGuideView): the foot is a guide across the screen's width, and the actions' row
+// one across the column's, each handing focus to its own buttons (`autoFocus`).
+//
 // Forget this server stays at the foot, also when the server doesn't answer (the owner,
 // 2026-10-29), so a server that's gone can be let go of from here; it and Back to Servers show only
 // where the app keeps a list of servers, never in a plain browser (connectivity.md).
@@ -57,7 +67,7 @@ import {
   useFormFactor,
   useTheme,
 } from '@highsea-tv/ui'
-import { TvKey } from '@highsea-tv/ui/tv'
+import { FocusGuide, TvKey } from '@highsea-tv/ui/tv'
 import { router } from 'expo-router'
 import { type ComponentRef, type ReactNode, useEffect, useRef, useState } from 'react'
 import { ActivityIndicator, type TextInput, View } from 'react-native'
@@ -516,11 +526,15 @@ function TvSignIn() {
   )
 }
 
-/** A quiet line of actions at the foot of the TV's screen. */
+/**
+ * A quiet line of actions at the foot of the TV's screen: a focus guide across its width, so Down
+ * from anything above reaches them, wherever they sit along it.
+ */
 function TvFoot({ children }: { children: ReactNode }) {
   const u = useTheme().u
   return (
-    <View
+    <FocusGuide
+      autoFocus
       style={{
         position: 'absolute',
         bottom: tokens.tv.safe.y * u,
@@ -531,7 +545,7 @@ function TvFoot({ children }: { children: ReactNode }) {
       }}
     >
       {children}
-    </View>
+    </FocusGuide>
   )
 }
 
@@ -664,7 +678,8 @@ function TvCode({ onPassword }: { onPassword: () => void }) {
             {approved ? t('approved') : t('waiting')}
           </Text>
         </View>
-        <View style={{ flexDirection: 'row', gap: TV_GATE.actionsGap * u }}>
+        {/* across the column, so Up from the foot's Forget this server comes back here */}
+        <FocusGuide autoFocus style={{ flexDirection: 'row', gap: TV_GATE.actionsGap * u }}>
           <Button variant="overlay" hasTVPreferredFocus icon="lock" onPress={onPassword}>
             {t('usePassword')}
           </Button>
@@ -673,7 +688,7 @@ function TvCode({ onPassword }: { onPassword: () => void }) {
               {t('anotherServer')}
             </Button>
           ) : null}
-        </View>
+        </FocusGuide>
       </View>
       <View style={{ width: QR * u, gap: m.gap }}>
         <View style={{ width: QR * u, height: QR * u }}>

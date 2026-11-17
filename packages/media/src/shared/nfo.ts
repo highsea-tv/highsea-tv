@@ -136,3 +136,82 @@ export async function writeArtwork(
   }
   return written
 }
+
+// ------------------------------------------------------------ reading (Phase 5 A1, ADR 0039)
+
+/** The ids a film's NFO names: a sure match, with no search (ADR 0039's 2026-11-15 section). */
+export type NfoIds = { tmdb: number | null; imdb: string | null }
+
+/** An NFO bigger than this isn't a movie's: it's left unread. */
+const MAX_NFO_BYTES = 1024 * 1024
+
+const IMDB = /^tt\d{7,10}$/
+
+const tmdbOf = (v: string | undefined) => {
+  const n = Number(v?.trim())
+  return Number.isInteger(n) && n > 0 && n < 2 ** 31 ? n : null
+}
+const imdbOf = (v: string | undefined) => {
+  const id = v?.trim().toLowerCase()
+  return id && IMDB.test(id) ? id : null
+}
+
+/**
+ * The TMDB and IMDb ids in an NFO's text, as Kodi and Jellyfin read them:
+ * - `<uniqueid type="tmdb">` and `<uniqueid type="imdb">` (Kodi wiki, NFO files/Movies:
+ *   https://kodi.wiki/view/NFO_files/Movies; Jellyfin: "type attribute specifies id provider",
+ *   https://jellyfin.org/docs/general/server/metadata/nfo/);
+ * - the provider tags `<tmdbid>` and `<imdbid>`, which Radarr's Kodi metadata writes and Jellyfin
+ *   reads ("Provider id tags are supported as well if they follow the scheme" of the provider's
+ *   name and `id`), and Kodi's older `<id>` holding an IMDb id;
+ * - a link to the film's TMDB or IMDb page anywhere in the file, as both allow.
+ * Each is checked for shape; the first of each kind wins, `uniqueid` before the rest.
+ */
+export function idsFromNfo(text: string): NfoIds {
+  const tag = (name: string) =>
+    new RegExp(`<${name}(?:\\s[^>]*)?>\\s*([^<]*?)\\s*</${name}>`, 'i').exec(text)?.[1]
+  const unique = (type: string) =>
+    new RegExp(
+      `<uniqueid\\b[^>]*\\btype\\s*=\\s*["']${type}["'][^>]*>\\s*([^<]*?)\\s*</uniqueid>`,
+      'i',
+    ).exec(text)?.[1]
+  const tmdbLink = /themoviedb\.org\/movie\/(\d+)/i.exec(text)?.[1]
+  const imdbLink = /imdb\.com\/title\/(tt\d{7,10})/i.exec(text)?.[1]
+  return {
+    tmdb: tmdbOf(unique('tmdb')) ?? tmdbOf(tag('tmdbid')) ?? tmdbOf(tmdbLink),
+    imdb: imdbOf(unique('imdb')) ?? imdbOf(tag('imdbid')) ?? imdbOf(tag('id')) ?? imdbOf(imdbLink),
+  }
+}
+
+/**
+ * The ids in a film folder's NFO: `movie.nfo`, then one named after a video in it (`<file>.nfo`),
+ * the names Kodi and Jellyfin look for. Null when there's none, it can't be read, or it names no id.
+ */
+export async function readFolderNfo(
+  folder: string,
+  videos: readonly string[] = [],
+): Promise<NfoIds | null> {
+  const names = ['movie.nfo', ...videos.map((v) => basename(nfoPath(v)))]
+  let entries: string[]
+  try {
+    entries = await fsp.readdir(folder)
+  } catch {
+    return null
+  }
+  // the names as they are on disk, whatever their case
+  const byLower = new Map(entries.map((e) => [e.toLowerCase(), e]))
+  for (const name of names) {
+    const found = byLower.get(name.toLowerCase())
+    if (!found) continue
+    try {
+      const path = join(folder, found)
+      const st = await fsp.stat(path)
+      if (!st.isFile() || st.size > MAX_NFO_BYTES) continue
+      const ids = idsFromNfo(await fsp.readFile(path, 'utf8'))
+      if (ids.tmdb || ids.imdb) return ids
+    } catch {
+      // unreadable: the next name, or the folder's name
+    }
+  }
+  return null
+}

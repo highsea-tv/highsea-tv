@@ -18,9 +18,10 @@ export type IconProps = {
 }
 
 /**
- * An SVG's name, or none for a decorative one, in each platform's terms (the Icon and the Mark). On the web react-native-svg hands the props it
- * doesn't know to the `<svg>` element, so React Native's accessibility props would reach the DOM;
- * there it's ARIA's (https://www.w3.org/WAI/ARIA/apg/practices/names-and-descriptions/).
+ * An SVG's name, or none for a decorative one, in each platform's terms (the Icon, the Mark and the
+ * QR code). On the web react-native-svg hands the props it doesn't know to the `<svg>` element, so
+ * React Native's accessibility props would reach the DOM and React would warn about them; there
+ * it's ARIA's (https://www.w3.org/WAI/ARIA/apg/practices/names-and-descriptions/).
  */
 export const svgName = (label: string | undefined) =>
   Platform.OS === 'web'

@@ -8,9 +8,12 @@ import { compileOptions } from '@highsea-tv/notifications/mail'
 import { notificationT, render } from '@highsea-tv/notifications/shared'
 import { act, cleanup, render as mount, within } from '@testing-library/react'
 import mjml2html from 'mjml-browser'
-import { EmailPreview } from '../src/email/preview.tsx'
 import { HARBOR_URL, notificationSamples, renderSample, sampleIds } from '../src/email/samples.ts'
 import { collect, unknownClasses, violations } from './check.ts'
+
+// the preview after dom.ts has set React Native up for the library's parts it draws: a static
+// import is linked before dom.ts runs
+const { EmailPreview } = await import('../src/email/preview.tsx')
 
 afterEach(() => cleanup())
 

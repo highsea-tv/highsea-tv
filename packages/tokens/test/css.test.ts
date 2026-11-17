@@ -32,7 +32,8 @@ describe('Tailwind theme', async () => {
     ['aspect-poster', /aspect-ratio: var\(--aspect-poster\)/],
     ['p-3', /padding: calc\(var\(--spacing\) \* 3\)/],
     ['font-semibold', /font-weight: var\(--font-weight-semibold\)/],
-    ['medium:p-4', /@media \(width >= 37\.5rem\)/],
+    // the form-factor rule's one width, 768 (E1: the old 600, 1024 and 1440 are gone)
+    ['regular:p-4', /@media \(width >= 48rem\)/],
   ])('%s produces a utility', (candidate, expected) => {
     expect(build(candidate)).toMatch(expected)
   })
@@ -44,6 +45,8 @@ describe('Tailwind theme', async () => {
     'rounded-2xl',
     'shadow-lg',
     'md:p-4',
+    'medium:p-4',
+    'expanded:p-4',
     'animate-pulse',
   ])('%s does not exist: only highsea roles and scales do', (candidate) => {
     expect(build(candidate)).not.toContain(`.${candidate.replace(':', '\\:')}`)

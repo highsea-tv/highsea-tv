@@ -11,6 +11,10 @@ const STATUSES = ['available', 'wanted', 'downloading', 'not-released', 'unmonit
 const PROFILES = ['any', 'hd-1080p', 'uhd-2160p']
 let raw: RawDatabase
 
+// Seeding 100,000 rows takes under 2 s on an idle machine and more on a busy CI one, past
+// bun:test's default 5,000 ms (https://bun.com/docs/test/runtime-behavior#test-timeouts), so the
+// setup alone gets room through beforeAll's timeout (https://bun.com/reference/bun/test/beforeAll);
+// the budgets the tests measure stay as they are.
 beforeAll(() => {
   raw = openDatabase(':memory:').raw
   migrate(raw)
@@ -38,7 +42,7 @@ beforeAll(() => {
   }
   raw.exec('COMMIT')
   raw.exec('ANALYZE')
-})
+}, 60_000)
 
 afterAll(() => raw.close())
 

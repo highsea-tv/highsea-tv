@@ -75,7 +75,7 @@ export default {
         await sheet(/Sintel/)(p)
         await p.getByRole('dialog').getByRole('button', { name: 'Remove' }).click()
       },
-      crop: (p) => p.getByRole('alertdialog'),
+      crop: (p) => p.getByRole('dialog'),
     },
   ],
 } satisfies Area

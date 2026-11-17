@@ -15,13 +15,16 @@
 //   (posters 10.5u, wide tiles 17u), so where they land is worked out, not measured; the row is a
 //   focus guide with `autoFocus`, so coming back to it lands on the item left
 //   (react-native-tvos's TVFocusGuideView). In a browser the engine pair does the same.
+// Only the touch form is virtual: a pointer's and the TV's rows draw every item, since their keys
+// and focus move along the drawn items, and a shelf is short.
 // Each form is a group named by its title (https://www.w3.org/TR/wai-aria-1.2/#group), not a list:
 // a list may hold only its items, and the row holds its heading and arrows too.
-import { breakpoints, formFactorLayouts, web } from '@highsea-tv/tokens'
+import { formFactorLayouts, web } from '@highsea-tv/tokens'
 import { type ComponentRef, type ReactNode, type Ref, useEffect, useRef, useState } from 'react'
-import { FlatList, ScrollView, useWindowDimensions, View } from 'react-native'
+import { ScrollView, useWindowDimensions, View } from 'react-native'
 import { moveInRow, roveRow } from './dom'
 import { RowArrow } from './row-arrow.tsx'
+import { ScrollView as LibraryScrollView } from './scroll-view.tsx'
 import { SectionHeading } from './section-heading.tsx'
 import { PosterSkeleton, Skeleton } from './skeleton.tsx'
 import { tokens, useMotionReduced, useTheme } from './theme.tsx'
@@ -29,8 +32,11 @@ import { FocusGuide, TvScroll } from './tv/engine'
 import { StopScope, type ViewHandle } from './tv/focusable.tsx'
 import { KEEP, keptAt } from './tv/model.ts'
 import { WIDE_WIDTH } from './tv/tiles.tsx'
+import { Virtual } from './virtual.tsx'
 
 const { gutter: phoneGutter, posterGap } = tokens.mobile
+/** A touch row's item before it's measured, when the row gives no width: about a poster's. */
+const TOUCH_ESTIMATE = 120
 
 /** A pointer row's items' gap, as the web prototype's `gap-3`. */
 const POINTER_GAP = tokens.space['3']
@@ -39,19 +45,15 @@ const PAGE_SHARE = 0.85
 
 /**
  * The page's side inset at this form factor, which a row's first item sits on: the phone's gutter,
- * the TV's safe area, and with a pointer the web's margin by the window's width (the prototype's
- * `px-4 medium:px-8 wide:px-16`: the phone's 16 below `medium`, then `web.margin`'s 32 and 64).
+ * the TV's safe area, and with a pointer the web's margin by the form-factor rule (the prototype's
+ * `px-4 medium:px-8 wide:px-16` on the one split: the phone's 16 in a compact window, then
+ * `web.margin.wide`'s 64 from 768).
  */
 export function usePageGutter(): number {
   const { formFactor, u } = useTheme()
-  const { width } = useWindowDimensions()
   if (formFactor.input === 'tv') return tokens.tv.safe.x * u
   if (formFactor.input === 'touch') return phoneGutter
-  return width < breakpoints.medium
-    ? phoneGutter
-    : width < breakpoints.wide
-      ? web.margin.compact
-      : web.margin.wide
+  return formFactor.widthClass === 'compact' ? phoneGutter : web.margin.wide
 }
 
 /**
@@ -92,6 +94,13 @@ export type RowProps<T> = {
   /** A link or button at the end of the title (touch and a pointer). */
   action?: ReactNode
   /**
+   * A pointer: the title and items' inset from the row's edge, when it isn't the page's gutter
+   * (the admin's rows sit flush in their column, as ui-web's CarouselRow's `flush`, so 0).
+   */
+  inset?: number
+  /** A pointer and touch: the title is a link to this address (a movie's collection's page). */
+  titleHref?: string
+  /**
    * Each item's width in the form factor's unit: on touch, so a fling stops with an item on the
    * gutter; on the TV, when it isn't a poster's or a wide tile's, so it lands where it should.
    */
@@ -131,24 +140,45 @@ function TouchForm<T>({
   itemWidth,
   itemGap = posterGap,
   titleHidden,
+  titleHref,
 }: RowProps<T>) {
   return (
-    <View style={{ gap: 10 }} role="group" accessibilityLabel={title}>
+    <View style={{ gap: tokens.space['2.5'] }} role="group" accessibilityLabel={title}>
       {titleHidden ? null : (
-        <SectionHeading title={title} suffix={suffix} action={action} inset={phoneGutter} />
+        <SectionHeading
+          title={title}
+          href={titleHref}
+          suffix={suffix}
+          action={action}
+          inset={phoneGutter}
+        />
       )}
-      <FlatList
+      {/* the library's virtual list, as the grids' (./virtual.tsx): a long row draws the items
+          near the screen */}
+      <LibraryScrollView
         horizontal
-        data={items}
-        keyExtractor={(item) => String(keyOf(item))}
-        renderItem={({ item, index }) => <>{render(item, { index, onFocus: noFocus })}</>}
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: phoneGutter, gap: itemGap }}
-        initialNumToRender={6}
+        contentContainerStyle={{ paddingHorizontal: phoneGutter }}
         {...(itemWidth
           ? { snapToInterval: itemWidth + itemGap, decelerationRate: 'fast' as const }
           : {})}
-      />
+      >
+        <Virtual
+          count={items.length}
+          estimateSize={() => itemWidth ?? TOUCH_ESTIMATE}
+          getKey={(i) => {
+            const item = items[i]
+            return item === undefined ? i : String(keyOf(item))
+          }}
+          gap={itemGap}
+          render={(index, onLayout) => {
+            const item = items[index]
+            return item === undefined ? null : (
+              <View onLayout={onLayout}>{render(item, { index, onFocus: noFocus })}</View>
+            )
+          }}
+        />
+      </LibraryScrollView>
     </View>
   )
 }
@@ -167,8 +197,19 @@ const STEPS: Record<string, number> = {
 /** Marks a row's item for the keyboard's moves (react-native-web writes `dataSet` as data-*). */
 const ITEM = { dataSet: { rowItem: '' } } as object
 
-function PointerForm<T>({ title, suffix, items, keyOf, render, action, onMove }: RowProps<T>) {
-  const gutter = usePageGutter()
+function PointerForm<T>({
+  title,
+  suffix,
+  items,
+  keyOf,
+  render,
+  action,
+  inset,
+  titleHref,
+  onMove,
+}: RowProps<T>) {
+  const pageGutter = usePageGutter()
+  const gutter = inset ?? pageGutter
   const reduced = useMotionReduced()
   const scroller = useRef<ComponentRef<typeof ScrollView>>(null)
   const row = useRef<ComponentRef<typeof View>>(null)
@@ -213,7 +254,13 @@ function PointerForm<T>({ title, suffix, items, keyOf, render, action, onMove }:
         if (moved === 'moved') onMove?.()
       }}
     >
-      <SectionHeading title={title} suffix={suffix} action={action} inset={gutter} />
+      <SectionHeading
+        title={title}
+        href={titleHref}
+        suffix={suffix}
+        action={action}
+        inset={gutter}
+      />
       <View>
         <ScrollView
           ref={scroller}
@@ -271,7 +318,12 @@ function TvForm<T>({
   const w = (itemWidth ?? (wide ? WIDE_WIDTH : tokens.tv.poster.width)) * u
   const inset = tokens.tv.safe.x * u
   return (
-    <View ref={ref} role="group" accessibilityLabel={title} style={{ gap: 0.8 * u }}>
+    <View
+      ref={ref}
+      role="group"
+      accessibilityLabel={title}
+      style={{ gap: tokens.tv.space['4'] * u }}
+    >
       <SectionHeading title={title} suffix={suffix} inset={inset} />
       <FocusGuide autoFocus trapFocusLeft trapFocusRight>
         <TvScroll
@@ -280,7 +332,7 @@ function TvForm<T>({
           contentContainerStyle={{
             gap: tokens.tv.poster.gap * u,
             paddingHorizontal: inset,
-            paddingVertical: 1 * u,
+            paddingVertical: tokens.tv.space['5'] * u,
           }}
         >
           {items.map((item, index) => (

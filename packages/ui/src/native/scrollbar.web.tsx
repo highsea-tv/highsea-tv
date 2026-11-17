@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The web's side of ./scrollbar.tsx: the web's PageScrollbar (src/web) for a ScrollView, drawn over
+// The web's side of ./scrollbar.tsx: the web renderer's PageScrollbar (removed in D3) for a ScrollView, drawn over
 // the scroller rather than beside it. react-native-web draws a ScrollView as a scrolling element
 // with the browser's own bar, which takes a column of its own, or none when the indicator is off
 // (`scrollbar-width: none`, react-native-web's ScrollViewBase.js). So ScrollView turns it off and

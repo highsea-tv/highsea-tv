@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { describe, expect, test } from 'bun:test'
-import { composeFor, gluetunProviders } from '../src/index.ts'
+import { composeFor, gluetunProviders, publishedPorts } from '../src/index.ts'
 import { seedProviders } from './helpers.ts'
 
 describe('Compose for your provider', () => {
@@ -48,5 +48,43 @@ describe('Compose for your provider', () => {
       `'{"auth":"apikey","apikey":"Kx7f2Qm9Rw3Tz8Yp4Vn6Bc"}'`,
     )
     expect(composeFor({ provider: 'proton', apiKey: `a'b"c` })).toContain('<the API key>')
+  })
+})
+
+describe('Compose for highsea connects', () => {
+  const block = composeFor({ mode: 'builtin' })
+
+  test('highsea’s own service, as the prototype shows it', () => {
+    expect(block).toBe(
+      [
+        'services:',
+        '  highsea:',
+        '    cap_add: [NET_ADMIN]',
+        '    # in place of network_mode: host, which would put the tunnel in the host’s network',
+        '    ports:',
+        '      - "3000:3000"   # the admin and the apps',
+        '      - "6881:6881/tcp"',
+        '      - "6881:6881/udp"',
+        '      - "7368:7368/udp"   # the apps find the server here',
+        '    # only on a kernel before Linux 5.6, which has no WireGuard of its own:',
+        '    # devices: [/dev/net/tun:/dev/net/tun]',
+      ].join('\n'),
+    )
+  })
+
+  test('no host networking, no gluetun, and the TUN device only as a comment', () => {
+    const lines = block.split('\n').filter((l) => !l.trimStart().startsWith('#'))
+    expect(lines.some((l) => l.includes('network_mode'))).toBe(false)
+    expect(lines.some((l) => l.includes('devices'))).toBe(false)
+    expect(block).not.toContain('gluetun')
+  })
+
+  test('publishes the ports the Docker guide’s macOS and Windows tab does', async () => {
+    const guide = await Bun.file(
+      new URL('../../../apps/docs/content/install/docker.mdx', import.meta.url),
+    ).text()
+    const tab = guide.slice(guide.indexOf('<Tab value="macOS and Windows">'))
+    const ports = (s: string) => [...s.matchAll(/- "(\d+:\d+(?:\/\w+)?)"/g)].map((m) => m[1])
+    expect(ports(publishedPorts.map((p) => `- ${p}`).join('\n'))).toEqual(ports(tab))
   })
 })

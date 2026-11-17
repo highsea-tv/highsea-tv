@@ -8,10 +8,13 @@
 // label as its accessibility label and the label's own text is hidden from VoiceOver, so it's read
 // once, on the input (React Native has no <label for>:
 // https://reactnative.dev/docs/accessibility#accessibilitylabel).
+
+import { line } from '@highsea-tv/tokens'
 import { type ComponentProps, createContext, type ReactNode, useContext, useState } from 'react'
 import { Platform, TextInput, type TextStyle, View, type ViewStyle } from 'react-native'
 import type { ControlSize, FieldCommon } from '../shared/controls.ts'
 import { ControlPress } from './control.tsx'
+import { useDense } from './dense.tsx'
 import { family, smoothing } from './fonts.ts'
 import { Icon, type IconName } from './icon.tsx'
 import type { ControlPoints } from './metrics.ts'
@@ -33,6 +36,18 @@ export function useField() {
   return useContext(FieldContext)
 }
 
+/**
+ * The admin's field labels (inside Dense): its ui type (13, medium) and 6 above its control and
+ * hint, as the admin's signed-off forms drew them (the web's Label, `text-[13px] font-medium`, in
+ * a `gap-1.5` grid), where a client's label is its scale's callout, a step larger (the owner's
+ * answer of 2026-11-06 at HT-4).
+ */
+const DENSE = {
+  ...tokens.adminText.ui,
+  weight: 500 as const,
+  gap: tokens.space['1'] + tokens.space['0.5'],
+}
+
 export function Field({
   label,
   hint,
@@ -44,11 +59,14 @@ export function Field({
 }: FieldCommon & { children: ReactNode }) {
   const theme = useTheme()
   const m = useControl(size)
+  const dense = useDense()
   return (
-    <View style={{ gap: m.gap }}>
+    <View style={{ gap: dense ? DENSE.gap : m.gap }}>
       {hideLabel ? null : (
         <Text
           variant="callout"
+          size={dense ? DENSE.size : undefined}
+          leading={dense ? DENSE.leading : undefined}
           weight={500}
           color="text-2"
           accessibilityElementsHidden
@@ -80,6 +98,9 @@ export function Field({
 }
 
 /** The field look's box: fill, edge and corner, by state. */
+/** The field look's edge: a thin line (elevation.md › Lines). */
+const EDGE = line.thin
+
 export function fieldBox(theme: Theme, m: ControlPoints, focused: boolean, invalid: boolean) {
   const looks = tokens.controls.looks
   const look = invalid ? looks.fieldInvalid : focused ? looks.fieldFocused : looks.field
@@ -87,7 +108,7 @@ export function fieldBox(theme: Theme, m: ControlPoints, focused: boolean, inval
   return {
     minHeight: m.height,
     borderRadius: m.radius,
-    borderWidth: 1,
+    borderWidth: EDGE,
     borderColor: edge,
     backgroundColor: theme.colors[look.fill],
     boxShadow: focused || invalid ? `0 0 0 1px ${edge}` : undefined,
@@ -106,12 +127,22 @@ export function fieldBox(theme: Theme, m: ControlPoints, focused: boolean, inval
  * on, and the native platforms never get it.
  */
 const NO_BROWSER_OUTLINE = (Platform.OS === 'web' ? { outlineStyle: 'none' } : {}) as TextStyle
+// a field box drawn around its input is one control: react-native-web writes `data-control`
+const FIELD_MARK = { dataSet: { control: 'field' } } as object
 
 type InputOwn = Pick<FieldCommon, 'size' | 'disabled'> & {
   /** Monospace, for codes and addresses. */
   mono?: boolean
   /** The danger edge; a Field with an error sets it. */
   invalid?: boolean
+  /**
+   * A word inside the field's end, after what's typed: a unit ("days", "KB/s"), as the web's
+   * Input `end`. It's part of the field's look, so the focus edge goes round it too; the field's
+   * label should say the unit as well, since it isn't read with the value.
+   */
+  end?: string
+  /** An icon inside the field's start, before what's typed (a folder field's), as the web's Input `icon`. */
+  icon?: IconName
 }
 
 export type InputProps = ComponentProps<typeof TextInput> & InputOwn
@@ -140,6 +171,10 @@ function useInput({
     common: {
       accessibilityLabel: field?.label,
       editable: !off,
+      // read-only alone reads as a field that can't be changed but still counts; an off field is
+      // inactive, as the web's `disabled` said (WCAG 1.4.3 exempts inactive controls' contrast,
+      // https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum)
+      'aria-disabled': off || undefined,
       placeholderTextColor: theme.colors[tokens.controls.looks.placeholder.label],
       selectionColor: theme.colors.accent,
       keyboardAppearance: 'dark' as const,
@@ -174,9 +209,59 @@ export function Input(props: InputProps) {
     disabled: _d,
     onFocus: _f,
     onBlur: _b,
+    end,
+    icon,
     ...rest
   } = props
   const { theme, m, focused, off, bad, common, text } = useInput(props)
+  if (end || icon)
+    return (
+      <View
+        // measured by the sweeps' row check as its box, not the input inside it
+        {...FIELD_MARK}
+        style={[
+          fieldBox(theme, m, focused, bad),
+          {
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: m.gap,
+            paddingStart: icon ? m.fieldPad : 0,
+            paddingEnd: end ? m.fieldPad : 0,
+            opacity: off ? tokens.controls.disabledOpacity : 1,
+          },
+        ]}
+      >
+        {icon ? <Icon name={icon} size={m.icon / theme.u} color="text-3" /> : null}
+        <TextInput
+          {...common}
+          style={[
+            text,
+            {
+              flex: 1,
+              minWidth: 0,
+              alignSelf: 'stretch',
+              paddingStart: icon ? 0 : m.fieldPad,
+              paddingEnd: end ? 0 : m.fieldPad,
+              // the box's edge is inside its height, so the input inside it is that much shorter
+              paddingVertical: m.inset - EDGE,
+            },
+            style,
+          ]}
+          {...rest}
+        />
+        {end ? (
+          <Text
+            aria-hidden
+            size={m.text}
+            color="text-3"
+            numberOfLines={1}
+            maxFontSizeMultiplier={MAX_FONT_MULTIPLIER}
+          >
+            {end}
+          </Text>
+        ) : null}
+      </View>
+    )
   return (
     <TextInput
       {...common}
@@ -262,6 +347,8 @@ export function SearchField({
   const filled = !!props.value
   return (
     <View
+      // measured by the sweeps' row check as its box, not the input inside it
+      {...FIELD_MARK}
       style={[
         fieldBox(theme, m, focused, bad),
         {
@@ -283,7 +370,8 @@ export function SearchField({
           {
             flex: 1,
             alignSelf: 'stretch',
-            paddingVertical: m.inset,
+            // the box's edge is inside its height (as Input with `end`)
+            paddingVertical: m.inset - EDGE,
             paddingRight: filled ? 0 : m.fieldPad,
           },
           style,
@@ -297,9 +385,10 @@ export function SearchField({
           haptic={false}
           slop={{ height: m.height, width: m.height }}
           onPress={() => props.onChangeText?.('')}
+          // square inside the box's edge, so a filled field is the height an empty one is
           style={{
-            width: m.height,
-            height: m.height,
+            width: m.height - EDGE * 2,
+            height: m.height - EDGE * 2,
             alignItems: 'center',
             justifyContent: 'center',
           }}

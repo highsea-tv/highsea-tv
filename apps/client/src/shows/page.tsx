@@ -23,7 +23,7 @@ import { peopleOf } from '@highsea-tv/client/library'
 import { episodePlayPath, seasonOf } from '@highsea-tv/client/shows'
 import { useT } from '@highsea-tv/i18n/react'
 import { useMedia } from '@highsea-tv/native/media'
-import { breakpoints, web } from '@highsea-tv/tokens'
+import { REGULAR_WIDTH, web } from '@highsea-tv/tokens'
 import {
   Badge,
   Button,
@@ -283,7 +283,7 @@ function Episodes({ p, refresh }: { p: Page; refresh: () => void }) {
   const c = useControl()
   const { width } = useWindowDimensions()
   const seasons = p.d.seasons
-  const two = input === 'pointer' && width >= breakpoints.wide
+  const two = input === 'pointer' && width >= REGULAR_WIDTH
   const episodes = p.shown?.episodes ?? []
   return (
     <View style={{ gap: input === 'pointer' ? space['4'] : space['3'] }}>
@@ -366,7 +366,7 @@ function Below({ p, d }: { p: Page; d: ClientShowDetail }) {
   const input = useFormFactor().input
   const gutter = usePageGutter()
   const { width } = useWindowDimensions()
-  const side = input === 'pointer' && width >= breakpoints.medium
+  const side = input === 'pointer' && width >= REGULAR_WIDTH
   return (
     <>
       {d.related.length > 0 ? (
@@ -525,7 +525,7 @@ function PointerShow(props: ShowProps) {
   const hero = useHero()
   const [trailer, setTrailer] = useState<Trailer | null>(null)
   const { s, next } = p
-  // from medium the art runs under the top bar, which turns to glass as the page scrolls
+  // from 768 the art runs under the top bar, which turns to glass as the page scrolls
   const chrome = useChromeOverlay(hero.overlay)
   return (
     <ScrollView

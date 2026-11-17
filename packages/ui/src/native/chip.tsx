@@ -3,12 +3,15 @@
 // every platform, a pill at the control's height. At rest `s2` with the `line-strong` edge and a
 // `text-2` label; chosen, `control-selected` with a `text` label at 600. The TV's Sort and
 // Unwatched choices are this chip at the TV's rule, with its focus ring and lift.
+
+import { line } from '@highsea-tv/tokens'
 import type { Ref } from 'react'
 import { type AccessibilityProps, type AccessibilityRole, Platform } from 'react-native'
 import type { ChipCommon } from '../shared/controls.ts'
 import { ControlPress, ControlText, lookAt } from './control.tsx'
 import { Icon, type IconName } from './icon.tsx'
 import { centredPadding } from './metrics.ts'
+import { OWN_SIZE } from './own-size.ts'
 import { tokens, useControl, useTheme } from './theme.tsx'
 import type { ViewHandle } from './tv/focusable.tsx'
 
@@ -105,14 +108,14 @@ export function Chip({
       slop={{ height: m.height }}
       style={{
         minHeight: m.height,
-        alignSelf: 'flex-start',
+        ...OWN_SIZE,
         flexDirection: 'row',
         alignItems: 'center',
         gap: m.gap,
         paddingHorizontal: m.pad,
         paddingVertical: centredPadding(m),
         backgroundColor: theme.colors[look.fill],
-        borderWidth: 1,
+        borderWidth: line.thin,
         // the chosen chip keeps the edge's width in its own fill, so choosing never moves the row
         borderColor: edge ? theme.colors[edge] : theme.colors[look.fill],
         opacity: disabled ? tokens.controls.disabledOpacity : 1,

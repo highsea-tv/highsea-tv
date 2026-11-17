@@ -1,11 +1,4 @@
 'use client'
-// SPDX-License-Identifier: AGPL-3.0-only
-// A17's Library import mode (manual-import.md › Library import; the owner's answer 9): a library
-// already on disk. The same table as Manual import with folders for files and TMDB's match as the
-// movie column. The owner picks a root folder (Settings › Media management's "Import what's
-// already here" opens it with the folder chosen), looks inside, checks the matches, and starts a
-// job that adds each movie where it is; Rename to my format renames them as it goes. The job's
-// progress is live on `import.updated`.
 import {
   LIBRARY_IMPORT_TOPIC,
   type LibraryCandidate,
@@ -15,13 +8,22 @@ import {
 import { bytes } from '@highsea-tv/core/format'
 import { useT } from '@highsea-tv/i18n/react'
 import { useAction, useClient, useQuery } from '@highsea-tv/sdk/react'
+// SPDX-License-Identifier: AGPL-3.0-only
+// A17's Library import mode (manual-import.md › Library import; the owner's answer 9): a library
+// already on disk. The same table as Manual import with folders for files and TMDB's match as the
+// movie column. The owner picks a root folder (Settings › Media management's "Import what's
+// already here" opens it with the folder chosen), looks inside, checks the matches, and starts a
+// job that adds each movie where it is; Rename to my format renames them as it goes. The job's
+// progress is live on `import.updated`.
+// Drawn with the library's native renderer since D2 (one-client-platform-d.md).
+import { admin, line, wrapBasis } from '@highsea-tv/tokens'
 import {
   Badge,
   Button,
   Checkbox,
   EmptyState,
   Field,
-  Progress,
+  ProgressBar,
   Select,
   Table,
   TableBody,
@@ -31,12 +33,23 @@ import {
   TableHeader,
   TableRow,
   TableToolbar,
+  Text,
   toast,
-} from '@highsea-tv/ui'
-import { useEffect, useRef, useState } from 'react'
+  tokens,
+  useTheme,
+} from '@highsea-tv/ui/native'
+import { type ReactNode, useEffect, useRef, useState } from 'react'
+import { View } from 'react-native'
 import { libraryImport as messages } from './library-import-messages.ts'
 import { errorReason } from './metadata-locale.ts'
 import { AdminPage } from './shell.tsx'
+import { Release } from './table-parts.tsx'
+
+const sp = tokens.space
+/** The movie and profile columns (the web's w-60 and w-44), and a folder's (max-w-72). */
+const MOVIE_WIDTH = admin.import.movie
+const PROFILE_WIDTH = admin.import.choice
+const NAME_WIDTH = admin.import.name
 
 type Row = LibraryCandidate & { selected: boolean }
 
@@ -47,24 +60,58 @@ const TAGS = { tmdb: '{tmdb-…}', imdb: '{imdb-…}' }
 export function ImportModes({ mode }: { mode: 'files' | 'library' }) {
   const t = useT(messages)
   return (
-    <nav aria-label={t('modes')} className="flex flex-wrap gap-1.5">
+    <View
+      role="navigation"
+      aria-label={t('modes')}
+      style={{ flexDirection: 'row', flexWrap: 'wrap', gap: sp['1'] + sp['0.5'] }}
+    >
       <Button
         size="sm"
         variant={mode === 'files' ? 'secondary' : 'ghost'}
-        aria-current={mode === 'files' ? 'page' : undefined}
-        asChild
+        current={mode === 'files' ? 'page' : undefined}
+        href="/activity/import"
       >
-        <a href="/activity/import">{t('filesMode')}</a>
+        {t('filesMode')}
       </Button>
       <Button
         size="sm"
         variant={mode === 'library' ? 'secondary' : 'ghost'}
-        aria-current={mode === 'library' ? 'page' : undefined}
-        asChild
+        current={mode === 'library' ? 'page' : undefined}
+        href="/activity/import?mode=library"
       >
-        <a href="/activity/import?mode=library">{t('libraryMode')}</a>
+        {t('libraryMode')}
       </Button>
-    </nav>
+    </View>
+  )
+}
+
+/** A17's panels: a named region on `s1` (the web's `rounded-lg border border-line bg-s1 p-4`). */
+export function ImportPanel({
+  label,
+  gap = sp['3'],
+  children,
+}: {
+  label: string
+  gap?: number
+  children: ReactNode
+}) {
+  const theme = useTheme()
+  return (
+    <View
+      role="region"
+      aria-label={label}
+      style={{
+        gap,
+        padding: sp['4'],
+        borderWidth: line.thin,
+        borderColor: theme.colors.line,
+        borderRadius: tokens.radius.lg,
+        backgroundColor: theme.colors.s1,
+        minWidth: 0,
+      }}
+    >
+      {children}
+    </View>
   )
 }
 
@@ -78,7 +125,11 @@ export function LibraryImport({ root: initialRoot = '' }: { root?: string }) {
   const [scanning, setScanning] = useState(false)
   const [rename, setRename] = useState(false)
   const [profileId, setProfileId] = useState('')
-  const roots = useQuery('import:library:roots', (c) => c.rootFolders.list(), ['settings.updated'])
+  const roots = useQuery(
+    'import:library:roots',
+    (c) => c.rootFolders.list({ query: { kind: 'movies' } }),
+    ['settings.updated'],
+  )
   const profiles = useQuery('import:library:profiles', (c) => c.quality.profiles())
   const status = useQuery('import:library:status', (c) => c.libraryImport.status(), [
     LIBRARY_IMPORT_TOPIC,
@@ -92,7 +143,8 @@ export function LibraryImport({ root: initialRoot = '' }: { root?: string }) {
       .scan({ body: { root: folder } })
       .then((xs) => {
         setScanned(folder)
-        setRows(xs.map((x) => ({ ...x, selected: !x.skip && x.match !== null })))
+        // a match to check (an NFO naming another film) waits for the owner to tick it
+        setRows(xs.map((x) => ({ ...x, selected: !x.skip && !x.check && x.match !== null })))
       })
       .catch((e: Error) => setError(errorReason(e) === 'no-tmdb-key' ? t('noKey') : e.message))
       .finally(() => setScanning(false))
@@ -132,82 +184,85 @@ export function LibraryImport({ root: initialRoot = '' }: { root?: string }) {
     run
       .run({
         items: chosen.map((r) => ({ folder: r.folder, tmdbId: r.match?.tmdbId as number })),
-        rename,
+        rename: rename && !readOnly,
         ...(profileId ? { qualityProfileId: profileId } : {}),
       })
       .catch((e: Error) => toast.error(t('fail.run'), { description: e.message }))
 
   const rootOptions = (roots.data ?? []).map((r) => ({ value: r.path, label: r.path }))
+  // a folder highsea only reads keeps its names (ADR 0063): no Rename to my format
+  const readOnly = !!roots.data?.find((r) => r.path === scanned)?.readOnly
   const profileOptions = (profiles.data ?? []).map((p) => ({ value: p.id, label: p.name }))
+  const ui = tokens.adminText.ui
 
   return (
     <AdminPage
       title={t('title')}
       description={t('description')}
       actions={
-        <Button variant="ghost" asChild>
-          <a href="/activity">{t('back')}</a>
+        <Button variant="ghost" href="/activity">
+          {t('back')}
         </Button>
       }
     >
-      <div className="grid gap-5">
+      <View style={{ gap: sp['5'], minWidth: 0 }}>
         <ImportModes mode="library" />
-        <section
-          aria-label={t('root')}
-          className="grid grid-cols-[minmax(0,1fr)] gap-3 rounded-lg border border-line bg-s1 p-4"
-        >
+        <ImportPanel label={t('root')}>
           <Field
             label={t('root')}
             error={error ?? undefined}
             hint={roots.data && rootOptions.length === 0 ? t('noRoots') : t('rootHint', TAGS)}
           >
-            <div className="flex min-w-0 flex-wrap gap-2">
-              <Select
-                aria-label={t('root')}
-                className="min-w-0 flex-1 basis-48 font-mono"
-                value={root}
-                placeholder={t('chooseRoot')}
-                onValueChange={setRoot}
-                options={rootOptions}
-              />
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: sp['2'] }}>
+              <View style={{ flexGrow: 1, flexShrink: 1, flexBasis: wrapBasis, minWidth: 0 }}>
+                <Select
+                  aria-label={t('root')}
+                  value={root}
+                  placeholder={t('chooseRoot')}
+                  onValueChange={setRoot}
+                  options={rootOptions}
+                />
+              </View>
               <Button
                 variant="primary"
                 icon="search"
                 loading={scanning}
                 disabled={!root}
-                onClick={() => scan()}
+                onPress={() => scan()}
               >
                 {t('lookInside')}
               </Button>
-            </div>
+            </View>
           </Field>
-        </section>
+        </ImportPanel>
 
         {s && (running || s.state === 'failed') && (
-          <section
-            aria-label={t('progress')}
-            className="grid gap-2 rounded-lg border border-line bg-s1 p-4"
-          >
+          <ImportPanel label={t('progress')} gap={sp['2']}>
             {running ? (
               <>
-                <p className="text-body text-text">{t('running')}</p>
-                <Progress
+                <Text variant="body">{t('running')}</Text>
+                <ProgressBar
+                  look="panel"
                   value={s.total ? (s.done / s.total) * 100 : 0}
                   showValue
-                  aria-label={t('progressOf')}
+                  label={t('progressOf')}
                 />
-                <p className="text-caption text-text-3">
+                <Text variant="caption" color="text-3">
                   {t('progressBody', { done: s.done, total: s.total })}
-                </p>
+                </Text>
               </>
             ) : (
-              <p className="text-caption text-badge-danger">{t('failed')}</p>
+              <Text variant="caption" color="badge-danger">
+                {t('failed')}
+              </Text>
             )}
-          </section>
+          </ImportPanel>
         )}
 
         {rows === null ? (
-          <p className="text-caption text-text-3">{t('start')}</p>
+          <Text variant="caption" color="text-3">
+            {t('start')}
+          </Text>
         ) : rows.length === 0 ? (
           <EmptyState icon="folder" title={t('empty')}>
             {t('emptyBody', { path: scanned })}
@@ -215,43 +270,42 @@ export function LibraryImport({ root: initialRoot = '' }: { root?: string }) {
         ) : (
           <TableFrame>
             <TableToolbar>
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  id="library-import-rename"
-                  checked={rename}
-                  onCheckedChange={(c) => setRename(c === true)}
-                />
-                <label htmlFor="library-import-rename" className="text-body text-text">
-                  {t('rename')}
-                </label>
-              </div>
-              <span className="text-caption text-text-3">
-                {rename ? t('renameBody') : t('keepBody')}
-              </span>
-              <div className="ms-auto flex items-center gap-2">
-                <Select
-                  aria-label={t('profile')}
-                  className="w-44"
-                  value={profileId || profileOptions[0]?.value || ''}
-                  onValueChange={setProfileId}
-                  options={profileOptions}
-                />
+              {readOnly ? null : (
+                <Checkbox label={t('rename')} checked={rename} onCheckedChange={setRename} />
+              )}
+              <Text variant="caption" color="text-3">
+                {readOnly ? t('readOnlyBody') : rename ? t('renameBody') : t('keepBody')}
+              </Text>
+              <View
+                style={{
+                  marginStart: 'auto',
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: sp['2'],
+                }}
+              >
+                <View style={{ width: PROFILE_WIDTH }}>
+                  <Select
+                    aria-label={t('profile')}
+                    value={profileId || profileOptions[0]?.value || ''}
+                    onValueChange={setProfileId}
+                    options={profileOptions}
+                  />
+                </View>
                 <Button
                   variant="primary"
                   disabled={!chosen.length || running}
                   loading={run.pending}
-                  onClick={start}
+                  onPress={start}
                 >
                   {t('run', { count: chosen.length })}
                 </Button>
-              </div>
+              </View>
             </TableToolbar>
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>
-                    <span className="sr-only">{t('col.import')}</span>
-                  </TableHead>
+                  <TableHead hidden>{t('col.import')}</TableHead>
                   <TableHead>{t('col.folder')}</TableHead>
                   <TableHead>{t('col.movie')}</TableHead>
                   <TableHead>{t('col.quality')}</TableHead>
@@ -263,48 +317,74 @@ export function LibraryImport({ root: initialRoot = '' }: { root?: string }) {
                   const failure = failures.get(r.folder)
                   return (
                     <TableRow key={r.folder}>
-                      <TableCell className="w-10">
+                      <TableCell>
                         <Checkbox
-                          aria-label={t('importOf', { folder: r.name })}
+                          label={t('importOf', { folder: r.name })}
+                          hideLabel
                           checked={r.selected}
                           disabled={!r.match || !!r.skip || running}
-                          onCheckedChange={(c) => set(i, { selected: c === true })}
+                          onCheckedChange={(c) => set(i, { selected: c })}
                         />
                       </TableCell>
-                      <TableCell className="max-w-72">
-                        <div className="truncate font-mono text-release text-text" title={r.folder}>
-                          {r.name}
-                        </div>
-                        {r.file && (
-                          <div
-                            className="truncate font-mono text-caption text-text-3"
-                            title={r.file}
-                          >
-                            {r.file.split('/').pop()}
-                          </div>
-                        )}
-                        {failure ? (
-                          <div className="whitespace-normal text-caption text-badge-danger">
-                            {failure}
-                          </div>
-                        ) : r.inLibrary ? (
-                          <Badge tone="success">{t('inLibrary')}</Badge>
-                        ) : r.match === null && r.file ? (
-                          <div className="whitespace-normal text-caption text-badge-warning">
-                            {t('noMatch', TAGS)}
-                          </div>
-                        ) : r.skip ? (
-                          <div className="text-caption text-text-3">{r.skip}</div>
-                        ) : null}
+                      <TableCell tall maxWidth={NAME_WIDTH}>
+                        <View
+                          style={{
+                            minWidth: 0,
+                            flex: 1,
+                            alignItems: 'flex-start',
+                            gap: tokens.space['0.5'],
+                          }}
+                        >
+                          <Release color="text">{r.name}</Release>
+                          {r.file && (
+                            <Release color="text-3">{r.file.split('/').pop() ?? r.file}</Release>
+                          )}
+                          {failure ? (
+                            <Text variant="caption" color="badge-danger">
+                              {failure}
+                            </Text>
+                          ) : r.inLibrary ? (
+                            <Badge tone="success">{t('inLibrary')}</Badge>
+                          ) : r.match === null && r.file ? (
+                            <Text variant="caption" color="badge-warning">
+                              {t('noMatch', TAGS)}
+                            </Text>
+                          ) : r.skip ? (
+                            <Text variant="caption" color="text-3">
+                              {r.skip}
+                            </Text>
+                          ) : r.parts.length > 1 ? (
+                            <Text variant="caption" color="text-3">
+                              {t('parts', { count: r.parts.length })}
+                            </Text>
+                          ) : null}
+                        </View>
                       </TableCell>
-                      <TableCell className="w-60 text-text">
-                        {r.match
-                          ? r.match.year
-                            ? t('movieLabel', { title: r.match.title, year: r.match.year })
-                            : r.match.title
-                          : '—'}
+                      <TableCell>
+                        <View style={{ width: MOVIE_WIDTH }}>
+                          <Text size={ui.size} leading={ui.leading} numberOfLines={1}>
+                            {r.match
+                              ? r.match.year
+                                ? t('movieLabel', { title: r.match.title, year: r.match.year })
+                                : r.match.title
+                              : '—'}
+                          </Text>
+                          {r.check && !r.skip ? (
+                            <Text variant="caption" color="badge-warning">
+                              {r.check}
+                            </Text>
+                          ) : r.match && r.matchedBy === 'nfo' ? (
+                            <Text variant="caption" color="text-3">
+                              {t('fromNfo')}
+                            </Text>
+                          ) : null}
+                        </View>
                       </TableCell>
-                      <TableCell className="text-text-2">{r.quality ?? '—'}</TableCell>
+                      <TableCell>
+                        <Text size={ui.size} leading={ui.leading} color="text-2" numberOfLines={1}>
+                          {r.quality ?? '—'}
+                        </Text>
+                      </TableCell>
                       <TableCell numeric>{r.file ? bytes(r.size) : '—'}</TableCell>
                     </TableRow>
                   )
@@ -313,7 +393,7 @@ export function LibraryImport({ root: initialRoot = '' }: { root?: string }) {
             </Table>
           </TableFrame>
         )}
-      </div>
+      </View>
     </AdminPage>
   )
 }

@@ -11,11 +11,11 @@ export const family = (weight: number, face: 'sans' | 'mono' = 'sans') =>
   NATIVE_FACES[face][weight as 400 | 500 | 600] ?? NATIVE_FACES.sans[400]
 
 /**
- * How the web smooths a text's glyphs, as the web renderer's base style does on `html`
- * (`-webkit-font-smoothing: antialiased` and `-moz-osx-font-smoothing: grayscale` in
- * src/web/styles.css). Without it a Mac's browsers draw light text on a dark ground with subpixel
+ * How the web smooths a text's glyphs, as the web renderer's base style did on `html` until D3
+ * (`-webkit-font-smoothing: antialiased` and `-moz-osx-font-smoothing: grayscale`), and the
+ * admin's and the prototype's stylesheets still do. Without it a Mac's browsers draw light text on a dark ground with subpixel
  * smoothing, a weight heavier than the design. `auto` is for a label on an accent or danger fill,
- * which the web renderer's button.tsx gives `[-webkit-font-smoothing:auto]`. react-native-web
+ * which the web renderer's button.tsx gave `[-webkit-font-smoothing:auto]`. react-native-web
  * passes both properties to its Text (its Text's style types list `WebkitFontSmoothing` and
  * `MozOsxFontSmoothing`); React Native has neither, so the phone and the TV get nothing.
  */

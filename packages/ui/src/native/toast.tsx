@@ -17,7 +17,11 @@ import { Text } from './text.tsx'
 import { tokens, useTheme } from './theme.tsx'
 
 /** The TV's card's insets and the gap under its title, in units. */
-const TV_NOTE = { padX: 1.2, padY: 0.8, gap: 0.2 }
+const TV_NOTE = {
+  padX: tokens.tv.space['6'],
+  padY: tokens.tv.space['4'],
+  gap: tokens.tv.space['1'],
+}
 
 export type ToastProps = {
   title: string

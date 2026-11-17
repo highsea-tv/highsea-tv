@@ -3,5 +3,5 @@
   "compilerOptions": {
     "types": ["bun"]
   },
-  "include": ["src/web", "src/shared", "scripts", "test/web", "test/parity.test.ts"]
+  "include": ["src/shared", "scripts", "test/parity.test.ts"]
 }

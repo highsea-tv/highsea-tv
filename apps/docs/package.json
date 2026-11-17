@@ -5,12 +5,13 @@
   "license": "AGPL-3.0-only",
   "type": "module",
   "scripts": {
-    "dev": "next dev --port 3100",
-    "build": "next build",
+    "dev": "next dev --webpack --port 3100",
+    "build": "next build --webpack",
     "typecheck": "fumadocs-mdx && tsc -p tsconfig.json"
   },
   "dependencies": {
     "@highsea-tv/brand": "workspace:*",
+    "@highsea-tv/i18n": "workspace:*",
     "@highsea-tv/tokens": "workspace:*",
     "@highsea-tv/ui": "workspace:*",
     "fumadocs-core": "16.16.2",

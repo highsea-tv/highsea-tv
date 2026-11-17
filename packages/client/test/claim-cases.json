@@ -1,0 +1,74 @@
+[
+  {
+    "name": "a new server at a known one's only address takes it, and the old entry goes",
+    "list": [
+      {
+        "id": "old",
+        "name": "Harbor",
+        "addresses": [{ "url": "http://192.168.1.20:3000", "kind": "local" }],
+        "lastSeen": 1
+      },
+      { "id": "attic", "name": "Attic", "addresses": [], "lastSeen": 1 }
+    ],
+    "server": {
+      "id": "new",
+      "addresses": [{ "url": "http://192.168.1.20:3000/", "kind": "local" }]
+    },
+    "after": [["attic", []]],
+    "gone": ["old"]
+  },
+  {
+    "name": "an old server still reached at another address keeps that one",
+    "list": [
+      {
+        "id": "kept",
+        "name": "Harbor",
+        "addresses": [
+          { "url": "http://192.168.1.20:3000/", "kind": "local" },
+          { "url": "https://harbor.example.net", "kind": "remote" }
+        ],
+        "lastSeen": 1
+      }
+    ],
+    "server": {
+      "id": "new",
+      "addresses": [{ "url": "http://192.168.1.20:3000", "kind": "local" }]
+    },
+    "after": [["kept", ["https://harbor.example.net"]]],
+    "gone": []
+  },
+  {
+    "name": "a server's own addresses stay its own",
+    "list": [
+      {
+        "id": "same",
+        "name": "Harbor",
+        "addresses": [{ "url": "http://192.168.1.20:3000", "kind": "local" }],
+        "lastSeen": 1
+      }
+    ],
+    "server": {
+      "id": "same",
+      "addresses": [{ "url": "http://192.168.1.20:3000", "kind": "local" }]
+    },
+    "after": [["same", ["http://192.168.1.20:3000"]]],
+    "gone": []
+  },
+  {
+    "name": "nothing to take",
+    "list": [
+      {
+        "id": "attic",
+        "name": "Attic",
+        "addresses": [{ "url": "http://192.168.1.30:3000", "kind": "local" }],
+        "lastSeen": 1
+      }
+    ],
+    "server": {
+      "id": "new",
+      "addresses": [{ "url": "http://192.168.1.20:3000", "kind": "local" }]
+    },
+    "after": [["attic", ["http://192.168.1.30:3000"]]],
+    "gone": []
+  }
+]

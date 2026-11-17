@@ -30,7 +30,7 @@ Use `bun run test`, never a bare `bun test`: it passes `--isolate`, and without 
 For a fix between checkpoint reports, check what it touched and nothing else, and say in the reply what ran and that the full set waits for the report:
 
 - **Tests and types:** `bun run lint`, then the touched workspaces' typecheck and tests (`bun test --isolate <folder>`), not the whole repo.
-- **Sweeps:** only the platform the fix touched. A prototype change to the web screens is `bun scripts/sweeps/pages.ts web` and `bun scripts/sweeps/keyboard.ts web` (a minute or two); `admin` and `mobile` likewise. `dpad.ts` only when TV screens changed. `server.ts` only when `apps/server`, `apps/client`'s web export or what they serve changed (`server.ts pages` or `keyboard` halves it).
+- **Sweeps:** only the platform the fix touched. A prototype change to the web screens is `bun scripts/sweeps/pages.ts web` and `bun scripts/sweeps/keyboard.ts web` (a minute or two); `admin` and `mobile` likewise. `dpad.ts` only when TV screens changed. `server.ts` only when `apps/server`, `apps/client`'s web export or what they serve changed (`server.ts pages` or `keyboard` halves it). `docs.ts` only when `apps/docs` or a library part the guides draw changed (paths narrow it).
 - **Nothing else:** smoke, licences, audit and the docs build only when the fix touched what they check (Node, dependencies, `apps/docs`).
 
 ## Full (before a checkpoint report)
@@ -41,6 +41,9 @@ The quick checks, then:
 bun run smoke       # the platform under Node, as production runs it
 bun run licenses    # every dependency compatible with AGPL-3.0
 bun run audit       # high or critical advisories; dated exceptions in scripts/audit-exceptions.json
+bun run one-place   # nothing defined in two places
+bun scripts/controls.ts   # no screen draws a control of its own
+bun scripts/bundles.ts    # each of the client's four bundles carries only its own renderer
 ```
 
 Then the sweeps (`scripts/sweeps/README.md`). Run them in the background and wait for their notifications rather than polling. The prototypes' three build and serve the prototypes themselves (about 5½ minutes together on a 12-core Mac); nothing needs starting first.
@@ -52,9 +55,19 @@ bun scripts/sweeps/keyboard.ts
 bun scripts/sweeps/dpad.ts
 bun scripts/sweeps/server.ts               # builds, then boots its own seeded production server on :3150
 bun scripts/sweeps/playback.ts             # the web player in Chromium and Firefox, on :3140 (install firefox once)
+bun scripts/sweeps/docs.ts                 # builds the guides, then every page of the export on :3170
 ```
 
-If the work touched packaging, also run `docker compose -f compose.dev.yaml up --build`, then `HIGHSEA_IMAGE=highsea:dev bun scripts/e2e/run.ts` and `bun scripts/image.ts size highsea:dev 2300` and `bun scripts/image.ts hardware highsea:dev`.
+If the work touched packaging, also run `docker compose -f docker/compose.dev.yaml up --build`, then `HIGHSEA_IMAGE=highsea:dev bun scripts/e2e/run.ts` and `bun scripts/image.ts size highsea:dev` (it reports the size; there is no budget since 2026-11-05) and `bun scripts/image.ts hardware highsea:dev`.
+
+## What CI runs, by branch
+
+The full local run before a report stays as above. CI runs two tiers ([ADR 0062](../../../docs/adr/0062-next-branch-and-ci-by-branch.md)):
+
+- **Fast:** `ci.yml`'s `check` (lint, types, the Bun tests, smoke, licences, audit, the client's exports, the admin's and the docs' builds) on every pull request and every push to `next` or `main`, and `catalog.yml` when the catalog changes.
+- **Heavy:** `ci.yml`'s `playback`, `leak` and `image`, `e2e.yml`, `desktop.yml` (`build`) and `native.yml` (`ios`, `tvos`) on a push to `next`, the pull request from `next` into `main`, a pull request with the `full-ci` label, and a release. On a task's pull request into `next` without the label they show as skipped.
+
+So a task's pull request proves only the fast tier. When a change could break the heavy jobs (packaging, the Dockerfile, the native or desktop builds, the workflows), run their local counterparts here (the image and the end-to-end run, `playback.ts`, the simulator builds), or ask for the `full-ci` label on its pull request.
 
 ## Known false alarms
 
@@ -62,7 +75,8 @@ Don't report these as failures. Do report anything else.
 
 - A toast caught mid-fade fails contrast (`pages.ts` waits for animations to avoid it).
 - In `server.ts` with `SWEEP_DEV=1`, a page that calls `notFound()` can throw "Failed to execute 'measure' on 'Performance' … negative time stamp" in development, and Next's dev overlay then shows up as a keyboard stop (vercel/next.js#86060). Production builds don't have it.
-- The keyboard sweep once had a hidden focus stop on `/web/settings/devices` (1440) and `/web/settings/home` (390) that a re-run didn't repeat. On 2026-10-28 the same finding (one stop, `hidden: span ""`, a Radix focus guard) was traced to the announcement dialog still mounted in its exit animation; `acknowledge` in `scripts/sweeps/lib.ts` now waits for the dialog itself to unmount. If it comes back, find the cause rather than re-running until it passes.
+- The keyboard sweep once had a hidden focus stop on `/web/settings/devices` (1440) and `/web/settings/home` (390) that a re-run didn't repeat. On 2026-10-28 the same finding (one stop, `hidden: span ""`, a focus guard of the web renderer's dialog, which went in D3) was traced to the announcement dialog still mounted in its exit animation; `acknowledge` in `scripts/sweeps/lib.ts` now waits for the dialog itself to unmount. If it comes back, find the cause rather than re-running until it passes.
+- At E3, `server.ts` once failed axe's `aria-allowed-attr` on Indexers' What changed while device builds ran beside it: react-native-web's Modal is `aria-modal` before it's `role="dialog"`. Since HT-19 `axe()` in `scripts/sweeps/lib.ts` waits for every dialog's role first (`dialogsReady`), so it shouldn't come back under load; if it does, find the cause rather than re-running until it passes.
 - The tests that need ffmpeg or `unar` skip and say so when those are missing. Report the skip count.
 
 ## Reporting

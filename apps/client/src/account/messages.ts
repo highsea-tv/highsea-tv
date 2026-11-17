@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The account's words (ADR 0021): Connect a device (pairing a TV, connectivity.md#pairing-a-tv-
-// from-the-phone), Profile (client-settings.md › C8) with the pointer's account menu, and Get the
-// apps (desktop-app.md). They're the prototypes' (web/link.tsx, mobile/pair.tsx, web/settings.tsx,
-// web/shell.tsx, client/get-the-apps.tsx) and the old phone app's `pair`.
+// from-the-phone) and Profile (client-settings.md › C8) with the pointer's account menu; Get the
+// apps' are the library's since D3 (packages/ui/src/native/get-the-apps.tsx). They're the
+// prototypes' (web/link.tsx, mobile/pair.tsx, web/settings.tsx, web/shell.tsx) and the old phone
+// app's `pair`.
 import { defineMessages } from '@highsea-tv/i18n'
 
 export const pairMessages = defineMessages({
@@ -70,27 +71,4 @@ export const profileMessages = defineMessages({
   links: 'More',
   // the pointer's account menu (the prototype's web/shell.tsx Profile)
   menu: '{name}: profile and settings',
-})
-
-export const appsMessages = defineMessages({
-  title: 'Get the apps',
-  list: 'Desktop apps',
-  mac: 'macOS',
-  macDetail: 'Apple silicon and Intel',
-  windows: 'Windows',
-  windowsDetail: 'Windows 10 and 11, 64-bit',
-  // the installer is unsigned until 1.0 (phase-4-checkpoint-4.md, answer 6)
-  windowsNote:
-    'Windows may say it doesn’t recognise the installer. Choose More info, then Run anyway.',
-  linux: 'Linux',
-  linuxDetail: 'Ubuntu, Debian, Fedora and others',
-  thisComputer: 'This computer',
-  download: 'Download {file}',
-  downloadFile: 'Download {file} for {os}',
-  address:
-    'The app finds {server} on this network by itself. Anywhere else, add it by this address:',
-  copy: 'Copy',
-  copyAddress: 'Copy the address',
-  copied: 'Address copied',
-  notCopied: 'Couldn’t copy the address',
 })

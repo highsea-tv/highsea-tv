@@ -229,13 +229,13 @@ describe('errors', () => {
 
   test('an uncovered route answers 501, naming it', async () => {
     const { app } = setup({ state: { role: 'admin' } })
-    const e = await caught((await app(LAN, 'theo')).system.tasks())
+    const e = await caught((await app(LAN, 'theo')).system.downloadLogs())
     expect(e.status).toBe(501)
-    expect(e.message).toContain('system.tasks')
+    expect(e.message).toContain('system.downloadLogs')
     expect(e.details).toEqual({
-      route: 'system.tasks',
+      route: 'system.downloadLogs',
       method: 'GET',
-      path: '/api/v1/system/tasks',
+      path: '/api/v1/system/logs/download',
     })
   })
 

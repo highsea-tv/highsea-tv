@@ -18,6 +18,7 @@ import {
   pruneOptionalPeers,
   pruneOtherLibc,
   publishedProblems,
+  unrequested,
 } from './image.ts'
 
 const dirs: string[] = []
@@ -126,6 +127,33 @@ describe('pruneOptionalPeers', () => {
     expect(existsSync(join(ui, 'node_modules', 'react-native'))).toBe(false)
     expect(existsSync(join(ui, 'node_modules', 'react', 'package.json'))).toBe(true)
     expect(existsSync(join(bun, 'react@1'))).toBe(true)
+  })
+})
+
+describe('unrequested', () => {
+  test('counts a package the root’s overrides install under another name as asked for', () => {
+    const root = temp()
+    const pkg = (entry: string, name: string, manifest: object = {}) => {
+      const dir = join(root, 'node_modules', '.bun', entry, 'node_modules', name)
+      mkdirSync(dir, { recursive: true })
+      writeFileSync(join(dir, 'package.json'), JSON.stringify({ name, ...manifest }))
+    }
+    // as the repository: react-native is react-native-tvos (an override), which the server asks for
+    writeFileSync(
+      join(root, 'package.json'),
+      JSON.stringify({ overrides: { 'react-native': 'npm:react-native-tvos@1.0.0-0' } }),
+    )
+    const server = join(root, 'apps', 'server')
+    mkdirSync(server, { recursive: true })
+    writeFileSync(
+      join(server, 'package.json'),
+      JSON.stringify({ name: '@highsea-tv/server', dependencies: { 'react-native-web': '1' } }),
+    )
+    pkg('react-native-web@1', 'react-native-web', { peerDependencies: { 'react-native': '*' } })
+    pkg('react-native-tvos@1', 'react-native-tvos')
+    pkg('stray@1', 'stray')
+
+    expect(unrequested(root, ['apps/server'])).toEqual(['stray'])
   })
 })
 

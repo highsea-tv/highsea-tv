@@ -63,9 +63,43 @@ export function addressesOf(
   return out
 }
 
-/** The list with this server added or brought up to date, most recently reached first. */
+const bare = (url: string) => url.replace(/\/+$/, '')
+
+/**
+ * An address answers for one server at a time: the SDK's ServerConnection takes a server that
+ * answers with another id as not this one (packages/sdk/src/connection.ts). So the addresses
+ * `server` answers at leave every other entry, and an entry left with none is gone, as when a
+ * server is set up afresh where another was (the owner's decision of 2026-11-15). An old server
+ * still reached at another address, its remote one, stays with that. `gone` lists the ids
+ * dropped, whose tokens go too; the list comes back as it was when nothing changed.
+ */
+export function claim(
+  list: Known[],
+  server: Pick<Known, 'id' | 'addresses'>,
+): { list: Known[]; gone: string[] } {
+  const taken = new Set(server.addresses.map((a) => bare(a.url)))
+  const gone: string[] = []
+  let changed = false
+  const out: Known[] = []
+  for (const k of list) {
+    const left =
+      k.id === server.id ? k.addresses : k.addresses.filter((a) => !taken.has(bare(a.url)))
+    if (left.length === k.addresses.length) out.push(k)
+    else {
+      changed = true
+      if (left.length > 0) out.push({ ...k, addresses: left })
+      else gone.push(k.id)
+    }
+  }
+  return changed ? { list: out, gone } : { list, gone }
+}
+
+/**
+ * The list with this server added or brought up to date, most recently reached first, its
+ * addresses taken from any other entry that listed them (`claim`).
+ */
 export function remember(list: Known[], server: Known): Known[] {
-  return [server, ...list.filter((k) => k.id !== server.id)]
+  return [server, ...claim(list, server).list.filter((k) => k.id !== server.id)]
 }
 
 export const forget = (list: Known[], id: string) => list.filter((k) => k.id !== id)

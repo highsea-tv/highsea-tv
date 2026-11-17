@@ -5,14 +5,9 @@
   "license": "AGPL-3.0-only",
   "type": "module",
   "exports": {
-    ".": {
-      "react-native": "./src/native/index.ts",
-      "default": "./src/web/index.ts"
-    },
-    "./web": "./src/web/index.ts",
+    ".": "./src/native/index.ts",
     "./native": "./src/native/index.ts",
     "./shared": "./src/shared/index.ts",
-    "./styles.css": "./src/web/styles.css",
     "./focus": "./src/native/tv/spatial/index.ts",
     "./icons": "./src/native/icons.ts",
     "./tv": "./src/native/tv/index.ts",
@@ -22,6 +17,8 @@
     "./next/asset-registry": "./src/next/asset-registry.ts",
     "./next/server": "./src/next/server.ts",
     "./next/style-sheet": "./src/next/style-sheet.ts",
+    "./next/style-registry": "./src/next/style-registry.tsx",
+    "./next/webpack": "./src/next/webpack.ts",
     "./testing/react-native-web": "./src/testing/react-native-web.ts"
   },
   "scripts": {
@@ -33,6 +30,7 @@
     "expo-haptics": "*",
     "expo-image": "*",
     "lucide-react-native": "*",
+    "next": "*",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "react-native": "*",
@@ -40,8 +38,7 @@
     "react-native-safe-area-context": "*",
     "react-native-svg": "*",
     "react-native-web": "*",
-    "react-native-webview": "*",
-    "tailwindcss": "^4.3.0"
+    "react-native-webview": "*"
   },
   "peerDependenciesMeta": {
     "expo-haptics": {
@@ -51,6 +48,9 @@
       "optional": true
     },
     "lucide-react-native": {
+      "optional": true
+    },
+    "next": {
       "optional": true
     },
     "react-dom": {
@@ -73,9 +73,6 @@
     },
     "react-native-webview": {
       "optional": true
-    },
-    "tailwindcss": {
-      "optional": true
     }
   },
   "dependencies": {
@@ -85,18 +82,12 @@
     "@highsea-tv/brand": "workspace:*",
     "@highsea-tv/i18n": "workspace:*",
     "@highsea-tv/tokens": "workspace:*",
-    "clsx": "2.1.1",
-    "cmdk": "1.1.1",
-    "lucide-react": "1.58.0",
-    "motion": "14.3.0",
-    "qrcode": "1.5.4",
-    "radix-ui": "1.8.1",
-    "tailwind-merge": "3.7.0"
+    "@tanstack/virtual-core": "3.19.7",
+    "qrcode": "1.5.4"
   },
   "devDependencies": {
     "@happy-dom/global-registrator": "21.0.3",
     "@highsea-tv/config": "workspace:*",
-    "@tailwindcss/node": "4.3.3",
     "@testing-library/dom": "10.4.2",
     "@testing-library/react": "16.3.3",
     "@testing-library/user-event": "14.6.8",
@@ -107,6 +98,7 @@
     "expo-haptics": "58.0.6",
     "expo-image": "58.0.15",
     "lucide-react-native": "1.57.0",
+    "next": "16.4.1",
     "react": "19.3.1",
     "react-dom": "19.3.1",
     "react-native": "npm:react-native-tvos@0.88.0-0",
@@ -115,7 +107,6 @@
     "react-native-svg": "15.16.0",
     "react-native-web": "0.21.4",
     "react-native-webview": "14.0.1",
-    "react-native-worklets": "0.13.0",
-    "tailwindcss": "4.3.3"
+    "react-native-worklets": "0.13.0"
   }
 }

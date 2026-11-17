@@ -18,6 +18,10 @@ const FILTERED_BUDGET_MS = 150
 
 let s: Awaited<ReturnType<typeof setup>>
 
+// Seeding 100,000 rows takes about 2 s on an idle machine and more on a busy CI one, past
+// bun:test's default 5,000 ms (https://bun.com/docs/test/runtime-behavior#test-timeouts), so the
+// setup alone gets room through beforeAll's timeout (https://bun.com/reference/bun/test/beforeAll);
+// the budgets the tests measure stay as they are.
 beforeAll(async () => {
   s = await setup()
   const { raw } = s
@@ -52,7 +56,7 @@ beforeAll(async () => {
   }
   raw.exec('COMMIT')
   raw.exec('ANALYZE')
-})
+}, 60_000)
 
 afterAll(() => s.cleanup())
 

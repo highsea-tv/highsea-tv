@@ -46,6 +46,7 @@ export async function bootRuntime(
     notifications?: BootOptions['notifications']
     restart?: BootOptions['restart']
     clock?: BootOptions['clock']
+    containerNetwork?: BootOptions['containerNetwork']
   } = {},
 ): Promise<Runtime> {
   const dir = mkdtempSync(join(tmpdir(), 'highsea-api-'))
@@ -72,6 +73,8 @@ export async function bootRuntime(
     // a restore's restart never ends the test process
     restart: options.restart ?? (() => {}),
     clock: options.clock,
+    // outside a container, whatever this machine is, unless a test plays one
+    containerNetwork: options.containerNetwork ?? null,
   })
 }
 

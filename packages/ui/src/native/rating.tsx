@@ -3,6 +3,7 @@
 // stars over them cut to the value, and the value always in the label.
 
 import { useT } from '@highsea-tv/i18n/react'
+import { rating } from '@highsea-tv/tokens'
 import { View } from 'react-native'
 import { Icon } from './icon.tsx'
 import { uiMessages } from './messages.ts'
@@ -23,9 +24,9 @@ export type RatingProps = {
 }
 
 /** The TV's star, in units: the TV prototype's `size={20}` on its 1080p screen, where 1u is 19.2. */
-export const TV_STAR = 1.04
+export const TV_STAR = rating.starTv
 /** The gap before the value, in units on the TV (the web's gap-1.5, 6 at 1080p). */
-const TV_GAP = 0.31
+const TV_GAP = tokens.tv.space['1.5']
 
 const fmt = (v: number) => (Number.isInteger(v) ? String(v) : v.toFixed(1))
 
@@ -53,7 +54,11 @@ export function Rating({ value, max = 5, size: given, showValue = false }: Ratin
       accessible
       accessibilityRole="image"
       accessibilityLabel={t('rated', { value: fmt(clamped), max })}
-      style={{ flexDirection: 'row', alignItems: 'center', gap: tv ? TV_GAP * theme.u : 6 }}
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: tv ? TV_GAP * theme.u : tokens.space['1.5'],
+      }}
     >
       <View style={{ flexDirection: 'row' }}>
         {stars('s4')}

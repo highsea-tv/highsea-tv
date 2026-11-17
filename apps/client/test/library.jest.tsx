@@ -8,8 +8,17 @@ import { letterOf, sortTitle } from '@highsea-tv/client/library'
 import { SEED } from '@highsea-tv/mock/films'
 import { act, cleanup, fireEvent, screen, within } from '@testing-library/react-native'
 import { router } from 'expo-router'
-import { FlatList, StyleSheet } from 'react-native'
-import { acknowledge, flush, fresh, rewrite, server, signedIn } from './mock.ts'
+import { StyleSheet } from 'react-native'
+import {
+  acknowledge,
+  flush,
+  fresh,
+  phoneWindow,
+  pointerWindow,
+  rewrite,
+  server,
+  signedIn,
+} from './mock.ts'
 
 // the phone, unless a test asks for a pointer's window
 jest.mock('../src/form-factor', () => ({
@@ -38,11 +47,37 @@ jest.mock('react-native-gesture-handler/ReanimatedSwipeable', () =>
 require('react-native-gesture-handler/jestSetup')
 // the films a pointer's letter jump focuses, by their poster's handle
 const mockFocused: string[] = []
+// the grid's jumps, by its virtual list's handle
+type MockJump = {
+  index: number
+  options?: { animated?: boolean; offset?: number }
+  handle: { offsetOf: (index: number) => number | undefined }
+}
+const mockJumps: MockJump[] = []
+type MockHandle = MockJump['handle'] & {
+  scrollToIndex: (index: number, options?: MockJump['options']) => void
+}
+type MockRef = ((handle: MockHandle | null) => void) | { current: unknown } | undefined
 jest.mock('@highsea-tv/ui', () => {
   const actual = jest.requireActual('@highsea-tv/ui')
   const { createElement } = require('react')
   return {
     ...actual,
+    Virtual: (p: { ref?: unknown }) => {
+      const given = p.ref as MockRef
+      const ref = (handle: MockHandle | null) => {
+        const wrapped = handle && {
+          ...handle,
+          scrollToIndex: (index: number, options?: MockJump['options']) => {
+            mockJumps.push({ index, options, handle })
+            handle.scrollToIndex(index, options)
+          },
+        }
+        if (typeof given === 'function') given(wrapped)
+        else if (given) given.current = wrapped
+      }
+      return createElement(actual.Virtual, { ...p, ref })
+    },
     Poster: (p: { title: string; ref?: unknown }) => {
       const given = p.ref
       // a ref callback gets a handle whose focus says which film it was
@@ -62,6 +97,7 @@ beforeEach(() => {
 })
 afterEach(async () => {
   await cleanup()
+  phoneWindow()
   delete (globalThis as { __formFactor?: string }).__formFactor
 })
 
@@ -72,6 +108,35 @@ async function at(path: string) {
   await act(() => router.navigate(path as never))
   await flush(500)
   return r
+}
+
+/**
+ * The grid's jumps: the virtualizer's handle records each `scrollToIndex` (the library's Virtual,
+ * TanStack Virtual's core, whose scrolling does nothing in Jest), and `land` reports the scroll
+ * to the last one's row as the scroller would, so the grid draws it.
+ */
+function spyOnGrid() {
+  mockJumps.length = 0
+  const scrolls = { calls: mockJumps }
+  const land = async () => {
+    // a poster in the grid: the event goes up to the scroller's handler, as RNTL's fireEvent does
+    const grid = screen.getAllByLabelText(/, \d{4}$/)[0]
+    if (!grid) throw new Error('no grid')
+    const scroll = (y: number) =>
+      fireEvent.scroll(grid, {
+        nativeEvent: {
+          contentOffset: { x: 0, y },
+          contentSize: { width: 750, height: 100_000 },
+          layoutMeasurement: { width: 750, height: 800 },
+        },
+      })
+    // the content's size first, which Jest's layout never reports, so the row isn't clamped to it
+    await scroll(0)
+    const jump = mockJumps.at(-1)
+    await scroll((jump?.handle.offsetOf(jump.index) ?? 0) - (jump?.options?.offset ?? 0))
+    await flush()
+  }
+  return { scrolls, land }
 }
 
 /** The films' posters in the grid, in order: "Sintel, 2010". */
@@ -242,16 +307,14 @@ describe('the Library on the phone', () => {
   })
 
   test('the index jumps to a letter’s first title', async () => {
-    const scrolls = jest.spyOn(FlatList.prototype, 'scrollToIndex').mockImplementation(() => {})
     await at('/library')
+    const { scrolls } = spyOnGrid()
     const index = screen.getByLabelText('Jump to a letter')
     // VoiceOver's swipe down: the next letter with titles
     await fireEvent(index, 'accessibilityAction', { nativeEvent: { actionName: 'decrement' } })
     await flush()
-    expect(scrolls).toHaveBeenCalledWith(
-      expect.objectContaining({ index: expect.any(Number), animated: false }),
-    )
-    scrolls.mockRestore()
+    expect(scrolls.calls.at(-1)?.options).toEqual(expect.objectContaining({ animated: false }))
+    expect(scrolls.calls.at(-1)?.index).toEqual(expect.any(Number))
   })
 
   test('an empty library says so', async () => {
@@ -371,9 +434,7 @@ describe('the Library on the phone', () => {
 })
 
 describe('Movies and Collections with a pointer', () => {
-  beforeEach(() => {
-    ;(globalThis as { __formFactor?: string }).__formFactor = 'regular-pointer'
-  })
+  beforeEach(pointerWindow)
 
   test('Movies has its selects and the index; sorting by year hides the index', async () => {
     const r = await at('/movies')
@@ -381,11 +442,13 @@ describe('Movies and Collections with a pointer', () => {
     expect(screen.getByRole('header', { name: 'Movies' })).toBeTruthy()
     const shown = titles()
     expect(shown).toEqual(byTitle(shown))
-    expect(screen.getByText(`${shown.length} movies`)).toBeTruthy()
+    // the grid draws the rows near the screen, so the count is the library's, at least those
+    const total = Number(String(screen.getByText(/^\d+ movies$/).props.children).split(' ')[0])
+    expect(total).toBeGreaterThanOrEqual(shown.length)
     expect(screen.getByLabelText('Jump to a letter')).toBeTruthy()
     await fireEvent.press(screen.getByRole('button', { name: 'Sort' }))
     await flush()
-    await fireEvent.press(screen.getByLabelText('Newest first'))
+    await fireEvent.press(screen.getByRole('button', { name: 'Newest first' }))
     await flush()
     const ys = years()
     expect(ys).toEqual([...ys].sort((a, b) => b - a))
@@ -393,19 +456,23 @@ describe('Movies and Collections with a pointer', () => {
   })
 
   test('a letter jumps to its first title, and focuses it', async () => {
-    const scrolls = jest.spyOn(FlatList.prototype, 'scrollToIndex').mockImplementation(() => {})
     await at('/movies')
-    const shown = titles()
-    const last = shown.at(-1)
-    if (!last) throw new Error('no titles')
-    const letter = letterOf(last)
-    const target = shown.find((x) => letterOf(x) === letter)
+    const { scrolls, land } = spyOnGrid()
+    // the index's last letter with titles, whose first title may be past the rows drawn
+    const letter = screen
+      .getAllByRole('button')
+      .filter((n) => /^[A-Z#]$/.test(String(n.props.accessibilityLabel ?? '')))
+      .filter((n) => !n.props.accessibilityState?.disabled)
+      .map((n) => String(n.props.accessibilityLabel))
+      .at(-1)
+    if (!letter) throw new Error('no letters')
     await fireEvent.press(screen.getByRole('button', { name: letter }))
     await flush()
-    const call = scrolls.mock.calls.at(-1)?.[0]
-    expect(call?.index).toBeGreaterThan(0)
-    expect(mockFocused).toEqual([target])
-    scrolls.mockRestore()
+    expect(scrolls.calls.at(-1)?.index).toBeGreaterThan(0)
+    // the scroller lands there and the grid draws the title, which takes focus
+    await land()
+    expect(mockFocused).toHaveLength(1)
+    expect(letterOf(mockFocused[0] ?? '')).toBe(letter)
   })
 
   test('the grid fills the width with posters, more than the phone’s three a row', async () => {
@@ -443,7 +510,7 @@ describe('Movies and Collections with a pointer', () => {
     await at('/movies')
     await fireEvent.press(screen.getByRole('button', { name: 'Show' }))
     await flush()
-    await fireEvent.press(screen.getByLabelText('Unwatched'))
+    await fireEvent.press(screen.getByRole('button', { name: 'Unwatched' }))
     await flush()
     expect(screen.getByText('Nothing matches')).toBeTruthy()
     await fireEvent.press(screen.getByRole('button', { name: 'Show everything' }))

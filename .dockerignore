@@ -14,3 +14,14 @@ design/explorations
 **/.env
 **/.env.*
 !**/.env.example
+# native build output, which the image never uses (one-client-platform-d.md, D3): the desktop app's
+# Rust target, the client's prebuilt projects (expo prebuild; never committed, .gitignore) and its
+# desktop and mock exports. packages/native/ios and packages/brand/assets/icons/ios are source, so
+# only these exact paths are left out
+apps/desktop/src-tauri/target
+apps/client/ios
+apps/client/android
+**/.expo
+**/dist-desktop
+**/dist-mock
+**/.dist-mock-*

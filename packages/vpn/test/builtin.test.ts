@@ -282,6 +282,38 @@ describe('highsea connects', () => {
     await noTun.vpn.stop()
   })
 
+  test('on host networking, won’t start, touching nothing, and says why', async () => {
+    const wg = createFakeWireGuard()
+    const t = testVpn({ runner: wg.runner, hostNetwork: () => true })
+    // off: the status still says which network highsea is on
+    expect(t.vpn.status()).toMatchObject({ mode: 'off', state: 'off', hostNetwork: true })
+    await t.vpn.save({ mode: 'builtin', provider: 'proton', config: wgConfig() })
+    t.vpn.start()
+    await t.vpn.settled()
+    expect(t.vpn.status()).toMatchObject({
+      mode: 'builtin',
+      state: 'failed',
+      hostNetwork: true,
+      needsCapability: false,
+      message:
+        'On host networking, the tunnel’s interface and routes would land in the host’s network beside everything else, so highsea won’t start it. Put the lines from Compose for highsea connects in place of network_mode: host, then recreate the container.',
+    })
+    // not one `ip` or `wg` command ran: nothing reached the host's network
+    expect(wg.lines()).toEqual([])
+    expect(t.last() ?? null).toBeNull()
+    // reconnecting doesn't get past it either
+    await t.vpn.reconnect()
+    await t.vpn.settled()
+    expect(t.vpn.status().state).toBe('failed')
+    expect(wg.lines()).toEqual([])
+    await t.vpn.stop()
+
+    // without the seam, highsea isn't on it
+    const plain = testVpn()
+    expect(plain.vpn.status().hostNetwork).toBe(false)
+    await plain.vpn.stop()
+  })
+
   test('port forwarding failing only warns, says so in System, and tries again in a minute', async () => {
     let fail = true
     const b = builtin({

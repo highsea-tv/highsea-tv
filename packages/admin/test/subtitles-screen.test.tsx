@@ -26,8 +26,9 @@ const { act, cleanup, render, within } = await import('@testing-library/react')
 const { default: userEvent } = await import('@testing-library/user-event')
 const { createClient } = await import('@highsea-tv/sdk')
 const { ClientProvider } = await import('@highsea-tv/sdk/react')
-const { TooltipProvider } = await import('@highsea-tv/ui')
+const { ThemeProvider, toast } = await import('@highsea-tv/ui/native')
 const { Subtitles } = await import('../src/subtitles.tsx')
+const { shown } = await import('./modal.ts')
 
 // ---------------------------------------------------------------- the fake API
 
@@ -141,6 +142,8 @@ async function api(url: string, init: RequestInit = {}): Promise<Response> {
       state.profiles.push(created)
       return json(created)
     }
+    case 'PUT /api/v1/languageprofiles/lp-en':
+      return json({ id: 'lp-en', ...body })
     case 'DELETE /api/v1/languageprofiles/lp-en':
       return failure(
         'conflict',
@@ -174,7 +177,10 @@ beforeEach(() => {
     ],
   }
 })
-afterEach(() => cleanup())
+afterEach(() => {
+  cleanup()
+  toast.clear()
+})
 
 const settle = () =>
   act(async () => {
@@ -186,9 +192,9 @@ async function open() {
   await act(async () => {
     render(
       <ClientProvider client={client}>
-        <TooltipProvider>
+        <ThemeProvider>
           <Routed<SubtitlesTab> base="/subtitles">{(tab) => <Subtitles tab={tab} />}</Routed>
-        </TooltipProvider>
+        </ThemeProvider>
       </ClientProvider>,
     )
   })
@@ -233,14 +239,12 @@ describe('A10 Subtitles', () => {
     expect(page.getByText('Add your account first.')).toBeTruthy()
     expect(page.getAllByText('Needs an account')).toHaveLength(2)
     expect(page.getByText('Subtitles provided by OpenSubtitles.com')).toBeTruthy()
-    const subdl = page.getByRole('switch', { name: 'Subdl enabled' }) as HTMLButtonElement
-    const subsource = page.getByRole('switch', { name: 'SubSource enabled' }) as HTMLButtonElement
-    expect(subdl.disabled).toBe(true)
-    expect(subsource.disabled).toBe(true)
-    expect(
-      (page.getByRole('switch', { name: 'OpenSubtitles.com enabled' }) as HTMLButtonElement)
-        .disabled,
-    ).toBe(false)
+    // react-native-web marks a disabled Pressable aria-disabled
+    const off = (name: string) =>
+      page.getByRole('switch', { name }).getAttribute('aria-disabled') === 'true'
+    expect(off('Subdl enabled')).toBe(true)
+    expect(off('SubSource enabled')).toBe(true)
+    expect(off('OpenSubtitles.com enabled')).toBe(false)
   })
 
   test('Edit: Test says what the provider answered, then Save', async () => {
@@ -249,6 +253,7 @@ describe('A10 Subtitles', () => {
     await settle()
     await user.click(page.getByRole('button', { name: 'Edit Subdl' }))
     await settle()
+    shown()
     const dialog = within(page.getByRole('dialog'))
     const key = dialog.getByLabelText('API key')
     await user.type(key, 'wrong')
@@ -276,6 +281,7 @@ describe('A10 Subtitles', () => {
     await settle()
     await user.click(page.getByRole('button', { name: 'Edit OpenSubtitles.com' }))
     await settle()
+    shown()
     const dialog = within(page.getByRole('dialog'))
     expect((dialog.getByLabelText('Username') as HTMLInputElement).value).toBe('ines')
     expect(dialog.getByText('Saved. Leave it empty to keep it.')).toBeTruthy()
@@ -318,6 +324,45 @@ describe('A10 Subtitles', () => {
     expect(requested('DELETE', '/api/v1/languageprofiles/lp-en')).toHaveLength(1)
     // still editing: the refusal is a toast, and the profile stays
     expect(page.getByRole('button', { name: 'Save profile' })).toBeTruthy()
+  })
+
+  test('a profile’s languages move with the keyboard: Space, Up, Space; Escape puts it back', async () => {
+    state.profiles[0] = {
+      ...state.profiles[0],
+      languages: [
+        { code: 'en', forced: 'also', hi: 'no' },
+        { code: 'fr', forced: 'no', hi: 'no' },
+      ],
+    }
+    const { user, page } = await open()
+    await user.click(page.getByRole('tab', { name: 'Languages' }))
+    await settle()
+    await user.click(page.getByRole('button', { name: 'Edit English' }))
+    await settle()
+    const handle = () => page.getByLabelText('Move French')
+    // Escape puts it back where it was
+    handle().focus()
+    await user.keyboard(' ')
+    await user.keyboard('{ArrowUp}')
+    await settle()
+    await user.keyboard('{Escape}')
+    await settle()
+    expect(page.getByLabelText('Move English').compareDocumentPosition(handle())).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    )
+    // Space, Up, Space moves it to the top, and focus stays on its handle
+    handle().focus()
+    await user.keyboard(' ')
+    await user.keyboard('{ArrowUp}')
+    await settle()
+    expect(document.activeElement).toBe(handle())
+    await user.keyboard(' ')
+    await user.click(page.getByRole('button', { name: 'Save profile' }))
+    await settle()
+    const saved = requested('PUT', '/api/v1/languageprofiles/lp-en').at(-1)?.body as {
+      languages: { code: string }[]
+    }
+    expect(saved.languages.map((l) => l.code)).toEqual(['fr', 'en'])
   })
 
   test('scoring and sync has no note that sync comes later: it’s here', async () => {

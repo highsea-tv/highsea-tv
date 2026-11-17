@@ -4,11 +4,38 @@
 // control's height with the spec's inset; the chosen segment is `control-selected` (3:1 on the
 // track) in the same corner less the inset, its label `text` at 600. On the phone each segment's
 // target reaches 44 through the hit area; on the TV each is a focus stop.
-import { View } from 'react-native'
+
+import { line, webText } from '@highsea-tv/tokens'
+import { Platform, View, type ViewStyle } from 'react-native'
 import type { SegmentedCommon } from '../shared/controls.ts'
 import { ControlPress, ControlText, lookAt, useControllable } from './control.tsx'
 import { Icon, type IconName } from './icon.tsx'
+import { OWN_SIZE } from './own-size.ts'
+import { Text } from './text.tsx'
 import { tokens, useControl, useTheme } from './theme.tsx'
+
+/** A count after a tab's label: mono 11 in `text-3`, `text` on the chosen tab (web/components/tabs.tsx). */
+const COUNT_SIZE = webText.label.size
+
+function Count({ on, n }: { on: boolean; n: number }) {
+  return (
+    <Text mono size={COUNT_SIZE} color={on ? 'text' : 'text-3'} numberOfLines={1}>
+      {String(n)}
+    </Text>
+  )
+}
+
+/**
+ * Too many to fit, the row scrolls sideways on the web with its scrollbar hidden, as the web
+ * renderer's track and tab list do (web/components/tabs.tsx, segmented.tsx): never wider than its
+ * column, so a narrow window doesn't widen the page. react-native-web takes `overflowX` and
+ * `scrollbarWidth` as web styles (https://necolas.github.io/react-native-web/docs/styling/).
+ */
+const SIDEWAYS = (
+  Platform.OS === 'web'
+    ? { maxWidth: '100%', overflowX: 'auto', overflowY: 'hidden', scrollbarWidth: 'none' }
+    : null
+) as ViewStyle | null
 
 export type SegmentedControlProps<V extends string = string> = SegmentedCommon<V, IconName>
 
@@ -37,12 +64,13 @@ function Segments<V extends string>({
       accessibilityLabel={label}
       style={{
         flexDirection: 'row',
-        alignSelf: block ? 'stretch' : 'flex-start',
+        ...(block ? { alignSelf: 'stretch' as const } : OWN_SIZE),
         minHeight: m.height,
         padding: m.inset,
         gap: m.inset,
         borderRadius: m.radius,
         backgroundColor: theme.colors[looks.track.fill],
+        ...SIDEWAYS,
       }}
     >
       {options.map((o) => {
@@ -79,6 +107,7 @@ function Segments<V extends string>({
                   <ControlText m={m} weight={look.weight} color={theme.colors[label]} lines={1}>
                     {o.label}
                   </ControlText>
+                  {o.count == null ? null : <Count on={on} n={o.count} />}
                 </>
               )
             }}
@@ -116,6 +145,7 @@ function LineTabs<V extends string>({
 }: SegmentedControlProps<V>) {
   const theme = useTheme()
   const m = useControl(size)
+  const tv = theme.formFactor.input === 'tv'
   const [chosen, choose] = useControllable<V | undefined>(
     value,
     defaultValue ?? options[0]?.value,
@@ -128,9 +158,12 @@ function LineTabs<V extends string>({
       accessibilityLabel={label}
       style={{
         flexDirection: 'row',
-        gap: m.pad,
-        borderBottomWidth: 1,
+        // the web renderer's line list: 20 between tabs on a pointer (web/components/tabs.tsx's
+        // `gap-5`), the control's padding on the TV (HT-4)
+        gap: tv ? m.pad : tokens.space['5'] * theme.u,
+        borderBottomWidth: line.thin,
         borderBottomColor: theme.colors.line,
+        ...SIDEWAYS,
       }}
     >
       {options.map((o) => {
@@ -150,27 +183,48 @@ function LineTabs<V extends string>({
               minHeight: m.height,
               alignItems: 'center',
               justifyContent: 'center',
-              borderBottomWidth: 2,
-              borderBottomColor: on ? theme.colors.accent : 'transparent',
-              marginBottom: -1,
+              paddingHorizontal: tv ? 0 : tokens.space['0.5'] * theme.u,
+              marginBottom: -line.thin,
               opacity: o.disabled ? tokens.controls.disabledOpacity : 1,
             }}
           >
             {(_focused, state) => (
-              <ControlText
-                m={m}
-                weight={on ? looks.selected.weight : looks.track.weight}
-                color={
-                  theme.colors[
-                    on
-                      ? looks.selected.label
-                      : lookAt(looks.track, o.disabled ? { ...state, hovered: false } : state).label
-                  ]
-                }
-                lines={1}
-              >
-                {o.label}
-              </ControlText>
+              <>
+                {/* the chosen tab's line: a 2pt bar with round ends over the list's rule (the web
+                    renderer's `h-0.5 rounded-full`); a bottom border would follow the tab's corner
+                    radius and curve up at its ends */}
+                {on ? (
+                  <View
+                    style={{
+                      position: 'absolute',
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      height: line.thick,
+                      borderRadius: tokens.radius.pill,
+                      backgroundColor: theme.colors.accent,
+                    }}
+                  />
+                ) : null}
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: m.gap }}>
+                  <ControlText
+                    m={m}
+                    weight={on ? looks.selected.weight : looks.track.weight}
+                    color={
+                      theme.colors[
+                        on
+                          ? looks.selected.label
+                          : lookAt(looks.track, o.disabled ? { ...state, hovered: false } : state)
+                              .label
+                      ]
+                    }
+                    lines={1}
+                  >
+                    {o.label}
+                  </ControlText>
+                  {o.count == null ? null : <Count on={on} n={o.count} />}
+                </View>
+              </>
             )}
           </ControlPress>
         )

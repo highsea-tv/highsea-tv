@@ -77,7 +77,7 @@ export const flows: Flow[] = [
       spec: 'docs/product/admin-shell.md',
       hints: [
         'Press ⌘K (Ctrl K) for the palette: pages, actions and every title.',
-        'Set Width to 768 for the icon rail, 390 for the menu sheet.',
+        'Set Width to 390 for the menu sheet: below 768 the window is compact; from 768 it’s regular, with the sidebar.',
         'Switch Server to User to see the page a user gets instead of the admin.',
       ],
     },
@@ -169,8 +169,8 @@ export const flows: Flow[] = [
       ready: true,
       spec: 'docs/product/media-pages.md',
       hints: [
-        'Not added yet: #/admin/movies/107 (Nanook of the North). Add it and the same page, at the same address, gains the library tabs.',
-        'Night of the Living Dead (#/admin/movies/30) has a collection with two parts missing; Fritz Lang’s page marks his films by library state.',
+        'Not added yet: #/admin/movies/1003000 (Nanook of the North). Add it and the same page, at the same address, gains the library tabs.',
+        'Night of the Living Dead (#/admin/movies/11073) has a collection with two parts missing; Fritz Lang’s page marks his films by library state.',
         'Interactive search: open a Rejected badge for the reasons; Grab anyway overrides the profile.',
         'Subtitles tab: nudge the offset in 50 ms steps, or re-sync to the audio.',
       ],

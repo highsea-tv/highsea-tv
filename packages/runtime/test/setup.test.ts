@@ -114,6 +114,8 @@ describe('setup', () => {
     expect(detectFolders(c)).toEqual({
       movies: join(c.dataDir, 'movies'),
       downloads: join(c.dataDir, 'downloads'),
+      shows: null,
+      music: null,
     })
     // TRaSH's layout first, matched without regard to case; torrents for downloads
     rmSync(join(c.dataDir, 'movies'), { recursive: true })
@@ -123,6 +125,15 @@ describe('setup', () => {
     expect(detectFolders(c)).toEqual({
       movies: join(c.dataDir, 'Media', 'Movies'),
       downloads: join(c.dataDir, 'torrents'),
+      shows: null,
+      music: null,
+    })
+    // shows and music beside the movies (Phase 5 A1), TRaSH's names first
+    mkdirSync(join(c.dataDir, 'Media', 'TV'))
+    mkdirSync(join(c.dataDir, 'Media', 'Music'))
+    expect(detectFolders(c)).toMatchObject({
+      shows: join(c.dataDir, 'Media', 'TV'),
+      music: join(c.dataDir, 'Media', 'Music'),
     })
     // movies without downloads: downloads goes beside them
     rmSync(join(c.dataDir, 'torrents'), { recursive: true })
@@ -135,7 +146,36 @@ describe('setup', () => {
     rmSync(join(c.dataDir, 'tv'), { recursive: true })
     mkdirSync(join(c.dataDir, 'lost+found'))
     mkdirSync(join(c.dataDir, 'transcodes'))
-    expect(detectFolders(c)).toEqual(setupDefaults(c).folders)
+    expect(detectFolders(c)).toEqual({ ...setupDefaults(c).folders, shows: null, music: null })
+  })
+
+  test('a work folder of its own: downloads go in it, and it isn’t the library (ADR 0063)', () => {
+    // the Synology package's read-only choice on a share another app's stack uses (2026-11-16):
+    // that stack's downloads folder is left to it
+    const { dir, config: base } = config()
+    const own = join(base.dataDir, 'highsea')
+    const c = loadConfig({
+      HIGHSEA_CONFIG_DIR: join(dir, 'config'),
+      HIGHSEA_DATA_DIR: base.dataDir,
+      HIGHSEA_WORK_DIR: own,
+    })
+    expect(c.workDir).toBe(own)
+    expect(detectFolders(c)).toEqual({
+      movies: join(c.dataDir, 'movies'),
+      downloads: join(own, 'downloads'),
+      shows: null,
+      music: null,
+    })
+    expect(setupDefaults(c).folders.downloads).toBe(join(own, 'downloads'))
+    // a share with only highsea's own folder in it is empty: highsea's own layout
+    rmSync(join(c.dataDir, 'movies'), { recursive: true })
+    rmSync(join(c.dataDir, 'downloads'), { recursive: true })
+    mkdirSync(own)
+    expect(detectFolders(c)).toEqual({ ...setupDefaults(c).folders, shows: null, music: null })
+    // unset or blank, it's the data folder, as before
+    expect(
+      loadConfig({ HIGHSEA_DATA_DIR: c.dataDir, HIGHSEA_WORK_DIR: ' ' }).workDir,
+    ).toBeUndefined()
   })
 
   test('the address apps use: the published URL, the LAN address, or null in a bridge', () => {

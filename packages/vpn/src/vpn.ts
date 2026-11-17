@@ -122,6 +122,12 @@ export type VpnDeps = {
   /** A fetch leaving from an address: the bound half of the exit check, and indexers (V6). */
   boundFetch?: (localAddress: string, options?: BoundFetchOptions) => Fetch
   interfaces?: () => NodeJS.Dict<os.NetworkInterfaceInfo[]>
+  /**
+   * Whether highsea's container is on host networking, as `@highsea-tv/runtime`'s
+   * `detectContainerNetwork` finds it (setup reads the same). highsea connects won't start there.
+   * False when absent.
+   */
+  hostNetwork?: () => boolean
   /** The catalog's `vpn-providers` entries (`@highsea-tv/catalog`'s provider reader). */
   providers?: () => readonly VpnProviderDefinition[]
   /** Runs `ip` and `wg` for highsea connects; tests pass a fake that records each command. */
@@ -440,6 +446,8 @@ export function createVpn(deps: VpnDeps) {
     const s = stored
     const provider = currentProvider(s)
     if (!provider) return failBuiltin(failures.provider)
+    // before anything touches the network: the tunnel's interface and rule would be the host's
+    if (deps.hostNetwork?.()) return failBuiltin(failures.hostNetwork)
     if (rt.phase !== 'connecting') update({ phase: 'connecting', down: null, failure: null })
     await closeTunnel()
     if (g !== generation) return
@@ -723,6 +731,7 @@ export function createVpn(deps: VpnDeps) {
       deps.listeningPort(),
       deps.peersIn?.() ?? 0,
       deps.clock.now(),
+      deps.hostNetwork?.() ?? false,
     )
   }
 

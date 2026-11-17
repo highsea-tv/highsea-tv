@@ -5,10 +5,15 @@ import type { Page } from 'playwright-core'
 import type { Area } from '../shot.ts'
 
 const mode = (name: RegExp) => (p: Page) => p.getByRole('radio', { name }).click()
+// highsea connects' fields wait for the provider list; the shot waits for them
+const connects = async (p: Page) => {
+  await mode(/highsea connects/)(p)
+  await p.getByText('WireGuard configuration', { exact: true }).first().waitFor()
+}
 const provider = (name: string) => async (p: Page) => {
   await mode(/highsea connects/)(p)
-  await p.getByRole('combobox', { name: 'Provider' }).click()
-  await p.getByRole('option', { name, exact: true }).click()
+  await p.getByRole('button', { name: 'Provider', exact: true }).click()
+  await p.getByRole('menuitemradio', { name, exact: true }).click()
 }
 // tall enough that the save bar sits below the form rather than over it
 const connection = (p: Page) => p.getByRole('region', { name: 'Connection' })
@@ -19,7 +24,18 @@ export default {
     {
       name: 'connects',
       path: '/settings/vpn',
-      act: mode(/highsea connects/),
+      act: connects,
+      crop: connection,
+      height: 1400,
+    },
+    {
+      name: 'connects-compose',
+      path: '/settings/vpn',
+      act: async (p) => {
+        await connects(p)
+        await p.getByText('Compose for highsea connects').click()
+        await p.getByText('cap_add: [NET_ADMIN]').first().waitFor()
+      },
       crop: connection,
       height: 1400,
     },

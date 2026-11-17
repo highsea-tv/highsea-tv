@@ -31,6 +31,10 @@ export const profiles = defineMessages({
   'formats.from': 'From',
   'formats.preset': 'Preset',
   'formats.custom': 'Yours',
+  // drawn when the server serves shows (D3's answer 5), in the prototype's copy (its stage 6)
+  'profiles.unused': 'Not used yet',
+  'profiles.usedBy':
+    'Used by {movies, plural, one {# movie} other {# movies}} and {shows, plural, one {# show} other {# shows}}',
   'presets.title': 'Presets from the catalog',
   'presets.description':
     'Profiles and formats kept up to date by the community, TRaSH-style. Adding one copies it; you can edit the copy.',
@@ -58,4 +62,13 @@ export const sizes = defineMessages({
   filmRange: '{min}–{max}',
   filmFrom: '{min} or more',
   none: 'No quality sizes yet.',
+  // the switch between movies' and episodes' tables, drawn when the server serves shows (D3's
+  // answer 5), in the prototype's copy (its stage 6)
+  kind: 'Sizes for',
+  'kind.movies': 'Movies',
+  'kind.shows': 'Shows',
+  'episodes.title': 'Sizes per minute of an episode',
+  'episodes.description':
+    'A release outside the range is rejected; the preferred size wins a tie. A season pack is checked episode by episode.',
+  episode: 'A {minutes}-minute episode',
 })

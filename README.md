@@ -30,7 +30,7 @@ Once highsea is running:
 - [Upgrade](https://docs.highsea.tv/upgrade/), and [CHANGELOG.md](CHANGELOG.md) for what each release changes;
 - a guide for every page of the admin and every Settings area, from the [Introduction](https://docs.highsea.tv/).
 
-The compose files are at the root (`compose.yaml`, and `compose.bridge.yaml` where host networking isn't available), and the NAS templates are in [`templates/`](templates/).
+One compose file is at the root, `compose.yaml`, for Linux with host networking; the [Docker guide](https://docs.highsea.tv/install/docker/) has the setup for a Mac or Windows, and [Settings › VPN](https://docs.highsea.tv/settings/vpn/) the lines for a VPN. The NAS templates are in [`templates/`](templates/), and the files for building and testing highsea are beside what uses them (`docker/compose.dev.yaml`, `scripts/e2e/compose.yaml`).
 
 ## Repository layout
 
@@ -42,7 +42,7 @@ The compose files are at the root (`compose.yaml`, and `compose.bridge.yaml` whe
 | `design/` | Brand explorations, source assets, clickable prototypes |
 | `docs/` | How highsea is planned and built: roadmap, ADRs, brand, design language, product specs. The guides for running it are in `apps/docs` |
 | `templates/` | The NAS templates: Unraid's XML, and compose files for TrueNAS and Synology |
-| `docker/`, `compose*.yaml` | The image's entrypoint and notices, and the compose files |
+| `docker/`, `compose.yaml` | The image's entrypoint, notices and development compose file, and the compose file for Linux |
 | `scripts/` | Checks, browser sweeps, the image's build steps, the end-to-end run and releases |
 
 ## Development

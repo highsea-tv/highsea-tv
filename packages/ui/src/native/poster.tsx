@@ -12,12 +12,20 @@
 // react-native-web's View passes the pointer's and focus's events on to its element
 // (modules/forwardedProps: onPointerEnter, onPointerLeave, onFocus and onBlur, which bubble in
 // React), so the poster's frame knows both.
-import { adminText } from '@highsea-tv/tokens'
-import { Image } from 'expo-image'
+import { adminText, line } from '@highsea-tv/tokens'
 import { type ReactNode, type Ref, useState } from 'react'
-import { type StyleProp, StyleSheet, View, type ViewProps, type ViewStyle } from 'react-native'
+import {
+  Platform,
+  type StyleProp,
+  StyleSheet,
+  View,
+  type ViewProps,
+  type ViewStyle,
+} from 'react-native'
 import Animated from 'react-native-reanimated'
 import { QualityTag } from './badge.tsx'
+import { artEdgeOf } from './glass.ts'
+import { Image } from './image.tsx'
 import { useLift } from './lift.ts'
 import { Press } from './press.tsx'
 import { ProgressBar } from './progress.tsx'
@@ -41,6 +49,12 @@ export type PosterProps = {
    */
   round?: boolean
   onPress?: () => void
+  /**
+   * Where it leads: on the web the poster is an `<a href>` (react-native-web draws a Pressable with
+   * an address as one), as the web renderer's Poster `href` (the admin's posters). Elsewhere
+   * `onPress` is the way.
+   */
+  href?: string
   onLongPress?: () => void
   /** What the long press does, which VoiceOver offers among the poster's actions. */
   longPressLabel?: string
@@ -89,6 +103,7 @@ export function Poster({
   aspect: aspectGiven = 'poster',
   round = false,
   onPress,
+  href,
   onLongPress,
   longPressLabel,
   longPressMs,
@@ -153,8 +168,8 @@ export function Poster({
         borderRadius: round ? tokens.radius.pill : tokens.radius.poster * theme.u,
         overflow: 'hidden',
         backgroundColor: theme.colors.s2,
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.04)',
+        borderWidth: line.thin,
+        borderColor: artEdgeOf(theme.colors),
       }}
     >
       {src || mosaic?.length === 1 ? (
@@ -221,7 +236,7 @@ export function Poster({
   )
   const below =
     progress !== undefined && progressBelow ? (
-      <View style={{ marginTop: 10 }}>
+      <View style={{ marginTop: tokens.space['2.5'] }}>
         <ProgressBar value={progress} />
       </View>
     ) : null
@@ -252,9 +267,18 @@ export function Poster({
     </View>
   ) : null
   const name = accessibilityLabel ?? [title, caption].filter(Boolean).join(', ')
-  if (!onPress)
+  const link = href && Platform.OS === 'web' ? ({ href } as object) : null
+  if (!onPress && !link)
     return (
-      <View ref={ref} style={{ width }} accessible accessibilityLabel={accessibilityLabel ?? title}>
+      // a label needs a role on the web (ARIA forbids naming a plain div, axe's aria-prohibited-attr);
+      // `group` is React Native's role too (https://reactnative.dev/docs/view#role)
+      <View
+        ref={ref}
+        style={{ width }}
+        accessible
+        role="group"
+        accessibilityLabel={accessibilityLabel ?? title}
+      >
         {art(false)}
         {below}
         {label}
@@ -267,6 +291,7 @@ export function Poster({
       onLongPress={onLongPress}
       delayLongPress={longPressMs}
       accessibilityRole="link"
+      {...link}
       accessibilityLabel={name}
       accessibilityActions={
         onLongPress && longPressLabel ? [{ name: 'longpress', label: longPressLabel }] : undefined
@@ -330,9 +355,9 @@ function Mosaic({ sources }: { sources: NonNullable<PosterMosaic> }) {
     />
   )
   return (
-    <View style={[StyleSheet.absoluteFill, { gap: 1 }]}>
+    <View style={[StyleSheet.absoluteFill, { gap: line.thin }]}>
       {[0, 2].map((row) => (
-        <View key={row} style={{ flex: 1, flexDirection: 'row', gap: 1 }}>
+        <View key={row} style={{ flex: 1, flexDirection: 'row', gap: line.thin }}>
           {cell(row)}
           {cell(row + 1)}
         </View>

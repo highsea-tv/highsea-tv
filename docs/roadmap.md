@@ -388,10 +388,23 @@ Checkpoint 4.3c (A to C) was signed off by the owner on 2026-10-28.
 ## Follow-up: one client platform (Phase 4)
 The owner asked on 2026-11-02 for every client and its prototype to share one design system, one set of tokens, one component library and one copy of each screen, on React Native, so nothing is defined in two places. The admin is the only exception, and it shares all it can. The scope is [plans/one-client-platform.md](plans/one-client-platform.md): one Expo project for the phone, the TV and the web (and so the desktop app), react-native-web on the web, the prototypes as the client itself on the mock server, and checks that fail on drift.
 
+Library parts left until a screen needs them (answer 8 on part E's scope, [one-client-platform-e.md](plans/one-client-platform-e.md)), so they aren't lost:
+- a Badge that truncates its words;
+- a tooltip with a table row's whole title;
+- a number input with limits;
+- a `MultiSelect`;
+- a heading level for a small EmptyState;
+- a Dialog's fade-out.
+
+**✅ One client platform signed off (2026-11-15).** Parts A to E are built and signed off: every client (the web at `/web`, the desktop app, the phone and the TV) and its prototype in one Expo project, `apps/client`, drawn by one React Native library, with the admin and the guides' parts drawn by it too and `bun run one-place` holding it ([ADR 0061](adr/0061-one-client-platform.md), Accepted). It comes before prototype-gaps' stage 7 (Music in the admin), 4.5c and 4.6, as the status has it since 2026-11-02; stage 8 was done in E3.
+
 ## Phase 4 (later): clients
 `ui-native`, then `apps/web` → `apps/desktop` (Tauri) → `apps/mobile` + `apps/tv` (Expo / react-native-tvos), built from the Phase 2 prototypes. Alongside them: `stream` (playback/transcode, WebSockets), TV/music/books domains, Usenet, requests, and the optional Connect relay.
 
 The step-by-step plan, with checkpoints, is [`docs/plans/phase-4-clients.md`](plans/phase-4-clients.md) (the owner answered its questions on 2026-10-23). It covers playback and the four clients for movies; the other media types, requests, Usenet and the relay are later phases of their own. It starts only after Phase 3's sign-off.
+
+## Phase 5: highsea in real use
+The owner asked on 2026-11-15 to move on from prototyping and get a real server running with their own films, shows and music, to test against real use. The scope is [plans/phase-5-real-use.md](plans/phase-5-real-use.md): highsea installed from Package Center on the owner's DS1520+, reading the media read-only beside today's stack; the films first (A1, A2), with the clients on the owner's devices, client error reports and a findings log; then shows' library (B), shows in full with Sonarr's downloading and Skip intro and credits (C), and music with audio on every client and Music in the admin prototyped first (D); then the phase's close (E). Prototyping takes a back seat: only what has no design is prototyped. Scoped and approved with the owner's answers of 2026-11-15 (every recommendation but one: profiles are built in A2, with the profile watching now kept per device). A1 is being built.
 
 ---
 

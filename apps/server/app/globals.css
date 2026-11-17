@@ -1,7 +1,30 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-@import "@highsea-tv/ui/styles.css";
+/*
+ * The admin's document styles, without Tailwind since D3 (one-client-platform-d.md): the library's
+ * native renderer draws every page through react-native-web, whose own sheet the server writes into
+ * the HTML (@highsea-tv/ui/next/style-registry). What's left here is the document's: the tokens'
+ * variables, the faces the native text names, and the page's ground, as react-native-web's setup
+ * asks of a host (https://necolas.github.io/react-native-web/docs/setup/#root-element).
+ */
+@import "@highsea-tv/tokens/tokens.css";
 @import "@highsea-tv/brand/native-fonts.css";
 
-@source "../src";
-@source "../../../packages/admin/src";
-@source "./";
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+html {
+  background: var(--color-bg);
+  color: var(--color-text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  -webkit-tap-highlight-color: transparent;
+}
+
+::selection {
+  background: var(--color-accent-soft);
+  color: var(--color-text);
+}

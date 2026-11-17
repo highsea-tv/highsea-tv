@@ -24,10 +24,8 @@ The build opens straight from disk: open `dist/index.html` in a browser, with no
 | --- | --- |
 | `src/chrome/` | Launcher, toolbar, frame |
 | `src/screen/` | The screen app: applies the toolbar state, holds the router |
-| `src/admin/`, `src/web/`, `src/mobile/`, `src/tv/` | One route tree per platform; paths mirror the products (`#/admin/movies/1` is the server's `/movies/[id]`, by media id) |
-| `src/client/` | What the three client apps share: their data calls, the connect flow, the player's state, settings and device preferences, formatting |
+| `src/admin/` | The admin's route tree: `admin-app.tsx` and `shared.tsx`, which draws `@highsea-tv/admin`'s screens over `@highsea-tv/mock`'s transport (one-client-platform-d.md). The clients' routes are `apps/client`'s mock export inside the frames |
 | `src/email/` | The email preview: samples and the `?emails` page. The templates, words and tokens are the server's, imported from `@highsea-tv/notifications/mail` |
-| `src/kit/` | Pieces the flows share that aren't in ui-web yet (the widget editor, the stepper, `useWidth`, the phone and TV frames) |
 | `src/mock/` | The screens' hooks over the mock, and the featured films' downloaded logos. The mock server itself, its seeds, clock and event stream, the metadata source (credits, trailers, collections, people), the typed client the screens call and the SDK's transport, is `@highsea-tv/mock` in `packages/mock/src/` |
 | `src/flows.ts` | The flow registry the launcher lists: ids, routes, specs, test hints |
 

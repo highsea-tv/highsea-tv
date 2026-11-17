@@ -8,8 +8,9 @@
 # hardlink instead of copying; change it if yours is named otherwise. highsea runs as whoever owns
 # what's in it, your DSM user and the `users` group (100).
 #
-# Published ports, as in compose.bridge.yaml: apps on your network find highsea by its broadcast on
-# 7368/udp, and by mDNS through DSM's own avahi, over the host's D-Bus (/run/dbus; ADR 0020).
+# Published ports, as on Docker Desktop (the Docker guide): apps on your network find highsea by
+# its broadcast on 7368/udp, and by mDNS through DSM's own avahi, over the host's D-Bus
+# (/run/dbus; ADR 0020).
 services:
   highsea:
     image: ghcr.io/highsea-tv/highsea:latest

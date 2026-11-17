@@ -75,8 +75,15 @@ export function connectionsApi(d: SettingsDeps) {
       throw d.fail(400, 'invalid', 'Only an email connection can send the server’s mail.', {
         field: 'serverMail',
       })
+    // a masked secret (an address kept as saved) isn't checked again
     for (const [key, v] of Object.entries(input.settings))
-      if (typeof v === 'string' && /url$/i.test(key) && v && !/^https?:\/\//.test(v))
+      if (
+        typeof v === 'string' &&
+        /url$/i.test(key) &&
+        v &&
+        !v.startsWith(MASK) &&
+        !/^https?:\/\//.test(v)
+      )
         throw d.fail(400, 'invalid', 'Use an address that starts with https:// or http://.', {
           field: `settings.${key}`,
         })

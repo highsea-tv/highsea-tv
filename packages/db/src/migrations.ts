@@ -70,5 +70,9 @@ export const migrations: Migration[] = [
   {
     "tag": "0016_now_playing",
     "sql": "CREATE TABLE `playback_history` (\n\t`id` text PRIMARY KEY NOT NULL,\n\t`user_id` text NOT NULL,\n\t`device_name` text NOT NULL,\n\t`client` text NOT NULL,\n\t`item_id` text,\n\t`tmdb_id` integer NOT NULL,\n\t`title` text NOT NULL,\n\t`year` integer,\n\t`version` text NOT NULL,\n\t`method` text NOT NULL,\n\t`away` integer NOT NULL,\n\t`watched` integer NOT NULL,\n\t`finished` integer NOT NULL,\n\t`started_at` integer NOT NULL,\n\t`ended_at` integer NOT NULL,\n\tFOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE cascade,\n\tFOREIGN KEY (`item_id`) REFERENCES `media_items`(`id`) ON UPDATE no action ON DELETE set null\n);\n--> statement-breakpoint\nCREATE INDEX `playback_history_ended` ON `playback_history` (`ended_at`);--> statement-breakpoint\nCREATE INDEX `playback_history_user` ON `playback_history` (`user_id`,`ended_at`);"
+  },
+  {
+    "tag": "0017_read_only_libraries",
+    "sql": "ALTER TABLE `root_folders` ADD `kind` text DEFAULT 'movies' NOT NULL;--> statement-breakpoint\nALTER TABLE `root_folders` ADD `read_only` integer DEFAULT false NOT NULL;"
   }
 ]

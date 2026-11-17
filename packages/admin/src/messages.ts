@@ -4,11 +4,14 @@ import { defineMessages } from '@highsea-tv/i18n'
 
 export const shell = defineMessages({
   skip: 'Skip to content',
+  /** The toast stack's region (the library's native Toaster). */
+  notifications: 'Notifications',
   menu: 'Menu',
   retry: 'Try again',
   'nav.dashboard': 'Dashboard',
   'nav.discover': 'Discover',
   'nav.movies': 'Movies',
+  'nav.shows': 'Shows',
   'nav.collections': 'Collections',
   'nav.wanted': 'Wanted',
   'nav.activity': 'Activity',
@@ -26,6 +29,7 @@ export const shell = defineMessages({
   'keywords.dashboard': 'home',
   'keywords.discover': 'add, search, tmdb, trending',
   'keywords.movies': 'library',
+  'keywords.shows': 'library, series, tv, seasons, episodes',
   'keywords.collections': 'smart collections, rules, lists, picks',
   'keywords.wanted': 'missing, cutoff, calendar, upcoming, ical',
   'keywords.activity': 'queue, history, blocklist, manual import',

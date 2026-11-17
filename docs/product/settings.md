@@ -1,6 +1,7 @@
 # Settings
 
-- **Platforms:** Admin, every breakpoint.
+- **Platforms:** Admin, compact and regular windows.
+- **Screen:** `packages/admin/src/settings.tsx` (the index and the area's frame, the areas in `settings-areas.ts`), each area its own file (`general.tsx`, `media-management.tsx`, `quality-editors.tsx`, `profiles.tsx`, `lists.tsx`, `connections.tsx`, `download-client.tsx`, `network.tsx`, `security.tsx`, `backups.tsx`, `migration.tsx`, `tag-settings.tsx`), at `apps/server/app/(admin)/settings/`.
 - **Prototype:** `#/admin/settings` (the index) and `#/admin/settings/{area}` (A15, reference fidelity; Appearance and Users and devices are core, in [appearance.md](appearance.md) and [users-devices.md](users-devices.md)).
   - *Since [prototype-gaps.md](../plans/prototype-gaps.md)'s stage 5 (2026-11-01):* General, Media management (with Root folders and Tags), Import lists, Connections and Migration draw what the built admin does, as the table's *As built* notes describe, and work against the mock: lists check and Trakt's device code is approved on the second poll; a connection's Test fails when its settings say "wrong"; a TMDB key shorter than 16 characters is refused; Migration's runs follow the simulated clock. Two differences remain: **Import what's already here** opens Manual import, which has no library mode in the prototype, and **This browser** adds the browser by the name its user agent gives, without asking it for notifications.
   - *Since stage 6 (2026-11-01), every kind, drawn ahead of the server:* the prototype's Settings cover shows and music too. `apps/server` doesn't have them yet; the server's TV series phase builds them from here.
@@ -25,7 +26,7 @@ Everything about how the server runs, in one place, one area per page: the regio
 ## Layout
 
 - **The index** (`/settings`): four groups (Server, People, Library, Downloads and alerts), and since 6b a fifth, System, with Migration, each a grid of cards (1, 2 or 3 across) with the area's icon, name and one line on what's inside. Subtitles links to its own page, opened on its settings (Providers), not Wanted; `/settings/subtitles` goes there too (prototype-gaps.md, stage 5).
-- **An area** (`/settings/{area}`): the page header with the area's name and line; from expanded, the areas beside the content (grouped, the current one marked); below expanded, **All settings** back to the index. Content is a stack of **groups** (a titled card each).
+- **An area** (`/settings/{area}`): the page header with the area's name and line; once the window has room for both (from 1136, `admin.settings.contentMin`), the areas beside the content (grouped, the current one marked); below that, **All settings** back to the index and the current area as a menu of every area, grouped, above the content (the owner, 2026-11-10). Content is a stack of **groups** (a titled card each).
 - **The save bar:** while an area has unsaved changes, "You have unsaved changes." with **Discard** and **Save** sticks to the bottom of the page.
 
 | Area | Groups and main controls |

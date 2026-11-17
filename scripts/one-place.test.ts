@@ -34,31 +34,29 @@ const run = async (files: Record<string, string>) => lines((await check(repo(fil
 
 const component = (name: string) => `export function ${name}() {\n  return null\n}\n`
 
-/** A Button in each renderer, and an Icon both re-export from one drawing. */
+/** A Button drawn per platform, in a pair of platform files, and an Icon drawn once. */
 const RENDERERS = {
-  'packages/ui/src/web/index.ts':
-    "export * from './button.tsx'\nexport { Icon } from '../shared/icon.tsx'\n",
-  'packages/ui/src/web/button.tsx': component('Button'),
   'packages/ui/src/native/index.ts':
-    "export { Button } from './button.tsx'\nexport { Icon } from '../shared/icon.tsx'\n",
-  'packages/ui/src/native/button.tsx': 'export const Button = () => null\n',
+    "export { Button } from './button'\nexport { Icon } from '../shared/icon.tsx'\n",
+  'packages/ui/src/native/button.tsx': component('Button'),
+  'packages/ui/src/native/button.web.tsx': 'export const Button = () => null\n',
   'packages/ui/src/shared/icon.tsx': component('Icon'),
 }
 
 describe('renderers', () => {
-  test('a component both renderers draw fails unless parity.ts gives the reason', async () => {
+  test('a component drawn twice fails unless parity.ts gives the reason', async () => {
     expect(await run({ ...RENDERERS, ...parity('export const BOTH = {}\n') })).toEqual([
-      "renderers packages/ui/src/web/button.tsx:1 Button is drawn twice, also at packages/ui/src/native/button.tsx:1; parity.ts's BOTH doesn't list it",
+      "renderers packages/ui/src/native/button.tsx:1 Button is drawn twice, also at packages/ui/src/native/button.web.tsx:1; parity.ts's BOTH doesn't list it",
     ])
     expect(
       await run({ ...RENDERERS, ...parity("export const BOTH = ['Button'] as const\n") }),
     ).toEqual([
-      "renderers packages/ui/src/web/button.tsx:1 Button is drawn twice, also at packages/ui/src/native/button.tsx:1; parity.ts's BOTH lists it without a reason",
+      "renderers packages/ui/src/native/button.tsx:1 Button is drawn twice, also at packages/ui/src/native/button.web.tsx:1; parity.ts's BOTH lists it without a reason",
     ])
     const listed = await check(
       repo({
         ...RENDERERS,
-        ...parity("export const BOTH = {\n  Button: 'the admin draws it until part D',\n}\n"),
+        ...parity("export const BOTH = {\n  Button: 'the browser’s own on the web',\n}\n"),
       }),
     )
     expect(listed.findings).toEqual([])
@@ -87,13 +85,14 @@ describe('renderers', () => {
       '',
     ].join('\n')
     expect(await run({ ...RENDERERS, ...parity(both) })).toEqual([
-      "renderers packages/ui/src/web/button.tsx:1 Button is drawn twice, also at packages/ui/src/native/button.tsx:1; parity.ts's BOTH gives no reason for it (it spreads ...CONTROLS, which can't carry reasons)",
+      "renderers packages/ui/src/native/button.tsx:1 Button is drawn twice, also at packages/ui/src/native/button.web.tsx:1; parity.ts's BOTH gives no reason for it (it spreads ...CONTROLS, which can't carry reasons)",
       "exceptions packages/ui/src/shared/parity.ts:2 parity.ts's BOTH lists Icon, which is drawn once",
     ])
   })
 
   test('parity.ts listing a component drawn once fails', async () => {
-    const both = "export const BOTH = {\n  Button: 'until part D',\n  Icon: 'drawn once now',\n}\n"
+    const both =
+      "export const BOTH = {\n  Button: 'the browser’s own on the web',\n  Icon: 'drawn once now',\n}\n"
     expect(await run({ ...RENDERERS, ...parity(both) })).toEqual([
       "exceptions packages/ui/src/shared/parity.ts:3 parity.ts's BOTH lists Icon, which is drawn once",
     ])
@@ -111,7 +110,7 @@ describe('screens', () => {
         rule: 'screens',
         path: 'design/prototypes/src/web/**',
         count: 1,
-        until: 'B',
+        until: null,
         reason: 'B moves it',
       },
     ]
@@ -129,6 +128,64 @@ describe('screens', () => {
       'exceptions scripts/one-place-exceptions.json:3 design/prototypes/src/web/** has 2 client files, listed as 1',
       'screens design/prototypes/src/web/home.tsx:1 a client file outside apps/client',
       'screens design/prototypes/src/web/search.tsx:1 a client file outside apps/client',
+    ])
+  })
+
+  test("the admin's hosts draw nothing of their own (D3)", async () => {
+    const files = {
+      'apps/server/app/page.tsx': [
+        "import { Dashboard } from '@highsea-tv/admin/dashboard.tsx'",
+        "import { ThemeProvider, type TextProps } from '@highsea-tv/ui/native'",
+        'export default () => <ThemeProvider><Dashboard /></ThemeProvider>',
+        '',
+      ].join('\n'),
+      'design/prototypes/src/admin/shared.tsx': [
+        "import { View } from 'react-native'",
+        "import { Button, ThemeProvider } from '@highsea-tv/ui/native'",
+        'export const Host = () => <ThemeProvider><View /><Button /></ThemeProvider>',
+        '',
+      ].join('\n'),
+    }
+    expect(await run(files)).toEqual([
+      "screens design/prototypes/src/admin/shared.tsx:1 the admin's host draws react-native, which belongs in @highsea-tv/admin",
+      "screens design/prototypes/src/admin/shared.tsx:2 the admin's host draws Button, which belongs in @highsea-tv/admin",
+    ])
+  })
+
+  test('the guides draw from the library only, and their components write no class (E2)', async () => {
+    const files = {
+      'apps/docs/app/layout.tsx': [
+        "import type { ViewProps } from 'react-native'",
+        'export default () => <html className="dark"><body className="flex" /></html>',
+        '',
+      ].join('\n'),
+      'apps/docs/components/guide-parts.tsx': [
+        "import { Banner, ThemeProvider } from '@highsea-tv/ui/native'",
+        'export const Note = () => <ThemeProvider><Banner title="Note" /></ThemeProvider>',
+        '',
+      ].join('\n'),
+      'apps/docs/lib/layout.tsx': "import { Text } from 'react-native'\nexport const T = Text\n",
+      'apps/docs/components/site-title.tsx': [
+        "import { View } from 'react-native'",
+        'export const Title = () => <div className="flex"><View /></div>',
+        '',
+      ].join('\n'),
+    }
+    expect(await run(files)).toEqual([
+      'screens apps/docs/components/site-title.tsx:1 the guides draw react-native, which belongs in the library',
+      "screens apps/docs/components/site-title.tsx:2 the guides draw a Tailwind class, which only Fumadocs' frame writes",
+      'screens apps/docs/lib/layout.tsx:1 the guides draw react-native, which belongs in the library',
+    ])
+  })
+
+  test('a guide’s component can’t take a library part’s name (E2)', async () => {
+    expect(
+      await run({
+        'packages/ui/src/native/admin.tsx': component('Figure'),
+        'apps/docs/components/guide-parts.tsx': component('Figure'),
+      }),
+    ).toEqual([
+      'parts apps/docs/components/guide-parts.tsx:1 Figure is defined again, first at packages/ui/src/native/admin.tsx:1',
     ])
   })
 
@@ -164,7 +221,7 @@ describe('screens', () => {
           rule: 'screens',
           path: 'design/prototypes/src/*/**',
           count: 2,
-          until: 'B',
+          until: null,
           reason: 'B moves them',
         },
       ],
@@ -217,7 +274,7 @@ describe('parts', () => {
         rule: 'parts',
         path: 'apps/client/src/parts/person.tsx',
         name: 'PersonTile',
-        until: 'B',
+        until: null,
         reason: 'B makes it a form of the library’s',
       },
     ]
@@ -297,6 +354,15 @@ describe('values', () => {
 
   test('a literal colour, size, space or corner fails', async () => {
     expect(await run({ [file]: card })).toEqual(found)
+  })
+
+  test('the admin’s screens and the guides’ components are read too (E1)', async () => {
+    const admin = 'packages/admin/src/card.tsx'
+    const guide = 'apps/docs/components/card.tsx'
+    expect(await run({ [admin]: card, [guide]: card })).toEqual([
+      ...found.map((f) => f.replace(file, admin)),
+      ...found.map((f) => f.replace(file, guide)),
+    ])
   })
 
   test('the tokens, 0, percentages, comments, types and a mask’s white pass', async () => {
@@ -389,7 +455,9 @@ describe('values', () => {
   test('a file’s values pass when the exceptions give their number, and fail on another', async () => {
     const values = (count: number) =>
       listing({
-        exceptions: [{ rule: 'values', path: file, count, until: 'E', reason: 'before the check' }],
+        exceptions: [
+          { rule: 'values', path: file, count, until: null, reason: 'before the check' },
+        ],
       })
     const listed = await check(repo({ [file]: card, ...values(8) }))
     expect(listed.findings).toEqual([])
@@ -413,14 +481,14 @@ describe('the exceptions', () => {
         rule: 'screens',
         path: 'design/prototypes/src/web/**',
         count: 3,
-        until: 'B',
+        until: null,
         reason: 'B moves them',
       },
       {
         rule: 'parts',
         path: 'apps/client/src/poster.tsx',
         name: 'Poster',
-        until: 'B',
+        until: null,
         reason: 'B',
       },
       { rule: 'values', path: 'apps/client/src/plain.tsx', count: 1, until: null, reason: 'stays' },
@@ -449,11 +517,13 @@ describe('the exceptions', () => {
       { rule: 'screens', path: 'b', until: 'B' },
       { rule: 'screens', path: 'c', until: 'F', reason: 'r' },
       { rule: 'screens', path: 'd', reason: 'r' },
-      { rule: 'parts', path: 'e', until: 'B', reason: 'r' },
-      { rule: 'values', path: 'f', until: 'E', reason: 'r' },
+      { rule: 'parts', path: 'e', until: null, reason: 'r' },
+      { rule: 'values', path: 'f', until: null, reason: 'r' },
       { rule: 'screens', path: 'g', until: null, count: 0, reason: 'r' },
-      { rule: 'parts', path: 'h', name: 'H', count: 1, until: 'B', reason: 'r' },
+      { rule: 'parts', path: 'h', name: 'H', count: 1, until: null, reason: 'r' },
       'i',
+      // open until a part: since E1 every exception stays, so a part can't end with one open
+      { rule: 'values', path: 'j', count: 1, until: 'E', reason: 'before the check' },
     ]
     const moved = [{ destination: 'Settings', part: 'A', copies: [] }]
     const findings = (await check(repo(listing({ moved, exceptions })))).findings
@@ -462,13 +532,14 @@ describe('the exceptions', () => {
       'renderer exceptions are listed in parity.ts, with reasons',
       "colours isn't a rule: screens, parts or values",
       'b has no reason',
-      "c's until is the part that removes it, A to E, or null if it stays",
-      "d's until is the part that removes it, A to E, or null if it stays",
+      "c's until is null, for an exception that stays",
+      "d's until is null, for an exception that stays",
       'e names no component',
       `f${count}`,
       `g${count}`,
       `h${count}`,
       'an exception is an object',
+      'j is open until part E: move its values onto the tokens, or give it a reason that never expires and "until": null',
       'Settings lists its copies, each a path with the names in it, if any',
     ])
     expect(new Set(findings.map((f) => f.rule))).toEqual(new Set(['exceptions']))

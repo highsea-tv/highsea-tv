@@ -194,4 +194,19 @@ export const editors = defineMessages({
   'sizes.check': 'Check the sizes',
   'sizes.saved': 'Sizes saved',
   'sizes.saveError': 'Couldn’t save the sizes',
+  // drawn when the server serves shows (D3's answer 5), in the prototype's copy (its stage 6)
+  'sizes.descriptionShows':
+    'How large a release may be for its quality, per minute of the movie’s or the episode’s runtime.',
+  'sizes.kind': 'Sizes for',
+  'sizes.kind.movies': 'Movies',
+  'sizes.kind.shows': 'Shows',
+  'sizes.resetMovies': 'Reset movies to TRaSH’s sizes',
+  'sizes.resetEpisodes': 'Reset episodes to TRaSH’s sizes',
+  'sizes.episodes.group': 'Sizes per minute of an episode',
+  'sizes.episodes.groupDescription':
+    'In MB per minute (MiB, as in Sonarr). A release outside the range is rejected; nearer the preferred size wins a tie. Leave the preferred size or the maximum empty for no limit. A season pack is checked episode by episode.',
+  'sizes.episodes.minutes': 'Show sizes for an episode of',
+  'sizes.episodes.minutesHint':
+    'Minutes. An episode whose runtime isn’t known is taken as the show’s usual length.',
+  'sizes.episode': 'A {minutes}-minute episode',
 })

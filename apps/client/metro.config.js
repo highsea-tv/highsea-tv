@@ -21,10 +21,12 @@
 //
 // 3. On the web, our own packages under the `react-native` condition. Expo asserts it on iOS and
 //    Android and `browser` on the web (unstable_conditionsByPlatform), which would give the web
-//    @highsea-tv/ui's DOM renderer (src/web); asserting `react-native` for @highsea-tv/* alone, as
-//    Metro's own custom resolver does for one package
-//    (https://metrobundler.dev/docs/package-exports/#example-custom-resolver), draws the library
-//    with react-native-web (src/native). A third-party package's `react-native` target can be
+//    @highsea-tv/native's browser entries (discovery and playback) where the client's web asks for
+//    its React Native ones; asserting `react-native` for @highsea-tv/* alone, as Metro's own custom
+//    resolver does for one package
+//    (https://metrobundler.dev/docs/package-exports/#example-custom-resolver), keeps the platform
+//    files deciding (`.web.ts` beside `.ts`). (Until D3 it also kept the library's DOM renderer out
+//    of the web; @highsea-tv/ui has only its native renderer now.) A third-party package's `react-native` target can be
 //    native-only code, so the rule stops at ours. Vite, Next and Bun never read this file: the
 //    admin and the prototypes keep `default`.
 //

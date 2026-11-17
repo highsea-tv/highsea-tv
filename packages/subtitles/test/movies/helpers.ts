@@ -55,6 +55,8 @@ export function setup({
   const jobs = createJobQueue({ db, clock, events })
   const fake = createFakeSubtitles({ clock, generate })
   const dir = mkdtempSync(join(tmpdir(), 'highsea-subtitles-'))
+  // outside `dir`, which a test may make a folder highsea only reads
+  const heldDir = `${dir}-held`
   const media = createMedia({ db, clock, logger: silentLogger })
   media.seed()
   // the engine is tested on real audio in test/sync; here it answers what a test sets
@@ -76,6 +78,7 @@ export function setup({
       jobs: queue,
       events,
       media,
+      heldDir,
       sync: (task) => {
         engine.tasks.push(task)
         if (engine.hold) return new Promise<SyncOutcome>(() => {})
@@ -231,6 +234,7 @@ export function setup({
     jobs,
     fake,
     dir,
+    heldDir,
     media,
     subtitles,
     engine,
@@ -240,7 +244,10 @@ export function setup({
     rows,
     wantedRows,
     history,
-    cleanup: () => rmSync(dir, { recursive: true, force: true }),
+    cleanup: () => {
+      rmSync(dir, { recursive: true, force: true })
+      rmSync(heldDir, { recursive: true, force: true })
+    },
   }
 }
 

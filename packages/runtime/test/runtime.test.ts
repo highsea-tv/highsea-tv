@@ -104,6 +104,21 @@ describe('config', () => {
 })
 
 describe('runtime', () => {
+  test('keeps what it makes in its own folder when one is set (ADR 0063, 2026-11-16)', async () => {
+    // the Synology package's read-only choice: the data folder is a share another app's stack
+    // uses, and highsea makes nothing at its top beside its own folder
+    const dir = temp()
+    const own = join(dir, 'data', 'highsea')
+    const config = loadConfig({
+      HIGHSEA_CONFIG_DIR: join(dir, 'config'),
+      HIGHSEA_DATA_DIR: join(dir, 'data'),
+      HIGHSEA_WORK_DIR: own,
+    })
+    const rt = await boot({ config, version: '0.1.0', quiet: true, manualTicks: true, torrent })
+    expect(rt.playbackSettings.get().cachePath).toBe(join(own, 'transcodes'))
+    expect(readdirSync(join(dir, 'data')).filter((n) => n !== 'highsea')).toEqual([])
+  })
+
   test('boots: secret key, migrated database, a stable server id, health', async () => {
     const dir = temp()
     const config = configFor(dir)

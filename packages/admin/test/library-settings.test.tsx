@@ -40,10 +40,10 @@ const { act, cleanup, render, within } = await import('@testing-library/react')
 const { default: userEvent } = await import('@testing-library/user-event')
 const { createClient } = await import('@highsea-tv/sdk')
 const { ClientProvider } = await import('@highsea-tv/sdk/react')
-const { TooltipProvider } = await import('@highsea-tv/ui')
 const { ThemeProvider } = await import('@highsea-tv/ui/native')
 const { TMDB_ATTRIBUTION } = await import('@highsea-tv/api-contract')
 const { General } = await import('../src/general.tsx')
+const { shown } = await import('./modal.ts')
 const { MediaManagement } = await import('../src/media-management.tsx')
 const { Profiles, QualitySizes } = await import('../src/profiles.tsx')
 const { System } = await import('../src/system.tsx')
@@ -105,10 +105,13 @@ const movie = (id: number, title: string, releaseDate: string | null, labels = [
 const folder = (id: string, path: string, total: number | null, movies: number, waiting = 0) => ({
   id,
   path,
+  kind: 'movies' as const,
   free: total === null ? null : total / 2,
   total,
   device: total === null ? null : 'sda1',
   accessible: total !== null,
+  readOnly: false,
+  mountedReadOnly: false,
   movies,
   languageProfileId: null as string | null,
   waiting,
@@ -133,6 +136,8 @@ let state: {
     extras: { url: string; keyId: string; publicKey: string }[]
   }
   media: Record<string, unknown>
+  /** Shows' drafted settings, asked for only when `sources` lists `shows` (D3's answer 5). */
+  episodes: Record<string, unknown>
   indexers: {
     id: string
     name: string
@@ -199,6 +204,15 @@ async function api(url: string, init: RequestInit = {}): Promise<Response> {
         })
       state.media = body
       return json(state.media)
+    case 'GET /api/v1/settings/episodeNaming':
+      return json(state.episodes)
+    case 'PUT /api/v1/settings/episodeNaming':
+      state.episodes = body
+      return json(state.episodes)
+    case 'GET /api/v1/settings/episodeSizes':
+      return json([{ quality: 'WEBDL-1080p', min: 15, preferred: null, max: null }])
+    case 'GET /api/v1/quality/profileUsage':
+      return json([{ profileId: 'qp-hd', movies: 12, shows: 1 }])
     case 'GET /api/v1/rootfolders':
       return json(state.folders)
     case 'POST /api/v1/rootfolders':
@@ -206,7 +220,16 @@ async function api(url: string, init: RequestInit = {}): Promise<Response> {
         return failure('invalid', '/nowhere doesn’t exist.', 400, { reason: 'not-found' })
       if (body.path === '/data/media/movies/inner')
         return failure('conflict', 'Inside a root folder.', 409)
-      state.folders = [...state.folders, folder('rf9', body.path, 4e12, 0)]
+      if (body.path === '/volume1/data/media/locked' && !body.readOnly)
+        return failure('invalid', 'Can’t write.', 400, { reason: 'not-writable' })
+      state.folders = [
+        ...state.folders,
+        {
+          ...folder('rf9', body.path, 4e12, 0),
+          kind: body.kind ?? 'movies',
+          readOnly: !!body.readOnly,
+        },
+      ]
       return json(state.folders.at(-1), 201)
     case 'GET /api/v1/qualityprofiles':
       return json([
@@ -303,6 +326,12 @@ async function api(url: string, init: RequestInit = {}): Promise<Response> {
         ],
       })
   }
+  if (method === 'PATCH' && path.startsWith('/api/v1/rootfolders/')) {
+    const id = path.split('/').pop()
+    state.folders = state.folders.map((f) => (f.id === id ? { ...f, ...body } : f))
+    return json(state.folders.find((f) => f.id === id))
+  }
+  if (method === 'POST' && /^\/api\/v1\/rootfolders\/[^/]+\/scan$/.test(path)) return noContent()
   if (method === 'DELETE' && path.startsWith('/api/v1/rootfolders/')) {
     const id = path.split('/').pop()
     state.folders = state.folders.filter((f) => f.id !== id)
@@ -340,6 +369,14 @@ beforeEach(() => {
       recycleBin: '',
       recycleBinDays: 7,
     },
+    episodes: {
+      rename: true,
+      standardFormat: '{Series Title} - S{season:00}E{episode:00} - {Episode Title} {Quality Full}',
+      dailyFormat: '{Series Title} - {Air-Date} - {Episode Title} {Quality Full}',
+      seriesFolderFormat: '{Series Title} ({Series Year})',
+      seasonFolderFormat: 'Season {season:00}',
+      multiEpisodeStyle: 'prefixed-range',
+    },
     indexers: [],
   }
 })
@@ -355,9 +392,7 @@ async function open(ui: ReactNode) {
   await act(async () => {
     render(
       <ClientProvider client={client}>
-        <ThemeProvider>
-          <TooltipProvider>{ui}</TooltipProvider>
-        </ThemeProvider>
+        <ThemeProvider>{ui}</ThemeProvider>
       </ClientProvider>,
     )
   })
@@ -423,7 +458,10 @@ describe('Settings › General › Metadata', () => {
   test('Remove asks first, then the group says no key is set', async () => {
     const { user, page } = await open(<General />)
     await user.click(page.getByRole('button', { name: 'Remove' }))
-    const dialog = page.getByRole('alertdialog')
+    await settle()
+    // the library's ConfirmDialog is read as a dialog on the web (confirm-dialog.tsx)
+    shown()
+    const dialog = page.getByRole('dialog')
     expect(within(dialog).getByText(/The library and its pages keep working/)).toBeTruthy()
     await user.click(within(dialog).getByRole('button', { name: 'Remove key' }))
     await settle()
@@ -444,7 +482,7 @@ describe('Settings › Media management › root folders', () => {
   test('each folder with its space, device and movies; one in use can’t be removed', async () => {
     state.folders.push(folder('rf2', '/mnt/old', null, 0))
     const { page } = await open(<MediaManagement />)
-    const list = page.getByRole('list', { name: 'Root folders' })
+    const list = page.getByRole('list', { name: 'Movies folders' })
     expect(within(list).getByText('1.0 TB free of 2.0 TB · 3 movies')).toBeTruthy()
     expect(within(list).getByText('Can’t be read now')).toBeTruthy()
     const inUse = page.getByRole('button', { name: 'Remove /data/media/movies' })
@@ -455,7 +493,7 @@ describe('Settings › Media management › root folders', () => {
   test('a folder says how many of the scan’s new folders wait for a match (4.1a’s review)', async () => {
     state.folders.push(folder('rf2', '/data/media/more', 2e12, 4, 2))
     const { page } = await open(<MediaManagement />)
-    const list = page.getByRole('list', { name: 'Root folders' })
+    const list = page.getByRole('list', { name: 'Movies folders' })
     expect(
       within(list).getByText(
         '1.0 TB free of 2.0 TB · 4 movies · 2 folders need a match in Library import',
@@ -478,37 +516,91 @@ describe('Settings › Media management › root folders', () => {
 
   test('adding checks the path; the server’s reasons read as plain sentences', async () => {
     const { user, page } = await open(<MediaManagement />)
-    const field = page.getByLabelText('Add a root folder')
+    const field = page.getByLabelText('Add a Movies folder')
+    // Movies' section comes first, so its Add folder is the first
+    const add = () =>
+      user.click(page.getAllByRole('button', { name: 'Add folder' })[0] as HTMLElement)
     await user.type(field, 'relative/path')
-    await user.click(page.getByRole('button', { name: 'Add folder' }))
+    await add()
     expect(page.getByText('Use the full path, starting with /.')).toBeTruthy()
     expect(requested('POST', '/api/v1/rootfolders')).toHaveLength(0)
 
     await user.clear(field)
     await user.type(field, '/nowhere')
-    await user.click(page.getByRole('button', { name: 'Add folder' }))
+    await add()
     await settle()
     expect(page.getByText('That folder doesn’t exist on the server.')).toBeTruthy()
 
     await user.clear(field)
     await user.type(field, '/data/media/movies/inner')
-    await user.click(page.getByRole('button', { name: 'Add folder' }))
+    await add()
     await settle()
     expect(page.getByText(/a root folder already, or inside or around one/)).toBeTruthy()
 
     await user.clear(field)
     await user.type(field, '/data/media/films')
-    await user.click(page.getByRole('button', { name: 'Add folder' }))
+    await add()
     await settle()
     expect(page.getByText('/data/media/films')).toBeTruthy()
+    expect(requested('POST', '/api/v1/rootfolders').at(-1)?.body).toEqual({
+      path: '/data/media/films',
+      kind: 'movies',
+      readOnly: false,
+    })
+  })
+
+  test('one kind per section; shows’ and music’s folders wait for those parts', async () => {
+    const { page } = await open(<MediaManagement />)
+    for (const kind of ['Movies', 'Shows', 'Music'])
+      expect(page.getByRole('heading', { name: kind })).toBeTruthy()
+    expect(page.getByText('No Shows folders yet. Add the folder your shows live in.')).toBeTruthy()
+    expect(page.getByText('No Music folders yet. Add the folder your music lives in.')).toBeTruthy()
+    expect(page.getByText(/reads them once it has shows/)).toBeTruthy()
+    expect(page.getByPlaceholderText('/data/media/tv')).toBeTruthy()
+    expect(page.getByPlaceholderText('/data/media/music')).toBeTruthy()
+  })
+
+  test('a library another app manages is added read-only, and can be switched (ADR 0063)', async () => {
+    const { user, page } = await open(<MediaManagement />)
+    const field = page.getByLabelText('Add a Movies folder')
+    await user.type(field, '/volume1/data/media/locked')
+    const add = page.getAllByRole('button', { name: 'Add folder' })[0] as HTMLElement
+    await user.click(add)
+    await settle()
+    expect(page.getByText(/turn on Only read it/)).toBeTruthy()
+    await user.click(page.getAllByRole('switch', { name: 'Only read it' })[0] as HTMLElement)
+    await user.click(add)
+    await settle()
+    expect(requested('POST', '/api/v1/rootfolders').at(-1)?.body).toEqual({
+      path: '/volume1/data/media/locked',
+      kind: 'movies',
+      readOnly: true,
+    })
+    const list = page.getByRole('list', { name: 'Movies folders' })
+    expect(within(list).getByText('Only read')).toBeTruthy()
+    const only = within(list).getAllByRole('switch', { name: 'Only read this folder' })
+    expect(only.map((s) => s.getAttribute('aria-checked'))).toEqual(['false', 'true'])
+    await user.click(only[1] as HTMLElement)
+    await settle()
+    expect(requested('PATCH', '/api/v1/rootfolders/rf9').at(-1)?.body).toEqual({ readOnly: false })
+  })
+
+  test('Scan now looks through a folder again', async () => {
+    const { user, page } = await open(<MediaManagement />)
+    await user.click(page.getByRole('button', { name: 'Scan /data/media/movies now' }))
+    await settle()
+    expect(requested('POST', '/api/v1/rootfolders/rf1/scan')).toHaveLength(1)
   })
 
   test('removing an unused folder asks first', async () => {
     state.folders.push(folder('rf2', '/data/media/old', 2e12, 0))
     const { user, page } = await open(<MediaManagement />)
     await user.click(page.getByRole('button', { name: 'Remove /data/media/old' }))
+    await settle()
+    shown()
+    // the library's native ConfirmDialog is read as `dialog` on the web (confirm-dialog.tsx)
     await user.click(
-      within(page.getByRole('alertdialog')).getByRole('button', { name: 'Remove folder' }),
+      within(page.getByRole('dialog')).getByRole('button', { name: 'Remove folder' }),
     )
     await settle()
     expect(requested('DELETE', '/api/v1/rootfolders/rf2')).toHaveLength(1)
@@ -522,9 +614,11 @@ describe('Settings › Media management › naming and importing', () => {
     expect(page.getByText('Sintel (2010)')).toBeTruthy()
     expect(page.getByText('Sintel (2010) Bluray-1080p.mkv')).toBeTruthy()
     expect(page.queryByText(/arrive in a later checkpoint/)).toBeNull()
-    // permissions and the bin's days wait for their switches
-    expect((page.getByLabelText('Folder permissions') as HTMLInputElement).disabled).toBe(true)
-    expect((page.getByLabelText('Keep deleted files for') as HTMLInputElement).disabled).toBe(true)
+    // permissions and the bin's days wait for their switches (a native Input that's disabled is
+    // read-only on the web, react-native-web's `editable={false}`)
+    expect((page.getByLabelText('Folder permissions') as HTMLInputElement).readOnly).toBe(true)
+    expect((page.getByLabelText('Keep deleted files for') as HTMLInputElement).readOnly).toBe(true)
+    expect(page.getByLabelText('Keep deleted files for').getAttribute('aria-disabled')).toBe('true')
 
     await user.click(page.getByRole('switch', { name: 'Write NFO files' }))
     await user.type(page.getByLabelText('Recycle bin'), '/data/.recycle')
@@ -563,6 +657,37 @@ describe('Settings › Media management › naming and importing', () => {
   })
 })
 
+describe('Settings › Media management › episode naming (shows, drafted)', () => {
+  test('a server without shows draws none of it, and doesn’t ask', async () => {
+    const { page } = await open(<MediaManagement />)
+    expect(page.queryByText('Episode naming')).toBeNull()
+    expect(requested('GET', '/api/v1/settings/episodeNaming')).toHaveLength(0)
+  })
+
+  test('with shows, a format without the episode is refused; then both are saved', async () => {
+    state.sources = ['system', 'movies', 'shows']
+    const { user, page } = await open(<MediaManagement />)
+    expect(page.getByText('Episode naming')).toBeTruthy()
+    const episode = page.getByLabelText('Episode')
+    await user.clear(episode)
+    await user.type(episode, '{{Series Title} {{Episode Title}')
+    await user.click(page.getByRole('button', { name: 'Save' }))
+    await settle()
+    expect(
+      page.getByText('The format needs {episode:00}, so episodes can be told apart.'),
+    ).toBeTruthy()
+    expect(requested('PUT', '/api/v1/settings/episodeNaming')).toHaveLength(0)
+
+    await user.clear(episode)
+    await user.type(episode, '{{Series Title} S{{season:00}E{{episode:00}')
+    await user.click(page.getByRole('button', { name: 'Save' }))
+    await settle()
+    expect(requested('PUT', '/api/v1/settings/episodeNaming')[0]?.body).toMatchObject({
+      standardFormat: '{Series Title} S{season:00}E{episode:00}',
+    })
+  })
+})
+
 describe('Settings › Profiles and formats, Quality sizes', () => {
   test('profiles list their allowed qualities with the cutoff; Edit opens the editor', async () => {
     const { page } = await open(<Profiles />)
@@ -595,6 +720,30 @@ describe('Settings › Profiles and formats, Quality sizes', () => {
     expect(within(table).getByText('6.3 GB–50.3 GB')).toBeTruthy()
     expect(within(table).getByText('No limit')).toBeTruthy()
     expect(page.getByText(/MB here are MiB/)).toBeTruthy()
+  })
+
+  test('without shows, no profile says what uses it and the sizes have no switch', async () => {
+    const profiles = await open(<Profiles />)
+    expect(profiles.page.queryByText(/Used by|Not used yet/)).toBeNull()
+    cleanup()
+    await open(<QualitySizes />)
+    expect(document.querySelector('[aria-label="Sizes for"]')).toBeNull()
+    expect(requested('GET', '/api/v1/quality/profileUsage')).toHaveLength(0)
+    expect(requested('GET', '/api/v1/settings/episodeSizes')).toHaveLength(0)
+  })
+
+  test('with shows, each profile says what uses it, and Shows switches to episodes’ sizes', async () => {
+    state.sources = ['system', 'movies', 'shows']
+    const profiles = await open(<Profiles />)
+    const profile = profiles.page.getByText('HD 1080p').closest('li') as HTMLElement
+    expect(within(profile).getByText('Used by 12 movies and 1 show')).toBeTruthy()
+    cleanup()
+    const { user, page } = await open(<QualitySizes />)
+    await user.click(page.getByRole('radio', { name: 'Shows' }))
+    await settle()
+    const table = page.getByRole('table', { name: 'Sizes per minute of an episode' })
+    expect(within(table).getByText('A 45-minute episode')).toBeTruthy()
+    expect(within(table).getByText(/or more/)).toBeTruthy()
   })
 })
 
@@ -666,7 +815,9 @@ describe('Settings › General › Indexer catalog', () => {
     await user.click(
       within(group).getByRole('button', { name: 'Remove https://friend.example/manifest.json' }),
     )
-    const dialog = page.getByRole('alertdialog')
+    await settle()
+    shown()
+    const dialog = page.getByRole('dialog')
     expect(within(dialog).getByText(/Its definitions go with it/)).toBeTruthy()
     await user.click(within(dialog).getByRole('button', { name: 'Remove catalog' }))
     await settle()

@@ -26,7 +26,7 @@ const { act, cleanup, render, within } = await import('@testing-library/react')
 const { default: userEvent } = await import('@testing-library/user-event')
 const { createClient } = await import('@highsea-tv/sdk')
 const { ClientProvider } = await import('@highsea-tv/sdk/react')
-const { toast, TooltipProvider } = await import('@highsea-tv/ui')
+const { ThemeProvider, toast } = await import('@highsea-tv/ui/native')
 const { PlaybackSettingsPage } = await import('../src/playback.tsx')
 
 const GB = 1e9
@@ -145,9 +145,9 @@ async function open() {
   await act(async () => {
     render(
       <ClientProvider client={client}>
-        <TooltipProvider>
+        <ThemeProvider>
           <PlaybackSettingsPage />
-        </TooltipProvider>
+        </ThemeProvider>
       </ClientProvider>,
     )
   })
@@ -200,9 +200,8 @@ describe('Settings › Playback', () => {
     await user.type(folder, '/media/cache')
     await user.click(page.getByRole('button', { name: 'Save' }))
     await settle()
-    expect(
-      page.getByText(/Choose a folder outside your library and downloads/, { selector: '[id]' }),
-    ).toBeTruthy()
+    // on the field, under it (no toaster is drawn here)
+    expect(page.getByText(/Choose a folder outside your library and downloads/)).toBeTruthy()
   })
 
   test('the cache’s use, its warning over the limit, and Clear', async () => {
@@ -224,7 +223,7 @@ describe('Settings › Playback', () => {
     expect(hw.getByText(/found no graphics chip it can use/)).toBeTruthy()
     const found = within(hw.getByRole('list', { name: 'What highsea found' }))
     expect(found.getAllByRole('listitem')).toHaveLength(4)
-    expect(found.getAllByLabelText('Not here')).toHaveLength(4)
+    expect(found.getAllByRole('img', { name: 'Not here' })).toHaveLength(4)
     expect(found.queryByRole('button', { name: 'Check' })).toBeNull()
     expect(
       hw.getByRole('figure', { name: 'Compose lines for Intel and AMD' }).textContent,
@@ -300,7 +299,7 @@ describe('Settings › Playback', () => {
       ),
     ).toBeTruthy()
     expect(within(vaapi as HTMLElement).getByRole('button', { name: 'Check again' })).toBeTruthy()
-    expect(within(qsv as HTMLElement).getByLabelText('Failed')).toBeTruthy()
+    expect(within(qsv as HTMLElement).getByRole('img', { name: 'Failed' })).toBeTruthy()
     expect(
       within(qsv as HTMLElement).getByText(/^Failed 2 days ago. The Intel media driver/),
     ).toBeTruthy()

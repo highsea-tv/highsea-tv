@@ -7,8 +7,8 @@ description: Join highsea to a gluetun container's network, for providers that o
 {/*
   Sources:
   - In highsea: packages/admin/src/vpn.tsx and vpn-messages.ts (the screen and its words),
-    packages/vpn/src (settings.ts for defaults, compose.ts for the gluetun block),
-    compose.gluetun.yaml at the repository's root.
+    packages/vpn/src (settings.ts for defaults, compose.ts for the gluetun block, the one place
+    it's written).
   - gluetun: https://github.com/qdm12/gluetun-wiki (providers, and the control server at
     https://github.com/qdm12/gluetun-wiki/blob/main/setup/advanced/control-server.md)
 */}
@@ -27,9 +27,9 @@ highsea joins the network of a [gluetun](https://github.com/qdm12/gluetun-wiki) 
    docker run --rm qmcgaw/gluetun genkey
    ```
 
-2. Add a gluetun service to your compose file and join highsea to its network with `network_mode: "service:gluetun"`. highsea's ports move to the gluetun service, since highsea no longer has a network of its own. `compose.gluetun.yaml` at the root of highsea's repository is a complete example for Proton VPN.
+2. Add a gluetun service to your compose file and join highsea to its network with `network_mode: "service:gluetun"`. highsea's ports move to the gluetun service, since highsea no longer has a network of its own.
 
-   For other providers, open **Compose for your provider** on the VPN page, pick your provider, and **Copy** the block it writes. Fill in what your provider gives you, and put your API key in `HTTP_CONTROL_SERVER_AUTH_DEFAULT_ROLE`. gluetun's wiki has a page for each provider with the settings it takes. highsea never gets access to Docker itself, so you run this step.
+   Open **Compose for your provider** on the VPN page, pick your provider, and **Copy** the block it writes. Fill in what your provider gives you, and put your API key in `HTTP_CONTROL_SERVER_AUTH_DEFAULT_ROLE`. gluetun's wiki has a page for each provider with the settings it takes. highsea never gets access to Docker itself, so you run this step.
 
 3. Start both, then in **Settings › VPN** choose **A VPN container**.
 4. Leave **Control server** at `http://127.0.0.1:8000`. The two containers share a network, so gluetun is on highsea's own loopback address.

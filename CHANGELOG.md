@@ -7,7 +7,7 @@ While highsea is at 0.x, any release may change how something works. When one do
 
 ## [Unreleased]
 
-## [0.4.0] - 2026-11-04
+## [0.4.0] - 2026-11-16
 
 ### Added
 
@@ -16,12 +16,28 @@ While highsea is at 0.x, any release may change how something works. When one do
 - **Remove from Continue watching**, in its row's menu, takes a film off the row without marking it watched.
 - Settings › Playback in the apps: the audio and subtitle languages to start with, subtitles only for foreign speech, and the quality to ask for at home and away. They follow you to every device you're signed in on.
 - Alerts, a page of the owner's announcements, in place of the bars across the top.
+- Libraries another app manages: a root folder added with **Only read it**, or switched with **Only read this folder**, is never written to, renamed or deleted from. Downloads aren't imported into it, and its films' subtitles are kept in highsea's data folder. A folder mounted read-only is found by itself.
+- Library import and the scan read a film's NFO first (`movie.nfo`, or one named after the film), so a TMDB or IMDb id in it matches the film without a search. When the NFO names another film than its folder does, the film waits for you to check, with the folder name's match offered instead.
+- Films in parts (`cd1`, `part1`, `disc1` and the like) are one film, and `Screenshots`, `Proof`, `Plex Versions`, samples and trailers are left out as extras. A folder with no film in it, or with several, says so and waits.
+- **Scan now** on each of Settings › Media management's movies folders.
+- Setup finds the shows' and music's folders beside the films' and adds each as a root folder of its kind, kept for when highsea has shows and music.
+- The Synology package asks at install who manages your films. When another app does, highsea gets the media folder read-only and keeps what it makes (artwork, previews, transcodes and its downloads) in a `highsea` folder of its own in the shared folder. Upgrades keep the answer.
+- `HIGHSEA_WORK_DIR` names the folder for what highsea makes, for a Docker install beside another app's; the Docker guide shows the media folder mounted again read-only. Unset, it's the data folder, as before.
+- **Compose for highsea connects** in Settings › VPN: the lines highsea's own service needs for its tunnel, ready to copy. When highsea is on host networking, where highsea connects can't run, the status says so and what to change.
+- In the web app and the highsea app, `/` opens Search and `?` lists the keyboard shortcuts.
 
 ### Changed
 
-- The web app at `/web` and the highsea app for macOS, Windows and Linux are rebuilt on the same code as highsea's iPhone and Apple TV apps, so every app has the same screens: Home, the library, collections, a film's page, search, the player, settings and choosing a server. They look as before, with the changes above.
+- The web app at `/web` and the highsea app for computers are rebuilt on the same code as highsea's iPhone and Apple TV apps, so every app has the same screens: Home, the library, collections, a film's page, search, the player, settings and choosing a server. They look as before, with the changes above.
 - Two addresses in the web app moved: `/web/library/collections` and `/web/settings/<section>`. Old bookmarks to them open a page that says so, with a way back to Home.
 - In the highsea app, choosing the server's name at the top left opens **Choose a server**, with the servers you use, the others on your network, and adding one by address.
+- In Choose a server, a server found at the address of one already listed takes its place, with its sign-in, so a server set up again isn't listed twice.
+- The admin is drawn with the same parts as the apps and looks as before. Its icon rail is gone: the sidebar shows in a window 768 pixels wide or more, and a menu in a narrower one.
+- In the admin, Settings' areas fold into a menu until the window has room for them beside the page, and the page behind the command palette, dialogs and sheets is blurred.
+- Long lists in the apps and the admin draw only the rows on screen, so a library of thousands of films scrolls smoothly. A long path in the admin's tables ends in an ellipsis and shows whole when you point at it.
+- Settings › Media management lists the root folders under Movies, Shows and Music, each with its own Add field. The root folders you already have are Movies folders that highsea manages, as before. System › Health lists the folders highsea only reads, as a notice.
+- Curation's preview shows announcements in Alerts on the web and the TV, as the apps do.
+- One compose file: `compose.bridge.yaml`, `compose.gluetun.yaml` and `compose.connects.yaml` are gone. The Docker guide has the setup for a Mac or Windows, and Settings › VPN writes the lines for gluetun and for highsea connects. A compose file you made from one of them keeps working.
 
 ### Fixed
 
@@ -93,6 +109,7 @@ While highsea is at 0.x, any release may change how something works. When one do
 - Personal dashboards, themes, branding and sound packs.
 - A one-time migration from Radarr and qBittorrent in Settings › Migration.
 - Images for amd64 and arm64 at `ghcr.io/highsea-tv/highsea`, with compose files and templates for Unraid, TrueNAS and Synology.
+
 
 
 

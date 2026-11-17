@@ -51,6 +51,7 @@
     "@highsea-tv/sdk": "workspace:*",
     "@highsea-tv/subtitles": "workspace:*",
     "@highsea-tv/tokens": "workspace:*",
+    "@highsea-tv/vpn": "workspace:*",
     "zod": "4.6.7"
   },
   "devDependencies": {

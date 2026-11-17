@@ -192,8 +192,9 @@ export async function acknowledge(page: Page) {
   const got = page.getByRole('button', { name: 'Got it' })
   if (await got.count()) {
     await got.first().click()
-    // Radix keeps the dialog mounted (data-state="closed") through its exit animation, with its
-    // focus guards and aria-hidden still in place, so wait for the dialog itself to go, not the button
+    // the library's dialog is react-native-web's Modal, which stays mounted through its exit
+    // animation (its ModalAnimation, https://necolas.github.io/react-native-web/docs/modal/), still
+    // aria-modal and holding focus, so wait for the dialog itself to go, not the button
     await page
       .waitForFunction(() => !document.querySelector('[role=dialog],[role=alertdialog]'), null, {
         timeout: 5000,
@@ -201,6 +202,116 @@ export async function acknowledge(page: Page) {
       .catch(() => {})
   }
 }
+
+/**
+ * The stop that says a signed-in client's shell is up, by form factor: the phone's You tab, the
+ * TV's account in its head, and with a pointer the avatar, the account menu (B2's
+ * account/menu.tsx), or the You tab where a compact window draws the tabs instead.
+ */
+export const accountStop = (page: Page, platform: ClientPlatform) =>
+  platform === 'mobile'
+    ? page.locator('[role=tab][aria-label="You"]')
+    : platform === 'tv'
+      ? page.locator('[aria-label$=", settings"]')
+      : page
+          .locator('[aria-label$=": profile and settings"]')
+          .or(page.locator('[role=tab][aria-label="You"]'))
+
+/** Who the client signs in as: the seeded user, on the mock and on seeded.ts's server alike. */
+export const THEO = { username: 'theo', password: 'theo theo theo' }
+
+/**
+ * Signs apps/client in on the web as a person does, on the page already at its Choose a server
+ * (`clientUrl('/<platform>/connect', platform)`): waits for discovery to finish, picks Harbor,
+ * signs in (by password, or on the TV by the code the mock approves after 8 seconds, its
+ * PAIRING_APPROVAL_MS), picks the profile last here at the TV's Who's watching, acknowledges the
+ * owner's announcement and waits for the shell. `at` is called at Choose a server and at the
+ * sign-in once each is up, and stops there by answering false; then this answers false.
+ * layout.ts and compare.ts both sign in through it.
+ */
+export async function signInClient(
+  page: Page,
+  platform: ClientPlatform,
+  {
+    user = THEO,
+    at,
+    log = () => {},
+  }: {
+    user?: { username: string; password: string }
+    at?: (step: 'connect' | 'sign-in') => Promise<boolean | undefined>
+    log?: (line: string) => void
+  } = {},
+): Promise<boolean> {
+  const tv = platform === 'tv'
+  // discovery has finished when Looking… turns into Look again on the phone and with a pointer,
+  // and into the count of servers that answered on the TV, whose Look again is always there
+  // (apps/client's connect.tsx); Layout.swift waits for the same
+  await (tv ? page.getByText(/^\d+ answered\. /) : page.getByRole('button', { name: 'Look again' }))
+    .first()
+    .waitFor({ timeout: 30_000 })
+  if ((await at?.('connect')) === false) return false
+  await page
+    .getByRole('button', { name: /^Harbor/ })
+    .first()
+    .click()
+  await (tv
+    ? page.getByText('Sign in with your phone', { exact: true })
+    : page.locator('input[type=password]')
+  )
+    .first()
+    .waitFor({ timeout: 20_000 })
+  if ((await at?.('sign-in')) === false) return false
+  if (!tv) {
+    await page.getByRole('textbox', { name: 'Username' }).fill(user.username)
+    await page.locator('input[type=password]').fill(user.password)
+    await page.getByRole('button', { name: 'Sign in', exact: true }).click()
+  }
+  const account = accountStop(page, platform)
+  // the TV's opening asks Who's watching? once it's signed in (B3's profiles, which the mock
+  // serves): the profile last here has the focus, and OK picks it, as a person would
+  if (tv) {
+    const opening = page.getByRole('button', { name: /, Last here/ }).first()
+    if (
+      await opening.waitFor({ timeout: 30_000 }).then(
+        () => true,
+        () => false,
+      )
+    ) {
+      await page.waitForTimeout(500)
+      await page.keyboard.press('Enter')
+      log('tv: picked the profile last here at the opening')
+    }
+  }
+  const gotIt = page.getByRole('button', { name: 'Got it', exact: true }).first()
+  await account.first().or(gotIt).first().waitFor({ timeout: 40_000 })
+  // the owner's announcement that must be acknowledged (the mock's seed.ts an-new-address) comes
+  // over the shell once its list has loaded, and on the TV hides it: Got it, as Layout.swift
+  // does, so the screens behind it are captured as they are under it
+  if (
+    await gotIt.waitFor({ timeout: 8_000 }).then(
+      () => true,
+      () => false,
+    )
+  ) {
+    await gotIt.click()
+    log(`${platform}: acknowledged the owner’s announcement`)
+  }
+  await account.first().waitFor({ timeout: 20_000 })
+  return true
+}
+
+/**
+ * Opens one of the client's own paths (`/movies/4`, `/settings?section=devices`) inside the
+ * running client, as a link opens one on the devices: pushed onto the history with a popstate,
+ * which React Navigation's web linking follows (https://reactnavigation.org/docs/web-support/). A
+ * page load would start the mock again, with its own person signed in rather than the one
+ * signInClient signed in. A chrome route's client path is `clientPathOf`'s.
+ */
+export const openInClient = (page: Page, path: string) =>
+  page.evaluate((to) => {
+    history.pushState(null, '', to)
+    dispatchEvent(new PopStateEvent('popstate', { state: null }))
+  }, `/web${path}`)
 
 /** Waits for running animations, so axe doesn't measure contrast on something mid-fade. */
 export const settleAnimations = (page: Page) =>
@@ -213,8 +324,30 @@ export const settleAnimations = (page: Page) =>
 
 const AXE = readFileSync(join(ROOT, 'node_modules/axe-core/axe.min.js'), 'utf8')
 
-/** WCAG 2.x A/AA violations on the page, as `rule: selector` strings. */
+/**
+ * Waits until every dialog on the page is ready: the library's dialogs and menus float on
+ * react-native-web's Modal, whose ModalContent (0.21.4, src/exports/Modal/ModalContent.js) writes
+ * `aria-modal` from its first render but `role="dialog"` only while it's active. It becomes active
+ * when ModalAnimation calls `onShow` (src/exports/Modal/index.js's addActiveModal and setIsActive):
+ * at the enter animation's `animationend`, or with no animation in an effect after the first
+ * render (ModalAnimation.js). Until then the dialog is a plain `div` with `aria-modal`, which axe
+ * rightly fails (aria-allowed-attr), and on a busy machine the sweep got there first. A modal
+ * under another stays without its role (only the top one is active), so this gives up after five
+ * seconds and lets axe report what's left.
+ */
+export const dialogsReady = (page: Page) =>
+  page
+    .waitForFunction(() => !document.querySelector('[aria-modal]:not([role])'), null, {
+      timeout: 5000,
+    })
+    .catch(() => {})
+
+/**
+ * WCAG 2.x A/AA violations on the page, as `rule: selector` strings, once its dialogs are ready
+ * (dialogsReady).
+ */
 export async function axe(page: Page): Promise<string[]> {
+  await dialogsReady(page)
   if (!(await page.evaluate(() => 'axe' in window))) await page.addScriptTag({ content: AXE })
   return page.evaluate(async () => {
     const w = window as unknown as {

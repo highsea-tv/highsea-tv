@@ -6,12 +6,17 @@
 // detected first (install-simplicity.md B): the host's name, the folders under /data, the address
 // apps use.
 import { existsSync, mkdirSync, readdirSync, realpathSync, statSync } from 'node:fs'
-import { hostname, type NetworkInterfaceInfo, networkInterfaces } from 'node:os'
+import { hostname, networkInterfaces } from 'node:os'
 import { dirname, join, resolve, sep } from 'node:path'
 import { AppError, type Clock, type EventBus } from '@highsea-tv/core'
 import { type Db, readSetting, writeSetting } from '@highsea-tv/db'
 import { defaultNetworkSettings, type NetworkSettings, PRIVATE_RANGES } from '@highsea-tv/network'
-import type { Config } from './config.ts'
+import { type Config, workDir } from './config.ts'
+import {
+  type ContainerNetworkInput,
+  DOCKER_INTERFACE,
+  detectContainerNetwork,
+} from './container-network.ts'
 
 export const SETUP_KEY = 'setup'
 export const FOLDERS_KEY = 'folders'
@@ -21,8 +26,19 @@ export const ADDRESS_KEY = 'address'
 export type AdvertisedAddress = { address: string }
 
 export type SetupState = { completedAt: number | null }
-/** The folders chosen in setup; checkpoint 4 turns them into root folders. */
-export type MediaFolders = { movies: string; downloads: string }
+/**
+ * The folders chosen in setup; checkpoint 4 turns them into root folders. Shows' and music's,
+ * when there are any (Phase 5 A1), become root folders of their kind, used from parts B and D.
+ */
+export type MediaFolders = { movies: string; downloads: string; shows?: string; music?: string }
+
+/** What setup finds: shows' and music's null when there's no such folder. */
+export type DetectedFolders = {
+  movies: string
+  downloads: string
+  shows: string | null
+  music: string | null
+}
 
 export type RemoteAccessInput =
   | { kind: 'local-only' }
@@ -57,7 +73,10 @@ export function setupDefaults(config: Config) {
   const dataDir = resolve(config.dataDir)
   return {
     dataDir,
-    folders: { movies: join(dataDir, 'media', 'movies'), downloads: join(dataDir, 'downloads') },
+    folders: {
+      movies: join(dataDir, 'media', 'movies'),
+      downloads: join(resolve(workDir(config)), 'downloads'),
+    } as MediaFolders,
     serverName: 'highsea',
   }
 }
@@ -77,6 +96,19 @@ export function detectServerName(name = hostname()): string | null {
 
 /** Where a library's movies usually are under /data: TRaSH's layout first, then a flat one. */
 const MOVIE_FOLDERS = [['media', 'movies'], ['movies'], ['media', 'films'], ['films']]
+/**
+ * Where shows and music usually are, beside the movies (TRaSH's `media/tv` and `media/music`, and
+ * the names Sonarr's and Lidarr's owners use), Phase 5 A1.
+ */
+const SHOW_FOLDERS = [
+  ['media', 'tv'],
+  ['media', 'shows'],
+  ['media', 'series'],
+  ['tv'],
+  ['shows'],
+  ['series'],
+]
+const MUSIC_FOLDERS = [['media', 'music'], ['music']]
 /** Where downloads usually are: highsea's own layout, then TRaSH's. */
 const DOWNLOAD_FOLDERS = [['downloads'], ['torrents']]
 
@@ -104,46 +136,54 @@ function findFolder(root: string, parts: string[]): string | null {
  * downloads folder gets `downloads` beside it, on the same mount, so imports hardlink. A root
  * with other folders and no movies folder is the owner's to point at.
  */
-export function detectFolders(config: Config): MediaFolders | null {
+export function detectFolders(config: Config): DetectedFolders | null {
   const root = resolve(config.dataDir)
+  // highsea's own folder when it's set apart (ADR 0063, 2026-11-16): another app's stack shares the
+  // data folder, so its downloads are that app's, and highsea's go in its own folder
+  const own = config.workDir ? resolve(config.workDir) : null
   let entries: string[] = []
   try {
-    // ext4's lost+found and highsea's own transcode cache (ADR 0051) say nothing about the library
+    // ext4's lost+found, highsea's own transcode cache (ADR 0051) and its own folder say nothing
+    // about the library
     entries = readdirSync(root).filter(
-      (name) => !name.startsWith('.') && name !== 'lost+found' && name !== 'transcodes',
+      (name) =>
+        !name.startsWith('.') &&
+        name !== 'lost+found' &&
+        name !== 'transcodes' &&
+        join(root, name) !== own,
     )
   } catch {
     // not there yet: Docker makes the mount point, and setup the folders
   }
-  if (!entries.length) return setupDefaults(config).folders
+  if (!entries.length) return { ...setupDefaults(config).folders, shows: null, music: null }
   const movies = MOVIE_FOLDERS.map((p) => findFolder(root, p)).find(Boolean)
   if (!movies) return null
-  const downloads = DOWNLOAD_FOLDERS.map((p) => findFolder(root, p)).find(Boolean)
-  return { movies, downloads: downloads ?? join(root, 'downloads') }
+  const downloads = own
+    ? join(own, 'downloads')
+    : DOWNLOAD_FOLDERS.map((p) => findFolder(root, p)).find(Boolean)
+  return {
+    movies,
+    downloads: downloads ?? join(root, 'downloads'),
+    shows: SHOW_FOLDERS.map((p) => findFolder(root, p)).find(Boolean) ?? null,
+    music: MUSIC_FOLDERS.map((p) => findFolder(root, p)).find(Boolean) ?? null,
+  }
 }
-
-/** Interfaces Docker makes on the host: seen only with host networking. */
-const DOCKER_INTERFACE = /^(docker\d+|br-[0-9a-f]+|veth)/
 
 /**
  * The address apps on the network use (ADR 0020's 4.3c section), as `host:port`.
  * `HIGHSEA_PUBLISHED_URL` wins, as Jellyfin's `JELLYFIN_PublishedServerUrl` does. Otherwise the
  * host's own address, when highsea can see it: outside a container, or inside one with host
- * networking, where Docker's own interfaces show. In a bridge network the container sees only its
- * own address, which nothing outside can reach, so it's null and setup offers the one the browser
- * used.
+ * networking (`detectContainerNetwork`, which Settings › VPN reads too). In a bridge network the
+ * container sees only its own address, which nothing outside can reach, so it's null and setup
+ * offers the one the browser used.
  */
 export function detectAddress(
   config: Config,
-  {
-    interfaces = networkInterfaces(),
-    inContainer = existsSync('/.dockerenv'),
-  }: { interfaces?: NodeJS.Dict<NetworkInterfaceInfo[]>; inContainer?: boolean } = {},
+  { interfaces = networkInterfaces(), inContainer }: ContainerNetworkInput = {},
 ): string | null {
   if (config.publishedUrl) return new URL(config.publishedUrl).host
-  const names = Object.keys(interfaces)
-  if (inContainer && !names.some((n) => DOCKER_INTERFACE.test(n))) return null
-  const lan = names
+  if (detectContainerNetwork({ interfaces, inContainer }) === 'bridge') return null
+  const lan = Object.keys(interfaces)
     .filter((n) => !DOCKER_INTERFACE.test(n))
     .flatMap((n) => interfaces[n] ?? [])
     .filter((a) => a.family === 'IPv4' && !a.internal && !a.address.startsWith('169.254.'))
@@ -247,6 +287,18 @@ export function checkSetup(
     throw invalid(`Choose a folder inside ${resolve(config.dataDir)}.`, 'folders.downloads')
   if (movies === downloads)
     throw invalid('Use a different folder from the movies folder.', 'folders.downloads')
+  // shows' and music's, when given: inside the root, and each a folder of its own
+  const extra: { shows?: string; music?: string } = {}
+  for (const kind of ['shows', 'music'] as const) {
+    const path = input.folders[kind]?.trim()
+    if (!path) continue
+    const real = insideRoot(config, path)
+    if (!real)
+      throw invalid(`Choose a folder inside ${resolve(config.dataDir)}.`, `folders.${kind}`)
+    if ([movies, downloads, extra.shows].includes(real))
+      throw invalid('Each kind needs a folder of its own.', `folders.${kind}`)
+    extra[kind] = real
+  }
   const r = input.remoteAccess
   if (r.kind === 'reverse-proxy') {
     let url: URL | null = null
@@ -258,7 +310,7 @@ export function checkSetup(
   }
   if (r.kind === 'port-forward' && (!Number.isInteger(r.port) || r.port < 1024 || r.port > 65535))
     throw invalid('Use a port from 1024 to 65535.', 'remoteAccess.port')
-  return { movies, downloads }
+  return { movies, downloads, ...extra }
 }
 
 /** Saves setup's choices, makes the folders, and marks setup complete. */
@@ -273,11 +325,13 @@ export function saveSetup(
   rename: (name: string) => void,
   serverName: string,
 ) {
-  const { movies, downloads } = checkSetup(config, { serverName, ...input })
-  for (const dir of [movies, downloads]) mkdirSync(dir, { recursive: true })
+  const folders = checkSetup(config, { serverName, ...input })
+  const { movies, downloads } = folders
+  // only what's missing is made: a media folder mounted read-only is there already (ADR 0063)
+  for (const dir of [movies, downloads]) if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
   const now = clock.now()
   rename(serverName.trim())
-  writeSetting<MediaFolders>(db, FOLDERS_KEY, { movies, downloads }, now)
+  writeSetting<MediaFolders>(db, FOLDERS_KEY, folders, now)
   writeSetting(db, 'network', networkFor(input.remoteAccess), now)
   // linking happens when highsea cloud exists; until then the choice is remembered
   writeSetting(db, CLOUD_KEY, { wanted: input.cloudLink ?? false, linked: false }, now)

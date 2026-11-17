@@ -7,11 +7,12 @@
 // touch the synopsis runs under the row across its width; with a pointer it's beside the still,
 // the play mark showing while the pointer is over the row, and the row's fill a step up. The TV
 // lists episodes as stills in a Row of Posters instead (tv/show.tsx).
-import { Image } from 'expo-image'
+
 import { StyleSheet, View } from 'react-native'
 import { Button } from './button.tsx'
-import { GLASS } from './glass.ts'
+import { glassOf } from './glass.ts'
 import { Icon } from './icon.tsx'
+import { Image } from './image.tsx'
 import { Press } from './press.tsx'
 import { Text } from './text.tsx'
 import { tokens, useTheme } from './theme.tsx'
@@ -79,7 +80,7 @@ function Still({
           borderRadius: tokens.radius.pill,
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: GLASS,
+          backgroundColor: glassOf(theme.colors),
         }}
       >
         <Icon name="play" size={size * 0.45} filled />
@@ -151,7 +152,12 @@ function TouchEpisode(props: EpisodeRowProps) {
             </Text>
           </View>
         </Press>
-        <Mark {...props} />
+        {/* in a view of its own, which follows the row's centring: off the web a button keeps its
+            own size by `alignSelf: 'flex-start'` (./own-size.ts), which would set it at the
+            row's top beside the still */}
+        <View>
+          <Mark {...props} />
+        </View>
       </View>
       {synopsis ? (
         <Text variant="body" color="text-2" numberOfLines={2}>

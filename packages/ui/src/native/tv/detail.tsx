@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // A title page's TV parts that stay the TV's own: the resume line and the dialog at the right of the
 // screen that the tracks open in. The rest of a title page's parts are merged by form factor (ADR 0060).
+import { tvDetail } from '@highsea-tv/tokens'
 import type { ReactNode } from 'react'
 import { View } from 'react-native'
 import { alpha } from '../alpha.ts'
@@ -14,7 +15,7 @@ const tv = tokens.tv
 export function TvProgressLine({
   progress,
   label,
-  width = 11,
+  width = tvDetail.progressWidth,
 }: {
   /** 0–1. */
   progress: number
@@ -25,10 +26,10 @@ export function TvProgressLine({
   const theme = useTheme()
   const u = theme.u
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 0.8 * u }}>
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: tv.space['4'] * u }}>
       <View
         style={{
-          height: 0.3 * u,
+          height: tvDetail.progressLine * u,
           width: width * u,
           borderRadius: tokens.radius.pill,
           overflow: 'hidden',
@@ -58,7 +59,7 @@ export function TvProgressLine({
  */
 export function TvSideDialog({
   label,
-  width = 32,
+  width = tvDetail.sideDialog,
   children,
 }: {
   label: string
@@ -84,10 +85,10 @@ export function TvSideDialog({
         right: inset.x,
         zIndex: 30,
         width: width * u,
-        gap: 1.6 * u,
-        paddingHorizontal: 2.4 * u,
-        paddingVertical: 2.4 * u,
-        borderRadius: 1 * u,
+        gap: tv.space['8'] * u,
+        paddingHorizontal: tv.space['12'] * u,
+        paddingVertical: tv.space['12'] * u,
+        borderRadius: tv.radius.panel * u,
         backgroundColor: alpha(theme.colors.s1, 0.95),
         boxShadow: tokens.elevation[4].boxShadow,
       }}

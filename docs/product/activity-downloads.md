@@ -1,6 +1,7 @@
 # Activity and Downloads
 
-- **Platforms:** Admin (`apps/server`), every breakpoint.
+- **Platforms:** Admin (`apps/server`), compact and regular windows.
+- **Screen:** `packages/admin/src/activity.tsx` and `packages/admin/src/downloads.tsx`, routed by `apps/server/app/(admin)/activity/` and `downloads/`.
 - **Prototype:** `#/admin/activity` (A7), `#/admin/downloads` (A8).
 - **Built:** checkpoint 6a, 2026-10-20: `/activity` and `/downloads` in `apps/server` (`src/admin/activity.tsx`, `downloads.tsx`), on `@highsea-tv/downloads` and `@highsea-tv/torrent` ([ADR 0037](../adr/0037-the-torrent-engine-as-built.md), [ADR 0038](../adr/0038-downloads.md)). What real data changed from the prototype is marked *As built* below. Checkpoint 6b added the categories, the watch folder ([settings.md](settings.md)) and the sheet's **Import into the library**.
 - **Roadmap:** [Phase 2 › A7, A8](../roadmap.md#phase-2-design-prototypes-gate-user-sign-off), [Built-in torrent engine](../roadmap.md#built-in-torrent-engine-highseatorrent), [Movie pipeline](../roadmap.md#movie-pipeline), [Admin UI routes](../roadmap.md#admin-ui-routes-built-to-match-the-phase-2-prototypes) (`/activity`, `/downloads`). Engine: [ADR 0005](../adr/0005-in-process-torrent-engine.md).
@@ -73,7 +74,7 @@ Two views of the same downloads, for two jobs. **Activity** is the library's vie
 - **File priority** saves on change. **Don't download** leaves the file at 0%.
 - **Add torrent** validates on Add: a magnet (`magnet:?xt=urn:btih:`) or an `http(s)` URL ending in `.torrent`.
 - **Pause all** pauses downloads; seeding continues. **Resume all** queues them again.
-- **Keyboard:** tabs, rows and menus are native or Radix controls; the sheet traps focus.
+- **Keyboard:** tabs, rows and menus are the library's controls, with their roles from React Native's accessibility props; the sheet traps focus.
 - **Sound:** none.
 
 ## Copy

@@ -2,24 +2,17 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Choosing tags (checkpoint 8c), in the movie's, an indexer's, a list's and a connection's edit
 // dialogs. The prototypes have no tag control, so this is the smallest one the design system
-// makes: the chosen tags as badges, and a menu of every tag with a check beside each (Radix's
-// DropdownMenu.CheckboxItem, kept open while choosing by preventing `onSelect`'s close, as Radix's
-// docs describe: https://www.radix-ui.com/primitives/docs/components/dropdown-menu#checkboxitem).
-// Tags are made in Settings › Media management, which the empty menu links to.
+// makes: the chosen tags as badges, and a menu of every tag with a check beside each, kept open
+// while choosing (the native Menu's `checked` and `keepsOpen` items, menuitemcheckbox: WAI-ARIA's
+// menu button pattern, https://www.w3.org/WAI/ARIA/apg/patterns/menu-button/). Drawn with the
+// library's native renderer since D2 (one-client-platform-d.md). Tags are made in Settings › Media
+// management, which the menu's last item opens.
 import type { Tag } from '@highsea-tv/api-contract'
 import { useT } from '@highsea-tv/i18n/react'
 import { useQuery } from '@highsea-tv/sdk/react'
-import {
-  Badge,
-  Button,
-  Menu,
-  MenuCheckboxItem,
-  MenuContent,
-  MenuItem,
-  MenuSeparator,
-  MenuTrigger,
-  useFieldControl,
-} from '@highsea-tv/ui'
+import { Badge, Button, Menu, Text, tokens, useField } from '@highsea-tv/ui/native'
+import { type ComponentRef, useRef, useState } from 'react'
+import { View } from 'react-native'
 import { useRouter } from './navigation.tsx'
 import { tagsMessages as messages } from './tags-messages.ts'
 
@@ -35,17 +28,21 @@ export function useTags() {
 export const labelsOf = (tags: readonly Tag[] | undefined, ids: readonly string[]) =>
   (tags ?? []).filter((t) => ids.includes(t.id)).map((t) => t.label)
 
+const ui = tokens.adminText.ui
+
 export function TagBadges({ tags, ids }: { tags: readonly Tag[] | undefined; ids: string[] }) {
   const t = useT(messages)
   const labels = labelsOf(tags, ids)
   return labels.length ? (
-    <span className="flex flex-wrap gap-1">
+    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: tokens.space['1'] }}>
       {labels.map((l) => (
         <Badge key={l}>{l}</Badge>
       ))}
-    </span>
+    </View>
   ) : (
-    <span className="text-text-3">{t('none')}</span>
+    <Text size={ui.size} leading={ui.leading} color="text-3">
+      {t('none')}
+    </Text>
   )
 }
 
@@ -53,62 +50,73 @@ export function TagPicker({
   value,
   onChange,
   name,
-  id,
-  describedBy,
 }: {
   value: string[]
   onChange: (ids: string[]) => void
-  /** What's being tagged, for the button's accessible name outside a `Field`. */
+  /** What's being tagged, for the button's accessible name; inside a `Field`, its label. */
   name?: string
-  id?: string
-  describedBy?: string
 }) {
   const t = useT(messages)
   const router = useRouter()
   const tags = useTags()
-  // inside a Field, its label names the button and its hint describes it
-  const control = useFieldControl({ id, 'aria-describedby': describedBy })
+  const field = useField()
+  const anchor = useRef<ComponentRef<typeof View>>(null)
+  const [open, setOpen] = useState(false)
   const all = tags.data ?? []
   const toggle = (tagId: string, on: boolean) =>
     onChange(on ? [...new Set([...value, tagId])] : value.filter((v) => v !== tagId))
+  const named = name ?? field?.label
   return (
-    <div className="flex min-w-0 flex-wrap items-center gap-2">
+    <View
+      style={{
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        alignItems: 'center',
+        gap: tokens.space['2'],
+        minWidth: 0,
+      }}
+    >
       <TagBadges tags={all} ids={value} />
-      <Menu>
-        <MenuTrigger asChild>
-          <Button
-            id={control.id}
-            size="sm"
-            variant="ghost"
-            iconEnd="chevron-down"
-            aria-label={name ? t('chooseFor', { name }) : undefined}
-            aria-describedby={control['aria-describedby']}
-            loading={tags.status === 'loading'}
-          >
-            {t('choose')}
-          </Button>
-        </MenuTrigger>
-        <MenuContent>
-          {all.length === 0 ? (
-            <MenuItem disabled>{t('empty')}</MenuItem>
-          ) : (
-            all.map((tag) => (
-              <MenuCheckboxItem
-                key={tag.id}
-                checked={value.includes(tag.id)}
-                onCheckedChange={(on) => toggle(tag.id, on === true)}
-                onSelect={(e) => e.preventDefault()}
-              >
-                {tag.label}
-              </MenuCheckboxItem>
-            ))
-          )}
-          <MenuSeparator />
-          <MenuItem icon="settings" onSelect={() => router.push(TAG_SETTINGS)}>
-            {t('manage')}
-          </MenuItem>
-        </MenuContent>
-      </Menu>
-    </div>
+      <Button
+        ref={anchor}
+        size="sm"
+        variant="ghost"
+        iconEnd="chevron-down"
+        accessibilityLabel={named ? t('chooseFor', { name: named }) : undefined}
+        hasPopup="menu"
+        accessibilityState={{ expanded: open }}
+        loading={tags.status === 'loading'}
+        onPress={() => setOpen(true)}
+      >
+        {t('choose')}
+      </Button>
+      <Menu
+        title={t('label')}
+        open={open}
+        onClose={() => setOpen(false)}
+        anchor={anchor}
+        items={[
+          ...(all.length === 0
+            ? [{ label: t('empty'), group: t('label'), disabled: true, onSelect: () => {} }]
+            : all.map((tag) => {
+                const on = value.includes(tag.id)
+                return {
+                  label: tag.label,
+                  // a heading, so Manage tags stands apart below a line
+                  group: t('label'),
+                  checked: on,
+                  keepsOpen: true,
+                  onSelect: () => toggle(tag.id, !on),
+                }
+              })),
+          {
+            label: t('manage'),
+            icon: 'settings' as const,
+            closes: 'leave' as const,
+            onSelect: () => router.push(TAG_SETTINGS),
+          },
+        ]}
+      />
+    </View>
   )
 }

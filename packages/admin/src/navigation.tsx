@@ -16,6 +16,17 @@ export type AdminNavigation = {
   router: AdminRouter
   pathname: string
   searchParams: URLSearchParams
+  /**
+   * The address a document loads for one of the admin's paths (an iframe's `src`): the path
+   * itself on the server; the prototype's page and hash route there.
+   */
+  href?: (path: string) => string
+  /**
+   * Loads one of the admin's paths afresh, after signing in or setting up, so the server's
+   * components see the new session: `window.location.assign` on the server; the prototype moves
+   * its own router.
+   */
+  load?: (path: string) => void
 }
 
 const NavigationContext = createContext<AdminNavigation | null>(null)
@@ -40,3 +51,11 @@ function useNavigation(): AdminNavigation {
 export const useRouter = (): AdminRouter => useNavigation().router
 export const usePathname = (): string => useNavigation().pathname
 export const useSearchParams = (): URLSearchParams => useNavigation().searchParams
+
+const same = (path: string) => path
+/** The address a document (an iframe) loads for one of the admin's paths. */
+export const useHref = (): ((path: string) => string) => useNavigation().href ?? same
+
+const assign = (path: string) => window.location.assign(path)
+/** Loads one of the admin's paths afresh (AdminNavigation's `load`). */
+export const useLoad = (): ((path: string) => void) => useNavigation().load ?? assign

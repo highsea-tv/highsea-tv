@@ -16,6 +16,12 @@
 // place when its match is sure (an id in its name, or TMDB's title and year the same as its own),
 // as Jellyfin adds what its scan finds. The rest wait in Library import, counted on the root
 // folder's row (`ROOT_WAITING_KEY`), and the 12-hourly scan doesn't search TMDB for them again.
+//
+// Phase 5 A1 (ADR 0039's 2026-11-15 section, ADR 0063): a folder's NFO is read first, and an id in
+// it is a sure match with no search; a folder with no film in it is shown with that reason and
+// doesn't wait; a folder holding several films waits with that reason; a film in parts
+// (`-cd1`, `- Part 2`) is one film, its first part the file. Under a folder highsea only reads,
+// Rename to my format is refused and nothing is renamed.
 import { promises as fsp } from 'node:fs'
 import { basename, dirname, extname, join } from 'node:path'
 import type { AddMovieInput } from '@highsea-tv/api-contract'
@@ -25,9 +31,17 @@ import type { DiscoverMovie } from '@highsea-tv/metadata'
 import { parse } from '@highsea-tv/parser'
 import { eq } from 'drizzle-orm'
 import { z } from 'zod'
-import { type FoundFile, isVideo, listFiles, skipBeforeProbe } from '../shared/files.ts'
+import {
+  type FolderFilm,
+  type FoundFile,
+  filmIn,
+  isVideo,
+  listFiles,
+  skipBeforeProbe,
+} from '../shared/files.ts'
 import type { Media } from '../shared/index.ts'
 import { buildFolderName } from '../shared/naming.ts'
+import { type NfoIds, readFolderNfo } from '../shared/nfo.ts'
 import { checkPath, isWithin } from '../shared/paths.ts'
 import type { MediaInfo } from '../shared/probe.ts'
 import { ROOT_WAITING_KEY, type RootWaiting } from '../shared/root-folders.ts'
@@ -55,6 +69,12 @@ export type LibraryCandidate = {
   inLibrary: boolean
   /** Why it can't be imported, or null. */
   skip: string | null
+  /** How it was matched: its NFO's id, its name's id, TMDB's search, or not at all. */
+  matchedBy: 'nfo' | 'name' | 'search' | null
+  /** The files of a film in parts, the first part first; empty for a film in one file. */
+  parts: string[]
+  /** Why the match needs the owner's check before it's imported (an NFO naming another film). */
+  check: string | null
 }
 
 export type LibraryImportItem = { folder: string; tmdbId: number }
@@ -92,8 +112,86 @@ const Payload = z.object({
   items: z.array(z.object({ folder: z.string(), tmdbId: z.number().int().positive() })),
 })
 
-/** A folder's match, and whether it's sure enough to add without asking. */
-type Matched = { match: LibraryCandidate['match']; sure: boolean }
+/**
+ * A folder's match, whether it's sure enough to add without asking, and why the owner should
+ * check it first when it isn't (an NFO naming another film than the folder does).
+ */
+type Matched = {
+  match: LibraryCandidate['match']
+  sure: boolean
+  by: LibraryCandidate['matchedBy']
+  check?: string | null
+}
+
+/** Roman numerals and spellings a folder name and TMDB's title write differently. */
+const SAME_WORD: Record<string, string> = {
+  ii: '2',
+  iii: '3',
+  iv: '4',
+  v: '5',
+  vi: '6',
+  vii: '7',
+  viii: '8',
+  ix: '9',
+  x: '10',
+  volume: 'vol',
+}
+
+/** A title's words, folded as folder names write them: no apostrophes, `&` as and, no `the`. */
+function titleWords(s: string): string[] {
+  const words = s
+    .toLowerCase()
+    .normalize('NFKD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/&/g, ' and ')
+    .replace(/³/g, ' 3 ')
+    .replace(/²/g, ' 2 ')
+    .replace(/['’‘]/g, '')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .split(' ')
+    .filter(Boolean)
+    .map((w) => SAME_WORD[w] ?? w)
+  return ['the', 'a', 'an'].includes(words[0] ?? '') ? words.slice(1) : words
+}
+
+const startsWith = (a: string[], b: string[]) =>
+  a.length <= b.length && a.every((w, i) => b[i] === w)
+
+/**
+ * Why an NFO's film isn't the one its folder names, or null when they agree (Phase 5 A1, ADR
+ * 0063): an id in the folder's name that isn't the NFO's, a year more than one off (Radarr's
+ * allowance), or a title where neither TMDB's title nor its original title starts the folder's,
+ * or the folder's starts it. A folder whose name says nothing agrees. Real libraries hold NFOs an
+ * app wrote for the wrong film; such a folder waits for the owner to check it.
+ */
+export function nfoDisagrees(
+  name: string,
+  film: { tmdbId: number; title: string; originalTitle: string; year: number | null },
+): string | null {
+  const parsed = parse(name)
+  const named = `${film.title}${film.year ? ` (${film.year})` : ''}`
+  const why = `Its NFO names ${named}, which isn’t the film the folder’s name says. Check the match before importing it.`
+  if (parsed.ids.tmdb) return parsed.ids.tmdb === film.tmdbId ? null : why
+  if (parsed.year && film.year && Math.abs(parsed.year - film.year) > 1) return why
+  const folder = titleWords(parsed.title ?? '')
+  if (folder.length === 0) return null
+  const agrees = [film.title, film.originalTitle].some((t) => {
+    const words = titleWords(t)
+    return startsWith(folder, words) || startsWith(words, folder)
+  })
+  return agrees ? null : why
+}
+
+/** What a folder holds, and why it can't be imported as one film; null when it can. */
+export function folderSkip(film: FolderFilm): string | null {
+  if (film.kind === 'none')
+    return film.archive
+      ? `No film in this folder, only ${film.archive}, which highsea leaves as it is.`
+      : 'No film in this folder.'
+  if (film.kind === 'several')
+    return `This folder holds ${film.count} films. Library import takes one film per folder.`
+  return null
+}
 
 /** What `addNew` did with the folders it was given. */
 export type AddNewResult = { added: number; waiting: number }
@@ -155,8 +253,8 @@ export function createLibraryImport(
   }
 
   function requireRoot(path: string): string {
-    const folder = media.rootFolders.find(path)
-    if (!folder) throw invalid('Pick one of the root folders.', 'unknown-root-folder')
+    const folder = media.rootFolders.find(path, 'movies')
+    if (!folder) throw invalid('Pick one of the movies’ root folders.', 'unknown-root-folder')
     return folder.path
   }
 
@@ -167,39 +265,87 @@ export function createLibraryImport(
       .sort((a, b) => b.size - a.size)
   }
 
+  /** A video's title as its name reads, folded: two copies of one film read the same. */
+  const titleOf = (path: string) => plain(parse(basename(path, extname(path))).title ?? '')
+
+  /** What a folder holds: its videos, the film among them, and its NFO's ids. */
+  async function readFolder(folder: string) {
+    const files = await listFiles(folder).catch(() => [] as FoundFile[])
+    const videos = files
+      .filter((f) => isVideo(f.path) && !skipBeforeProbe(f.path, folder))
+      .sort((a, b) => b.size - a.size)
+    const others = files.filter((f) => !isVideo(f.path)).map((f) => f.path)
+    const film = filmIn(videos, others, titleOf)
+    const nfo = film.kind === 'film' ? await readFolderNfo(folder, [film.main.path]) : null
+    return { videos, film, nfo }
+  }
+
   /**
    * The folder's movie on TMDB. Sure when the name carries its id, or when TMDB's title (or
    * original title) and year are the folder's own: what the scan adds without asking.
    */
-  async function matchFor(name: string): Promise<Matched> {
+  async function matchFor(name: string, nfo: NfoIds | null = null): Promise<Matched> {
     const parsed = parse(name)
     const toMatch = (m: { id: number; title: string; year: number | null }) => ({
       tmdbId: m.id,
       title: m.title,
       year: m.year,
     })
-    if (parsed.ids.tmdb) {
-      const m = await metadata.movie(parsed.ids.tmdb).catch((e) => {
-        if ((e as AppError).code === 'not-found') return null
-        throw e
-      })
-      if (m) return { match: toMatch(m), sure: true }
+    // an NFO's film is sure when the folder's name agrees with it; a name's own id always is
+    const found = (
+      m: { id: number; title: string; originalTitle: string; year: number | null },
+      by: 'nfo' | 'name',
+    ): Matched => {
+      const check = by === 'nfo' ? nfoDisagrees(name, { ...m, tmdbId: m.id }) : null
+      return { match: toMatch(m), sure: check === null, by, check }
     }
-    if (parsed.ids.imdb) {
-      const m = await metadata.discover.findByImdb(parsed.ids.imdb)
-      if (m) return { match: toMatch(m), sure: true }
+    const byIds = async (
+      ids: { tmdb: number | null; imdb: string | null },
+      by: 'nfo' | 'name',
+    ): Promise<Matched | null> => {
+      if (ids.tmdb) {
+        const m = await metadata.movie(ids.tmdb).catch((e) => {
+          if ((e as AppError).code === 'not-found') return null
+          throw e
+        })
+        if (m) return found(m, by)
+      }
+      if (ids.imdb) {
+        const m = await metadata.discover.findByImdb(ids.imdb)
+        if (m) return found(m, by)
+      }
+      return null
     }
-    if (!parsed.title) return { match: null, sure: false }
-    // TMDB's search ignores case; one spelling keeps the requests (and the recordings) the same
-    const page = await metadata.discover.search(parsed.title.toLowerCase())
-    const best = bestMatch(page.results, parsed.title, parsed.year)
-    if (!best) return { match: null, sure: false }
-    const want = plain(parsed.title)
-    const sure =
-      parsed.year !== null &&
-      best.year === parsed.year &&
-      (plain(best.title) === want || plain(best.originalTitle) === want)
-    return { match: toMatch(best), sure }
+    // the NFO the owner's other app wrote names the film, when the folder's name agrees with it;
+    // then an id in the name
+    const fromNfo = nfo ? await byIds(nfo, 'nfo') : null
+    if (fromNfo?.sure) return fromNfo
+    const fromFolder = await byName()
+    // an NFO that disagrees with its folder: the name's match is offered, and it waits either way
+    if (fromNfo)
+      return fromFolder.match
+        ? { ...fromFolder, sure: false, check: fromNfo.check }
+        : { ...fromNfo, sure: false }
+    return fromFolder
+
+    async function byName(): Promise<Matched> {
+      const fromName = await byIds(
+        { tmdb: parsed.ids.tmdb ?? null, imdb: parsed.ids.imdb ?? null },
+        'name',
+      )
+      if (fromName) return fromName
+      if (!parsed.title) return { match: null, sure: false, by: null }
+      // TMDB's search ignores case; one spelling keeps the requests (and the recordings) the same
+      const page = await metadata.discover.search(parsed.title.toLowerCase())
+      const best = bestMatch(page.results, parsed.title, parsed.year)
+      if (!best) return { match: null, sure: false, by: null }
+      const want = plain(parsed.title)
+      const sure =
+        parsed.year !== null &&
+        best.year === parsed.year &&
+        (plain(best.title) === want || plain(best.originalTitle) === want)
+      return { match: toMatch(best), sure, by: 'search' }
+    }
   }
 
   /**
@@ -210,7 +356,7 @@ export function createLibraryImport(
     const root = requireRoot(
       checkPath(
         rootPath,
-        media.rootFolders.list().map((r) => r.path),
+        media.rootFolders.list('movies').map((r) => r.path),
       ),
     )
     const entries = await fsp.readdir(root, { withFileTypes: true }).catch(() => {
@@ -232,12 +378,21 @@ export function createLibraryImport(
     const out: LibraryCandidate[] = []
     for (const name of folders) {
       const folder = join(root, name)
-      const videos = await videosIn(folder).catch(() => [] as FoundFile[])
-      const main = videos[0] ?? null
+      const { film, nfo } = await readFolder(folder)
+      const main = film.kind === 'film' ? film.main : null
+      const folderProblem = folderSkip(film)
       let match: LibraryCandidate['match'] = null
+      let matchedBy: LibraryCandidate['matchedBy'] = null
       let matchProblem: string | null = null
+      let check: string | null = null
       try {
-        match = (await matchFor(name)).match
+        // a folder that isn't one film isn't searched for
+        if (!folderProblem) {
+          const found = await matchFor(name, nfo)
+          match = found.match
+          matchedBy = found.by
+          check = found.check ?? null
+        }
       } catch (e) {
         // no key: nothing can be matched, so the whole scan says so
         if ((e as { details?: { reason?: string } }).details?.reason === 'no-tmdb-key') throw e
@@ -258,9 +413,12 @@ export function createLibraryImport(
         size: main?.size ?? 0,
         quality,
         match,
+        matchedBy,
+        parts: film.kind === 'film' ? film.parts.map((f) => f.path) : [],
+        check,
         inLibrary,
-        skip: !main
-          ? 'No video file in the folder.'
+        skip: folderProblem
+          ? folderProblem
           : inLibrary
             ? 'Already in the library.'
             : (matchProblem ?? (match ? null : 'No match on TMDB. Pick the movie to import it.')),
@@ -284,7 +442,7 @@ export function createLibraryImport(
     { retry = false }: { retry?: boolean } = {},
   ): Promise<AddNewResult> {
     const result: AddNewResult = { added: 0, waiting: 0 }
-    const root = media.rootFolders.find(rootPath)?.path
+    const root = media.rootFolders.find(rootPath, 'movies')?.path
     const profile = media.profiles.list()[0]
     if (!root || !profile || folders.length === 0) return result
     const waiting = new Set(readWaiting()[root] ?? [])
@@ -309,14 +467,20 @@ export function createLibraryImport(
       if (!isWithin(root, folder) || folder === root) continue
       if (downloads.some((d) => isWithin(d, folder) || isWithin(folder, d))) continue
       if (waiting.has(folder) && !retry) continue
-      const videos = await videosIn(folder).catch(() => [] as FoundFile[])
-      if (videos.length === 0) {
+      const { film, nfo } = await readFolder(folder)
+      // no film: nothing to wait for (Library import still shows it, with the reason)
+      if (film.kind === 'none') {
         waiting.delete(folder)
+        continue
+      }
+      // several films: it waits, and Library import says why
+      if (film.kind === 'several') {
+        waiting.add(folder)
         continue
       }
       let found: Matched
       try {
-        found = await matchFor(basename(folder))
+        found = await matchFor(basename(folder), nfo)
       } catch (e) {
         if ((e as { details?: { reason?: string } }).details?.reason === 'no-tmdb-key') {
           log.info('new folders wait for a TMDB key to be matched', { root })
@@ -379,7 +543,7 @@ export function createLibraryImport(
     if (status().state === 'running')
       throw new AppError('conflict', 'A library import is already running.', { reason: 'running' })
     if (items.length === 0) throw invalid('Pick at least one folder.', 'no-items')
-    const roots = media.rootFolders.list().map((r) => r.path)
+    const roots = media.rootFolders.list('movies').map((r) => r.path)
     let root: string | null = null
     const seen = new Set<number>()
     const checked: LibraryImportItem[] = []
@@ -400,6 +564,8 @@ export function createLibraryImport(
       : profiles[0]
     if (!profile) throw invalid('Add a quality profile first.', 'no-profiles')
     const rename = options.rename ?? false
+    // ADR 0063: a folder highsea only reads keeps its names
+    if (rename) media.rootFolders.assertWritable(root as string, 'rename folders or files')
     const jobId = jobs.enqueue(LIBRARY_IMPORT_JOB, {
       root: root as string,
       rename,
@@ -441,7 +607,7 @@ export function createLibraryImport(
 
     // the folder: where it is, or under the folder format; a second run finds it renamed
     let folder = item.folder
-    if (p.rename) {
+    if (p.rename && !media.rootFolders.readOnlyAt(p.root)) {
       const name = buildFolderName(settings.folderFormat, imports.internal.namingMovie(row, meta), {
         colonReplacement: settings.colonReplacement,
       })
@@ -467,13 +633,18 @@ export function createLibraryImport(
       row = { ...row, path: folder }
     }
 
-    // the file: the largest video that probes as one and isn't a sample
+    // the file: the largest video that probes as one and isn't a sample; a film in parts, its
+    // first part
     let videos: FoundFile[]
     try {
       videos = await videosIn(folder)
     } catch {
       return `${folder} can’t be read.`
     }
+    const film = filmIn(videos, [], titleOf)
+    const problem = folderSkip(film)
+    if (problem) return problem
+    if (film.kind === 'film' && film.parts.length) videos = [film.main]
     let picked: { file: FoundFile; info: MediaInfo } | null = null
     let why = 'No video file in the folder.'
     for (const f of videos) {
@@ -504,7 +675,7 @@ export function createLibraryImport(
       info: picked.info,
       // the file's own name, with the folder's for what it leaves out (the year, an id)
       sourceTitle: own,
-      rename: p.rename,
+      rename: p.rename && !media.rootFolders.readOnlyAt(p.root),
       message: p.rename
         ? 'Imported from the existing library, renamed to the naming format.'
         : 'Imported from the existing library, where it was.',

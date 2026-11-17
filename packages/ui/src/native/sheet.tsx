@@ -9,14 +9,17 @@
 // the dialogs answered by their footer keep their look.
 
 import { useT } from '@highsea-tv/i18n/react'
+import { line, sheet } from '@highsea-tv/tokens'
 import { type ReactNode, useEffect, useId, useRef, useSyncExternalStore } from 'react'
-import { Modal, Platform, View } from 'react-native'
+import { Modal, Platform, Pressable, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Button } from './button.tsx'
+import { visuallyHidden } from './hidden-heading.tsx'
 import { uiMessages } from './messages.ts'
+import { useScrimStyle } from './scrim.ts'
 import { ScrollView } from './scroll-view.tsx'
-import { Text } from './text.tsx'
-import { tokens, useTheme } from './theme.tsx'
+import { Text, textStyle } from './text.tsx'
+import { tokens, useControl, useTheme } from './theme.tsx'
 
 // ---------------------------------------------------------------- yielding to a link
 
@@ -62,7 +65,13 @@ export async function yieldToLink(): Promise<void> {
 
 /** Whether a Modal is visible, given whether it's asked to be, and its part in `yieldToLink`. */
 function useYielding(open: boolean): { visible: boolean; dismissed: () => void } {
-  const shut = useSyncExternalStore(subscribeYield, () => yielding)
+  // the server never yields: without its snapshot React gives up server rendering the page
+  // (https://react.dev/reference/react/useSyncExternalStore#adding-support-for-server-rendering)
+  const shut = useSyncExternalStore(
+    subscribeYield,
+    () => yielding,
+    () => false,
+  )
   const waiting = useRef<(() => void) | null>(null)
   const visible = open && !shut
   useEffect(() => {
@@ -87,14 +96,7 @@ function useYielding(open: boolean): { visible: boolean; dismissed: () => void }
   return { visible, dismissed: () => waiting.current?.() }
 }
 
-export function Sheet({
-  open,
-  onClose,
-  title,
-  children,
-  footer,
-  onDismiss,
-}: {
+export type SheetProps = {
   open: boolean
   onClose: () => void
   /** Once it has gone (React Native's Modal `onDismiss`), after `open` turns false. */
@@ -106,7 +108,29 @@ export function Sheet({
    * that wraps (the web renderer's SheetContent footer, mobile/library.tsx's Reset and Show).
    */
   footer?: ReactNode
-}) {
+  /**
+   * With a pointer, the edge it comes from (the admin's detail and menu sheets): a panel the
+   * window's height at that edge, as the web renderer's SheetContent `side`. Touch and the TV keep
+   * the page sheet.
+   */
+  side?: 'right' | 'left'
+  /** A pointer's side sheet: its widest (416 at the right and 320 at the left, the web's). */
+  width?: number
+  /** A pointer's side sheet: a line under the title. */
+  description?: ReactNode
+  /** A pointer's side sheet: the title is read but not shown (a menu sheet). */
+  hideTitle?: boolean
+  /** A pointer's side sheet: its padding, 24 unless given (the admin's menu sheet's 16, the web's p-4). */
+  padding?: number
+}
+
+export function Sheet(props: SheetProps) {
+  const pointer = useTheme().formFactor.input === 'pointer'
+  if (pointer && props.side) return <SideSheet {...props} side={props.side} />
+  return <PageSheet {...props} />
+}
+
+function PageSheet({ open, onClose, title, children, footer, onDismiss }: SheetProps) {
   const theme = useTheme()
   const t = useT(uiMessages)
   const insets = useSafeAreaInsets()
@@ -141,7 +165,7 @@ export function Sheet({
               alignItems: 'center',
               paddingHorizontal: tokens.space['4'],
               paddingTop: tokens.space['3'],
-              minHeight: 56,
+              minHeight: sheet.header,
             }}
           >
             <Text
@@ -195,6 +219,139 @@ export function Sheet({
   )
 }
 
+/** A side sheet's widest by its edge (the web renderer's w-[min(26rem,…)] and w-[min(20rem,…)]). */
+const SIDE_WIDTH = { right: 416, left: 320 } as const
+/** The space a side sheet leaves beside it in a narrow window (the web's 100vw - 2rem). */
+const SIDE_MARGIN = tokens.space['8']
+
+/**
+ * A pointer's side sheet (web/components/dialog.tsx's SheetContent at `right` or `left`): over the
+ * scrim, `s3` with the extra-large corner on its inner side and the fourth elevation, 24 of padding
+ * and 20 between its title, body and footer, the whole of it scrolling. Escape and a press on the
+ * scrim close it (React Native's Modal `onRequestClose`, which react-native-web calls on Escape).
+ */
+function SideSheet({
+  open,
+  onClose,
+  onDismiss,
+  title,
+  description,
+  hideTitle,
+  children,
+  footer,
+  side,
+  width,
+  padding = tokens.space['6'],
+}: SheetProps & { side: 'right' | 'left' }) {
+  const theme = useTheme()
+  const t = useT(uiMessages)
+  const titleId = useId()
+  const { visible, dismissed } = useYielding(open)
+  const scrim = useScrimStyle()
+  const corner = tokens.radius.xl
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      onRequestClose={onClose}
+      onDismiss={() => {
+        dismissed()
+        onDismiss?.()
+      }}
+      {...named(titleId)}
+    >
+      <View
+        style={{
+          flex: 1,
+          flexDirection: side === 'right' ? 'row-reverse' : 'row',
+          ...scrim,
+        }}
+      >
+        <View
+          accessibilityViewIsModal
+          style={{
+            width: width ?? SIDE_WIDTH[side],
+            maxWidth: `calc(100% - ${SIDE_MARGIN}px)` as unknown as number,
+            height: '100%',
+            backgroundColor: theme.colors.s3,
+            borderTopLeftRadius: side === 'right' ? corner : 0,
+            borderBottomLeftRadius: side === 'right' ? corner : 0,
+            borderTopRightRadius: side === 'left' ? corner : 0,
+            borderBottomRightRadius: side === 'left' ? corner : 0,
+            boxShadow: tokens.elevation[4].boxShadow,
+            overflow: 'hidden',
+          }}
+        >
+          <ScrollView contentContainerStyle={{ padding, gap: tokens.space['5'] }}>
+            {hideTitle ? (
+              <HiddenTitle id={titleId}>{title}</HiddenTitle>
+            ) : (
+              <View
+                style={{ flexDirection: 'row', alignItems: 'flex-start', gap: tokens.space['3'] }}
+              >
+                <View style={{ flex: 1, minWidth: 0, gap: tokens.space['1'] }}>
+                  <Text
+                    variant="title"
+                    accessibilityRole="header"
+                    aria-level={2}
+                    nativeID={titleId}
+                  >
+                    {title}
+                  </Text>
+                  {description == null ? null : typeof description === 'string' ? (
+                    <Text
+                      size={tokens.adminText.form.size}
+                      leading={tokens.adminText.form.leading}
+                      color="text-2"
+                    >
+                      {description}
+                    </Text>
+                  ) : (
+                    description
+                  )}
+                </View>
+                <TitleClose label={t('close')} onPress={onClose} />
+              </View>
+            )}
+            <View style={{ minWidth: 0 }}>{children}</View>
+            {footer ? (
+              <View
+                style={{
+                  flexDirection: 'row',
+                  flexWrap: 'wrap',
+                  justifyContent: 'flex-end',
+                  gap: tokens.space['2'],
+                }}
+              >
+                {footer}
+              </View>
+            ) : null}
+          </ScrollView>
+        </View>
+        {/* the scrim beside it closes it, as the web's overlay does */}
+        <Pressable
+          accessible={false}
+          tabIndex={-1}
+          onPress={onClose}
+          style={{ flex: 1, alignSelf: 'stretch' }}
+        />
+      </View>
+    </Modal>
+  )
+}
+
+/** A title read but not shown: HiddenHeading's visually-hidden box, with the id that names the sheet. */
+function HiddenTitle({ id, children }: { id: string; children: string }) {
+  return (
+    <View pointerEvents="none" style={visuallyHidden}>
+      <Text accessibilityRole="header" aria-level={2} nativeID={id} numberOfLines={1}>
+        {children}
+      </Text>
+    </View>
+  )
+}
+
 /**
  * Names a Modal by its title. On the web react-native-web's Modal is the `role="dialog"` element
  * and passes its other props to it (exports/Modal/ModalContent.js), and its Text writes `nativeID`
@@ -210,6 +367,7 @@ export function Dialog({
   open,
   onClose,
   title,
+  description,
   children,
   footer,
   size = 'md',
@@ -219,6 +377,8 @@ export function Dialog({
   /** Without it the dialog must be answered by its footer. */
   onClose?: () => void
   title: string
+  /** A line under the title, in the admin's form type and `text-2` (the web's DialogContent's). */
+  description?: string
   children?: ReactNode
   /** Its buttons: with a pointer in a row at its end that wraps; by touch as they're given. */
   footer?: ReactNode
@@ -232,6 +392,7 @@ export function Dialog({
   const pointer = theme.formFactor.input === 'pointer'
   const titleId = useId()
   const { visible, dismissed } = useYielding(open)
+  const scrim = useScrimStyle()
   return (
     <Modal
       visible={visible}
@@ -248,7 +409,7 @@ export function Dialog({
           justifyContent: 'center',
           alignItems: pointer ? 'center' : undefined,
           padding: tokens.space['6'],
-          backgroundColor: 'rgba(0,0,0,0.6)',
+          ...scrim,
         }}
       >
         <View
@@ -256,11 +417,12 @@ export function Dialog({
           style={{
             width: pointer ? '100%' : undefined,
             maxWidth: pointer ? DIALOG_WIDTH[size] : undefined,
+            maxHeight: '100%',
             gap: tokens.space['4'],
             padding: tokens.space['5'],
             borderRadius: tokens.radius.lg,
             backgroundColor: theme.colors.s3,
-            borderWidth: 1,
+            borderWidth: line.thin,
             borderColor: theme.colors.line,
             boxShadow: tokens.elevation[4].boxShadow,
           }}
@@ -278,21 +440,34 @@ export function Dialog({
               >
                 {title}
               </Text>
-              <Button
-                variant="ghost"
-                size="sm"
-                icon="close"
-                iconOnly
-                accessibilityLabel={t('close')}
-                onPress={onClose}
-              />
+              <TitleClose label={t('close')} onPress={onClose} />
             </View>
           ) : (
             <Text variant="title" accessibilityRole="header" aria-level={2} nativeID={titleId}>
               {title}
             </Text>
           )}
-          {children}
+          {description ? (
+            <Text
+              size={tokens.adminText.form.size}
+              leading={tokens.adminText.form.leading}
+              color="text-2"
+              style={{ marginTop: -tokens.space['3'] }}
+            >
+              {description}
+            </Text>
+          ) : null}
+          {/* a body taller than the window scrolls between the title and the footer, which stay
+              in view, as the web's dialogs did; menus open in their own Modal, so nothing is clipped */}
+          {children ? (
+            <ScrollView
+              style={{ flexShrink: 1 }}
+              keyboardShouldPersistTaps="handled"
+              contentContainerStyle={{ gap: tokens.space['4'] }}
+            >
+              {children}
+            </ScrollView>
+          ) : null}
           {footer && pointer ? (
             <View
               style={{
@@ -310,5 +485,29 @@ export function Dialog({
         </View>
       </View>
     </Modal>
+  )
+}
+
+/**
+ * The close button beside a sheet's or dialog's title, centred on the title's first line: the row
+ * tops them both (a title that wraps keeps its first line by the button, as the web's
+ * `items-start` header), and the button, taller than the title's line, is raised by half the
+ * difference so its icon sits on that line rather than below it (HT-4).
+ */
+function TitleClose({ label, onPress }: { label: string; onPress: () => void }) {
+  const theme = useTheme()
+  const m = useControl('sm')
+  const line = textStyle(theme, 'title').lineHeight
+  return (
+    <View style={{ marginTop: Math.min(0, (line - m.height) / 2) }}>
+      <Button
+        variant="ghost"
+        size="sm"
+        icon="close"
+        iconOnly
+        accessibilityLabel={label}
+        onPress={onPress}
+      />
+    </View>
   )
 }

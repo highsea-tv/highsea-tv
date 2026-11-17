@@ -12,7 +12,7 @@
 // Pressable reports hover for a mouse or a pen, not for touch
 // (https://necolas.github.io/react-native-web/docs/pressable/).
 import type { ControlLook } from '@highsea-tv/tokens'
-import { Image } from 'expo-image'
+import { line } from '@highsea-tv/tokens'
 import type { Ref } from 'react'
 import {
   type AccessibilityProps,
@@ -23,11 +23,16 @@ import {
 import type { ButtonCommon, ButtonVariant } from '../shared/controls.ts'
 import { ControlPress, ControlText, lookAt } from './control.tsx'
 import { Icon, type IconName } from './icon.tsx'
+import { Image } from './image.tsx'
 import { brighten, HOVER_BRIGHTNESS } from './lift.ts'
 import { centredPadding } from './metrics.ts'
+import { OWN_SIZE } from './own-size.ts'
 import { tokens, useControl, useTheme } from './theme.tsx'
 import type { ViewHandle } from './tv/focusable.tsx'
 import type { TileSource } from './tv/tiles.tsx'
+
+/** The outline's width: a thin line (elevation.md › Lines). */
+const EDGE = line.thin
 
 export type { ButtonVariant } from '../shared/controls.ts'
 
@@ -57,6 +62,15 @@ export type ButtonProps = ButtonCommon<IconName> &
     accessibilityState?: Pick<AccessibilityState, 'checked' | 'selected' | 'expanded'>
     /** It opens a menu or a dialog (`aria-haspopup`), with `accessibilityState.expanded` while open. */
     hasPopup?: 'menu' | 'dialog'
+    /**
+     * Where it leads: on the web an `<a href>` drawn as the button, with the link role (the web
+     * renderer's Button `asChild` round an `<a>`); elsewhere `onPress` is the way.
+     */
+    href?: string
+    /** How a browser follows `href`: saved (`download`), or in a new tab (`external`). */
+    follow?: 'download' | 'external'
+    /** The page or step it stands for is the one shown (`aria-current`): Manual import's modes. */
+    current?: 'page'
     /** tvOS's preferred focus when the screen appears (react-native-tvos). */
     hasTVPreferredFocus?: boolean
     /** A round picture before the label: a person in the TV's Search. */
@@ -79,6 +93,9 @@ export function Button({
   accessibilityHint,
   accessibilityState,
   hasPopup,
+  current,
+  href,
+  follow,
   onPress,
   onLongPress,
   onFocus,
@@ -109,6 +126,9 @@ export function Button({
       role={typeof accessibilityState?.checked === 'boolean' ? 'togglebutton' : undefined}
       state={{ ...accessibilityState, busy: !!loading }}
       hasPopup={hasPopup}
+      current={current}
+      href={href}
+      follow={follow}
       radius={m.radius}
       slop={square ? { height: m.height, width: m.height } : { height: m.height }}
       style={(state) => {
@@ -117,16 +137,18 @@ export function Button({
         return {
           minHeight: m.height,
           minWidth: square ? m.height : undefined,
-          alignSelf: block ? 'stretch' : 'flex-start',
+          ...(block ? { alignSelf: 'stretch' as const } : OWN_SIZE),
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'center',
           gap: m.gap,
           paddingHorizontal: square ? 0 : m.pad,
           paddingLeft: image !== undefined && !square ? m.inset * 2 : undefined,
-          paddingVertical: square ? 0 : centredPadding(m),
+          // the edge is inside the box (border-box), so the label is centred within it: a bordered
+          // button is the spec's height, as one without an edge is
+          paddingVertical: square ? 0 : Math.max(0, centredPadding(m) - (look.edge ? EDGE : 0)),
           backgroundColor: look.fill ? theme.colors[look.fill] : 'transparent',
-          borderWidth: look.edge ? 1 : 0,
+          borderWidth: look.edge ? EDGE : 0,
           borderColor: look.edge ? theme.colors[look.edge] : undefined,
           opacity: disabled ? tokens.controls.disabledOpacity : 1,
           filter: bright ? brighten(bright) : undefined,

@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The library's text in a browser, drawn through react-native-web in happy-dom as
 // field-web.test.tsx draws its fields: every text smooths its glyphs as the web renderer's `html`
-// does (`-webkit-font-smoothing: antialiased`, src/web/styles.css), so a Mac's browser doesn't
+// did until D3 (`-webkit-font-smoothing: antialiased`), so a Mac's browser doesn't
 // draw light text a weight heavier than the design, and a label on an accent fill keeps the
-// browser's own (`[-webkit-font-smoothing:auto]` in the web renderer's button.tsx).
+// browser's own (`[-webkit-font-smoothing:auto]`, as the web renderer's button.tsx had it).
 import { GlobalRegistrator } from '@happy-dom/global-registrator'
 
 if (!GlobalRegistrator.isRegistered) GlobalRegistrator.register({ url: 'http://localhost/' })
@@ -47,7 +47,13 @@ mock.module('react-native-reanimated', () => ({
   withTiming: <T,>(value: T) => value,
 }))
 const none = () => null
-mock.module('react-native-svg', () => ({ default: none, Path: none, Circle: none, Rect: none }))
+mock.module('react-native-svg', () => ({
+  default: none,
+  G: none,
+  Path: none,
+  Circle: none,
+  Rect: none,
+}))
 // a Button's picture, which none of these has
 mock.module('expo-image', () => ({ Image: () => null }))
 mock.module('expo-haptics', () => ({ impactAsync: async () => {}, ImpactFeedbackStyle: {} }))

@@ -1,13 +1,15 @@
 # SPDX-License-Identifier: AGPL-3.0-only
-# highsea on one Linux machine: the recommended setup.
+# highsea on one Linux machine, with host networking: the file the Docker guide shows and
+# get.highsea.tv's installer writes.
 #   docker compose up -d
 # Then open http://<this machine>:3000 and follow the setup.
 #
 # Host networking lets the apps find the server on your network by itself, through UDP 7368 and
-# mDNS (ADR 0020), and lets the torrent engine take incoming peers on 6881 (ADR 0037). Docker
-# Desktop, and NAS boxes that don't offer host networking, use compose.bridge.yaml instead.
-# Torrents behind a VPN container: compose.gluetun.yaml. highsea's own WireGuard tunnel:
-# compose.connects.yaml (ADR 0042). Building from a checkout: compose.dev.yaml.
+# mDNS (ADR 0020), and lets the torrent engine take incoming peers on 6881 (ADR 0037).
+# On a Mac or Windows, Docker Desktop publishes the ports instead, as the Docker guide shows:
+# https://docs.highsea.tv/install/docker/
+# For torrents through a VPN, Settings › VPN and its guide give the lines to add:
+# https://docs.highsea.tv/settings/vpn/
 services:
   highsea:
     # `latest` is the newest stable release; pin a version (0.1.0) to choose when you move

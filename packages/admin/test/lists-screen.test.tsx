@@ -26,7 +26,8 @@ const { act, cleanup, render, within } = await import('@testing-library/react')
 const { default: userEvent } = await import('@testing-library/user-event')
 const { createClient } = await import('@highsea-tv/sdk')
 const { ClientProvider } = await import('@highsea-tv/sdk/react')
-const { TooltipProvider } = await import('@highsea-tv/ui')
+const { shown } = await import('./modal.ts')
+const { ThemeProvider } = await import('@highsea-tv/ui/native')
 const { ImportLists } = await import('../src/lists.tsx')
 
 const json = (body: unknown, status = 200) =>
@@ -147,9 +148,9 @@ async function open() {
   await act(async () => {
     render(
       <ClientProvider client={client}>
-        <TooltipProvider>
+        <ThemeProvider>
           <ImportLists />
-        </TooltipProvider>
+        </ThemeProvider>
       </ClientProvider>,
     )
   })
@@ -178,6 +179,7 @@ describe('Settings › Import lists', () => {
     const { user, page } = await open()
     await user.click(page.getByRole('button', { name: 'Add a list' }))
     await settle()
+    shown()
     const dialog = within(page.getByRole('dialog'))
     await user.click(dialog.getByRole('radio', { name: 'Generic list' }))
     await user.type(dialog.getByLabelText('Address'), 'https://lists.example/blender.json')

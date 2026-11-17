@@ -25,13 +25,16 @@ for (const spec of ['react', 'react-dom', 'react/jsx-runtime', 'react-dom/client
 }
 const React = await import('react')
 const web = await import(rnw)
-/** The props each FlatList was last drawn with: touch's snapping is the phone's, which the web ignores. */
+/**
+ * The props each sideways ScrollView was drawn with: touch's snapping is the phone's, which the
+ * web ignores.
+ */
 const lists: Record<string, unknown>[] = []
-const SpiedList = (props: Record<string, unknown>) => {
-  lists.push(props)
-  return React.createElement(web.FlatList, props)
+const SpiedScrollView = (props: Record<string, unknown>) => {
+  if (props.horizontal) lists.push(props)
+  return React.createElement(web.ScrollView, props)
 }
-mock.module('react-native', () => ({ ...web, FlatList: SpiedList }))
+mock.module('react-native', () => ({ ...web, ScrollView: SpiedScrollView }))
 /** A layout animation's builder, which the web's View never reads. */
 const builder: Record<string, unknown> = {}
 for (const k of ['springify', 'stiffness', 'damping', 'mass', 'duration'])
@@ -83,6 +86,7 @@ mock.module('react-native-svg', () => ({
   default: none,
   Circle: none,
   Defs: none,
+  G: none,
   LinearGradient: none,
   Mask: none,
   Path: none,
@@ -114,6 +118,7 @@ const testing = await import('@testing-library/react')
 const { act, cleanup, fireEvent, screen } = testing
 const { ThemeProvider } = await import('../../src/native/theme.tsx')
 const { Button } = await import('../../src/native/button.tsx')
+const { Press } = await import('../../src/native/press.tsx')
 const { FilmRow } = await import('../../src/native/film-row.tsx')
 const { LetterIndex } = await import('../../src/native/letter-index.tsx')
 const { FactsCard, NamedAction, PersonTile } = await import('../../src/native/page-parts.tsx')
@@ -843,8 +848,13 @@ describe('PersonTile', () => {
       )
       const out = [...container.querySelectorAll('*')]
         .map((el) => (el as HTMLElement).style)
-        // the circles: square by aspect ratio, or by their width and height (the TV's)
-        .filter((st) => st.aspectRatio === '1 / 1' || (st.width && st.width === st.height))
+        // the circles: square by aspect ratio, or by their width and height in pixels (the TV's;
+        // a chip that's its content's size is `fit-content` both ways, and no circle)
+        .filter(
+          (st) =>
+            st.aspectRatio === '1 / 1' ||
+            (st.width && st.width === st.height && !Number.isNaN(parseFloat(st.width))),
+        )
         .map((st) => parseFloat(st.width))
       cleanup()
       return out
@@ -1161,6 +1171,71 @@ describe('Pager', () => {
     cleanup()
     draw('touch', pager(3))
     expect(screen.queryByRole('button')).toBeNull()
+  })
+})
+
+describe('Press', () => {
+  /** Enter pressed and let go on `el`, as a keyboard sends it; `repeat` as a held key repeats. */
+  const enter = (el: Element, { repeat = 0 } = {}) =>
+    act(() => {
+      fireEvent.keyDown(el, { key: 'Enter', code: 'Enter' })
+      for (let i = 0; i < repeat; i++) fireEvent.keyDown(el, { key: 'Enter', repeat: true })
+      fireEvent.keyUp(el, { key: 'Enter', code: 'Enter' })
+    })
+
+  test('with a pointer, Enter follows a link drawn without an href, once however long it’s held', () => {
+    const presses: number[] = []
+    draw(
+      'pointer',
+      <Press role="link" accessibilityLabel="Movies" onPress={() => presses.push(1)}>
+        <Text>Movies</Text>
+      </Press>,
+    )
+    const link = screen.getByRole('link', { name: 'Movies' })
+    expect(link.tagName).toBe('DIV')
+    focus(link)
+    enter(link)
+    expect(presses).toEqual([1])
+    enter(link, { repeat: 3 })
+    expect(presses).toEqual([1, 1])
+  })
+
+  test('Enter from a link inside a link follows the inner one only', () => {
+    const presses: string[] = []
+    draw(
+      'pointer',
+      <Press role="link" accessibilityLabel="Sintel" onPress={() => presses.push('film')}>
+        <Press role="link" accessibilityLabel="Ines" onPress={() => presses.push('person')}>
+          <Text>Ines</Text>
+        </Press>
+      </Press>,
+    )
+    const inner = screen.getByRole('link', { name: 'Ines' })
+    focus(inner)
+    enter(inner)
+    expect(presses).toEqual(['person'])
+  })
+
+  test('a link with an href is left to the browser, which follows an `<a href>` itself', () => {
+    const presses: string[] = []
+    draw(
+      'pointer',
+      <Press
+        role="link"
+        // as TitleLink gives its address: react-native-web's View takes `href`, Pressable's props don't name it
+        {...{ href: '/movies' }}
+        accessibilityLabel="All movies"
+        onPress={() => presses.push('all')}
+      >
+        <Text>All movies</Text>
+      </Press>,
+    )
+    const all = screen.getByRole('link', { name: 'All movies' })
+    expect(all.tagName).toBe('A')
+    focus(all)
+    enter(all)
+    // happy-dom sends no click for Enter; a browser does, and react-native-web presses on it
+    expect(presses).toEqual([])
   })
 })
 

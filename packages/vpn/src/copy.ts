@@ -14,6 +14,8 @@ export const failures = {
   containerKey: 'Enter the control server’s API key.',
   needsCapability:
     'highsea needs the NET_ADMIN capability to run the tunnel. Add it to highsea’s service in your compose file, then restart.',
+  hostNetwork:
+    'On host networking, the tunnel’s interface and routes would land in the host’s network beside everything else, so highsea won’t start it. Put the lines from Compose for highsea connects in place of network_mode: host, then recreate the container.',
   // Not in the prototype: what highsea connects can meet that the prototype didn't play (6b).
   linuxOnly:
     'highsea connects runs on Linux, as highsea’s Docker image does. Use a VPN container or an interface on this machine here.',

@@ -9,8 +9,12 @@ import { compile } from '@tailwindcss/node'
 // axe reads `window` when it loads; as CommonJS it would load before ./dom.ts registers one
 const { default: axe } = await import('axe-core')
 
-/** Classes with no CSS of their own: named groups, and Lucide's identifying classes. */
-const MARKERS = /^(group\/[\w-]+|lucide(-[\w-]+)?)$/
+/**
+ * Classes with no CSS of their own: named groups, and Lucide's identifying classes; and
+ * react-native-web's (`css-view-…`, `r-flexDirection-…`), whose CSS is its own sheet's, not
+ * Tailwind's, in the admin's shared screens (one-client-platform-d.md).
+ */
+const MARKERS = /^(group\/[\w-]+|lucide(-[\w-]+)?|css-[A-Za-z]+-\w+|r-[A-Za-z]+-\w+)$/
 export const classes = new Set<string>()
 
 /** Records the classes in the document now. Call it in each state you render. */

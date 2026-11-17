@@ -2,6 +2,8 @@
 // The progress bar (ProgressBar, as on the web): the accent on a faint track, for Continue watching
 // on artwork, for the player's buffered and played ranges, and for a download (neutral while it's
 // paused, with its percentage beside it, as the web renderer's `tone` and `showValue`).
+
+import { progress } from '@highsea-tv/tokens'
 import { View } from 'react-native'
 import { Text } from './text.tsx'
 import { tokens, useTheme } from './theme.tsx'
@@ -21,14 +23,14 @@ const FILL = {
 } as const satisfies Record<ProgressBarTone, string>
 
 /** A panel's bar (web/components/progress.tsx's `sm`): 5 tall on `s3`. */
-const PANEL_HEIGHT = 5
+const PANEL_HEIGHT = progress.panel
 
 const percent = (v: number) => `${v < 10 && v > 0 && v % 1 ? v.toFixed(1) : Math.round(v)}%`
 
 export function ProgressBar({
   value,
   label = 'Watched',
-  height = 4,
+  height = progress.height,
   tone = 'accent',
   showValue = false,
   look = 'overlay',

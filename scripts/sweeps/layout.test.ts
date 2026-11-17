@@ -572,7 +572,7 @@ group("B1's destinations", () => {
     'the account’s settings stop': 'ines settings',
     'library’s count of movies': '34 of 34 movies',
     'movies’ count': '34 movies',
-    'tears of steel’s poster': 'tears of steel 2012',
+    'big buck bunny’s poster': 'big buck bunny 2008',
     'home’s staff picks': 'staff picks by ines',
     'the a–z sort': 'a z',
     'the collections title': 'collections',
@@ -601,7 +601,7 @@ group("B1's destinations", () => {
     'saltmarsh’s poster': 'saltmarsh 2021',
     'the show’s title': 'saltmarsh',
     'its first season': 'season 1',
-    'sintel’s score': 'sintel original score 2010',
+    'big buck bunny’s score': 'big buck bunny original score jan morgenstern',
     'the count of songs': '383 of 383 songs',
     'the first song': 'play afterglow ferrous loom 2 32',
     'the album’s title': 'sintel original score',
@@ -724,6 +724,9 @@ group("B1's destinations", () => {
     // the TV's player waits out the controls' hide, since its anchor is there from the start
     expect(stepsFor('appletv', ['player'])[0]?.settle).toBeGreaterThan(3000)
     expect(stepsFor('iphone', ['player'])[0]?.settle).toBe(0)
+    // and its Songs waits for the list to take focus from Music's first tab
+    expect(stepsFor('appletv', ['songs'])[0]?.settle).toBeGreaterThan(0)
+    expect(stepsFor('iphone', ['songs'])[0]?.settle).toBe(0)
     expect(phone.find((s) => s.screen === 'search-results')?.url).toBe(
       `${CLIENT_SCHEME}://search?q=tears`,
     )

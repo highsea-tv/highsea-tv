@@ -42,6 +42,15 @@ export type ChoiceOption<V extends string = string, I extends string = string> =
   label: string
   icon?: I
   disabled?: boolean
+  /** Tabs: a count after the label, in mono (the admin's queue and its filters). */
+  count?: number
+  /**
+   * A select on a pointer: the heading of the group it's in, consecutive options with the same
+   * group drawn under one (the web's SelectGroup and SelectLabel).
+   */
+  group?: string
+  /** A select: the label in mono (a release group, a folder, a field's key). */
+  mono?: boolean
 }
 
 /** One choice from a few: a segmented control or segmented tabs. */

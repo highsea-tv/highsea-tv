@@ -37,8 +37,9 @@ const { act, cleanup, render, within } = await import('@testing-library/react')
 const { default: userEvent } = await import('@testing-library/user-event')
 const { createClient } = await import('@highsea-tv/sdk')
 const { ClientProvider } = await import('@highsea-tv/sdk/react')
-const { toast, TooltipProvider } = await import('@highsea-tv/ui')
+const { ThemeProvider, toast } = await import('@highsea-tv/ui/native')
 const { Activity } = await import('../src/activity.tsx')
+const { shown } = await import('./modal.ts')
 const { ManualImport } = await import('../src/import.tsx')
 
 // ---------------------------------------------------------------- the fake API
@@ -239,7 +240,7 @@ async function open(screen: ReactNode) {
   await act(async () => {
     render(
       <ClientProvider client={client}>
-        <TooltipProvider>{screen}</TooltipProvider>
+        <ThemeProvider>{screen}</ThemeProvider>
       </ClientProvider>,
     )
   })
@@ -287,8 +288,8 @@ describe('A7 Activity', () => {
     await user.click(page.getByRole('button', { name: 'More for Sintel' }))
     await user.click(page.getByRole('menuitem', { name: 'Remove from queue' }))
     await settle()
-    const dialog = within(page.getByRole('alertdialog'))
-    expect(dialog.getByText('Remove Sintel?')).toBeTruthy()
+    shown()
+    const dialog = within(page.getByRole('dialog', { name: 'Remove Sintel?' }))
     await user.click(dialog.getByRole('button', { name: 'Remove' }))
     await settle()
     expect(requested('DELETE', '/api/v1/queue/q_1')[0]?.body).toEqual({
@@ -395,15 +396,16 @@ describe('A17 Manual import', () => {
   test('each file picks a version; two files for one version are refused', async () => {
     state.extraCandidates = [candidate('/data/downloads/Sintel/Sintel.4k.mkv')]
     const { user, page } = await open(<ManualImport />)
-    const first = page.getByRole('combobox', { name: 'Sintel.mkv: version' })
+    const first = page.getByRole('button', { name: 'Sintel.mkv: version' })
     expect(first.textContent).toContain('1080p')
     expect(page.getAllByText('Pick another version for one of these.')).toHaveLength(2)
-    expect(
-      (page.getByRole('button', { name: 'Import 2 files' }) as HTMLButtonElement).disabled,
-    ).toBe(true)
+    expect(page.getByRole('button', { name: 'Import 2 files' }).getAttribute('aria-disabled')).toBe(
+      'true',
+    )
 
-    await user.click(page.getByRole('combobox', { name: 'Sintel.4k.mkv: version' }))
-    await user.click(await page.findByRole('option', { name: '4K HDR · has a file' }))
+    await user.click(page.getByRole('button', { name: 'Sintel.4k.mkv: version' }))
+    shown()
+    await user.click(await page.findByRole('menuitemradio', { name: '4K HDR · has a file' }))
     await settle()
     expect(page.queryByText('Pick another version for one of these.')).toBeNull()
     await user.click(page.getByRole('button', { name: 'Import 2 files' }))

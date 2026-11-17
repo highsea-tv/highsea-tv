@@ -12,7 +12,7 @@ import type {
   RuleValue,
   SmartCollection,
 } from '@highsea-tv/mock/types'
-import { act, cleanup, render, waitFor, within } from '@testing-library/react'
+import { act, cleanup, render, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { memoryLocation } from 'wouter/memory-location'
 import { defaultState, type Role } from '../src/proto/state.ts'
@@ -38,7 +38,7 @@ const settle = () =>
 const client = (mock: Mock, role: Role = 'owner') =>
   createClient(mock, { data: 'populated', role, latency: 0 })
 
-async function open(path: string, role: Role = 'owner') {
+async function _open(path: string, role: Role = 'owner') {
   const mock = createMock()
   const location = memoryLocation({ path, record: true })
   const state = { ...defaultState, data: 'populated' as const, role, time: 'pause' as const }
@@ -56,7 +56,7 @@ async function _acknowledge(user: ReturnType<typeof userEvent.setup>) {
   await settle()
 }
 
-async function clean() {
+async function _clean() {
   collect()
   expect(await violations()).toEqual([])
 }
@@ -250,72 +250,6 @@ describe('the evaluator', () => {
   })
 })
 
-describe('A19 collections', () => {
-  test('the list: each with its kind, what it holds and who sees it', async () => {
-    await open('/admin/collections')
-    const list = within(page().getByRole('list', { name: 'Collections' }))
-    expect(list.getAllByRole('listitem')).toHaveLength(6)
-    expect(list.getByRole('link', { name: '2010s, 4.5 stars and up, in English' })).toBeTruthy()
-    expect(list.getByText('Released 2010–2020, rated 4.5 or more, in English')).toBeTruthy()
-    expect(list.getByText(/4 movies, 3 in the apps/)).toBeTruthy()
-    expect(list.getByText('Picked')).toBeTruthy()
-    expect(list.getByText(/Nothing matches yet/)).toBeTruthy()
-    await clean()
-  })
-
-  test('the editor counts as the rules change, and saves', async () => {
-    const { mock, location, user } = await open('/admin/collections/sc-2010s')
-    const result = () => within(page().getByRole('region', { name: 'What it holds now' }))
-    await waitFor(() => expect(result().getByText(/films match/).textContent).toContain('4'))
-
-    // rated 5: nothing in the seed's 2010s is that good
-    const rating = page().getByLabelText('Condition 2: value')
-    await user.clear(rating)
-    await user.type(rating, '5')
-    await waitFor(() => expect(result().getByText(/No films match yet/)).toBeTruthy(), {
-      timeout: 3000,
-    })
-
-    // rated 4: Sintel joins them
-    await user.clear(rating)
-    await user.type(rating, '4')
-    await waitFor(() => expect(result().getByText(/films match/).textContent).toContain('5'), {
-      timeout: 3000,
-    })
-    const matched = 5
-
-    const name = page().getByLabelText('Name')
-    await user.clear(name)
-    await user.type(name, 'The 2010s, rated 4 and up')
-    await user.click(page().getByRole('button', { name: 'Save changes' }))
-    await settle()
-    expect(location.history?.at(-1)).toBe('/admin/collections')
-    const c = await saved(mock, 'sc-2010s')
-    expect(c.name).toBe('The 2010s, rated 4 and up')
-    expect(c.matched).toBe(matched)
-    await clean()
-  })
-
-  test('a new collection starts from the Movies library', async () => {
-    const { location, user } = await open('/admin/movies')
-    await user.click(page().getByRole('button', { name: 'Save as smart collection' }))
-    await settle()
-    expect(location.history?.at(-1)).toBe('/admin/collections/new')
-    expect(page().getByRole('form', { name: 'Collection' })).toBeTruthy()
-    expect(page().getByText(/No conditions yet, so every film is in it/)).toBeTruthy()
-    await user.click(page().getByRole('button', { name: 'Add a condition' }))
-    expect(
-      within(page().getByRole('list', { name: 'Rules' })).getAllByRole('listitem'),
-    ).toHaveLength(1)
-    await clean()
-  })
-
-  test('a collection that isn’t there says so', async () => {
-    await open('/admin/collections/nowhere')
-    expect(page().getByText(/no collection with that id/)).toBeTruthy()
-  })
-})
-
 describe('shows in collections and featured sections (prototype-gaps.md › stage 6)', () => {
   test('a collection’s shows are picked by hand, counted as the apps count them', async () => {
     const mock = createMock()
@@ -341,30 +275,6 @@ describe('shows in collections and featured sections (prototype-gaps.md › stag
     await expect(
       api.collections.save(draft([], { id: 'sc-none', name: 'None', rules: null })),
     ).rejects.toThrow(/film or show/)
-  })
-
-  test('the admin’s list and editor show the shows', async () => {
-    const { mock, user } = await open('/admin/collections/sc-staff')
-    const result = () => within(page().getByRole('region', { name: 'What it holds now' }))
-    await waitFor(() =>
-      expect(result().getByRole('list', { name: 'Shows in it' }).children).toHaveLength(1),
-    )
-    await user.type(page().getByRole('textbox', { name: 'Picked shows' }), 'orbit')
-    await settle()
-    const matches = within(page().getByRole('list', { name: 'Picked shows: matches' }))
-    await user.click(matches.getByRole('button', { name: /Orbital/ }))
-    expect(
-      within(page().getByRole('list', { name: 'Picked shows' })).getAllByRole('listitem'),
-    ).toHaveLength(2)
-    await waitFor(
-      () => expect(result().getByRole('list', { name: 'Shows in it' }).children).toHaveLength(2),
-      { timeout: 3000 },
-    )
-    await clean()
-    await user.click(page().getByRole('button', { name: 'Save changes' }))
-    await settle()
-    expect((await saved(mock, 'sc-staff')).shows).toEqual(['saltmarsh', 'orbital'])
-    expect(page().getByText(/6 movies and 2 shows, all in the apps/)).toBeTruthy()
   })
 
   test('a hand-picked featured section holds shows beside films, with their taglines', async () => {

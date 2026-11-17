@@ -1,6 +1,6 @@
 # One client platform: every client and its prototype on one React Native codebase
 
-- **Status:** Scoped on 2026-11-02 at the owner's request, and approved with [the owner's answers](#the-owners-answers) of 2026-11-02: every recommendation but two, with [two changes](#the-owners-changes). Nothing is built.
+- **Status:** Scoped on 2026-11-02 at the owner's request, and approved with [the owner's answers](#the-owners-answers) of 2026-11-02: every recommendation but two, with [two changes](#the-owners-changes). Parts A to D are signed off (D on 2026-11-06), and **part E on 2026-11-15, so the one client platform is signed off (2026-11-15)**. Each part's plan and [docs/status.md](../status.md) have the details.
 - **The owner's words (2026-11-02):** "we should never have to update a design token, component, layout, element, etc. in more than one place, with very rare exceptions." Then: "this is *FOUNDATIONAL* and *PARAMOUNT* to the development and ongoing growth of the highsea application(s). the only real exception is the admin - all clients should share the exact same design system, tokens, components, packages, etc. using React Native - but even then, the admin should still make as much use of the same design system, tokens, components, packages, etc. as possible to achieve maximal parity and consistency."
 
 ## Read first
@@ -166,6 +166,13 @@ This is the largest change since Phase 3: every client screen moves once, and th
   - expo-web-browser is loaded only off the TV.
 - **ADRs:** 0061 (Proposed) and dated sections in 0003, 0008, 0053, 0055, 0058, 0059 and 0060.
 - **Calls, prototype changes and questions:** these are in the checkpoint report. The owner reviews the converged screens on its compare sheet.
+
+### 2026-11-15: part E signed off, and with it the one client platform
+
+- **Part E** (the guides, the specs and the checks, [one-client-platform-e.md](one-client-platform-e.md)) is signed off by the owner on 2026-11-15: E1 (the tokens) on 2026-11-14, E2 (the guides on the library) and E3 (the docs and every check) on 2026-11-15, E3 approved by merging HT-15's pull request #18 into `next`.
+- **The one client platform is signed off** with it: every client and its prototype in `apps/client` on the one library, the admin drawn by it in `@highsea-tv/admin`, the guides' parts from it, and `bun run one-place` holding it.
+- **ADRs 0060 and 0061 are Accepted** (part E's answer 10). 0053's phone and TV part and 0059 stay Proposed until 4.5c.
+- **Left for later:** the TV sign-in's two bugs (a follow-up, HT-17), and what E3's Progress lists as left open.
 
 ## ADRs
 

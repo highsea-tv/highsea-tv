@@ -100,6 +100,8 @@ export const system = defineMessages({
   'status.remote': 'Remote',
   'status.notSet': 'Not set',
   'status.network': 'Network and remote access',
+  // the prototype's, beside Network (desktop-app.md › Get the apps)
+  'status.getApps': 'Get the apps',
   'status.disks': 'Disks',
   'status.noDisks': 'No disks to show yet. Add a root folder in Media management.',
   'status.free': '{free} free of {total}',
@@ -115,6 +117,8 @@ export const system = defineMessages({
   'logs.warn': 'Warnings and errors',
   'logs.error': 'Errors',
   'logs.search': 'Search the log',
+  // the native search field's clear button, which the browser's own search input drew unnamed
+  'logs.clear': 'Clear the search',
   'logs.download': 'Download logs',
   'logs.label': 'Log',
   'logs.nothing': 'Nothing matches.',

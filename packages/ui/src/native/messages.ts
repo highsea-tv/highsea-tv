@@ -9,6 +9,10 @@ export const uiMessages = defineMessages({
   dismiss: 'Dismiss',
   /** A sheet's or a dialog's close button. */
   close: 'Close',
+  /** The command palette, read as its dialog's name. */
+  commandPalette: 'Command palette',
+  /** The command palette when nothing matches what's typed. */
+  nothingMatches: 'Nothing matches that.',
   /** Rating, read out. */
   rated: 'Rated {value} out of {max}',
 })

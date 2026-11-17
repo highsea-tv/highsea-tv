@@ -3,8 +3,10 @@
 import { describe, expect, test } from 'bun:test'
 import {
   addressesOf,
+  claim,
   codeFrom,
   forget,
+  type Known,
   looksLikeCode,
   looksLocal,
   normalCode,
@@ -13,6 +15,7 @@ import {
   showCode,
   tokenKey,
 } from '../src/servers/index.ts'
+import cases from './claim-cases.json'
 
 describe('servers', () => {
   test('typed addresses get the scheme a home server or a domain needs', () => {
@@ -53,6 +56,35 @@ describe('servers', () => {
     expect(list.map((k) => k.id)).toEqual(['b', 'a'])
     expect(remember(list, { ...a, lastSeen: 3 }).map((k) => k.id)).toEqual(['a', 'b'])
     expect(forget(list, 'b').map((k) => k.id)).toEqual(['a'])
+  })
+
+  test('an address answers for one server: a new one there takes it from the old', () => {
+    const local = { url: 'http://192.168.1.20:3000', kind: 'local' as const }
+    const remote = { url: 'https://harbor.example.net', kind: 'remote' as const }
+    const old = { id: 'old', name: 'Harbor', addresses: [local], lastSeen: 1 }
+    const kept = { id: 'kept', name: 'Harbor', addresses: [local, remote], lastSeen: 1 }
+    const other = { id: 'attic', name: 'Attic', addresses: [], lastSeen: 1 }
+    const fresh = { id: 'new', name: 'Harbor', addresses: [{ ...local, url: `${local.url}/` }] }
+    // the old entry had only that address, so it goes; one still reached elsewhere keeps the rest
+    const { list, gone } = claim([old, kept, other], fresh)
+    expect(gone).toEqual(['old'])
+    expect(list.map((k) => [k.id, k.addresses.map((a) => a.url)])).toEqual([
+      ['kept', [remote.url]],
+      ['attic', []],
+    ])
+    // nothing to take: the same list back
+    const none = [other]
+    expect(claim(none, fresh).list).toBe(none)
+    // remembered, the new server is listed once, first
+    const after = remember([old, other], { ...fresh, lastSeen: 2 })
+    expect(after.map((k) => k.id)).toEqual(['new', 'attic'])
+  })
+
+  // the same cases run against the desktop app's claim() in Rust (servers.rs), so the two keep one rule
+  test.each(cases)('claim: $name', ({ list, server, after, gone }) => {
+    const out = claim(list as Known[], server as Pick<Known, 'id' | 'addresses'>)
+    expect(out.gone).toEqual(gone)
+    expect(out.list.map((k) => [k.id, k.addresses.map((a) => a.url)])).toEqual(after)
   })
 
   test('keychain keys are safe for SecureStore', () => {

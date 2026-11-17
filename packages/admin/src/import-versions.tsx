@@ -3,10 +3,11 @@
 // A17's version per row (checkpoint 6b, answer 8): each file goes to one of its movie's versions,
 // the first without a file by default, as the scan picks; two files for one version are refused
 // with the answer's copy, "Pick another version for one of these." Kept apart from import.tsx so
-// the screen's other modes don't carry it.
+// the screen's other modes don't carry it. Drawn with the library's native renderer since D2.
 import type { Movie } from '@highsea-tv/api-contract'
 import { useT } from '@highsea-tv/i18n/react'
-import { Select } from '@highsea-tv/ui'
+import { Select, Text, tokens } from '@highsea-tv/ui/native'
+import { View } from 'react-native'
 import { manualImport as messages } from './import-messages.ts'
 
 /** The first version without a file, else the first: what the scan picks (ADR 0012). */
@@ -44,13 +45,17 @@ export function VersionSelect({
   onChange: (versionId: string) => void
 }) {
   const t = useT(messages)
-  if (!movie) return <span className="text-text-3">—</span>
-  const id = `version-clash-${file.replace(/\W/g, '-')}`
+  const ui = tokens.adminText.ui
+  if (!movie)
+    return (
+      <Text size={ui.size} leading={ui.leading} color="text-3">
+        —
+      </Text>
+    )
   return (
-    <div className="grid gap-1">
+    <View style={{ gap: tokens.space['1'], minWidth: 0, flex: 1 }}>
       <Select
         aria-label={t('versionOf', { file })}
-        aria-describedby={clash ? id : undefined}
         value={value ?? defaultVersion(movie) ?? ''}
         disabled={disabled || movie.versions.length < 2}
         onValueChange={onChange}
@@ -59,11 +64,11 @@ export function VersionSelect({
           label: v.fileId ? t('versionHasFile', { label: v.label }) : v.label,
         }))}
       />
-      {clash && (
-        <p id={id} className="whitespace-normal text-caption text-badge-danger">
+      {clash ? (
+        <Text variant="caption" color="badge-danger" accessibilityLiveRegion="polite">
           {t('versionClash')}
-        </p>
-      )}
-    </div>
+        </Text>
+      ) : null}
+    </View>
   )
 }

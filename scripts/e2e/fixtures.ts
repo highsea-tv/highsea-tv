@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The end-to-end run's other side (phase-3-checkpoint-9.md › Tests (9a)): everything the server
-// would otherwise reach on the internet, on one Docker network with no way out (compose.e2e.yaml).
+// would otherwise reach on the internet, on one Docker network with no way out (compose.yaml, beside
+// this file).
 // It runs in the Dockerfile's `e2e-fixtures` stage, and holds the harnesses the in-process run
 // (apps/server/test/sintel-e2e.test.ts) and the server sweep already use, behind network ports:
 //
@@ -138,7 +139,7 @@ const torrent = makeTorrent({
   name: RELEASE,
   files,
   // by address: the tracker records each peer at the address its announce came from, and the
-  // seeder must announce over the closed network (compose.e2e.yaml)
+  // seeder must announce over the closed network (compose.yaml, beside this file)
   announce: [`http://${process.env.FIXTURES_ADDRESS ?? HOST}:${trackerPort}/announce`],
 })
 const seedDir = tempDir('seed')

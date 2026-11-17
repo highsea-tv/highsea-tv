@@ -3,6 +3,7 @@
 // (design/prototypes/src/{web,mobile,tv}/music.tsx, album.tsx, artist.tsx, playlist.tsx and
 // home.tsx, removed in B3). The phone's are in points; the TV's in its unit (1u = 1cqw). One place
 // for them, until docs/design-language/platforms/ names them.
+import { art } from '@highsea-tv/tokens'
 
 /** The phone's and the pointer's. */
 export const MUSIC = {
@@ -67,6 +68,6 @@ export const TV_MUSIC = {
 /**
  * The black under the scrims over art and the mosaic's shadow: the prototypes' `bg-black/50`,
  * `bg-black/60` and `rgba(0,0,0,0.35)`, which no theme's colours have, since they darken art
- * whatever the theme.
+ * whatever the theme (`art.black`).
  */
-export const BLACK = '#000000'
+export const BLACK = art.black

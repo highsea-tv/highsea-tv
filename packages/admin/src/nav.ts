@@ -8,6 +8,7 @@ type Id =
   | 'dashboard'
   | 'discover'
   | 'movies'
+  | 'shows'
   | 'collections'
   | 'wanted'
   | 'activity'
@@ -25,14 +26,17 @@ export type Page = {
   keywords: `keywords.${Id}` & keyof typeof shell
   icon: IconName
   path: string
+  /** Drawn only when the server serves it (`serves.ts`): Shows is drafted (D3, answer 5). */
+  source?: 'shows'
 }
 
-const page = (id: Id, icon: IconName, path: string): Page => ({
+const page = (id: Id, icon: IconName, path: string, source?: Page['source']): Page => ({
   id,
   label: `nav.${id}`,
   keywords: `keywords.${id}`,
   icon,
   path,
+  ...(source ? { source } : {}),
 })
 
 export const pageGroups: Page[][] = [
@@ -40,6 +44,7 @@ export const pageGroups: Page[][] = [
     page('dashboard', 'dashboard', '/'),
     page('discover', 'discover', '/discover'),
     page('movies', 'movie', '/movies'),
+    page('shows', 'tv', '/shows', 'shows'),
     page('collections', 'library', '/collections'),
     page('wanted', 'calendar', '/wanted'),
     page('activity', 'activity', '/activity'),
