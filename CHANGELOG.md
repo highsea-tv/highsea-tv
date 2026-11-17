@@ -7,6 +7,26 @@ While highsea is at 0.x, any release may change how something works. When one do
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-11-17
+
+### Added
+
+- Setup asks whether highsea manages each library folder it adds or only reads it. A folder that already holds something starts as **Only read**, so finishing setup without a look leaves another app's library as it is. **Change** on Review lets highsea manage one.
+- Updating the Synology package can ask for **Your shared folder** again, with the one highsea uses now first. Keep it, or choose another to move highsea there, then check the library's folders in Settings › Media management. An update that doesn't ask, such as an automatic one, keeps the folder.
+
+### Changed
+
+- The Synology package's install wizard lists the NAS's shared folders to choose from, or a new `highsea` one, and asks for nothing else. The folders in it that hold your films, shows and music, wherever they are, are chosen in setup and Settings › Media management.
+- On the Synology package, scrub previews, transcodes and the rest of what highsea makes always go in a `highsea` folder in the shared folder. After the update, an install highsea managed makes them there again; its old `trickplay` and `transcodes` folders can be deleted.
+
+### Removed
+
+- **Who manages your films** is gone from the Synology package, with its second, read-only mount of the `media` folder, so a shared folder no longer needs one. Folders highsea only reads stay that way after the update, kept by highsea's own check.
+
+### Fixed
+
+- An update of the Synology package to a shared folder that won't do is refused before the old version is uninstalled, and highsea carries on as it was. Before, a refused update could leave behind a Container Manager project that stopped highsea installing again.
+
 ## [0.4.0] - 2026-11-16
 
 ### Added
@@ -110,15 +130,8 @@ While highsea is at 0.x, any release may change how something works. When one do
 - A one-time migration from Radarr and qBittorrent in Settings › Migration.
 - Images for amd64 and arm64 at `ghcr.io/highsea-tv/highsea`, with compose files and templates for Unraid, TrueNAS and Synology.
 
-
-
-
-
-
-
-
-
-[unreleased]: https://github.com/highsea-tv/highsea-tv/compare/v0.4.0...HEAD
+[unreleased]: https://github.com/highsea-tv/highsea-tv/compare/v0.4.1...HEAD
+[0.4.1]: https://github.com/highsea-tv/highsea-tv/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/highsea-tv/highsea-tv/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/highsea-tv/highsea-tv/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/highsea-tv/highsea-tv/compare/v0.1.0...v0.2.0
