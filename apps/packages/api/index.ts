@@ -64,8 +64,10 @@ export function entryOf(m: Manifest, link: string, origin: string) {
     thumbnail: [`${origin}/icon_72.png`, `${origin}/icon_120.png`],
     thumbnail_retina: [`${origin}/icon_256.png`, `${origin}/icon_256.png`],
     snapshot: [],
-    // spkrepo's quick flags: an install wizard means no quiet install or start; there's no
-    // upgrade wizard, so upgrades are quiet
+    // spkrepo's quick flags: an install wizard means no quiet install or start. spkrepo's
+    // derive_quick_flags would make upgrades not quiet too, since the package has had an upgrade
+    // wizard since 0.4.1 (upgrade_uifile.sh); they stay quiet so automatic updates keep running,
+    // and an update without the wizard keeps the shared folder (preinst). Left open for the NAS.
     qinst: false,
     qupgrade: true,
     qstart: false,

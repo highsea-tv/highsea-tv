@@ -58,13 +58,21 @@ bun scripts/sweeps/playback.ts             # the web player in Chromium and Fire
 bun scripts/sweeps/docs.ts                 # builds the guides, then every page of the export on :3170
 ```
 
-If the work touched packaging, also run `docker compose -f docker/compose.dev.yaml up --build`, then `HIGHSEA_IMAGE=highsea:dev bun scripts/e2e/run.ts` and `bun scripts/image.ts size highsea:dev` (it reports the size; there is no budget since 2026-11-05) and `bun scripts/image.ts hardware highsea:dev`.
+If the work touched packaging, also run `docker compose -f docker/compose.dev.yaml up --build`, then `HIGHSEA_IMAGE=highsea:dev bun scripts/e2e/run.ts` and `bun scripts/image.ts size highsea:dev` (it reports the size; there is no budget since 2026-11-05) and `bun scripts/image.ts hardware highsea:dev`. After the end-to-end run, `bun run clean --docker` prunes Docker's build cache and dangling images (containers, tagged images and volumes stay; the `ht8` container among them).
+
+## Afterwards (every mode)
+
+```sh
+bun run clean       # build output, and highsea-* temp folders nothing has changed in for an hour; says what it freed
+```
+
+A task's worker runs it before `herdr-task ready`, so a finished worktree keeps only its source and `node_modules`. It never touches `.dev`, `node_modules` (unless `--deps`), `/Volumes` or anything outside the checkout and the temp folder ([architecture.md § Commands](../../../docs/architecture.md#commands), Disk). Report the line it ends with.
 
 ## What CI runs, by branch
 
 The full local run before a report stays as above. CI runs two tiers ([ADR 0062](../../../docs/adr/0062-next-branch-and-ci-by-branch.md)):
 
-- **Fast:** `ci.yml`'s `check` (lint, types, the Bun tests, smoke, licences, audit, the client's exports, the admin's and the docs' builds) on every pull request and every push to `next` or `main`, and `catalog.yml` when the catalog changes.
+- **Fast:** `ci.yml`'s `check` (lint, types, the Bun tests, smoke, licences, audit, the client's exports, the admin's and the docs' builds) on every pull request that changes more than the internal docs, and every push to `next` or `main`, and `catalog.yml` when the catalog changes.
 - **Heavy:** `ci.yml`'s `playback`, `leak` and `image`, `e2e.yml`, `desktop.yml` (`build`) and `native.yml` (`ios`, `tvos`) on a push to `next`, the pull request from `next` into `main`, a pull request with the `full-ci` label, and a release. On a task's pull request into `next` without the label they show as skipped.
 
 So a task's pull request proves only the fast tier. When a change could break the heavy jobs (packaging, the Dockerfile, the native or desktop builds, the workflows), run their local counterparts here (the image and the end-to-end run, `playback.ts`, the simulator builds), or ask for the `full-ci` label on its pull request.

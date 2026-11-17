@@ -1,3 +1,8 @@
 #!/bin/sh
 # SPDX-License-Identifier: AGPL-3.0-only
+# Checks the upgrade wizard's choices while the old version is still installed: DSM runs this from
+# the new package first, and aborts the upgrade when it fails (DSM 7 Developer Guide, Script
+# Execution Order), so a choice that won't do leaves highsea as it was. preinst writes them.
+. "$(dirname "$0")/common"
+choose || exit 1
 exit 0

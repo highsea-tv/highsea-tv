@@ -145,6 +145,8 @@ import {
   detectServerName,
   FOLDERS_KEY,
   isSetupComplete,
+  type LibraryKind,
+  libraryReadOnly,
   type MediaFolders,
   type RemoteAccessInput,
   saveSetup,
@@ -839,7 +841,7 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
   })
   // what the host has, looked at in the background, so boot doesn't wait on ffmpeg; then each
   // path found without a check is checked, so a new install uses its chip with nothing to press
-  void hardware
+  const lookingAtHardware = hardware
     .start()
     .then(() => hardware.checkNew())
     .catch((e: Error) =>
@@ -1366,6 +1368,12 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
       const key = md.key?.trim()
       // the key step checked the key already; checking again keeps a bad one from being stored
       if (key) await metadata.settings.checkKey(key)
+      // decided before saveSetup makes a missing folder, from what the folders held when setup began
+      const readOnlyAtSetup: Partial<Record<LibraryKind, boolean>> = {}
+      for (const kind of ['movies', 'shows', 'music'] as const) {
+        const path = input.folders[kind]?.trim()
+        if (path) readOnlyAtSetup[kind] = libraryReadOnly(input.folders, kind, resolve(path))
+      }
       const owner = await auth.createOwner(input.owner, meta)
       saveSetup({ db, config, clock, events }, input, rename, input.serverName)
       // the browser's time zone, or the one picked on Review, over the host's (4.3c)
@@ -1376,12 +1384,12 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
       // the contract checked their shape; the owner's locale when the step sent them
       if (md.language !== undefined || md.region !== undefined)
         metadata.settings.update({ language: md.language, region: md.region })
-      // setup's movies folder is the first root folder (setup.ts › MediaFolders); saveSetup made it.
-      // One mounted read-only is added as a folder highsea only reads (ADR 0063). Shows' and
-      // music's are kept as root folders of their kind, for parts B and D
-      const folder = resolve(input.folders.movies)
+      // setup's movies folder is the first root folder (setup.ts › MediaFolders). Shows' and
+      // music's are kept as root folders of their kind, for parts B and D. Each is one highsea only
+      // reads when the owner said so on Review, or by default when it already held something
+      // (ADR 0063, 2026-11-17); one mounted read-only is read-only whatever was chosen
       const kinds = [
-        ['movies', folder],
+        ['movies', input.folders.movies],
         ['shows', input.folders.shows],
         ['music', input.folders.music],
       ] as const
@@ -1389,7 +1397,11 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
         if (!path?.trim()) continue
         try {
           if (!media.rootFolders.find(resolve(path)))
-            media.rootFolders.add({ path: resolve(path), kind })
+            media.rootFolders.add({
+              path: resolve(path),
+              kind,
+              readOnly: readOnlyAtSetup[kind] ?? false,
+            })
         } catch (e) {
           log.warn('couldn’t add a folder from setup as a root folder', {
             kind,
@@ -1406,6 +1418,7 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
           log.warn('couldn’t save the TMDB key at setup', { error: (e as Error).message })
         }
       // the movies already in the folder, matched with the key just saved
+      const folder = resolve(input.folders.movies)
       if (media.rootFolders.find(folder)) movies.libraryScan.queue(folder)
       // the indexer step: added once the owner exists, each tested first. Not awaited, so a slow
       // or unreachable site doesn't hold up Finish for its 30 seconds; they appear on the
@@ -1644,6 +1657,9 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
           log.error('a shutdown step failed', { error: (e as Error).message })
         }
       }
+      // what the hardware check runs is stopped, and waited for, before the data folder can go
+      hardware.stop()
+      await lookingAtHardware
       await vpn.stop()
       stopWatching()
       stopWatchSync()

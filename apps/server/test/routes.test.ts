@@ -102,6 +102,7 @@ describe('setup’s detection and Review (4.3c)', () => {
       ...(await anon.setup.defaults()).folders,
       shows: null,
       music: null,
+      readOnly: { movies: false, shows: false, music: false },
     })
     expect(found.graphics).toBeNull()
     expect((await finish(app, {})).status).toBe(200)

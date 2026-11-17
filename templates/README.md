@@ -53,13 +53,21 @@ moves them on.
 - `conf/privilege` runs the scripts as the package's own user, and the container runs as it too
   (Container Manager adds `user:` for a package's project). `conf/resource` also asks the
   `data-share` worker for the shared folder from the wizard, with read and write for that user.
-- `WIZARD_UIFILES/` holds the install wizard (the shared folder) and the uninstall wizard (whether
-  to delete highsea's settings), in the JSON format of the DSM 6.0 developer guide, which DSM 7
-  still reads.
+- `WIZARD_UIFILES/` holds the install wizard and the uninstall wizard (whether to delete highsea's
+  settings). `install_uifile.sh` writes the install wizard when DSM runs it: a dropdown of the NAS's
+  shared folders, the one chosen before or a new `highsea` first. `scripts/spk.ts` packs it as
+  `upgrade_uifile.sh` too, which asks again on an update, under a key of its own
+  (`wizard_upgrade_share`), with the current folder first. The wizard asks only for the shared
+  folder: the library's folders in it, and whether highsea only reads each one, are chosen in
+  highsea's setup and Settings, and highsea keeps what it makes in `/data/highsea`.
+- `scripts/common`'s `choose()` reads and checks the shared folder. `preupgrade` runs it before the
+  old version is uninstalled, so a choice that won't do aborts the update and leaves highsea as it
+  was; `preinst` runs it again and writes the `.env`; `postinst` saves the choice for the next
+  update.
 - `PACKAGE_ICON.PNG` is 64×64; the 256×256 icon is the brand's, added by the build.
 
-`scripts/spk.test.ts` checks the archive with the system's `tar`, the scripts with `sh -n`, and
-`preinst` with DSM's variables. A real install is tried on a NAS by hand, never in CI.
+`scripts/spk.test.ts` checks the archive with the system's `tar`, the scripts with `sh -n`, the
+wizards against a folder laid out like a NAS, and `preinst` and `preupgrade` with DSM's variables. A real install is tried on a NAS by hand, never in CI.
 
 Owners get the package from highsea's package source, `packages.highsea.tv`, which they add in
 Package Center › Settings › Package Sources. It's `apps/packages`, a Vercel Function that answers

@@ -9,6 +9,7 @@ import { execFileSync, spawn } from 'node:child_process'
 import { cpSync, mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { atExit } from './ending.ts'
 import { ROOT } from './lib.ts'
 
 /** Which test project to run, and how to show and bound its run. */
@@ -45,6 +46,7 @@ export async function runUITest(
   project: UITestProject = DPAD_WALK,
 ) {
   const work = mkdtempSync(join(tmpdir(), 'highsea-uitest-'))
+  const forget = atExit(() => rmSync(work, { recursive: true, force: true }))
   try {
     cpSync(join(ROOT, project.dir), work, { recursive: true })
     execFileSync('xcodegen', ['generate', '--quiet'], { cwd: work, stdio: 'inherit' })
@@ -103,6 +105,7 @@ export async function runUITest(
       )
     return { passed: status === 0 && !timedOut, lines, timedOut }
   } finally {
+    forget()
     rmSync(work, { recursive: true, force: true })
   }
 }

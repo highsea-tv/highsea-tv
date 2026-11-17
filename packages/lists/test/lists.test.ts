@@ -2,9 +2,6 @@
 // Import lists against the TMDB recordings and the fakes of Trakt and the generic format: reading
 // each source, matching IMDb ids, adding what's new, exclusions, and Trakt's device flow.
 import { describe, expect, test } from 'bun:test'
-import { mkdtempSync } from 'node:fs'
-import { tmpdir } from 'node:os'
-import { join } from 'node:path'
 import type { ImportListInput, ImportListSettings } from '@highsea-tv/api-contract'
 import {
   AppError,
@@ -14,6 +11,7 @@ import {
   generateSecretKey,
   silentLogger,
 } from '@highsea-tv/core'
+import { testFolder } from '@highsea-tv/core/testing'
 import { migrate, openDatabase, schema } from '@highsea-tv/db'
 import { createJobQueue } from '@highsea-tv/jobs'
 import { createMetadata } from '@highsea-tv/metadata'
@@ -58,7 +56,7 @@ async function setup({
     events,
     sealer,
     fetch: replay,
-    imagesDir: mkdtempSync(join(tmpdir(), 'highsea-lists-')),
+    imagesDir: testFolder('lists'),
     sleep: async (ms) => clock.advance(ms),
   })
   await metadata.settings.setKey('test-key-for-replay-0001')

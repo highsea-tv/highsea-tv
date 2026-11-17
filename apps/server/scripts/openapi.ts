@@ -9,19 +9,23 @@ import pkg from '../package.json' with { type: 'json' }
 import { createApi } from '../src/api/app.ts'
 
 const dir = mkdtempSync(join(tmpdir(), 'highsea-openapi-'))
-const runtime = await boot({
-  config: loadConfig({
-    HIGHSEA_CONFIG_DIR: join(dir, 'config'),
-    HIGHSEA_DATA_DIR: join(dir, 'data'),
-  }),
-  version: pkg.version,
-  quiet: true,
-  memory: true,
-  manualTicks: true,
-})
-const doc = await (await createApi(runtime).request('/api/v1/openapi.json')).json()
-await runtime.shutdown()
-rmSync(dir, { recursive: true, force: true })
+let doc: unknown
+try {
+  const runtime = await boot({
+    config: loadConfig({
+      HIGHSEA_CONFIG_DIR: join(dir, 'config'),
+      HIGHSEA_DATA_DIR: join(dir, 'data'),
+    }),
+    version: pkg.version,
+    quiet: true,
+    memory: true,
+    manualTicks: true,
+  })
+  doc = await (await createApi(runtime).request('/api/v1/openapi.json')).json()
+  await runtime.shutdown()
+} finally {
+  rmSync(dir, { recursive: true, force: true })
+}
 
 const out = `${JSON.stringify(doc, null, 2)}\n`
 const target = join(import.meta.dir, '..', 'openapi.json')

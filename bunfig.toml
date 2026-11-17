@@ -1,0 +1,4 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+[test]
+# each test file's temp folder, removed when it ends (scripts/test-temp.ts)
+preload = ["./scripts/test-temp.ts"]

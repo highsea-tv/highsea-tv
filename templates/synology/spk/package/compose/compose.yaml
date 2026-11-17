@@ -12,17 +12,14 @@ services:
     # the NAS's own name, which setup offers as the server's (a container's is its id otherwise)
     hostname: ${HIGHSEA_HOSTNAME:-highsea}
     environment:
-      # highsea's own folder in the shared folder when another app manages the films (ADR 0063,
-      # 2026-11-16); empty otherwise, which is the shared folder itself
-      HIGHSEA_WORK_DIR: ${HIGHSEA_WORK:-}
+      # what highsea makes (images, previews, transcodes) in a folder of its own in the shared folder,
+      # apart from the library's folders, which are chosen in setup and Settings (ADR 0057, 2026-11-17)
+      HIGHSEA_WORK_DIR: /data/highsea
     volumes:
       # kept on uninstall unless the uninstall wizard is told to delete it
       - /var/packages/highsea/var/config:/config
       # the shared folder chosen at install, through the link DSM makes for the package
       - ${HIGHSEA_DATA}:/data
-      # its media folder again, read-only, when the install wizard was told another app manages the
-      # films (ADR 0063); otherwise an empty folder, read-only, where highsea never looks
-      - ${HIGHSEA_MEDIA}:${HIGHSEA_MEDIA_AT}:ro
       # the graphics chip's folder, or an empty one on a model without it (Synology's Docker
       # won't start a container whose bind mount is missing)
       - ${HIGHSEA_DRI}:/dev/dri

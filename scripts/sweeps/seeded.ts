@@ -17,6 +17,7 @@ import { FAKE_CREDENTIALS, serveFakeIndexer } from '@highsea-tv/indexers/fake'
 import { makeFeature } from '@highsea-tv/media/testing'
 import { FAKE_ACCOUNTS } from '@highsea-tv/subtitles/fake'
 import { sintel } from '@highsea-tv/subtitles/testing'
+import { atExit } from './ending.ts'
 import { ROOT } from './lib.ts'
 
 /** "00:01:02,500". */
@@ -78,12 +79,28 @@ export async function boot(port: number, { production = false, lan = false } = {
     stdio: ['ignore', 'ignore', 'inherit'],
   })
   const exited = new Promise<void>((resolve) => server.once('exit', () => resolve()))
-  /** Stops the server; resolves once it has exited, and Next's dev server with it. */
-  const stop = () => {
+  // however the run ends (ending.ts): the server is asked to stop, which ends its transcodes
+  // (apps/server/server.ts), and its folder goes
+  const forget = atExit(() => {
     server.kill('SIGTERM')
     indexer.stop()
     rmSync(dir, { recursive: true, force: true })
-    return exited
+  })
+  /**
+   * Stops the server; resolves once it has exited, and Next's dev server with it, and its folder is
+   * gone. One that hasn't shut down in 30 s is killed.
+   */
+  const stop = async () => {
+    forget()
+    server.kill('SIGTERM')
+    indexer.stop()
+    const late = setTimeout(() => {
+      console.error('The server didn’t stop in 30 s: killing it')
+      server.kill('SIGKILL')
+    }, 30_000)
+    await exited
+    clearTimeout(late)
+    rmSync(dir, { recursive: true, force: true })
   }
 
   async function api<T>(method: string, path: string, body?: unknown, token?: string): Promise<T> {
@@ -106,7 +123,7 @@ export async function boot(port: number, { production = false, lan = false } = {
     )
     if (up) break
     if (i > 120) {
-      stop()
+      await stop()
       throw new Error('The server didn’t start')
     }
     await Bun.sleep(500)

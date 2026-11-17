@@ -13,3 +13,38 @@ listening() {
   hex=$(printf ':%04X' "$1")
   awk -v p="$hex" '$2 ~ p"$" && $4 == "0A" { found = 1 } END { exit !found }' /proc/net/tcp /proc/net/tcp6 2>/dev/null
 }
+
+# The shared folder, into $share, or a message and 1 when it won't do. An install takes the
+# wizard's choice. An upgrade takes the upgrade wizard's, which shows the current one under a key of
+# its own (WIZARD_UIFILES/install_uifile.sh, packed as upgrade_uifile.sh too), and keeps what
+# postinst saved when no wizard ran, since an upgrade from the command line still has the install
+# wizard's default: postinst saves it in the package's var folder (@appdata, kept across upgrades),
+# read from the volume since /var/packages/highsea/var isn't linked while the new version's preinst
+# runs. preupgrade runs this before the old version is uninstalled, since a preinst that fails then
+# leaves no package (DSM 7 Developer Guide, Script Execution Order: preupgrade (new), preuninst
+# (old), postuninst (old), preinst (new); "package upgrade will be aborted for non-zero returned
+# value" of preupgrade); preinst again for an install.
+#
+# Only the shared folder: the folders in it that hold the library, and whether highsea manages each
+# one or only reads it, are chosen in highsea's setup and Settings (ADR 0057, 2026-11-17).
+choose() {
+  saved="${SYNOPKG_PKGDEST_VOL:-/volume1}/@appdata/highsea/package.conf"
+  share=""
+  if [ "$SYNOPKG_PKG_STATUS" = UPGRADE ]; then
+    share="${wizard_upgrade_share:-}"
+    [ -n "$share" ] || [ ! -r "$saved" ] || share=$(sed -n 's/^share=//p' "$saved")
+  fi
+  [ -n "$share" ] || share="${wizard_data_share:-}"
+  if [ -z "$share" ]; then
+    say "Choose a shared folder for highsea."
+    return 1
+  fi
+  # a shared folder's name, which the .env quotes: no slash, quote, backslash, dollar or backtick
+  case "$share" in
+    */* | *[\"\\\'\$\`]* | .* | @* | \#*)
+      say "highsea can't use the shared folder $share. Choose another."
+      return 1
+      ;;
+  esac
+  return 0
+}

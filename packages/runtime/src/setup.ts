@@ -30,14 +30,53 @@ export type SetupState = { completedAt: number | null }
  * The folders chosen in setup; checkpoint 4 turns them into root folders. Shows' and music's,
  * when there are any (Phase 5 A1), become root folders of their kind, used from parts B and D.
  */
-export type MediaFolders = { movies: string; downloads: string; shows?: string; music?: string }
+export type MediaFolders = {
+  movies: string
+  downloads: string
+  shows?: string
+  music?: string
+  /** Which of the library's folders highsea only reads (ADR 0063, 2026-11-17); see libraryReadOnly. */
+  readOnly?: Partial<Record<LibraryKind, boolean>>
+}
 
-/** What setup finds: shows' and music's null when there's no such folder. */
+/** The kinds of library folder setup adds as root folders. */
+export type LibraryKind = 'movies' | 'shows' | 'music'
+
+/**
+ * What setup finds: shows' and music's null when there's no such folder, and which folders it
+ * suggests highsea only reads: those that already hold something (ADR 0063, 2026-11-17).
+ */
 export type DetectedFolders = {
   movies: string
   downloads: string
   shows: string | null
   music: string | null
+  readOnly: Record<LibraryKind, boolean>
+}
+
+/**
+ * Whether a folder already holds anything: a library another app may file, so setup adds it as one
+ * highsea only reads unless the owner says otherwise (ADR 0063, 2026-11-17). Hidden entries, ext4's
+ * lost+found and Synology's own (`@eaDir` thumbnails, `#recycle`) don't count.
+ */
+export function holdsFiles(path: string | null | undefined): boolean {
+  if (!path) return false
+  try {
+    return readdirSync(path).some(
+      (name) => !/^[.@#]/.test(name) && name !== 'lost+found' && name !== 'transcodes',
+    )
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Whether setup adds a library folder as one highsea only reads: the owner's choice on Review,
+ * else read-only when the folder already holds something, so finishing without a look never lets
+ * highsea rename or move another app's files (ADR 0063, 2026-11-17).
+ */
+export function libraryReadOnly(folders: MediaFolders, kind: LibraryKind, path: string): boolean {
+  return folders.readOnly?.[kind] ?? holdsFiles(path)
 }
 
 export type RemoteAccessInput =
@@ -155,17 +194,26 @@ export function detectFolders(config: Config): DetectedFolders | null {
   } catch {
     // not there yet: Docker makes the mount point, and setup the folders
   }
-  if (!entries.length) return { ...setupDefaults(config).folders, shows: null, music: null }
+  if (!entries.length)
+    return {
+      ...setupDefaults(config).folders,
+      shows: null,
+      music: null,
+      readOnly: { movies: false, shows: false, music: false },
+    }
   const movies = MOVIE_FOLDERS.map((p) => findFolder(root, p)).find(Boolean)
   if (!movies) return null
   const downloads = own
     ? join(own, 'downloads')
     : DOWNLOAD_FOLDERS.map((p) => findFolder(root, p)).find(Boolean)
+  const shows = SHOW_FOLDERS.map((p) => findFolder(root, p)).find(Boolean) ?? null
+  const music = MUSIC_FOLDERS.map((p) => findFolder(root, p)).find(Boolean) ?? null
   return {
     movies,
     downloads: downloads ?? join(root, 'downloads'),
-    shows: SHOW_FOLDERS.map((p) => findFolder(root, p)).find(Boolean) ?? null,
-    music: MUSIC_FOLDERS.map((p) => findFolder(root, p)).find(Boolean) ?? null,
+    shows,
+    music,
+    readOnly: { movies: holdsFiles(movies), shows: holdsFiles(shows), music: holdsFiles(music) },
   }
 }
 

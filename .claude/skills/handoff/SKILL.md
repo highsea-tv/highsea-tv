@@ -28,7 +28,7 @@ Start your message with `Written for: …`, naming the reader (a fresh agent, wh
    - commit only when asked, never push, no attribution lines; work lands on `next`, and `main` changes only through the owner's merge of `next`;
    - copy is plain and calm, with no exclamation marks;
    - never infer pronouns from a name, and use they/them for the owner.
-6. **When it's done:** which checks to run (`/checks full`), what to record (the plan's Progress, `docs/status.md`, ADRs), and what to report at the gate (`/checkpoint-report`). Then "Stop and ask for review. Don't start <the next part>."
+6. **When it's done:** which checks to run (`/checks full`), then `bun run clean` (a Shepherdr worker runs it before `herdr-task ready`), what to record (the plan's Progress, `docs/status.md`, ADRs), and what to report at the gate (`/checkpoint-report`). Then "Stop and ask for review. Don't start <the next part>."
 
 ## Never
 

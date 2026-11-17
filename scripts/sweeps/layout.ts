@@ -67,6 +67,7 @@ import { HIDE_MS } from '../../packages/client/src/player/index.ts'
 import { SEED } from '../../packages/mock/src/films.ts'
 import { showNumber } from '../../packages/mock/src/kinds.ts'
 import { controlMetrics, TV_REFERENCE } from '../../packages/tokens/src/controls.ts'
+import { atExit, keepLatestRun } from './ending.ts'
 
 // ---------------------------------------------------------------- the comparison (pure)
 
@@ -1607,6 +1608,7 @@ if (import.meta.main) {
       }
       rmSync(join(data, 'Documents/servers.json'), { force: true })
       const shots = mkdtempSync(join(tmpdir(), `highsea-layout-${d.target}-`))
+      const forgetShots = atExit(() => rmSync(shots, { recursive: true, force: true }))
       log(`${d.target}: the XCUITest on ${udid}`)
       const run = await runUITest(
         udid,
@@ -1643,6 +1645,7 @@ if (import.meta.main) {
         cpSync(join(shots, `${screen}.png`), join(out, `${d.target}.${screen}.png`))
         cpSync(file, join(out, `${d.target}.${screen}.json`))
       }
+      forgetShots()
       rmSync(shots, { recursive: true, force: true })
     }
   } finally {
@@ -1664,6 +1667,10 @@ if (import.meta.main) {
     JSON.stringify({ plan, captures, comparisons, notes, problems }, null, 2),
   )
   writeSheet(out, screens, captures, comparisons, notes, problems)
+  // this run's sheet stays for the person to look at; earlier runs' go (each held hundreds of MB)
+  if (!parsed.folder)
+    for (const dir of keepLatestRun('highsea-layout-', out, 'results.json'))
+      log(`removed an earlier run's sheet, ${dir}`)
 
   const failed = comparisons.filter((c) => !c.pass)
   console.log(

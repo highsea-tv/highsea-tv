@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { describe, expect, test } from 'bun:test'
-import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
-import { tmpdir } from 'node:os'
+import { mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { testFolder } from '../packages/core/src/testing.ts'
 import { compatible, pods } from './license-audit.ts'
 
 describe('license audit', () => {
@@ -29,7 +29,7 @@ describe('license audit', () => {
   })
 
   test('reads each pod in Podfile.lock, with its spec’s licence, and nothing without a prebuild', () => {
-    const dir = mkdtempSync(join(tmpdir(), 'pods-'))
+    const dir = testFolder('pods')
     expect(pods(dir)).toBeNull()
     writeFileSync(
       join(dir, 'Podfile.lock'),

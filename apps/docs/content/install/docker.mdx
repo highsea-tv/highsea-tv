@@ -17,6 +17,8 @@ description: Run highsea with Docker Compose on Linux, macOS or Windows.
   - Bind mounts make a missing source folder: https://docs.docker.com/engine/storage/bind-mounts/
   - Setup and its copy: packages/admin/src/setup.tsx and setup-messages.ts; what it finds by
     itself: packages/runtime/src/setup.ts (detectServerName, detectFolders, detectAddress).
+  - Library folders only read from setup, when they already hold something: ADR 0063's section of
+    2026-11-17 (holdsFiles and libraryReadOnly in packages/runtime/src/setup.ts).
 */}
 
 Written for highsea 0.2.0-beta.3, and followed on Docker Engine 29.8 with Docker Compose 5.6. Any Docker with the Compose plugin works.
@@ -137,8 +139,9 @@ Open `http://<your server's address>:3000` in a browser, or `http://localhost:30
 ![highsea's setup at its first step, Create the owner account, with the server's name filled in](/images/setup-owner.png)
 
 1. **Create the owner account.** Your name, then a username of 2 to 32 lowercase letters, numbers, dots, dashes or underscores, and a password of at least 10 characters. **Server name** comes from the computer's name; everyone who connects sees it, so change it if you like. You can turn on two-step verification and passkeys later, from Your account.
-2. **Choose your folders**, only if highsea didn't find them. It looks under `/data` for a movies folder (`media/movies`, `movies`, `media/films` or `films`) and a downloads folder (`downloads` or `torrents`), and when `/data` is empty it makes `media/movies` and `downloads` itself. Otherwise, pick the two folders you mounted. highsea says "Hardlinks will work" when they're on the same disk, and "Imports will be copied" when they aren't.
+2. **Choose your folders**, only if highsea didn't find them. It looks under `/data` for a movies folder (`media/movies`, `movies`, `media/films` or `films`) and a downloads folder (`downloads` or `torrents`), and when `/data` is empty it makes `media/movies` and `downloads` itself. Otherwise, pick the two folders you mounted. highsea says "Hardlinks will work" when they're on the same disk, and "Imports will be copied" when they aren't. Below each library folder, **Only read it: another app manages this folder** is on for a folder you pointed at, since it most likely holds a library already.
 3. **Check and finish.** A list of what highsea chose, each with **Change** to edit it in place:
+   - **Folders** are the movies, downloads, shows and music folders highsea found. A library folder that already holds something is marked **Only read**: highsea finds and plays what's there, but doesn't rename, move, delete or import anything into it, so finishing without a look leaves another app's library as it is. To let highsea manage one, choose **Change** and turn **Only read it** off. You can switch either way later in **Settings › Media management** ([Root folders](/settings/media-management/root-folders/#a-library-another-app-manages)).
    - **Movie details** come from TMDB with highsea's own key. You can add your own key here instead, or later in Settings.
    - **Indexers** are the public ones in highsea's catalog, which need no account.
    - **Subtitles** are in your browser's languages, the first preferred.

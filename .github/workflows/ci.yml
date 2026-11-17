@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 # Two tiers (ADR 0062, next-branch.md › CI by branch). The fast one, `check`, runs on every pull
-# request and every push to next or main: lint, types, tests (Bun), the platform under Node, the
+# request that changes more than the internal docs, and every push to next or main: lint, types, tests (Bun), the platform under Node, the
 # license audit, the dependency check, the client's exports, the admin's and the docs' builds. The
 # heavy one: highsea connects' leak test, the web player in Chromium and Firefox
 # (phase-4-checkpoint-2.md › Tests, 4.2b), and the image on both platforms: built, booted healthy,
@@ -32,13 +32,16 @@ name: CI
 #
 # A pull request has no path filter: next and main require `check`, and a workflow its paths skip
 # leaves its required checks pending, which blocks the merge (troubleshooting-required-status-checks,
-# above). So a pull request that changes only the internal docs runs `check` too.
+# above). Instead the `changes` job below lists the pull request's files, and `check`'s `if:` skips
+# it when every one is in the list above, which reports success under the same name (2026-11-17,
+# ADR 0062's section of that date). Keep the two lists the same.
 #
 # `labeled` joins the default types (opened, synchronize, reopened), so adding `full-ci` to an open
 # pull request starts the heavy jobs
 # (https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#pull_request).
 # Any other label starts a run too, and cancels the one in progress (the concurrency group below);
-# `check` runs again rather than being skipped, so a skipped run can't stand in for a failed one.
+# `check` runs again (or is skipped again, for the internal docs alone), so a cancelled run can't
+# stand in for a failed one.
 on:
   push:
     branches: [next, main]
@@ -63,7 +66,61 @@ permissions:
   contents: read
 
 jobs:
+  # Whether a pull request changes anything besides the internal docs, the same list as
+  # `paths-ignore` above: `code` is `false` only then. It compares the pull request's head with
+  # where it branched from its base (`git diff base...head`, git-diff(1)), so what the base gained
+  # since doesn't count; both SHAs are in the event's `pull_request` object
+  # (https://docs.github.com/en/webhooks/webhook-events-and-payloads#pull_request), and
+  # `fetch-depth: 0` fetches the history to find where they meet
+  # (https://github.com/actions/checkout#usage). `--no-renames` lists a moved file under both its
+  # names, so moving code into docs/ still counts as code. Any other event (a push, a release's
+  # `workflow_call`) says `true` without looking, and so does a failed step: `check` runs then.
+  changes:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      code: ${{ steps.files.outputs.code }}
+    steps:
+      - if: github.event_name == 'pull_request'
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+      - name: Does it change more than the internal docs?
+        id: files
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT" != pull_request ]; then
+            echo "code=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          files=$(git diff --name-only --no-renames "$BASE...$HEAD")
+          echo "$files"
+          code=false
+          while IFS= read -r file; do
+            case "$file" in
+              '' | docs/* | .claude/* | README.md | CLAUDE.md) ;;
+              *) code=true ;;
+            esac
+          done <<< "$files"
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+          if [ "$code" = false ]; then
+            echo "::notice::Only the internal docs changed, so check is skipped"
+          fi
+
   check:
+    # Skipped only when `changes` says the pull request touches nothing but the internal docs. A job
+    # its `if:` skips reports success, so `next` and `main`, which require `check`, can still merge
+    # (troubleshooting-required-status-checks, above). A job whose `needs` failed is skipped too, and
+    # would pass the same way, so `!cancelled()` runs `check` even then, and an empty output (a failed
+    # `changes`) isn't `false`
+    # (https://docs.github.com/en/actions/reference/workflows-and-actions/expressions#status-check-functions).
+    # The heavy jobs don't need `check`, so this changes nothing for them.
+    needs: changes
+    if: ${{ !cancelled() && needs.changes.outputs.code != 'false' }}
     runs-on: ubuntu-24.04
     # Without a limit a job may run for 360 minutes, GitHub's default
     # (https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#jobsjob_idtimeout-minutes);

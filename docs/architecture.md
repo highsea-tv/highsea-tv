@@ -60,7 +60,7 @@ Every command, with the development switches, the image, release and packaging. 
 
 **Branches and CI** ([ADR 0062](adr/0062-next-branch-and-ci-by-branch.md)). Work lands on `next`: each task branches from it, and its pull request merges into it. `main` changes only when the owner merges `next` into it by a pull request, and releases and the docs come from `main`. CI runs in two tiers:
 
-- **Fast:** `ci.yml`'s `check` (lint, types, the Bun tests, smoke, licences, the dependency check, the client's exports, the admin's and the docs' builds) on every pull request and every push to `next` or `main`; `catalog.yml` when the catalog changes.
+- **Fast:** `ci.yml`'s `check` (lint, types, the Bun tests, smoke, licences, the dependency check, the client's exports, the admin's and the docs' builds) on every pull request that changes more than the internal docs, and every push to `next` or `main`; `catalog.yml` when the catalog changes.
 - **Heavy:** `ci.yml`'s `playback`, `leak` and `image`, `e2e.yml`, `desktop.yml` and `native.yml` on a push to `next`, a pull request into `main`, a pull request with the `full-ci` label (for packaging, the Dockerfile, the native and desktop builds and the workflows), and a release. On a pull request into `next` without the label they show as skipped.
 
 ```sh
@@ -70,6 +70,8 @@ bun run typecheck       # every workspace, plus scripts/
 bun run test            # everything (Bun's runner, each file isolated)
 bun run smoke           # the platform under Node, as production runs it
 bun run check:node      # is `node` the version in .nvmrc (26.11.1)?
+bun run clean           # removes what development rebuilds (.next, dist, the Rust target, stale highsea-* temp folders) and says what it freed
+bun run clean --docker  # also Docker's build cache and dangling images; --deps also node_modules; --dry-run removes nothing
 
 bun run server          # the server in development, http://localhost:3000 (data in .dev/)
 HIGHSEA_TMDB_REPLAY=1 bun run server   # the same, answering TMDB from the recordings: no key, no network
@@ -110,4 +112,16 @@ bun scripts/release.ts check 0.1.0     # what the release workflow checks first 
 ```
 
 Browser sweeps are in [scripts/sweeps](../scripts/sweeps/README.md) (the server they boot and seed is `scripts/sweeps/seeded.ts`, which the guides' screenshots share): axe in three themes, overflow, 200% text, reduced motion, and the keyboard and D-pad walks. They cover the prototypes (from a build they serve themselves, so `bun run prototypes` isn't needed; `pages.ts` and `keyboard.ts` take a platform, for sweeping only what a fix touched) and, with `bun scripts/sweeps/server.ts`, the server's real admin pages from the production build (`SWEEP_DEV=1` for the dev server). Run them before each checkpoint report. `bun scripts/sweeps/compare.ts` puts every admin screen beside its prototype for the owner's review. `bun scripts/sweeps/playback.ts` plays films in the web player in Chromium and Firefox (`bunx playwright-core install chromium firefox` once). `bun scripts/sweeps/docs.ts` builds the guides and sweeps every page of the static export at 1440 and 390, and checks with scripts off that each picture is there with its alt text. `bun scripts/sweeps/phone.ts` signs in and plays Sintel in the client's iPhone build on a booted simulator through Maestro (`~/.maestro/bin` on the PATH; a Release simulator build signed ad hoc, as its header says). `bun scripts/sweeps/tv.ts` walks the client's Apple TV build with the remote on a booted Apple TV simulator (an XCUITest, `apps/client/dpad-walk`, through XcodeGen; the app installed and signed in). `bun scripts/sweeps/layout.ts` compares the one client's screens between the web and the iPhone and Apple TV simulators from their accessibility trees, failing on drift beyond 4 pt (`build both` first makes the mock-mode builds; `--preflight` takes one screen); its sheet goes outside the repo. `bun run one-place` fails when anything is defined in two places.
+
+**Disk** (2026-11-17, when development had filled the owner's: 16 GB of test and sweep folders in the temp folder, stopped `ffmpeg`s days old, 34.5 GB of Docker build cache). What a run makes, it removes, pass or fail:
+
+- **Tests.** A temp folder a test makes goes when its file ends: `@highsea-tv/core/testing`'s `testFolder` for helpers, `afterEach` or `afterAll` otherwise. `bun run test` also preloads `scripts/test-temp.ts` (bunfig.toml), which points `TMPDIR` at a `highsea-test-*` folder per file and removes it after, so one a test forgets goes too.
+- **Child processes.** The transcode runner pauses `ffmpeg` with SIGSTOP, and a stopped process waits for SIGCONT before it acts on SIGTERM, so a process that ended without closing its transcodes left one stopped for good. Every `ffmpeg` the runner, the trickplay maker and the hardware check start is killed when the process that started it exits (`@highsea-tv/core/children`), and shutdown stops the hardware check before the data folder can go.
+- **Sweeps.** The prototypes' preview and the seeded server are stopped, and their folders removed, however a sweep ends, Ctrl-C included (`scripts/sweeps/ending.ts`). A sheet the person is told to look at (`layout.ts`, `compare.ts`) stays in the temp folder, but only the latest run's.
+- **Afterwards.** `bun run clean` removes what's left: build output only where git ignores it, and `highsea-*` temp folders nothing has changed in for an hour. It never touches `.dev`, `/Volumes`, or anything outside the checkout and the temp folder. A worker runs it before `herdr-task ready`, and the checks' full mode runs `bun run clean --docker` after the image's end-to-end run.
+- **Docker's build cache.** Docker Desktop's builder uses the `docker` driver, whose garbage collection is set in the daemon's configuration: Settings › Docker Engine ([Docker's guide](https://docs.docker.com/build/cache/garbage-collection/#docker-daemon-configuration-file)). Its default cap is 20 GB; Docker says to lower `defaultKeepStorage` to save space. For this Mac, set it to 10 GB, then Apply & restart (the owner sets it; the checks don't change Docker's settings):
+
+  ```json
+  { "builder": { "gc": { "enabled": true, "defaultKeepStorage": "10GB" } } }
+  ```
 

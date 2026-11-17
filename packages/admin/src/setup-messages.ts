@@ -57,6 +57,14 @@ export const setup = defineMessages({
   'folders.laterHint': 'Optional. highsea keeps it and reads it once it has shows and music.',
   'folders.sameAsOthers': 'Use a folder of its own, not the movies or downloads folder.',
   'folders.browse': 'Browse',
+  // as Settings › Media management says them (ADR 0063, 2026-11-17)
+  'folders.readOnly': 'Only read it: another app manages this folder',
+  'folders.readOnlyBadge': 'Only read',
+  'folders.readOnlyHint.movies':
+    'highsea finds the films here and plays them, but doesn’t rename, move, delete or import anything into it. Its subtitles are kept in highsea’s data folder.',
+  'folders.readOnlyHint.shows': 'highsea won’t rename, move, delete or import anything into it.',
+  'folders.readOnlyHint.music': 'highsea won’t rename, move, delete or import anything into it.',
+  'folders.managedHint': 'highsea manages it: imports, renames and deletes go here.',
   'folders.moviesMissing': 'Pick a folder for movies.',
   'folders.downloadsMissing': 'Pick a folder for downloads.',
   'folders.same': 'Use a different folder from the movies folder.',
