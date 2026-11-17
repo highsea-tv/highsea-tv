@@ -1,29 +1,45 @@
 #!/bin/sh
 # SPDX-License-Identifier: AGPL-3.0-only
 # Writes the compose project's .env into the unpacked package, before Container Manager creates the
-# project from it. An upgrade keeps the shared folder chosen at install, which postinst saved in
-# the package's var folder (@appdata, kept across upgrades); /var/packages/highsea/var isn't linked
-# while the new version's preinst runs, so it's read from the volume.
+# project from it. An install takes the wizard's choices. An upgrade takes the upgrade wizard's,
+# which shows the current ones (WIZARD_UIFILES/install_uifile.sh, packed as upgrade_uifile.sh too),
+# and keeps what postinst saved when no wizard ran: postinst saves it in the package's var folder
+# (@appdata, kept across upgrades); /var/packages/highsea/var isn't linked while the new version's
+# preinst runs, so it's read from the volume.
 . "$(dirname "$0")/common"
 
 saved="${SYNOPKG_PKGDEST_VOL:-/volume1}/@appdata/highsea/package.conf"
 share=""
 library=""
-if [ "$SYNOPKG_PKG_STATUS" = UPGRADE ] && [ -r "$saved" ]; then
-  share=$(sed -n 's/^share=//p' "$saved")
-  library=$(sed -n 's/^library=//p' "$saved")
+# a singleselect's options reach the script as their keys, true or false (WIZARD_UIFILES 7.2.2:
+# "their keys will be set in the script environment variables with true, false, or text values")
+if [ "$SYNOPKG_PKG_STATUS" = UPGRADE ]; then
+  if [ "${wizard_upgrade_managed:-}" = true ] || [ "${wizard_upgrade_read_only:-}" = true ]; then
+    share="${wizard_data_share:-}"
+    library=managed
+    [ "${wizard_upgrade_read_only:-false}" = true ] && library=read-only
+  elif [ -r "$saved" ]; then
+    share=$(sed -n 's/^share=//p' "$saved")
+    library=$(sed -n 's/^library=//p' "$saved")
+  fi
 fi
 [ -n "$share" ] || share="${wizard_data_share:-}"
-# the wizard's choice (Phase 5 A1, ADR 0063): a singleselect's options reach the script as their
-# keys, true or false (DSM 7.0 Developer Guide, WIZARD_UIFILES)
+# the install wizard's choice (Phase 5 A1, ADR 0063); an install from before the choice is managed
 if [ -z "$library" ]; then
   library=managed
   [ "${wizard_library_read_only:-false}" = true ] && library=read-only
 fi
 if [ -z "$share" ]; then
-  say "Choose a shared folder for highsea's films."
+  say "Choose a shared folder for highsea."
   exit 1
 fi
+# a shared folder's name, which the .env quotes: no slash, quote, backslash, dollar or backtick
+case "$share" in
+  */* | *[\"\\\'\$\`]* | .* | @* | \#*)
+    say "highsea can't use the shared folder $share. Choose another."
+    exit 1
+    ;;
+esac
 
 if [ "$SYNOPKG_PKG_STATUS" = INSTALL ] && listening 3000; then
   say "Something on this NAS already uses port 3000. If it's highsea in Container Manager, stop and delete that project first, then install the package again."
