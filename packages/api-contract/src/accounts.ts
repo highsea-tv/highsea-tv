@@ -240,6 +240,12 @@ const CodeParam = z.object({ code: z.string().openapi({ param: { name: 'code', i
 const TokenParam = z.object({ token: z.string().openapi({ param: { name: 'token', in: 'path' } }) })
 const Password = z.string().max(256)
 
+/**
+ * A new username: trimmed and lowercased by the server, then 2 to 32 lowercase letters, numbers,
+ * dots, dashes or underscores, as setup's (setup.md). The length is checked after trimming.
+ */
+const NewUsername = z.string().max(64).openapi({ example: 'sebastian' })
+
 // ---------------------------------------------------------------- routes
 
 const AUTH = `${API_PREFIX}/auth`
@@ -480,6 +486,17 @@ export const me = {
     request: { ...body(z.object({ current: Password.nullable(), password: Password })) },
     responses: { ...noContent, ...errors('invalid', 'unauthorized') },
   }),
+  changeUsername: createRoute({
+    method: 'put',
+    path: `${ME}/username`,
+    tags: ['Me'],
+    summary: 'Change your username',
+    description:
+      'Asks for your password when you have one. Every device stays signed in, and from now on you sign in with the new name. Errors: 400 `username-invalid`; 401 `invalid-credentials` for a wrong password; 409 `username-taken`, case aside.',
+    ...access('user'),
+    request: { ...body(z.object({ username: NewUsername, password: Password.nullable() })) },
+    responses: { 200: json(User, 'You'), ...errors('invalid', 'unauthorized', 'conflict') },
+  }),
   twoFactor: createRoute({
     method: 'get',
     path: `${ME}/two-factor`,
@@ -628,6 +645,20 @@ export const users = {
     responses: {
       200: json(User, 'Updated'),
       ...errors('invalid', 'unauthorized', 'forbidden', 'not-found'),
+    },
+  }),
+  rename: createRoute({
+    method: 'put',
+    path: `${API_PREFIX}/users/{id}/username`,
+    tags: ['Users'],
+    summary: 'Change someone’s username',
+    description:
+      'Their devices stay signed in, and they sign in with the new name from now on. Your own goes through `/me/username`. Errors: 400 `username-invalid`; 403 `self`; 409 `username-taken`, case aside.',
+    ...access('owner'),
+    request: { params: IdParam, ...body(z.object({ username: NewUsername })) },
+    responses: {
+      200: json(User, 'Renamed'),
+      ...errors('invalid', 'unauthorized', 'forbidden', 'not-found', 'conflict'),
     },
   }),
   remove: createRoute({

@@ -631,6 +631,135 @@ describe('people', () => {
   })
 })
 
+describe('renaming', () => {
+  const password = 'a long enough password'
+  const check = (env: Awaited<ReturnType<typeof withOwner>>, secret: string) =>
+    env.auth.authenticate({ secret, headers: new Headers(), fromTrustedProxy: false })
+
+  test('the owner renames someone: same id, still signed in, the new name signs in', async () => {
+    const env = await withOwner()
+    const mara = await addMember(env, 'Mara')
+    const browser = signedIn(
+      await env.auth.signIn.password({ username: mara.username, password }, meta),
+    )
+    const living = signedIn(
+      await env.auth.signIn.password({ username: mara.username, password, device: tv }, meta),
+    )
+    const before = env.auth.devices.list(mara.id).map((d) => d.id)
+    const renamed = env.auth.users.rename(mara.id, '  Mara.J ', env.actor, meta)
+    // trimmed and lowercased, as setup and sign-in take it
+    expect(renamed).toMatchObject({ id: mara.id, username: 'mara.j' })
+    expect(check(env, browser.secret)?.user).toMatchObject({ id: mara.id, username: 'mara.j' })
+    expect(check(env, living.secret)?.user.id).toBe(mara.id)
+    expect(env.auth.devices.list(mara.id).map((d) => d.id)).toEqual(before)
+    signedIn(await env.auth.signIn.password({ username: 'Mara.J', password }, meta))
+    expect(
+      (await failure(() => env.auth.signIn.password({ username: 'mara', password }, meta))).code,
+    ).toBe('unauthorized')
+  })
+
+  test('audited as user.rename with the old and new name', async () => {
+    const env = await withOwner()
+    const mara = await addMember(env, 'Mara')
+    env.auth.users.rename(mara.id, 'mara.j', env.actor, meta)
+    expect(env.auth.audit({}).items[0]).toMatchObject({
+      action: 'user.rename',
+      actorId: env.owner.id,
+      actorName: 'ines',
+      targetType: 'user',
+      targetId: mara.id,
+      detail: { from: 'mara', to: 'mara.j' },
+    })
+    expect(env.seen.at(-1)).toMatchObject({ topic: 'users.updated', ids: [mara.id] })
+  })
+
+  test('you rename yourself with your password, and stay signed in', async () => {
+    const env = await withOwner()
+    const here = signedIn(await env.auth.signIn.password(OWNER, meta))
+    const wrong = await failure(() =>
+      env.auth.me.changeUsername(env.owner.id, { username: 'sebastian', password: 'nope' }, meta),
+    )
+    expect(wrong).toMatchObject({ code: 'unauthorized', reason: 'invalid-credentials' })
+    expect(env.auth.users.get(env.owner.id).username).toBe('ines')
+    const you = await env.auth.me.changeUsername(
+      env.owner.id,
+      { username: 'sebastian', password: OWNER.password },
+      meta,
+    )
+    expect(you).toMatchObject({ id: env.owner.id, username: 'sebastian', role: 'owner' })
+    expect(check(env, here.secret)?.user.username).toBe('sebastian')
+    signedIn(
+      await env.auth.signIn.password({ username: 'sebastian', password: OWNER.password }, meta),
+    )
+    expect((await failure(() => env.auth.signIn.password(OWNER, meta))).code).toBe('unauthorized')
+    expect(env.auth.audit({}).items.find((e) => e.action === 'user.rename')).toMatchObject({
+      actorId: env.owner.id,
+      targetId: env.owner.id,
+      detail: { from: 'ines', to: 'sebastian' },
+    })
+  })
+
+  test('a user renames themselves too; nobody but the owner renames someone else', async () => {
+    const env = await withOwner()
+    const mara = await addMember(env, 'Mara')
+    const ruth = await addMember(env, 'Ruth', 'admin')
+    await env.auth.me.changeUsername(mara.id, { username: 'mj', password }, meta)
+    expect(env.auth.users.get(mara.id).username).toBe('mj')
+    for (const who of [mara, ruth])
+      expect(
+        (
+          await failure(() =>
+            env.auth.users.rename(env.owner.id, 'boss', { id: who.id, name: who.username }, meta),
+          )
+        ).reason,
+      ).toBe('not-owner')
+    expect(
+      (
+        await failure(() =>
+          env.auth.users.rename(mara.id, 'mara2', { id: ruth.id, name: ruth.username }, meta),
+        )
+      ).reason,
+    ).toBe('not-owner')
+    // the owner's own goes through their account, with their password
+    expect(
+      (await failure(() => env.auth.users.rename(env.owner.id, 'x1', env.actor, meta))).reason,
+    ).toBe('self')
+    expect(env.auth.users.get(env.owner.id).username).toBe('ines')
+  })
+
+  test('a name that’s taken, case aside, is a field error', async () => {
+    const env = await withOwner()
+    const mara = await addMember(env, 'Mara')
+    for (const taken of ['ines', 'INES', ' Ines '])
+      expect(
+        await failure(() => env.auth.users.rename(mara.id, taken, env.actor, meta)),
+      ).toMatchObject({
+        code: 'conflict',
+        reason: 'username-taken',
+      })
+    const mine = await failure(() =>
+      env.auth.me.changeUsername(mara.id, { username: 'Ines', password }, meta),
+    )
+    expect(mine).toMatchObject({ code: 'conflict', reason: 'username-taken' })
+    // your own name again, in another case, changes nothing
+    expect(env.auth.users.rename(mara.id, 'MARA', env.actor, meta).username).toBe('mara')
+    expect(env.auth.audit({}).items.some((e) => e.action === 'user.rename')).toBe(false)
+  })
+
+  test('an invalid name is a field error, by setup’s rules', async () => {
+    const env = await withOwner()
+    const mara = await addMember(env, 'Mara')
+    for (const bad of ['m', 'mara jensen', 'mára', 'a'.repeat(33), '   ', 'mara!'])
+      expect(
+        await failure(() => env.auth.users.rename(mara.id, bad, env.actor, meta)),
+      ).toMatchObject({
+        code: 'invalid',
+        reason: 'username-invalid',
+      })
+    expect(env.auth.users.get(mara.id).username).toBe('mara')
+  })
+})
+
 describe('devices and API keys', () => {
   test('signing a device out stops its token at once', async () => {
     const env = await withOwner()

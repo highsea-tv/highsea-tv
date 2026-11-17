@@ -24,6 +24,9 @@ type VpnOut = Output<Routes['vpn']['settings']>
 export const peopleMessages = defineMessages({
   'users.unknown': 'There’s no one with that id.',
   'users.notInvited': 'They’ve already finished their account. Reset their password instead.',
+  'users.usernameInvalid': 'Use 2 to 32 lowercase letters, numbers, dots, dashes or underscores.',
+  'users.usernameTaken': 'That username is taken.',
+  'users.self': 'Change your own username in Your account.',
   'security.sessionDays': 'Choose 1, 7, 30 or 90 days.',
   'security.issuer': 'Use the provider’s https address, like https://auth.example.net.',
   'security.clientId': 'Paste the client id from your provider.',
@@ -49,6 +52,32 @@ const DISCOVERY_PORT = 7359
 
 const invalid = (message: string, field: string, details: Record<string, unknown> = {}) =>
   refuse('invalid', message, { field, ...details })
+
+/** setup.md's username rule, as packages/auth's `USERNAME`. */
+const USERNAME = /^[a-z0-9._-]{2,32}$/
+
+/**
+ * packages/auth's rename: trimmed and lowercased, setup's rule, unique case aside, the same id.
+ * `me.changeUsername` (flows.ts) calls it after checking the password.
+ */
+export function renameIn(
+  ctx: Ctx,
+  user: { id: string; username: string },
+  input: string,
+  emit: AdminKit['emit'],
+) {
+  const username = input.trim().toLowerCase()
+  if (username === user.username) return
+  if (!USERNAME.test(username))
+    throw invalid(t('users.usernameInvalid'), 'username', { reason: 'username-invalid' })
+  if (ctx.srv.state.users.some((u) => u.id !== user.id && u.username === username))
+    throw refuse('conflict', t('users.usernameTaken'), {
+      field: 'username',
+      reason: 'username-taken',
+    })
+  user.username = username
+  emit('users.updated')
+}
 
 /** What the server keeps that the mock's settings don't, per server kind. */
 type Extra = {
@@ -150,6 +179,12 @@ export function peopleAnswers({ wall, emit, userOf, devicesOf }: AdminKit): Answ
           u.displayName = displayName.trim()
           emit('users.updated')
         }
+        return userOf(u)
+      },
+      rename: ({ params, body }, ctx) => {
+        if (params.id === ctx.userId) throw refuse('forbidden', t('users.self'), { reason: 'self' })
+        const u = userAt(ctx, params.id)
+        renameIn(ctx, u, body.username, emit)
         return userOf(u)
       },
       remove: ({ params }, ctx) => {

@@ -12,6 +12,7 @@ import { createT, defineMessages } from '@highsea-tv/i18n'
 import type { User } from '../types.ts'
 import type { AdminKit, Answers, Ctx } from './kit.ts'
 import { refuse } from './kit.ts'
+import { renameIn } from './people.ts'
 import { indexerAnswers } from './work-indexers.ts'
 
 export const flowsMessages = defineMessages({
@@ -145,6 +146,11 @@ export function flowsAnswers(kit: AdminKit): Answers {
       changePassword: ({ body }) => {
         checkPassword(body.current)
         return undefined
+      },
+      changeUsername: ({ body }, ctx) => {
+        checkPassword(body.password)
+        renameIn(ctx, person(ctx), body.username, emit)
+        return you(ctx)
       },
       twoFactor: (_, ctx) => {
         const u = person(ctx)

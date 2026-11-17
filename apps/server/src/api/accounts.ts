@@ -197,6 +197,13 @@ export function registerAccounts(app: OpenAPIHono<Env>) {
     return c.body(null, 204)
   })
 
+  app.openapi(routes.me.changeUsername, async (c) =>
+    c.json(
+      userView(await auth(c).me.changeUsername(me(c).user.id, c.req.valid('json'), c.get('meta'))),
+      200,
+    ),
+  )
+
   app.openapi(routes.me.twoFactor, (c) => c.json(auth(c).twoFactor.status(me(c).user.id), 200))
 
   app.openapi(routes.me.startTwoFactor, async (c) =>
@@ -294,6 +301,20 @@ export function registerAccounts(app: OpenAPIHono<Env>) {
         auth(c).users.update(
           c.req.valid('param').id,
           c.req.valid('json'),
+          actor(me(c)),
+          c.get('meta'),
+        ),
+      ),
+      200,
+    ),
+  )
+
+  app.openapi(routes.users.rename, (c) =>
+    c.json(
+      userView(
+        auth(c).users.rename(
+          c.req.valid('param').id,
+          c.req.valid('json').username,
           actor(me(c)),
           c.get('meta'),
         ),
