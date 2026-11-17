@@ -61,6 +61,58 @@ describe('the gate', () => {
     expect(screen.getByText('That username and password don’t match.')).toBeTruthy()
   })
 
+  // HT-36: the fields take credentials as typed, with the props React Native's TextInput documents
+  // (https://reactnative.dev/docs/textinput): no capital first letter, no autocorrect, and the
+  // autofill hints a password manager reads
+  test('the username and password fields take credentials as typed', async () => {
+    await open()
+    await fireEvent.press(screen.getByRole('button', { name: /^Harbor/ }))
+    await flush()
+    const credentials = {
+      autoCapitalize: 'none',
+      autoCorrect: false,
+      spellCheck: false,
+      smartInsertDelete: false,
+    }
+    expect(screen.getByLabelText('Username').props).toMatchObject({
+      ...credentials,
+      autoComplete: 'username',
+      textContentType: 'username',
+    })
+    expect(screen.getByLabelText('Password').props).toMatchObject({
+      ...credentials,
+      secureTextEntry: true,
+      autoComplete: 'current-password',
+      textContentType: 'password',
+    })
+  })
+
+  // HT-36: only refused credentials say they don't match (one message for an unknown username or
+  // a wrong password, as OWASP's Authentication Cheat Sheet asks); anything else says what happened
+  test('a sign-in refused for another reason says so, not that the password is wrong', async () => {
+    const r = await open()
+    await fireEvent.press(screen.getByRole('button', { name: /^Harbor/ }))
+    await flush()
+    const attempt = async (password: string) => {
+      await type({ Username: 'ruth', Password: password })
+      await fireEvent.press(screen.getByRole('button', { name: 'Sign in' }))
+      await flush()
+      expect(r.getPathname()).toBe('/sign-in')
+      expect(screen.queryByText('That username and password don’t match.')).toBeNull()
+    }
+    // too many tries (429)
+    await attempt('locked')
+    expect(screen.getByText('Too many attempts. Try again in 5 minutes.')).toBeTruthy()
+    // a request the server can't read (400), as a build that speaks another contract would send
+    rewrite((url, init) => {
+      if (typeof init.body !== 'string' || !init.body.includes('"password"')) return
+      const { username: _, ...body } = JSON.parse(init.body)
+      return [url, { ...init, body: JSON.stringify(body) }]
+    })
+    await attempt('right one')
+    expect(screen.queryByText('Too many attempts. Try again in 5 minutes.')).toBeNull()
+  })
+
   test('signing in opens the shell, and reopened it opens signed in', async () => {
     const r = await signedIn()
     expect(r.getPathname()).toBe('/')

@@ -413,6 +413,12 @@ function SignInForm() {
       {ssoError ? <Notice>{ssoError}</Notice> : null}
       {server.auth.local ? (
         <View style={{ gap: space['4'] }}>
+          {/* Credentials go to the server as typed. React Native's TextInput
+              (https://reactnative.dev/docs/textinput): autoCapitalize defaults to `sentences`, so
+              both fields say `none`; autoCorrect and spellCheck are off; autoComplete and
+              textContentType name the username and current password, so a password manager fills
+              the pair it saved; smartInsertDelete off keeps iOS from adding a space after a paste.
+              The server also trims and lowercases the username (packages/auth's sign-in.ts). */}
           <Field label={t('username')}>
             <Input
               value={username}
@@ -422,6 +428,7 @@ function SignInForm() {
               autoCapitalize="none"
               autoCorrect={false}
               spellCheck={false}
+              smartInsertDelete={false}
               returnKeyType="next"
               onSubmitEditing={() => passwordInput.current?.focus()}
             />
@@ -434,6 +441,10 @@ function SignInForm() {
               secureTextEntry
               autoComplete="current-password"
               textContentType="password"
+              autoCapitalize="none"
+              autoCorrect={false}
+              spellCheck={false}
+              smartInsertDelete={false}
               returnKeyType="go"
               onSubmitEditing={() => void submit()}
               invalid={!!fieldError}
