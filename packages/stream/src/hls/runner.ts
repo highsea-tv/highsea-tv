@@ -48,16 +48,29 @@ import {
   attachmentArgs,
   type BurnIn,
   type EncoderPreset,
+  fromFilmStart,
   INIT_NAME,
+  indexProbeArgs,
   keyframeArgs,
   parseFonts,
+  parseIndexProbe,
   parseKeyframes,
+  parseWindow,
   pieceName,
   type RunInput,
   runArgs,
   subtitleArgs,
   subtitlesArgs,
+  windowArgs,
 } from './args.ts'
+import {
+  agrees,
+  fileReader,
+  matroskaKeyframes,
+  mp4Keyframes,
+  NoIndex,
+  windows,
+} from './keyframe-index.ts'
 import {
   gridSegments,
   keyframeSegments,
@@ -351,18 +364,74 @@ const exec = (command: string, args: string[], timeoutMs: number, background: Ba
       }
   })
 
+/** A film's keyframes, and whether they came from its index or from every packet, and why. */
+export type Keyframes = { times: number[]; from: 'index' | 'packets'; why?: string }
+
 /**
- * Reads a film's keyframes with ffprobe, without decoding (`keyframeArgs`). It lists every packet
- * of the picture, so it reads the whole file: seconds from an SSD, minutes for a large film on
- * spinning disks. The runtime does it after the import, ahead of the first play.
+ * Reads a film's keyframes: from the container's index where it has one that agrees with the
+ * film's own packets (`keyframe-index.ts`), a few megabytes; else with ffprobe from every packet
+ * of the picture, without decoding (`keyframeArgs`), which reads the whole file: seconds from an
+ * SSD, minutes for a large film on spinning disks. The runtime does it after the import, ahead of
+ * the first play.
  */
+export async function readKeyframesFrom(
+  ffprobe: string,
+  input: string,
+  index: number,
+  background?: Background,
+): Promise<Keyframes> {
+  let why: string
+  try {
+    return { times: await fromIndex(ffprobe, input, index, background), from: 'index' }
+  } catch (e) {
+    if (background?.signal?.aborted) throw e
+    why = (e as Error).message
+  }
+  const output = await exec(ffprobe, keyframeArgs(input, index), 60 * 60_000, background)
+  return { times: parseKeyframes(output), from: 'packets', why }
+}
+
+/** `readKeyframesFrom`'s times alone. */
 export async function readKeyframes(
   ffprobe: string,
   input: string,
   index: number,
   background?: Background,
 ) {
-  return parseKeyframes(await exec(ffprobe, keyframeArgs(input, index), 60 * 60_000, background))
+  return (await readKeyframesFrom(ffprobe, input, index, background)).times
+}
+
+/**
+ * The keyframes from the film's index, checked against ffprobe's packets at its start, its middle
+ * and its end (`windows`, `agrees`); throws when there's no index or it disagrees.
+ */
+async function fromIndex(ffprobe: string, input: string, index: number, background?: Background) {
+  const probe = parseIndexProbe(
+    await exec(ffprobe, indexProbeArgs(input), 2 * 60_000, background),
+    index,
+  )
+  if (!probe?.container) throw new NoIndex('Only Matroska and MP4 indexes are read.')
+  const reader = await fileReader(input)
+  let keys: number[]
+  try {
+    keys =
+      probe.container === 'matroska'
+        ? await matroskaKeyframes(reader, probe.nth)
+        : await mp4Keyframes(reader, probe.id, probe.nth)
+  } finally {
+    await reader.close()
+  }
+  keys = [...new Set(keys)].sort((a, b) => a - b)
+  const checks = windows(keys)
+  if (!checks) throw new NoIndex('The index has too few keyframes to check.')
+  for (const w of checks) {
+    const seen = parseWindow(
+      await exec(ffprobe, windowArgs(input, index, w.interval), 10 * 60_000, background),
+    )
+    if (!agrees(keys, seen, w.edge))
+      throw new NoIndex(`The index disagrees with the film’s packets at its ${w.edge}.`)
+  }
+  return fromFilmStart(keys, probe.start)
 }
 
 /**

@@ -192,6 +192,9 @@ describe.skipIf(!hasFfmpeg)('HLS over HTTP', () => {
     runtime.jobs.enqueue('media.ahead', {}, { dedupeKey: 'ahead' })
     await runtime.jobs.tick()
     await runtime.jobs.idle()
+    // the keyframes' job queues the subtitles' once no file is left without keyframes
+    await runtime.jobs.tick()
+    await runtime.jobs.idle()
 
     // a minute with a keyframe every 2 s
     const kept = runtime.db.select().from(schema.fileKeyframes).get()
@@ -201,9 +204,14 @@ describe.skipIf(!hasFfmpeg)('HLS over HTTP', () => {
     expect(readFileSync(vtt, 'utf8')).toContain('00:00.000 --> 00:02.000\nHello.')
     expect(existsSync(`${vtt}.part`)).toBe(false)
     expect(existsSync(orphan)).toBe(false)
+    // from the file's index (HT-48), then the subtitles in a job of their own
     expect(logged('read ahead of the first play')[0]?.fields).toMatchObject({
       file: file.id,
       keyframes: 30,
+      from: 'index',
+    })
+    expect(logged('subtitles converted ahead of the first play')[0]?.fields).toMatchObject({
+      file: file.id,
       subtitles: 1,
     })
 

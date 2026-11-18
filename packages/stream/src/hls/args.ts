@@ -414,6 +414,96 @@ export function keyframeArgs(input: string, index: number): string[] {
 }
 
 /**
+ * What reading a film's keyframes from its index needs to know first (https://ffmpeg.org/ffprobe.html):
+ * the container, the film's start, and each stream's kind and ID (the Matroska track number or
+ * the MP4 `track_ID`, as ffmpeg's demuxers set it). It reads the header and a few packets.
+ */
+export function indexProbeArgs(input: string): string[] {
+  return [
+    ...['-v', 'error'],
+    ...['-show_entries', 'format=format_name,start_time:stream=index,id,codec_type'],
+    ...['-show_entries', 'stream_disposition=attached_pic', '-of', 'json', input],
+  ]
+}
+
+export type IndexProbe = {
+  container: 'matroska' | 'mp4' | null
+  start: number
+  /** The picture's place among the film's video tracks, cover pictures left out. */
+  nth: number
+  /** Its Matroska track number or MP4 `track_ID`, when the demuxer gave one. */
+  id: number | null
+}
+
+export function parseIndexProbe(output: string, index: number): IndexProbe | null {
+  const json = JSON.parse(output || '{}') as {
+    format?: { format_name?: string; start_time?: string }
+    streams?: {
+      index?: number
+      id?: string
+      codec_type?: string
+      disposition?: { attached_pic?: number }
+    }[]
+  }
+  const name = json.format?.format_name ?? ''
+  const pictures = (json.streams ?? []).filter(
+    (s) => s.codec_type === 'video' && !s.disposition?.attached_pic,
+  )
+  const nth = pictures.findIndex((s) => s.index === index)
+  if (nth < 0) return null
+  const id = Number.parseInt(pictures[nth]?.id ?? '', 16)
+  const start = Number(json.format?.start_time)
+  return {
+    container: name.includes('matroska') ? 'matroska' : /\bmov\b|\bmp4\b/.test(name) ? 'mp4' : null,
+    start: Number.isFinite(start) ? start : 0,
+    nth,
+    id: Number.isFinite(id) ? id : null,
+  }
+}
+
+/**
+ * The picture's packets in one stretch of the film (`-read_intervals`, https://ffmpeg.org/ffprobe.html:
+ * "ffprobe will seek to the interval starting point, and will continue reading from that"), to
+ * check a keyframe index against. `%end` reads from the beginning without a seek, `start%` to the
+ * file's end.
+ */
+export function windowArgs(input: string, index: number, interval: string): string[] {
+  return [
+    ...['-v', 'error', '-select_streams', String(index), '-read_intervals', interval],
+    ...['-show_entries', 'packet=pts_time,dts_time,flags', '-of', 'compact=p=0:nk=0', input],
+  ]
+}
+
+/** A window's keyframes and the span of times it read, as ffprobe printed them. */
+export function parseWindow(output: string): { keys: number[]; first: number; last: number } {
+  const keys: number[] = []
+  let first = Number.POSITIVE_INFINITY
+  let last = Number.NEGATIVE_INFINITY
+  for (const line of output.split('\n')) {
+    const fields = new Map(
+      line
+        .trim()
+        .split('|')
+        .map((f) => f.split('=') as [string, string]),
+    )
+    const pts = Number(fields.get('pts_time'))
+    const t = Number.isFinite(pts) ? pts : Number(fields.get('dts_time'))
+    if (!Number.isFinite(t)) continue
+    first = Math.min(first, t)
+    last = Math.max(last, t)
+    if (fields.get('flags')?.includes('K')) keys.push(t)
+  }
+  return { keys: [...new Set(keys)].sort((a, b) => a - b), first, last }
+}
+
+/** Times taken back to the film's start and kept to a microsecond, ascending, each once. */
+export function fromFilmStart(raw: readonly number[], start: number): number[] {
+  return [...new Set(raw.map((t) => Math.max(0, Math.round((t - start) * 1e6) / 1e6)))].sort(
+    (a, b) => a - b,
+  )
+}
+
+/**
  * The keyframes' times in seconds from the film's start, ascending, from `keyframeArgs`'s output.
  * The film's start is the container's `start_time`, which `-start_at_zero` takes away too.
  */
@@ -437,7 +527,5 @@ export function parseKeyframes(output: string): number[] {
     const t = Number.isFinite(pts) ? pts : Number(fields.get('dts_time'))
     if (Number.isFinite(t)) raw.push(t)
   }
-  return [...new Set(raw.map((t) => Math.max(0, Math.round((t - start) * 1e6) / 1e6)))].sort(
-    (a, b) => a - b,
-  )
+  return fromFilmStart(raw, start)
 }
