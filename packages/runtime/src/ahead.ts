@@ -6,19 +6,22 @@
 //   read from the container's index where it has one that agrees with the film's packets, a few
 //   megabytes, and else from every packet, the whole file (HT-48, `readKeyframesFrom`). They're
 //   kept by the file's size (`file_keyframes`), as before.
-// - **Text subtitles of the file's own, as WebVTT.** A subtitle track is spread through the file,
-//   so ffmpeg reads all of it to take one out (https://ffmpeg.org/ffmpeg.html#Stream-copy: it
-//   demuxes the whole input), and no index helps: Matroska's Cues point at the Clusters that hold
-//   a subtitle (RFC 9559 § 22.1), each a few seconds of the whole film. Converted once a session,
-//   every play with a subtitle read the film again beside its own stream. They're kept in the data
-//   folder's `webvtt/<file>/`, named by the file's size and the stream, so a file replaced at the
-//   same path is converted again.
+// - **Text subtitles of a WebM file's own, as WebVTT.** A stream's subtitles come in segments
+//   from the reads its runs make anyway (HT-49, `hls/webvtt.ts`), so only a file played as it is
+//   needs one whole, and only MP4, MOV and WebM files are (`profiles`). MP4's and MOV's sample
+//   tables say where each subtitle sample is (ISO/IEC 14496-12 § 8.7), so taking one out reads
+//   those samples alone: a megabyte of a 41 MB test film, by ffmpeg's own count, done when first
+//   asked. WebM is Matroska, whose subtitle blocks sit among the picture's in Clusters with no
+//   index of them (RFC 9559 § 22.1), so ffmpeg reads the whole file to take one out
+//   (https://ffmpeg.org/ffmpeg.html#Stream-copy): that's done here, after the import. They're kept
+//   in the data folder's `webvtt/<file>/`, named by the file's size and the stream, so a file
+//   replaced at the same path is converted again.
 //
 // Two jobs, one file at a time each, as trickplay's is: `media.ahead` reads the newest file without
 // keyframes for its present size and queues itself again while any is left, then queues
-// `media.ahead.subtitles`, which converts the newest file's missing subtitles in one pass and
-// queues itself again the same way. The keyframes come first and never wait for a conversion: a
-// library's keyframes take seconds a film, its subtitles a read of each film that has any. The
+// `media.ahead.subtitles`, which converts the newest WebM file's missing subtitles in one pass
+// and queues itself again the same way. The keyframes come first and never wait for a conversion:
+// a library's keyframes take seconds a film, a WebM file's subtitles a read of the film. The
 // import's hook queues the keyframes and so does boot, which is how a library from before this
 // gets read. Both run at the lowest priority. A play that comes first reads what it needs itself,
 // and shares a read already under way. A file that fails is left until the server next starts.
@@ -40,6 +43,13 @@ export const AHEAD_SUBTITLES_JOB = 'media.ahead.subtitles'
 const { mediaFiles, fileKeyframes } = schema
 
 type File = { id: string; path: string; size: number }
+
+/**
+ * Whether taking a file's own subtitle out reads all of it when it's played as it is: a WebM
+ * file's, Matroska's, told by its name as `containerOf` in `profiles` does. A Matroska file of
+ * any other name is never played as it is, so its streams read its subtitles (HT-49).
+ */
+export const readWholeForSubtitles = (path: string) => /\.webm$/i.test(path)
 type Read = { times: number[]; read: boolean; from?: 'index' | 'packets'; why?: string }
 
 export function createAhead(deps: {
@@ -157,8 +167,8 @@ export function createAhead(deps: {
   }
 
   /**
-   * The newest file with a text subtitle of its own not converted yet for its present size: a
-   * look at each file's folder, newest first, which is quick beside a conversion.
+   * The newest WebM file with a text subtitle of its own not converted yet for its present size:
+   * a look at each file's folder, newest first, which is quick beside a conversion.
    */
   function nextSubtitles(): File | null {
     const files = db
@@ -167,7 +177,7 @@ export function createAhead(deps: {
       .orderBy(desc(mediaFiles.addedAt))
       .all()
     for (const file of files) {
-      if (failedSubtitles.has(file.id)) continue
+      if (failedSubtitles.has(file.id) || !readWholeForSubtitles(file.path)) continue
       if (deps.textTracks(file.id).some((index) => !existsSync(subtitlePath(file, index))))
         return file
     }

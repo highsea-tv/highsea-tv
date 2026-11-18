@@ -191,19 +191,24 @@ export function multivariantPlaylist(variant: Variant, subtitles: readonly Subti
 }
 
 /**
- * A subtitle rendition's media playlist: the whole track as one WebVTT segment as long as the film,
- * which every player reads at once (§ 3.5).
+ * A subtitle rendition's media playlist (HT-49): a WebVTT segment for each of the picture's, at
+ * the same times, since "all video variants and renditions MUST have segment boundaries at the
+ * same points in time" (Apple's HLS authoring specification, 8.22), and for the whole film, cues
+ * or none (5.5: "The subtitle playlist MUST exist for the entirety of the main content"). A
+ * sidecar, a small file of its own, is one segment as long as the film. `uri` names segment `i`.
  */
-export function subtitlePlaylist(duration: number, uri: string): string {
-  return [
+export function subtitlePlaylist(segments: readonly Segment[], uri: (i: number) => string): string {
+  const target = Math.max(1, ...segments.map((s) => Math.round(s.duration)))
+  const lines = [
     '#EXTM3U',
     '#EXT-X-VERSION:7',
-    `#EXT-X-TARGETDURATION:${Math.max(1, Math.round(duration))}`,
+    `#EXT-X-TARGETDURATION:${target}`,
     '#EXT-X-MEDIA-SEQUENCE:0',
     '#EXT-X-PLAYLIST-TYPE:VOD',
-    `#EXTINF:${extinf(duration)},`,
-    uri,
-    '#EXT-X-ENDLIST',
-    '',
-  ].join('\n')
+  ]
+  segments.forEach((s, i) => {
+    lines.push(`#EXTINF:${extinf(s.duration)},`, uri(i))
+  })
+  lines.push('#EXT-X-ENDLIST', '')
+  return lines.join('\n')
 }

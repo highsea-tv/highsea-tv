@@ -15,13 +15,7 @@
 // `showNowPlayingNotification`, with the title and artwork in the source's `metadata`; AirPlay
 // from `allowsExternalPlayback`, all three on the phone only: the docs list none of them for tvOS
 // (https://docs.expo.dev/versions/latest/sdk/video/#videoplayer).
-import {
-  type Cue,
-  clampSeek,
-  initialPlayer,
-  parseCues,
-  playerReducer,
-} from '@highsea-tv/client/player'
+import { clampSeek, initialPlayer, playerReducer } from '@highsea-tv/client/player'
 import { useClient } from '@highsea-tv/sdk/react'
 import { useEventListener } from 'expo'
 import { useVideoPlayer, type VideoPlayer } from 'expo-video'
@@ -38,6 +32,7 @@ import {
   useStarts,
   useStoppedEvent,
 } from './playback-shared.ts'
+import { useSubtitleCues } from './subtitle-cues.ts'
 
 export { TRANSCODE_LIMIT } from './playback-shared.ts'
 
@@ -59,7 +54,6 @@ export const usePlayback: UsePlayback<VideoPlayer> = (id, fromStart, type = 'mov
   const [external, setExternal] = useState(false)
   // counts the sources loaded, so the subtitle choice below is made again on each one
   const [loads, setLoads] = useState(0)
-  const [cues, setCues] = useState<Cue[]>([])
   // true once the current stream plays: until then the player's events are about nothing the
   // server should save
   const playingStream = useRef(false)
@@ -121,22 +115,16 @@ export const usePlayback: UsePlayback<VideoPlayer> = (id, fromStart, type = 'mov
   const d = c.detail.data
   nowPlaying.current = { title: d?.item.title, artwork: d?.item.art.poster ?? null }
 
-  // the chosen subtitle's cues, from the session's WebVTT; the offset is added as they're drawn
-  useEffect(() => {
-    setCues([])
-    const src = subtitlePath ? mediaRef.current(subtitlePath) : undefined
-    if (!src) return
-    let gone = false
-    fetch(src.uri, { headers: src.headers })
-      .then((r) => (r.ok ? r.text() : ''))
-      .then((text) => {
-        if (!gone) setCues(parseCues(text))
-      })
-      .catch(() => {})
-    return () => {
-      gone = true
-    }
-  }, [subtitlePath])
+  // the chosen subtitle's cues, in segments around where it's playing, with this device's token
+  // in a header; the offset is added as they're drawn
+  const fetchText = useCallback(async (path: string) => {
+    const src = mediaRef.current(path)
+    if (!src) throw new Error('No server.')
+    const r = await fetch(src.uri, { headers: src.headers })
+    if (!r.ok) throw new Error(`HTTP ${r.status}`)
+    return r.text()
+  }, [])
+  const cues = useSubtitleCues(subtitlePath, state.position - c.offsetMs / 1000, fetchText)
 
   const retry = useStarts(c, fromStart, () => stateRef.current.position, begin, started)
 
@@ -270,7 +258,6 @@ export const usePlayback: UsePlayback<VideoPlayer> = (id, fromStart, type = 'mov
     audio: c.audio,
     subtitle,
     // the engine loads the WebVTT itself, with the device's token in a header (`cues`)
-    subtitleUrl: null,
     cues,
     burnt: !!burnt,
     pictureTrack: c.pictureTrack,

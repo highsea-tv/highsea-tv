@@ -18,13 +18,13 @@
 // session at the same place; subtitles and their timing never do. The position goes to the
 // session every 10 s while playing and on pause and seek; leaving saves it with `keepalive`, so it
 // survives the page closing (https://developer.mozilla.org/en-US/docs/Web/API/RequestInit#keepalive),
-// and ends the session, which stops its ffmpeg. The browser reads the subtitle's cues from a
-// hidden `<track>` for `subtitleUrl`, which the screen puts in the `<video>`, so `cues` stays empty.
+// and ends the session, which stops its ffmpeg. The subtitle's cues are loaded in segments around
+// where it's playing (./subtitle-cues.ts), and the screen lays them on the `<video>`'s own text
+// track for the browser to draw.
 import type { PlaySession } from '@highsea-tv/api-contract'
 import {
   type Base,
   baseProfile,
-  type Cue,
   clampSeek,
   deviceReport,
   initialPlayer,
@@ -45,13 +45,13 @@ import {
   useStarts,
   useStoppedEvent,
 } from './playback-shared.ts'
+import { useSubtitleCues } from './subtitle-cues.ts'
 import { useWebHost, type WebHost } from './web-host.ts'
 
 export { TRANSCODE_LIMIT } from './playback-shared.ts'
 
 const API = '/api/v1'
 const REPORTED = 'highsea:device-report'
-const NO_CUES: Cue[] = []
 
 /** The web's handle on the picture: pass `attach` to the `<video>` as its ref. */
 type WebPlayer = {
@@ -257,6 +257,17 @@ export const usePlayback: Engine<WebPlayer> = (id, fromStart, type = 'movie') =>
     },
   })
   const c = useChoices(id, session, type)
+  // the chosen subtitle's cues, in segments around where it's playing, from the address the page
+  // loads the stream from
+  const fetchText = useCallback(
+    async (path: string) => {
+      const r = await fetch(host.media(path))
+      if (!r.ok) throw new Error(`HTTP ${r.status}`)
+      return r.text()
+    },
+    [host],
+  )
+  const cues = useSubtitleCues(c.subtitlePath, state.position - c.offsetMs / 1000, fetchText)
 
   const retry = useStarts(c, fromStart, () => stateRef.current.position, begin, started)
 
@@ -362,8 +373,7 @@ export const usePlayback: Engine<WebPlayer> = (id, fromStart, type = 'movie') =>
     version: c.version,
     audio: c.audio,
     subtitle: c.subtitle,
-    subtitleUrl: c.subtitlePath ? host.media(c.subtitlePath) : null,
-    cues: NO_CUES,
+    cues,
     burnt: !!c.burnt,
     pictureTrack: c.pictureTrack,
     offsetMs: c.offsetMs,
