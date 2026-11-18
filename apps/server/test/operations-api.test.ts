@@ -154,19 +154,11 @@ describe('client reports', () => {
       },
       body: JSON.stringify(body),
     })
-  const on = async (owner: Awaited<ReturnType<typeof started>>['owner']) =>
-    owner.settings.saveGeneral({
-      body: { ...(await owner.settings.general()), crashReports: true },
-    })
-
   test('anyone signed in sends one; staff read them; nobody signed out does', async () => {
     const { app, owner, admin, user, userToken, ownerToken } = await started()
     expect((await send(app, report)).status).toBe(401)
-    // with General › Diagnostics off, a report is answered and not kept
-    await user.system.sendClientReport({ body: report })
-    expect(await owner.system.clientReports()).toEqual([])
-
-    await on(owner)
+    // kept with General › Diagnostics' crash reports off, as they are by default (HT-56)
+    expect((await owner.settings.general()).crashReports).toBe(false)
     expect((await send(app, report, userToken)).status).toBe(204)
     const [kept] = await admin.system.clientReports()
     expect(kept).toMatchObject({
@@ -190,7 +182,6 @@ describe('client reports', () => {
 
   test('what’s kept: the report, the sender’s id, and nothing it didn’t ask for', async () => {
     const { runtime, app, owner, userToken, ownerToken } = await started()
-    await on(owner)
     const sent = {
       ...report,
       username: 'rui',
@@ -227,7 +218,6 @@ describe('client reports', () => {
 
   test('a failed play is kept with the decision and the device’s profile', async () => {
     const { app, owner, userToken, ownerToken } = await started()
-    await on(owner)
     const play = {
       type: 'movie' as const,
       id: 603,
@@ -261,7 +251,6 @@ describe('client reports', () => {
 
   test('its size limit: 64 KB, and each field its own', async () => {
     const { app, owner, userToken } = await started()
-    await on(owner)
     const large = { ...report, error: { ...report.error, stack: 'x'.repeat(CLIENT_REPORT_MAX) } }
     const res = await send(app, large, userToken)
     expect(res.status).toBe(400)

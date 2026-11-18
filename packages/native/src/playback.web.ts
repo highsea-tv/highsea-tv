@@ -28,6 +28,7 @@ import {
   clampSeek,
   deviceReport,
   initialPlayer,
+  playerFailure,
   playerReducer,
   reportKey,
 } from '@highsea-tv/client/player'
@@ -240,9 +241,11 @@ export const usePlayback: Engine<WebPlayer> = (id, fromStart, type = 'movie') =>
           // 503: it waited a minute past Settings › Playback's limit (4.3's answer 7). hls.js
           // gives a failed load's HTTP status in `response.code`
           // (https://github.com/video-dev/hls.js/blob/v1.7.3/docs/API.md#errors)
+          // otherwise what hls.js and the element say, for the failed play's report (HT-56):
+          // a decoder's failure reaches hls.js as an append the failed element refused
           dispatch({
             type: 'error',
-            message: data.response?.code === 503 ? TRANSCODE_LIMIT : data.details,
+            message: data.response?.code === 503 ? TRANSCODE_LIMIT : playerFailure(data, v.error),
           })
         })
         h.loadSource(url)
@@ -349,7 +352,7 @@ export const usePlayback: Engine<WebPlayer> = (id, fromStart, type = 'movie') =>
       on('error', () => {
         // hls.js reports its own errors; this is direct play's, or native HLS's
         if (!hls.current && live.current && v.error)
-          dispatch({ type: 'error', message: v.error.message || `media error ${v.error.code}` })
+          dispatch({ type: 'error', message: playerFailure({}, v.error) })
       })
       // the element stays in `video` until the next one: React clears refs before effects
       // clean up, and leaving reads the place from it

@@ -19,7 +19,7 @@ The usual answer is a hosted error service. highsea sends nothing to anyone (ADR
   - a body over 64 KB is refused before it's read, with Hono's [Body Limit Middleware](https://hono.dev/docs/middleware/builtin/body-limit), and each field has its own length;
   - the server keeps the newest 200 in `<config>/client-reports/`, a JSON file each, and removes the oldest as new ones arrive;
   - an app sends the same failure on the same screen once, and ten reports a run at most.
-- **One switch.** Reports are kept only when General › Diagnostics' **Write crash reports** is on, the owner's switch for crash reports (ADR 0047, the owner's answer 12 there). With it off the route answers 204 and keeps nothing, so an app never learns or cares which.
+- **One switch.** (Reports from the apps are now always kept: the dated section of 2026-11-18.) Reports are kept only when General › Diagnostics' **Write crash reports** is on, the owner's switch for crash reports (ADR 0047, the owner's answer 12 there). With it off the route answers 204 and keeps nothing, so an app never learns or cares which.
 - **Where the owner sees them:** System › Logs, in a group below Crash reports drawn the same way: the error's first line, the time, the app with its version and screen, the size, and **Download report**. **Download logs** ends with the reports, each as one of the log's JSON lines (`error`, from `client`, the report in its fields), so one file has both.
 - **In the apps,** once for every client, in the shared shell (`apps/client/src/shell/reports.tsx`):
   - a React error boundary around the signed-in shell. `componentDidCatch` gets the error and the component stack ([React: Component](https://react.dev/reference/react/Component#componentdidcatch)); the boundary reports it and draws a plain screen with **Go home** in place of the tree that failed;
@@ -36,3 +36,7 @@ The usual answer is a hosted error service. highsea sends nothing to anyone (ADR
 - Nothing is reported before sign-in: the route needs a session, so a failure on Choose a server or the sign-in screen stays on the device.
 - Crash reports themselves still have no limit on how many are kept; they're written only on a server failure, and this ADR doesn't change them.
 - The 200 kept are shared by everyone on the server: an app that failed over and over on one person's device could push others' reports out, up to the ten a run each app sends.
+
+## 2026-11-18: the apps' reports always kept (HT-56)
+
+The owner's decision of 2026-11-18. **One switch** no longer applies to them: a report from the apps is kept whether or not General › Diagnostics' **Write crash reports** is on, which stays the switch for the server's own crash reports (ADR 0047). The switch is off by default, so the first failed play of real use (HT-56, a resumed MKV film) left nothing to read; a report never leaves the server, so keeping it needs no one's word. The route still answers 204, and the newest 200 are kept as before.

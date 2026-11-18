@@ -158,10 +158,20 @@ export function createPlayback(deps: {
    * segment is served: what the "first segment served" line counts from.
    */
   const served = new Map<string, { startedAt: number; playlistAt: number | null }>()
+  /**
+   * How many segments each live HLS session has been sent whole. One that ends with one or none
+   * is a player that gave up (HT-56: a resume Chrome couldn't decode left only "first segment
+   * served" behind), so its end is said at warn; every other end stays at debug.
+   */
+  const segmentsSent = new Map<string, number>()
   const sessions = createSessions({
     now: () => clock.now(),
     onEnd: (s, why: EndReason) => {
-      log.debug('play session ended', { session: s.id, why })
+      const segments = segmentsSent.get(s.id)
+      segmentsSent.delete(s.id)
+      if (segments !== undefined && segments <= 1)
+        log.warn('play session ended early', { session: s.id, why, segments })
+      else log.debug('play session ended', { session: s.id, why })
       served.delete(s.id)
       void transcodes.end(s.id)
       const notice = notices.get(s.id)
@@ -478,7 +488,10 @@ export function createPlayback(deps: {
       subtitles: info.subtitles.filter((t) => isTextSubtitle(t.codec)).map((t) => t.index),
     }
     const transcode = transcodes.open(session.id, source)
-    if (isHls(decision)) transcode.prepare()
+    if (isHls(decision)) {
+      transcode.prepare()
+      segmentsSent.set(session.id, 0)
+    }
     served.set(session.id, { startedAt: asked, playlistAt: null })
     log.info('play session started', {
       session: session.id,
@@ -647,6 +660,8 @@ export function createPlayback(deps: {
     took: { waitMs: number; sendMs: number; bytes: number },
   ) {
     const s = sessions.verify(token)
+    const count = s && segmentsSent.get(s.id)
+    if (s && count !== undefined && count !== null) segmentsSent.set(s.id, count + 1)
     const timing = s && served.get(s.id)
     if (!s || !timing) return
     served.delete(s.id)

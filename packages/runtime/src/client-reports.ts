@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Client reports (Phase 5's A2a, ADR 0066): what the apps signed in here send when an error isn't
 // handled or a play fails, kept beside the server's own crash reports (./crashes.ts, ADR 0047) in
-// `/config/client-reports/`, a file each. General › Diagnostics' switch decides whether they're
-// kept, as it does for crash reports; the newest `keep` stay and the oldest go as new ones arrive.
+// `/config/client-reports/`, a file each. They're always kept (the owner's word of 2026-11-18,
+// HT-56): General › Diagnostics' switch is for the server's own crash reports, and a failed play is
+// what the owner most needs to read afterwards. The newest `keep` stay and the oldest go as new
+// ones arrive.
 // System › Logs lists them, the owner downloads one, and Download logs ends with them. Nothing is
 // sent anywhere.
 import { mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
@@ -52,7 +54,6 @@ export function createClientReports(deps: {
   dir: string
   version: string
   clock: Clock
-  enabled: () => boolean
   /** How many are kept. */
   keep: number
   /** Called after a report is kept, so System › Logs hears of it. */
@@ -82,8 +83,8 @@ export function createClientReports(deps: {
   return {
     dir,
     /**
-     * Keeps a report when the switch is on, and removes the oldest past `keep`. Returns its id,
-     * or null when reports are off or the disk refused. Never throws: a report is never worth
+     * Keeps a report, and removes the oldest past `keep`. Returns its id, or null when the disk
+     * refused. Never throws: a report is never worth
      * failing the app that sent it.
      */
     record(
@@ -91,7 +92,6 @@ export function createClientReports(deps: {
       from: { userId: string; deviceProfile?: unknown },
     ): string | null {
       try {
-        if (!deps.enabled()) return null
         const at = new Date(deps.clock.now()).toISOString()
         const id = `client-${at.replace(/[:.]/g, '-')}-${newId('c').slice(2, 8)}`
         const report: ClientReportFile = {

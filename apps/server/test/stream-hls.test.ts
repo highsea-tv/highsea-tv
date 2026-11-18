@@ -215,6 +215,10 @@ describe.skipIf(!hasFfmpeg)('HLS over HTTP', () => {
     expect(logged('subtitle converted', session.id)).toEqual([])
     expect(existsSync(join(root, file.id))).toBe(false)
     await api.playback.stop({ params: { id: session.id } })
+    // one segment and gone: a player that gave up, said at warn (HT-56)
+    expect(logged('play session ended early', session.id).map((l) => [l.level, l.fields])).toEqual([
+      ['warn', { session: session.id, why: 'stopped', segments: 1 }],
+    ])
   })
 
   test('a resume: the playlist starts there, and the log says where the start’s time went', async () => {
@@ -267,6 +271,7 @@ describe.skipIf(!hasFfmpeg)('HLS over HTTP', () => {
     await fetch(`${base}${Number(name.split('.')[0]) + 1}.m4s`)
     expect(logged('first segment served', session.id).length).toBe(1)
     await api.playback.stop({ params: { id: session.id } })
+    expect(logged('play session ended early', session.id)).toEqual([])
   })
 
   test('a direct stream: the playlists, the init and a segment far ahead, played as one file', async () => {

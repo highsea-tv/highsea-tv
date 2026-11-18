@@ -340,11 +340,10 @@ describe('client reports', () => {
     error: { name: 'Error', message: 'boom', stack: null },
   }
 
-  test('are kept only with the switch on, with who sent them', async () => {
+  test('are kept with who sent them, whether or not crash reports are on (HT-56)', async () => {
     const { rt } = await start()
     const reports = rt.operations.clientReports
-    expect(reports.record(report, { userId: 'u1' })).toBeNull()
-    rt.operations.general.update({ ...rt.operations.general.get(), crashReports: true })
+    expect(rt.operations.general.get().crashReports).toBe(false)
     const id = reports.record(report, { userId: 'u1' })
     expect(id).toMatch(/^client-/)
     expect(reports.list()).toMatchObject([
@@ -363,7 +362,6 @@ describe('client reports', () => {
       dir,
       version: '0.4.2',
       clock: { now: () => now },
-      enabled: () => true,
       keep: 3,
       kept: () => kept.push(1),
     })

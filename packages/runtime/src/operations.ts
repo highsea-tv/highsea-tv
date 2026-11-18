@@ -193,12 +193,11 @@ export function createOperations(deps: OperationsDeps) {
     recentLog: () => deps.logs.entries(),
   })
 
-  // what the apps send (ADR 0066): kept under the same switch, the newest 200
+  // what the apps send (ADR 0066): always kept, the newest 200
   const clientReports = createClientReports({
     dir: `${deps.configDir}/client-reports`,
     version: deps.version,
     clock,
-    enabled: () => general().crashReports,
     keep: CLIENT_REPORTS_KEPT,
     kept: announceLogs,
   })

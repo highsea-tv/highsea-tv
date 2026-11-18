@@ -23,6 +23,7 @@ const OWNER = { username: 'sweep', displayName: 'Sweep', password: 'sweep sweep 
 const BUNNY = 10378
 const SINTEL = 45745
 const ELEPHANTS = 9761
+const TEARS = 133701
 const STOP_MESSAGE = 'Back in five minutes.'
 // far ahead on the clips' 600 s timeline: past what a direct stream has made, so it starts again there
 const AHEAD = 480
@@ -50,6 +51,7 @@ try {
   const { token } = await seed(server, OWNER, 'Playback script')
   await importMp4(token)
   await importPgs(token)
+  await importBlurayLike(token)
 
   for (const [name, type] of Object.entries(browsers)) {
     if (only && only !== name) continue
@@ -140,6 +142,43 @@ async function importPgs(token: string) {
     join(folder, `${name}.mkv`),
   ])
   await importFolder(token, folder, ELEPHANTS)
+}
+
+/**
+ * Tears of Steel as a Blu-ray rip is laid out (HT-56): 720p H.264 with B-frames and open GOPs, a
+ * keyframe every 5 s, two sound tracks, and the clip's own text subtitle (its one cue at the start,
+ * none near a resume) and a PGS track. The seed's clips are encoded `ultrafast`, closed GOPs with no
+ * B-frames, so they never met ffmpeg's seek heuristic for B-frames (fftools/ffmpeg_demux.c,
+ * `dts_heuristic`), which started a resumed Matroska film one keyframe early, nor an open GOP's
+ * leading frames, which Chrome can't decode at the start of a run.
+ */
+async function importBlurayLike(token: string) {
+  const name = 'Tears.of.Steel.2012.1080p.BluRay.x264-GRP'
+  const folder = join(server.dataDir, 'downloads', name)
+  mkdirSync(folder, { recursive: true })
+  const feature = join(server.dir, 'feature.mkv')
+  const sup = join(folder, 'box.sup')
+  writeFileSync(
+    sup,
+    pgsBox({ width: 1280, height: 720, x: 160, y: 560, w: 960, h: 80, from: 0, to: 590 }),
+  )
+  execFileSync(ffmpeg, [
+    ...['-v', 'error', '-y', '-f', 'lavfi', '-i', 'testsrc2=size=1280x720:rate=24:duration=600'],
+    ...['-i', feature, '-i', sup],
+    ...['-map', '0:v', '-map', '1:a', '-map', '1:a', '-map', '1:s', '-map', '2:0'],
+    ...['-c:v', 'libx264', '-preset', 'ultrafast', '-b:v', '1M', '-pix_fmt', 'yuv420p'],
+    ...['-bf', '3', '-x264-params', 'open-gop=1'],
+    ...['-g', '120', '-keyint_min', '120', '-sc_threshold', '0'],
+    ...['-c:a', 'copy', '-c:s', 'copy'],
+    // Copied sound outruns the encoder, and past the muxer's default 10 s it's written ahead of
+    // the picture; 0 waits for the picture, as a release's file is laid out (ffmpeg's
+    // max_interleave_delta, https://ffmpeg.org/ffmpeg-formats.html#Format-Options).
+    ...['-max_interleave_delta', '0'],
+    ...['-metadata:s:a:0', 'language=eng', '-metadata:s:a:1', 'language=fre'],
+    ...['-metadata:s:s:0', 'language=eng', '-metadata:s:s:1', 'language=eng'],
+    join(folder, `${name}.mkv`),
+  ])
+  await importFolder(token, folder, TEARS)
 }
 
 /** Scans a download's folder and imports what matched `movieId`, by hard link. */
@@ -249,6 +288,17 @@ async function inBrowser(name: string, page: Page, token: string) {
   if (!(kept.item.position > AHEAD)) {
     problems.push(`${name}: Sintel kept ${kept.item.position} s, not past ${AHEAD} s`)
   }
+
+  // resumed (HT-56): a new session that starts where the last one left, so its stream's first
+  // run starts there, with the film's own subtitle track written beside the picture (HT-49)
+  await resume(page, SINTEL, kept.item.position)
+  await leave(page, SINTEL)
+
+  // a Blu-ray rip's layout, resumed where the owner's film was (HT-56): a place saved between two
+  // keyframes, so the session's first run starts past the beginning on an open GOP's I-frame
+  await server.api('POST', `/items/movie/${TEARS}/progress`, { position: 492 }, token)
+  await resume(page, TEARS, 492)
+  await leave(page, TEARS)
 
   // burned in: the PGS track can't be drawn by the browser, so choosing it transcodes with it in
   // the picture, and the panel says why its timing can't be changed. The server remembers the
@@ -378,6 +428,34 @@ async function play(page: Page, id: number, method: string | null) {
     null,
   )
   return session.decision.method
+}
+
+/**
+ * Opens the player without `/start`, so it resumes where the server kept the place, checks that
+ * the session starts there as a direct stream, and waits for it to play on past it.
+ */
+async function resume(page: Page, id: number, at: number) {
+  const answered = page.waitForResponse(
+    (r) => r.request().method() === 'POST' && r.url().endsWith(`/items/movie/${id}/play`),
+  )
+  await page.goto(`/web/play/${id}`)
+  const session = (await (await answered).json()) as {
+    start: number
+    decision: { method: string }
+  }
+  if (session.decision.method !== 'direct-stream')
+    throw new Error(`${id}'s resume was decided ${session.decision.method}, not direct-stream`)
+  if (Math.abs(session.start - at) > 10)
+    throw new Error(`${id}'s resume started at ${session.start} s, not near ${at} s`)
+  await until(
+    page,
+    `${id} to play on from ${at.toFixed(0)} s`,
+    (t) => {
+      const v = document.querySelector('video')
+      return !!v && !v.paused && v.currentTime > t + 2
+    },
+    session.start,
+  )
 }
 
 /** Back to the title's page: the last report, paused, then the session's end. */

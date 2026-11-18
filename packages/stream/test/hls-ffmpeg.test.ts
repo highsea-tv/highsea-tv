@@ -243,6 +243,40 @@ describe.skipIf(!hasFfmpeg)('HLS with ffmpeg', () => {
     expect(existsSync(other.dir)).toBe(false)
   })
 
+  test('a resumed Matroska film with open GOPs starts its first run at its own keyframe, with no frame before it (HT-56)', async () => {
+    // B-frames and open GOPs, as a Blu-ray's picture has. ffmpeg's demuxer seeks a Matroska file
+    // early for B-frames (fftools/ffmpeg_demux.c, `dts_heuristic`), so a run asked for a
+    // millisecond past a keyframe started at the one before; and an open GOP's keyframe is an
+    // I-frame whose leading B-frames show before it and refer to the GOP before, which Chrome
+    // can't decode at a run's start
+    const film = join(dir, 'open-gop.mkv')
+    run(ffmpeg, [
+      ...['-v', 'error', '-y', '-f', 'lavfi', '-i', `testsrc2=size=320x180:rate=24:duration=20`],
+      ...['-c:v', 'libx264', '-preset', 'veryfast', '-bf', '3', '-pix_fmt', 'yuv420p'],
+      ...['-x264-params', 'open-gop=1', '-g', '48', '-keyint_min', '48', '-sc_threshold', '0'],
+      film,
+    ])
+    const t = transcodes.open(
+      'open-gop',
+      source({
+        input: film,
+        duration: 20,
+        decision: { ...decision({ action: 'copy' }), audio: null },
+        start: 9,
+        keyframes: () => readKeyframes(ffprobe, film, 0),
+      }),
+    )
+    const segments = await t.segments()
+    const at = segments.findIndex((s) => s.start === 8)
+    const files = await t.segment(at)
+    await t.init()
+    const video = packets(t.dir, files).filter((p) => p.stream === 0)
+    expect(video[0]?.key).toBe(true)
+    expect(video[0]?.pts).toBeCloseTo(8, 2)
+    expect(Math.min(...video.map((p) => p.pts))).toBeCloseTo(8, 2)
+    await transcodes.end('open-gop')
+  })
+
   test('the init, asked for as a seek restarts the run, comes from the new run', async () => {
     const t = transcodes.open('init-restart', source({}))
     t.prepare()
