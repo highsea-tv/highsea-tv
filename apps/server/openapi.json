@@ -2435,6 +2435,27 @@
             "type": "string",
             "format": "date-time",
             "example": "2026-10-17T20:15:00.000Z"
+          },
+          "action": {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "reverse-proxy"
+                ]
+              },
+              "path": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "kind",
+              "path"
+            ]
+          },
+          "dismissible": {
+            "type": "boolean"
           }
         },
         "required": [
@@ -18893,6 +18914,68 @@
           },
           "403": {
             "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/system/health/{id}/dismiss": {
+      "post": {
+        "tags": [
+          "System"
+        ],
+        "summary": "Dismiss a check that can be dismissed, for good",
+        "x-highsea-access": "owner",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Done"
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
             "content": {
               "application/json": {
                 "schema": {

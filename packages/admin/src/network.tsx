@@ -9,7 +9,9 @@
 // name and discovery port in place of the prototype's, and the addresses it answers on. The
 // prototype's Check from outside is gone (the owner's call, 2026-10-21). Admins read the area;
 // only the owner saves it (the API refuses anyone else), so their fields are disabled. Drawn with the
-// library's native renderer since D3 (one-client-platform-d.md).
+// library's native renderer since D3 (one-client-platform-d.md). Since HT-53, System › Health's
+// reverse proxy notice opens it with `?proxy=1&externalUrl=…&trustedProxies=…`: the owner's draft
+// starts set for that proxy, unsaved, until they save it.
 import type { NetworkSettings, NetworkStatus } from '@highsea-tv/api-contract'
 import { useT } from '@highsea-tv/i18n/react'
 import { useAction, useQuery } from '@highsea-tv/sdk/react'
@@ -26,6 +28,7 @@ import {
 import { useState } from 'react'
 import { View, type ViewStyle } from 'react-native'
 import { Loadable } from './loadable.tsx'
+import { useSearchParams } from './navigation.tsx'
 import { network as messages } from './network-messages.ts'
 import { AreaPage, Group, SaveBar } from './settings.tsx'
 import { useShell } from './shell.tsx'
@@ -44,6 +47,22 @@ const draftOf = ({
   tlsProblem: _problem,
   ...s
 }: NetworkStatus): Draft => ({ ...s, httpsPort: String(s.httpsPort) })
+
+/**
+ * The reverse proxy notice's suggestion (HT-53), for the owner, while highsea isn't set for a proxy:
+ * the proxy does TLS, its headers are read, and the address and proxy seen are filled in.
+ */
+function suggested(draft: Draft, params: URLSearchParams, owner: boolean): Draft | null {
+  if (!owner || params.get('proxy') !== '1') return null
+  if (draft.tls === 'proxy' && draft.proxyHeaders) return null
+  return {
+    ...draft,
+    tls: 'proxy',
+    proxyHeaders: true,
+    externalUrl: params.get('externalUrl') ?? draft.externalUrl,
+    trustedProxies: params.get('trustedProxies') ?? draft.trustedProxies,
+  }
+}
 
 /** The field a refused save names (`details.field`, as checkNetwork gives it). */
 function errorField(error: unknown): string | undefined {
@@ -88,7 +107,9 @@ function Form({ loaded, reload }: { loaded: NetworkStatus; reload: () => void })
   const owner = role === 'owner'
   const info = useQuery('public-info', (c) => c.system.publicInfo())
   const initial = draftOf(loaded)
-  const [v, setDraft] = useState(initial)
+  const params = useSearchParams()
+  const [suggestion] = useState(() => suggested(initial, params, owner))
+  const [v, setDraft] = useState(suggestion ?? initial)
   const [errors, setErrors] = useState<Errors>({})
   const save = useAction((c, body: NetworkSettings) => c.settings.saveNetwork({ body }))
   const set = (patch: Partial<Draft>) => {
@@ -126,6 +147,11 @@ function Form({ loaded, reload }: { loaded: NetworkStatus; reload: () => void })
         </Text>
       )}
       <Group title={t('remote.title')} description={t('remote.description')}>
+        {suggestion && (
+          <Text variant="caption" color="text-2">
+            {t('suggested')}
+          </Text>
+        )}
         <Field label={t('externalUrl')} error={errors.externalUrl}>
           <Input
             mono
