@@ -12,7 +12,8 @@
 //    browser;
 // 6. an announcement for Admins, on an Admin's dashboard and not in a User's announcements;
 // 7. Sintel played through `/stream` (phase-4-checkpoint-1.md › Tests, 4.1b): the play API, the
-//    HLS playlists, a segment far ahead on the film's timeline, and the subtitle as WebVTT;
+//    HLS playlists, a segment far ahead on the film’s timeline, and the subtitle’s rendition
+//    playlist with a WebVTT segment holding its first line;
 // 8. signing in on `/web` and playing Sintel in the browser's player (phase-4-checkpoint-2.md ›
 //    Tests, 4.2b), the stream on the admin's Now playing (phase-4-checkpoint-3.md › Tests, 4.3a),
 //    then leaving, which ends the session;
@@ -498,12 +499,54 @@ try {
           ? Number(segment.readBigUInt64BE(at + 8))
           : segment.readUInt32BE(at + 8)
       if (at < 0 || time <= 0) throw new Error(`The last segment starts at ${time}, not far ahead`)
-      // the `.en.srt` step 4 found, as WebVTT
+      // the `.en.srt` step 4 found, as a player reads a stream's text track (ADR 0051, HT-49):
+      // its rendition playlist, then a segment of WebVTT
       const subtitle = session.subtitles.find((t) => t.url)
       if (!subtitle?.url) throw new Error('The session lists no text subtitle')
-      const vtt = await (await get(subtitle.url)).text()
-      if (!vtt.startsWith('WEBVTT') || !vtt.includes('-->'))
-        throw new Error(`The subtitle isn't WebVTT:\n${vtt.slice(0, 200)}`)
+      if (!subtitle.url.split('?')[0]?.endsWith('.m3u8'))
+        throw new Error(`The stream's subtitle is ${subtitle.url}, not a rendition playlist`)
+      const rendition = await (await get(subtitle.url)).text()
+      const uris = rendition.split('\n').filter((l) => l.trim() && !l.startsWith('#'))
+      if (!rendition.startsWith('#EXTM3U') || !rendition.includes('#EXT-X-ENDLIST'))
+        throw new Error(`The subtitle's playlist isn't a whole HLS playlist:\n${rendition}`)
+      // "segment boundaries at the same points in time" as the picture's (Apple's HLS authoring
+      // specification, 8.22): one WebVTT segment for each of the picture's
+      const pictures = media.split('\n').filter((l) => /^\d+\.m4s$/.test(l)).length
+      if (uris.length !== pictures)
+        throw new Error(`The subtitle has ${uris.length} segments, the picture ${pictures}`)
+      // its URIs are relative to the playlist (RFC 8216 § 4.1)
+      const first = new URL(uris[0] as string, `${BASE}${subtitle.url}`)
+      // a segment the session hasn't read yet is a 503 with Retry-After (RFC 9110 § 15.6.4), in
+      // seconds or as a date (§ 10.2.3): asked again, as the players do, for up to a minute
+      const ask = Date.now()
+      let vtt = ''
+      for (;;) {
+        const res = await fetch(first)
+        if (res.status === 503 && Date.now() - ask < 60_000) {
+          const after = res.headers.get('retry-after') ?? ''
+          const wait = /^\d+$/.test(after)
+            ? Number(after) * 1000
+            : Date.parse(after) - Date.now() || 2000
+          await Bun.sleep(Math.min(Math.max(wait, 500), 10_000))
+          continue
+        }
+        if (!res.ok) throw new Error(`GET ${first.pathname}: ${res.status} ${await res.text()}`)
+        vtt = await res.text()
+        break
+      }
+      // the header's timestamp map (RFC 8216 § 3.5; Apple's specification, 5.3), and the clip's
+      // first line, which the sync moved but didn't change
+      const line = sintel.cues()[0]?.text ?? ''
+      if (
+        !vtt.startsWith('WEBVTT') ||
+        !/^X-TIMESTAMP-MAP=/m.test(vtt) ||
+        !vtt.includes('-->') ||
+        !line ||
+        !vtt.includes(line)
+      )
+        throw new Error(
+          `The subtitle's first segment isn't WebVTT with "${line}":\n${vtt.slice(0, 300)}`,
+        )
       await api('DELETE', `/playback/sessions/${session.id}`, undefined, token)
       if ((await fetch(`${BASE}${base}video.m3u8`)).status !== 404)
         throw new Error('The stream outlived its session')
