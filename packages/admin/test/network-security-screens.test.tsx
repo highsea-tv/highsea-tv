@@ -10,10 +10,11 @@ import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test'
 import type { ReactNode } from 'react'
 
 let role = 'owner'
+let search = new URLSearchParams()
 mock.module('../src/navigation.tsx', () => ({
   useRouter: () => ({ push: () => {} }),
   usePathname: () => '/settings/network',
-  useSearchParams: () => new URLSearchParams(),
+  useSearchParams: () => search,
 }))
 mock.module('../src/shell.tsx', () => ({
   useShell: () => ({ role }),
@@ -131,6 +132,7 @@ async function api(url: string, init: RequestInit = {}): Promise<Response> {
 
 beforeEach(() => {
   role = 'owner'
+  search = new URLSearchParams()
   state = { network: networkStatus(), security: securitySettings(), requests: [] }
 })
 afterEach(() => cleanup())
@@ -159,6 +161,52 @@ const saves = (path: string) =>
 // ---------------------------------------------------------------- Network
 
 describe('Settings › Network and remote access', () => {
+  test('opened from the reverse proxy notice: set for the proxy, unsaved until the owner saves', async () => {
+    search = new URLSearchParams({
+      proxy: '1',
+      externalUrl: 'https://watch.example.net',
+      trustedProxies: '127.0.0.1',
+    })
+    const { user, page } = await open(<Network />)
+    expect(page.getByText(/Filled in for the reverse proxy highsea noticed/)).toBeTruthy()
+    expect((page.getByLabelText('External URL') as HTMLInputElement).value).toBe(
+      'https://watch.example.net',
+    )
+    expect((page.getByLabelText('Trusted proxies') as HTMLInputElement).value).toBe('127.0.0.1')
+    // nothing is sent until the owner saves
+    expect(saves('/api/v1/settings/network')).toEqual([])
+    await user.click(page.getByRole('button', { name: 'Save' }))
+    await settle()
+    expect(saves('/api/v1/settings/network')).toEqual([
+      expect.objectContaining({
+        externalUrl: 'https://watch.example.net',
+        trustedProxies: '127.0.0.1',
+        proxyHeaders: true,
+        tls: 'proxy',
+      }),
+    ])
+  })
+
+  test('the suggestion is only the owner’s, and only while highsea isn’t set for a proxy', async () => {
+    search = new URLSearchParams({ proxy: '1', externalUrl: 'https://watch.example.net' })
+    role = 'admin'
+    const first = await open(<Network />)
+    expect(first.page.queryByText(/Filled in for the reverse proxy/)).toBeNull()
+    expect((first.page.getByLabelText('External URL') as HTMLInputElement).value).toBe('')
+    cleanup()
+    role = 'owner'
+    state.network = networkStatus({
+      tls: 'proxy',
+      proxyHeaders: true,
+      externalUrl: 'https://a.example',
+    })
+    const second = await open(<Network />)
+    expect(second.page.queryByText(/Filled in for the reverse proxy/)).toBeNull()
+    expect((second.page.getByLabelText('External URL') as HTMLInputElement).value).toBe(
+      'https://a.example',
+    )
+  })
+
   test('the settings, the server’s name and port, and the addresses it answers on', async () => {
     const { page } = await open(<Network />)
     expect(page.getByLabelText('Let apps on this network find Harbor')).toBeTruthy()

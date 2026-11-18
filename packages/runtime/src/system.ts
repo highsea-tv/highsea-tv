@@ -152,6 +152,10 @@ export type HealthIssue = {
   level: 'ok' | 'notice' | 'warning' | 'error'
   message: string
   since: number
+  /** The one thing to do about it, for the owner: an admin page with what to fill in (HT-53). */
+  action?: { kind: 'reverse-proxy'; path: string }
+  /** Whether the owner can dismiss it for good. */
+  dismissible?: boolean
 }
 
 /** Under this much free space a disk is all but full: downloads and imports stop soon (9c). */

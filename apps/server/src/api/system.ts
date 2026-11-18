@@ -75,6 +75,12 @@ export function registerSystem(app: OpenAPIHono<Env>) {
     ),
   )
 
+  app.openapi(routes.system.dismissHealthCheck, (c) => {
+    if (!rt(c).dismissIssue(c.req.valid('param').id))
+      throw new AppError('not-found', 'There’s no check to dismiss there.')
+    return c.body(null, 204)
+  })
+
   // ---------------------------------------------------------------- setup
 
   app.openapi(routes.setup.defaults, (c) => {

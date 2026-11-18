@@ -9,6 +9,7 @@ import dgram from 'node:dgram'
 import { AppError, type Clock, type EventBus, type Logger } from '@highsea-tv/core'
 import { type Db, readSetting, writeSetting } from '@highsea-tv/db'
 import {
+  behindProxy,
   chooseResponder,
   createDiscoveryResponder,
   createMdnsAdvertiser,
@@ -17,6 +18,7 @@ import {
   type MdnsResponder,
   NETWORK_KEY,
   type NetworkSettings,
+  type ProxySighting,
   parseTrustedProxies,
   type TrustedProxies,
 } from '@highsea-tv/network'
@@ -32,6 +34,23 @@ export type RouterMapping = {
 
 /** The part of the torrent engine's port mapper this uses; tests pass a fake. */
 export type PortMapper = Pick<ReturnType<typeof createPortMapper>, 'start' | 'stop' | 'status'>
+
+/**
+ * What highsea offers when it sees a reverse proxy it isn't set for (HT-53): Settings › Network
+ * set for the proxy, with the address people used as the External URL and the proxy's own address
+ * trusted. Nothing changes until the owner saves it.
+ */
+export type ProxyNotice = {
+  host: string
+  externalUrl: string
+  trustedProxies: string
+  since: number
+}
+
+/** The proxy last seen and whether the owner dismissed the notice, kept across restarts. */
+type ProxyState = { seen: (ProxySighting & { at: number }) | null; dismissed: boolean }
+export const PROXY_NOTICE_KEY = 'network.proxy-notice'
+const noProxy: ProxyState = { seen: null, dismissed: false }
 
 export type NetworkService = {
   settings(): NetworkSettings
@@ -54,6 +73,12 @@ export type NetworkService = {
   /** Counts an open event stream; call the result when it closes. */
   connect(): () => void
   clientsConnected(): number
+  /** A request's sign of a reverse proxy highsea isn't set for (front-door.ts's sightProxy). */
+  sawProxy(sighting: ProxySighting): void
+  /** What to offer about the proxy seen: null when none was, it's dismissed, or highsea is set. */
+  proxyNotice(): ProxyNotice | null
+  /** Dismisses the notice for good. */
+  dismissProxyNotice(): void
 }
 
 const URL_PROBLEM = 'Enter the full address, starting with https://'
@@ -109,6 +134,11 @@ export function createNetworkService({
   const settings = () => readSetting(db, NETWORK_KEY, defaultNetworkSettings)
   let trusted = parseTrustedProxies(settings().trustedProxies).trusted
   let connected = 0
+  let proxy = readSetting(db, PROXY_NOTICE_KEY, noProxy)
+  const keepProxy = (next: ProxyState) => {
+    proxy = writeSetting(db, PROXY_NOTICE_KEY, next, clock.now())
+    events.emit({ topic: 'health.updated' })
+  }
   let discoveryProblem: string | null = null
   const udp = createDiscoveryResponder({ port: config.discoveryPort, answer, logger: log })
   const mdns = createMdnsAdvertiser({ responder, logger: log })
@@ -209,6 +239,34 @@ export function createNetworkService({
       }
     },
     clientsConnected: () => connected,
+    sawProxy(sighting) {
+      if (proxy.dismissed) return
+      const seen = proxy.seen
+      if (seen?.host === sighting.host) {
+        // once the name is known over HTTPS, a plain-HTTP request for it doesn't replace it
+        if (seen.secure && !sighting.secure) return
+        if (seen.secure === sighting.secure && seen.peer === sighting.peer) return
+      }
+      keepProxy({ ...proxy, seen: { ...sighting, at: clock.now() } })
+    },
+    proxyNotice() {
+      const seen = proxy.seen
+      const s = settings()
+      if (!seen || proxy.dismissed || behindProxy(s)) return null
+      const current = s.trustedProxies.trim()
+      const trustedProxies = parseTrustedProxies(current).trusted.has(seen.peer)
+        ? current
+        : [current, seen.peer].filter(Boolean).join(', ')
+      return {
+        host: seen.host,
+        externalUrl: `${seen.secure ? 'https' : 'http'}://${seen.host}`,
+        trustedProxies,
+        since: seen.at,
+      }
+    },
+    dismissProxyNotice() {
+      if (!proxy.dismissed) keepProxy({ ...proxy, dismissed: true })
+    },
   }
   return service
 }
