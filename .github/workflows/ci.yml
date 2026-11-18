@@ -434,12 +434,57 @@ jobs:
           restore-keys: bun-${{ runner.os }}-${{ runner.arch }}-
       - if: *build
         run: bun install --frozen-lockfile
-      - name: ffmpeg
+      # ffmpeg and the browsers' system packages come through apt the way the tests' ffmpeg does
+      # (the note on `tests`): Azure's mirror once sent them so slowly that the two apt steps took
+      # 14 and 5+ minutes and the 0.4.2 release run hit this job's limit (run 44227620609,
+      # 2026-11-17), where a good run takes 20 s for each. So the mirror is checked first, the
+      # .debs are kept between runs, and each step has its own limit. The browsers' packages are
+      # the ones Playwright itself reports missing: `install-deps --dry-run` simulates its own
+      # apt-get install and lists them (`playwright install-deps --help`). The browsers themselves
+      # download in about 20 s and aren't cached, as Playwright advises: restoring takes about as
+      # long (https://playwright.dev/docs/ci#caching-browsers).
+      - name: The apt index
         if: *build
-        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
+        timeout-minutes: 3
+        run: |
+          if ! timeout 10 getent hosts azure.archive.ubuntu.com > /dev/null; then
+            echo "::warning::azure.archive.ubuntu.com doesn't resolve; using the image's other mirrors"
+            sudo sed -i '/azure\.archive\.ubuntu\.com/d' /etc/apt/apt-mirrors.txt
+          fi
+          sudo apt-get update
+      - name: The apt packages and their versions
+        if: *build
+        id: apt
+        run: |
+          browsers=$(bunx playwright-core install-deps --dry-run chromium firefox | sed -n 's/^  \([^ ]*\)$/\1/p' | tr '\n' ' ' || true)
+          echo "Playwright's packages: ${browsers:-none missing}"
+          echo "packages=ffmpeg $browsers" >> "$GITHUB_OUTPUT"
+          # shellcheck disable=SC2086 # one word per package
+          versions=$(apt-get install -s --no-install-recommends ffmpeg $browsers | grep '^Inst ' | sha256sum | cut -c1-16)
+          echo "key=apt-${RUNNER_OS}-${RUNNER_ARCH}-playback-${versions}" >> "$GITHUB_OUTPUT"
+      - if: *build
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: ~/apt-archives
+          key: ${{ steps.apt.outputs.key }}
+          restore-keys: apt-${{ runner.os }}-${{ runner.arch }}-playback-
+      - name: ffmpeg and the browsers' system packages
+        if: *build
+        timeout-minutes: 8
+        env:
+          PACKAGES: ${{ steps.apt.outputs.packages }}
+        run: |
+          archives="$HOME/apt-archives"
+          mkdir -p "$archives/partial"
+          # shellcheck disable=SC2086 # one word per package
+          sudo apt-get install -y --no-install-recommends -o Dir::Cache::Archives="$archives" $PACKAGES
+          sudo apt-get autoclean -o Dir::Cache::Archives="$archives"
+          sudo rm -rf "$archives/lock" "$archives/partial"
+          sudo chown -R "$(id -u):$(id -g)" "$archives"
       - name: Chromium and Firefox for Playwright
         if: *build
-        run: bunx playwright-core install --with-deps chromium firefox
+        timeout-minutes: 5
+        run: bunx playwright-core install chromium firefox
       - name: Playback in Chromium and Firefox
         if: *build
         run: bun scripts/sweeps/playback.ts
