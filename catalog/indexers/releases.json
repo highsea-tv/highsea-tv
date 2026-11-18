@@ -1,5 +1,21 @@
 [
   {
+    "version": "0.4.3",
+    "channel": "stable",
+    "date": "2026-11-18",
+    "notes": [
+      "Run scoped checks in tasks and leave the full gate to CI (#50)",
+      "Cut CI's wait: shard the tests, cache cargo-audit, reuse next's results (#48)",
+      "HT-44 Toasts above sheets, floating side sheets, 0.4.2 recorded (#51)",
+      "HT-45 Client error reports (A2a) (#53)",
+      "HT-46 Faster playback start and resume, with timings in the logs (#54)",
+      "HT-48 Read keyframes from the file's index, not the whole film (#56)",
+      "HT-49 Send a film's own subtitles in segments, in step with the picture (#57)",
+      "HT-47 Prototype the dashboard widgets' next round (#55)"
+    ],
+    "url": "https://github.com/highsea-tv/highsea-tv/releases/tag/v0.4.3"
+  },
+  {
     "version": "0.4.2",
     "channel": "stable",
     "date": "2026-11-17",
