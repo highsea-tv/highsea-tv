@@ -4,9 +4,15 @@
 // keyframes about 10 s apart, 5.1 AC-3 and a subtitle track of its own, in MKV: a direct stream
 // for both players), and each start timed from Play to the first frame at the right place:
 // - in the web player in Chromium (hls.js), from the beginning on the film's first play, from the
-//   beginning again, on a resume deep in, and on a resume with the film's own subtitle on;
+//   beginning again and on a resume deep in, then both with the film's own subtitle on, timed to
+//   its first line on screen too;
 // - in AVPlayer (scripts/sweeps/avplayer.swift), which the phone and the TV play with, under the
-//   `ios` profile, from the beginning and on a resume.
+//   `ios` profile, from the beginning and on a resume, then both with the subtitle on as the app
+//   loads it (its WebVTT fetched beside the player, timed to the line at the start in hand), and
+//   on a resume with the playlist's own subtitle rendition chosen in AVPlayer, as Safari's own HLS
+//   chooses one, timed to its first line out.
+// Each start with a subtitle finds it not taken out of the film yet (the data folder's `webvtt/`
+// emptied first), as a play on the NAS does before the read after the import reaches the film.
 // After each it prints the server's own timing lines for the session (System › Logs' `playback`).
 // Both players reach the server through a small proxy here that sends at a set rate, as a home
 // network or a phone's connection would, and notes what each start asked for and how much of it
@@ -20,7 +26,7 @@
 // START_TIMES_PORT moves it; START_TIMES_BUILT=1 skips the builds. The film is about 190 MB a
 // minute and goes with the server's folder.
 import { execFileSync, spawn } from 'node:child_process'
-import { mkdirSync, statSync, writeFileSync } from 'node:fs'
+import { mkdirSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { createServer, request as httpRequest } from 'node:http'
 import { join } from 'node:path'
 import { chromium, type Page } from 'playwright-core'
@@ -40,6 +46,8 @@ const RESUME = Math.round((MINUTES * 60) / 2) + 4
 const GOP = process.env.START_TIMES_GOP ?? '250'
 const MBIT = Number(process.env.START_TIMES_MBIT ?? 40)
 const ffmpeg = process.env.HIGHSEA_FFMPEG ?? 'ffmpeg'
+/** The read after the import has taken the subtitles out, or a minute passed (`forgetSubtitles`). */
+let subtitlesSettled = false
 
 if (!process.env.START_TIMES_BUILT) {
   execFileSync('bun', ['run', 'build'], { cwd: join(ROOT, 'apps/server'), stdio: 'inherit' })
@@ -75,14 +83,35 @@ try {
     await web(page, token, 'web, from the beginning, the film’s first play', 0)
     await web(page, token, 'web, from the beginning', 0)
     await web(page, token, `web, resuming at ${RESUME} s`, RESUME)
+    await web(page, token, 'web, from the beginning, its own subtitle on', 0, true)
     await web(page, token, `web, resuming at ${RESUME} s, its own subtitle on`, RESUME, true)
-    await web(page, token, `web, resuming at ${RESUME} s, its own subtitle on, again`, RESUME, true)
   } finally {
     await browser.close()
   }
   if (avplayer) {
     await native(avplayer, token, 'AVPlayer (ios), from the beginning', 0)
     await native(avplayer, token, `AVPlayer (ios), resuming at ${RESUME} s`, RESUME)
+    await native(
+      avplayer,
+      token,
+      'AVPlayer (ios), from the beginning, its own subtitle on',
+      0,
+      'app',
+    )
+    await native(
+      avplayer,
+      token,
+      `AVPlayer (ios), resuming at ${RESUME} s, its own subtitle on`,
+      RESUME,
+      'app',
+    )
+    await native(
+      avplayer,
+      token,
+      `AVPlayer (ios), resuming at ${RESUME} s, the playlist’s subtitle chosen in AVPlayer`,
+      RESUME,
+      'legible',
+    )
   } else console.log('AVPlayer: skipped, since swiftc isn’t here (a Mac with Xcode’s tools)')
 } finally {
   link.stop()
@@ -232,7 +261,12 @@ async function importFolder(token: string, folder: string) {
   if (refused.length) throw new Error(`not imported: ${JSON.stringify(refused)}`)
 }
 
-type Session = { id: string; url: string | null; decision: { method: string } }
+type Session = {
+  id: string
+  url: string | null
+  decision: { method: string }
+  subtitles: { id: string; url: string | null }[]
+}
 
 /** Leaves the film at `seconds` for the person, as a player's last report does. */
 async function leaveAt(token: string, seconds: number) {
@@ -263,6 +297,7 @@ async function pickSubtitle(token: string, on: boolean) {
 /** The web player: from its Play request to a frame playing at the right place. */
 async function web(page: Page, token: string, name: string, start: number, subtitle = false) {
   await pickSubtitle(token, subtitle)
+  if (subtitle) await forgetSubtitles(token)
   if (start) await leaveAt(token, start)
   const asked = page.waitForRequest(
     (r) => r.method() === 'POST' && r.url().endsWith(`/items/movie/${FILM}/play`),
@@ -285,15 +320,16 @@ async function web(page: Page, token: string, name: string, start: number, subti
   )
   const ms = Date.now() - from
   const loads = link.take()
+  // a line on screen: a showing track with a cue at the video's time
   const cue = subtitle
     ? await page
         .waitForFunction(
           () =>
             Array.from(document.querySelector('video')?.textTracks ?? []).some(
-              (t) => (t.cues?.length ?? 0) > 0,
+              (t) => t.mode === 'showing' && (t.activeCues?.length ?? 0) > 0,
             ),
           null,
-          { timeout: 180_000 },
+          { timeout: 300_000, polling: 'raf' },
         )
         .then(() => Date.now() - from)
     : null
@@ -307,9 +343,20 @@ async function web(page: Page, token: string, name: string, start: number, subti
   )
 }
 
-/** AVPlayer under the `ios` profile: from the Play request to a frame at the right place. */
-async function native(avplayer: string, token: string, name: string, start: number) {
-  await pickSubtitle(token, false)
+/**
+ * AVPlayer under the `ios` profile: from the Play request to a frame at the right place. With
+ * `app`, the subtitle is on and loaded as the app loads it, beside the player (`appLine`); with
+ * `legible`, AVPlayer chooses the playlist's own subtitle rendition and says when its line is out.
+ */
+async function native(
+  avplayer: string,
+  token: string,
+  name: string,
+  start: number,
+  subtitle: 'app' | 'legible' | null = null,
+) {
+  await pickSubtitle(token, subtitle !== null)
+  if (subtitle) await forgetSubtitles(token)
   link.take()
   const from = Date.now()
   const session = await server.api<Session>(
@@ -318,8 +365,16 @@ async function native(avplayer: string, token: string, name: string, start: numb
     { start, profile: 'ios' },
     token,
   )
+  const track = session.subtitles.find((t) => t.url)
+  const line =
+    subtitle === 'app' && track?.url ? appLine(track.url, start).then((at) => at - from) : null
   const out = await new Promise<string>((resolve) => {
-    const child = spawn(avplayer, [`${link.base}${session.url}`, String(start), AVPLAYER_MODE])
+    const child = spawn(avplayer, [
+      `${link.base}${session.url}`,
+      String(start),
+      AVPLAYER_MODE,
+      ...(subtitle === 'legible' ? ['legible'] : []),
+    ])
     let text = ''
     child.stdout.on('data', (c: Buffer) => {
       text += c.toString()
@@ -327,15 +382,70 @@ async function native(avplayer: string, token: string, name: string, start: numb
     child.on('exit', () => resolve(text.trim()))
   })
   const ms = Date.now() - from
+  const lineMs = line ? await line.catch((e: Error) => `none (${e.message})`) : null
   const loads = link.take()
   await report(
     token,
     name,
     session,
     ms,
-    `AVPlayer (${AVPLAYER_MODE}): ${out}; ${loads.megabytes.toFixed(0)} MB sent before it: ${loads.summary}`,
+    `AVPlayer (${AVPLAYER_MODE}): ${out}; ${loads.megabytes.toFixed(0)} MB sent before it: ${loads.summary}${lineMs === null ? '' : `; the line at the start in hand after ${lineMs} ms`}`,
   )
   await server.api('DELETE', `/playback/sessions/${session.id}`, undefined, token).catch(() => {})
+}
+
+/**
+ * The subtitle as the app loads it, through the link: a whole WebVTT file, or the rendition's
+ * playlist and then the segment holding the start. When the first line from the start on is in
+ * hand, as `Date.now()`.
+ */
+async function appLine(url: string, start: number): Promise<number> {
+  const get = async (path: string) => {
+    const r = await fetch(new URL(path, `${link.base}${url}`))
+    if (!r.ok) throw new Error(`${r.status} for ${path}`)
+    return r.text()
+  }
+  let vtt: string
+  if (url.split('?')[0]?.endsWith('.m3u8')) {
+    const list = await get(url)
+    let at = 0
+    let uri: string | null = null
+    for (const [, d, u] of list.matchAll(/#EXTINF:([\d.]+),\n(.+)/g)) {
+      if (start < at + Number(d)) {
+        uri = u as string
+        break
+      }
+      at += Number(d)
+    }
+    if (!uri) throw new Error('no segment holds the start')
+    vtt = await get(uri)
+  } else vtt = await get(url)
+  // a cue that ends after the start: `00:01.000 --> 00:05.000` or with hours
+  const seconds = (t: string) => t.split(':').reduce((n, p) => n * 60 + Number(p), 0)
+  const cues = [...vtt.matchAll(/([\d:.]+) --> ([\d:.]+)/g)]
+  if (!cues.some(([, , end]) => seconds(end as string) > start)) throw new Error('no line there')
+  return Date.now()
+}
+
+/**
+ * Empties the data folder's `webvtt/`, once the read after the import has taken the subtitles
+ * out (it logs a line when it has), so the next play finds the film's subtitle not converted.
+ */
+async function forgetSubtitles(token: string) {
+  const from = Date.now()
+  // waited for once: a server without that read goes on after a minute
+  while (!subtitlesSettled && Date.now() - from < 60_000) {
+    const { entries } = await server.api<{ entries: unknown[] }>(
+      'GET',
+      '/system/logs?search=subtitles%20converted%20ahead&limit=5',
+      undefined,
+      token,
+    )
+    if (entries.length) break
+    await new Promise((r) => setTimeout(r, 500))
+  }
+  subtitlesSettled = true
+  rmSync(join(server.dataDir, 'webvtt'), { recursive: true, force: true })
 }
 
 /** A start's row, and the server's timing lines for its session. */
