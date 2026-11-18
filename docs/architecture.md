@@ -63,6 +63,8 @@ Every command, with the development switches, the image, release and packaging. 
 - **Fast:** `ci.yml`'s `check` (lint, types, the Bun tests, smoke, licences, the dependency check, the client's exports, the admin's and the docs' builds) on every pull request that changes more than the internal docs, and every push to `next` or `main`; `catalog.yml` when the catalog changes.
 - **Heavy:** `ci.yml`'s `playback`, `leak` and `image`, `e2e.yml`, `desktop.yml` and `native.yml` on a push to `next`, a pull request into `main`, a pull request with the `full-ci` label (for packaging, the Dockerfile, the native and desktop builds and the workflows), and a release. On a pull request into `next` without the label they show as skipped.
 
+**Who runs which checks** (the owner, 2026-11-17, [phase-3-server.md](plans/phase-3-server.md#standing-rules)). CI is the full gate. A task's worker runs only the scoped checks for what it touched (lint, the touched workspaces' types and tests, and the one sweep that shows a visible change), and marks the task ready without waiting on CI unless the change is to CI itself; the coordinator watches CI and sends a failure back. The full local run is only what CI can't do: the browser sweeps, `one-place` and `controls.ts` at a gate, the simulators and the desktop app on the Mac, the owner's NAS, and a release's install on it. The `checks` skill names each run and when.
+
 ```sh
 bun install
 bun run lint            # Biome

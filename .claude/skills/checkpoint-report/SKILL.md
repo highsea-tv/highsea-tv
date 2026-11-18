@@ -1,6 +1,6 @@
 ---
 name: checkpoint-report
-description: Finish a highsea checkpoint or gated part, run the full checks, record progress in the plan and docs/status.md, and report at the gate for the owner's review. Use when a checkpoint's or part's work is done and it's time to stop at the gate.
+description: Finish a highsea checkpoint or gated part, run the local checks CI can't, read CI's result, record progress in the plan and docs/status.md, and report at the gate for the owner's review. Use when a checkpoint's or part's work is done and it's time to stop at the gate.
 argument-hint: "[checkpoint or part, e.g. 9b]"
 ---
 
@@ -16,9 +16,14 @@ The owner reviews every checkpoint and part before the next starts. Make the rep
 - Every new source file has its SPDX header: `// SPDX-License-Identifier: AGPL-3.0-only` (`/* */` in CSS, `#` in YAML and shell, `{/* */}` in MDX). Check with `git ls-files -mo --exclude-standard`.
 - Every new dependency went through `/add-dependency`.
 
-## 2. Run the full checks
+## 2. Run what CI can't, and read CI's result
 
-Use `/checks full`, under Node 26.11. Fix what fails, and find the documented cause before working around it.
+CI is the full gate (the owner, 2026-11-17), so the gate doesn't run it all again here:
+
+- **Locally:** `/checks full`, under Node 26.11.1. Since 2026-11-17 that's only what CI can't run: the browser sweeps, `one-place` and `controls.ts`, and the simulators, the desktop app and the NAS where the part touched them. The `checks` skill's table says which and when.
+- **CI:** the latest run on the work's branch or pull request, both tiers (the heavy jobs through the `full-ci` label, or the push to `next`). Give its link and its jobs' results in the report rather than rerunning them here.
+
+Fix what fails, and find the documented cause before working around it.
 
 ## 3. Record it
 
@@ -33,7 +38,7 @@ Open with one sentence: the part is built, whether the checks pass, that you've 
 Then these sections, in this order:
 
 - **What was built**: grouped bullets in plain words, with file paths where the owner will look. Measurements against their budgets go in a table.
-- **Results**: a table, one row per check, with the numbers. Say they ran under Node 26.11.0.
+- **Results**: a table, one row per check, with the numbers, saying which ran here and which in CI (with the run's link). Say the local ones ran under Node 26.11.1.
 - **Found and fixed along the way**: bugs found outside the scope, what caused each and how it was fixed. Flag any change to the locked design system, tokens or prototypes, since those need the owner's approval.
 - **Judgement calls**: every unknown you decided, so the owner can overturn it. Include where you departed from the plan and why, and any **change real data forced on a prototype screen** (the standing rules require these to be listed).
 - **Needs your decision**: a numbered list of what's blocked on the owner, with your recommendation for each.

@@ -69,3 +69,11 @@ The owner asked for this on 2026-11-17, after pull request #32, which changed on
 - **What a docs-only pull request shows:** `changes` passes with a notice ("Only the internal docs changed, so check is skipped"), `check` shows as skipped, which counts as passing, and the heavy jobs as skipped (into `next`) or run (into `main`, or with `full-ci`).
 - **The two lists must match:** `paths-ignore` and the `case` in `changes`. A file outside them, such as `catalog/keys/README.md` in #32, still runs `check`.
 
+## 2026-11-17: workers run scoped checks, CI is the full gate (HT-42)
+
+The Context above says each task ran the sweeps and screenshots locally before it was marked ready, which is part of why the heavy jobs could wait for the push to `next`. The owner changed that on 2026-11-17: highsea is pre-production, serving one user, and a full local run (about an hour) repeated most of what CI runs ([phase-3-server.md's standing rules](../plans/phase-3-server.md#standing-rules)).
+
+- **A task's worker runs the scoped checks** for what it touched (lint, the touched workspaces' types and tests, and the one sweep that shows a visible change), and marks the task ready without waiting on CI, unless its change is to CI itself. The coordinator watches CI and sends a failure back.
+- **CI is the full gate.** The tiers above are unchanged. A change likely to break the heavy jobs still takes the `full-ci` label; otherwise the push to `next` is where the heavy jobs first run it.
+- **Full local runs are only for what CI can't do:** the browser sweeps, `one-place` and `controls.ts` at a gate, the simulators and the desktop app on the Mac, the owner's NAS, and a release's install on it. The `checks` skill names each.
+- **What follows:** a worker's change reaches `next` having run fewer checks, so `next` is red more often until the coordinator sends the failure back, and a heavy failure is still found after the merge, as the Consequences above say.

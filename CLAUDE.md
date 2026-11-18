@@ -28,6 +28,7 @@ The plan's standing rules in short; Phase 3's plan has the full text.
 - **Internal and public docs are separate.** Internal docs (the roadmap, plans, ADRs, specs, brand, prototypes) stay in `docs/` and `design/` and are never published. Public guides live only in `apps/docs/content/`, served at `docs.highsea.tv`. Neither copies the other.
 - **No network in tests,** and no secrets in fixtures. Never open, read or print `.env.local` or `~/.tauri`.
 - **Unknowns:** use your judgement and list each call in the checkpoint report.
+- **Checks (2026-11-17):** workers run the scoped checks for what they touched and don't wait on CI; CI is the full gate; full local runs only for what CI can't (the `checks` skill).
 - **Copy** follows [docs/brand/brief.md § 6](docs/brand/brief.md#6-voice-and-tone): plain, calm, specific, no exclamation marks.
 - **This file stays slim.** Progress, plans and history go in docs/status.md and the plans, never here.
 
@@ -58,7 +59,7 @@ The server's development switches (`HIGHSEA_TMDB_REPLAY=1`, `HIGHSEA_TORRENT_OFF
 
 ## Skills
 
-The repeated workflows are project skills in `.claude/skills/`: the gate loop (`/scope`, `/questions`, `/checkpoint-report`, and `/signoff`, owner-only, which commits and pushes), `/checks` (quick, scoped or full, under Node 26.11.1), `/guide`, `/adr`, `/add-dependency`, `/port-screen`, `/handoff` and `/avatars`. When a rule here changes, update the skill that repeats it.
+The repeated workflows are project skills in `.claude/skills/`: the gate loop (`/scope`, `/questions`, `/checkpoint-report`, and `/signoff`, owner-only, which commits and pushes), `/checks` (scoped, quick or full, under Node 26.11.1), `/guide`, `/adr`, `/add-dependency`, `/port-screen`, `/handoff` and `/avatars`. When a rule here changes, update the skill that repeats it.
 
 ## Where the code is
 
