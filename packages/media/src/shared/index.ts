@@ -213,6 +213,7 @@ export {
   type PlaybackPrefs,
   playedOf,
   type Watch,
+  type Watcher,
   watchOf,
 } from './watch.ts'
 export {

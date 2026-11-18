@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The account's profiles in the client (prototype-gaps.md › 3.6; one-client-platform-b.md › B3),
-// only when the server serves them: the contract drafts the `profiles` routes, the mock answers
-// them, and a real server doesn't yet, so its public info leaves `profiles` out of `sources`
-// (useServes) and this provider never asks it (it would answer 501). The shell holds the provider
-// ((in)/_layout.tsx); every screen and part reads it through `useProfilesState`, which is null on
-// a server without profiles, and then draws exactly what it drew at B2.
+// only when the server serves them: its public info lists `profiles` in `sources` (read as useServes does;
+// the server since HT-52, ADR 0068, and the mock), and a server that doesn't is never asked. The
+// shell holds the provider ((in)/_layout.tsx); every screen and part reads it through
+// `useProfilesState`, which is null on a server without profiles (and until public info answers,
+// `useProfilesKnown`), and then draws exactly what it drew at B2.
 //
 // The server keeps the profiles and checks their PINs (an app never sees one); the rules and words
 // are @highsea-tv/client/profiles'. Whether this TV asks who's watching when highsea opens is the
 // TV's own setting, kept on the device (./launch-setting.ts).
 import type { Profile, ProfileTone } from '@highsea-tv/api-contract'
-import { useProfiles, useServes } from '@highsea-tv/client/data'
+import { useProfiles, usePublicInfo } from '@highsea-tv/client/data'
 import { createProfilesText, PIN_REST_S, profileRefusal } from '@highsea-tv/client/profiles'
 import { useLocale } from '@highsea-tv/i18n/react'
 import {
@@ -47,6 +47,16 @@ const Profiles = createContext<ProfilesState | null>(null)
 /** The account's profiles, or null when this server doesn't serve them. */
 export const useProfilesState = () => useContext(Profiles)
 
+/**
+ * Whether the provider has heard from public info, so a null `useProfilesState` means the server
+ * doesn't serve profiles rather than that it hasn't said yet: `/who` opened straight from its
+ * address waits for it before sending anyone Home. It comes from the provider's own answer, the
+ * one it decides with: each component's query keeps its own (`useQuery`), so a screen asking
+ * public info itself can hear before the provider has.
+ */
+const Known = createContext(false)
+export const useProfilesKnown = () => useContext(Known)
+
 /** The profile watching now, for the avatar, the account menu and You; null without profiles. */
 export const useWatching = () => useContext(Profiles)?.me ?? null
 
@@ -55,7 +65,9 @@ export function ProfilesProvider({ children }: { children: ReactNode }) {
   // answers would mount the whole signed-in shell again (React keeps a subtree's state only while
   // the same type stays at the same position: https://react.dev/learn/preserving-and-resetting-state).
   // A server without profiles is never asked for them.
-  const served = useServes('profiles')
+  const info = usePublicInfo()
+  const served = info.data?.sources.includes('profiles') ?? false
+  const known = info.status !== 'loading'
   const p = useProfiles(served)
   const locale = useLocale()
   const text = useMemo(() => createProfilesText(locale), [locale])
@@ -91,7 +103,11 @@ export function ProfilesProvider({ children }: { children: ReactNode }) {
     }),
     [profiles, me, max, ready, choose, create, update, remove, text],
   )
-  return <Profiles.Provider value={served ? value : null}>{children}</Profiles.Provider>
+  return (
+    <Known.Provider value={known}>
+      <Profiles.Provider value={served ? value : null}>{children}</Profiles.Provider>
+    </Known.Provider>
+  )
 }
 
 // ---------------------------------------------------------------- asking on launch

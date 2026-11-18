@@ -322,12 +322,15 @@ describe('home', () => {
   test('rows in the person’s order; ids not offered yet are kept', () => {
     const { p, person, seen } = setup()
     person('m')
-    expect(p.home.layout('m')).toEqual({
+    expect(p.home.layout({ userId: 'm', profileId: 'm' })).toEqual({
       order: [],
       hidden: [],
       rows: [{ id: 'continue', title: null }],
     })
-    const saved = p.home.save('m', { order: ['later', 'continue', 'later'], hidden: ['continue'] })
+    const saved = p.home.save(
+      { userId: 'm', profileId: 'm' },
+      { order: ['later', 'continue', 'later'], hidden: ['continue'] },
+    )
     expect(saved).toMatchObject({ order: ['later', 'continue'], hidden: ['continue'] })
     expect(seen.at(-1)).toEqual(expect.objectContaining({ topic: 'home.updated', ids: ['m'] }))
   })

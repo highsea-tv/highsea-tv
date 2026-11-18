@@ -3,13 +3,14 @@
 // server serves profiles; elsewhere the address goes to Settings.
 import { useFormFactor } from '@highsea-tv/ui'
 import { type Href, Redirect } from 'expo-router'
-import { useProfilesState } from '../../../profiles/state.tsx'
+import { useProfilesKnown, useProfilesState } from '../../../profiles/state.tsx'
 import { TvPinSteps } from '../../../profiles/tv-settings.tsx'
 
 export default function ChoosePin() {
   const p = useProfilesState()
+  const known = useProfilesKnown()
   const tv = useFormFactor().input === 'tv'
-  if (!p) return <Redirect href="/" />
+  if (!p) return known ? <Redirect href="/" /> : null
   if (!tv) return <Redirect href={'/settings' as Href} />
   if (!p.ready) return null
   return <TvPinSteps />

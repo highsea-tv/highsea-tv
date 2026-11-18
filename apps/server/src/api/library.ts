@@ -19,20 +19,20 @@ export function registerLibrary(app: OpenAPIHono<Env>) {
     const { libraries } = p.user
     if (libraries !== 'all' && !libraries.includes('movies'))
       return c.json({ items: [], next: null, total: 0 }, 200)
-    return c.json(client(c).list(c.req.valid('query'), p.user.id), 200)
+    return c.json(client(c).list(c.req.valid('query'), p.profileId), 200)
   })
 
   app.openapi(routes.library.item, async (c) => {
     const { type, id } = c.req.valid('param')
     // an episode's address answers 501 before it gets here (drafts.ts)
     if (type !== 'movie') throw new NotServed()
-    return c.json(await client(c).item(type, id, viewer(c).userId), 200)
+    return c.json(await client(c).item(type, id, viewer(c).profileId), 200)
   })
 
   app.openapi(routes.library.search, async (c) => {
     const p = me(c)
     const results = await client(c).search(c.req.valid('query').query, {
-      userId: p.user.id,
+      profileId: p.profileId,
       // the discover section offers requests (ADR 0032); until the request flow exists, nobody
       // can make one, so it's left out for everyone
       mayRequest: false,

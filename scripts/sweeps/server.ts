@@ -40,6 +40,8 @@ const VARIANTS = [
 const WIDTHS = [1440, 390]
 // SWEEP_SHOTS=<folder>: also save each page, default theme, at each width (for checkpoint reports)
 const SHOTS = process.env.SWEEP_SHOTS
+// SWEEP_ONLY=<regex>: only the visits whose name matches, e.g. `^(admin:)?dashboard` (setup still runs)
+const ONLY = process.env.SWEEP_ONLY ? new RegExp(process.env.SWEEP_ONLY) : undefined
 
 // ---------------------------------------------------------------- the server
 
@@ -177,9 +179,10 @@ async function serverRendered(
 }
 
 async function sweep(
-  visits: Visit[],
+  all: Visit[],
   context: (options?: BrowserContextOptions) => Promise<BrowserContext>,
 ) {
+  const visits = ONLY ? all.filter((v) => ONLY.test(v.name)) : all
   if (only !== 'keyboard') {
     await serverRendered(visits, context)
     const jobs = visits.flatMap((v) => WIDTHS.flatMap((w) => VARIANTS.map((q) => ({ v, w, q }))))
@@ -797,6 +800,18 @@ try {
       // an address the old web client had, which the client doesn't: its not-found page (answer 3)
       { name: 'web:moved', path: '/web/library/collections' },
       { name: 'web:profile', path: '/web/profile' },
+      // Who's watching on the real server's profiles (Phase 5's A2b): Theo's own and Kit's, with
+      // Kit's PIN asked for
+      { name: 'web:who', path: '/web/who' },
+      {
+        name: 'web:who:pin',
+        path: '/web/who',
+        act: async (p) => {
+          await p.getByRole('button', { name: 'Kit, has a PIN' }).click()
+          await p.getByText('Enter Kit’s PIN').waitFor()
+        },
+      },
+      { name: 'web:who:new', path: '/web/who/new' },
       { name: 'web:downloads', path: '/web/downloads' },
       { name: 'web:play', path: '/web/play/45745' },
       { name: 'web:nowhere', path: '/web/no/such/page' },

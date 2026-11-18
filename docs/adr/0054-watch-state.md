@@ -60,3 +60,7 @@ The client API's items carry `watched` beside `progress`.
 Continue watching's menu (prototype-gaps.md › 2.4) has Remove from Continue watching, which forgets the place without marking the title watched. `POST /api/v1/items/{type}/{id}/dismiss` does it: the person's `watch_positions` row goes, and `watch_history` stays, so the plays counted and Watched are kept, as Plex's and Netflix's removal keeps what was watched. `watch.updated` reaches the person's devices, as for `played`.
 
 Continue watching is the position rows, so there's nothing more to clear: the next progress report from playing it again writes a row, and the title is back. The plan called for a dismissed flag in a migration, which the mock keeps for a show (its episodes would otherwise bring it back through Next up); for films it adds nothing the deleted row doesn't say, so it waits for shows, where it's needed.
+
+## 2026-11-18: per profile (Phase 5's A2b)
+
+Watch state is a profile's, not an account's (ADR 0068). `watch_positions`, `watch_history` and `playback_prefs` gain `profile_id`, keyed `(profile_id, item_id)`; `user_id` stays beside it for the account's events (`watch.updated` reaches every app on the account, each reading its own profile). The migration moved every row to its account's own profile, whose id is the account's. Writes take a `Watcher` (`{ userId, profileId }`, `packages/media/src/shared/watch.ts`), reads a profile id. Deleting a profile deletes its watch state with it.

@@ -37,7 +37,7 @@ test('the client API’s shapes and decorated TMDB lists match the contract', as
   ClientItemPage.parse(s.movies.client.list({}, user))
   ClientDetail.parse(await s.movies.client.item('movie', LLAMA_DRAMA, user))
   SearchResults.parse(
-    await s.movies.client.search('caminandes', { userId: user, mayRequest: true }),
+    await s.movies.client.search('caminandes', { profileId: user, mayRequest: true }),
   )
   const collection = await s.metadata.collection(339473)
   z.array(DiscoverMovie).parse(s.movies.decorate(collection.parts))

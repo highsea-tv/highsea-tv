@@ -51,3 +51,7 @@ The owner decided this after checkpoint 4. It replaces the "Roles and permission
 - **Staff powers come from the role.** Permissions are a user's alone: Ask for titles and Download for offline.
 - **Access levels:** `public`, `user`, `staff` and `owner`. `people` is gone. Admins read people, and only the owner manages them.
 - **API keys:** only the owner and admins make them. An admin sees their own; the owner sees everyone's.
+
+## 2026-11-18: the profile watching on a session and device token (Phase 5's A2b)
+
+A device, whether an app's token or the admin's session, now carries the profile it watches as (`devices.profile_id`, ADR 0068), and the `Principal` carries it as `profileId`: the device's choice, or the account's own profile, whose id is the account's. API keys and forward-auth proxy requests have no device, so they watch as the account's own. A new device starts on the account's own profile. Profile PINs are hashed with the same Argon2id parameters as passwords (`hashPassword` in `packages/auth/src/passwords.ts`).

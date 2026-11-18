@@ -5,21 +5,11 @@
 // server, so any app can add or switch them without signing in again, and every app asks for a
 // profile's PIN, which the server checks: an app never sees one. The account's own profile is the
 // first, and can't be deleted. Drafted with B3 of the one client platform (one-client-platform-b.md,
-// the owner's answer 1): the prototypes' mock answers these, and the real server answers 501
-// until it has profiles (`draft()` in common.ts). Whether a TV asks who's watching when it opens
-// is the TV's own setting, kept on the device, not here.
+// the owner's answer 1) and served since Phase 5's A2b (ADR 0068). The profile watching now is
+// each device's own: choosing one on a TV leaves a phone on the same account as it was. Whether a
+// TV asks who's watching when it opens is the TV's own setting, kept on the device, not here.
 import { createRoute, z } from '@hono/zod-openapi'
-import {
-  API_PREFIX,
-  access,
-  body,
-  draft,
-  errors,
-  IdParam,
-  json,
-  noContent,
-  notServed,
-} from './common.ts'
+import { API_PREFIX, access, body, errors, IdParam, json, noContent } from './common.ts'
 
 /** A profile's colour, from the tokens' soft pairs. */
 export const PROFILE_TONES = ['accent', 'info', 'success', 'warning', 'danger'] as const
@@ -49,7 +39,7 @@ export const Profile = z
 export const Profiles = z
   .object({
     profiles: z.array(Profile),
-    /** The profile watching now. */
+    /** The profile watching now on the asking device. */
     current: z.string(),
     max: z.number().int(),
   })
@@ -71,67 +61,62 @@ export const ProfilePatch = z
   .openapi('ProfilePatch')
 
 const PROFILES = `${API_PREFIX}/me/profiles`
-const DRAFTED = 'Drafted: the server answers 501 until it has profiles.'
-const mine = { ...access('user'), ...draft() }
+const mine = access('user')
 
 export const profiles = {
   list: createRoute({
     method: 'get',
     path: PROFILES,
     tags: ['Profiles'],
-    summary: 'Your account’s profiles, and the one watching now (draft)',
-    description: DRAFTED,
+    summary: 'Your account’s profiles, and the one watching now on this device',
     ...mine,
-    responses: { 200: json(Profiles, 'The profiles'), ...errors('unauthorized'), ...notServed },
+    responses: { 200: json(Profiles, 'The profiles'), ...errors('unauthorized') },
   }),
   create: createRoute({
     method: 'post',
     path: PROFILES,
     tags: ['Profiles'],
-    summary: 'Add a profile (draft)',
-    description: `409 once the account has its most. ${DRAFTED}`,
+    summary: 'Add a profile',
+    description: '409 once the account has its most.',
     ...mine,
     request: body(NewProfile),
     responses: {
       200: json(Profile, 'The new profile'),
       ...errors('invalid', 'unauthorized', 'conflict'),
-      ...notServed,
     },
   }),
   update: createRoute({
     method: 'patch',
     path: `${PROFILES}/{id}`,
     tags: ['Profiles'],
-    summary: 'Rename a profile, change its colour, or set or turn off its PIN (draft)',
-    description: DRAFTED,
+    summary: 'Rename a profile, change its colour, or set or turn off its PIN',
     ...mine,
     request: { params: IdParam, ...body(ProfilePatch) },
     responses: {
       200: json(Profile, 'The profile'),
       ...errors('invalid', 'unauthorized', 'not-found'),
-      ...notServed,
     },
   }),
   delete: createRoute({
     method: 'delete',
     path: `${PROFILES}/{id}`,
     tags: ['Profiles'],
-    summary: 'Delete a profile and its watch history (draft)',
-    description: `409 for the account’s own profile. ${DRAFTED}`,
+    summary: 'Delete a profile and its watch history',
+    description:
+      '409 for the account’s own profile. Its watch state and Home go with it, and the devices watching as it go back to the account’s own.',
     ...mine,
     request: { params: IdParam },
     responses: {
       ...noContent,
       ...errors('unauthorized', 'not-found', 'conflict'),
-      ...notServed,
     },
   }),
   choose: createRoute({
     method: 'post',
     path: `${PROFILES}/{id}/choose`,
     tags: ['Profiles'],
-    summary: 'Watch as a profile, with its PIN when it has one (draft)',
-    description: `A wrong PIN is 403 with \`{ field: 'pin', reason: 'wrong-pin' }\` (not 401, which would say the app isn't signed in: RFC 9110 § 15.5.2); after five wrong in a row, 429 with \`{ reason: 'rate-limited', retryAfter: 60 }\` for a minute. The profile watching now needs no PIN. ${DRAFTED}`,
+    summary: 'Watch as a profile on this device, with its PIN when it has one',
+    description: `A wrong PIN is 403 with \`{ field: 'pin', reason: 'wrong-pin' }\` (not 401, which would say the app isn't signed in: RFC 9110 § 15.5.2); after five wrong in a row, 429 with \`{ reason: 'rate-limited', retryAfter: 60 }\` for a minute. The profile watching now needs no PIN. Only this device changes; the account's other apps stay as they are. A request with no device of its own (an API key, a forward-auth proxy's) is 403 with \`reason: 'no-device'\`.`,
     ...mine,
     request: {
       params: IdParam,
@@ -140,7 +125,6 @@ export const profiles = {
     responses: {
       200: json(Profiles, 'The profiles, with this one watching'),
       ...errors('invalid', 'unauthorized', 'forbidden', 'not-found', 'rate-limited'),
-      ...notServed,
     },
   }),
 } as const

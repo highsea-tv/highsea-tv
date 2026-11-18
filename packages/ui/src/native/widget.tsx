@@ -3,16 +3,18 @@
 // (one-client-platform-d.md) at the web renderer's sizes (web/components/widget.tsx): `s1`, a
 // `line` border, `radius-md`, 14 inside, in a 4/2/1-column grid (expanded, medium, compact) with
 // a 12 gap. With `rows`, the grid has fixed 84 rows and each widget spans some of them; its body
-// fills the height and clips. Edit mode dashes the border and shows the drag handle and resize
+// fills the height and scrolls what it can't hold, and only then is a Tab stop. Edit mode dashes the border and shows the drag handle and resize
 // corner; an editor passes its own interactive `handle` and `resize` in their place.
 // On the web the grid is CSS grid through react-native-web's style pass-through
 // (https://necolas.github.io/react-native-web/docs/styling/, https://drafts.csswg.org/css-grid-2/);
 // elsewhere (a phone or TV never draws the admin) widgets stack in one column.
 import { line, widget } from '@highsea-tv/tokens'
-import type { ComponentRef, ReactNode, Ref } from 'react'
+import { type ComponentRef, type ReactNode, type Ref, useId, useState } from 'react'
 import { Platform, View, type ViewStyle } from 'react-native'
 import { useRegularWindow } from './admin.tsx'
+import { FOCUS_RING, focusVisible } from './dom'
 import { Icon } from './icon.tsx'
+import { useOverflows } from './measure.ts'
 import { Text } from './text.tsx'
 import { tokens, useTheme } from './theme.tsx'
 
@@ -93,6 +95,9 @@ export function WidgetFrame({
 }: WidgetFrameProps) {
   const theme = useTheme()
   const cols = useWidgetColumns()
+  // the title names the body when the body scrolls (react-native-web writes `id` as the
+  // element's id, createDOMProps)
+  const titleId = useId()
   const heading = tokens.adminText['widget-title']
   const columns = Math.min(span, cols)
   const place = web
@@ -139,7 +144,7 @@ export function WidgetFrame({
               </View>
             ))
           : null}
-        <View style={{ flex: 1, minWidth: 0 }}>
+        <View id={titleId} style={{ flex: 1, minWidth: 0 }}>
           {typeof title === 'string' ? (
             <Text
               size={heading.size}
@@ -168,29 +173,7 @@ export function WidgetFrame({
         ) : null}
         {actions}
       </View>
-      {rows ? (
-        <View
-          {...({ dataSet: { widgetBody: '' } } as object)}
-          style={{
-            flex: 1,
-            minHeight: 0,
-            minWidth: 0,
-            gap: tokens.space['2'] + tokens.space['0.5'],
-            // What a widget can't shrink (an empty state with its button, a short widget's
-            // figures) scrolls inside the frame rather than being cut at its edge (HT-47): a
-            // flex item that may shrink still fits, so a clipped list is as it was, and one that
-            // may not overflows its scroll container
-            // (https://www.w3.org/TR/css-overflow-3/#overflow-properties). Sideways it clips.
-            ...(web
-              ? ({ overflowX: 'hidden', overflowY: 'auto' } as unknown as ViewStyle)
-              : { overflow: 'hidden' }),
-          }}
-        >
-          {children}
-        </View>
-      ) : (
-        children
-      )}
+      {rows ? <Body labelledBy={titleId}>{children}</Body> : children}
       {editing
         ? (resize ?? (
             <View
@@ -209,6 +192,62 @@ export function WidgetFrame({
             />
           ))
         : null}
+    </View>
+  )
+}
+
+/**
+ * A widget's body in a grid with rows: it fills the frame's height, and what a widget can't shrink
+ * (an empty state with its button, a short widget's figures) scrolls inside the frame rather than
+ * being cut at its edge (HT-47): a flex item that may shrink still fits, so a clipped list is as it
+ * was, and one that may not overflows its scroll container
+ * (https://www.w3.org/TR/css-overflow-3/#overflow-properties). Sideways it clips.
+ *
+ * A body that scrolls must be reachable and scrollable by keyboard (WCAG 2.1.1 Keyboard,
+ * https://www.w3.org/WAI/WCAG21/Understanding/keyboard; axe's scrollable-region-focusable,
+ * https://dequeuniversity.com/rules/axe/4.14/scrollable-region-focusable): while it overflows it
+ * is a Tab stop (`tabIndex` 0, which react-native-web writes as it is; a View is no Tab stop
+ * otherwise, createDOMProps), a group named by the widget's title, and draws the web's focus ring
+ * (focus.web, as ./press.tsx). The browser scrolls a focused scroller with the arrow keys and Page
+ * Up and Down. A body that fits adds no Tab stop (HT-55).
+ */
+function Body({ labelledBy, children }: { labelledBy: string; children: ReactNode }) {
+  const theme = useTheme()
+  const { ref, overflows } = useOverflows()
+  const [ring, setRing] = useState(false)
+  const reach = web && overflows
+  return (
+    <View
+      ref={ref as never}
+      {...({ dataSet: { widgetBody: '' } } as object)}
+      {...(reach
+        ? {
+            tabIndex: 0 as const,
+            role: 'group' as const,
+            'aria-labelledby': labelledBy,
+            onFocus: (e: { target: unknown }) => setRing(focusVisible(e.target)),
+            onBlur: () => setRing(false),
+          }
+        : null)}
+      style={{
+        flex: 1,
+        minHeight: 0,
+        minWidth: 0,
+        gap: tokens.space['2'] + tokens.space['0.5'],
+        ...(web
+          ? ({ overflowX: 'hidden', overflowY: 'auto' } as unknown as ViewStyle)
+          : { overflow: 'hidden' }),
+        ...(FOCUS_RING && reach && ring
+          ? {
+              outlineStyle: 'solid',
+              outlineWidth: tokens.focus.web.width * theme.focusRingScale,
+              outlineOffset: tokens.focus.web.offset,
+              outlineColor: theme.colors.focus,
+            }
+          : null),
+      }}
+    >
+      {children}
     </View>
   )
 }

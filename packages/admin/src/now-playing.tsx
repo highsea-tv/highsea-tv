@@ -56,7 +56,7 @@ import {
 } from '@highsea-tv/ui/native'
 import { type ReactNode, useState } from 'react'
 import { View } from 'react-native'
-import { behind, clientIcon, mbps, methodTone, timecode } from './delivery.ts'
+import { behind, clientIcon, mbps, methodTone, timecode, watcher } from './delivery.ts'
 import { Loadable } from './loadable.tsx'
 import { moviePath } from './media-links.ts'
 import { nowPlaying as messages } from './now-playing-messages.ts'
@@ -192,7 +192,7 @@ function SessionRow({ s, onStop }: { s: StreamSession; onStop: () => void }) {
   return (
     <View
       role="listitem"
-      aria-label={`${s.user.displayName}, ${s.item.title}`}
+      aria-label={`${watcher(s.user)}, ${s.item.title}`}
       style={{
         flexDirection: 'row',
         gap: sp['4'],
@@ -248,7 +248,7 @@ function SessionRow({ s, onStop }: { s: StreamSession; onStop: () => void }) {
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: sp['1'] + sp['0.5'] }}>
               <Icon name={clientIcon[s.client]} size={tokens.icon.size.xs} color="text-2" />
               <Text variant="caption" color="text-2" numberOfLines={1} style={{ flexShrink: 1 }}>
-                {`${s.user.displayName} · ${s.deviceName}`}
+                {`${watcher(s.user)} · ${s.deviceName}`}
               </Text>
             </View>
           </View>
@@ -506,7 +506,7 @@ function History() {
                       />
                     </TableCell>
                     <TableCell>
-                      <Muted>{w.user.displayName}</Muted>
+                      <Muted>{watcher(w.user)}</Muted>
                     </TableCell>
                     <TableCell>
                       <Icon name={clientIcon[w.client]} size={tokens.icon.size.xs} color="text-2" />

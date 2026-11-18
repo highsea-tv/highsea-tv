@@ -11,13 +11,16 @@ import type { OpenAPIHono } from '@hono/zod-openapi'
 import type { Context } from 'hono'
 import { actor, type Env, me } from './guard.ts'
 
-/** The person, with the movie library checked: 404 when it isn't theirs. */
+/**
+ * The person and the profile watching on this device (ADR 0068), with the movie library checked:
+ * 404 when it isn't theirs.
+ */
 export function viewer(c: Context<Env>) {
   const p = me(c)
   const { libraries } = p.user
   if (libraries !== 'all' && !libraries.includes('movies'))
     throw new AppError('not-found', 'That movie isn’t in the library.')
-  return { userId: p.user.id, deviceId: p.deviceId, libraries }
+  return { userId: p.user.id, profileId: p.profileId, deviceId: p.deviceId, libraries }
 }
 
 export function registerPlayback(app: OpenAPIHono<Env>) {
@@ -48,41 +51,35 @@ export function registerPlayback(app: OpenAPIHono<Env>) {
   })
 
   app.openapi(routes.playback.prefs, (c) => {
-    const { userId } = viewer(c)
-    return c.json(watch(c).prefs(userId, c.req.valid('param').id), 200)
+    return c.json(watch(c).prefs(viewer(c), c.req.valid('param').id), 200)
   })
 
   app.openapi(routes.playback.setPrefs, (c) => {
-    const { userId } = viewer(c)
-    return c.json(watch(c).setPrefs(userId, c.req.valid('param').id, c.req.valid('json')), 200)
+    return c.json(watch(c).setPrefs(viewer(c), c.req.valid('param').id, c.req.valid('json')), 200)
   })
 
   app.openapi(routes.playback.played, (c) => {
-    watch(c).played(viewer(c).userId, c.req.valid('param').id)
+    watch(c).played(viewer(c), c.req.valid('param').id)
     return c.body(null, 204)
   })
 
   app.openapi(routes.playback.unplayed, (c) => {
-    watch(c).unplayed(viewer(c).userId, c.req.valid('param').id)
+    watch(c).unplayed(viewer(c), c.req.valid('param').id)
     return c.body(null, 204)
   })
 
   app.openapi(routes.playback.dismiss, (c) => {
-    watch(c).dismiss(viewer(c).userId, c.req.valid('param').id)
+    watch(c).dismiss(viewer(c), c.req.valid('param').id)
     return c.body(null, 204)
   })
 
   app.openapi(routes.playback.itemProgress, (c) => {
     const { position, duration } = c.req.valid('json')
-    return c.json(
-      watch(c).position(viewer(c).userId, c.req.valid('param').id, position, duration),
-      200,
-    )
+    return c.json(watch(c).position(viewer(c), c.req.valid('param').id, position, duration), 200)
   })
 
   app.openapi(routes.playback.next, (c) => {
-    const { userId } = viewer(c)
-    return c.json({ item: watch(c).next(userId, c.req.valid('param').id) }, 200)
+    return c.json({ item: watch(c).next(viewer(c), c.req.valid('param').id) }, 200)
   })
 
   app.openapi(routes.playback.trickplay, (c) => {

@@ -21,7 +21,9 @@
 //    backdrop and the library's posters on `/web`, and a poster in the admin, each drawn from the
 //    server's own /api/v1/images (TMDB's replay at the fixtures serves the pictures).
 // 10. an error in the web app, reported to its server (ADR 0066), listed in System › Logs and in
-//    Download logs.
+//    Download logs;
+// 11. Who's watching on `/web` (Phase 5's A2b, ADR 0068): a profile with a PIN, a wrong PIN
+//    refused, the right one chosen, and only that browser watching as it.
 //
 //   HIGHSEA_IMAGE=highsea:ci bun scripts/e2e/run.ts
 //
@@ -655,6 +657,46 @@ try {
       throw new Error('Download logs doesn’t include the app’s report')
     await context.close()
   })
+
+  await step(
+    '11. Who’s watching on /web: a PIN asked for, and only this browser switched',
+    async () => {
+      const theo = await api<{ id: string }>(
+        'POST',
+        '/me/profiles',
+        { name: 'Theo', tone: 'info' },
+        token,
+      )
+      await api('PATCH', `/me/profiles/${theo.id}`, { pin: '2580' }, token)
+      const context = await (browser as Browser).newContext()
+      const page = await context.newPage()
+      current = page
+      await page.goto(`${BASE}/web/`)
+      await page.getByLabel('Username').fill(OWNER.username)
+      await page.getByLabel('Password').fill(OWNER.password)
+      await page.getByRole('button', { name: 'Sign in' }).click()
+      await page.getByRole('navigation', { name: 'Main' }).first().waitFor()
+      await page.goto(`${BASE}/web/who`)
+      await page.getByRole('button', { name: 'Theo, has a PIN' }).click()
+      const field = page.getByLabel('Theo’s PIN, four digits')
+      await field.fill('1111')
+      await page.getByText('That isn’t Theo’s PIN. Try again.').waitFor()
+      await field.fill('2580')
+      await page.getByRole('navigation', { name: 'Main' }).first().waitFor()
+      await page.goto(`${BASE}/web/who`)
+      await page.getByRole('button', { name: 'Theo, has a PIN, watching now' }).waitFor()
+      // the run's own token is another device: still the account's own profile
+      const mine = await api<{ current: string; profiles: { id: string; main: boolean }[] }>(
+        'GET',
+        '/me/profiles',
+        undefined,
+        token,
+      )
+      if (mine.current === theo.id || !mine.profiles.find((p) => p.id === mine.current)?.main)
+        throw new Error('Choosing Theo in the browser changed another device’s profile')
+      await context.close()
+    },
+  )
 
   // the server's network has no way out (scripts/e2e/compose.yaml): everything above came from the fixtures
   const offline = inServer(

@@ -29,11 +29,15 @@
 #   6. desktop: the desktop app for a stable release (ADR 0058), built on macOS, Windows and Linux
 #      and signed for the updater with TAURI_SIGNING_PRIVATE_KEY (a dry run without it signs with
 #      the development key), then `latest.json` and the installers' SHA-256 sums from them.
-#   7. publish, only when it isn't a dry run: the platforms merged under their tags
-#      (`docker buildx imagetools create`), the catalog deployed to GitHub Pages, and then
-#      `github-release`: the tag on the release commit, the GitHub release with the changelog's
-#      section, the Synology package and the desktop app's installers and feed, and, from next,
-#      next and main fast-forwarded to the release commit, which deploys docs.highsea.tv.
+#   7. publishable: every build ended as the release needs (scripts/release-gate.ts). Nothing
+#      below runs until it has passed, so a build that failed, was cancelled or never got a runner
+#      leaves nothing published (ADR 0050's second 2026-11-18 note).
+#   8. publish, only when it isn't a dry run, in order of how hard each is to take back: the
+#      platforms merged under their tags (`docker buildx imagetools create`), the catalog deployed
+#      to GitHub Pages, and last `github-release`: the tag on the release commit, the GitHub
+#      release with the changelog's section, the Synology package and the desktop app's
+#      installers and feed, and, from next, next and main fast-forwarded to the release commit,
+#      which deploys docs.highsea.tv. The note above `merge` says what a failure at each leaves.
 #
 # Jobs that read highsea's keys, the catalog key or the deploy key use the `release` environment,
 # whose required reviewer is the owner, so nothing signed, keyed or pushed runs without their
@@ -635,11 +639,57 @@ jobs:
           name: desktop
           path: ${{ runner.temp }}/desktop/
 
+  # May the release publish? Every build ended as the release needs: passed, or skipped on purpose
+  # (spk and the desktop app on a prerelease), by scripts/release-gate.ts's rule. It runs whatever
+  # the builds did (`!cancelled()`) and fails unless the rule says go; `merge` and `pages` need it
+  # to have passed, and `github-release` reads its result before the tag. GitHub's docs give a
+  # job's result in `needs` as success, failure, cancelled or skipped and say nothing of a matrix;
+  # run 44371744243 showed one cancelled macOS build leaving `desktop`'s result short of success
+  # (`desktop-feed`, which needs it to be success, was skipped), so one build that never got a
+  # runner is enough to stop it (ADR 0050's second 2026-11-18 note;
+  # https://docs.github.com/en/actions/reference/workflows-and-actions/contexts#needs-context).
+  # It runs on a dry run too, so a dry run shows the verdict a real one would act on.
+  publishable:
+    if: ${{ !cancelled() }}
+    needs: [prepare, checks, image, catalog, spk, desktop, desktop-feed]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: 1.4.4
+      - name: Every build the release needs passed
+        run: bun scripts/release-gate.ts builds
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+          PRERELEASE: ${{ needs.prepare.outputs.prerelease }}
+          DRY_RUN: ${{ inputs.dry-run }}
+
+  # Publishing, after `publishable` and only on a real release, in order of how hard each is to
+  # take back, with what a failure at each step leaves and how a re-run recovers. "Re-run failed
+  # jobs" runs the failed jobs and every job that depends on them again, and the jobs that passed
+  # keep their results and outputs
+  # (https://docs.github.com/en/actions/how-tos/manage-workflow-runs/re-run-workflows-and-jobs).
+  #
+  #   publishable fails: nothing is published. Once the failed build can pass (a runner that never
+  #     came, a flaky step), re-run failed jobs: it, `publishable` and everything after run again.
+  #   1. merge, the image's tags (`0.4.3`, `0.4`, `latest`, `beta` as release.ts picks them). A
+  #     tag can be moved back to the digest it had, but whoever pulled it in between has it. A
+  #     failure leaves some tags moved at most; nothing reads the release yet, and re-running
+  #     failed jobs pushes the same digests under the same tags again.
+  #   2. pages, catalog.highsea.tv, whose newest entry tells every server the version is out. A
+  #     redeploy takes it back. A failure leaves the image's tags out and the catalog as it was;
+  #     re-run failed jobs.
+  #   3. github-release, last: the tag, the GitHub release, which packages.highsea.tv (Package
+  #     Center) and the desktop app's updater read from the Latest release, and next and main
+  #     moved. A failure before the release takes the tag back (below); re-run failed jobs, and
+  #     its gate reads the jobs carried over from the earlier attempt with their results. A failure
+  #     after it leaves the release out and next or main to merge by hand, as its error says.
   merge:
     if: >-
       ${{ !cancelled() && !inputs.dry-run && needs.prepare.result == 'success'
-        && needs.image.result == 'success' && needs.catalog.result == 'success' }}
-    needs: [prepare, image, catalog]
+        && needs.publishable.result == 'success' }}
+    needs: [prepare, publishable]
     runs-on: ubuntu-24.04
     env:
       VERSION: ${{ needs.prepare.outputs.version }}
@@ -675,8 +725,10 @@ jobs:
           IMAGE_TAGS: ${{ needs.prepare.outputs.tags }}
 
   pages:
-    if: ${{ !cancelled() && !inputs.dry-run && needs.merge.result == 'success' && needs.catalog.result == 'success' }}
-    needs: [merge, catalog]
+    if: >-
+      ${{ !cancelled() && !inputs.dry-run && needs.publishable.result == 'success'
+        && needs.merge.result == 'success' }}
+    needs: [publishable, merge]
     runs-on: ubuntu-24.04
     permissions:
       pages: write
@@ -691,8 +743,10 @@ jobs:
   # The tag, the GitHub release and, from next, next and main moved to the release commit. It
   # names the `release` environment, for the deploy key, and waits on `checks` like the other
   # keyed jobs so the owner's one approval covers it too; then, before it pushes anything, it waits
-  # for every job it publishes after and stops unless each ended as the release needs: passed, or
-  # skipped on purpose (spk and the desktop app on a prerelease). That rule is
+  # for every job it publishes after, `publishable`, `merge` and `pages` among them, and stops
+  # unless each ended as the release needs: passed, or skipped on purpose (spk and the desktop app
+  # on a prerelease). It reads them instead of naming them in `needs`, which would bring it to the
+  # `release` environment after the builds and ask the owner for a second approval. That rule is
   # scripts/release-gate.ts's, read from the run's own jobs
   # (https://docs.github.com/en/rest/actions/workflow-jobs#list-jobs-for-a-workflow-run-attempt),
   # and `outcome` below applies the same rule to the whole run.
@@ -837,7 +891,18 @@ jobs:
   # on a cancel (the note above `image`).
   outcome:
     if: ${{ !cancelled() }}
-    needs: [prepare, checks, image, catalog, spk, desktop, desktop-feed, merge, pages, github-release]
+    needs:
+      - prepare
+      - checks
+      - image
+      - catalog
+      - spk
+      - desktop
+      - desktop-feed
+      - publishable
+      - merge
+      - pages
+      - github-release
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0

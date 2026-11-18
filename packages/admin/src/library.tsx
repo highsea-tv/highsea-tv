@@ -3,7 +3,7 @@ import {
   type BulkInput,
   LIST_TOPICS,
   MOVIE_SORTS,
-  type MoviePage,
+  type Movie,
   type MovieStatus,
   type RuleCondition,
 } from '@highsea-tv/api-contract'
@@ -18,7 +18,12 @@ import { useAction, useQuery } from '@highsea-tv/sdk/react'
 //
 // What real data changes:
 // - the library is paged on the server (cursor paging, phase-3-server.md › Paging and sorting):
-//   the tab counts come with each page, and Show more under the frame loads the next 60;
+//   the page reads every page for its filters, 200 at a time, as the clients' libraries do, and
+//   draws only the posters and rows near the screen (./library-grid.tsx), so the whole library
+//   shows with no Show more (the owner, 2026-11-18, HT-57); the tab counts come with each page;
+// - sorted by title, the clients' A–Z index stands beside the frame (HT-57): a letter scrolls to
+//   its first movie, in the grid or the table, drawn or not;
+// - select all ticks every movie that matches, since every one is read, not only those drawn;
 // - the status tab, title filter and sort live in the address, so Back keeps them;
 // - checkpoint 8c adds a tag filter (in the address too, shown once a tag exists) and Add a tag
 //   and Remove a tag to bulk edit (Radarr's Movie Editor tags: wiki.servarr.com/radarr/movies);
@@ -57,7 +62,10 @@ import {
   Tooltip,
   toast,
   tokens,
+  useMotionReduced,
   useTheme,
+  type VirtualGridHandle,
+  type VirtualList,
 } from '@highsea-tv/ui/native'
 import { type ComponentRef, useDeferredValue, useRef, useState, useSyncExternalStore } from 'react'
 import { View } from 'react-native'
@@ -65,11 +73,11 @@ import { useAddressParam } from './address.ts'
 import { handoff } from './collections-editor.tsx'
 import { ruleId } from './collections-rules.tsx'
 import { useSearchable } from './indexer-state.ts'
+import { LibraryPosters, STUCK, useLetters, WithLetters } from './library-grid.tsx'
 import { library as messages } from './library-messages.ts'
 import { Loadable, PosterSkeletons } from './loadable.tsx'
 import { moviePath, movieStatus } from './media-links.ts'
-import { GridItem, PosterGrid } from './media-sections.tsx'
-import { type LibraryFilters, loadMovies, PAGE } from './movie-data.ts'
+import { type LibraryFilters, loadMovies } from './movie-data.ts'
 import { useRouter } from './navigation.tsx'
 import { AdminPage } from './shell.tsx'
 import { useTags } from './tag-picker.tsx'
@@ -142,27 +150,20 @@ export function MoviesLibrary() {
     sort,
   }
   const filterKey = `${tab}:${sort}:${title}:${tag}`
-  const [more, setMore] = useState({ filterKey, count: PAGE })
-  const count = more.filterKey === filterKey ? more.count : PAGE
-  const movies = useQuery(`movies:${filterKey}:${count}`, (c) => loadMovies(c, filters, count), [
-    'movies.updated',
-  ])
-  // Show more keeps what's on screen while the longer list loads
-  const last = useRef<{ filterKey: string; data: MoviePage } | null>(null)
-  if (movies.status === 'success') last.current = { filterKey, data: movies.data }
-  const kept =
-    movies.status === 'loading' && last.current?.filterKey === filterKey
-      ? last.current.data
-      : undefined
-  const shownQuery = kept
-    ? {
-        status: 'success' as const,
-        data: kept,
-        error: undefined,
-        refetch: movies.refetch,
-        refresh: movies.refresh,
-      }
-    : movies
+  // every movie for these filters; the page draws only those near the screen
+  const movies = useQuery(`movies:${filterKey}`, (c) => loadMovies(c, filters), ['movies.updated'])
+  const items = movies.data?.items ?? NONE
+  const letters = useLetters(items, sortedOf, sort === 'title')
+  const reduced = useMotionReduced()
+  const posters = useRef<VirtualGridHandle>(null)
+  const rows = useRef<VirtualList>(null)
+  // where the grid or table starts in the frame, under its toolbars: the letters start level with it
+  const jump = (l: string) => {
+    const at = letters.firsts.get(l) ?? 0
+    const options = { animated: !reduced, offset: STUCK }
+    if (view === 'grid') posters.current?.toItem(at, options)
+    else rows.current?.scrollToIndex(at, options)
+  }
 
   const profiles = useQuery('quality-profiles', (c) => c.quality.profiles())
   const languageProfiles = useQuery('language-profiles', (c) => c.subtitles.languageProfiles(), [
@@ -300,7 +301,7 @@ export function MoviesLibrary() {
   return (
     <AdminPage title={t('title')} actions={actions}>
       <Loadable
-        query={shownQuery}
+        query={movies}
         what={t('what')}
         skeleton={view === 'grid' ? <PosterSkeletons /> : undefined}
       >
@@ -320,139 +321,136 @@ export function MoviesLibrary() {
               {t('empty.body')}
             </EmptyState>
           ) : (
-            <>
-              <TableFrame>
-                <TableToolbar>
-                  <Tabs
-                    aria-label={t('tabs')}
-                    value={tab}
-                    onValueChange={(v) => setTab(v as Tab)}
-                    options={TABS.map((k) => ({
-                      value: k,
-                      label: t(`tab.${k}`),
-                      count: page.counts[k],
-                    }))}
-                  />
-                  <View
-                    style={{
-                      marginStart: 'auto',
-                      minWidth: 0,
-                      flexDirection: 'row',
-                      flexWrap: 'wrap',
-                      alignItems: 'center',
-                      gap: tokens.space['2'],
-                    }}
-                  >
-                    <View style={{ width: FILTER_WIDTH }}>
-                      <SearchField
-                        label={t('filter')}
-                        icon="filter"
-                        value={text}
-                        onChangeText={setText}
-                        placeholder={t('filter')}
-                      />
-                    </View>
-                    {hasTags && (
-                      <View style={{ width: SELECT_WIDTH }}>
-                        <Select
-                          value={tag || ANY_TAG}
-                          onValueChange={(v) => setTag(v === ANY_TAG ? '' : v)}
-                          aria-label={t('tag')}
-                          options={[
-                            { value: ANY_TAG, label: t('tag.all') },
-                            ...(tags.data ?? []).map((g) => ({ value: g.id, label: g.label })),
-                          ]}
-                        />
-                      </View>
-                    )}
+            <TableFrame>
+              <TableToolbar>
+                <Tabs
+                  aria-label={t('tabs')}
+                  value={tab}
+                  onValueChange={(v) => setTab(v as Tab)}
+                  options={TABS.map((k) => ({
+                    value: k,
+                    label: t(`tab.${k}`),
+                    count: page.counts[k],
+                  }))}
+                />
+                <View
+                  style={{
+                    marginStart: 'auto',
+                    minWidth: 0,
+                    flexDirection: 'row',
+                    flexWrap: 'wrap',
+                    alignItems: 'center',
+                    gap: tokens.space['2'],
+                  }}
+                >
+                  <View style={{ width: FILTER_WIDTH }}>
+                    <SearchField
+                      label={t('filter')}
+                      icon="filter"
+                      value={text}
+                      onChangeText={setText}
+                      placeholder={t('filter')}
+                    />
+                  </View>
+                  {hasTags && (
                     <View style={{ width: SELECT_WIDTH }}>
                       <Select
-                        value={sort}
-                        onValueChange={(v) => setSort(v as Sort)}
-                        aria-label={t('sortBy')}
-                        options={MOVIE_SORTS.map((k) => ({ value: k, label: t(`sort.${k}`) }))}
+                        value={tag || ANY_TAG}
+                        onValueChange={(v) => setTag(v === ANY_TAG ? '' : v)}
+                        aria-label={t('tag')}
+                        options={[
+                          { value: ANY_TAG, label: t('tag.all') },
+                          ...(tags.data ?? []).map((g) => ({ value: g.id, label: g.label })),
+                        ]}
                       />
                     </View>
-                    <Button icon="library" onPress={saveAsCollection}>
-                      {t('saveAsCollection')}
-                    </Button>
+                  )}
+                  <View style={{ width: SELECT_WIDTH }}>
+                    <Select
+                      value={sort}
+                      onValueChange={(v) => setSort(v as Sort)}
+                      aria-label={t('sortBy')}
+                      options={MOVIE_SORTS.map((k) => ({ value: k, label: t(`sort.${k}`) }))}
+                    />
                   </View>
-                </TableToolbar>
-                {ids.length > 0 && (
-                  <View
-                    role="toolbar"
-                    aria-label={t('bulk')}
-                    style={{
-                      flexDirection: 'row',
-                      flexWrap: 'wrap',
-                      alignItems: 'center',
-                      gap: tokens.space['2'],
-                      borderBottomWidth: line.thin,
-                      borderBottomColor: colors.line,
-                      backgroundColor: colors['accent-soft'],
-                      paddingHorizontal: CELL_X,
-                      paddingVertical: tokens.space['2'],
-                    }}
-                  >
-                    <Text
-                      size={tokens.adminText.ui.size}
-                      weight={500}
-                      style={{ marginEnd: 'auto' }}
+                  <Button icon="library" onPress={saveAsCollection}>
+                    {t('saveAsCollection')}
+                  </Button>
+                </View>
+              </TableToolbar>
+              {ids.length > 0 && (
+                <View
+                  role="toolbar"
+                  aria-label={t('bulk')}
+                  style={{
+                    flexDirection: 'row',
+                    flexWrap: 'wrap',
+                    alignItems: 'center',
+                    gap: tokens.space['2'],
+                    borderBottomWidth: line.thin,
+                    borderBottomColor: colors.line,
+                    backgroundColor: colors['accent-soft'],
+                    paddingHorizontal: CELL_X,
+                    paddingVertical: tokens.space['2'],
+                  }}
+                >
+                  <Text size={tokens.adminText.ui.size} weight={500} style={{ marginEnd: 'auto' }}>
+                    {t('selected', { count: ids.length })}
+                  </Text>
+                  {searchable.canSearch ? (
+                    <Button
+                      size="sm"
+                      icon="search"
+                      loading={bulkAction.pending}
+                      onPress={() =>
+                        bulk((count) => t('done.search', { count }), { action: 'search', ids })
+                      }
                     >
-                      {t('selected', { count: ids.length })}
-                    </Text>
-                    {searchable.canSearch ? (
-                      <Button
-                        size="sm"
-                        icon="search"
-                        loading={bulkAction.pending}
-                        onPress={() =>
-                          bulk((count) => t('done.search', { count }), { action: 'search', ids })
-                        }
-                      >
+                      {t('search')}
+                    </Button>
+                  ) : (
+                    // decision 2: shown but inert while no indexer is enabled; the tooltip's
+                    // wrapper takes focus, so the reason is reachable by keyboard (WAI-ARIA APG,
+                    // "Focusability of disabled controls")
+                    <Tooltip content={t('search.noIndexers')} focusable>
+                      <Button size="sm" icon="search" disabled>
                         {t('search')}
                       </Button>
-                    ) : (
-                      // decision 2: shown but inert while no indexer is enabled; the tooltip's
-                      // wrapper takes focus, so the reason is reachable by keyboard (WAI-ARIA APG,
-                      // "Focusability of disabled controls")
-                      <Tooltip content={t('search.noIndexers')} focusable>
-                        <Button size="sm" icon="search" disabled>
-                          {t('search')}
-                        </Button>
-                      </Tooltip>
-                    )}
-                    <Button
-                      ref={editAnchor}
-                      size="sm"
-                      iconEnd="chevron-down"
-                      loading={bulkAction.pending}
-                      hasPopup="menu"
-                      accessibilityState={{ expanded: editing }}
-                      onPress={() => setEditing(true)}
-                    >
-                      {t('edit')}
-                    </Button>
-                    <Menu
-                      title={t('edit')}
-                      open={editing}
-                      onClose={() => setEditing(false)}
-                      anchor={editAnchor}
-                      items={editItems}
-                    />
-                    <Button
-                      size="sm"
-                      variant="danger"
-                      icon="delete"
-                      onPress={() => setConfirm(true)}
-                    >
-                      {t('remove')}
-                    </Button>
-                    <Button size="sm" variant="ghost" onPress={() => setSelected(new Set())}>
-                      {t('clear')}
-                    </Button>
-                  </View>
-                )}
+                    </Tooltip>
+                  )}
+                  <Button
+                    ref={editAnchor}
+                    size="sm"
+                    iconEnd="chevron-down"
+                    loading={bulkAction.pending}
+                    hasPopup="menu"
+                    accessibilityState={{ expanded: editing }}
+                    onPress={() => setEditing(true)}
+                  >
+                    {t('edit')}
+                  </Button>
+                  <Menu
+                    title={t('edit')}
+                    open={editing}
+                    onClose={() => setEditing(false)}
+                    anchor={editAnchor}
+                    items={editItems}
+                  />
+                  <Button size="sm" variant="danger" icon="delete" onPress={() => setConfirm(true)}>
+                    {t('remove')}
+                  </Button>
+                  <Button size="sm" variant="ghost" onPress={() => setSelected(new Set())}>
+                    {t('clear')}
+                  </Button>
+                </View>
+              )}
+              <WithLetters
+                shown={sort === 'title' && shown.length > 0}
+                present={letters.present}
+                label={t('letters')}
+                inset={CELL_X}
+                onLetter={jump}
+              >
                 {shown.length === 0 ? (
                   <View style={{ paddingHorizontal: CELL_X, paddingVertical: tokens.space['8'] }}>
                     <Text variant="caption" color="text-3" align="center">
@@ -461,27 +459,29 @@ export function MoviesLibrary() {
                   </View>
                 ) : view === 'grid' ? (
                   <View style={{ padding: CELL_X }}>
-                    <PosterGrid>
-                      {shown.map((m) => (
-                        <GridItem key={m.id}>
-                          <Poster
-                            title={m.title}
-                            src={m.art.poster ?? undefined}
-                            href={moviePath(m.id)}
-                            status={
-                              m.status !== 'available' ? (
-                                <Badge overlay tone={movieStatus[m.status].tone}>
-                                  {t(movieStatus[m.status].label)}
-                                </Badge>
-                              ) : undefined
-                            }
-                            showTitle
-                            titleSize="ui"
-                            caption={m.year === null ? undefined : String(m.year)}
-                          />
-                        </GridItem>
-                      ))}
-                    </PosterGrid>
+                    <LibraryPosters
+                      ref={posters}
+                      items={shown}
+                      keyOf={keyOf}
+                      label={t('title')}
+                      render={(m) => (
+                        <Poster
+                          title={m.title}
+                          src={m.art.poster ?? undefined}
+                          href={moviePath(m.id)}
+                          status={
+                            m.status !== 'available' ? (
+                              <Badge overlay tone={movieStatus[m.status].tone}>
+                                {t(movieStatus[m.status].label)}
+                              </Badge>
+                            ) : undefined
+                          }
+                          showTitle
+                          titleSize="ui"
+                          caption={m.year === null ? undefined : String(m.year)}
+                        />
+                      )}
+                    />
                   </View>
                 ) : (
                   <Table label={t('title')}>
@@ -509,7 +509,7 @@ export function MoviesLibrary() {
                         <TableHead numeric>{t('col.added')}</TableHead>
                       </TableRow>
                     </TableHeader>
-                    <TableBody>
+                    <TableBody ref={rows} virtual={sort === 'title'}>
                       {shown.map((m) => (
                         <TableRow key={m.id} selected={selected.has(m.id)}>
                           <TableCell tall>
@@ -557,18 +557,8 @@ export function MoviesLibrary() {
                     </TableBody>
                   </Table>
                 )}
-              </TableFrame>
-              {page.next && (
-                <View style={{ alignItems: 'center' }}>
-                  <Button
-                    loading={Boolean(kept)}
-                    onPress={() => setMore({ filterKey, count: shown.length + PAGE })}
-                  >
-                    {t('more')}
-                  </Button>
-                </View>
-              )}
-            </>
+              </WithLetters>
+            </TableFrame>
           )
         }}
       </Loadable>
@@ -612,6 +602,12 @@ export function MoviesLibrary() {
     </AdminPage>
   )
 }
+
+/** None yet, the same array each time so the letters aren't counted again. */
+const NONE: Movie[] = []
+const keyOf = (m: Movie) => String(m.id)
+/** The server sorts by the sort title (folded, without a leading article), so letters follow it. */
+const sortedOf = (m: Movie) => m.sortTitle
 
 /** A table cell's side padding (the web's px-3.5), which the toolbars and the grid share. */
 const CELL_X = admin.table.cellX

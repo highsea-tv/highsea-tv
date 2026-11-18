@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// A person's home screen (client-settings.md › Home screen): the order of the rows below the hero,
-// and the rows they've hidden, by row id. Ids not offered yet (a curated row that goes live next
-// week) are kept, so arranging today doesn't forget them.
+// A profile's home screen (client-settings.md › Home screen): the order of the rows below the
+// hero, and the rows they've hidden, by row id. Ids not offered yet (a curated row that goes live
+// next week) are kept, so arranging today doesn't forget them. Each profile arranges its own (ADR
+// 0068, the drafted design's Home per profile); the rows offered are the account's.
 import { schema } from '@highsea-tv/db'
 import { eq } from 'drizzle-orm'
 import type { Ctx } from './context.ts'
@@ -19,23 +20,26 @@ export const BUILT_IN_ROWS: HomeRow[] = [{ id: 'continue', title: null }]
 
 export const HOME_IDS_MAX = 200
 
+/** Whose Home: the account, and the profile watching (its own profile's id is the account's). */
+export type HomeOwner = { userId: string; profileId: string }
+
 export function createHome(ctx: Ctx, offered: (userId: string) => HomeRow[] = () => BUILT_IN_ROWS) {
   const { db, clock, events } = ctx
 
-  const mine = (userId: string): HomeLayout => {
+  const mine = (profileId: string): HomeLayout => {
     const row = db
       .select()
       .from(schema.homeLayouts)
-      .where(eq(schema.homeLayouts.userId, userId))
+      .where(eq(schema.homeLayouts.profileId, profileId))
       .get()
     return row
       ? { order: row.order as string[], hidden: row.hidden as string[] }
       : { order: [], hidden: [] }
   }
 
-  const layout = (userId: string): HomeLayout & { rows: HomeRow[] } => {
-    const own = mine(userId)
-    const rows = offered(userId)
+  const layout = (who: HomeOwner): HomeLayout & { rows: HomeRow[] } => {
+    const own = mine(who.profileId)
+    const rows = offered(who.userId)
     const pos = (id: string) => {
       const i = own.order.indexOf(id)
       return i < 0 ? HOME_IDS_MAX + rows.findIndex((r) => r.id === id) : i
@@ -46,18 +50,18 @@ export function createHome(ctx: Ctx, offered: (userId: string) => HomeRow[] = ()
   return {
     layout,
 
-    save(userId: string, next: HomeLayout) {
+    save(who: HomeOwner, next: HomeLayout) {
       const values = {
         order: [...new Set(next.order)],
         hidden: [...new Set(next.hidden)],
         updatedAt: clock.now(),
       }
       db.insert(schema.homeLayouts)
-        .values({ userId, ...values })
-        .onConflictDoUpdate({ target: schema.homeLayouts.userId, set: values })
+        .values({ profileId: who.profileId, userId: who.userId, ...values })
+        .onConflictDoUpdate({ target: schema.homeLayouts.profileId, set: values })
         .run()
-      events.emit({ topic: 'home.updated', ids: [userId], to: [userId] })
-      return layout(userId)
+      events.emit({ topic: 'home.updated', ids: [who.userId], to: [who.userId] })
+      return layout(who)
     },
   }
 }

@@ -70,6 +70,7 @@ export * from './toaster.tsx'
 export * from './toggle.tsx'
 export * from './tooltip.tsx'
 export * from './virtual.tsx'
+export * from './virtual-grid.tsx'
 export * from './waveform.tsx'
 export * from './widget.tsx'
 // a platform pair: the grid off the web, customize mode in a browser (widget-editor.web.tsx)

@@ -9,6 +9,7 @@ import { and, eq, ne } from 'drizzle-orm'
 import type { Ctx, RequestMeta, UserView } from './context.ts'
 import { notFound } from './context.ts'
 import { hashPassword, passwordProblem, verifyPassword } from './passwords.ts'
+import { ensureMainProfile } from './profiles.ts'
 import { ALL_LIBRARIES, canManageUsers, isStaff, LIBRARIES, ROLE_DEFAULTS } from './roles.ts'
 import { newSecret, verifier } from './secrets.ts'
 
@@ -113,6 +114,8 @@ function insertUser(
       updatedAt: now,
     })
     .run()
+  // the account's own profile (ADR 0068), with the account's id
+  ensureMainProfile(ctx, id, input.displayName)
   setPermissions(ctx, id, ROLE_DEFAULTS[input.role])
   // staff see every library (ADR 0032)
   setLibraries(ctx, id, isStaff(input.role) ? 'all' : input.libraries)

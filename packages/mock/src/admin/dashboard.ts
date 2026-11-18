@@ -125,7 +125,8 @@ export function dashboardAnswers({ wall, wallMs, userOf }: AdminKit): Answers {
 
   const sessionOf = (ctx: Ctx, s: Session): NowPlaying['sessions'][number] => ({
     id: s.id,
-    user: s.user,
+    // the mock's sessions are each account's own profile (ADR 0068): no name beside it
+    user: { profile: null, ...s.user },
     deviceName: s.deviceName,
     client: s.client,
     item: titleOf(ctx, s.item),
@@ -159,7 +160,7 @@ export function dashboardAnswers({ wall, wallMs, userOf }: AdminKit): Answers {
 
   const watchOf = (ctx: Ctx, w: Watch): Output<Routes['sessions']['history']>[number] => ({
     id: w.id,
-    user: w.user,
+    user: { profile: null, ...w.user },
     deviceName: w.deviceName,
     client: w.client,
     item: titleOf(ctx, w.item),

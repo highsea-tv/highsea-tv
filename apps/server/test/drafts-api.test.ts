@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The drafted routes (one-client-platform-b.md › B3): shows, music, playlists and profiles are in
+// The drafted routes (one-client-platform-b.md › B3): shows, music and playlists are in
 // the contract and the OpenAPI document, marked as drafts, and this server answers each 501 in the
 // usual error body, after the guard; an episode's address on the films' routes answers the same,
-// and public info lists none of their sources, so the apps hide them.
+// and public info lists neither of their sources, so the apps hide them. Profiles were drafted
+// with them and are served since Phase 5's A2b (ADR 0068).
 import { afterEach, describe, expect, test } from 'bun:test'
 import { CLIENT_SOURCES, DRAFT_KEY, isDraft, routes } from '@highsea-tv/api-contract'
 import { createApi } from '../src/api/app.ts'
@@ -15,13 +16,13 @@ const concrete = (path: string) => path.replace(/\{\w+\}/g, 'x1')
 
 describe('drafted routes', () => {
   // `series` is the admin's shows, drafted with D3 (one-client-platform-d.md, answer 5)
-  test('are the shows, series, music, playlists and profiles groups, and nothing else', () => {
+  test('are the shows, series, music and playlists groups, and nothing else', () => {
     const groups = new Set(
       Object.entries(routes).flatMap(([group, rs]) =>
         Object.values(rs).some((r) => isDraft(r)) ? [group] : [],
       ),
     )
-    expect([...groups].sort()).toEqual(['music', 'playlists', 'profiles', 'series', 'shows'])
+    expect([...groups].sort()).toEqual(['music', 'playlists', 'series', 'shows'])
     for (const g of groups)
       for (const r of Object.values(routes[g as keyof typeof routes]))
         expect(isDraft(r), `${g} ${r.path}`).toBe(true)
@@ -70,7 +71,7 @@ describe('drafted routes', () => {
     expect((await get('/api/v1/items/movie/603')).status).toBe(404)
   })
 
-  test('are marked in the OpenAPI document, and public info lists none of their sources', async () => {
+  test('are marked in the OpenAPI document, and public info lists only profiles of the apps’ sources', async () => {
     const runtime = await bootRuntime()
     const app = createApi(runtime)
     const doc = (await (await app.request('/api/v1/openapi.json')).json()) as {
@@ -84,6 +85,8 @@ describe('drafted routes', () => {
     const info = (await (await app.request('/api/v1/system/info/public')).json()) as {
       sources: string[]
     }
-    for (const s of CLIENT_SOURCES) expect(info.sources).not.toContain(s)
+    expect(info.sources.filter((s) => (CLIENT_SOURCES as readonly string[]).includes(s))).toEqual([
+      'profiles',
+    ])
   })
 })

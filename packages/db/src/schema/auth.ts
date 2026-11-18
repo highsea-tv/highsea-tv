@@ -124,11 +124,49 @@ export const devices = sqliteTable(
     lastSeenAt: integer('last_seen_at').notNull(),
     /** Sessions only; tokens last until revoked. */
     expiresAt: integer('expires_at'),
+    /**
+     * The profile this device watches as now (ADR 0068), chosen on the device; null is the
+     * account's own. Kept per device, not per account, so a TV and a phone on one account can
+     * watch as different people at once.
+     */
+    profileId: text('profile_id').references(() => profiles.id, { onDelete: 'set null' }),
   },
   (t) => [
     uniqueIndex('devices_token').on(t.tokenHash),
     index('devices_user').on(t.userId, t.lastSeenAt),
   ],
+)
+
+/** A profile's colour, from the tokens' soft pairs (the contract's `PROFILE_TONES`). */
+export type ProfileTone = 'accent' | 'info' | 'success' | 'warning' | 'danger'
+
+/**
+ * The people who watch with an account (ADR 0068): each with its own name, colour, watch state and
+ * Home, and an optional four-digit PIN kept only as an Argon2id hash, as passwords are (ADR 0023).
+ * The account's own profile (`main`) shares the account's id, is made with the account and is
+ * never deleted. Wrong PINs in a row are counted here, and the profile rests for a minute after
+ * the fifth.
+ */
+export const profiles = sqliteTable(
+  'profiles',
+  {
+    id: text('id').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    tone: text('tone').$type<ProfileTone>().notNull(),
+    /** A PHC string (`$argon2id$…`); null for no PIN. */
+    pinHash: text('pin_hash'),
+    main: integer('main', { mode: 'boolean' }).notNull().default(false),
+    /** Wrong PINs in a row. */
+    pinFailures: integer('pin_failures').notNull().default(0),
+    /** Until when choosing it rests, after the fifth wrong PIN. */
+    pinRestUntil: integer('pin_rest_until'),
+    createdAt: integer('created_at').notNull(),
+    updatedAt: integer('updated_at').notNull(),
+  },
+  (t) => [index('profiles_user').on(t.userId, t.createdAt)],
 )
 
 export const apiKeys = sqliteTable(

@@ -7,16 +7,17 @@
 //   shell sends it to as highsea opens (TvLaunch).
 import { useFormFactor } from '@highsea-tv/ui'
 import { type Href, Redirect, useLocalSearchParams } from 'expo-router'
-import { useAskOnLaunch, useProfilesState } from '../../../profiles/state.tsx'
+import { useAskOnLaunch, useProfilesKnown, useProfilesState } from '../../../profiles/state.tsx'
 import { TvLaunch, TvWho } from '../../../profiles/tv.tsx'
 import { WhoPage } from '../../../profiles/who.tsx'
 
 export default function Who() {
   const p = useProfilesState()
+  const known = useProfilesKnown()
   const { input } = useFormFactor()
   const launch = useLocalSearchParams<{ launch?: string }>().launch === '1'
   const [ask] = useAskOnLaunch()
-  if (!p) return <Redirect href="/" />
+  if (!p) return known ? <Redirect href="/" /> : null
   if (input === 'touch') return <Redirect href={'/settings?who=1' as Href} />
   if (!p.ready) return null
   if (input === 'tv') {

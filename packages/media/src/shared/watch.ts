@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// Each person's watch state per title, whatever the title's type (ADR 0054): where they stopped
-// (`watch_positions`), whether they've watched it, how often and when (`watch_history`), and the
-// player's picks (`playback_prefs`). Positions past `WATCHED_AT` count as watched and are cleared,
-// so the title isn't resumed. Playback writes them from checkpoint 4.1a.
+// Each profile's watch state per title, whatever the title's type (ADR 0054, per profile since ADR
+// 0068): where they stopped (`watch_positions`), whether they've watched it, how often and when
+// (`watch_history`), and the player's picks (`playback_prefs`). Positions past `WATCHED_AT` count as
+// watched and are cleared, so the title isn't resumed. Playback writes them from checkpoint 4.1a.
+// Reads take the profile; writes take the account too, which each row keeps beside it.
 import type { Clock } from '@highsea-tv/core'
 import { type Db, schema } from '@highsea-tv/db'
 import { and, eq, inArray, sql } from 'drizzle-orm'
@@ -11,21 +12,27 @@ import { chunks } from './sql.ts'
 
 const { watchPositions, watchHistory, playbackPrefs } = schema
 
-/** The person's watch state for each of the items, by item id; items never started are absent. */
-export function watchOf(db: Db, userId: string, itemIds: string[]): Map<string, WatchState> {
+/**
+ * Who's watching: the account, and the profile watching now on the asking device (ADR 0068). The
+ * account's own profile's id is the account's.
+ */
+export type Watcher = { userId: string; profileId: string }
+
+/** The profile's watch state for each of the items, by item id; items never started are absent. */
+export function watchOf(db: Db, profileId: string, itemIds: string[]): Map<string, WatchState> {
   const out = new Map<string, WatchState>()
   for (const ids of chunks(itemIds))
     for (const w of db
       .select()
       .from(watchPositions)
-      .where(and(eq(watchPositions.userId, userId), inArray(watchPositions.itemId, ids)))
+      .where(and(eq(watchPositions.profileId, profileId), inArray(watchPositions.itemId, ids)))
       .all())
       out.set(w.itemId, { positionSeconds: w.positionSeconds, durationSeconds: w.durationSeconds })
   return out
 }
 
-/** Whether the person has watched each item, by item id; items never watched are absent. */
-export function playedOf(db: Db, userId: string, itemIds: string[]): Set<string> {
+/** Whether the profile has watched each item, by item id; items never watched are absent. */
+export function playedOf(db: Db, profileId: string, itemIds: string[]): Set<string> {
   const out = new Set<string>()
   for (const ids of chunks(itemIds))
     for (const h of db
@@ -33,7 +40,7 @@ export function playedOf(db: Db, userId: string, itemIds: string[]): Set<string>
       .from(watchHistory)
       .where(
         and(
-          eq(watchHistory.userId, userId),
+          eq(watchHistory.profileId, profileId),
           eq(watchHistory.played, true),
           inArray(watchHistory.itemId, ids),
         ),
@@ -61,13 +68,21 @@ export const NO_PREFS: PlaybackPrefs = {
 
 export function createWatch({ db, clock }: { db: Db; clock: Clock }) {
   /** Marks the item watched once more: played, the count up by one, and its position cleared. */
-  function played(userId: string, itemId: string) {
+  function played(who: Watcher, itemId: string) {
     const now = clock.now()
     db.transaction((tx) => {
       tx.insert(watchHistory)
-        .values({ userId, itemId, played: true, playCount: 1, lastPlayedAt: now, updatedAt: now })
+        .values({
+          userId: who.userId,
+          profileId: who.profileId,
+          itemId,
+          played: true,
+          playCount: 1,
+          lastPlayedAt: now,
+          updatedAt: now,
+        })
         .onConflictDoUpdate({
-          target: [watchHistory.userId, watchHistory.itemId],
+          target: [watchHistory.profileId, watchHistory.itemId],
           set: {
             played: true,
             playCount: sql`${watchHistory.playCount} + 1`,
@@ -77,7 +92,7 @@ export function createWatch({ db, clock }: { db: Db; clock: Clock }) {
         })
         .run()
       tx.delete(watchPositions)
-        .where(and(eq(watchPositions.userId, userId), eq(watchPositions.itemId, itemId)))
+        .where(and(eq(watchPositions.profileId, who.profileId), eq(watchPositions.itemId, itemId)))
         .run()
     })
   }
@@ -86,13 +101,13 @@ export function createWatch({ db, clock }: { db: Db; clock: Clock }) {
    * Unwatched, as if never started: the history and the position go, as Jellyfin's "mark
    * unplayed" clears the play count and the last-played date with the flag.
    */
-  function unplayed(userId: string, itemId: string) {
+  function unplayed(who: Watcher, itemId: string) {
     db.transaction((tx) => {
       tx.delete(watchHistory)
-        .where(and(eq(watchHistory.userId, userId), eq(watchHistory.itemId, itemId)))
+        .where(and(eq(watchHistory.profileId, who.profileId), eq(watchHistory.itemId, itemId)))
         .run()
       tx.delete(watchPositions)
-        .where(and(eq(watchPositions.userId, userId), eq(watchPositions.itemId, itemId)))
+        .where(and(eq(watchPositions.profileId, who.profileId), eq(watchPositions.itemId, itemId)))
         .run()
     })
   }
@@ -101,9 +116,9 @@ export function createWatch({ db, clock }: { db: Db; clock: Clock }) {
    * Off Continue watching: the position goes and the history stays, so the title still counts as
    * started and its plays are kept (apps-catch-up.md › A.2). Starting it again brings it back.
    */
-  function dismiss(userId: string, itemId: string) {
+  function dismiss(who: Watcher, itemId: string) {
     db.delete(watchPositions)
-      .where(and(eq(watchPositions.userId, userId), eq(watchPositions.itemId, itemId)))
+      .where(and(eq(watchPositions.profileId, who.profileId), eq(watchPositions.itemId, itemId)))
       .run()
   }
 
@@ -113,7 +128,7 @@ export function createWatch({ db, clock }: { db: Db; clock: Clock }) {
    * starts over. Returns whether this report crossed it.
    */
   function position(
-    userId: string,
+    who: Watcher,
     itemId: string,
     positionSeconds: number,
     durationSeconds: number | null,
@@ -124,45 +139,46 @@ export function createWatch({ db, clock }: { db: Db; clock: Clock }) {
       const started = db
         .select({ at: watchPositions.positionSeconds })
         .from(watchPositions)
-        .where(and(eq(watchPositions.userId, userId), eq(watchPositions.itemId, itemId)))
+        .where(and(eq(watchPositions.profileId, who.profileId), eq(watchPositions.itemId, itemId)))
         .get()
       // the credits after the mark keep reporting; only the first report past it counts
       if (!started) return { played: false }
-      played(userId, itemId)
+      played(who, itemId)
       return { played: true }
     }
     const now = clock.now()
     db.insert(watchPositions)
       .values({
-        userId,
+        userId: who.userId,
+        profileId: who.profileId,
         itemId,
         positionSeconds: seconds,
         durationSeconds: duration,
         updatedAt: now,
       })
       .onConflictDoUpdate({
-        target: [watchPositions.userId, watchPositions.itemId],
+        target: [watchPositions.profileId, watchPositions.itemId],
         set: { positionSeconds: seconds, durationSeconds: duration, updatedAt: now },
       })
       .run()
     return { played: false }
   }
 
-  function history(userId: string, itemId: string) {
+  function history(who: Watcher, itemId: string) {
     return (
       db
         .select()
         .from(watchHistory)
-        .where(and(eq(watchHistory.userId, userId), eq(watchHistory.itemId, itemId)))
+        .where(and(eq(watchHistory.profileId, who.profileId), eq(watchHistory.itemId, itemId)))
         .get() ?? null
     )
   }
 
-  function prefs(userId: string, itemId: string): PlaybackPrefs {
+  function prefs(who: Watcher, itemId: string): PlaybackPrefs {
     const row = db
       .select()
       .from(playbackPrefs)
-      .where(and(eq(playbackPrefs.userId, userId), eq(playbackPrefs.itemId, itemId)))
+      .where(and(eq(playbackPrefs.profileId, who.profileId), eq(playbackPrefs.itemId, itemId)))
       .get()
     return row
       ? {
@@ -175,22 +191,22 @@ export function createWatch({ db, clock }: { db: Db; clock: Clock }) {
   }
 
   /** Whether the person has picked anything for the item, so their language defaults stand back. */
-  function hasPrefs(userId: string, itemId: string): boolean {
+  function hasPrefs(who: Watcher, itemId: string): boolean {
     return !!db
       .select({ at: playbackPrefs.updatedAt })
       .from(playbackPrefs)
-      .where(and(eq(playbackPrefs.userId, userId), eq(playbackPrefs.itemId, itemId)))
+      .where(and(eq(playbackPrefs.profileId, who.profileId), eq(playbackPrefs.itemId, itemId)))
       .get()
   }
 
   /** Saves the picks that are given; the rest stay as they were. */
-  function setPrefs(userId: string, itemId: string, patch: Partial<PlaybackPrefs>): PlaybackPrefs {
-    const next = { ...prefs(userId, itemId), ...patch }
+  function setPrefs(who: Watcher, itemId: string, patch: Partial<PlaybackPrefs>): PlaybackPrefs {
+    const next = { ...prefs(who, itemId), ...patch }
     const now = clock.now()
     db.insert(playbackPrefs)
-      .values({ userId, itemId, ...next, updatedAt: now })
+      .values({ userId: who.userId, profileId: who.profileId, itemId, ...next, updatedAt: now })
       .onConflictDoUpdate({
-        target: [playbackPrefs.userId, playbackPrefs.itemId],
+        target: [playbackPrefs.profileId, playbackPrefs.itemId],
         set: { ...next, updatedAt: now },
       })
       .run()

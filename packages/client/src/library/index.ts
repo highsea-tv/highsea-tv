@@ -4,6 +4,7 @@
 // and a person's page say (client-detail.md), and Continue watching's menu (client-home.md), in
 // i18n catalogs (ADR 0021).
 import type { ClientItem } from '@highsea-tv/api-contract'
+import { type Letter, letterOfSorted } from '@highsea-tv/core/letters'
 import { createT, defineMessages } from '@highsea-tv/i18n'
 import { languageName } from '@highsea-tv/i18n/languages'
 import { createFormat } from '../format/index.ts'
@@ -45,15 +46,11 @@ export function arrange<T extends Arrangeable>(
 export const genresOf = (items: Pick<ClientItem, 'genres'>[]) =>
   [...new Set(items.flatMap((m) => m.genres))].sort((a, b) => collator.compare(a, b))
 
-/** The A–Z index beside a library sorted by title. Titles that don't start with a letter file under #. */
-export const LETTERS = ['#', ...'ABCDEFGHIJKLMNOPQRSTUVWXYZ'] as const
-export type Letter = (typeof LETTERS)[number]
+/** The A–Z index beside a library sorted by title, as the admin's (@highsea-tv/core/letters). */
+export { LETTERS, type Letter } from '@highsea-tv/core/letters'
 
 /** The letter a title files under, by its sort title ("The Matrix" under M). */
-export const letterOf = (title: string): Letter => {
-  const c = sortTitle(title).charAt(0).toUpperCase()
-  return /[A-Z]/.test(c) ? (c as Letter) : '#'
-}
+export const letterOf = (title: string): Letter => letterOfSorted(sortTitle(title))
 
 // ---------------------------------------------------------------------------------------------
 // Continue watching's menu (client-home.md › Continue watching), the same on every app: ⋯ on the

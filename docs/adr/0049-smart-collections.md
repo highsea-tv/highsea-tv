@@ -71,3 +71,7 @@ Playback brings watch state (ADR 0054), so the two fields that waited for it wor
 - A collection named in another's rule is answered for the same reader.
 
 The apps refetch a collection when they hear `watch.updated`, which 4.2's web client does.
+
+## 2026-11-18: watch rules per profile (Phase 5's A2b)
+
+Watched and Last played read the watch state of the profile watching on the asking device (ADR 0068), not the account's: `collection-query.ts` filters `watch_history` by `profile_id`. Who a collection is for (its audience) is still the account's. The admin's counts and previews still answer for no one.
