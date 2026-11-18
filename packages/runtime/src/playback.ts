@@ -102,6 +102,8 @@ const TYPES: Record<string, string> = {
 
 export type Viewer = {
   userId: string
+  /** The profile watching now on the device (ADR 0068). */
+  profileId: string
   deviceId: string | null
   libraries: 'all' | string[]
 }
@@ -370,16 +372,16 @@ export function createPlayback(deps: {
   ): ApiSession {
     if (!seesMovies(viewer.libraries)) throw notHere()
     const asked = clock.now()
-    const src = movies.playback.source(tmdbId, viewer.userId, request.versionId)
+    const src = movies.playback.source(tmdbId, viewer, request.versionId)
     const info = src.file.info
     if (!info)
       throw new AppError('conflict', 'That file hasn’t been read yet. Try again in a minute.', {
         reason: 'no-probe',
       })
-    const prefs = movies.playback.prefs(viewer.userId, tmdbId)
+    const prefs = movies.playback.prefs(viewer, tmdbId)
     const mine = deps.preferences?.(viewer.userId, viewer.deviceId) ?? null
     // the person's languages stand back once they've picked anything for the title
-    const own = movies.playback.hasPrefs(viewer.userId, tmdbId)
+    const own = movies.playback.hasPrefs(viewer, tmdbId)
     // a pick is the version's only when it names this file's track
     const audioId = request.audioId !== undefined ? request.audioId : prefs.audioId
     let audio = audioId ? trackIndex(src.file.id, audioId) : null
@@ -424,10 +426,11 @@ export function createPlayback(deps: {
       throw new AppError('conflict', 'That file’s length isn’t known, so it can’t be streamed.', {
         reason: 'no-duration',
       })
-    const resume = movies.client.byIds([tmdbId], viewer.userId)[0]?.position ?? 0
+    const resume = movies.client.byIds([tmdbId], viewer.profileId)[0]?.position ?? 0
     const start = request.start ?? resume
     const session = sessions.start({
       userId: viewer.userId,
+      profileId: viewer.profileId,
       deviceId: viewer.deviceId,
       itemId: src.item.id,
       tmdbId,
@@ -506,7 +509,7 @@ export function createPlayback(deps: {
     const was = s.paused
     const { save } = sessions.heard(s, report)
     const watched = save
-      ? movies.playback.position(userId, s.tmdbId, report.position, s.duration).watched
+      ? movies.playback.position(s, s.tmdbId, report.position, s.duration).watched
       : false
     if (watched) s.finished = true
     deps.hooks?.heard(s.paused, was)
@@ -518,7 +521,7 @@ export function createPlayback(deps: {
     const s = sessions.get(id, userId)
     if (!s) throw ended(userId, id)
     if (s.heardAt > s.startedAt && s.savedAt < s.heardAt)
-      movies.playback.position(userId, s.tmdbId, s.position, s.duration)
+      movies.playback.position(s, s.tmdbId, s.position, s.duration)
     sessions.end(id)
   }
 
@@ -542,7 +545,7 @@ export function createPlayback(deps: {
     if (!s) throw new AppError('not-found', 'That stream has already ended.')
     notices.set(id, { userId: s.userId, by: by.name, message: message || null, at: clock.now() })
     if (s.heardAt > s.startedAt && s.savedAt < s.heardAt)
-      movies.playback.position(s.userId, s.tmdbId, s.position, s.duration)
+      movies.playback.position(s, s.tmdbId, s.position, s.duration)
     sessions.end(id, 'staff')
     events.emit({ topic: SESSIONS_TOPICS.stopped, ids: [id], to: [s.userId] })
     log.info('play session stopped from Now playing', { session: id })
@@ -737,7 +740,7 @@ export function createPlayback(deps: {
     versionId?: string,
   ): { versionId: string; manifest: TrickplayManifest | null; fileId: string } {
     if (!seesMovies(viewer.libraries)) throw notHere()
-    const src = movies.playback.source(tmdbId, viewer.userId, versionId)
+    const src = movies.playback.source(tmdbId, viewer, versionId)
     return {
       versionId: src.versionId,
       fileId: src.file.id,

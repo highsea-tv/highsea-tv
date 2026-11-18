@@ -253,6 +253,8 @@ export function createNotify(deps: NotifyDeps) {
     sessionId: string
     tmdbId: number
     person: string
+    /** The profile watching, by name (ADR 0068). */
+    profile: string | null
     device: string
     method: 'direct-play' | 'direct-stream' | 'transcode'
     sent: string
@@ -260,11 +262,14 @@ export function createNotify(deps: NotifyDeps) {
   }) {
     const found = byTmdb(p.tmdbId)
     if (!found) return
+    // the account, and the profile beside it when it isn't named as the account is, as Now playing
+    // shows them
+    const person = p.profile && p.profile !== p.person ? `${p.person} · ${p.profile}` : p.person
     notifications.notify(
       'playback-started',
       {
         movie: found.ref,
-        person: p.person,
+        person,
         device: p.device,
         method: p.method,
         sent: p.sent,

@@ -34,6 +34,18 @@ export function setup() {
         updatedAt: now,
       })
       .run()
+    // the account's own profile, with the account's id (ADR 0068)
+    db.insert(schema.profiles)
+      .values({
+        id,
+        userId: id,
+        name: id,
+        tone: 'accent',
+        main: true,
+        createdAt: now,
+        updatedAt: now,
+      })
+      .run()
     return { id, role }
   }
   const device = (id: string, userId: string, client: ClientType) => {

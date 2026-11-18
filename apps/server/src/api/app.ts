@@ -24,6 +24,7 @@ import { registerMovies } from './movies.ts'
 import { registerOperations } from './operations.ts'
 import { registerPersonalization } from './personalization.ts'
 import { registerPlayback } from './playback.ts'
+import { registerProfiles } from './profiles.ts'
 import { registerQuality } from './quality.ts'
 import { registerSessions } from './sessions.ts'
 import { registerSubtitles } from './subtitles.ts'
@@ -95,6 +96,7 @@ export function createApi(runtime: Runtime) {
   registerOperations(app)
   registerAccounts(app)
   registerPersonalization(app)
+  registerProfiles(app)
   // Discover's static path and the movie pages' metadata come before `/movies/{id}`
   registerMetadata(app)
   registerMovies(app)

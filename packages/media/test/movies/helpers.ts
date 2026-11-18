@@ -120,6 +120,18 @@ export async function setup({
         updatedAt: now,
       })
       .run()
+    // the account's own profile, with the account's id, as accounts are made (ADR 0068)
+    db.insert(schema.profiles)
+      .values({
+        id,
+        userId: id,
+        name: id,
+        tone: 'accent',
+        main: true,
+        createdAt: now,
+        updatedAt: now,
+      })
+      .run()
     return id
   }
 

@@ -52,6 +52,8 @@ export type UserView = {
   libraries: 'all' | string[]
   twoFactor: boolean
   passkeys: number
+  /** Profiles on the account, its own included (ADR 0068). */
+  profiles: number
   hasPassword: boolean
   email: string | null
   invited: boolean
@@ -120,6 +122,11 @@ export function createContext(deps: AuthDeps): Ctx {
       .from(schema.passkeys)
       .where(inArray(schema.passkeys.userId, userIds))
       .all()
+    const profiles = db
+      .select({ userId: schema.profiles.userId })
+      .from(schema.profiles)
+      .where(inArray(schema.profiles.userId, userIds))
+      .all()
     return rows.map((u) => {
       const own = libs.filter((l) => l.userId === u.id).map((l) => l.library)
       return {
@@ -131,6 +138,7 @@ export function createContext(deps: AuthDeps): Ctx {
         libraries: own.includes(ALL_LIBRARIES) ? 'all' : own.sort(),
         twoFactor: totps.some((t) => t.userId === u.id && t.enabledAt !== null),
         passkeys: keys.filter((k) => k.userId === u.id).length,
+        profiles: profiles.filter((p) => p.userId === u.id).length,
         hasPassword: u.passwordHash !== null,
         email: u.email,
         invited: u.invited,

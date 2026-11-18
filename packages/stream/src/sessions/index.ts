@@ -19,6 +19,8 @@ export const SAVE_EVERY_MS = 5_000
 
 export type SessionInput = {
   userId: string
+  /** The profile watching (ADR 0068): its place is saved, whatever the device chooses meanwhile. */
+  profileId: string
   deviceId: string | null
   /** The library item, and its TMDB id for the API and events. */
   itemId: string

@@ -63,10 +63,10 @@ export function createClient(ctx: Ctx, { library }: { library: Library }) {
     return out
   }
 
-  function items(rows: ItemRow[], userId: string): ClientItem[] {
+  function items(rows: ItemRow[], profileId: string): ClientItem[] {
     const ids = rows.map((r) => r.id)
-    const watch = watchOf(db, userId, ids)
-    const played = playedOf(db, userId, ids)
+    const watch = watchOf(db, profileId, ids)
+    const played = playedOf(db, profileId, ids)
     const playable = withFile(ids)
     return rows.map((r) =>
       toClientItem(r, library.internal.cached(r.tmdbId), watch.get(r.id) ?? null, {
@@ -77,7 +77,7 @@ export function createClient(ctx: Ctx, { library }: { library: Library }) {
   }
 
   /** The library a page at a time, with this person's watch state. Movies are the only type yet. */
-  function list(query: ClientListQuery, userId: string): ClientItemPage {
+  function list(query: ClientListQuery, profileId: string): ClientItemPage {
     const playable =
       query.playable === undefined
         ? undefined
@@ -90,14 +90,14 @@ export function createClient(ctx: Ctx, { library }: { library: Library }) {
       cursor: query.cursor,
       limit: query.limit,
     })
-    return { items: items(rows, userId), next, total: library.internal.countOf(filters) }
+    return { items: items(rows, profileId), next, total: library.internal.countOf(filters) }
   }
 
   /**
    * Titles by TMDB id, in the order given, with this person's watch state; ids not in the library
    * are left out. Curation's sections and the home's rows read them (checkpoint 8c).
    */
-  function byIds(tmdbIds: number[], userId: string): ClientItem[] {
+  function byIds(tmdbIds: number[], profileId: string): ClientItem[] {
     if (!tmdbIds.length) return []
     const rows = new Map<number, ItemRow>()
     for (let i = 0; i < tmdbIds.length; i += 500)
@@ -111,12 +111,12 @@ export function createClient(ctx: Ctx, { library }: { library: Library }) {
         rows.set(r.tmdbId, r)
     return items(
       tmdbIds.flatMap((id) => rows.get(id) ?? []),
-      userId,
+      profileId,
     )
   }
 
   /** A title's page and the player. 404 when it isn't in the library. */
-  async function item(type: 'movie', tmdbId: number, userId: string): Promise<ClientDetail> {
+  async function item(type: 'movie', tmdbId: number, profileId: string): Promise<ClientDetail> {
     if (type !== 'movie') throw notInLibrary()
     const row = library.internal.rowOf(tmdbId)
     if (!row) throw notInLibrary()
@@ -129,7 +129,7 @@ export function createClient(ctx: Ctx, { library }: { library: Library }) {
       const rows = recommended
         .filter((id) => here.has(id))
         .flatMap((id) => library.internal.rowOf(id) ?? [])
-      related = items(rows, userId)
+      related = items(rows, profileId)
     } catch (e) {
       log.warn('couldn’t read recommendations', { tmdbId, error: (e as Error).message })
     }
@@ -143,7 +143,7 @@ export function createClient(ctx: Ctx, { library }: { library: Library }) {
       ).map((f) => [f.id, f]),
     )
     return {
-      item: items([row], userId)[0] as ClientItem,
+      item: items([row], profileId)[0] as ClientItem,
       originalTitle: meta?.originalTitle ?? row.title,
       tagline: meta?.tagline ?? null,
       certification: meta?.certification ?? null,
@@ -181,7 +181,7 @@ export function createClient(ctx: Ctx, { library }: { library: Library }) {
    * (`json_each`, https://sqlite.org/json1.html#jeach), which is fine for thousands of titles; a
    * names index is a follow-up for libraries far larger.
    */
-  function searchMovies(query: string, userId: string): ClientItem[] {
+  function searchMovies(query: string, profileId: string): ClientItem[] {
     const like = `%${escapeLike(query)}%`
     const rows = db
       .select()
@@ -203,7 +203,7 @@ export function createClient(ctx: Ctx, { library }: { library: Library }) {
       .all()
     return items(
       rankByMatch(rows, (r) => matchScore(r.title, query)),
-      userId,
+      profileId,
     )
   }
 
@@ -308,12 +308,12 @@ export function createClient(ctx: Ctx, { library }: { library: Library }) {
    */
   async function search(
     query: string,
-    { userId, mayRequest }: { userId: string; mayRequest: boolean },
+    { profileId, mayRequest }: { profileId: string; mayRequest: boolean },
   ): Promise<SearchResults> {
     const q = query.trim()
     if (!q) return { sections: [] }
     const sections: SearchSection[] = rankSections(q, {
-      movies: searchMovies(q, userId),
+      movies: searchMovies(q, profileId),
       collections: searchCollections(q),
       people: searchPeople(q),
     })

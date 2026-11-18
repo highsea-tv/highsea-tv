@@ -323,7 +323,9 @@ function People() {
                             color="text-3"
                             numberOfLines={1}
                           >
-                            @{u.username}
+                            {u.profiles > 1
+                              ? `@${u.username} · ${t('people.profiles', { count: u.profiles })}`
+                              : `@${u.username}`}
                           </Text>
                         </View>
                         {u.invited && <Badge tone="info">{t('people.invitedBadge')}</Badge>}

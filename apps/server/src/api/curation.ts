@@ -99,9 +99,13 @@ export function registerCuration(app: OpenAPIHono<Env>) {
 
   // ----------------------------------------------------- the apps' own reads
 
-  app.openapi(routes.home.sections, (c) =>
-    c.json(curation(c).home(me(c).user.id, c.req.valid('query').client ?? 'web'), 200),
-  )
+  app.openapi(routes.home.sections, (c) => {
+    const p = me(c)
+    return c.json(
+      curation(c).home(p.user.id, c.req.valid('query').client ?? 'web', p.profileId),
+      200,
+    )
+  })
 
   app.openapi(routes.announcements.active, (c) =>
     c.json(

@@ -47,6 +47,7 @@ const person = (over: Record<string, unknown>) => ({
   libraries: 'all',
   twoFactor: false,
   passkeys: 0,
+  profiles: 1,
   hasPassword: true,
   email: null,
   lastSeen: null,
@@ -70,7 +71,10 @@ async function api(url: string, init: RequestInit = {}): Promise<Response> {
     case 'GET /api/v1/auth/session':
       return json({ user: owner, deviceId: 'dev_1', expiresAt: null, method: 'password' })
     case 'GET /api/v1/users':
-      return json([owner])
+      return json([
+        owner,
+        person({ id: 'usr_sam', username: 'sam', displayName: 'Sam', role: 'user', profiles: 3 }),
+      ])
     case 'GET /api/v1/devices':
     case 'GET /api/v1/api-keys':
       return json([])
@@ -102,7 +106,7 @@ const settle = () =>
     for (let i = 0; i < 6; i++) await new Promise((r) => setTimeout(r, 0))
   })
 
-async function invite(email: string) {
+async function open() {
   const client = createClient({ fetch: api as never })
   await act(async () => {
     render(
@@ -114,8 +118,12 @@ async function invite(email: string) {
     )
   })
   await settle()
+  return within(document.body)
+}
+
+async function invite(email: string) {
+  const page = await open()
   const user = userEvent.setup()
-  const page = within(document.body)
   await user.click(page.getByRole('button', { name: 'Invite someone' }))
   shown()
   const dialog = within(page.getByRole('dialog'))
@@ -138,5 +146,15 @@ describe('A13 invite links', () => {
     const dialog = await invite('mara@example.com')
     expect(dialog.getByText('Mara is invited')).toBeTruthy()
     expect(dialog.queryByText(/emailed it/)).toBeNull()
+  })
+})
+
+describe('A13 people', () => {
+  // ADR 0068: the count of an account's profiles, only when it has more than its own
+  test('each person’s profiles beside their username, when there’s more than one', async () => {
+    const page = await open()
+    expect(page.getByText('@sam · 3 profiles')).toBeTruthy()
+    expect(page.getByText('@ines')).toBeTruthy()
+    expect(page.queryByText(/@ines · /)).toBeNull()
   })
 })

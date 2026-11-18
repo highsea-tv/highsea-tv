@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // A movie's side of playback (checkpoint 4.1a): the file a version plays from, and each person's
-// watch state by TMDB id (ADR 0054): positions, played and unplayed, the player's picks, and Next
-// up. Every change is heard as `watch.updated` by the person it belongs to, on each of their
-// devices, so Resume and Continue watching move at once. Deciding how to play and serving the
+// watch state by TMDB id (ADR 0054), per profile (ADR 0068): positions, played and unplayed, the
+// player's picks, and Next up. Every change is heard as `watch.updated` by the account it belongs
+// to, on each of its devices, so Resume and Continue watching move at once. Deciding how to play and serving the
 // file are the runtime's and `@highsea-tv/stream`'s.
 import type { ClientItem } from '@highsea-tv/api-contract'
 import { AppError } from '@highsea-tv/core'
@@ -11,7 +11,7 @@ import { eq, sql } from 'drizzle-orm'
 import { probeOf } from '../shared/file-facts.ts'
 import type { ItemRow } from '../shared/map.ts'
 import type { MediaInfo } from '../shared/probe.ts'
-import { createWatch, type PlaybackPrefs, playedOf } from '../shared/watch.ts'
+import { createWatch, type PlaybackPrefs, playedOf, type Watcher } from '../shared/watch.ts'
 import type { Client } from './client.ts'
 import { type Ctx, notInLibrary } from './context.ts'
 import type { Library } from './library.ts'
@@ -46,18 +46,18 @@ export function createPlayback(
     return row
   }
 
-  const announce = (userId: string, tmdbId: number) =>
-    events.emit({ topic: WATCH_TOPIC, ids: [`movie:${tmdbId}`], to: [userId] })
+  const announce = (who: Watcher, tmdbId: number) =>
+    events.emit({ topic: WATCH_TOPIC, ids: [`movie:${tmdbId}`], to: [who.userId] })
 
   /**
    * The file a version plays from: the version asked for, else the person's pick for the title,
    * else the first version with a file. 404 for a version that isn't the title's; 409 when it has
    * no file.
    */
-  function source(tmdbId: number, userId: string, versionId?: string | null): PlaySource {
+  function source(tmdbId: number, who: Watcher, versionId?: string | null): PlaySource {
     const item = rowOf(tmdbId)
     const versions = library.internal.versionsOf([item.id]).get(item.id) ?? []
-    const wanted = versionId ?? watch.prefs(userId, item.id).versionId
+    const wanted = versionId ?? watch.prefs(who, item.id).versionId
     const version =
       (wanted ? versions.find((v) => v.id === wanted) : undefined) ??
       (versionId ? undefined : (versions.find((v) => v.fileId) ?? versions[0]))
@@ -76,15 +76,15 @@ export function createPlayback(
 
   /** Where the person is; past 90% the title is watched. Duration falls back to the probe's. */
   function position(
-    userId: string,
+    who: Watcher,
     tmdbId: number,
     seconds: number,
     duration?: number | null,
   ): { watched: boolean } {
     const item = rowOf(tmdbId)
     const length = duration ?? lengthOf(item.id)
-    const { played } = watch.position(userId, item.id, seconds, length)
-    announce(userId, tmdbId)
+    const { played } = watch.position(who, item.id, seconds, length)
+    announce(who, tmdbId)
     return { watched: played }
   }
 
@@ -104,37 +104,36 @@ export function createPlayback(
     return null
   }
 
-  function played(userId: string, tmdbId: number) {
-    watch.played(userId, rowOf(tmdbId).id)
-    announce(userId, tmdbId)
+  function played(who: Watcher, tmdbId: number) {
+    watch.played(who, rowOf(tmdbId).id)
+    announce(who, tmdbId)
   }
 
-  function unplayed(userId: string, tmdbId: number) {
-    watch.unplayed(userId, rowOf(tmdbId).id)
-    announce(userId, tmdbId)
+  function unplayed(who: Watcher, tmdbId: number) {
+    watch.unplayed(who, rowOf(tmdbId).id)
+    announce(who, tmdbId)
   }
 
   /** Off the person's Continue watching; what they've watched stays (ADR 0054's 2026-11-01 section). */
-  function dismiss(userId: string, tmdbId: number) {
-    watch.dismiss(userId, rowOf(tmdbId).id)
-    announce(userId, tmdbId)
+  function dismiss(who: Watcher, tmdbId: number) {
+    watch.dismiss(who, rowOf(tmdbId).id)
+    announce(who, tmdbId)
   }
 
-  const hasPrefs = (userId: string, tmdbId: number) => watch.hasPrefs(userId, rowOf(tmdbId).id)
+  const hasPrefs = (who: Watcher, tmdbId: number) => watch.hasPrefs(who, rowOf(tmdbId).id)
 
-  const prefs = (userId: string, tmdbId: number): PlaybackPrefs =>
-    watch.prefs(userId, rowOf(tmdbId).id)
+  const prefs = (who: Watcher, tmdbId: number): PlaybackPrefs => watch.prefs(who, rowOf(tmdbId).id)
 
   /** Saves the picks sent. A version that isn't the title's is refused. */
-  function setPrefs(userId: string, tmdbId: number, patch: Partial<PlaybackPrefs>): PlaybackPrefs {
+  function setPrefs(who: Watcher, tmdbId: number, patch: Partial<PlaybackPrefs>): PlaybackPrefs {
     const item = rowOf(tmdbId)
     if (patch.versionId) {
       const versions = library.internal.versionsOf([item.id]).get(item.id) ?? []
       if (!versions.some((v) => v.id === patch.versionId))
         throw new AppError('invalid', 'That version isn’t this title’s.', { reason: 'version' })
     }
-    const saved = watch.setPrefs(userId, item.id, patch)
-    announce(userId, tmdbId)
+    const saved = watch.setPrefs(who, item.id, patch)
+    announce(who, tmdbId)
     return saved
   }
 
@@ -143,7 +142,7 @@ export function createPlayback(
    * with a file, the first the person hasn't watched; when they've watched them all, the next one.
    * Null when the title isn't in a collection or is its last film here.
    */
-  function next(userId: string, tmdbId: number): ClientItem | null {
+  function next(who: Watcher, tmdbId: number): ClientItem | null {
     const item = rowOf(tmdbId)
     const ids = db
       .all<{ id: string }>(sql`
@@ -158,10 +157,10 @@ export function createPlayback(
     if (at < 0) return null
     const after = ids.slice(at + 1)
     if (!after.length) return null
-    const seen = playedOf(db, userId, after)
+    const seen = playedOf(db, who.profileId, after)
     const pick = after.find((id) => !seen.has(id)) ?? (after[0] as string)
     const row = db.select().from(mediaItems).where(eq(mediaItems.id, pick)).get()
-    return row ? (client.items([row], userId)[0] ?? null) : null
+    return row ? (client.items([row], who.profileId)[0] ?? null) : null
   }
 
   return { source, position, played, unplayed, dismiss, prefs, hasPrefs, setPrefs, next }

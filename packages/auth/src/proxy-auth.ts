@@ -30,5 +30,13 @@ export function authenticateProxy(
   if (!row) return null
   const user = ctx.userViews([row.id])[0]
   if (!user || user.invited) return null
-  return { user, deviceId: null, via: 'proxy', scope: 'full', method: 'proxy', expiresAt: null }
+  return {
+    user,
+    deviceId: null,
+    profileId: user.id,
+    via: 'proxy',
+    scope: 'full',
+    method: 'proxy',
+    expiresAt: null,
+  }
 }

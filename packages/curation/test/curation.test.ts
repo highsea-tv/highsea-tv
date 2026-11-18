@@ -128,7 +128,7 @@ function setup() {
     jobs,
     logger: silentLogger,
     library: fake.library,
-    arrangement: (id) => arrangements.get(id) ?? { order: [], hidden: [] },
+    arrangement: ({ profileId }) => arrangements.get(profileId) ?? { order: [], hidden: [] },
   })
   curation.defineJobs()
   curation.schedule(clock.now())

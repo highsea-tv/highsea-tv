@@ -208,7 +208,7 @@ describe('0018_profiles', () => {
         `hash-${id}`,
       )
       raw.run(
-        "INSERT INTO home_layouts (user_id, \"order\", hidden, updated_at) VALUES (?, '[\"continue\"]', '[]', 0)",
+        'INSERT INTO home_layouts (user_id, "order", hidden, updated_at) VALUES (?, \'["continue"]\', \'[]\', 0)',
         id,
       )
     }
@@ -224,9 +224,7 @@ describe('0018_profiles', () => {
     raw.run("INSERT INTO watch_positions VALUES ('usr_ines', 'itm_a', 600, 6000, 10)")
     raw.run("INSERT INTO watch_positions VALUES ('usr_theo', 'itm_a', 60, 6000, 11)")
     raw.run("INSERT INTO watch_history VALUES ('usr_ines', 'itm_b', 1, 2, 12, 12)")
-    raw.run(
-      "INSERT INTO playback_prefs VALUES ('usr_ines', 'itm_a', NULL, 'a2', 's1', 250, 13)",
-    )
+    raw.run("INSERT INTO playback_prefs VALUES ('usr_ines', 'itm_a', NULL, 'a2', 's1', 250, 13)")
     raw.exec('PRAGMA foreign_keys = ON')
     return raw
   }
@@ -247,15 +245,31 @@ describe('0018_profiles', () => {
     expect(migrate(raw).applied).toContain('0018_profiles')
     expect(state(raw)).toEqual({
       profiles: [
-        { id: 'usr_ines', user_id: 'usr_ines', name: 'Ines', tone: 'accent', pin_hash: null, main: 1 },
-        { id: 'usr_theo', user_id: 'usr_theo', name: 'Theo', tone: 'accent', pin_hash: null, main: 1 },
+        {
+          id: 'usr_ines',
+          user_id: 'usr_ines',
+          name: 'Ines',
+          tone: 'accent',
+          pin_hash: null,
+          main: 1,
+        },
+        {
+          id: 'usr_theo',
+          user_id: 'usr_theo',
+          name: 'Theo',
+          tone: 'accent',
+          pin_hash: null,
+          main: 1,
+        },
       ],
       positions: [
         { user_id: 'usr_ines', profile_id: 'usr_ines', item_id: 'itm_a', position_seconds: 600 },
         { user_id: 'usr_theo', profile_id: 'usr_theo', item_id: 'itm_a', position_seconds: 60 },
       ],
       history: [{ user_id: 'usr_ines', profile_id: 'usr_ines', item_id: 'itm_b', play_count: 2 }],
-      prefs: [{ profile_id: 'usr_ines', item_id: 'itm_a', audio_id: 'a2', subtitle_offset_ms: 250 }],
+      prefs: [
+        { profile_id: 'usr_ines', item_id: 'itm_a', audio_id: 'a2', subtitle_offset_ms: 250 },
+      ],
       home: [
         { profile_id: 'usr_ines', user_id: 'usr_ines', order: '["continue"]' },
         { profile_id: 'usr_theo', user_id: 'usr_theo', order: '["continue"]' },
@@ -280,7 +294,10 @@ describe('0018_profiles', () => {
     const once = state(first)
     first.close()
     const again = openDatabase(file).raw
-    expect(migrate(again, { backupDir: join(dir, 'backups') })).toEqual({ applied: [], backup: null })
+    expect(migrate(again, { backupDir: join(dir, 'backups') })).toEqual({
+      applied: [],
+      backup: null,
+    })
     expect(state(again)).toEqual(once)
     again.close()
   })

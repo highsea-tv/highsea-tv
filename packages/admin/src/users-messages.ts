@@ -36,6 +36,7 @@ export const users = defineMessages({
   // people
   'people.what': 'the people on this server',
   'people.count': '{count, plural, one {# person} other {# people}}',
+  'people.profiles': '{count} profiles',
   'people.invited': '{count} invited',
   'people.person': 'Person',
   'people.role': 'Role',
