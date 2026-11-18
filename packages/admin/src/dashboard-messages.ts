@@ -152,6 +152,7 @@ export const widgets = defineMessages({
   'page.health': 'Health',
   'page.activity': 'Activity',
   'page.now-playing': 'Now playing',
+  'page.media': 'Media management',
   'playing.none': 'Nobody is watching',
   'playing.paused': ' · paused',
   'playing.so-far': '{title}, watched so far',

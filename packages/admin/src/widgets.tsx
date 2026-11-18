@@ -488,6 +488,10 @@ function StorageOf({ folders, ...props }: WidgetProps & { folders: RootFolder[] 
   })
   // three rows and up: the legend becomes a list with a figure per line
   const tall = (props.frame.rows ?? 2) >= 3
+  // Below, the legend's lines that don't fit are hidden, never cut, and counted with a link to the
+  // root folders (HT-55): a folder's path takes a line of its own, so at two rows a third folder
+  // went past the body's edge and made it scroll
+  const clip = useClip(LIST_ROWS)
   return (
     <Widget
       {...props}
@@ -541,12 +545,14 @@ function StorageOf({ folders, ...props }: WidgetProps & { folders: RootFolder[] 
               />
             </View>
             <View
+              ref={clip.ref}
               role="list"
-              style={
+              style={[
                 tall
                   ? { gap: s['1.5'] }
-                  : { flexDirection: 'row', flexWrap: 'wrap', columnGap: s['3'], rowGap: s['1'] }
-              }
+                  : { flexDirection: 'row', flexWrap: 'wrap', columnGap: s['3'], rowGap: s['1'] },
+                fill,
+              ]}
             >
               <View role="listitem" style={item}>
                 <View
@@ -583,6 +589,7 @@ function StorageOf({ folders, ...props }: WidgetProps & { folders: RootFolder[] 
                 </View>
               ))}
             </View>
+            <More count={clip.hidden} page={t('page.media')} path="/settings/media" />
           </>
         )
       }}
