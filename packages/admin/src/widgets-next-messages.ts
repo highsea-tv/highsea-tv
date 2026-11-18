@@ -35,6 +35,14 @@ export const widgetsNext = defineMessages({
   'pattern.busy': 'Everything at once',
   'pattern.idle': 'Nothing running',
 
+  'units.temperature': 'Temperature',
+  'units.celsius': '°C',
+  'units.fahrenheit': '°F',
+  'units.wind': 'Wind',
+  'units.kmh': 'km/h',
+  'units.mph': 'mph',
+  'units.ms': 'm/s',
+
   error: 'Couldn’t load this',
   retry: 'Try again',
   more: '{count} more in {page}',

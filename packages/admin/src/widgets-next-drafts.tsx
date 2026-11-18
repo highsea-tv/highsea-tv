@@ -17,6 +17,7 @@ import {
   Badge,
   Button,
   EmptyState,
+  Icon,
   Poster,
   Press,
   SkeletonText,
@@ -788,18 +789,39 @@ export type Weather = {
   days: { at: number; high: number; low: number; condition: WeatherCondition; rain: number }[]
 }
 
+export const TEMPERATURE_UNITS = ['celsius', 'fahrenheit'] as const
+export const WIND_UNITS = ['kmh', 'mph', 'ms'] as const
+export type WeatherUnits = {
+  temperature: (typeof TEMPERATURE_UNITS)[number]
+  wind: (typeof WIND_UNITS)[number]
+}
+
+/** Each wind unit as Intl names it, and how many of it a kilometre an hour is. */
+const WIND = {
+  kmh: { unit: 'kilometer-per-hour', per: 1 },
+  mph: { unit: 'mile-per-hour', per: 0.621371 },
+  ms: { unit: 'meter-per-second', per: 1 / 3.6 },
+} as const
+
 /**
- * The weather where the server is: now, then the next days as lines. Words name the conditions:
- * the icon set has no weather icons, and drawing some is the owner's call (the PR asks).
+ * The weather where the server is: now, then the next days as lines. An icon and words name each
+ * condition, never the icon alone. The figures arrive metric and are written in the units the
+ * server's settings will name (the owner's answer of 2026-11-17); the page's controls stand in.
  */
-export function WeatherDraft({ weather, ...props }: DraftProps & { weather: Weather }) {
+export function WeatherDraft({
+  weather,
+  units = { temperature: 'celsius', wind: 'kmh' },
+  ...props
+}: DraftProps & { weather: Weather; units?: WeatherUnits }) {
   const t = useT(messages)
   const locale = useLocale()
   const theme = useTheme()
   const { seen } = useRelative()
   const clip = useClip(LIST_ROWS)
   const { onLayout, width } = useSize()
-  const degrees = (n: number) => `${Math.round(n)}°`
+  const degrees = (n: number) =>
+    `${Math.round(units.temperature === 'fahrenheit' ? (n * 9) / 5 + 32 : n)}°`
+  const wind = WIND[units.wind]
   const day = (at: number, i: number) =>
     i === 0 ? t('weather.today') : new Intl.DateTimeFormat(locale, { weekday: 'short' }).format(at)
   const now = weather.current
@@ -813,9 +835,9 @@ export function WeatherDraft({ weather, ...props }: DraftProps & { weather: Weat
     t('weather.wind', {
       speed: new Intl.NumberFormat(locale, {
         style: 'unit',
-        unit: 'kilometer-per-hour',
+        unit: wind.unit,
         maximumFractionDigits: 0,
-      }).format(now.wind),
+      }).format(now.wind * wind.per),
     }),
     t('weather.humidity', { percent: `${now.humidity}%` }),
   ]
@@ -836,11 +858,18 @@ export function WeatherDraft({ weather, ...props }: DraftProps & { weather: Weat
         }}
       >
         <View style={{ flexShrink: 0, gap: s['1'], width: wide ? LEGEND : undefined }}>
-          <Stat
-            value={degrees(now.temperature)}
-            unit={t(`weather.condition.${now.condition}`)}
-            caption={details.join(' · ')}
-          />
+          <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: s['2.5'] }}>
+            <View style={{ paddingTop: s['1'] }}>
+              <Icon name={`weather-${now.condition}`} size={tokens.icon.size.lg} color="text-2" />
+            </View>
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Stat
+                value={degrees(now.temperature)}
+                unit={t(`weather.condition.${now.condition}`)}
+                caption={details.join(' · ')}
+              />
+            </View>
+          </View>
           {wide ? (
             <>
               <Text variant="caption" color="text-3">
@@ -878,6 +907,7 @@ export function WeatherDraft({ weather, ...props }: DraftProps & { weather: Weat
               >
                 {day(d.at, wide ? i : i + 1)}
               </Ui>
+              <Icon name={`weather-${d.condition}`} size={tokens.icon.size.sm} color="text-2" />
               <Ui numberOfLines={1} style={{ flex: 1, minWidth: 0 }}>
                 {t(`weather.condition.${d.condition}`)}
               </Ui>

@@ -6,7 +6,7 @@
 // drafts (widgets-next-drafts.tsx): Recently added three ways, the network's whole activity, the
 // date and time, and the weather. "Every widget at one size" draws the registry's widgets at any
 // size the grid allows, so one that cuts its content off shows. The address can open it at a
-// state (`?tab=sizes&span=2&rows=3&editing=1&variant=list&pattern=idle`); the controls then hold it.
+// state (`?tab=sizes&span=2&rows=3&editing=1&variant=list&pattern=idle&temperature=fahrenheit&wind=mph`); the controls then hold it.
 
 import { useT } from '@highsea-tv/i18n/react'
 import { MAX_ROWS, type WidgetSpan, widgetDefinitions } from '@highsea-tv/personalization/widgets'
@@ -28,9 +28,12 @@ import {
   RECENT_VARIANTS,
   RecentDraft,
   type RecentVariant,
+  TEMPERATURE_UNITS,
   WEATHER_SIZE,
   type Weather,
   WeatherDraft,
+  type WeatherUnits,
+  WIND_UNITS,
 } from './widgets-next-drafts.tsx'
 import { widgetsNext as messages } from './widgets-next-messages.ts'
 
@@ -82,11 +85,13 @@ function Drafts({
   size,
   variant,
   pattern,
+  units,
   data,
 }: {
   size: Size
   variant: RecentVariant
   pattern: ActivityPattern
+  units: WeatherUnits
   data: DraftData
 }) {
   const now = useNow(2_000)
@@ -99,7 +104,7 @@ function Drafts({
         activity={data.networkActivity(now, NETWORK_MINUTES, pattern)}
       />
       <ClockDraft frame={frameOf(size, CLOCK_SIZE)} />
-      <WeatherDraft frame={frameOf(size, WEATHER_SIZE)} weather={data.weather(now)} />
+      <WeatherDraft frame={frameOf(size, WEATHER_SIZE)} weather={data.weather(now)} units={units} />
     </WidgetGrid>
   )
 }
@@ -124,8 +129,15 @@ export function WidgetsNext({ data }: { data: DraftData }) {
     clamp(Number(query.get('rows') ?? 3), [MIN_ROWS, MAX_ROWS]),
   )
   const [editing, setEditing] = useState(() => query.get('editing') === '1')
-  const [variant, setVariant] = useState(() => pick(RECENT_VARIANTS, query.get('variant')))
+  const [variant, setVariant] = useState(() =>
+    // Featured first: the owner's pick of 2026-11-17
+    pick(RECENT_VARIANTS, query.get('variant') ?? 'featured'),
+  )
   const [pattern, setPattern] = useState(() => pick(ACTIVITY_PATTERNS, query.get('pattern')))
+  const [temperature, setTemperature] = useState(() =>
+    pick(TEMPERATURE_UNITS, query.get('temperature')),
+  )
+  const [wind, setWind] = useState(() => pick(WIND_UNITS, query.get('wind')))
   const size = { span, rows, editing }
   const row = { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: s['4'] } as const
   return (
@@ -189,11 +201,35 @@ export function WidgetsNext({ data }: { data: DraftData }) {
                   options={ACTIVITY_PATTERNS.map((v) => ({ value: v, label: t(`pattern.${v}`) }))}
                 />
               </Control>
+              <Control label={t('units.temperature')}>
+                <SegmentedControl
+                  aria-label={t('units.temperature')}
+                  size="sm"
+                  value={temperature}
+                  onValueChange={(v) => setTemperature(pick(TEMPERATURE_UNITS, v))}
+                  options={TEMPERATURE_UNITS.map((v) => ({ value: v, label: t(`units.${v}`) }))}
+                />
+              </Control>
+              <Control label={t('units.wind')}>
+                <SegmentedControl
+                  aria-label={t('units.wind')}
+                  size="sm"
+                  value={wind}
+                  onValueChange={(v) => setWind(pick(WIND_UNITS, v))}
+                  options={WIND_UNITS.map((v) => ({ value: v, label: t(`units.${v}`) }))}
+                />
+              </Control>
             </View>
             <Text variant="caption" color="text-2">
               {`${t(`variant.${variant}For`)} ${t('sizes.note')}`}
             </Text>
-            <Drafts size={size} variant={variant} pattern={pattern} data={data} />
+            <Drafts
+              size={size}
+              variant={variant}
+              pattern={pattern}
+              units={{ temperature, wind }}
+              data={data}
+            />
           </>
         ) : (
           <>
