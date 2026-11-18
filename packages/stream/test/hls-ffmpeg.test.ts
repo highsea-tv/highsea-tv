@@ -2,8 +2,8 @@
 // HLS and trickplay with real ffmpeg (checkpoint 4.1b), on a clip made here with lavfi's sources
 // (ADR 0040), skipped and said so without ffmpeg, as ADR 0044's tests are: segments made on
 // demand from a keyframe, on the film's own timeline whichever run made them, a run paused when
-// it's far enough ahead, a transcode's keyframes every 6 s, WebVTT from an embedded track, a
-// failure's log, and trickplay's sheets.
+// it's far enough ahead, a transcode's keyframes every 6 s, WebVTT from an embedded track and in
+// segments from the runs' own reads, a failure's log, and trickplay's sheets.
 import { afterAll, afterEach, beforeAll, describe, expect, test } from 'bun:test'
 import { execFileSync, spawn as nodeSpawn } from 'node:child_process'
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
@@ -114,7 +114,13 @@ describe.skipIf(!hasFfmpeg)('HLS with ffmpeg', () => {
     const srt = join(dir, 'clip.srt')
     writeFileSync(
       srt,
-      '1\n00:00:01,000 --> 00:00:03,000\nHello.\n\n2\n00:00:30,000 --> 00:00:32,000\nLater.\n',
+      [
+        '1\n00:00:01,000 --> 00:00:03,000\nHello.',
+        // across the segment boundary at 13 s, and showing at the keyframe at 19 s
+        '2\n00:00:12,500 --> 00:00:14,500\nAcross.',
+        '3\n00:00:18,500 --> 00:00:22,000\nAlready.',
+        '4\n00:00:30,000 --> 00:00:32,000\nLater.\n',
+      ].join('\n\n'),
     )
     // 24 fps with a keyframe every 2 s, and one forced at 5 s, which x264 counts on from
     run(ffmpeg, [
@@ -337,6 +343,50 @@ describe.skipIf(!hasFfmpeg)('HLS with ffmpeg', () => {
     expect(vtt).toContain('00:01.000 --> 00:03.000\nHello.')
     expect(vtt).toContain('00:30.000 --> 00:32.000\nLater.')
     await transcodes.end('subs')
+  })
+
+  test('the film’s own text track in segments, from the run’s read, a cue across a boundary in both', async () => {
+    const t = transcodes.open('subs-cut', source({ subtitles: [2] }))
+    const segments = await t.segments()
+    // played from the start, as a player asks: 11–13 s, then 13–19 s
+    for (let i = 0; i <= 6; i++) await t.segment(i)
+    expect(segments[5]).toMatchObject({ start: 11, duration: 2 })
+    expect(segments[6]).toMatchObject({ start: 13, duration: 6 })
+    const [first, fifth, sixth] = await Promise.all([
+      t.subtitleSegment(2, 0),
+      t.subtitleSegment(2, 5),
+      t.subtitleSegment(2, 6),
+    ])
+    expect(first).toBe(
+      'WEBVTT\nX-TIMESTAMP-MAP=LOCAL:00:00:00.000,MPEGTS:0\n\n00:01.000 --> 00:03.000\nHello.\n',
+    )
+    expect(fifth).toContain('\n00:12.500 --> 00:14.500\nAcross.\n')
+    expect(sixth).toContain('\n00:12.500 --> 00:14.500\nAcross.\n')
+    expect(sixth).toContain('\n00:18.500 --> 00:22.000\nAlready.\n')
+    expect(fifth).not.toContain('Hello.')
+    // one run read it all: nothing else read the film
+    expect(t.state()?.first).toBe(0)
+    await transcodes.end('subs-cut')
+  })
+
+  test('a resume’s subtitles: the cue showing where it starts is read from just before it', async () => {
+    const t = transcodes.open('subs-resume', source({ start: 20, subtitles: [2] }))
+    const segments = await t.segments()
+    const at = segments.findIndex((s) => s.start <= 20 && 20 < s.start + s.duration)
+    expect(segments[at]).toMatchObject({ start: 19, first: 10 })
+    await t.segment(at)
+    const text = await t.subtitleSegment(2, at)
+    expect(text).toContain('\n00:18.500 --> 00:22.000\nAlready.\n')
+    expect(text).not.toContain('Across.')
+    // the run itself never sees it: Matroska's seek drops what began before the keyframe
+    // (libavformat/matroskadec.c), which is why the few seconds before are read on their own
+    const own = readFileSync(join(t.dir, 'subs', 'run-1-2.vtt'), 'utf8')
+    expect(own).not.toContain('Already.')
+    expect(readFileSync(join(t.dir, 'subs', 'lead-1-2.vtt'), 'utf8')).toContain('Already.')
+    // a segment far past what's been read waits, and the session's end answers it
+    const far = t.subtitleSegment(2, segments.length - 1).catch((e: Error) => e)
+    await transcodes.end('subs-resume')
+    expect(await far).toBeInstanceOf(TranscodeError)
   })
 
   test('a run that fails keeps ffmpeg’s last lines for the log', async () => {

@@ -50,7 +50,29 @@ export type RunInput = {
    * processor (`toneMapOn`); left out, it's only labelled SDR, as 4.1 did.
    */
   toneMap?: 'gpu' | 'cpu' | null
+  /**
+   * The film's own text subtitles, each written as WebVTT by this run as it reads the film
+   * (HT-49): what the session's subtitle segments are cut from.
+   */
+  subtitles?: SubtitleOutput[]
 }
+
+/** A text subtitle of the film's own, by its stream index, and the WebVTT file it's written to. */
+export type SubtitleOutput = { index: number; output: string }
+
+/**
+ * Each subtitle as an output of its own, beside the stream's (https://ffmpeg.org/ffmpeg.html#Synopsis:
+ * "any number of output files"), so the one read of the film makes both: WebVTT, flushed after
+ * each cue (`flush_packets`, https://ffmpeg.org/ffmpeg-formats.html#Format-Options) so a cue is
+ * in the file as soon as it's read. An output of its own never holds the picture back: ffmpeg's
+ * outputs are muxed apart, while a subtitle in the HLS output would be interleaved with the
+ * picture, which waits up to `max_interleave_delta` (10 s) for a sparse stream's next packet.
+ */
+const subtitleOutputs = (subtitles: readonly SubtitleOutput[]) =>
+  subtitles.flatMap((t) => [
+    ...['-map', `0:${t.index}`, '-c:s', 'webvtt', '-flush_packets', '1'],
+    ...['-f', 'webvtt', t.output],
+  ])
 
 /**
  * A subtitle burned in (4.3): a picture track (PGS, VobSub, DVB) of the film's own, laid over the
@@ -322,6 +344,30 @@ export function runArgs(run: RunInput): string[] {
     ...['-start_number', String(run.startNumber)],
     ...['-hls_segment_filename', join(run.dir, '%d.m4s')],
     join(run.dir, RUN_PLAYLIST),
+    ...subtitleOutputs(run.subtitles ?? []),
+  ]
+}
+
+/** How far before a run's start the cues showing there are looked for (`leadInArgs`). */
+export const LEAD_IN_SECONDS = 10
+
+/**
+ * The subtitles of the stretch before a run's start, from `from` to the start (HT-49). A run that
+ * starts past the beginning never writes a cue that began before it, even one still showing:
+ * Matroska's demuxer seeks to the picture's keyframe and skips every block before it, whatever
+ * its track (libavformat/matroskadec.c, `matroska_read_seek` sets `skip_to_timecode`, which
+ * `matroska_parse_block` drops blocks against). So a short read of the `LEAD_IN_SECONDS` before
+ * it (`-ss` and `-t`, https://ffmpeg.org/ffmpeg.html#Main-options) finds them; MP4's demuxer
+ * seeks each track on its own and finds them anyway.
+ */
+export function leadInArgs(input: string, from: number, to: number, subtitles: SubtitleOutput[]) {
+  return [
+    ...['-hide_banner', '-nostdin', '-loglevel', 'error', '-y'],
+    ...(from > 0 ? ['-ss', from.toFixed(6)] : []),
+    ...['-t', Math.max(0, to - from).toFixed(6), '-copyts', '-start_at_zero', '-i', input],
+    ...subtitles.flatMap((t) => [
+      ...['-map', `0:${t.index}`, '-c:s', 'webvtt', '-f', 'webvtt', t.output],
+    ]),
   ]
 }
 

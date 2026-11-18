@@ -332,38 +332,90 @@ describe('the player with a pointer', () => {
 })
 
 describe('the web’s picture', () => {
-  test('the chosen subtitle is the browser’s own <track> of the session’s WebVTT', async () => {
+  test('the chosen subtitle’s cues are laid on a text track of the page’s own, for the browser to draw', async () => {
     const { usePicture, DRAWS_CUES } = jest.requireActual('../src/player/picture.web.tsx')
     expect(DRAWS_CUES).toBe(false)
-    const p = {
-      player: { attach: () => undefined, video: { current: null } },
-      subtitleUrl: '/api/v1/playback/sessions/s1/subtitles/en.vtt',
+    // jsdom has no text tracks: a VTTCue and a video that adds tracks, as browsers do
+    class FakeCue {
+      snapToLines = true
+      lineAlign = 'start'
+      line: number | 'auto' = 'auto'
+      constructor(
+        public startTime: number,
+        public endTime: number,
+        public text: string,
+      ) {}
+    }
+    const added: { label: string; language: string; mode: string; cues: FakeCue[] }[] = []
+    const safari = { mode: 'showing' }
+    const video = {
+      addEventListener: () => {},
+      textTracks: [safari] as { mode: string }[],
+      addTextTrack: (_kind: string, label: string, language: string) => {
+        const t = {
+          label,
+          language,
+          mode: 'disabled',
+          cues: [] as FakeCue[],
+          addCue: (c: FakeCue) => t.cues.push(c),
+          removeCue: (c: FakeCue) => t.cues.splice(t.cues.indexOf(c), 1),
+        }
+        added.push(t)
+        video.textTracks.push(t)
+        return t
+      },
+    }
+    ;(globalThis as { VTTCue?: unknown }).VTTCue = FakeCue
+    const across = { startTime: 5, endTime: 7, text: 'Across' }
+    const base = {
+      player: { attach: () => undefined, video: { current: video } },
       subtitle: { id: 'en', language: 'en', label: 'English' },
-      offsetMs: 0,
       detail: { data: null },
       seekBy: () => {},
       seekTo: () => {},
     }
+    let props = { ...base, cues: [across], offsetMs: 0 }
+    let raised = false
     let picture: unknown = null
     function Picture() {
-      picture = usePicture(p, { dim: false, raised: false }).picture
+      picture = usePicture(props, { dim: false, raised }).picture
       return null
     }
-    // the cue's colour is the theme's text, so it's drawn inside the app's ThemeProvider
     const { ThemeProvider } = jest.requireActual('@highsea-tv/ui')
-    await render(
+    const view = await render(
       <ThemeProvider>
         <Picture />
       </ThemeProvider>,
     )
-    const [track] = elementsOf(picture, 'track')
-    expect(track?.props).toMatchObject({
-      kind: 'subtitles',
-      src: p.subtitleUrl,
-      srcLang: 'en',
-      label: 'English',
-      default: true,
-    })
+    // one video, and no <track> to load a file: the cues come in segments
     expect(elementsOf(picture, 'video')).toHaveLength(1)
+    expect(elementsOf(picture, 'track')).toEqual([])
+    expect(added).toHaveLength(1)
+    const [own] = added
+    expect(own).toMatchObject({ label: 'English', language: 'en', mode: 'showing' })
+    // the stream's own track is turned off
+    expect(safari.mode).toBe('disabled')
+    expect(own?.cues).toMatchObject([
+      { startTime: 5, endTime: 7, text: 'Across', snapToLines: false, lineAlign: 'end', line: 84 },
+    ])
+
+    // the next segment's cues are added, the one in both segments not again; the person's
+    // timing and the controls move every cue
+    props = {
+      ...base,
+      cues: [across, { startTime: 8, endTime: 9, text: 'Next' }],
+      offsetMs: 500,
+    }
+    raised = true
+    await view.rerender(
+      <ThemeProvider>
+        <Picture />
+      </ThemeProvider>,
+    )
+    expect(own?.cues.map((c) => [c.text, c.startTime, c.endTime, c.line])).toEqual([
+      ['Across', 5.5, 7.5, 78],
+      ['Next', 8.5, 9.5, 78],
+    ])
+    expect(added).toHaveLength(1)
   })
 })

@@ -9,13 +9,16 @@ import { join } from 'node:path'
 import {
   assArgs,
   attachmentArgs,
+  covers,
   createTranscodes,
+  cueBlocks,
   downmixFilter,
   type EncoderPreset,
   filterPath,
   gridSegments,
   keyframeArgs,
   keyframeSegments,
+  leadInArgs,
   mediaPlaylist,
   multivariantPlaylist,
   parseFonts,
@@ -29,6 +32,7 @@ import {
   subtitlePlaylist,
   subtitlesArgs,
   transcodeCodecs,
+  webvttSegment,
 } from '../src/hls/index.ts'
 import { trickplayArgs, trickplayManifest } from '../src/trickplay/index.ts'
 
@@ -249,10 +253,117 @@ describe('playlists, by RFC 8216', () => {
     expect(text).not.toContain('SUBTITLES')
   })
 
-  test('a subtitle rendition is one WebVTT segment as long as the film', () => {
-    const text = subtitlePlaylist(5404.544, '/stream/subtitles/t/a.vtt')
-    expect(text).toContain('#EXT-X-TARGETDURATION:5405')
-    expect(text).toContain('#EXTINF:5404.544000,\n/stream/subtitles/t/a.vtt\n#EXT-X-ENDLIST')
+  test('a subtitle rendition has a WebVTT segment at each of the picture’s', () => {
+    // a resume's segments: a long one up to the keyframe before the start, short ones after
+    const text = subtitlePlaylist(
+      [
+        { start: 0, duration: 3600.24, first: 0, last: 360 },
+        { start: 3600.24, duration: 10, first: 360, last: 361 },
+        { start: 3610.24, duration: 10.5, first: 361, last: 362 },
+      ],
+      (i) => `fil_1%3A2/${i}.vtt`,
+    )
+    expect(text).toBe(
+      [
+        '#EXTM3U',
+        '#EXT-X-VERSION:7',
+        '#EXT-X-TARGETDURATION:3600',
+        '#EXT-X-MEDIA-SEQUENCE:0',
+        '#EXT-X-PLAYLIST-TYPE:VOD',
+        '#EXTINF:3600.240000,',
+        'fil_1%3A2/0.vtt',
+        '#EXTINF:10.000000,',
+        'fil_1%3A2/1.vtt',
+        '#EXTINF:10.500000,',
+        'fil_1%3A2/2.vtt',
+        '#EXT-X-ENDLIST',
+        '',
+      ].join('\n'),
+    )
+  })
+})
+
+describe('subtitle segments', () => {
+  // as ffmpeg's WebVTT muxer writes them, the last cut short where a run was stopped
+  const written = [
+    'WEBVTT',
+    '',
+    '00:58.000 --> 01:00.500',
+    'Before the start.',
+    '',
+    '01:00.000 --> 01:01.000',
+    '<i>Hello.</i>',
+    '',
+    '01:05.000 --> 01:07.000 line:85%',
+    'Across',
+    'the boundary.',
+    '',
+    '01:00:12.000 --> 01:00:13.000',
+    'An hour in.',
+    '',
+    '01:00:20.000 --> 01:00:2',
+  ].join('\n')
+
+  test('the cues of a growing file, each as written, a cut-off one left out', () => {
+    expect(cueBlocks(written)).toEqual([
+      { start: 58, end: 60.5, block: '00:58.000 --> 01:00.500\nBefore the start.' },
+      { start: 60, end: 61, block: '01:00.000 --> 01:01.000\n<i>Hello.</i>' },
+      { start: 65, end: 67, block: '01:05.000 --> 01:07.000 line:85%\nAcross\nthe boundary.' },
+      { start: 3612, end: 3613, block: '01:00:12.000 --> 01:00:13.000\nAn hour in.' },
+    ])
+    // Windows line ends, and a header with notes
+    expect(cueBlocks('WEBVTT\r\n\r\nNOTE x\r\n\r\n00:01.000 --> 00:02.000\r\nHi.\r\n')).toEqual([
+      { start: 1, end: 2, block: '00:01.000 --> 00:02.000\nHi.' },
+    ])
+  })
+
+  test('a cue across a boundary is in each segment it shows in, with its own times', () => {
+    const cues = cueBlocks(written)
+    const first = webvttSegment(cues, 60, 66)
+    const second = webvttSegment(cues, 66, 72)
+    expect(first).toBe(
+      [
+        'WEBVTT',
+        'X-TIMESTAMP-MAP=LOCAL:00:00:00.000,MPEGTS:0',
+        '',
+        '00:58.000 --> 01:00.500',
+        'Before the start.',
+        '',
+        '01:00.000 --> 01:01.000',
+        '<i>Hello.</i>',
+        '',
+        '01:05.000 --> 01:07.000 line:85%',
+        'Across',
+        'the boundary.',
+        '',
+      ].join('\n'),
+    )
+    expect(second).toContain('01:05.000 --> 01:07.000 line:85%\nAcross\nthe boundary.')
+    expect(second).not.toContain('Hello.')
+    // a segment with none is a header alone, still valid WebVTT (RFC 8216 § 3.5)
+    expect(webvttSegment(cues, 70, 76)).toBe(
+      'WEBVTT\nX-TIMESTAMP-MAP=LOCAL:00:00:00.000,MPEGTS:0\n',
+    )
+  })
+
+  test('a stretch read by two runs gives each cue once, in order', () => {
+    const cues = cueBlocks(written)
+    const text = webvttSegment([...cues.slice(2), ...cues, ...cues.slice(1, 2)], 55, 3700)
+    expect(text.match(/Hello\./g)).toHaveLength(1)
+    expect(text.indexOf('Before the start.')).toBeLessThan(text.indexOf('An hour in.'))
+  })
+
+  test('what the runs have read covers a segment only without a gap', () => {
+    const read = [
+      { from: 3590, to: 3600 },
+      { from: 3600, to: 3640 },
+      { from: 0, to: 20 },
+    ]
+    expect(covers(read, 3590, 3620)).toBe(true)
+    expect(covers(read, 10, 20)).toBe(true)
+    expect(covers(read, 15, 25)).toBe(false)
+    expect(covers(read, 3630, 3650)).toBe(false)
+    expect(covers([], 5, 5)).toBe(true)
   })
 })
 
@@ -283,6 +394,38 @@ describe('ffmpeg’s command lines', () => {
       ...['-hls_fmp4_init_filename', 'init.mp4', '-start_number', '100'],
       ...['-hls_segment_filename', '/data/transcodes/s1/%d.m4s'],
       '/data/transcodes/s1/ffmpeg.m3u8',
+    ])
+  })
+
+  test('a run writes the film’s own text tracks as WebVTT, an output each, from its read', () => {
+    const args = runArgs({
+      input: '/m/a.mkv',
+      dir: '/t/s1',
+      start: 0,
+      startNumber: 0,
+      video: { ...video, plan: { action: 'copy' } },
+      audio: null,
+      subtitles: [
+        { index: 2, output: '/t/s1/subs/run-1-2.vtt' },
+        { index: 3, output: '/t/s1/subs/run-1-3.vtt' },
+      ],
+    })
+    // after the stream's own output, which keeps leaving subtitles out
+    const hls = args.indexOf('/t/s1/ffmpeg.m3u8')
+    expect(args.slice(0, hls)).toContain('-sn')
+    expect(args.slice(hls + 1)).toEqual([
+      ...['-map', '0:2', '-c:s', 'webvtt', '-flush_packets', '1'],
+      ...['-f', 'webvtt', '/t/s1/subs/run-1-2.vtt'],
+      ...['-map', '0:3', '-c:s', 'webvtt', '-flush_packets', '1'],
+      ...['-f', 'webvtt', '/t/s1/subs/run-1-3.vtt'],
+    ])
+  })
+
+  test('the stretch before a run’s start is read for its subtitles alone', () => {
+    expect(leadInArgs('/m/a.mkv', 3590.24, 3600.24, [{ index: 2, output: '/t/l.vtt' }])).toEqual([
+      ...['-hide_banner', '-nostdin', '-loglevel', 'error', '-y'],
+      ...['-ss', '3590.240000', '-t', '10.000000', '-copyts', '-start_at_zero'],
+      ...['-i', '/m/a.mkv', '-map', '0:2', '-c:s', 'webvtt', '-f', 'webvtt', '/t/l.vtt'],
     ])
   })
 

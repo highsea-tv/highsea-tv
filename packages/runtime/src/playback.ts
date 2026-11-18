@@ -16,8 +16,9 @@
 // - The person's own playback preferences (client-settings.md › Playback, ADR 0027's 2026-11-01
 //   section) start a film in their audio language and with their subtitles, unless they've picked
 //   for that title already, and cap its quality at home and away; the remote ceiling still holds.
-// - Text subtitles are sent as WebVTT: the film's own kept from the read after the import, a
-//   sidecar converted once a session; picture subtitles aren't sent.
+// - Text subtitles are sent as WebVTT. A stream's come in segments, in step with the picture
+//   (HT-49): the film's own written by the session's runs as they read it, a sidecar converted
+//   once a session. A file played as it is has them whole; picture subtitles aren't sent.
 // - Where a start's time went is logged, a few lines a play (phase 5, A1's finding of 2026-11-17):
 //   the decision with the start position, a file's keyframes when they had to be read, and the
 //   first segment a player is served, with how long it waited and how long it took to send. The
@@ -26,6 +27,7 @@
 //   session with `stopFor`: its player's next report gets a 404 saying who stopped it and why,
 //   and the person hears `playback.stopped` so it asks at once.
 
+import { readFile } from 'node:fs/promises'
 import type {
   PlaybackDecision as ApiDecision,
   PlaySession as ApiSession,
@@ -52,6 +54,7 @@ import {
 } from '@highsea-tv/stream/decision'
 import { toneMapOn } from '@highsea-tv/stream/hardware'
 import {
+  cueBlocks,
   type Hardware,
   type HlsSource,
   mediaPlaylist,
@@ -62,6 +65,7 @@ import {
   type Transcode,
   type Transcodes,
   transcodeCodecs,
+  webvttSegment,
 } from '@highsea-tv/stream/hls'
 import {
   builtIn,
@@ -343,9 +347,13 @@ export function createPlayback(deps: {
     url: urlOf(s),
     subtitles: deps.subtitles(s.file.id).map((t) => ({
       id: t.id,
-      url: isTextSubtitle(t.format)
-        ? `/stream/subtitles/${sessions.token(s)}/${encodeURIComponent(t.id)}.vtt`
-        : null,
+      // a stream's text tracks come in segments, in step with the picture (HT-49); a file played
+      // as it is has its tracks whole
+      url: !isTextSubtitle(t.format)
+        ? null
+        : isHls(s.decision)
+          ? `/stream/hls/${sessions.token(s)}/subs/${encodeURIComponent(t.id)}.m3u8`
+          : `/stream/subtitles/${sessions.token(s)}/${encodeURIComponent(t.id)}.vtt`,
       delivery: delivery(t.id),
     })),
     start,
@@ -466,6 +474,8 @@ export function createPlayback(deps: {
       },
       audio: sound ? { channels: sound.channels, layout: sound.layout } : null,
       burnIn: burnInOf(src.file, info, decision),
+      // the film's own text subtitles, written by every run from the read it makes (HT-49)
+      subtitles: info.subtitles.filter((t) => isTextSubtitle(t.codec)).map((t) => t.index),
     }
     const transcode = transcodes.open(session.id, source)
     if (isHls(decision)) transcode.prepare()
@@ -670,17 +680,40 @@ export function createPlayback(deps: {
     return row ? { input: row.path, index: null } : null
   }
 
-  /** A text track's rendition playlist: the whole track as one segment. */
-  function subtitleList(token: string, trackId: string): string | null {
+  /**
+   * A text track's rendition playlist (HT-49): a WebVTT segment for each of the picture's, at
+   * `subs/{track}/{i}.vtt`, beside the playlist.
+   */
+  async function subtitleList(token: string, trackId: string): Promise<string | null> {
     const stream = streamOf(token)
     if (!stream || !subtitleInput(stream.s, trackId)) return null
-    return subtitlePlaylist(stream.t.source.duration, `${encodeURIComponent(trackId)}.vtt`)
+    const segments = await stream.t.segments()
+    return subtitlePlaylist(segments, (i) => `${encodeURIComponent(trackId)}/${i}.vtt`)
   }
 
   /**
-   * A text track as WebVTT: the file's path, or null. The film's own track is kept from the read
-   * after the import, since taking it out reads the whole film (`ahead.ts`); a sidecar, a small
-   * file of its own, is converted once a session.
+   * Segment `i` of a text track, as WebVTT, or null. The film's own track is cut from what the
+   * session's runs have read (`subtitleSegment`), so nothing reads the film for it; a sidecar, a
+   * small file of its own, is converted once a session and cut from that.
+   */
+  async function subtitleSegment(token: string, trackId: string, i: number) {
+    const stream = streamOf(token)
+    const from = stream && subtitleInput(stream.s, trackId)
+    if (!stream || !from) return null
+    const { t } = stream
+    const segment = (await t.segments())[i]
+    if (!segment) return null
+    if (from.index !== null) return t.subtitleSegment(from.index, i)
+    const path = await t.subtitle(trackId, from.input, null)
+    const cues = cueBlocks(await readFile(path, 'utf8'))
+    return webvttSegment(cues, segment.start, segment.start + segment.duration)
+  }
+
+  /**
+   * A text track as WebVTT, whole: the file's path, or null. A file played as it is (only MP4,
+   * MOV and WebM are, `profiles`) has no runs to read its subtitles, so the film's own track is
+   * taken out once and kept (`ahead.ts`); a sidecar, a small file of its own, is converted once
+   * a session.
    */
   async function subtitle(token: string, trackId: string): Promise<string | null> {
     const s = live(token)
@@ -732,7 +765,7 @@ export function createPlayback(deps: {
     open,
     /** Whether an address is away from home: the test that applies the remote ceiling. */
     away: (address: string) => !home.has(address),
-    hls: { playlist, segment, init, subtitleList, sent },
+    hls: { playlist, segment, init, subtitleList, subtitleSegment, sent },
     subtitle,
     /** The live sessions, for Now playing (4.3) and the test page. */
     sessions: () => sessions.list(),
