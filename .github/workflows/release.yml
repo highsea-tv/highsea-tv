@@ -115,13 +115,24 @@ jobs:
           name: release-notes
           path: ${{ runner.temp }}/release-notes.md
 
+  # The heavy jobs in ci.yml and e2e.yml read next's runs to reuse a result on the next → main pull
+  # request, which needs `actions: read`; a called workflow can only lower the permissions its
+  # caller gives, so they're given here
+  # (https://docs.github.com/en/actions/reference/workflows-and-actions/reusing-workflow-configurations).
+  # A release's event isn't a pull request, so it never reuses anything and runs every job whole.
   ci:
     needs: prepare
     uses: ./.github/workflows/ci.yml
+    permissions:
+      contents: read
+      actions: read
 
   e2e:
     needs: prepare
     uses: ./.github/workflows/e2e.yml
+    permissions:
+      contents: read
+      actions: read
 
   image:
     needs: [prepare, ci, e2e]

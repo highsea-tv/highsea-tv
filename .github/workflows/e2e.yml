@@ -3,7 +3,8 @@
 # image beside the fixtures service on a network with no way out (scripts/e2e/compose.yaml), driven by
 # Playwright through setup, a one-click indexer, adding and grabbing Sintel, Activity, the import,
 # the synced subtitle, a theme and a layout across sessions, and an announcement for Admins.
-# In the heavy tier, when a change touches the server, amd64 only; arm64 boots healthy in ci.yml.
+# In the heavy tier (on a pull request, when it touches the server), amd64 only; arm64 boots healthy
+# in ci.yml.
 name: End to end
 
 # The heavy tier (ADR 0062, next-branch.md › CI by branch): it runs on a push to next, a pull
@@ -12,7 +13,10 @@ name: End to end
 # branch filter, so a pull request into next with the label gets here, and `labeled` joins the
 # default types so adding the label starts it
 # (https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#pull_request).
-# A push to main runs only ci.yml's `check` (the owner's answer 3). The jobs' `if:` holds the rest:
+# A push to main runs only ci.yml's fast tier (the owner's answer 3). A push to next runs it whatever
+# it changed (2026-11-17): the next → main pull request reuses next's result only for its exact
+# commit, so next needs one for every commit it may stand at; a pull request keeps the paths that
+# could reach it. The job's `if:` holds the rest:
 # a pull request into another branch without the label skips them, and a job its `if:` skips
 # reports success rather than leaving a check pending
 # (https://docs.github.com/en/pull-requests/how-tos/merge-and-close-pull-requests/troubleshooting-required-status-checks#handling-skipped-but-required-checks).
@@ -22,19 +26,6 @@ name: End to end
 on:
   push:
     branches: [next]
-    paths:
-      - 'apps/server/**'
-      - 'packages/**'
-      - 'catalog/**'
-      - 'docker/**'
-      - 'Dockerfile'
-      - '.dockerignore'
-      - 'scripts/e2e/**'
-      - 'scripts/image.ts'
-      - 'package.json'
-      - 'bun.lock'
-      - '.nvmrc'
-      - '.github/workflows/e2e.yml'
   pull_request:
     types: [opened, synchronize, reopened, labeled]
     paths:
@@ -53,12 +44,12 @@ on:
   # the release runs it before building anything (release.yml)
   workflow_call:
 
-# a called workflow's `github` context is its caller's, so `github.workflow` keeps a release's run apart
-# from a push's, and neither cancels the other
-# (https://docs.github.com/en/actions/reference/workflows-and-actions/reusing-workflow-configurations)
+# A pull request's newer run cancels its older one; a push to next and a release are never
+# cancelled, each in a group of its own (ci.yml's note on `concurrency`,
+# https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#concurrency)
 concurrency:
-  group: e2e-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: e2e-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
@@ -72,18 +63,43 @@ jobs:
       || (github.event_name == 'push' && github.ref == 'refs/heads/next')
       || (github.event_name != 'pull_request' && github.event_name != 'push')
     runs-on: ubuntu-24.04
+    # its runs took 10 to 13 minutes, and it may wait 15 for next's run first
     timeout-minutes: 30
+    # `actions: read` for the reuse step (ci.yml's note on `playback`)
+    permissions:
+      contents: read
+      actions: read
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
-      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      # On the next → main pull request: passed on next for this commit? Then every step after
+      # it is skipped and the job passes (.github/scripts/reuse-next.sh, ci.yml's header)
+      - name: Reuse next's result for this commit
+        id: reuse
+        if: github.event_name == 'pull_request' && github.base_ref == 'main'
+        run: bash .github/scripts/reuse-next.sh e2e.yml e2e 15
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          EVENT: ${{ github.event_name }}
+          BASE_REF: ${{ github.base_ref }}
+          HEAD_REF: ${{ github.head_ref }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+      - if: &build steps.reuse.outputs.reused != 'true'
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version: 1.4.4
-      - run: bun install --frozen-lockfile
-      - name: Chromium for Playwright
+      - if: *build
+        run: bun install --frozen-lockfile
+      - if: *build
+        name: Chromium for Playwright
         run: bunx playwright-core install --with-deps chromium
-      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
+      - if: *build
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
       # from ci.yml's amd64 cache when it's there
-      - name: Build the image
+      - if: *build
+        name: Build the image
         uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
         with:
           context: .
@@ -92,7 +108,8 @@ jobs:
           provenance: false
           tags: highsea:ci
           cache-from: type=gha,scope=image-linux/amd64
-      - name: Build the fixtures
+      - if: *build
+        name: Build the fixtures
         uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
         with:
           context: .
@@ -105,7 +122,8 @@ jobs:
             type=gha,scope=image-linux/amd64
             type=gha,scope=e2e-fixtures
           cache-to: type=gha,scope=e2e-fixtures,mode=max
-      - name: The run
+      - if: *build
+        name: The run
         run: bun scripts/e2e/run.ts
         env:
           HIGHSEA_IMAGE: highsea:ci

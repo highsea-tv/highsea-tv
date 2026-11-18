@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 # The desktop app (ADR 0058; phase-4-checkpoint-4.md › Signed installers and updates): in the
-# heavy tier (below), on the changes that could reach it, the Rust side's format, lints and tests
+# heavy tier (below), the Rust side's format, lints and tests
 # on all three systems, then the app built and bundled on each, as Tauri's pipeline guide builds it
 # (https://v2.tauri.app/distribute/pipelines/github/). Nothing is signed or uploaded here; the
 # release workflow builds, signs and attaches the installers in the `release` environment.
@@ -15,7 +15,10 @@ name: Desktop
 # branch filter, so a pull request into next with the label gets here, and `labeled` joins the
 # default types so adding the label starts it
 # (https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#pull_request).
-# A push to main runs only ci.yml's `check` (the owner's answer 3). The jobs' `if:` holds the rest:
+# A push to main runs only ci.yml's fast tier (the owner's answer 3). A push to next builds whatever
+# it changed (2026-11-17): the next → main pull request reuses next's result only for its exact
+# commit, so next needs one for every commit it may stand at; a pull request keeps the paths that
+# could reach it. The job's `if:` holds the rest:
 # a pull request into another branch without the label skips them, and a job its `if:` skips
 # reports success rather than leaving a check pending
 # (https://docs.github.com/en/pull-requests/how-tos/merge-and-close-pull-requests/troubleshooting-required-status-checks#handling-skipped-but-required-checks).
@@ -25,12 +28,6 @@ name: Desktop
 on:
   push:
     branches: [next]
-    paths:
-      - 'apps/desktop/**'
-      - 'apps/client/**'
-      - 'packages/**'
-      - 'bun.lock'
-      - '.github/workflows/desktop.yml'
   pull_request:
     types: [opened, synchronize, reopened, labeled]
     paths:
@@ -40,9 +37,12 @@ on:
       - 'bun.lock'
       - '.github/workflows/desktop.yml'
 
+# A pull request's newer run cancels its older one; a push to next is never cancelled, each in a
+# group of its own (ci.yml's note on `concurrency`,
+# https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#concurrency)
 concurrency:
-  group: desktop-${{ github.ref }}
-  cancel-in-progress: true
+  group: desktop-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
@@ -69,32 +69,57 @@ jobs:
     runs-on: ${{ matrix.runner }}
     # Without a limit a job may run for 360 minutes, GitHub's default
     # (https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#jobsjob_idtimeout-minutes);
-    # the last 12 builds took up to 21 minutes on each of the three
+    # the last 12 builds took up to 21 minutes on each of the three, and it may wait 20 for next's
+    # run first
     timeout-minutes: 45
+    # `actions: read` for the reuse step (ci.yml's note on `playback`)
+    permissions:
+      contents: read
+      actions: read
     defaults:
       run:
         shell: bash
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
-      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      # On the next → main pull request: passed on next for this commit? Then every step after
+      # it is skipped and the job passes (.github/scripts/reuse-next.sh, ci.yml's header). The
+      # check's name for a matrix job is the job's id and its values; `gh` and `jq` are on all
+      # three images.
+      - name: Reuse next's result for this commit
+        id: reuse
+        if: github.event_name == 'pull_request' && github.base_ref == 'main'
+        run: bash .github/scripts/reuse-next.sh desktop.yml "build (${{ matrix.runner }}, ${{ matrix.target }})" 20
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          EVENT: ${{ github.event_name }}
+          BASE_REF: ${{ github.base_ref }}
+          HEAD_REF: ${{ github.head_ref }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+      - if: &build steps.reuse.outputs.reused != 'true'
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version: 1.4.4
       # Tauri's Linux prerequisites (https://v2.tauri.app/start/prerequisites/#linux), and D-Bus for
       # the Secret Service the keychain uses there
       - name: Linux libraries
-        if: runner.os == 'Linux'
+        if: runner.os == 'Linux' && steps.reuse.outputs.reused != 'true'
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends libwebkit2gtk-4.1-dev build-essential \
             file libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev libdbus-1-dev
-      - name: Rust, and both Mac targets
+      - if: *build
+        name: Rust, and both Mac targets
         working-directory: apps/desktop/src-tauri
         run: |
           rustup show active-toolchain || rustup toolchain install
           if [ "$RUNNER_OS" = macOS ]; then rustup target add aarch64-apple-darwin x86_64-apple-darwin; fi
       # the registry and the build, kept between runs by the lockfile
       # (https://doc.rust-lang.org/cargo/guide/cargo-home.html#caching-the-cargo-home-in-ci)
-      - uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+      - if: *build
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
         with:
           path: |
             ~/.cargo/registry/index/
@@ -103,16 +128,19 @@ jobs:
             apps/desktop/src-tauri/target/
           key: cargo-${{ matrix.target }}-${{ hashFiles('apps/desktop/src-tauri/Cargo.lock') }}
           restore-keys: cargo-${{ matrix.target }}-
-      - run: bun install --frozen-lockfile
-      # the page's checks run in CI's main job; here, what only the Rust side has
-      - name: Format, lints and tests
+      - if: *build
+        run: bun install --frozen-lockfile
+      # the page's checks run in CI's fast tier; here, what only the Rust side has
+      - if: *build
+        name: Format, lints and tests
         working-directory: apps/desktop/src-tauri
         run: |
           cargo fmt --check
           cargo clippy --locked --all-targets -- -D warnings
           cargo test --locked
       # unsigned, without the updater's artifacts: the release builds those with its key
-      - name: The app and its installers
+      - if: *build
+        name: The app and its installers
         working-directory: apps/desktop
         run: bun run tauri build --ci --target ${{ matrix.target }} -- --locked
         # Tauri runs the client's desktop export first (tauri.conf.json's beforeBuildCommand)

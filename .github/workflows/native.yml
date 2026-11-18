@@ -1,7 +1,6 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 # The native builds of the one client (apps/client, ADR 0059 and 0061; one-client-platform-b.md ›
-# B2 brings this piece of part C forward): in the heavy tier (below), on the
-# changes that could reach them, the client's types and Jest tests, its iPhone project generated
+# B2 brings this piece of part C forward): in the heavy tier (below), the iPhone project generated
 # with `expo prebuild`
 # (https://docs.expo.dev/workflow/prebuild/), the licence audit over its pods, and the app built for
 # the iOS simulator with xcodebuild, signed ad hoc (`CODE_SIGN_IDENTITY=-`, no certificate): an
@@ -10,7 +9,31 @@
 # project from `EXPO_TV=1 expo prebuild` (`prebuild:tv`, https://docs.expo.dev/guides/building-for-tv/).
 # Nothing is signed with a certificate or uploaded here, and there are no EAS builds
 # (phase-4-checkpoint-5.md's answer 10). Android joins in 4.5c. The paths are the client and every
-# workspace package, since it reaches most of them through @highsea-tv/sdk and @highsea-tv/client.
+# workspace package, since it reaches most of them through @highsea-tv/sdk and @highsea-tv/client;
+# a pull request is filtered by them, and a push to next builds whatever it changed (below).
+#
+# The client's types and Jest tests ran here too until 2026-11-17, on top of CI's fast tier, which
+# runs both on every pull request and push (`bun run typecheck` takes in every workspace, and the
+# `tests` job's Jest shards are the same `jest` with the same config): 20 minutes of the iPhone
+# job repeated what Linux had already checked. Jest's preset is iOS's whatever the host
+# (apps/client/jest.config.js), so the host changes nothing.
+#
+# The Objective-C and C++ the pods compile go through ccache, React Native's documented compiler
+# cache (https://reactnative.dev/docs/build-speed#local-caches): with ccache on the PATH,
+# `USE_CCACHE=1` at `pod install` (which prebuild runs) makes the Podfile wrap clang with React
+# Native's own ccache scripts and settings (the Expo template's Podfile, `ccache_enabled?`; React
+# Native's scripts/xcode/ccache.conf). ccache keys each result by the compiler, its arguments and
+# the source and headers it reads, so a changed header or flag is a miss and compiles again
+# (https://ccache.dev/manual/latest.html#_how_ccache_works). React Native's page warns of stale
+# results on CI when the compiler check goes by timestamps. Here clang is called through
+# /usr/bin/clang, Xcode's shim, whose timestamp stays the same when the image's Xcode changes, so
+# the cache's key holds the Xcode build (`xcodebuild -version`): another Xcode starts from an empty
+# cache and is never served an older one's objects. Nothing built here ships: the job shows the
+# app compiles, and a release doesn't build it. Its folder is kept between runs
+# (https://github.com/actions/cache), one per platform; a run restores the newest and saves its
+# own. Swift isn't cached. The other caches were considered and left out: Pods and the generated
+# project (`prebuild --clean` makes them anew, and pod install took under 3 minutes), and
+# DerivedData (a fresh checkout's new timestamps rebuild it anyway, and its paths are absolute).
 #
 # The runner's Xcode must be one Expo SDK 58 supports, so the image is macOS 26's
 # (https://github.com/actions/runner-images). Each action is pinned to a full commit SHA, with its
@@ -22,7 +45,10 @@ name: Native
 # branch filter, so a pull request into next with the label gets here, and `labeled` joins the
 # default types so adding the label starts it
 # (https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#pull_request).
-# A push to main runs only ci.yml's `check` (the owner's answer 3). The jobs' `if:` holds the rest:
+# A push to main runs only ci.yml's fast tier (the owner's answer 3). A push to next builds whatever
+# it changed (2026-11-17): the next → main pull request reuses next's result only for its exact
+# commit, so next needs one for every commit it may stand at; a pull request keeps the paths that
+# could reach it. The jobs' `if:` holds the rest:
 # a pull request into another branch without the label skips them, and a job its `if:` skips
 # reports success rather than leaving a check pending
 # (https://docs.github.com/en/pull-requests/how-tos/merge-and-close-pull-requests/troubleshooting-required-status-checks#handling-skipped-but-required-checks).
@@ -32,13 +58,6 @@ name: Native
 on:
   push:
     branches: [next]
-    paths:
-      - 'apps/client/**'
-      - 'packages/**'
-      - 'bun.lock'
-      - 'package.json'
-      - 'scripts/license-audit.ts'
-      - '.github/workflows/native.yml'
   pull_request:
     types: [opened, synchronize, reopened, labeled]
     paths:
@@ -49,9 +68,12 @@ on:
       - 'scripts/license-audit.ts'
       - '.github/workflows/native.yml'
 
+# A pull request's newer run cancels its older one; a push to next is never cancelled, each in a
+# group of its own (ci.yml's note on `concurrency`,
+# https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#concurrency)
 concurrency:
-  group: native-${{ github.ref }}
-  cancel-in-progress: true
+  group: native-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
@@ -67,70 +89,164 @@ jobs:
     runs-on: macos-26
     # Without a limit a job may run for 360 minutes, GitHub's default
     # (https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#jobsjob_idtimeout-minutes);
-    # the last 8 builds took 47 minutes on average, 58 at most
+    # the last 8 builds took 47 minutes on average, 58 at most, 20 of them the Jest tests it no
+    # longer runs, and it may wait 30 for next's run first
     timeout-minutes: 90
+    # `actions: read` for the reuse step (ci.yml's note on `playback`)
+    permissions: &reuse-permissions
+      contents: read
+      actions: read
+    env:
+      HOMEBREW_NO_AUTO_UPDATE: '1'
+      HOMEBREW_NO_INSTALL_CLEANUP: '1'
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+      # On the next → main pull request: passed on next for this commit? Then every step after
+      # it is skipped and the job passes (.github/scripts/reuse-next.sh, ci.yml's header). The
+      # arguments: this workflow's file, the job's check name, the minutes to wait.
+      - name: Reuse next's result for this commit
+        id: reuse
+        if: &next-to-main github.event_name == 'pull_request' && github.base_ref == 'main'
+        run: bash .github/scripts/reuse-next.sh native.yml ios 30
+        env: &reuse-env
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          EVENT: ${{ github.event_name }}
+          BASE_REF: ${{ github.base_ref }}
+          HEAD_REF: ${{ github.head_ref }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+      - if: &build steps.reuse.outputs.reused != 'true'
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version-file: .nvmrc
-      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      - if: *build
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version: 1.4.4
-      - run: bun install --frozen-lockfile
-      # the Jest tests render every form factor (the TV's and touch's among them), so they run once
-      - name: Types and the Jest tests
-        working-directory: apps/client
-        run: |
-          bun run typecheck
-          bun run test --ci
+      - if: *build
+        run: bun install --frozen-lockfile
       # the phone's bundle draws with ui's native renderer only, and no `.web` side (ADR 0060, 0061)
       - name: The bundle carries no web renderer
+        if: *build
         run: bun scripts/bundles.ts client-phone
+      # ccache from Homebrew, which GitHub's macOS images carry, its counters zeroed so the build's
+      # hits show below, and the Xcode build for the cache's key (the header above)
+      - name: ccache
+        if: *build
+        id: ccache
+        run: |
+          brew install ccache
+          ccache --zero-stats
+          echo "xcode=$(xcodebuild -version | tr -cs 'A-Za-z0-9.' '-')" >> "$GITHUB_OUTPUT"
+      - name: ccache's folder from the last build
+        if: *build
+        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: ~/Library/Caches/ccache
+          key: ccache-ios-${{ steps.ccache.outputs.xcode }}-${{ github.run_id }}
+          restore-keys: ccache-ios-${{ steps.ccache.outputs.xcode }}-
       # the generated project, with its pods installed (prebuild runs `pod install`)
       - name: The iOS project
+        if: *build
         working-directory: apps/client
         env:
           CI: '1'
           EXPO_NO_TELEMETRY: '1'
+          USE_CCACHE: '1'
         run: bun run prebuild
       - name: Licences, with the pods
+        if: *build
         run: bun run licenses
       - name: The app, for the simulator
+        if: *build
         working-directory: apps/client/ios
         run: |
           xcodebuild -workspace highsea.xcworkspace -scheme highsea -configuration Release \
             -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
             -derivedDataPath build CODE_SIGN_IDENTITY=- CODE_SIGNING_REQUIRED=NO build
+      - name: ccache's hits
+        if: *build
+        run: ccache --show-stats --verbose
+      # a key of its own per run, since a cache's key can't be written twice
+      # (https://github.com/actions/cache/blob/main/save/README.md)
+      - name: Keep ccache's folder
+        if: *build
+        uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: ~/Library/Caches/ccache
+          key: ccache-ios-${{ steps.ccache.outputs.xcode }}-${{ github.run_id }}-${{ github.run_attempt }}
 
   tvos:
     if: *heavy
     runs-on: macos-26
-    # the last 8 builds took 30 minutes on average, 37 at most (the limit's note on ios)
+    # the last 8 builds took 30 minutes on average, 37 at most (the limit's note on ios), and it
+    # may wait 20 for next's run first
     timeout-minutes: 60
+    permissions: *reuse-permissions
+    env:
+      HOMEBREW_NO_AUTO_UPDATE: '1'
+      HOMEBREW_NO_INSTALL_CLEANUP: '1'
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+      - name: Reuse next's result for this commit
+        id: reuse
+        if: *next-to-main
+        run: bash .github/scripts/reuse-next.sh native.yml tvos 20
+        env: *reuse-env
+      - if: *build
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version-file: .nvmrc
-      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      - if: *build
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version: 1.4.4
-      - run: bun install --frozen-lockfile
+      - if: *build
+        run: bun install --frozen-lockfile
       # the TV's bundle draws with ui's native renderer only, and no `.web` side (ADR 0060, 0061)
       - name: The bundle carries no web renderer
+        if: *build
         run: bun scripts/bundles.ts client-tv
+      - name: ccache
+        if: *build
+        id: ccache
+        run: |
+          brew install ccache
+          ccache --zero-stats
+          echo "xcode=$(xcodebuild -version | tr -cs 'A-Za-z0-9.' '-')" >> "$GITHUB_OUTPUT"
+      - name: ccache's folder from the last build
+        if: *build
+        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: ~/Library/Caches/ccache
+          key: ccache-tvos-${{ steps.ccache.outputs.xcode }}-${{ github.run_id }}
+          restore-keys: ccache-tvos-${{ steps.ccache.outputs.xcode }}-
       - name: The tvOS project
+        if: *build
         working-directory: apps/client
         env:
           CI: '1'
           EXPO_NO_TELEMETRY: '1'
+          USE_CCACHE: '1'
         run: bun run prebuild:tv
       - name: Licences, with the pods
+        if: *build
         run: bun run licenses
       - name: The app, for the simulator
+        if: *build
         working-directory: apps/client/ios
         run: |
           xcodebuild -workspace highsea.xcworkspace -scheme highsea -configuration Release \
             -sdk appletvsimulator -destination 'generic/platform=tvOS Simulator' \
             -derivedDataPath build CODE_SIGN_IDENTITY=- CODE_SIGNING_REQUIRED=NO build
+      - name: ccache's hits
+        if: *build
+        run: ccache --show-stats --verbose
+      - name: Keep ccache's folder
+        if: *build
+        uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: ~/Library/Caches/ccache
+          key: ccache-tvos-${{ steps.ccache.outputs.xcode }}-${{ github.run_id }}-${{ github.run_attempt }}
