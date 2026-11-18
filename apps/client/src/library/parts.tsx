@@ -4,18 +4,13 @@
 // Poster, worded by @highsea-tv/client/films), a TV page's title and its empty words, and the
 // page's loading mark. Search and a film's page can draw the same grid and tiles.
 // - The grid draws only the rows near the screen, so a library of thousands stays light: its rows
-//   are the library's `Virtual` list (TanStack Virtual's core, ADR 0061's 2026-11-06 section) in
-//   the page's own ScrollView, three rows drawn past each end so the TV's focus always has
-//   somewhere to go. A phone's compact width is three a row,
-//   8 apart and 16 between rows (the prototype's mobile `grid-cols-3 gap-x-2 gap-y-4`); everything
-//   else fills the width with posters of at least 9rem, 16 apart and 24 between rows (the web
-//   prototype's `repeat(auto-fill,minmax(9rem,1fr))`), so an iPad and a narrow browser draw a
-//   pointer's columns.
-// - Each row of the grid is a list of its own and each cell a listitem that gives its place in the
-//   whole (aria-posinset of aria-setsize), since the scroller holds the page's header and states
-//   besides the cells and draws only some of the rows: WAI-ARIA 1.2's listitem needs a list as its
-//   parent, and aria-setsize and aria-posinset are for sets not all in the DOM
-//   (https://www.w3.org/TR/wai-aria-1.2/#listitem, #aria-setsize, #aria-posinset).
+//   are the library's VirtualGrid (over its `Virtual` list, TanStack Virtual's core, ADR 0061's
+//   2026-11-06 section), which the admin's Movies and Shows draw too, in the page's own
+//   ScrollView, three rows drawn past each end so the TV's focus always has somewhere to go. A
+//   phone's compact width is three a row, 8 apart and 16 between rows (the prototype's mobile
+//   `grid-cols-3 gap-x-2 gap-y-4`); everything else fills the width with posters of at least
+//   9rem, 16 apart and 24 between rows (the web prototype's `repeat(auto-fill,minmax(9rem,1fr))`),
+//   so an iPad and a narrow browser draw a pointer's columns.
 // - A collection's tile prefers its mosaic to its poster, as the prototype's CollectionTile does
 //   (kit/collection-art.tsx), and is read with its Smart mark ("…, smart collection, …"). The TV's
 //   tile draws no mosaic, so it keeps the poster, or the mosaic's first image.
@@ -36,21 +31,12 @@ import {
   useFormFactor,
   useMotionReduced,
   useTheme,
-  Virtual,
-  type VirtualList,
+  VirtualGrid,
+  type VirtualGridHandle,
 } from '@highsea-tv/ui'
 import type { ViewHandle } from '@highsea-tv/ui/tv'
 import { type Href, router } from 'expo-router'
-import {
-  type ReactElement,
-  type ReactNode,
-  type Ref,
-  useEffect,
-  useImperativeHandle,
-  useMemo,
-  useRef,
-  useState,
-} from 'react'
+import { type ReactElement, type ReactNode, type Ref, useEffect, useState } from 'react'
 import {
   Animated,
   type NativeScrollEvent,
@@ -80,11 +66,8 @@ export function gridOf(widthClass: WidthClass, span: number) {
   return { columns, width, gap }
 }
 
-/** What a grid's parent can ask of it: to scroll an item into view. */
-export type GridHandle = {
-  /** Scrolls the row holding item `index` to `offset` under the scroller's top. */
-  toItem: (index: number, options: { animated: boolean; offset: number }) => void
-}
+/** What a grid's parent can ask of it: to scroll an item into view (the library's VirtualGrid's). */
+export type GridHandle = VirtualGridHandle
 
 /**
  * Posters in rows across the width they're given, inside a page's own scroller: Search's sections
@@ -132,10 +115,6 @@ function useWidthClass(given?: WidthClass): WidthClass {
   const ff = useFormFactor()
   return given ?? (ff.input === 'touch' && ff.widthClass === 'compact' ? 'compact' : 'regular')
 }
-
-/** A cell's place in the whole grid, for assistive tech (RN's types don't name these yet). */
-const placeOf = (index: number, size: number) =>
-  ({ 'aria-posinset': index + 1, 'aria-setsize': size }) as object
 
 export type LibraryGridListProps<T> = {
   items: readonly T[]
@@ -200,7 +179,6 @@ export function LibraryGridList<T>({
   ref,
 }: LibraryGridListProps<T>) {
   const klass = useWidthClass(widthClass)
-  const list = useRef<VirtualList>(null)
   // the width it's laid out at, less its insets; until then the window's, so the first frame is
   // near enough
   const window = useWindowDimensions().width
@@ -209,21 +187,9 @@ export function LibraryGridList<T>({
   const grid = gridOf(klass, Math.max(0, span - (lead?.room ?? 0)))
   const columns = givenColumns ?? grid.columns
   const gap = givenGap ?? grid.gap
-  const rows = useMemo(() => {
-    const out: T[][] = []
-    for (let i = 0; i < items.length; i += columns) out.push(items.slice(i, i + columns))
-    return out
-  }, [items, columns])
   // a row before it's measured: a poster (2:3) and its two lines under it
   const cell = Math.max(0, (span - (lead?.room ?? 0) - (columns - 1) * gap.column) / columns)
   const estimate = Math.round(cell * 1.5 + ROW_WORDS)
-  // biome-ignore lint/correctness/useExhaustiveDependencies: the handle reads this render's rows
-  useImperativeHandle(ref, () => ({
-    toItem: (index, { animated, offset }) => {
-      const row = Math.floor(index / columns)
-      if (row < rows.length) list.current?.scrollToIndex(row, { animated, offset })
-    },
-  }))
   return (
     <ScrollView
       onLayout={(e) => setLaid(e.nativeEvent.layout.width)}
@@ -239,49 +205,18 @@ export function LibraryGridList<T>({
       {header ? (
         <View onLayout={(e) => onGridTop?.(e.nativeEvent.layout.height)}>{header}</View>
       ) : null}
-      {rows.length === 0 ? empty : null}
-      <Virtual
-        ref={list}
-        count={rows.length}
-        estimateSize={() => estimate}
-        // a row by its first item, which no other row holds
-        getKey={(r) => {
-          const first = rows[r]?.[0]
-          return first === undefined ? String(r) : keyOf(first)
-        }}
-        gap={gap.row}
+      {items.length === 0 ? empty : null}
+      <VirtualGrid
+        ref={ref}
+        items={items}
+        keyOf={keyOf}
+        render={render}
+        label={label}
+        columns={columns}
+        gap={gap}
+        estimate={estimate}
+        lead={lead?.width}
         overscan={OVERSCAN_ROWS}
-        render={(r, onLayout) => {
-          const row = rows[r] ?? []
-          return (
-            <View onLayout={onLayout} style={{ flexDirection: 'row' }}>
-              {lead ? <Animated.View style={{ width: lead.width }} /> : null}
-              <View
-                role="list"
-                // the first row names the grid; the rest are its continuation
-                accessibilityLabel={r === 0 ? label : undefined}
-                style={{ flex: 1, flexDirection: 'row', columnGap: gap.column }}
-              >
-                {Array.from({ length: columns }, (_, c) => {
-                  const item = row[c]
-                  // a short last row keeps the columns' width with empty places
-                  return item === undefined ? (
-                    <View key={`empty-${String(c)}`} aria-hidden style={{ flex: 1 }} />
-                  ) : (
-                    <View
-                      key={keyOf(item)}
-                      role="listitem"
-                      {...placeOf(r * columns + c, items.length)}
-                      style={{ flex: 1, minWidth: 0 }}
-                    >
-                      {render(item, r * columns + c)}
-                    </View>
-                  )
-                })}
-              </View>
-            </View>
-          )
-        }}
       />
     </ScrollView>
   )

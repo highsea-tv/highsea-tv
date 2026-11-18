@@ -151,7 +151,7 @@ describe('the library', () => {
     expect(calls).toEqual([{ sort: 'title', cursor: undefined, limit: 60 }])
   })
 
-  test('Show more follows the cursor in requests of at most 200', async () => {
+  test('follows the cursor in requests of at most 200', async () => {
     const { client, calls } = fakeClient(500)
     const page = await loadMovies(client, { sort: 'added' }, 300)
     expect(page.items.map((m) => m.id)).toEqual(Array.from({ length: 300 }, (_, i) => i + 1))
@@ -160,6 +160,18 @@ describe('the library', () => {
       ['200', 100],
     ])
     expect(page.next).toBe('300')
+  })
+
+  test('with no count it reads the whole library (HT-57)', async () => {
+    const { client, calls } = fakeClient(450)
+    const page = await loadMovies(client, { sort: 'title' })
+    expect(page.items).toHaveLength(450)
+    expect(page.next).toBeNull()
+    expect(calls.map((c) => [c.cursor, c.limit])).toEqual([
+      [undefined, 200],
+      ['200', 200],
+      ['400', 200],
+    ])
   })
 
   test('stops at the end of the library', async () => {

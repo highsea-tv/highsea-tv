@@ -16,6 +16,7 @@ export const shows = defineMessages({
   'empty.body': 'Add a show and highsea finds each episode, downloads it and files it here.',
   'empty.discover': 'Discover shows',
   noMatch: 'No shows match. Try another filter.',
+  letters: 'Jump to a letter',
   'filter.all': 'All',
   'filter.missing': 'Missing episodes',
   'filter.airing': 'Airing',

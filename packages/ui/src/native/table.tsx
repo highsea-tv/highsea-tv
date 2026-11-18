@@ -13,7 +13,7 @@
 // A body of more than VIRTUAL_FROM rows draws only those near the screen, in the page's own
 // scroller (the library's Virtual, TanStack Virtual's core: ./virtual.tsx), with a spacer row
 // before and after them; a shorter one draws every row, so the page's find and the server's HTML
-// have them all.
+// have them all, unless the page asks for it (`virtual`) to scroll to a row by its place.
 // A cell centres its content in its row: react-native-web gives every View `align-content:
 // flex-start` (its View's base style), and on a table cell a value other than `normal` overrides
 // `vertical-align` (https://www.w3.org/TR/css-align-3/#distribution-block), so cells set it to
@@ -63,7 +63,7 @@ import { visuallyHidden } from './hidden-heading.tsx'
 import { Text } from './text.tsx'
 import { tokens, useTheme } from './theme.tsx'
 import { Tooltip } from './tooltip.tsx'
-import { useScrollSourceOrNull, Virtual } from './virtual.tsx'
+import { useScrollSourceOrNull, Virtual, type VirtualList } from './virtual.tsx'
 
 const s = tokens.space
 const web = Platform.OS === 'web'
@@ -201,14 +201,26 @@ const spacerRow = (size: number, ref?: Ref<ComponentRef<typeof View>>) => (
   <View ref={ref} aria-hidden style={[css('table-row'), { height: size }]} />
 )
 
+export type TableBodyProps = {
+  children: ReactNode
+  /**
+   * Draw only the rows near the screen however few there are, so a page can scroll to a row it
+   * hasn't drawn through `ref` (the admin's A–Z index, HT-57).
+   */
+  virtual?: boolean
+  /** The virtual list, while the body is one. */
+  ref?: Ref<VirtualList>
+}
+
 /** The rows. The last row has no line under it: the frame's border closes the table. */
-export function TableBody({ children }: { children: ReactNode }) {
+export function TableBody({ children, virtual: always, ref }: TableBodyProps) {
   const rows = Children.toArray(children).filter(isValidElement)
-  const virtual = useScrollSourceOrNull() !== null && rows.length > VIRTUAL_FROM
+  const virtual = useScrollSourceOrNull() !== null && (always || rows.length > VIRTUAL_FROM)
   return (
     <View role="rowgroup" style={css('table-row-group')}>
       {virtual ? (
         <Virtual
+          ref={ref}
           count={rows.length}
           estimateSize={() => tokens.density.rowSingle}
           getKey={(i) => rows[i]?.key ?? i}

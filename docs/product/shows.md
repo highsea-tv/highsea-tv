@@ -26,6 +26,7 @@ The admin's side of shows. The **library** shows every show here, which are stil
 - **Table:** a select column, the title with a poster thumbnail and its path under it, network, status (Airing or Ended), seasons, episodes (the count over its bar), next airing (date, with the episode's code under it), size, monitored.
 - **Episode count** is Sonarr's: aired episodes that are monitored or have a file, and how many of them have a file. Episodes still to air don't count. Missing counts what's downloading too, as Sonarr does.
 - **Bulk bar:** as Movies': "3 shows selected", **Search**, **Edit** (Monitor, Stop monitoring, then each quality profile), **Remove**, **Clear**.
+- **The whole library and the A–Z index** (HT-57): as Movies' ([movies.md › Library](movies.md#library-a5)): the grid and the table draw only what's near the screen, and sorted by Title the clients' A–Z index stands beside the frame.
 
 ### Show page (`/shows/{id}`)
 

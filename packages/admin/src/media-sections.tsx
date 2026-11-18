@@ -396,15 +396,19 @@ export function ReleaseLine({ date }: { date: string | null }) {
 
 // ---------------------------------------------------------------- grids
 
+/** A poster grid's least column width, and its gaps: the libraries' windowed grid shares them. */
+export const POSTER_MIN = 136
+export const POSTER_GAP = { column: tokens.space['4'], row: tokens.space['5'] }
+
 /** A grid of posters, as many 136-wide columns as fit (Discover's, a person's Known for). */
-export function PosterGrid({ children, min = 136 }: { children: ReactNode; min?: number }) {
+export function PosterGrid({ children, min = POSTER_MIN }: { children: ReactNode; min?: number }) {
   return (
     <View
       role="list"
       style={grid({
         gridTemplateColumns: `repeat(auto-fill, minmax(${min}px, 1fr))`,
-        columnGap: tokens.space['4'],
-        rowGap: tokens.space['5'],
+        columnGap: POSTER_GAP.column,
+        rowGap: POSTER_GAP.row,
       })}
     >
       {children}
