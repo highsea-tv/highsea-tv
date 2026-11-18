@@ -58,6 +58,7 @@ const USER_ROUTES = [
   'library.search',
   'me.addPasskey',
   'me.changePassword',
+  'me.changeUsername',
   'me.devices',
   'me.disableTwoFactor',
   'me.enableTwoFactor',

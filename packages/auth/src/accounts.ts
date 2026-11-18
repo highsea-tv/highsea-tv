@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // People (users-devices.md): the owner from setup, invites and password-reset links, role and
-// access changes, removal, and each person's own name and password.
+// access changes, renames, removal, and each person's own name, username and password.
 import { randomBytes } from 'node:crypto'
 import { AppError, newId } from '@highsea-tv/core'
 import { schema } from '@highsea-tv/db'
@@ -19,6 +19,13 @@ export const LINK_TTL = 7 * 86_400_000
 export const USERNAME = /^[a-z0-9._-]{2,32}$/
 
 export type Actor = { id: string; name: string }
+
+/**
+ * A username as it's kept and matched: trimmed and lowercased, as sign-in, proxy sign-in and
+ * setup's field take it (sign-in.ts, proxy-auth.ts). Kept names are lowercase already, so a name
+ * that differs only in case is the same name.
+ */
+export const normalUsername = (username: string) => username.trim().toLowerCase()
 
 const invalid = (message: string, details: Record<string, unknown>) =>
   new AppError('invalid', message, details)
@@ -470,6 +477,61 @@ export function updateUser(
   return ctx.userView(id)
 }
 
+/**
+ * Gives an account a new username. Only the name changes: the id stays, so sessions, device
+ * tokens, keys, passkeys, watch state, profiles and the audit log still belong to it. Audited as
+ * `user.rename` with both names, since older entries keep the name their actor had then.
+ */
+function rename(
+  ctx: Ctx,
+  user: { id: string; username: string },
+  input: string,
+  actor: Actor,
+  meta: RequestMeta,
+): UserView {
+  const username = normalUsername(input)
+  if (username === user.username) return ctx.userView(user.id)
+  checkUsername(ctx, username, user.id)
+  ctx.db.transaction(() => {
+    ctx.db
+      .update(schema.users)
+      .set({ username, updatedAt: ctx.now() })
+      .where(eq(schema.users.id, user.id))
+      .run()
+    ctx.audit({
+      action: 'user.rename',
+      actor,
+      targetType: 'user',
+      targetId: user.id,
+      address: meta.address,
+      detail: { from: user.username, to: username },
+    })
+  })
+  ctx.events.emit({ topic: 'users.updated', ids: [user.id] })
+  return ctx.userView(user.id)
+}
+
+/**
+ * The owner renames someone else (ADR 0032: managing people is the owner's). Your own goes through
+ * `changeUsername`, which asks for your password.
+ */
+export function renameUser(
+  ctx: Ctx,
+  id: string,
+  username: string,
+  actor: Actor,
+  meta: RequestMeta,
+): UserView {
+  const user = ctx.findUser(id)
+  if (!user) throw notFound('There’s no one with that id.')
+  assertCanManage(ctx, actor)
+  if (id === actor.id)
+    throw new AppError('forbidden', 'Change your own username in Your account.', {
+      reason: 'self',
+    })
+  return rename(ctx, user, username, actor, meta)
+}
+
 /** Removes someone: they're signed out everywhere and their devices, keys and links go too. */
 export function removeUser(ctx: Ctx, id: string, actor: Actor, meta: RequestMeta) {
   const user = ctx.findUser(id)
@@ -520,6 +582,24 @@ export async function confirmPassword(ctx: Ctx, userId: string, password: string
       field: 'password',
       reason: 'invalid-credentials',
     })
+}
+
+/**
+ * Changes your own username. A username is half of what signs you in, so it asks for your password
+ * first, as changing the password does (OWASP Authentication Cheat Sheet: re-authenticate before
+ * changing sign-in details). Someone without a password (single sign-on or passkeys only) has
+ * none to give. Every device stays signed in.
+ */
+export async function changeUsername(
+  ctx: Ctx,
+  userId: string,
+  input: { username: string; password: string | null },
+  meta: RequestMeta,
+): Promise<UserView> {
+  const user = ctx.findUser(userId)
+  if (!user) throw notFound('There’s no one with that id.')
+  if (user.passwordHash) await confirmPassword(ctx, userId, input.password ?? '')
+  return rename(ctx, user, input.username, { id: userId, name: user.username }, meta)
 }
 
 /**

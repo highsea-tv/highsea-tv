@@ -32,9 +32,13 @@ export default {
     {
       name: 'edit',
       path: '/settings/users',
-      act: (p) => p.getByRole('button', { name: 'Edit Theo' }).click(),
+      // under Next's dev server the sheet can take half a minute to open: wait for its Save
+      act: async (p) => {
+        await p.getByRole('button', { name: 'Edit Theo' }).click()
+        await p.getByRole('button', { name: 'Save' }).waitFor({ timeout: 60_000 })
+      },
       crop: dialog,
-      height: 600,
+      height: 760,
     },
     {
       name: 'person-menu',
@@ -66,6 +70,15 @@ export default {
       crop: dialog,
     },
     { name: 'account', path: '/', act: account, crop: dialog },
+    {
+      name: 'account-username',
+      path: '/',
+      act: async (p) => {
+        await account(p)
+        await section('Username')(p).scrollIntoViewIfNeeded()
+      },
+      crop: section('Username'),
+    },
     {
       name: 'account-two-step',
       path: '/',
