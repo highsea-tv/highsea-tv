@@ -213,7 +213,10 @@ describe.skipIf(!hasFfmpeg)('HLS with ffmpeg', () => {
     expect(decodeTimes(tail[0] as string)[0]).toBe(37 * (videoScale as number))
 
     // the same piece from a run started elsewhere starts at the same time, from the same header
-    const before = decodeTimes(join(t.dir, '8.m4s'))
+    // (both runs start at the keyframe at 7 s: the sound's first samples follow a run's start)
+    await t.segment(3)
+    await t.segment(4)
+    const before = decodeTimes(join(t.dir, '5.m4s'))
     const other = transcodes.open('copy-again', source({ start: 8 }))
     // a resume at 8 s: a segment begins at the keyframe before it (7 s), short ones after
     expect((await other.segments()).slice(0, 3)).toEqual([
@@ -221,11 +224,10 @@ describe.skipIf(!hasFfmpeg)('HLS with ffmpeg', () => {
       { start: 7, duration: 2, first: 4, last: 5 },
       { start: 9, duration: 2, first: 5, last: 6 },
     ])
-    // its run starts at the resume's segment, and goes on to the piece the first session made
     await other.segment(1)
-    const again = await other.segment(5)
+    const again = await other.segment(2)
     expect(other.state()?.first).toBe(4)
-    expect(again.map((f) => f.split('/').at(-1))).toEqual(['8.m4s'])
+    expect(again.map((f) => f.split('/').at(-1))).toEqual(['5.m4s'])
     expect(decodeTimes(again[0] as string)).toEqual(before)
     await other.init()
     expect(readFileSync(join(other.dir, 'header.mp4'))).toEqual(
