@@ -1,5 +1,21 @@
 [
   {
+    "version": "0.4.4",
+    "channel": "stable",
+    "date": "2026-11-18",
+    "notes": [
+      "HT-53 Notice a reverse proxy, HTTPS only behind one, and the audit exceptions (#60)",
+      "HT-55 Dashboard widgets' scrolling bodies reachable by keyboard (axe) (#63)",
+      "HT-52 Profiles on the server, served to every client (A2b) (#61)",
+      "HT-57 Admin libraries show the whole library, with the clients' A–Z quick-jump (#64)",
+      "HT-56 Resuming a direct-stream film fails in the web player on 0.4.3 (#65)",
+      "HT-58 The phone's player turns with the device, and Now Playing shows artwork (#66)",
+      "Keep each stream piece's keyframe at its own time, and seek the open-GOP film in the sweep (HT-59) (#68)",
+      "HT-60 Dashboard widgets on real data: Recently added, Network, date and time, weather (#70)"
+    ],
+    "url": "https://github.com/highsea-tv/highsea-tv/releases/tag/v0.4.4"
+  },
+  {
     "version": "0.4.3",
     "channel": "stable",
     "date": "2026-11-18",

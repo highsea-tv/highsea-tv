@@ -7,6 +7,19 @@ While highsea is at 0.x, any release may change how something works. When one do
 
 ## [Unreleased]
 
+## [0.4.4] - 2026-11-18
+
+### Changed
+
+- HT-53 Notice a reverse proxy, HTTPS only behind one, and the audit exceptions ([#60](https://github.com/highsea-tv/highsea-tv/pull/60))
+- HT-55 Dashboard widgets' scrolling bodies reachable by keyboard (axe) ([#63](https://github.com/highsea-tv/highsea-tv/pull/63))
+- HT-52 Profiles on the server, served to every client (A2b) ([#61](https://github.com/highsea-tv/highsea-tv/pull/61))
+- HT-57 Admin libraries show the whole library, with the clients' A–Z quick-jump ([#64](https://github.com/highsea-tv/highsea-tv/pull/64))
+- HT-56 Resuming a direct-stream film fails in the web player on 0.4.3 ([#65](https://github.com/highsea-tv/highsea-tv/pull/65))
+- HT-58 The phone's player turns with the device, and Now Playing shows artwork ([#66](https://github.com/highsea-tv/highsea-tv/pull/66))
+- Keep each stream piece's keyframe at its own time, and seek the open-GOP film in the sweep (HT-59) ([#68](https://github.com/highsea-tv/highsea-tv/pull/68))
+- HT-60 Dashboard widgets on real data: Recently added, Network, date and time, weather ([#70](https://github.com/highsea-tv/highsea-tv/pull/70))
+
 ## [0.4.3] - 2026-11-18
 
 ### Changed
@@ -155,7 +168,9 @@ While highsea is at 0.x, any release may change how something works. When one do
 - Images for amd64 and arm64 at `ghcr.io/highsea-tv/highsea`, with compose files and templates for Unraid, TrueNAS and Synology.
 
 
-[unreleased]: https://github.com/highsea-tv/highsea-tv/compare/v0.4.3...HEAD
+
+[unreleased]: https://github.com/highsea-tv/highsea-tv/compare/v0.4.4...HEAD
+[0.4.4]: https://github.com/highsea-tv/highsea-tv/compare/v0.4.3...v0.4.4
 [0.4.3]: https://github.com/highsea-tv/highsea-tv/compare/v0.4.2...v0.4.3
 [0.4.2]: https://github.com/highsea-tv/highsea-tv/compare/v0.4.1...v0.4.2
 [0.4.1]: https://github.com/highsea-tv/highsea-tv/compare/v0.4.0...v0.4.1
