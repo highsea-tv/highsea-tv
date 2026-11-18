@@ -328,19 +328,40 @@ export async function mp4Keyframes(r: Reader, id: number | null, nth: number): P
   if (!stss) throw new NoIndex('The picture has no sync sample table.')
   if (!stts || !timescale) throw new NoIndex('The picture has no decode times.')
 
-  // the edit list: one edit that starts the media at `media_time`, at the normal rate, is what
-  // ffmpeg's muxer and most others write; anything else is left to the full read
+  // the edit list (§ 8.6.6): one edit that starts the media at `media_time`, at the normal rate,
+  // is what ffmpeg's muxer and most others write, after an empty edit ("media_time equal to -1")
+  // when the picture starts after the sound, which delays it by the empty edit's
+  // `segment_duration`, in the movie's timescale (`mvhd`, § 8.2.2); anything else is left to the
+  // full read
   let mediaTime = 0
+  let delay = 0
   const elst = path(b, trak, 'edts', 'elst')
   if (elst) {
     const v1 = b[elst.data] === 1
+    const size = v1 ? 20 : 12
     const count = b.readUInt32BE(elst.data + 4)
-    if (count > 1) throw new NoIndex('The picture has more than one edit.')
-    if (count === 1) {
-      const at = elst.data + 8
-      mediaTime = v1 ? Number(b.readBigInt64BE(at + 8)) : b.readInt32BE(at + 4)
-      const rate = b.readInt16BE(at + (v1 ? 16 : 8))
-      if (mediaTime < 0 || rate !== 1) throw new NoIndex('The picture’s edit isn’t a plain one.')
+    const edits = Array.from({ length: count }, (_, i) => {
+      const at = elst.data + 8 + i * size
+      return {
+        duration: v1 ? Number(b.readBigUInt64BE(at)) : b.readUInt32BE(at),
+        mediaTime: v1 ? Number(b.readBigInt64BE(at + 8)) : b.readInt32BE(at + 4),
+        rate: b.readInt16BE(at + (v1 ? 16 : 8)),
+      }
+    })
+    const empty = edits[0]?.mediaTime === -1 ? edits.shift() : undefined
+    if (edits.length > 1) throw new NoIndex('The picture has more than one edit.')
+    const edit = edits[0]
+    if (edit) {
+      if (edit.mediaTime < 0 || edit.rate !== 1)
+        throw new NoIndex('The picture’s edit isn’t a plain one.')
+      mediaTime = edit.mediaTime
+    }
+    if (empty) {
+      const mvhd = child(b, moov, 'mvhd')
+      // timescale follows the creation and modification times (§ 8.2.2)
+      const movieScale = mvhd ? b.readUInt32BE(mvhd.data + (b[mvhd.data] === 1 ? 20 : 12)) : 0
+      if (!movieScale) throw new NoIndex('The film has no timescale.')
+      delay = (empty.duration * timescale) / movieScale
     }
   }
 
@@ -379,7 +400,7 @@ export async function mp4Keyframes(r: Reader, id: number | null, nth: number): P
       sample++
     }
     const offset = offsets.length ? (offsets[o]?.value ?? 0) : 0
-    times.push(round6((dts + offset - mediaTime) / timescale))
+    times.push(round6((dts + offset - mediaTime + delay) / timescale))
   }
   return times
 }
