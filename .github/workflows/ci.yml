@@ -462,12 +462,19 @@ jobs:
           # shellcheck disable=SC2086 # one word per package
           versions=$(apt-get install -s --no-install-recommends ffmpeg $browsers | grep '^Inst ' | sha256sum | cut -c1-16)
           echo "key=apt-${RUNNER_OS}-${RUNNER_ARCH}-playback-${versions}" >> "$GITHUB_OUTPUT"
+      # restored from this job's last cache, or else the tests' (ffmpeg's packages, most of the
+      # download), and saved straight after the install, so a slow first download is kept even if
+      # a later step fails (the cache action's restore and save actions, whose save runs whatever
+      # follows: https://github.com/actions/cache/blob/v5.1.0/save/README.md)
       - if: *build
-        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        id: apt-cache
+        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
         with:
           path: ~/apt-archives
           key: ${{ steps.apt.outputs.key }}
-          restore-keys: apt-${{ runner.os }}-${{ runner.arch }}-playback-
+          restore-keys: |
+            apt-${{ runner.os }}-${{ runner.arch }}-playback-
+            apt-${{ runner.os }}-${{ runner.arch }}-ffmpeg-unar-
       - name: ffmpeg and the browsers' system packages
         if: *build
         timeout-minutes: 8
@@ -481,6 +488,11 @@ jobs:
           sudo apt-get autoclean -o Dir::Cache::Archives="$archives"
           sudo rm -rf "$archives/lock" "$archives/partial"
           sudo chown -R "$(id -u):$(id -g)" "$archives"
+      - if: steps.reuse.outputs.reused != 'true' && steps.apt-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: ~/apt-archives
+          key: ${{ steps.apt.outputs.key }}
       - name: Chromium and Firefox for Playwright
         if: *build
         timeout-minutes: 5
