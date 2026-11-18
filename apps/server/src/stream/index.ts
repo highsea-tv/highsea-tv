@@ -43,17 +43,17 @@ function fail(res: ServerResponse, status: number, message: string) {
   res.end(JSON.stringify({ error: { code: status === 404 ? 'not-found' : 'invalid', message } }))
 }
 
-/** Sends files one after another as one body: a segment's pieces, or one file. */
+/** Sends files one after another as one body: a segment's pieces, or one file. Returns its bytes. */
 async function sendFiles(req: IncomingMessage, res: ServerResponse, files: string[], type: string) {
   const sizes = await Promise.all(files.map(async (f) => (await stat(f)).size))
-  res.writeHead(200, {
-    ...SECURITY,
-    'content-type': type,
-    'content-length': String(sizes.reduce((a, b) => a + b, 0)),
-  })
-  if (req.method === 'HEAD') return void res.end()
+  const total = sizes.reduce((a, b) => a + b, 0)
+  res.writeHead(200, { ...SECURITY, 'content-type': type, 'content-length': String(total) })
+  if (req.method === 'HEAD') {
+    res.end()
+    return total
+  }
   for (const f of files) {
-    if (res.destroyed) return
+    if (res.destroyed) return total
     await new Promise<void>((resolve, reject) => {
       const body = createReadStream(f)
       res.once('close', () => body.destroy())
@@ -62,7 +62,9 @@ async function sendFiles(req: IncomingMessage, res: ServerResponse, files: strin
       body.pipe(res, { end: false })
     })
   }
-  res.end()
+  // the body is with the client's connection once `end` calls back
+  await new Promise<void>((resolve) => res.end(resolve))
+  return total
 }
 
 function sendText(req: IncomingMessage, res: ServerResponse, text: string, type: string) {
@@ -153,8 +155,20 @@ export function createStream(
     }
     const segment = /^(\d{1,6})\.m4s$/.exec(rest)
     if (segment) {
-      const files = await playback.hls.segment(token, Number(segment[1]))
-      return files === null ? gone() : sendFiles(req, res, files, MP4)
+      const index = Number(segment[1])
+      const asked = Date.now()
+      const files = await playback.hls.segment(token, index)
+      if (files === null) return gone()
+      const ready = Date.now()
+      const bytes = await sendFiles(req, res, files, MP4)
+      // a whole segment sent: the session's first is its start's last timing line
+      if (req.method === 'GET' && res.writableFinished)
+        playback.hls.sent(token, index, {
+          waitMs: ready - asked,
+          sendMs: Date.now() - ready,
+          bytes,
+        })
+      return
     }
     const sub = /^subs\/([^/]+)\.(m3u8|vtt)$/.exec(rest)
     if (sub) {
@@ -204,11 +218,10 @@ export function createStream(
       const token = decodeURIComponent(vtt[1] as string)
       return void runtime.playback
         .subtitle(token, decodeURIComponent(vtt[2] as string))
-        .then((file) =>
-          file === null
-            ? fail(res, 404, 'That subtitle isn’t there.')
-            : sendFiles(req, res, [file], VTT),
-        )
+        .then(async (file) => {
+          if (file === null) return fail(res, 404, 'That subtitle isn’t there.')
+          await sendFiles(req, res, [file], VTT)
+        })
         .catch(failed(res))
     }
     if (options.tryPage && path === '/stream/try/hls.js') {

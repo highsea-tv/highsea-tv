@@ -4,10 +4,19 @@
 // the multivariant and media playlists, the initialization section and a segment far ahead that
 // play as one file, each text track as WebVTT and as an HLS rendition, the session's folder gone
 // when it ends, the player told "This film didn't start" when ffmpeg fails, and the scrubber's
-// previews made by the `media.trickplay` job and served. Skipped, and said so, without ffmpeg; the
+// previews made by the `media.trickplay` job and served, the keyframes and subtitles read ahead by
+// `media.ahead`, and a resume's playlist and timing lines. Skipped, and said so, without ffmpeg; the
 // runs themselves are tested in packages/stream.
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
-import { existsSync, mkdirSync, mkdtempSync, renameSync, rmSync, writeFileSync } from 'node:fs'
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  renameSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs'
 import type { AddressInfo } from 'node:net'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -162,6 +171,102 @@ describe.skipIf(!hasFfmpeg)('HLS over HTTP', () => {
       params: { type: 'movie', id: SINTEL },
       body: { profile: 'web-chromium', subtitleId: 'fil_sintel:2' },
     })
+
+  const logged = (message: string, session?: string) =>
+    runtime.logs
+      .entries()
+      .filter(
+        (l) =>
+          l.source === 'playback' &&
+          l.message === message &&
+          (!session || l.fields?.session === session),
+      )
+
+  test('read ahead of the first play: the keyframes kept, the film’s subtitles as WebVTT', async () => {
+    const file = runtime.db.select().from(schema.mediaFiles).get() as { id: string; size: number }
+    const root = join(runtime.config.dataDir, 'webvtt')
+    const orphan = join(root, 'fil_gone')
+    mkdirSync(orphan, { recursive: true })
+    expect(runtime.db.select().from(schema.fileKeyframes).all()).toEqual([])
+
+    runtime.jobs.enqueue('media.ahead', {}, { dedupeKey: 'ahead' })
+    await runtime.jobs.tick()
+    await runtime.jobs.idle()
+
+    // a minute with a keyframe every 2 s
+    const kept = runtime.db.select().from(schema.fileKeyframes).get()
+    expect(kept).toMatchObject({ fileId: file.id, size: file.size })
+    expect(kept?.times.length).toBe(30)
+    const vtt = join(root, file.id, `${file.size}-2.vtt`)
+    expect(readFileSync(vtt, 'utf8')).toContain('00:00.000 --> 00:02.000\nHello.')
+    expect(existsSync(`${vtt}.part`)).toBe(false)
+    expect(existsSync(orphan)).toBe(false)
+    expect(logged('read ahead of the first play')[0]?.fields).toMatchObject({
+      file: file.id,
+      keyframes: 30,
+      subtitles: 1,
+    })
+
+    // so a play reads and converts nothing: its subtitle is the kept file
+    const session = await play()
+    const sub = await fetch(`${url}${session.subtitles[0]?.url}`)
+    expect(await sub.text()).toContain('Hello.')
+    expect(logged('keyframes read', session.id)).toEqual([])
+    expect(logged('subtitle converted', session.id)).toEqual([])
+    await api.playback.stop({ params: { id: session.id } })
+  })
+
+  test('a resume: the playlist starts there, and the log says where the start’s time went', async () => {
+    const session = await api.playback.play({
+      params: { type: 'movie', id: SINTEL },
+      body: { profile: 'web-chromium', start: 31 },
+    })
+    const base = `${url}${(session.url as string).replace(/main\.m3u8$/, '')}`
+    const media = await (await fetch(`${base}video.m3u8`)).text()
+    expect(media).toContain('#EXT-X-START:TIME-OFFSET=31.000,PRECISE=YES')
+    // a segment begins at the keyframe before the resume (30 s), and it's a short one
+    const lines = media.split('\n')
+    let at = 0
+    let name = ''
+    for (let i = 0; i < lines.length && !name; i++) {
+      if (!lines[i]?.startsWith('#EXTINF:')) continue
+      const length = Number(lines[i]?.slice(8).split(',')[0])
+      if (at + length > 31) {
+        expect(at).toBeCloseTo(30, 1)
+        expect(length).toBeCloseTo(2, 1)
+        name = lines[i + 1] as string
+      }
+      at += length
+    }
+    expect((await fetch(`${base}${name}`)).status).toBe(200)
+
+    const one = (message: string) => {
+      const lines = logged(message, session.id)
+      expect(lines.map((l) => l.level)).toEqual(['info'])
+      return lines[0]?.fields as Record<string, number>
+    }
+    expect(one('play session started')).toMatchObject({ start: 31, method: 'direct-stream' })
+    expect(one('play session started').decisionMs).toBeGreaterThanOrEqual(0)
+    // ffmpeg began at the keyframe before the resume, not at the film's start
+    const started = one('ffmpeg started')
+    expect(started).toMatchObject({ run: 1, method: 'direct-stream', piece: 15 })
+    expect(started.start).toBeCloseTo(30, 1)
+    const ready = one('first segment ready')
+    expect(ready).toMatchObject({ run: 1, piece: 15 })
+    expect(ready.ffmpegMs).toBeGreaterThan(0)
+    expect(ready.playlistMs).toBeGreaterThanOrEqual(0)
+    expect(ready.sinceOpenMs).toBeGreaterThanOrEqual(ready.ffmpegMs as number)
+    for (let i = 0; i < 50 && !logged('first segment served', session.id).length; i++)
+      await Bun.sleep(20)
+    const served = one('first segment served')
+    expect(served).toMatchObject({ segment: Number(name.split('.')[0]) })
+    expect(served.bytes).toBeGreaterThan(0)
+    expect(served.sincePlayMs).toBeGreaterThanOrEqual(served.sendMs as number)
+    // once a session: the next segment says nothing more
+    await fetch(`${base}${Number(name.split('.')[0]) + 1}.m4s`)
+    expect(logged('first segment served', session.id).length).toBe(1)
+    await api.playback.stop({ params: { id: session.id } })
+  })
 
   test('a direct stream: the playlists, the init and a segment far ahead, played as one file', async () => {
     const session = await play()

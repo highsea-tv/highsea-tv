@@ -49,6 +49,9 @@ export { TRANSCODE_LIMIT } from './playback-shared.ts'
  */
 const clear = (player: VideoPlayer) => player.replace(null, true)
 
+/** How near its start a loaded item must be, in seconds, to be left where it is. */
+const START_SLACK = 1
+
 export const usePlayback: UsePlayback<VideoPlayer> = (id, fromStart, type = 'movie') => {
   const client = useClient()
   const media = useMedia()
@@ -60,7 +63,8 @@ export const usePlayback: UsePlayback<VideoPlayer> = (id, fromStart, type = 'mov
   // true once the current stream plays: until then the player's events are about nothing the
   // server should save
   const playingStream = useRef(false)
-  // where the stream should start once it's loaded: AVPlayer seeks only an item it has read
+  // where the stream should start once it's loaded, when it isn't there by then: AVPlayer seeks
+  // only an item it has read
   const pendingStart = useRef<number | null>(null)
   // the place last heard from the player, kept for leaving after the player is let go
   const position = useRef(0)
@@ -188,7 +192,10 @@ export const usePlayback: UsePlayback<VideoPlayer> = (id, fromStart, type = 'mov
       if (player.duration > 0) dispatch({ type: 'duration', duration: player.duration })
       const at = pendingStart.current
       pendingStart.current = null
-      if (at) player.currentTime = at
+      // a stream's playlist says where to start (EXT-X-START, RFC 8216 § 4.3.5.2), and AVPlayer
+      // loads from there, so it's there already; seeking it again would only load that place
+      // twice. A file played directly has no playlist, and starts at its beginning
+      if (at && Math.abs(player.currentTime - at) > START_SLACK) player.currentTime = at
       dispatch({ type: 'ready' })
     } else if (status === 'loading') dispatch({ type: 'waiting', at: Date.now() })
     else if (status === 'error')

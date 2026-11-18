@@ -339,6 +339,21 @@ export function subtitleArgs(input: string, index: number | null, output: string
 }
 
 /**
+ * Several of a film's text subtitles as WebVTT in one pass over the file, an output each
+ * (https://ffmpeg.org/ffmpeg.html#Synopsis: "any number of output files"). A subtitle track is
+ * spread through the whole file, so reading one reads it all; reading them together reads it once.
+ */
+export function subtitlesArgs(input: string, tracks: { index: number; output: string }[]) {
+  return [
+    ...['-hide_banner', '-nostdin', '-loglevel', 'error', '-y'],
+    ...['-i', input],
+    ...tracks.flatMap((t) => [
+      ...['-map', `0:${t.index}`, '-c:s', 'webvtt', '-f', 'webvtt', t.output],
+    ]),
+  ]
+}
+
+/**
  * An ASS track to burn in, taken out of the film once a session, with the fonts it carries: libass's
  * `subtitles` filter reads the whole file it's given each time it starts, and each seek starts a
  * run. Each font is written under a name highsea picks, never the one in the file
