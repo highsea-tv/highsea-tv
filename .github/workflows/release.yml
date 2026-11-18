@@ -308,8 +308,20 @@ jobs:
           SPK: ${{ needs.spk.result }}
           PRERELEASE: ${{ needs.prepare.outputs.prerelease }}
 
+  # Every job from here on names the results it needs and runs on `!cancelled()`. Without a status
+  # function an `if:` is `success() && …`, and GitHub skips a job when any job before it in its
+  # `needs` chain failed or was skipped: "a failure or skip applies to all jobs in the dependency
+  # chain from the point of failure or skip onwards"
+  # (https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#jobsjob_idneeds,
+  # https://docs.github.com/en/actions/reference/workflows-and-actions/expressions#status-check-functions).
+  # `ci` and `e2e` are skipped on purpose when next's results are reused, and they're in the chain
+  # through `checks`, so run 44267473765 (2026-11-18) skipped every build and only `github-release`,
+  # which had `!cancelled()`, went on (ADR 0050's 2026-11-18 note). `!cancelled()` still stops on a
+  # cancel, and `needs.<job>.result == 'success'` keeps a failure upstream from going on.
+  # scripts/release-gate.test.ts holds every job after `checks` to this.
   image:
     needs: [prepare, checks]
+    if: ${{ !cancelled() && needs.prepare.result == 'success' && needs.checks.result == 'success' }}
     environment: release
     strategy:
       matrix:
@@ -427,6 +439,7 @@ jobs:
 
   catalog:
     needs: [prepare, checks]
+    if: ${{ !cancelled() && needs.prepare.result == 'success' && needs.checks.result == 'success' }}
     runs-on: ubuntu-24.04
     environment: release
     steps:
@@ -492,7 +505,9 @@ jobs:
   # once the Apple secrets are there (https://v2.tauri.app/distribute/sign/macos/); Windows'
   # installer stays unsigned until 1.0 (the owner's answer of 2026-10-29)
   desktop:
-    if: ${{ needs.prepare.outputs.prerelease == 'false' }}
+    if: >-
+      ${{ !cancelled() && needs.prepare.result == 'success' && needs.checks.result == 'success'
+        && needs.prepare.outputs.prerelease == 'false' }}
     needs: [prepare, checks]
     environment: release
     strategy:
@@ -589,6 +604,7 @@ jobs:
   # the updater's feed and the installers' sums, from all three
   desktop-feed:
     needs: [prepare, desktop]
+    if: ${{ !cancelled() && needs.prepare.result == 'success' && needs.desktop.result == 'success' }}
     runs-on: ubuntu-24.04
     env:
       VERSION: ${{ needs.prepare.outputs.version }}
@@ -620,7 +636,9 @@ jobs:
           path: ${{ runner.temp }}/desktop/
 
   merge:
-    if: ${{ !inputs.dry-run }}
+    if: >-
+      ${{ !cancelled() && !inputs.dry-run && needs.prepare.result == 'success'
+        && needs.image.result == 'success' && needs.catalog.result == 'success' }}
     needs: [prepare, image, catalog]
     runs-on: ubuntu-24.04
     env:
@@ -657,7 +675,7 @@ jobs:
           IMAGE_TAGS: ${{ needs.prepare.outputs.tags }}
 
   pages:
-    if: ${{ !inputs.dry-run }}
+    if: ${{ !cancelled() && !inputs.dry-run && needs.merge.result == 'success' && needs.catalog.result == 'success' }}
     needs: [merge, catalog]
     runs-on: ubuntu-24.04
     permissions:
@@ -672,10 +690,12 @@ jobs:
 
   # The tag, the GitHub release and, from next, next and main moved to the release commit. It
   # names the `release` environment, for the deploy key, and waits on `checks` like the other
-  # keyed jobs so the owner's one approval covers it too; then it waits, in its own steps, for
-  # everything it publishes after (merge, pages and, for a stable release, spk and desktop-feed)
-  # and stops unless each passed, so a failed check never publishes. The jobs' results come from
-  # the run's own jobs (https://docs.github.com/en/rest/actions/workflow-jobs#list-jobs-for-a-workflow-run-attempt).
+  # keyed jobs so the owner's one approval covers it too; then, before it pushes anything, it waits
+  # for every job it publishes after and stops unless each ended as the release needs: passed, or
+  # skipped on purpose (spk and the desktop app on a prerelease). That rule is
+  # scripts/release-gate.ts's, read from the run's own jobs
+  # (https://docs.github.com/en/rest/actions/workflow-jobs#list-jobs-for-a-workflow-run-attempt),
+  # and `outcome` below applies the same rule to the whole run.
   #
   # next and main are protected by rulesets that require pull requests. The deploy key in the
   # `release` environment, RELEASE_DEPLOY_KEY, is the rulesets' one bypass for a workflow (actor
@@ -686,7 +706,7 @@ jobs:
   # (https://docs.github.com/en/actions/concepts/security/github_token), so next runs CI on the
   # release commit and main's push deploys docs.highsea.tv (ADR 0050's 2026-10-23 section).
   github-release:
-    if: ${{ !cancelled() && !inputs.dry-run && needs.checks.result == 'success' }}
+    if: ${{ !cancelled() && !inputs.dry-run && needs.prepare.result == 'success' && needs.checks.result == 'success' }}
     needs: [prepare, checks]
     runs-on: ubuntu-24.04
     environment: release
@@ -708,41 +728,21 @@ jobs:
           fi
         env:
           KEY: ${{ secrets.RELEASE_DEPLOY_KEY }}
-      - name: Everything before the release passed
-        run: |
-          wanted=(merge pages)
-          if [ "$PRERELEASE" = false ]; then wanted+=(spk desktop-feed); fi
-          deadline=$(($(date +%s) + 200 * 60))
-          while :; do
-            jobs=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/attempts/$GITHUB_RUN_ATTEMPT/jobs?per_page=100" --paginate \
-              --jq '.jobs[] | [.name, .status, (.conclusion // "")] | @tsv') || jobs=''
-            waiting=()
-            for name in "${wanted[@]}"; do
-              line=$(awk -F'\t' -v n="$name" '$1 == n' <<< "$jobs" | head -1)
-              status=$(cut -f2 <<< "$line")
-              conclusion=$(cut -f3 <<< "$line")
-              if [ "$status" = completed ]; then
-                if [ "$conclusion" != success ]; then
-                  echo "$name ended ${conclusion:-without a result}, so nothing is released." >&2
-                  exit 1
-                fi
-              else
-                waiting+=("$name")
-              fi
-            done
-            [ "${#waiting[@]}" -eq 0 ] && break
-            if [ "$(date +%s)" -ge "$deadline" ]; then echo "Still waiting for ${waiting[*]}; nothing is released." >&2; exit 1; fi
-            echo "Waiting for ${waiting[*]}"
-            sleep 30
-          done
-          echo "${wanted[*]} passed."
-        env:
-          GH_TOKEN: ${{ github.token }}
-          PRERELEASE: ${{ needs.prepare.outputs.prerelease }}
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           fetch-depth: 0
           ssh-key: ${{ github.ref == 'refs/heads/next' && secrets.RELEASE_DEPLOY_KEY || '' }}
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: 1.4.4
+      # nothing is pushed or published before this passes (scripts/release-gate.ts imports nothing,
+      # so it runs without `bun install`)
+      - name: Everything the release needs passed
+        run: bun scripts/release-gate.ts wait
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PRERELEASE: ${{ needs.prepare.outputs.prerelease }}
+          DRY_RUN: ${{ inputs.dry-run }}
       - if: ${{ needs.prepare.outputs.bundle == 'true' }}
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
@@ -772,9 +772,11 @@ jobs:
       # from main, creating the release makes the tag on main's commit
       # (https://cli.github.com/manual/gh_release_create)
       - name: The tag
+        id: tag
         if: ${{ github.ref == 'refs/heads/next' }}
         run: git push origin "$COMMIT:refs/tags/v$VERSION"
       - name: The release
+        id: release
         run: |
           kind=()
           if [ "$PRERELEASE" = true ]; then kind+=(--prerelease); fi
@@ -795,6 +797,12 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PRERELEASE: ${{ needs.prepare.outputs.prerelease }}
           TAGS: ${{ needs.prepare.outputs.tags }}
+      # A tag pushed without its release would make the next run pick the patch after it, so it's
+      # taken back and a new run releases the same version (`failure()` runs this step only when
+      # one before it failed, https://docs.github.com/en/actions/reference/workflows-and-actions/expressions#failure)
+      - name: No tag without its release
+        if: ${{ failure() && steps.tag.outcome == 'success' && steps.release.outcome != 'success' }}
+        run: git push origin ":refs/tags/v$VERSION"
       # next and main to the release commit, by fast-forward: a plain push, which git refuses
       # unless it's one (git-push(1)). If next moved on during the release, the release commit
       # is merged into it instead; main must not have moved, since only the owner's merge or a
@@ -822,3 +830,23 @@ jobs:
             echo "::error::v$VERSION is released and next has it, but main couldn't fast-forward to $COMMIT; merge next into main by hand."
             exit 1
           fi
+
+  # The run's verdict, by the same rule as `github-release` (scripts/release-gate.ts): it fails
+  # unless every job the release needs passed and the rest were skipped on purpose, so a dry run
+  # that skipped a build fails instead of looking green. It runs whatever the others did and stops
+  # on a cancel (the note above `image`).
+  outcome:
+    if: ${{ !cancelled() }}
+    needs: [prepare, checks, image, catalog, spk, desktop, desktop-feed, merge, pages, github-release]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: 1.4.4
+      - name: Every job ended as the release needs
+        run: bun scripts/release-gate.ts needs
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+          PRERELEASE: ${{ needs.prepare.outputs.prerelease }}
+          DRY_RUN: ${{ inputs.dry-run }}
