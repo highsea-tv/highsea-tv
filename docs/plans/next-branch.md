@@ -72,7 +72,7 @@ Each job falls in one of two tiers:
 
 | Tier | Jobs | When it runs |
 | --- | --- | --- |
-| Fast | `ci.yml`'s `lint` (lint, types, licences, the dependency check), `tests` (Bun's in 4 shards, the first with the platform under Node, Jest's in 2), `exports` and `builds` side by side since 2026-11-17, and `check`, which needs them; `catalog.yml` when the catalog changes | every pull request that changes more than the internal docs (since 2026-11-17), and every push to `next` or `main` |
+| Fast | `ci.yml`'s `lint` (lint, types, licences, the dependency check), `tests` (Bun's in 4 shards, the first with the platform under Node, Jest's in 3), `exports` and `builds` side by side since 2026-11-17, and `check`, which needs them; `catalog.yml` when the catalog changes | every pull request that changes more than the internal docs (since 2026-11-17), and every push to `next` or `main` |
 | Heavy | `ci.yml`'s `playback`, `leak` and `image`; `e2e.yml`; `desktop.yml`; `native.yml` | every push to `next` (whatever it changed, since 2026-11-17), a pull request into `main` (each job reusing `next`'s result for the same commit when it passed there), a pull request with the `full-ci` label, and a release |
 
 - **How:**
@@ -91,7 +91,7 @@ Each job falls in one of two tiers:
 - **A push to `main`** runs only `check` (answer 3): the pull request from `next` already ran everything on the same result, and a release runs it all again.
 - **`release.yml`** keeps calling `ci.yml` and `e2e.yml` through `workflow_call`. The tier condition lets a called run through whole, since its event is `workflow_dispatch`, not `pull_request`.
 - **Since 2026-11-17 (HT-40), the wait is cut** (ADR 0062's second section of that date):
-  - **The fast tier runs side by side:** `check`'s old steps are `lint`, `tests`, `exports` and `builds`, which start together. `tests` is a matrix of Bun's `--shard=1/4` to `4/4`, balanced by `scripts/test-timings.json`, and Jest's `--shard=1/2` and `2/2`. `check` keeps its name, needs the four, and fails unless each passed and the shards between them ran every test file exactly once (`scripts/test-shards.ts`).
+  - **The fast tier runs side by side:** `check`'s old steps are `lint`, `tests`, `exports` and `builds`, which start together. `tests` is a matrix of Bun's `--shard=1/4` to `4/4`, balanced by `scripts/test-timings.json`, and Jest's `--shard=1/3` to `3/3`. `check` keeps its name, needs the four, and fails unless each passed and the shards between them ran every test file exactly once (`scripts/test-shards.ts`).
   - **cargo-audit** is RustSec's prebuilt binary through `taiki-e/install-action`, checked by its SHA-256, instead of `cargo install` on every run.
   - **The pull request from `next` into `main` reuses `next`'s results:** each heavy job first runs `.github/scripts/reuse-next.sh`, which passes the job without building when the same job passed in `next`'s push run for the same commit, the pull request's head is `next`'s commit, and merging it into `main` gives `next`'s tree; it waits for `next`'s run when that's still going, and builds in every other case. So a push to `next` runs every heavy workflow whatever it changed, and pull requests keep the path filters. A release never reuses anything.
   - **Concurrency:** a pull request's newer run cancels its older one; pushes to `next` and `main` and releases are each in a group of their own, so nothing cancels them, a pending run included.

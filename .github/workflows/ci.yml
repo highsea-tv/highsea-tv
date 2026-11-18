@@ -201,8 +201,10 @@ jobs:
           - { runner: bun, shard: 2, of: 4 }
           - { runner: bun, shard: 3, of: 4 }
           - { runner: bun, shard: 4, of: 4 }
-          - { runner: jest, shard: 1, of: 2 }
-          - { runner: jest, shard: 2, of: 2 }
+          # 3 rather than 2: two Jest shards took 185 to 263 s, the run's longest job (2026-11-17)
+          - { runner: jest, shard: 1, of: 3 }
+          - { runner: jest, shard: 2, of: 3 }
+          - { runner: jest, shard: 3, of: 3 }
     runs-on: ubuntu-24.04
     # each shard took under 5 minutes (2026-11-17); the whole suite once took 16 on one runner
     timeout-minutes: 20
