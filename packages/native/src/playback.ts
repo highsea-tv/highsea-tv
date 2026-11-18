@@ -12,7 +12,8 @@
 // at the same place; subtitles and their timing never do. The position goes to the session every
 // 10 s while playing and on pause and seek; leaving saves it and ends the session, which stops its
 // ffmpeg. Now Playing and the lock screen's controls come from the player's
-// `showNowPlayingNotification`, with the title and artwork in the source's `metadata`; AirPlay
+// `showNowPlayingNotification`, with the title, a line under it and the poster in the source's
+// `metadata`, the poster as a file the app loaded itself (./now-playing.ts); AirPlay
 // from `allowsExternalPlayback`, all three on the phone only: the docs list none of them for tvOS
 // (https://docs.expo.dev/versions/latest/sdk/video/#videoplayer).
 import { clampSeek, initialPlayer, playerReducer } from '@highsea-tv/client/player'
@@ -23,6 +24,7 @@ import { useCallback, useEffect, useReducer, useRef, useState } from 'react'
 import { Platform } from 'react-native'
 import { playbackProfile } from './device.ts'
 import { useMedia } from './media.ts'
+import { artworkFile, type NowPlayingText, nowPlayingText, within } from './now-playing.ts'
 import {
   TRANSCODE_LIMIT,
   type UsePlayback,
@@ -43,6 +45,8 @@ export { TRANSCODE_LIMIT } from './playback-shared.ts'
  * cancel. So the warning is turned off here, by its documented second argument.
  */
 const clear = (player: VideoPlayer) => player.replace(null, true)
+
+const noArtwork = Promise.resolve(undefined)
 
 /** How near its start a loaded item must be, in seconds, to be left where it is. */
 const START_SLACK = 1
@@ -68,8 +72,10 @@ export const usePlayback: UsePlayback<VideoPlayer> = (id, fromStart, type = 'mov
   const started = useRef<string | null>(null)
   const mediaRef = useRef(media)
   mediaRef.current = media
-  // the title and its poster for Now Playing, read when a session starts
-  const nowPlaying = useRef<{ title?: string; artwork: string | null }>({ artwork: null })
+  // Now Playing's title and line, and its poster as a cached file's URL (./now-playing.ts),
+  // read when a session starts
+  const nowPlaying = useRef<NowPlayingText>({})
+  const artwork = useRef<{ path: string; file: Promise<string | undefined> } | null>(null)
 
   const player = useVideoPlayer(null, (p) => {
     p.timeUpdateEventInterval = 0.25
@@ -96,15 +102,17 @@ export const usePlayback: UsePlayback<VideoPlayer> = (id, fromStart, type = 'mov
     attach: async (s, current) => {
       const src = s.url ? mediaRef.current(s.url) : undefined
       if (!src) return
-      const { title, artwork } = nowPlaying.current
-      const art = artwork ? mediaRef.current(artwork)?.uri : undefined
+      // the poster is usually on disk already (the item page drew it); a slow one isn't waited
+      // for long, and the film plays without it
+      const art = Platform.isTV ? undefined : await within(artwork.current?.file ?? noArtwork)
+      if (!current()) return
       position.current = s.start
       pendingStart.current = s.start || null
       await player.replaceAsync({
         ...src,
         // AVPlayer needs telling a playlist is HLS when its address doesn't end in .m3u8
         contentType: s.decision.method === 'direct-play' ? 'progressive' : 'hls',
-        metadata: { title, ...(art ? { artwork: art } : {}) },
+        metadata: { ...nowPlaying.current, ...(art ? { artwork: art } : {}) },
       })
       if (current()) player.play()
     },
@@ -113,7 +121,13 @@ export const usePlayback: UsePlayback<VideoPlayer> = (id, fromStart, type = 'mov
   const { subtitle, subtitlePath } = c
   const burnt = c.burnt
   const d = c.detail.data
-  nowPlaying.current = { title: d?.item.title, artwork: d?.item.art.poster ?? null }
+  nowPlaying.current = nowPlayingText(d)
+  // the poster starts loading as soon as the title is known, before the session answers
+  const poster = Platform.isTV ? null : (d?.item.art.poster ?? null)
+  useEffect(() => {
+    if ((artwork.current?.path ?? null) === poster) return
+    artwork.current = poster ? { path: poster, file: artworkFile(mediaRef.current(poster)) } : null
+  }, [poster])
 
   // the chosen subtitle's cues, in segments around where it's playing, with this device's token
   // in a header; the offset is added as they're drawn

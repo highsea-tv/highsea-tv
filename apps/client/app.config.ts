@@ -63,7 +63,11 @@ const shared = {
 
 const phone: ExpoConfig = {
   ...shared,
-  orientation: 'portrait',
+  // every orientation in Info.plist (UISupportedInterfaceOrientations; Android's screenOrientation
+  // unspecified), since iOS turns a screen only to orientations the app declares
+  // (https://docs.expo.dev/versions/latest/config/app/#orientation); each screen then narrows it,
+  // the player turning with the phone and the rest upright (src/orientation.ts, HT-58)
+  orientation: 'default',
   icon: `${brand}/ios/icon.png`,
   ios: {
     bundleIdentifier: 'tv.highsea.mobile',

@@ -122,6 +122,12 @@ export type SheetProps = {
   hideTitle?: boolean
   /** A pointer's side sheet: its padding, 24 unless given (the admin's menu sheet's 16, the web's p-4). */
   padding?: number
+  /**
+   * The page sheet turns with the phone, over a screen that does (the player). iOS draws a Modal
+   * only upright unless it's told otherwise, and turns the app back upright to show it
+   * (https://reactnative.dev/docs/modal#supportedorientations-ios).
+   */
+  turns?: boolean
 }
 
 export function Sheet(props: SheetProps) {
@@ -130,7 +136,10 @@ export function Sheet(props: SheetProps) {
   return <PageSheet {...props} />
 }
 
-function PageSheet({ open, onClose, title, children, footer, onDismiss }: SheetProps) {
+/** Every orientation a turning sheet takes, as React Native's Modal names them. */
+const TURNS = ['portrait', 'landscape-left', 'landscape-right'] as const
+
+function PageSheet({ open, onClose, title, children, footer, onDismiss, turns }: SheetProps) {
   const theme = useTheme()
   const t = useT(uiMessages)
   const insets = useSafeAreaInsets()
@@ -141,6 +150,7 @@ function PageSheet({ open, onClose, title, children, footer, onDismiss }: SheetP
       visible={visible}
       animationType="slide"
       presentationStyle="pageSheet"
+      supportedOrientations={turns ? [...TURNS] : undefined}
       onRequestClose={onClose}
       onDismiss={() => {
         dismissed()
