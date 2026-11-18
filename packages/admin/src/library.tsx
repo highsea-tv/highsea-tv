@@ -158,7 +158,6 @@ export function MoviesLibrary() {
   const posters = useRef<VirtualGridHandle>(null)
   const rows = useRef<VirtualList>(null)
   // where the grid or table starts in the frame, under its toolbars: the letters start level with it
-  const [bodyTop, setBodyTop] = useState(0)
   const jump = (l: string) => {
     const at = letters.firsts.get(l) ?? 0
     const options = { animated: !reduced, offset: STUCK }
@@ -322,146 +321,136 @@ export function MoviesLibrary() {
               {t('empty.body')}
             </EmptyState>
           ) : (
-            <WithLetters
-              shown={sort === 'title' && shown.length > 0}
-              present={letters.present}
-              label={t('letters')}
-              from={bodyTop}
-              onLetter={jump}
-            >
-              <TableFrame>
-                <TableToolbar>
-                  <Tabs
-                    aria-label={t('tabs')}
-                    value={tab}
-                    onValueChange={(v) => setTab(v as Tab)}
-                    options={TABS.map((k) => ({
-                      value: k,
-                      label: t(`tab.${k}`),
-                      count: page.counts[k],
-                    }))}
-                  />
-                  <View
-                    style={{
-                      marginStart: 'auto',
-                      minWidth: 0,
-                      flexDirection: 'row',
-                      flexWrap: 'wrap',
-                      alignItems: 'center',
-                      gap: tokens.space['2'],
-                    }}
-                  >
-                    <View style={{ width: FILTER_WIDTH }}>
-                      <SearchField
-                        label={t('filter')}
-                        icon="filter"
-                        value={text}
-                        onChangeText={setText}
-                        placeholder={t('filter')}
-                      />
-                    </View>
-                    {hasTags && (
-                      <View style={{ width: SELECT_WIDTH }}>
-                        <Select
-                          value={tag || ANY_TAG}
-                          onValueChange={(v) => setTag(v === ANY_TAG ? '' : v)}
-                          aria-label={t('tag')}
-                          options={[
-                            { value: ANY_TAG, label: t('tag.all') },
-                            ...(tags.data ?? []).map((g) => ({ value: g.id, label: g.label })),
-                          ]}
-                        />
-                      </View>
-                    )}
+            <TableFrame>
+              <TableToolbar>
+                <Tabs
+                  aria-label={t('tabs')}
+                  value={tab}
+                  onValueChange={(v) => setTab(v as Tab)}
+                  options={TABS.map((k) => ({
+                    value: k,
+                    label: t(`tab.${k}`),
+                    count: page.counts[k],
+                  }))}
+                />
+                <View
+                  style={{
+                    marginStart: 'auto',
+                    minWidth: 0,
+                    flexDirection: 'row',
+                    flexWrap: 'wrap',
+                    alignItems: 'center',
+                    gap: tokens.space['2'],
+                  }}
+                >
+                  <View style={{ width: FILTER_WIDTH }}>
+                    <SearchField
+                      label={t('filter')}
+                      icon="filter"
+                      value={text}
+                      onChangeText={setText}
+                      placeholder={t('filter')}
+                    />
+                  </View>
+                  {hasTags && (
                     <View style={{ width: SELECT_WIDTH }}>
                       <Select
-                        value={sort}
-                        onValueChange={(v) => setSort(v as Sort)}
-                        aria-label={t('sortBy')}
-                        options={MOVIE_SORTS.map((k) => ({ value: k, label: t(`sort.${k}`) }))}
+                        value={tag || ANY_TAG}
+                        onValueChange={(v) => setTag(v === ANY_TAG ? '' : v)}
+                        aria-label={t('tag')}
+                        options={[
+                          { value: ANY_TAG, label: t('tag.all') },
+                          ...(tags.data ?? []).map((g) => ({ value: g.id, label: g.label })),
+                        ]}
                       />
                     </View>
-                    <Button icon="library" onPress={saveAsCollection}>
-                      {t('saveAsCollection')}
-                    </Button>
+                  )}
+                  <View style={{ width: SELECT_WIDTH }}>
+                    <Select
+                      value={sort}
+                      onValueChange={(v) => setSort(v as Sort)}
+                      aria-label={t('sortBy')}
+                      options={MOVIE_SORTS.map((k) => ({ value: k, label: t(`sort.${k}`) }))}
+                    />
                   </View>
-                </TableToolbar>
-                {ids.length > 0 && (
-                  <View
-                    role="toolbar"
-                    aria-label={t('bulk')}
-                    style={{
-                      flexDirection: 'row',
-                      flexWrap: 'wrap',
-                      alignItems: 'center',
-                      gap: tokens.space['2'],
-                      borderBottomWidth: line.thin,
-                      borderBottomColor: colors.line,
-                      backgroundColor: colors['accent-soft'],
-                      paddingHorizontal: CELL_X,
-                      paddingVertical: tokens.space['2'],
-                    }}
-                  >
-                    <Text
-                      size={tokens.adminText.ui.size}
-                      weight={500}
-                      style={{ marginEnd: 'auto' }}
+                  <Button icon="library" onPress={saveAsCollection}>
+                    {t('saveAsCollection')}
+                  </Button>
+                </View>
+              </TableToolbar>
+              {ids.length > 0 && (
+                <View
+                  role="toolbar"
+                  aria-label={t('bulk')}
+                  style={{
+                    flexDirection: 'row',
+                    flexWrap: 'wrap',
+                    alignItems: 'center',
+                    gap: tokens.space['2'],
+                    borderBottomWidth: line.thin,
+                    borderBottomColor: colors.line,
+                    backgroundColor: colors['accent-soft'],
+                    paddingHorizontal: CELL_X,
+                    paddingVertical: tokens.space['2'],
+                  }}
+                >
+                  <Text size={tokens.adminText.ui.size} weight={500} style={{ marginEnd: 'auto' }}>
+                    {t('selected', { count: ids.length })}
+                  </Text>
+                  {searchable.canSearch ? (
+                    <Button
+                      size="sm"
+                      icon="search"
+                      loading={bulkAction.pending}
+                      onPress={() =>
+                        bulk((count) => t('done.search', { count }), { action: 'search', ids })
+                      }
                     >
-                      {t('selected', { count: ids.length })}
-                    </Text>
-                    {searchable.canSearch ? (
-                      <Button
-                        size="sm"
-                        icon="search"
-                        loading={bulkAction.pending}
-                        onPress={() =>
-                          bulk((count) => t('done.search', { count }), { action: 'search', ids })
-                        }
-                      >
+                      {t('search')}
+                    </Button>
+                  ) : (
+                    // decision 2: shown but inert while no indexer is enabled; the tooltip's
+                    // wrapper takes focus, so the reason is reachable by keyboard (WAI-ARIA APG,
+                    // "Focusability of disabled controls")
+                    <Tooltip content={t('search.noIndexers')} focusable>
+                      <Button size="sm" icon="search" disabled>
                         {t('search')}
                       </Button>
-                    ) : (
-                      // decision 2: shown but inert while no indexer is enabled; the tooltip's
-                      // wrapper takes focus, so the reason is reachable by keyboard (WAI-ARIA APG,
-                      // "Focusability of disabled controls")
-                      <Tooltip content={t('search.noIndexers')} focusable>
-                        <Button size="sm" icon="search" disabled>
-                          {t('search')}
-                        </Button>
-                      </Tooltip>
-                    )}
-                    <Button
-                      ref={editAnchor}
-                      size="sm"
-                      iconEnd="chevron-down"
-                      loading={bulkAction.pending}
-                      hasPopup="menu"
-                      accessibilityState={{ expanded: editing }}
-                      onPress={() => setEditing(true)}
-                    >
-                      {t('edit')}
-                    </Button>
-                    <Menu
-                      title={t('edit')}
-                      open={editing}
-                      onClose={() => setEditing(false)}
-                      anchor={editAnchor}
-                      items={editItems}
-                    />
-                    <Button
-                      size="sm"
-                      variant="danger"
-                      icon="delete"
-                      onPress={() => setConfirm(true)}
-                    >
-                      {t('remove')}
-                    </Button>
-                    <Button size="sm" variant="ghost" onPress={() => setSelected(new Set())}>
-                      {t('clear')}
-                    </Button>
-                  </View>
-                )}
-                <View onLayout={(e) => setBodyTop(e.nativeEvent.layout.y + line.thin)} />
+                    </Tooltip>
+                  )}
+                  <Button
+                    ref={editAnchor}
+                    size="sm"
+                    iconEnd="chevron-down"
+                    loading={bulkAction.pending}
+                    hasPopup="menu"
+                    accessibilityState={{ expanded: editing }}
+                    onPress={() => setEditing(true)}
+                  >
+                    {t('edit')}
+                  </Button>
+                  <Menu
+                    title={t('edit')}
+                    open={editing}
+                    onClose={() => setEditing(false)}
+                    anchor={editAnchor}
+                    items={editItems}
+                  />
+                  <Button size="sm" variant="danger" icon="delete" onPress={() => setConfirm(true)}>
+                    {t('remove')}
+                  </Button>
+                  <Button size="sm" variant="ghost" onPress={() => setSelected(new Set())}>
+                    {t('clear')}
+                  </Button>
+                </View>
+              )}
+              <WithLetters
+                shown={sort === 'title' && shown.length > 0}
+                present={letters.present}
+                label={t('letters')}
+                inset={CELL_X}
+                onLetter={jump}
+              >
                 {shown.length === 0 ? (
                   <View style={{ paddingHorizontal: CELL_X, paddingVertical: tokens.space['8'] }}>
                     <Text variant="caption" color="text-3" align="center">
@@ -568,8 +557,8 @@ export function MoviesLibrary() {
                     </TableBody>
                   </Table>
                 )}
-              </TableFrame>
-            </WithLetters>
+              </WithLetters>
+            </TableFrame>
           )
         }}
       </Loadable>

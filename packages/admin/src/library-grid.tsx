@@ -6,12 +6,14 @@
 //   own (ADR 0061's 2026-11-06 section), in the shell's scroller: as many 136-wide columns as fit,
 //   16 apart and 20 between rows, as PosterGrid lays Discover's out;
 // - sorted by title, the clients' A–Z index (the library's LetterIndex, in its pointer form) stands
-//   in a column of its own left of the frame, from level with the grid or table, and stays under
-//   the page's top as it scrolls (CSS `position: sticky`, which react-native-web passes through:
-//   https://necolas.github.io/react-native-web/docs/styling/, and
-//   https://developer.mozilla.org/en-US/docs/Web/CSS/position#sticky). A compact width has none,
-//   as the clients' web library has none (its `medium:block`). A letter scrolls its first title's
-//   row to that line, drawn or not: every title is read, only the drawing is windowed.
+//   inside the surface that holds the grid or table, along its left edge within its padding (the
+//   owner, 2026-11-18: a rail between the sidebar and the page set the list apart from its index),
+//   and stays under the page's top as it scrolls (CSS `position: sticky`, which react-native-web
+//   passes through: https://necolas.github.io/react-native-web/docs/styling/, and
+//   https://developer.mozilla.org/en-US/docs/Web/CSS/position#sticky; the frame clips with
+//   `overflow: clip` on the web so the index can stick inside it, see TableFrame). A compact width
+//   has none, as the clients' web library has none (its `medium:block`). A letter scrolls its first
+//   title's row to that line, drawn or not: every title is read, only the drawing is windowed.
 import { LETTERS, letterFirsts } from '@highsea-tv/core/letters'
 import {
   LetterIndex,
@@ -82,21 +84,21 @@ export function useLetters<T>(items: readonly T[], sortedOf: (item: T) => string
 const sticky = (top: number) => ({ position: 'sticky', top }) as unknown as ViewStyle
 
 /**
- * The page's frame with the A–Z index beside it while `shown`, its letters starting `from` below the
- * frame's top (where the grid or table starts).
+ * A surface's body (its grid or table) with the A–Z index along its left edge while `shown`, within
+ * the surface's padding (`inset`), sticking under the page's top as the body scrolls past.
  */
 export function WithLetters({
   shown,
   present,
   label,
-  from,
+  inset,
   onLetter,
   children,
 }: {
   shown: boolean
   present: Set<string>
   label: string
-  from: number
+  inset: number
   onLetter: (letter: string) => void
   children: ReactNode
 }) {
@@ -108,9 +110,8 @@ export function WithLetters({
   // the scroller (the status bar) counts as above them
   const top = (viewport ? Math.max(0, window - viewport) : 0) + STUCK
   return (
-    <View style={{ flexDirection: 'row', gap: tokens.space['4'] }}>
-      <View style={{ width: POINTER_LETTER }}>
-        <View style={{ height: from }} />
+    <View style={{ flexDirection: 'row' }}>
+      <View style={{ width: POINTER_LETTER, marginLeft: inset, marginVertical: inset }}>
         <View style={sticky(STUCK)}>
           <LetterIndex
             letters={LETTERS}

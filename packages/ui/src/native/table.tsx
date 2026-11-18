@@ -104,7 +104,11 @@ export function TableFrame({ children, label }: { children: ReactNode; label?: s
       aria-label={label}
       style={{
         minWidth: 0,
-        overflow: 'hidden',
+        // on the web `clip`, which cuts to the rounded edge as `hidden` does but makes no scroll
+        // container, so a part inside can stick to the page as it scrolls (the admin library's A–Z
+        // index, HT-57): https://developer.mozilla.org/en-US/docs/Web/CSS/overflow#clip and
+        // https://drafts.csswg.org/css-overflow-3/#valdef-overflow-clip
+        overflow: web ? ('clip' as 'hidden') : 'hidden',
         borderRadius: tokens.radius.lg,
         borderWidth: line.thin,
         borderColor: theme.colors.line,

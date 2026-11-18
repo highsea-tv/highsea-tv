@@ -180,7 +180,6 @@ function Library() {
   const reduced = useMotionReduced()
   const posters = useRef<VirtualGridHandle>(null)
   const rows = useRef<VirtualList>(null)
-  const [bodyTop, setBodyTop] = useState(0)
   const jump = (l: string) => {
     const at = letters.firsts.get(l) ?? 0
     const options = { animated: !reduced, offset: STUCK }
@@ -260,117 +259,107 @@ function Library() {
               {t('empty.body')}
             </EmptyState>
           ) : (
-            <WithLetters
-              shown={sort === 'title' && shown.length > 0}
-              present={letters.present}
-              label={t('letters')}
-              from={bodyTop}
-              onLetter={jump}
-            >
-              <TableFrame>
-                <TableToolbar>
-                  <Tabs
-                    aria-label={t('filters')}
-                    value={filter}
-                    onValueChange={(v) => setFilter(v as Filter)}
-                    options={FILTERS.map((k) => ({
-                      value: k,
-                      label: t(`filter.${k}`),
-                      count: counts[k],
-                    }))}
-                  />
-                  <View
-                    style={{
-                      marginStart: 'auto',
-                      minWidth: 0,
-                      flexDirection: 'row',
-                      flexWrap: 'wrap',
-                      alignItems: 'center',
-                      gap: tokens.space['2'],
-                    }}
-                  >
-                    <View style={{ width: FILTER_WIDTH }}>
-                      <SearchField
-                        label={t('filter.label')}
-                        icon="filter"
-                        value={text}
-                        onChangeText={setText}
-                        placeholder={t('filter')}
-                      />
-                    </View>
-                    <View style={{ width: SELECT_WIDTH }}>
-                      <Select
-                        value={sort}
-                        onValueChange={(v) => setSort(v as Sort)}
-                        aria-label={t('sortBy')}
-                        options={SORTS.map((k) => ({ value: k, label: t(`sort.${k}`) }))}
-                      />
-                    </View>
-                  </View>
-                </TableToolbar>
-                {count > 0 && (
-                  <View
-                    role="toolbar"
-                    aria-label={t('bulk')}
-                    style={{
-                      flexDirection: 'row',
-                      flexWrap: 'wrap',
-                      alignItems: 'center',
-                      gap: tokens.space['2'],
-                      borderBottomWidth: line.thin,
-                      borderBottomColor: colors.line,
-                      backgroundColor: colors['accent-soft'],
-                      paddingHorizontal: CELL_X,
-                      paddingVertical: tokens.space['2'],
-                    }}
-                  >
-                    <Text
-                      size={tokens.adminText.ui.size}
-                      weight={500}
-                      style={{ marginEnd: 'auto' }}
-                    >
-                      {t('selected', { count })}
-                    </Text>
-                    <Button
-                      size="sm"
-                      icon="search"
-                      loading={bulkSearch.pending}
-                      onPress={() => bulk(t('done.search', { count }), () => bulkSearch.run(ids))}
-                    >
-                      {t('search')}
-                    </Button>
-                    <Button
-                      ref={editAnchor}
-                      size="sm"
-                      iconEnd="chevron-down"
-                      loading={bulkEdit.pending}
-                      hasPopup="menu"
-                      accessibilityState={{ expanded: editing }}
-                      onPress={() => setEditing(true)}
-                    >
-                      {t('edit')}
-                    </Button>
-                    <Menu
-                      title={t('edit')}
-                      open={editing}
-                      onClose={() => setEditing(false)}
-                      anchor={editAnchor}
-                      items={editItems}
+            <TableFrame>
+              <TableToolbar>
+                <Tabs
+                  aria-label={t('filters')}
+                  value={filter}
+                  onValueChange={(v) => setFilter(v as Filter)}
+                  options={FILTERS.map((k) => ({
+                    value: k,
+                    label: t(`filter.${k}`),
+                    count: counts[k],
+                  }))}
+                />
+                <View
+                  style={{
+                    marginStart: 'auto',
+                    minWidth: 0,
+                    flexDirection: 'row',
+                    flexWrap: 'wrap',
+                    alignItems: 'center',
+                    gap: tokens.space['2'],
+                  }}
+                >
+                  <View style={{ width: FILTER_WIDTH }}>
+                    <SearchField
+                      label={t('filter.label')}
+                      icon="filter"
+                      value={text}
+                      onChangeText={setText}
+                      placeholder={t('filter')}
                     />
-                    <Button
-                      size="sm"
-                      variant="danger"
-                      icon="delete"
-                      onPress={() => setConfirm(true)}
-                    >
-                      {t('remove')}
-                    </Button>
-                    <Button size="sm" variant="ghost" onPress={() => setSelected(new Set())}>
-                      {t('clear')}
-                    </Button>
                   </View>
-                )}
-                <View onLayout={(e) => setBodyTop(e.nativeEvent.layout.y + line.thin)} />
+                  <View style={{ width: SELECT_WIDTH }}>
+                    <Select
+                      value={sort}
+                      onValueChange={(v) => setSort(v as Sort)}
+                      aria-label={t('sortBy')}
+                      options={SORTS.map((k) => ({ value: k, label: t(`sort.${k}`) }))}
+                    />
+                  </View>
+                </View>
+              </TableToolbar>
+              {count > 0 && (
+                <View
+                  role="toolbar"
+                  aria-label={t('bulk')}
+                  style={{
+                    flexDirection: 'row',
+                    flexWrap: 'wrap',
+                    alignItems: 'center',
+                    gap: tokens.space['2'],
+                    borderBottomWidth: line.thin,
+                    borderBottomColor: colors.line,
+                    backgroundColor: colors['accent-soft'],
+                    paddingHorizontal: CELL_X,
+                    paddingVertical: tokens.space['2'],
+                  }}
+                >
+                  <Text size={tokens.adminText.ui.size} weight={500} style={{ marginEnd: 'auto' }}>
+                    {t('selected', { count })}
+                  </Text>
+                  <Button
+                    size="sm"
+                    icon="search"
+                    loading={bulkSearch.pending}
+                    onPress={() => bulk(t('done.search', { count }), () => bulkSearch.run(ids))}
+                  >
+                    {t('search')}
+                  </Button>
+                  <Button
+                    ref={editAnchor}
+                    size="sm"
+                    iconEnd="chevron-down"
+                    loading={bulkEdit.pending}
+                    hasPopup="menu"
+                    accessibilityState={{ expanded: editing }}
+                    onPress={() => setEditing(true)}
+                  >
+                    {t('edit')}
+                  </Button>
+                  <Menu
+                    title={t('edit')}
+                    open={editing}
+                    onClose={() => setEditing(false)}
+                    anchor={editAnchor}
+                    items={editItems}
+                  />
+                  <Button size="sm" variant="danger" icon="delete" onPress={() => setConfirm(true)}>
+                    {t('remove')}
+                  </Button>
+                  <Button size="sm" variant="ghost" onPress={() => setSelected(new Set())}>
+                    {t('clear')}
+                  </Button>
+                </View>
+              )}
+              <WithLetters
+                shown={sort === 'title' && shown.length > 0}
+                present={letters.present}
+                label={t('letters')}
+                inset={CELL_X}
+                onLetter={jump}
+              >
                 {shown.length === 0 ? (
                   <View style={{ paddingHorizontal: CELL_X, paddingVertical: tokens.space['8'] }}>
                     <Text variant="caption" color="text-3" align="center">
@@ -496,8 +485,8 @@ function Library() {
                     </TableBody>
                   </Table>
                 )}
-              </TableFrame>
-            </WithLetters>
+              </WithLetters>
+            </TableFrame>
           )
         }
       </Loadable>
