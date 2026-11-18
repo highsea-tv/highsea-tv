@@ -15,7 +15,10 @@
 //    HLS playlists, a segment far ahead on the film's timeline, and the subtitle as WebVTT;
 // 8. signing in on `/web` and playing Sintel in the browser's player (phase-4-checkpoint-2.md ›
 //    Tests, 4.2b), the stream on the admin's Now playing (phase-4-checkpoint-3.md › Tests, 4.3a),
-//    then leaving, which ends the session.
+//    then leaving, which ends the session;
+// 9. the artwork at a host name other than localhost, as an owner browses their server: Home's
+//    backdrop and the library's posters on `/web`, and a poster in the admin, each drawn from the
+//    server's own /api/v1/images (TMDB's replay at the fixtures serves the pictures).
 //
 //   HIGHSEA_IMAGE=highsea:ci bun scripts/e2e/run.ts
 //
@@ -34,6 +37,12 @@ const ARTIFACTS = process.env.E2E_ARTIFACTS
 const COMPOSE = ['compose', '-f', join(ROOT, 'scripts', 'e2e', 'compose.yaml')]
 // localhost, the fixtures' proxy to the server (scripts/e2e/compose.yaml)
 const BASE = 'http://localhost:3000'
+// the same proxy by another name, as an owner reaches their NAS (`http://<NAS>:3000`): Chromium
+// resolves it to 127.0.0.1 (its --host-resolver-rules switch,
+// https://www.chromium.org/developers/design-documents/network-stack/socks-proxy/), so nothing
+// outside the browser changes; `.test` is reserved for this (RFC 6761 § 6.2)
+const HOST = 'harbor.test'
+const ELSEWHERE = `http://${HOST}:3000`
 const OWNER = { name: 'Ines', username: 'ines', password: 'harbor harbor harbor' }
 const ADMIN = { name: 'Ruth', password: 'ruth ruth ruth' }
 const USER = { name: 'Theo', password: 'theo theo theo' }
@@ -75,11 +84,15 @@ const signInApi = async (username: string, password: string) =>
   ).token
 
 /** Waits for `check` to come back truthy, every half second. */
-async function until<T>(what: string, check: () => Promise<T> | T, ms = 60_000): Promise<T> {
+async function until<T>(
+  what: string,
+  check: () => Promise<T> | T,
+  ms = 60_000,
+): Promise<NonNullable<T>> {
   const start = Date.now()
   for (;;) {
     const value = await check()
-    if (value) return value
+    if (value) return value as NonNullable<T>
     if (Date.now() - start > ms) throw new Error(`Timed out after ${ms / 1000} s: ${what}`)
     await Bun.sleep(500)
   }
@@ -108,6 +121,72 @@ async function signIn(context: BrowserContext, username: string, password: strin
   return page
 }
 
+const IMAGES = '/api/v1/images/'
+/**
+ * Checks that the page drew artwork of `kind` from the server's /api/v1/images, and that every
+ * picture on it loaded: each `<img>` (expo-image's on the web, packages/ui/src/native/image.tsx) has
+ * a source and decoded to a width, and each artwork address, an `<img>`'s or a CSS background's,
+ * answers 200 with an image. An element alone isn't enough: 0.4.1's web client drew its frames and
+ * no picture in them (HT-35).
+ */
+async function artwork(page: Page, where: string, kind: string, refused: string[]) {
+  type Seen = { src: string; complete: boolean; width: number }[]
+  const look = () =>
+    page.evaluate((images) => {
+      const imgs: Seen = [...document.querySelectorAll('img')].map((i) => ({
+        src: i.getAttribute('src') ?? '',
+        complete: i.complete,
+        width: i.naturalWidth,
+      }))
+      const backgrounds = [...document.querySelectorAll<HTMLElement>('body *')]
+        .map((e) => /url\("?([^")]+)"?\)/.exec(getComputedStyle(e).backgroundImage)?.[1] ?? '')
+        .filter((u) => u.includes(images))
+      return { imgs, backgrounds }
+    }, IMAGES)
+  const wanted = new RegExp(`${IMAGES}\\w+/\\d+/${kind}/`)
+  // drawn, and every picture done loading (or failed), as a person would wait for the page
+  const seen = await until(
+    `${where}: a ${kind} from ${IMAGES}`,
+    async () => {
+      const now = await look()
+      const drawn = [...now.imgs.map((i) => i.src), ...now.backgrounds].some((u) => wanted.test(u))
+      return drawn && now.imgs.every((i) => !i.src || i.complete) ? now : undefined
+    },
+    30_000,
+  ).catch(async (error) => {
+    const now = await look()
+    throw new Error(
+      `${(error as Error).message}. The page has ${now.imgs.length} image(s)${
+        now.imgs.length ? `: ${now.imgs.map((i) => i.src || '(no source)').join(', ')}` : ''
+      }`,
+    )
+  })
+  const broken = seen.imgs.filter((i) => !i.src || i.width === 0)
+  if (broken.length)
+    throw new Error(
+      `${where}: ${broken.length} image(s) drew nothing: ${broken.map((i) => i.src || '(no source)').join(', ')}`,
+    )
+  const addresses = new Set(
+    [...seen.imgs.map((i) => i.src), ...seen.backgrounds].filter((u) => u.includes(IMAGES)),
+  )
+  // asked again from the page, as its own <img> asked: the browser's cookie and its name for the
+  // host (Playwright's page.request resolves outside Chromium, so not harbor.test)
+  const answers = await page.evaluate(
+    (urls) =>
+      Promise.all(
+        urls.map(async (url) => {
+          const res = await fetch(url)
+          return { url, status: res.status, type: res.headers.get('content-type') ?? '' }
+        }),
+      ),
+    [...addresses],
+  )
+  for (const a of answers)
+    if (a.status !== 200 || !a.type.startsWith('image/'))
+      throw new Error(`${where}: ${a.url} answered ${a.status} ${a.type || 'no content type'}`)
+  if (refused.length) throw new Error(`${where}: artwork refused:\n${refused.join('\n')}`)
+}
+
 // ---------------------------------------------------------------- the stack
 
 console.log(`The end-to-end run, against ${IMAGE}`)
@@ -116,7 +195,7 @@ docker([...COMPOSE, 'up', '--detach', '--wait', '--wait-timeout', '300'])
 
 let failed: unknown
 try {
-  browser = await launch()
+  browser = await launch({ args: [`--host-resolver-rules=MAP ${HOST} 127.0.0.1`] })
   const ownerContext = await browser.newContext()
   let token = ''
 
@@ -466,6 +545,33 @@ try {
       await context.close()
     },
   )
+
+  await step('9. Artwork at another host name: Home, the library and the admin', async () => {
+    const context = await (browser as Browser).newContext()
+    const page = await context.newPage()
+    current = page
+    // every answer for artwork the page asked for, whatever drew it
+    const refused: string[] = []
+    page.on('response', (r) => {
+      const { pathname } = new URL(r.url())
+      if (!pathname.startsWith(IMAGES)) return
+      const type = r.headers()['content-type'] ?? ''
+      if (r.status() !== 200 || !type.startsWith('image/'))
+        refused.push(`${pathname}: ${r.status()} ${type || 'no content type'}`)
+    })
+    await page.goto(`${ELSEWHERE}/web/`)
+    await page.getByLabel('Username').fill(OWNER.username)
+    await page.getByLabel('Password').fill(OWNER.password)
+    await page.getByRole('button', { name: 'Sign in' }).click()
+    await page.getByRole('navigation', { name: 'Main' }).first().waitFor()
+    await artwork(page, 'Home on /web', 'backdrop', refused)
+    await page.goto(`${ELSEWHERE}/web/movies`)
+    await artwork(page, 'The library on /web', 'poster', refused)
+    // the admin draws with the same library but its own pages (Next), signed in by the same cookie
+    await page.goto(`${ELSEWHERE}/movies`)
+    await artwork(page, 'The admin’s Movies', 'poster', refused)
+    await context.close()
+  })
 
   // the server's network has no way out (scripts/e2e/compose.yaml): everything above came from the fixtures
   const offline = inServer(

@@ -86,6 +86,8 @@ export const users = defineMessages({
   'link.copied': 'Link copied',
   'link.emailed': 'We also emailed it to {email}.',
   // edit
+  'edit.username': 'Username',
+  'edit.usernameHint': 'They sign in with this. Their devices stay signed in.',
   'edit.role': 'Role',
   'edit.can': 'What they can do',
   'edit.resets': 'Changing the role resets these to the role’s defaults.',

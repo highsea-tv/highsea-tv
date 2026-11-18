@@ -1,7 +1,7 @@
 'use client'
 // SPDX-License-Identifier: AGPL-3.0-only
 // "Your account": a sheet from the sidebar and the palette, for every role. Your name, your
-// password, two-step verification and passkeys. The prototype has no screen for these (the
+// username, your password, two-step verification and passkeys. The prototype has no screen for these (the
 // client's Profile lists them as "not in the prototype"); this follows the shell's sheet and the
 // settings groups' look. Every change re-asks for the password (OWASP Authentication Cheat Sheet:
 // re-authenticate before sensitive changes). Drawn with the library's native renderer since D3
@@ -105,6 +105,7 @@ export function AccountSheet({
       ) : (
         <View style={{ gap: s['4'] }}>
           <Profile key={session.data.user.id} user={session.data.user} />
+          <Username key={`${session.data.user.id}:username`} user={session.data.user} />
           {session.data.user.hasPassword && <Password />}
           <TwoFactor hasPassword={session.data.user.hasPassword} />
           <Passkeys />
@@ -151,6 +152,77 @@ function Profile({ user }: { user: User }) {
         onPress={() => save.run().then(() => toast.success(t('profile.saved')), fail(t('failed')))}
       >
         {t('profile.save')}
+      </Button>
+    </Section>
+  )
+}
+
+/** The field a refusal names, from the server's `details.field`. */
+const fieldOf = (e: unknown) => (e as { details?: { field?: string } }).details?.field
+
+/**
+ * Your username, which signs you in: the password first when you have one (OWASP Authentication
+ * Cheat Sheet: re-authenticate before changing sign-in details). Typed lowercase, as setup's field.
+ */
+function Username({ user }: { user: User }) {
+  const t = useT(account)
+  const [username, setUsername] = useState(user.username)
+  const [password, setPassword] = useState('')
+  const [errors, setErrors] = useState<{ username?: string; password?: string }>({})
+  const change = useAction((c) =>
+    c.me.changeUsername({
+      body: { username: username.trim(), password: user.hasPassword ? password : null },
+    }),
+  )
+  const ready =
+    !!username.trim() && username.trim() !== user.username && (!user.hasPassword || !!password)
+  const submit = () => {
+    if (!ready) return
+    setErrors({})
+    change.run().then(
+      (you) => {
+        toast.success(t('username.changed'), {
+          description: t('username.changedBody', { username: you.username }),
+        })
+        setUsername(you.username)
+        setPassword('')
+      },
+      (e: Error & { status?: number }) => {
+        const field = fieldOf(e)
+        if (field === 'username') setErrors({ username: e.message })
+        else if (e.status === 401) setErrors({ password: e.message })
+        else fail(t('failed'))(e)
+      },
+    )
+  }
+  return (
+    <Section title={t('username.title')}>
+      <Line>{t('username.body')}</Line>
+      <Field label={t('username.field')} hint={t('username.hint')} error={errors.username}>
+        <Input
+          value={username}
+          autoCapitalize="none"
+          autoCorrect={false}
+          spellCheck={false}
+          autoComplete="username"
+          maxLength={32}
+          onChangeText={(v) => setUsername(v.toLowerCase())}
+          onSubmitEditing={submit}
+        />
+      </Field>
+      {user.hasPassword && (
+        <Field label={t('username.password')} error={errors.password}>
+          <Input
+            secureTextEntry
+            value={password}
+            autoComplete="current-password"
+            onChangeText={setPassword}
+            onSubmitEditing={submit}
+          />
+        </Field>
+      )}
+      <Button disabled={!ready} loading={change.pending} onPress={submit}>
+        {t('username.change')}
       </Button>
     </Section>
   )

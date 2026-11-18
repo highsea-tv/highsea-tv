@@ -7,6 +7,17 @@ While highsea is at 0.x, any release may change how something works. When one do
 
 ## [Unreleased]
 
+## [0.4.2] - 2026-11-17
+
+### Added
+
+- Usernames can be changed. The Owner changes anyone else's in Settings › Users and devices › **Edit**, and each person changes their own in **Your account** with their current password. Every device stays signed in, and the new name is the one to sign in with from then on.
+
+### Fixed
+
+- The web app at `/web` shows posters, backdrops, stills, covers and portraits again, and the player's scrubbing previews. In 0.4.1 it showed none. The apps for phones, TVs and computers weren't affected.
+- In the iPhone app, sign-in's password field takes a password as typed, with no capital first letter, autocorrect or space added after a paste, as the username field already did. A password manager fills the username and password it saved for highsea.
+
 ## [0.4.1] - 2026-11-17
 
 ### Added
@@ -130,7 +141,8 @@ While highsea is at 0.x, any release may change how something works. When one do
 - A one-time migration from Radarr and qBittorrent in Settings › Migration.
 - Images for amd64 and arm64 at `ghcr.io/highsea-tv/highsea`, with compose files and templates for Unraid, TrueNAS and Synology.
 
-[unreleased]: https://github.com/highsea-tv/highsea-tv/compare/v0.4.1...HEAD
+[unreleased]: https://github.com/highsea-tv/highsea-tv/compare/v0.4.2...HEAD
+[0.4.2]: https://github.com/highsea-tv/highsea-tv/compare/v0.4.1...v0.4.2
 [0.4.1]: https://github.com/highsea-tv/highsea-tv/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/highsea-tv/highsea-tv/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/highsea-tv/highsea-tv/compare/v0.2.0...v0.3.0

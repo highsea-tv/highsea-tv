@@ -3,8 +3,8 @@
 // own server at '', no device named, no list of servers kept), the web's real store
 // (packages/native/src/server-store.web.ts over a localStorage of the test's own) and the
 // platform's fetch, which the mock server answers as the page's own origin, with its session
-// cookie. A valid cookie opens signed in, the server can't be switched or forgotten, a sign-out the
-// server refuses says so, a server that doesn't answer is still the one in use, and a browser
+// cookie. A valid cookie opens signed in, the library's posters load from the page's own origin,
+// the server can't be switched or forgotten, a sign-out the server refuses says so, a server that doesn't answer is still the one in use, and a browser
 // drawn for the TV signs in with a password.
 import { act, cleanup, fireEvent, screen } from '@testing-library/react-native'
 import { router } from 'expo-router'
@@ -139,6 +139,44 @@ describe('a browser at its own server', () => {
     await act(() => router.push('/connect'))
     await flush()
     expect(r.getPathname()).toBe('/')
+  })
+
+  test('the library’s posters load from the page’s own server, signed by the cookie', async () => {
+    // the library as the real server answers it: each poster a path on the server
+    // (/api/v1/images/…, packages/metadata/src/image-url.ts), where the mock draws its own art
+    const page = (globalThis as unknown as { __pageFetch: typeof fetch }).__pageFetch
+    put('__pageFetch', async (url: string, init?: RequestInit) => {
+      const answer = await page(url, init)
+      if (!/\/api\/v1\/items(\?|$)/.test(url)) return answer
+      let n = 0
+      const text = (await answer.text()).replace(
+        /"data:image\/[^"]*"/g,
+        () => `"/api/v1/images/movie/${++n}/poster/w342/poster${n}.jpg"`,
+      )
+      return new Response(text, { status: answer.status, headers: answer.headers })
+    })
+    await signIn()
+    await act(() => router.push('/movies'))
+    await flush()
+    // each poster as the page hands it to expo-image: the path at the page's own origin (''), with
+    // no token, so the browser sends the session cookie. An empty origin once read as no server,
+    // and no poster was drawn at all (HT-35).
+    const sources: { uri?: string; headers?: Record<string, string> }[] = []
+    const walk = (n: unknown) => {
+      if (!n || typeof n !== 'object') return
+      if (Array.isArray(n)) return n.forEach(walk)
+      const node = n as { props?: { source?: unknown }; children?: unknown[] }
+      const source = node.props?.source
+      for (const s of Array.isArray(source) ? source : [source])
+        if (s && typeof s === 'object' && 'uri' in s) sources.push(s)
+      node.children?.forEach(walk)
+    }
+    walk(screen.toJSON())
+    const posters = sources.filter((s) =>
+      /^\/api\/v1\/images\/movie\/\d+\/poster\//.test(s.uri ?? ''),
+    )
+    expect(posters.length).toBeGreaterThan(0)
+    for (const s of posters) expect(s.headers?.authorization).toBeUndefined()
   })
 
   test('a sign-out the server refuses says so, and stays signed in', async () => {

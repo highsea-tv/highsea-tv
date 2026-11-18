@@ -560,11 +560,17 @@ function EditSheet({ user, onClose }: { user: User; onClose: () => void }) {
     permissions: user.permissions,
     libraries: user.libraries,
   })
+  // their username, which they sign in with (HT-37): renamed first, so a taken name stops the save
+  const [username, setUsername] = useState(user.username)
+  const [usernameError, setUsernameError] = useState<string | undefined>()
+  const renamed = username.trim() !== user.username
   // staff hold every power and see every library: what they can do is a user's alone
   const isUser = draft.role === 'user'
-  const save = useAction((c, d: typeof draft) =>
-    c.users.update({ params: { id: user.id }, body: d }),
-  )
+  const save = useAction(async (c, d: typeof draft) => {
+    if (renamed)
+      await c.users.rename({ params: { id: user.id }, body: { username: username.trim() } })
+    return c.users.update({ params: { id: user.id }, body: d })
+  })
   return (
     <Sheet
       open
@@ -574,6 +580,20 @@ function EditSheet({ user, onClose }: { user: User; onClose: () => void }) {
       description={`@${user.username}`}
     >
       <View style={{ gap: s['5'] }}>
+        <Field label={t('edit.username')} hint={t('edit.usernameHint')} error={usernameError}>
+          <Input
+            value={username}
+            autoCapitalize="none"
+            autoCorrect={false}
+            spellCheck={false}
+            autoComplete="off"
+            maxLength={32}
+            onChangeText={(v) => {
+              setUsername(v.toLowerCase())
+              setUsernameError(undefined)
+            }}
+          />
+        </Field>
         <RoleField
           value={draft.role}
           onChange={(role) =>
@@ -623,7 +643,9 @@ function EditSheet({ user, onClose }: { user: User; onClose: () => void }) {
           <Button
             variant="primary"
             loading={save.pending}
-            disabled={Array.isArray(draft.libraries) && !draft.libraries.length}
+            disabled={
+              (Array.isArray(draft.libraries) && !draft.libraries.length) || !username.trim()
+            }
             onPress={() =>
               save.run(draft).then(
                 () => {
@@ -632,7 +654,10 @@ function EditSheet({ user, onClose }: { user: User; onClose: () => void }) {
                   })
                   onClose()
                 },
-                (e: Error) => toast.error(t('edit.failed'), { description: e.message }),
+                (e: Error & { details?: { field?: string } }) =>
+                  e.details?.field === 'username'
+                    ? setUsernameError(e.message)
+                    : toast.error(t('edit.failed'), { description: e.message }),
               )
             }
           >

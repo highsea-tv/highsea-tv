@@ -13,8 +13,10 @@ export function useMedia() {
   return (url: string | null | undefined): Source | undefined => {
     if (!url) return undefined
     if (!url.startsWith('/')) return { uri: url }
+    // null until an address answers; '' is one, the page's own origin, as the web at /web uses its
+    // server (host.web.ts's HOME_SERVER), so it isn't falsy here (HT-35)
     const base = current.base()
-    if (!base) return undefined
+    if (base === null) return undefined
     return {
       uri: `${base}${url}`,
       ...(current.token ? { headers: { authorization: `Bearer ${current.token}` } } : {}),

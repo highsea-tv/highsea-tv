@@ -19,6 +19,7 @@ import {
   EmptyState,
   FilmRow,
   FilmRowSkeleton,
+  Image,
   ScrollView,
   Skeleton,
   SkeletonText,
@@ -28,7 +29,6 @@ import {
   useTheme,
 } from '@highsea-tv/ui'
 import { TV_HEAD_HEIGHT, TvAmbient, TvMessage, type ViewHandle } from '@highsea-tv/ui/tv'
-import { Image } from 'expo-image'
 import { type Href, router } from 'expo-router'
 import { type ReactNode, useCallback, useState } from 'react'
 import { View } from 'react-native'

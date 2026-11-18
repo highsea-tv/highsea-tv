@@ -153,6 +153,8 @@ export function createAuth(deps: AuthDeps) {
         accounts.resetLink(ctx, id, actor, meta),
       update: (id: string, patch: accounts.UserPatch, actor: accounts.Actor, meta: RequestMeta) =>
         accounts.updateUser(ctx, id, patch, actor, meta),
+      rename: (id: string, username: string, actor: accounts.Actor, meta: RequestMeta) =>
+        accounts.renameUser(ctx, id, username, actor, meta),
       remove: (id: string, actor: accounts.Actor, meta: RequestMeta) =>
         accounts.removeUser(ctx, id, actor, meta),
       resetTwoFactor: (id: string, actor: accounts.Actor, meta: RequestMeta) =>
@@ -184,6 +186,11 @@ export function createAuth(deps: AuthDeps) {
         deviceId: string | null,
         meta: RequestMeta,
       ) => accounts.changePassword(ctx, userId, input, deviceId, meta),
+      changeUsername: (
+        userId: string,
+        input: { username: string; password: string | null },
+        meta: RequestMeta,
+      ) => accounts.changeUsername(ctx, userId, input, meta),
     },
 
     devices: {
