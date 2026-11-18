@@ -15,6 +15,8 @@ export const network = defineMessages({
   'remote.description':
     'The address the apps use away from home. On the LAN they find the server on their own.',
   externalUrl: 'External URL',
+  suggested:
+    'Filled in for the reverse proxy highsea noticed in front of it. Check the address and the trusted proxy, then save.',
   'externalUrl.invalid': 'Use a full address, like https://harbor.example.net.',
   'tls.title': 'Reverse proxy and TLS',
   tls: 'TLS',

@@ -64,6 +64,7 @@ import { type ReactNode, useEffect, useState } from 'react'
 import { ActivityIndicator, ScrollView, View } from 'react-native'
 import { TmdbNotice } from './attribution.tsx'
 import { Loadable } from './loadable.tsx'
+import { useRouter } from './navigation.tsx'
 import { Group } from './settings.tsx'
 import { AdminPage, useShell } from './shell.tsx'
 import { system as messages } from './system-messages.ts'
@@ -506,12 +507,24 @@ const divided = (i: number, color: string) =>
 /** Text that breaks anywhere rather than overflow (the web's overflow-wrap: anywhere). */
 const ANYWHERE = { overflowWrap: 'anywhere' } as object
 
-/** The prototype's Health list: each check with its level, where it comes from and since when. */
+/**
+ * The prototype's Health list: each check with its level, where it comes from and since when.
+ * Since HT-53 a check may carry one action and a dismiss for the owner, as small buttons below its
+ * message (the owner's choice of place, 2026-11-18): the reverse proxy highsea noticed.
+ */
 function Health() {
   const t = useT(messages)
   const theme = useTheme()
   const { relative } = useRelative()
+  const { role } = useShell()
+  const router = useRouter()
   const health = useQuery('system:health', (c) => c.system.healthChecks(), HEALTH_TOPICS)
+  const dismiss = useAction((c, id: string) => c.system.dismissHealthCheck({ params: { id } }))
+  const onDismiss = (id: string) =>
+    dismiss.run(id).then(
+      () => health.refetch(),
+      (e: Error) => toast.error(t('health.dismissFailed'), { description: e.message }),
+    )
   return (
     <Loadable query={health} what={t('health.what')}>
       {(checks) =>
@@ -560,6 +573,36 @@ function Health() {
                     <Text color="text-2" style={ANYWHERE}>
                       {c.message}
                     </Text>
+                    {role === 'owner' && (c.action || c.dismissible) && (
+                      <View
+                        style={{
+                          flexDirection: 'row',
+                          flexWrap: 'wrap',
+                          gap: sp['2'],
+                          marginTop: sp['1'],
+                        }}
+                      >
+                        {c.action && (
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onPress={() => c.action && router.push(c.action.path)}
+                          >
+                            {t(`health.action.${c.action.kind}`)}
+                          </Button>
+                        )}
+                        {c.dismissible && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            loading={dismiss.pending}
+                            onPress={() => onDismiss(c.id)}
+                          >
+                            {t('health.dismiss')}
+                          </Button>
+                        )}
+                      </View>
+                    )}
                   </View>
                 </View>
               )

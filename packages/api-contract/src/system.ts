@@ -319,6 +319,13 @@ export const HealthCheck = z
     level: z.enum(['ok', 'notice', 'warning', 'error']),
     message: z.string(),
     since: IsoDate,
+    /**
+     * The one thing to do about it, for the owner: an admin page to open, with what to fill in
+     * there in its query. `reverse-proxy` opens Settings › Network set for the proxy seen (HT-53).
+     */
+    action: z.object({ kind: z.enum(['reverse-proxy']), path: z.string() }).optional(),
+    /** Whether the owner can dismiss it for good (`POST /system/health/{id}/dismiss`). */
+    dismissible: z.boolean().optional(),
   })
   .openapi('HealthCheck')
 
@@ -423,6 +430,15 @@ export const system = {
       200: json(z.array(HealthCheck), 'Checks'),
       ...errors('unauthorized', 'forbidden'),
     },
+  }),
+  dismissHealthCheck: createRoute({
+    method: 'post',
+    path: `${API_PREFIX}/system/health/{id}/dismiss`,
+    tags: ['System'],
+    summary: 'Dismiss a check that can be dismissed, for good',
+    ...access('owner'),
+    request: { params: IdParam },
+    responses: { ...noContent, ...errors('unauthorized', 'forbidden', 'not-found') },
   }),
 
   // ---------------------------------------------------------------- the owner's tools (8b)

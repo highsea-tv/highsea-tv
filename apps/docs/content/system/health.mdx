@@ -11,7 +11,7 @@ description: What System › Health lists, and what to do about each message, by
     messages (packages/indexers/src/service.ts, packages/catalog/src/service.ts,
     packages/downloads/src/service.ts, ip-blocklist.ts, packages/vpn/src/copy.ts,
     packages/subtitles/src/movies/accounts.ts, packages/notifications/src/service/messages.ts,
-    packages/network/src/tls.ts), the folders' checks and the hardlink check at start
+    packages/network/src/tls.ts, front-door.ts), the folders' checks and the hardlink check at start
     (packages/runtime/src/system.ts), imports that copy (packages/media/src/movies/import.ts), and
     the NVIDIA card that isn't in the container (packages/runtime/src/hardware.ts,
     packages/stream/src/hardware/messages.ts).
@@ -55,6 +55,7 @@ What each message means, and what to do, by source:
 - **The certificate in … can't be used: …** highsea's built-in HTTPS can't read the certificate or key in `/config/tls`. Replace them with a full chain and its key. See [Network](/settings/network/).
 - **Discovery couldn't listen on UDP …** Something else is using the port apps use to find the server at home. Apps can still connect by address.
 - **The external URL isn't HTTPS.** Passwords cross the internet unencrypted, and passkeys can't work. Set an `https://` address in Network.
+- **A reverse proxy looks to be in front of highsea, for …** A notice: requests came through a proxy for that name, but highsea isn't set up for one. The owner sees **Set it up**, which opens Network with the proxy's settings filled in to check and save, and **Dismiss**, which hides it for good. See [When highsea notices your proxy](/settings/network/reverse-proxy-and-tls/#when-highsea-notices-your-proxy).
 
 ## Subtitles
 
