@@ -1,18 +1,19 @@
 # SPDX-License-Identifier: AGPL-3.0-only
-# Two tiers (ADR 0062, next-branch.md › CI by branch). The fast one, `check`, runs on every pull
-# request that changes more than the internal docs, and every push to next or main: lint, types, tests (Bun), the platform under Node, the
-# license audit, the dependency check, the client's exports, the admin's and the docs' builds. The
-# heavy one: highsea connects' leak test, the web player in Chromium and Firefox
-# (phase-4-checkpoint-2.md › Tests, 4.2b), and the image on both platforms: built, booted healthy,
-# with its labels and attestations. Nothing is pushed (phase-3-checkpoint-9.md › Images: "CI
-# builds both platforms … and pushes nothing").
+# Two tiers (ADR 0062, next-branch.md › CI by branch). The fast one runs on every pull request that
+# changes more than the internal docs, and every push to next or main: lint, types, the platform
+# under Node, the license audit and the dependency check (`lint`), the tests in parallel shards
+# (`tests`), the client's exports (`exports`), the admin's and the docs' builds (`builds`), and
+# `check`, which the branch rulesets require, gathering them. The heavy one: highsea connects' leak
+# test, the web player in Chromium and Firefox (phase-4-checkpoint-2.md › Tests, 4.2b), and the
+# image on both platforms: built, booted healthy, with its labels and attestations. Nothing is
+# pushed (phase-3-checkpoint-9.md › Images: "CI builds both platforms … and pushes nothing").
 #
 # The heavy jobs share one condition, `&heavy` on `playback` below: they run on a push to next, a
 # pull request into main, a pull request with the `full-ci` label, and a release (called from
 # release.yml, whose event is workflow_dispatch, since a called workflow's `github` context is its
-# caller's). A push to main runs only `check`: the pull request from next already ran everything
-# on the same result, and a release runs it all again (the owner's answer 3). A job its `if:` skips
-# reports success, so the condition never leaves a required check pending
+# caller's). A push to main runs only the fast tier: the pull request from next already ran
+# everything on the same result, and a release runs it all again (the owner's answer 3). A job its
+# `if:` skips reports success, so the condition never leaves a required check pending
 # (https://docs.github.com/en/pull-requests/how-tos/merge-and-close-pull-requests/troubleshooting-required-status-checks#handling-skipped-but-required-checks).
 # `github.base_ref` is a pull request's base branch, and the label is in
 # `github.event.pull_request.labels`, matched with `contains()` over the names
@@ -21,60 +22,68 @@
 # written once and repeated with YAML aliases
 # (https://docs.github.com/en/actions/reference/workflows-and-actions/reusing-workflow-configurations#yaml-anchors-and-aliases).
 #
+# On the next → main pull request each heavy job first asks whether the same job already passed in
+# next's push run for the same commit (.github/scripts/reuse-next.sh says exactly when), and if it
+# did, skips its own steps and passes under its own name: main's ruleset requires playback, leak
+# and both images, and a job whose steps are all skipped still reports success (2026-11-17, ADR
+# 0062's section of that date). The steps are skipped, not the job, so the matrix still expands to
+# the names main requires. A release never reuses anything: its event isn't a pull request.
+#
 # Each action is pinned to a full commit SHA, with its version beside it, as GitHub's security
 # guidance advises: a tag can be moved, a commit can't
 # (https://docs.github.com/en/actions/reference/security/secure-use#using-third-party-actions).
 name: CI
 
-# The internal docs and the notes for Claude change nothing that's built or tested, so a push that
-# only touches them runs nothing (https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#onpushpull_requestpull_request_targetpathspaths-ignore).
-# The guides in apps/docs are built and tested here, so they're not left out.
+# A push to next or main runs whatever it changed, the internal docs alone included (2026-11-17):
+# the next → main pull request reuses next's run only for its exact commit, and next's commit is
+# often one that touches only the docs, such as a release's record.
 #
 # A pull request has no path filter: next and main require `check`, and a workflow its paths skip
 # leaves its required checks pending, which blocks the merge (troubleshooting-required-status-checks,
-# above). Instead the `changes` job below lists the pull request's files, and `check`'s `if:` skips
-# it when every one is in the list above, which reports success under the same name (2026-11-17,
-# ADR 0062's section of that date). Keep the two lists the same.
+# above). Instead the `changes` job below lists the pull request's files, and the fast tier's `if:`
+# skips it when every one is internal docs or notes for Claude, which reports success under the
+# same names (ADR 0062's 2026-11-17 sections).
 #
 # `labeled` joins the default types (opened, synchronize, reopened), so adding `full-ci` to an open
 # pull request starts the heavy jobs
 # (https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#pull_request).
 # Any other label starts a run too, and cancels the one in progress (the concurrency group below);
-# `check` runs again (or is skipped again, for the internal docs alone), so a cancelled run can't
-# stand in for a failed one.
+# the fast tier runs again (or is skipped again, for the internal docs alone), so a cancelled run
+# can't stand in for a failed one.
 on:
   push:
     branches: [next, main]
-    paths-ignore:
-      - 'docs/**'
-      - '.claude/**'
-      - 'README.md'
-      - 'CLAUDE.md'
   pull_request:
     types: [opened, synchronize, reopened, labeled]
   # the release runs it whole before building anything (release.yml)
   workflow_call:
 
-# a called workflow's `github` context is its caller's, so `github.workflow` keeps a release's run apart
-# from a push's, and neither cancels the other
-# (https://docs.github.com/en/actions/reference/workflows-and-actions/reusing-workflow-configurations)
+# A pull request's newer run cancels its older one, which tested a commit that's no longer its
+# head. A push to next or main, and a release, are never cancelled: the group is the run's own
+# (`github.run_id`), so nothing else is ever in it, and `cancel-in-progress` is false for them. One
+# group per branch would still cancel a *pending* run when a third arrives, whatever
+# `cancel-in-progress` says, and next → main reuses next's run for its commit
+# (https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#concurrency,
+# https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-workflow-concurrency).
+# A called workflow's `github` context is its caller's, so a release's run is its own as well
+# (https://docs.github.com/en/actions/reference/workflows-and-actions/reusing-workflow-configurations).
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: ci-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
 
 jobs:
-  # Whether a pull request changes anything besides the internal docs, the same list as
-  # `paths-ignore` above: `code` is `false` only then. It compares the pull request's head with
-  # where it branched from its base (`git diff base...head`, git-diff(1)), so what the base gained
-  # since doesn't count; both SHAs are in the event's `pull_request` object
+  # Whether a pull request changes anything besides the internal docs: `code` is `false` only
+  # then. It compares the pull request's head with where it branched from its base
+  # (`git diff base...head`, git-diff(1)), so what the base gained since doesn't count; both SHAs
+  # are in the event's `pull_request` object
   # (https://docs.github.com/en/webhooks/webhook-events-and-payloads#pull_request), and
   # `fetch-depth: 0` fetches the history to find where they meet
   # (https://github.com/actions/checkout#usage). `--no-renames` lists a moved file under both its
   # names, so moving code into docs/ still counts as code. Any other event (a push, a release's
-  # `workflow_call`) says `true` without looking, and so does a failed step: `check` runs then.
+  # `workflow_call`) says `true` without looking, and so does a failed step: the fast tier runs then.
   changes:
     runs-on: ubuntu-24.04
     timeout-minutes: 5
@@ -108,41 +117,103 @@ jobs:
           done <<< "$files"
           echo "code=$code" >> "$GITHUB_OUTPUT"
           if [ "$code" = false ]; then
-            echo "::notice::Only the internal docs changed, so check is skipped"
+            echo "::notice::Only the internal docs changed, so the checks are skipped"
           fi
 
-  check:
-    # Skipped only when `changes` says the pull request touches nothing but the internal docs. A job
-    # its `if:` skips reports success, so `next` and `main`, which require `check`, can still merge
-    # (troubleshooting-required-status-checks, above). A job whose `needs` failed is skipped too, and
-    # would pass the same way, so `!cancelled()` runs `check` even then, and an empty output (a failed
-    # `changes`) isn't `false`
+  # Lint, types, the licences and the dependency check: about two minutes
+  # together, so one job rather than one runner's setup each.
+  lint:
+    # The fast tier's condition. Skipped only when `changes` says the pull request touches nothing
+    # but the internal docs. A job whose `needs` failed is skipped too, so `!cancelled()` runs it
+    # even then, and an empty output (a failed `changes`) isn't `false`
     # (https://docs.github.com/en/actions/reference/workflows-and-actions/expressions#status-check-functions).
-    # The heavy jobs don't need `check`, so this changes nothing for them.
     needs: changes
-    if: ${{ !cancelled() && needs.changes.outputs.code != 'false' }}
+    if: &fast ${{ !cancelled() && needs.changes.outputs.code != 'false' }}
     runs-on: ubuntu-24.04
     # Without a limit a job may run for 360 minutes, GitHub's default
-    # (https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#jobsjob_idtimeout-minutes);
-    # a hung test once held this one for four hours. Its last 30 runs took 7 to 26 minutes,
-    # leaving out the apt stalls the step below now avoids (HT-8, 2026-11-06).
-    timeout-minutes: 40
+    # (https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#jobsjob_idtimeout-minutes)
+    timeout-minutes: 15
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
-      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      - &checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - &bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version: 1.4.4
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+      - &node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version-file: .nvmrc
       # Bun's global cache (https://bun.com/docs/pm/global-cache), kept between runs by the lockfile,
       # so an install fetches only what changed (https://github.com/actions/cache#creating-a-cache-key)
-      - uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+      - &bun-cache
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
         with:
           path: ~/.bun/install/cache
           key: bun-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('bun.lock') }}
           restore-keys: bun-${{ runner.os }}-${{ runner.arch }}-
-      - run: bun install --frozen-lockfile
+      - &install
+        run: bun install --frozen-lockfile
+      - name: Lint
+        run: bun run lint
+      - name: Types
+        run: bun run typecheck
+      # the platform under Node runs in the first Bun shard, which has ffmpeg for its subtitle sync
+      - name: License audit
+        run: bun run licenses
+      # cargo-audit for the desktop app's crates (ADR 0058), as RustSec's own prebuilt binary
+      # instead of compiling it with `cargo install` on every run (143 s, 2026-11-17). The action
+      # downloads it from rustsec/rustsec's GitHub release and checks it against the SHA-256 in its
+      # manifest (https://github.com/taiki-e/install-action#usage, manifests/cargo-audit.json). The
+      # advisory database is fetched fresh by `cargo audit` itself on every run, so the check is
+      # as current as before. cargo is on GitHub's Ubuntu image
+      # (https://github.com/actions/runner-images/blob/main/images/ubuntu/Ubuntu2404-Readme.md),
+      # which the license audit's `cargo metadata` uses too.
+      - name: cargo-audit
+        uses: taiki-e/install-action@682ce6c3c696a4cd5168a05f98e51aa02b877941 # v2.89.1
+        with:
+          tool: cargo-audit@0.22.2
+      # the exit criteria's dependency check: npm's advisories, high and critical, production
+      # packages only, and RustSec's for the desktop app's crates; exceptions with reasons and
+      # dates in scripts/audit-exceptions.json
+      - name: Dependency check
+        run: bun run audit
+
+  # The tests, split across runners (2026-11-17: one runner took 393 s for Bun's and 262 s for
+  # Jest's). Bun's runner splits its files with `--shard=i/n`, balanced by the durations in
+  # scripts/test-timings.json, a file with no entry counting as the median
+  # (https://bun.com/docs/test/parallel); each file still runs isolated, as `bun run test` runs it.
+  # The client's Jest tests split the same way with Jest's own `--shard`
+  # (https://jestjs.io/docs/cli#--shard). Each shard keeps the list of files it ran, and `check`
+  # fails unless every test file ran exactly once (scripts/test-shards.ts). The durations are CI's
+  # own, from a run's `shard-bun-*` artifacts; to refresh them, merge those files' `files`:
+  # `jq -s '{version: 1, files: (map(.files) | add)}' bun-*.json > scripts/test-timings.json`.
+  tests:
+    name: tests (${{ matrix.runner }} ${{ matrix.shard }}/${{ matrix.of }})
+    needs: changes
+    if: *fast
+    strategy:
+      # every shard finishes, so a failure shows all its company
+      fail-fast: false
+      matrix:
+        include:
+          - { runner: bun, shard: 1, of: 4 }
+          - { runner: bun, shard: 2, of: 4 }
+          - { runner: bun, shard: 3, of: 4 }
+          - { runner: bun, shard: 4, of: 4 }
+          # 3 rather than 2: two Jest shards took 185 to 263 s, the run's longest job (2026-11-17)
+          - { runner: jest, shard: 1, of: 3 }
+          - { runner: jest, shard: 2, of: 3 }
+          - { runner: jest, shard: 3, of: 3 }
+    runs-on: ubuntu-24.04
+    # each shard took under 5 minutes (2026-11-17); the whole suite once took 16 on one runner
+    timeout-minutes: 20
+    steps:
+      - *checkout
+      - *bun
+      - *node
+      - *bun-cache
+      - *install
       # ffprobe and unar, so the probing and extraction tests run instead of skipping (ADR 0039).
       #
       # Their .debs are kept between runs. The index downloads in a second, but on some runs
@@ -168,7 +239,10 @@ jobs:
       # used up the step's 3 minutes on every attempt (the jobs' logs, 2026-11-11: "Temporary
       # failure resolving 'azure.archive.ubuntu.com'"). So the name is looked up once first, and
       # when it doesn't resolve its line comes off the list and apt goes straight to the others.
+      #
+      # Only Bun's tests probe and extract; Jest's render the client's screens.
       - name: The apt index
+        if: matrix.runner == 'bun'
         timeout-minutes: 3
         run: |
           if ! timeout 10 getent hosts azure.archive.ubuntu.com > /dev/null; then
@@ -177,16 +251,19 @@ jobs:
           fi
           sudo apt-get update
       - name: The apt packages' versions
+        if: matrix.runner == 'bun'
         id: apt
         run: |
           versions=$(apt-get install -s --no-install-recommends ffmpeg unar | grep '^Inst ' | sha256sum | cut -c1-16)
           echo "key=apt-${RUNNER_OS}-${RUNNER_ARCH}-ffmpeg-unar-${versions}" >> "$GITHUB_OUTPUT"
-      - uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+      - if: matrix.runner == 'bun'
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
         with:
           path: ~/apt-archives
           key: ${{ steps.apt.outputs.key }}
           restore-keys: apt-${{ runner.os }}-${{ runner.arch }}-ffmpeg-unar-
       - name: ffmpeg and unar
+        if: matrix.runner == 'bun'
         timeout-minutes: 8
         run: |
           archives="$HOME/apt-archives"
@@ -196,35 +273,69 @@ jobs:
           # apt's lock and partial downloads are root's; the cache saves the .debs as the runner
           sudo rm -rf "$archives/lock" "$archives/partial"
           sudo chown -R "$(id -u):$(id -g)" "$archives"
-      - name: Lint
-        run: bun run lint
-      - name: Types
-        run: bun run typecheck
-      # its own limit, so a hang names this step; the last 30 runs took 5 to 16 minutes
+      # `--timings` names two files: the first, new, is where this shard's own durations are
+      # written, and the second, read only, balances the shards (`bun test --help`)
       - name: Tests (Bun)
-        timeout-minutes: 25
-        run: bun run test
+        if: matrix.runner == 'bun'
+        timeout-minutes: 15
+        run: |
+          mkdir -p "$RUNNER_TEMP/shards"
+          bun test --isolate --shard=${{ matrix.shard }}/${{ matrix.of }} \
+            --timings="$RUNNER_TEMP/shards/bun-${{ matrix.shard }}.json" \
+            --timings=scripts/test-timings.json --update-timings
+      # The platform under Node: better-sqlite3, workers, the API and the subtitle sync, whose
+      # ffmpeg reads a clip, so it runs here beside ffmpeg, in the shard that finished first
+      # (128 s of the slowest 214 s, 2026-11-17)
       - name: The platform under Node (better-sqlite3, workers, API)
+        if: matrix.runner == 'bun' && matrix.shard == 1
         run: bun run smoke
-      - name: License audit
-        run: bun run licenses
-      # cargo-audit for the desktop app's crates (ADR 0058); cargo is on GitHub's Ubuntu image
-      # (https://github.com/actions/runner-images/blob/main/images/ubuntu/Ubuntu2404-Readme.md),
-      # which the license audit's `cargo metadata` uses too
-      - name: cargo-audit
-        run: cargo install cargo-audit@0.22.2 --locked
-      # the exit criteria's dependency check: npm's advisories, high and critical, production
-      # packages only, and RustSec's for the desktop app's crates; exceptions with reasons and
-      # dates in scripts/audit-exceptions.json
-      - name: Dependency check
-        run: bun run audit
-      # the client's web export, which /web serves (ADR 0061): react-native-web and the library's
-      # one drawing, no React Native itself, no mock, and hls.js in a chunk of its own; and the
-      # desktop app's export, the same with its host on Tauri, which only it carries (ADR 0058)
+      # the same as `bun run test`'s second half, with `--ci` so a missing snapshot fails rather
+      # than being written (https://jestjs.io/docs/cli#--ci)
+      - name: Tests (Jest)
+        if: matrix.runner == 'jest'
+        timeout-minutes: 15
+        working-directory: apps/client
+        run: |
+          mkdir -p "$RUNNER_TEMP/shards"
+          bun run test --ci --shard=${{ matrix.shard }}/${{ matrix.of }} \
+            --json --outputFile="$RUNNER_TEMP/shards/jest-${{ matrix.shard }}.json"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: shard-${{ matrix.runner }}-${{ matrix.shard }}
+          path: ${{ runner.temp }}/shards/
+          if-no-files-found: error
+          retention-days: 3
+
+  # the client's web export, which /web serves (ADR 0061): react-native-web and the library's
+  # one drawing, no React Native itself, no mock, and hls.js in a chunk of its own; and the
+  # desktop app's export, the same with its host on Tauri, which only it carries (ADR 0058)
+  exports:
+    needs: changes
+    if: *fast
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - *checkout
+      - *bun
+      - *node
+      - *bun-cache
+      - *install
       - name: The client's web and desktop exports carry only their own side
         run: bun scripts/bundles.ts client-web client-desktop
         env:
           EXPO_NO_TELEMETRY: 1
+
+  builds:
+    needs: changes
+    if: *fast
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - *checkout
+      - *bun
+      - *node
+      - *bun-cache
+      - *install
       - name: Build the admin
         run: bun run --filter @highsea-tv/server build
         env:
@@ -234,6 +345,38 @@ jobs:
         run: bun run --filter @highsea-tv/docs build
         env:
           NEXT_TELEMETRY_DISABLED: 1
+
+  # The name next's and main's rulesets require. It passes only when every fast job passed and the
+  # shards between them ran every test file exactly once. A job whose `needs` failed is skipped,
+  # and a skipped job reports success, so `!cancelled()` runs this one whatever the others did,
+  # and the first step looks at each one's `result`: `success`, `failure`, `cancelled` or `skipped`
+  # (https://docs.github.com/en/actions/reference/workflows-and-actions/contexts#needs-context,
+  # https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#jobsjob_idneeds).
+  # Anything but `success` fails it, a cancelled or skipped shard included. A cancelled run cancels
+  # this job too, which never reports success. With the internal docs alone it's skipped by the
+  # same condition as the others, which reports success (the header above). `changes` itself is
+  # left out: when it fails, the fast tier runs anyway, as before 2026-11-17.
+  check:
+    needs: [changes, lint, tests, exports, builds]
+    if: *fast
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Every job passed
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+        run: |
+          echo "$NEEDS" | jq -r 'del(.changes) | to_entries[] | "\(.key): \(.value.result)"'
+          echo "$NEEDS" | jq -e 'del(.changes) | to_entries | all(.value.result == "success")' > /dev/null
+      - *checkout
+      - *bun
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          pattern: shard-*
+          path: ${{ runner.temp }}/shards
+          merge-multiple: true
+      - name: Every test file ran exactly once
+        run: bun scripts/test-shards.ts check "$RUNNER_TEMP/shards"
 
   # the web player in real browsers: the seeded production build with generated clips, one played
   # directly and one as HLS, a subtitle drawn, a seek far ahead, and the place kept on leaving
@@ -249,25 +392,113 @@ jobs:
       || (github.event_name != 'pull_request' && github.event_name != 'push')
     runs-on: ubuntu-24.04
     timeout-minutes: 20
+    # `actions: read` for next's runs and jobs, which the reuse step reads
+    # (https://docs.github.com/en/rest/actions/workflow-runs); a job's `permissions` replace the
+    # workflow's, so `contents: read` is repeated
+    # (https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#permissions)
+    permissions: &reuse-permissions
+      contents: read
+      actions: read
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
-      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      - *checkout
+      # Passed on next for this commit? Then every step after it is skipped (the header above). It
+      # waits up to the minutes given for next's run when that's still going, which leaves this
+      # job time to build after all within its limit.
+      # (the arguments: this workflow's file, the job's check name, the minutes to wait)
+      - name: Reuse next's result for this commit
+        id: reuse
+        if: &next-to-main github.event_name == 'pull_request' && github.base_ref == 'main'
+        run: bash .github/scripts/reuse-next.sh ci.yml playback 0
+        env: &reuse-env
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          EVENT: ${{ github.event_name }}
+          BASE_REF: ${{ github.base_ref }}
+          HEAD_REF: ${{ github.head_ref }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          MERGE_SHA: ${{ github.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+      - if: &build steps.reuse.outputs.reused != 'true'
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version: 1.4.4
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+      - if: *build
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version-file: .nvmrc
-      - uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+      - if: *build
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
         with:
           path: ~/.bun/install/cache
           key: bun-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('bun.lock') }}
           restore-keys: bun-${{ runner.os }}-${{ runner.arch }}-
-      - run: bun install --frozen-lockfile
-      - name: ffmpeg
-        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
+      - if: *build
+        run: bun install --frozen-lockfile
+      # ffmpeg and the browsers' system packages come through apt the way the tests' ffmpeg does
+      # (the note on `tests`): Azure's mirror once sent them so slowly that the two apt steps took
+      # 14 and 5+ minutes and the 0.4.2 release run hit this job's limit (run 44227620609,
+      # 2026-11-17), where a good run takes 20 s for each. So the mirror is checked first, the
+      # .debs are kept between runs, and each step has its own limit. The browsers' packages are
+      # the ones Playwright itself reports missing: `install-deps --dry-run` simulates its own
+      # apt-get install and lists them (`playwright install-deps --help`). The browsers themselves
+      # download in about 20 s and aren't cached, as Playwright advises: restoring takes about as
+      # long (https://playwright.dev/docs/ci#caching-browsers).
+      - name: The apt index
+        if: *build
+        timeout-minutes: 3
+        run: |
+          if ! timeout 10 getent hosts azure.archive.ubuntu.com > /dev/null; then
+            echo "::warning::azure.archive.ubuntu.com doesn't resolve; using the image's other mirrors"
+            sudo sed -i '/azure\.archive\.ubuntu\.com/d' /etc/apt/apt-mirrors.txt
+          fi
+          sudo apt-get update
+      - name: The apt packages and their versions
+        if: *build
+        id: apt
+        run: |
+          browsers=$(bunx playwright-core install-deps --dry-run chromium firefox | sed -n 's/^  \([^ ]*\)$/\1/p' | tr '\n' ' ' || true)
+          echo "Playwright's packages: ${browsers:-none missing}"
+          echo "packages=ffmpeg $browsers" >> "$GITHUB_OUTPUT"
+          # shellcheck disable=SC2086 # one word per package
+          versions=$(apt-get install -s --no-install-recommends ffmpeg $browsers | grep '^Inst ' | sha256sum | cut -c1-16)
+          echo "key=apt-${RUNNER_OS}-${RUNNER_ARCH}-playback-${versions}" >> "$GITHUB_OUTPUT"
+      # restored from this job's last cache, or else the tests' (ffmpeg's packages, most of the
+      # download), and saved straight after the install, so a slow first download is kept even if
+      # a later step fails (the cache action's restore and save actions, whose save runs whatever
+      # follows: https://github.com/actions/cache/blob/v5.1.0/save/README.md)
+      - if: *build
+        id: apt-cache
+        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: ~/apt-archives
+          key: ${{ steps.apt.outputs.key }}
+          restore-keys: |
+            apt-${{ runner.os }}-${{ runner.arch }}-playback-
+            apt-${{ runner.os }}-${{ runner.arch }}-ffmpeg-unar-
+      - name: ffmpeg and the browsers' system packages
+        if: *build
+        timeout-minutes: 8
+        env:
+          PACKAGES: ${{ steps.apt.outputs.packages }}
+        run: |
+          archives="$HOME/apt-archives"
+          mkdir -p "$archives/partial"
+          # shellcheck disable=SC2086 # one word per package
+          sudo apt-get install -y --no-install-recommends -o Dir::Cache::Archives="$archives" $PACKAGES
+          sudo apt-get autoclean -o Dir::Cache::Archives="$archives"
+          sudo rm -rf "$archives/lock" "$archives/partial"
+          sudo chown -R "$(id -u):$(id -g)" "$archives"
+      - if: steps.reuse.outputs.reused != 'true' && steps.apt-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: ~/apt-archives
+          key: ${{ steps.apt.outputs.key }}
       - name: Chromium and Firefox for Playwright
-        run: bunx playwright-core install --with-deps chromium firefox
+        if: *build
+        timeout-minutes: 5
+        run: bunx playwright-core install chromium firefox
       - name: Playback in Chromium and Firefox
+        if: *build
         run: bun scripts/sweeps/playback.ts
         env:
           NEXT_TELEMETRY_DISABLED: 1
@@ -279,25 +510,37 @@ jobs:
     runs-on: ubuntu-24.04
     # its last 30 runs took under 1.5 minutes (the default limit is 360, the check job's note)
     timeout-minutes: 10
+    permissions: *reuse-permissions
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
-      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      - *checkout
+      - name: Reuse next's result for this commit
+        id: reuse
+        if: *next-to-main
+        run: bash .github/scripts/reuse-next.sh ci.yml leak 0
+        env: *reuse-env
+      - if: *build
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version: 1.4.4
       # the test's connections run under Node, as highsea does: Bun reports a route's EHOSTUNREACH
       # as ECONNREFUSED (packages/vpn/test/leak.test.ts)
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+      - if: *build
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version-file: .nvmrc
-      - uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+      - if: *build
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
         with:
           path: ~/.bun/install/cache
           key: bun-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('bun.lock') }}
           restore-keys: bun-${{ runner.os }}-${{ runner.arch }}-
-      - run: bun install --frozen-lockfile
+      - if: *build
+        run: bun install --frozen-lockfile
       - name: Install wireguard-tools and iproute2
+        if: *build
         run: sudo apt-get update && sudo apt-get install -y --no-install-recommends wireguard-tools iproute2
       - name: The leak test
+        if: *build
         run: sudo env "PATH=$PATH" HIGHSEA_LEAK_TEST=1 "$(command -v bun)" test packages/vpn/test/leak.test.ts
 
   # Each platform on its own runner, as Docker documents for multi-platform builds: native, so
@@ -315,9 +558,10 @@ jobs:
           - platform: linux/arm64
             runner: ubuntu-24.04-arm
     runs-on: ${{ matrix.runner }}
-    # its last 30 runs took up to 12 minutes on either platform (the default limit is 360, the
-    # check job's note)
+    # its last 30 runs took up to 12 minutes on either platform, and it may wait 15 for next's
+    # run first (the default limit is 360, the check job's note)
     timeout-minutes: 30
+    permissions: *reuse-permissions
     # the size budget's history, kept for the record:
     # set from the first slim builds (2026-10-22: amd64 1907 MB, arm64 1836 MB), about 5% above the
     # larger; raising it needs a reason here.
@@ -332,17 +576,27 @@ jobs:
     # image was 2,883 MB with the admin on React Native (expo-image 138 MB, lucide-react-native,
     # hermes-compiler); the step below reports the size and its largest folders, and fails on nothing
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
-      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      - *checkout
+      # the check's name for a matrix job is the job's id and its values, the name main requires
+      - name: Reuse next's result for this commit
+        id: reuse
+        if: *next-to-main
+        run: bash .github/scripts/reuse-next.sh ci.yml "image (${{ matrix.platform }}, ${{ matrix.runner }})" 15
+        env: *reuse-env
+      - if: *build
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version: 1.4.4
-      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
+      - if: *build
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
       - name: The image's version and dates
+        if: *build
         id: meta
         run: |
           echo "version=sha-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
           echo "created=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
       - name: Build the image
+        if: *build
         uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
         with:
           context: .
@@ -359,6 +613,7 @@ jobs:
           cache-from: type=gha,scope=image-${{ matrix.platform }}
           cache-to: type=gha,scope=image-${{ matrix.platform }},mode=max
       - name: It boots and reports healthy
+        if: *build
         run: |
           docker run -d --name highsea -p 3000:3000 highsea:ci
           for _ in $(seq 1 30); do
@@ -372,16 +627,20 @@ jobs:
           docker stop highsea
           test "$(docker inspect --format '{{.State.ExitCode}}' highsea)" = 0
       - name: Its size and largest folders
+        if: *build
         run: bun scripts/image.ts size highsea:ci
       - name: Its hardware encoders, filters and drivers
+        if: *build
         run: bun scripts/image.ts hardware highsea:ci
       - name: The user its entrypoint runs highsea as
+        if: *build
         run: bun scripts/image.ts user highsea:ci
       # The same build again from the cache, exported as an OCI layout with what a release pushes:
       # BuildKit's provenance (mode=min, its default) and the SBOM, which is opt-in
       # (https://docs.docker.com/build/metadata/attestations/). `tar=false` writes a folder
       # (https://docs.docker.com/build/exporters/oci-docker/).
       - name: Export it with its attestations
+        if: *build
         uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
         with:
           context: .
@@ -395,4 +654,5 @@ jobs:
           outputs: type=oci,dest=${{ runner.temp }}/highsea-oci,tar=false
           cache-from: type=gha,scope=image-${{ matrix.platform }}
       - name: Its labels, provenance and SBOM
+        if: *build
         run: bun scripts/image.ts attestations "$RUNNER_TEMP/highsea-oci"

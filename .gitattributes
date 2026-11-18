@@ -1,0 +1,4 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# Shell scripts keep LF endings on every checkout, Windows runners included, where Git may turn
+# them into CRLF and bash would read the CR as part of each line (gitattributes(5), `eol`)
+*.sh text eol=lf
