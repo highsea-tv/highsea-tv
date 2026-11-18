@@ -375,8 +375,13 @@ export function runArgs(run: RunInput): string[] {
     ...['-hls_list_size', '0', '-hls_flags', 'temp_file'],
     // each fragment's decode time (`tfdt`) is the film's own, not the run's, so pieces from any run
     // share one timeline and one initialization section (`frag_discont`,
-    // https://ffmpeg.org/ffmpeg-formats.html#Options-6, as Jellyfin's HLS does)
-    ...['-hls_segment_options', 'movflags=+frag_discont'],
+    // https://ffmpeg.org/ffmpeg-formats.html#Options-6, as Jellyfin's HLS does). `skip_sidx` too
+    // (HT-59): the HLS muxer writes fragments in DASH mode, where movenc sets each fragment's
+    // first sample's presentation time to where the last fragment ended, so a `sidx` lines up
+    // (libavformat/movenc.c, mov_write_single_packet). With B-frames that shows a piece's keyframe
+    // before its own leading frames, a wrong picture order at every keyframe. HLS reads no `sidx`,
+    // and without one movenc keeps the film's own times (Jellyfin's flags, jellyfin/jellyfin#17501)
+    ...['-hls_segment_options', 'movflags=+frag_discont+skip_sidx'],
     ...['-hls_fmp4_init_filename', INIT_NAME],
     ...['-start_number', String(run.startNumber)],
     ...['-hls_segment_filename', join(run.dir, '%d.m4s')],

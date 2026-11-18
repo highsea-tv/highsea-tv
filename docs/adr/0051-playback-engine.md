@@ -130,3 +130,21 @@ A resumed MKV film failed in the web player ("This film didn't start") and showe
 The seed's clips are `ultrafast`, closed GOPs without B-frames, which is why no test met either. The playback sweep now imports a 720p Matroska film with B-frames, open GOPs, two sound tracks, its own subtitle and a PGS track, saves a place between two keyframes and resumes it: before, it showed the owner's screen; after, it plays.
 
 What's left: a seek that lands in a segment's second or later piece of an open-GOP film. Chrome starts decoding at that piece's I-frame, whose leading frames refer to the piece before, which it has but didn't decode, and stops the same way. Every segment would have to start without leading frames, which a bitstream filter can't do for each piece; it's a finding for Phase 5's log, not this change.
+
+## 2026-11-18: each piece keeps its keyframe's own time, and seeks in Chromium's software decoder (phase 5; HT-59)
+
+The section above left a seek within a play of an open-GOP film open. Two separate things were found under it.
+
+- **Every piece showed its keyframe three frames early.** The HLS muxer writes its fMP4 segments through movenc in DASH mode, where movenc sets each fragment's first sample's presentation time to where the last fragment ended, so a `sidx` lines up (`mov_write_single_packet` in [libavformat/movenc.c](https://github.com/FFmpeg/FFmpeg/blob/release/7.1/libavformat/movenc.c)). With B-frames that first sample is the keyframe, and its leading frames show before it, so each piece put its keyframe ahead of them: a wrong picture order at every keyframe, in every player. HLS reads no `sidx` ([RFC 8216 § 3.3](https://www.rfc-editor.org/rfc/rfc8216#section-3.3) names only `moof`/`mdat`), and with `skip_sidx` movenc writes none and keeps the film's own times ([ffmpeg-formats § mov, mp4, ismv](https://ffmpeg.org/ffmpeg-formats.html#Options-6)). The segment options are now `movflags=+frag_discont+skip_sidx`, Jellyfin's flags (jellyfin/jellyfin#17501).
+- **Chromium's software decoder still fails a seek onto an open GOP's I-frame.** Since Chrome 149, Chromium's MP4 parser marks an I-frame that isn't an IDR as a keyframe when its SEI recovery point says it's whole (`recovery_frame_cnt` 0), so MSE may start a seek there (`kMediaSourceSeiRecoveryPointKeyframe`, `media/formats/mp4/mp4_stream_parser.cc`). The leading frames after it refer to the GOP before; Chromium's FFmpeg decoder runs with `AV_EF_EXPLODE` and stops on them (`PIPELINE_ERROR_DECODE`). Chrome's hardware decoders (VideoToolbox on a Mac), Safari, Firefox and AVPlayer play the same seeks. It meets Playwright's Chromium, Chrome on Linux without a hardware decoder, and Chrome with hardware decoding off.
+
+Not chosen, with their costs:
+
+- **Rewriting each piece** (drop a segment's first leading frames, give the keyframe their time, and mark later pieces' recovery points as not whole). It passed nearly every seek in five browsers, but one buffered sequence in Chromium still failed for a reason not found, and editing sample tables by hand is a risk across a whole library.
+- **Starting runs and seek targets only at an IDR** lands a seek up to a GOP early, and doesn't help a seek within what's already buffered, where the browser picks the piece.
+- **Re-encoding a run's first GOP** helps only at a run's start, for the same reason.
+- **Transcoding open-GOP H.264 for Chromium** always plays, at the NAS's CPU for those films in Chrome. It's the fallback if the owner meets this in real use; the decision would need to know the browser's engine and the film's GOPs.
+
+The playback sweep's open-GOP film now seeks right after its resume to a keyframe, on between two, back between two, back before the run's start and far back, in Firefox; Chromium skips those seeks and says why in the script. A test reads a later piece of a copy through ffmpeg and checks its keyframe keeps its own time, after its leading frames.
+
+The iPhone's QuickTime logo on a resume (the section above) didn't reproduce on the iPhone 17 Pro simulator (iOS 26): a probe app with AVPlayer played the open-GOP H.264 film, HEVC Main and HEVC Main 10 from the start and resumed at 92 s, with and without `skip_sidx`, frames drawn every second and nothing in the error log. It waits for the film's stream list and a report from the NAS.
