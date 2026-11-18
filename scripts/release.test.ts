@@ -189,9 +189,7 @@ describe('preparing and checking', () => {
     expect(JSON.parse(after.desktopPackage).version).toBe('0.2.0')
     expect(JSON.parse(after.clientPackage).version).toBe('0.2.0')
     // bun.lock's three released workspaces, and not the design system's own 1.0.0
-    expect(after.lock).toBe(
-      before.lock.replace(/"version": "0\.1\.0"/g, '"version": "0.2.0"'),
-    )
+    expect(after.lock).toBe(before.lock.replace(/"version": "0\.1\.0"/g, '"version": "0.2.0"'))
     expect(after.lock).toContain('"version": "1.0.0"')
     expect(JSON.parse(after.releases)).toEqual([
       {
@@ -350,7 +348,9 @@ describe('the version to release', () => {
   test('an explicit version must be SemVer and newer than every tag', () => {
     expect(pickVersion('0.6.0', tags)).toBe('0.6.0')
     expect(pickVersion('0.5.0-beta.1', tags)).toBe('0.5.0-beta.1')
-    expect(() => pickVersion('0.4.2', tags)).toThrow('0.4.2 isn’t newer than v0.4.2, the newest tag.')
+    expect(() => pickVersion('0.4.2', tags)).toThrow(
+      '0.4.2 isn’t newer than v0.4.2, the newest tag.',
+    )
     expect(() => pickVersion('0.3.9', tags)).toThrow('isn’t newer than v0.4.2')
     expect(() => pickVersion('0.5', tags)).toThrow('isn’t patch, minor, major or a SemVer version')
   })
@@ -434,7 +434,10 @@ describe('the changelog from pull requests', () => {
   })
 
   test('fills an empty Unreleased, which prepare then releases within the catalog’s limits', () => {
-    const empty = CHANGELOG.replace(/## \[Unreleased\][\s\S]*?(?=## \[0\.1\.0\])/, '## [Unreleased]\n\n')
+    const empty = CHANGELOG.replace(
+      /## \[Unreleased\][\s\S]*?(?=## \[0\.1\.0\])/,
+      '## [Unreleased]\n\n',
+    )
     const { text, from } = fillUnreleased(empty, merged)
     expect(from).toBe('pull requests')
     expect(readChangelog(text).unreleased).toBe(changelogEntries(merged))
@@ -455,7 +458,10 @@ describe('the changelog from pull requests', () => {
       labels: [],
       files: ['apps/server/x.ts'],
     }))
-    const empty = CHANGELOG.replace(/## \[Unreleased\][\s\S]*?(?=## \[0\.1\.0\])/, '## [Unreleased]\n\n')
+    const empty = CHANGELOG.replace(
+      /## \[Unreleased\][\s\S]*?(?=## \[0\.1\.0\])/,
+      '## [Unreleased]\n\n',
+    )
     const { text } = fillUnreleased(empty, many)
     const notes = notesOf(readChangelog(text).unreleased)
     expect(notes).toHaveLength(50)
@@ -468,7 +474,10 @@ describe('the changelog from pull requests', () => {
   })
 
   test('nothing to release is said plainly', () => {
-    const empty = CHANGELOG.replace(/## \[Unreleased\][\s\S]*?(?=## \[0\.1\.0\])/, '## [Unreleased]\n\n')
+    const empty = CHANGELOG.replace(
+      /## \[Unreleased\][\s\S]*?(?=## \[0\.1\.0\])/,
+      '## [Unreleased]\n\n',
+    )
     expect(() => fillUnreleased(empty, [merged[4] as Merged, merged[5] as Merged])).toThrow(
       'Nothing to release',
     )
