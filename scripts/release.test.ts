@@ -5,12 +5,19 @@ import { join } from 'node:path'
 import {
   addCatalogChange,
   catalogNote,
+  changelogEntries,
   desktopFeed,
   desktopKeyProblems,
+  fillUnreleased,
+  groupOf,
   imageTags,
+  isInternal,
+  type Merged,
   nextCatalogVersion,
   notesOf,
+  pickVersion,
   prepare,
+  prNumberOf,
   problemsOf,
   REPOSITORY,
   readChangelog,
@@ -44,6 +51,30 @@ Intro.
 [0.1.0]: ${REPOSITORY}/releases/tag/v0.1.0
 `
 
+// bun.lock's workspaces as Bun writes them: the released ones carry the version, the rest don't
+const LOCK = `{
+  "lockfileVersion": 1,
+  "workspaces": {
+    "apps/client": {
+      "name": "@highsea-tv/app",
+      "version": "0.1.0",
+    },
+    "apps/desktop": {
+      "name": "@highsea-tv/desktop",
+      "version": "0.1.0",
+    },
+    "apps/server": {
+      "name": "@highsea-tv/server",
+      "version": "0.1.0",
+    },
+    "packages/ui": {
+      "name": "@highsea-tv/ui",
+      "version": "1.0.0",
+    },
+  },
+}
+`
+
 const files = () => ({
   changelog: CHANGELOG,
   server: `${JSON.stringify({ name: '@highsea-tv/server', version: '0.1.0' }, null, 2)}\n`,
@@ -55,6 +86,7 @@ const files = () => ({
     '[[package]]\nname = "heck"\nversion = "0.5.0"\n\n[[package]]\nname = "highsea-desktop"\nversion = "0.1.0"\n',
   desktopPackage: '{\n  "name": "@highsea-tv/desktop",\n  "version": "0.1.0"\n}\n',
   clientPackage: '{\n  "name": "@highsea-tv/app",\n  "version": "0.1.0"\n}\n',
+  lock: LOCK,
 })
 
 describe('the image’s tags', () => {
@@ -138,6 +170,9 @@ describe('preparing and checking', () => {
       'apps/desktop/src-tauri/Cargo.lock is at 0.1.0, not 0.2.0.',
       'apps/desktop/package.json is at 0.1.0, not 0.2.0.',
       'apps/client/package.json is at 0.1.0, not 0.2.0.',
+      'bun.lock (apps/server) is at 0.1.0, not 0.2.0.',
+      'bun.lock (apps/desktop) is at 0.1.0, not 0.2.0.',
+      'bun.lock (apps/client) is at 0.1.0, not 0.2.0.',
       'CHANGELOG.md has no ## [0.2.0] section.',
       'releases.json doesn’t start with 0.2.0.',
       'The catalog’s CHANGES.md doesn’t mention 0.2.0, so servers wouldn’t see it.',
@@ -153,6 +188,9 @@ describe('preparing and checking', () => {
     expect(after.desktopLock).toContain('name = "highsea-desktop"\nversion = "0.2.0"')
     expect(JSON.parse(after.desktopPackage).version).toBe('0.2.0')
     expect(JSON.parse(after.clientPackage).version).toBe('0.2.0')
+    // bun.lock's three released workspaces, and not the design system's own 1.0.0
+    expect(after.lock).toBe(before.lock.replace(/"version": "0\.1\.0"/g, '"version": "0.2.0"'))
+    expect(after.lock).toContain('"version": "1.0.0"')
     expect(JSON.parse(after.releases)).toEqual([
       {
         version: '0.2.0',
@@ -220,6 +258,7 @@ describe('preparing and checking', () => {
       desktopLock: read('apps/desktop/src-tauri/Cargo.lock'),
       desktopPackage: read('apps/desktop/package.json'),
       clientPackage: read('apps/client/package.json'),
+      lock: read('bun.lock'),
     }
     const version = JSON.parse(repo.server).version
     const { unreleased, sections } = readChangelog(repo.changelog)
@@ -276,5 +315,177 @@ describe('the desktop app’s updates', () => {
     expect(desktopKeyProblems(config('DEV'), 'DEV')[0]).toContain('trusts the development key')
     expect(desktopKeyProblems(config('RELEASE'), 'DEV')).toEqual([])
     expect(desktopKeyProblems('{}', 'DEV')).toEqual(['tauri.conf.json has no updater pubkey.'])
+  })
+})
+
+describe('the version to release', () => {
+  const tags = ['v0.1.0', 'v0.4.1', 'v0.4.2', 'v0.3.0']
+
+  test('blank or patch is the next patch after the newest tag', () => {
+    expect(pickVersion('', tags)).toBe('0.4.3')
+    expect(pickVersion('  ', tags, '0.4.2')).toBe('0.4.3')
+    expect(pickVersion('patch', tags)).toBe('0.4.3')
+    expect(pickVersion('', [])).toBe('0.0.1')
+  })
+
+  test('blank keeps a newer version prepared by hand', () => {
+    expect(pickVersion('', tags, '0.5.0')).toBe('0.5.0')
+    expect(pickVersion('minor', tags, '0.7.0')).toBe('0.5.0')
+  })
+
+  test('minor and major step their parts', () => {
+    expect(pickVersion('minor', tags)).toBe('0.5.0')
+    expect(pickVersion('major', tags)).toBe('1.0.0')
+  })
+
+  test('a step from a pre-release finishes it first', () => {
+    expect(pickVersion('', ['v0.4.2', 'v0.5.0-beta.1'])).toBe('0.5.0')
+    expect(pickVersion('minor', ['v0.4.2', 'v0.5.0-beta.1'])).toBe('0.5.0')
+    expect(pickVersion('major', ['v0.5.0-beta.1'])).toBe('1.0.0')
+    expect(pickVersion('major', ['v1.0.0-beta.1'])).toBe('1.0.0')
+  })
+
+  test('an explicit version must be SemVer and newer than every tag', () => {
+    expect(pickVersion('0.6.0', tags)).toBe('0.6.0')
+    expect(pickVersion('0.5.0-beta.1', tags)).toBe('0.5.0-beta.1')
+    expect(() => pickVersion('0.4.2', tags)).toThrow(
+      '0.4.2 isn’t newer than v0.4.2, the newest tag.',
+    )
+    expect(() => pickVersion('0.3.9', tags)).toThrow('isn’t newer than v0.4.2')
+    expect(() => pickVersion('0.5', tags)).toThrow('isn’t patch, minor, major or a SemVer version')
+  })
+})
+
+describe('the changelog from pull requests', () => {
+  // what `merged` lists for the pull requests after 0.4.1, as GitHub named and labelled them
+  const merged: Merged[] = [
+    {
+      number: 43,
+      title: 'Find the iPhone’s refused sign-in: a typo in setup’s username',
+      labels: ['bug'],
+      files: ['apps/client/src/setup.tsx', 'docs/plans/phase-5-real-use.md'],
+    },
+    {
+      number: 44,
+      title: 'Draw the web client’s artwork from the page’s own server',
+      labels: [],
+      files: ['packages/client/src/artwork.ts'],
+    },
+    {
+      number: 45,
+      title: 'Check the web client’s artwork in the end-to-end run',
+      labels: [],
+      files: ['scripts/e2e/artwork.spec.ts', '.github/workflows/e2e.yml'],
+    },
+    {
+      number: 46,
+      title: 'Let an account’s username be changed (#46)',
+      labels: [],
+      files: ['apps/server/src/api/users.ts', 'packages/admin/src/users.tsx'],
+    },
+    {
+      number: 47,
+      title: 'Prepare 0.4.2, the first findings’ fixes, dated 2026-11-17',
+      labels: [],
+      files: ['CHANGELOG.md', 'apps/server/package.json'],
+    },
+    {
+      number: 50,
+      title: 'Run scoped checks in tasks and leave the full gate to CI',
+      labels: [],
+      files: ['.claude/skills/checks/SKILL.md', 'docs/adr/0062-next-branch-and-ci-by-branch.md'],
+    },
+    {
+      title: 'Fix the poster’s corner on the TV',
+      labels: [],
+      files: ['packages/ui/src/poster.tsx'],
+    },
+  ]
+
+  test('groups them by label, then by the title’s first word, Changed otherwise', () => {
+    expect(groupOf(merged[0] as Merged)).toBe('Fixed')
+    expect(groupOf(merged[1] as Merged)).toBe('Changed')
+    expect(groupOf(merged[3] as Merged)).toBe('Added')
+    expect(groupOf(merged[6] as Merged)).toBe('Fixed')
+    expect(groupOf({ title: 'Add a thing', labels: ['changed'], files: [] })).toBe('Changed')
+    expect(groupOf({ title: 'Tidy a thing', labels: ['enhancement'], files: [] })).toBe('Added')
+  })
+
+  test('leaves out internal-only pull requests and the release’s own', () => {
+    expect(isInternal(['docs/a.md', '.claude/b.md', '.github/c.yml', 'scripts/d.ts'])).toBe(true)
+    expect(isInternal(['docs/a.md', 'apps/server/x.ts'])).toBe(false)
+    expect(isInternal([])).toBe(false)
+    expect(changelogEntries(merged)).toBe(
+      [
+        '### Added',
+        '',
+        `- Let an account’s username be changed ([#46](${REPOSITORY}/pull/46))`,
+        '',
+        '### Changed',
+        '',
+        `- Draw the web client’s artwork from the page’s own server ([#44](${REPOSITORY}/pull/44))`,
+        '',
+        '### Fixed',
+        '',
+        `- Find the iPhone’s refused sign-in: a typo in setup’s username ([#43](${REPOSITORY}/pull/43))`,
+        '- Fix the poster’s corner on the TV',
+      ].join('\n'),
+    )
+  })
+
+  test('fills an empty Unreleased, which prepare then releases within the catalog’s limits', () => {
+    const empty = CHANGELOG.replace(
+      /## \[Unreleased\][\s\S]*?(?=## \[0\.1\.0\])/,
+      '## [Unreleased]\n\n',
+    )
+    const { text, from } = fillUnreleased(empty, merged)
+    expect(from).toBe('pull requests')
+    expect(readChangelog(text).unreleased).toBe(changelogEntries(merged))
+    const after = prepare('0.2.0', '2026-11-17', { ...files(), changelog: text }, ['v0.1.0'])
+    expect(problemsOf('0.2.0', after, ['v0.1.0'])).toEqual([])
+    expect(JSON.parse(after.releases)[0].notes).toEqual([
+      'Let an account’s username be changed (#46)',
+      'Draw the web client’s artwork from the page’s own server (#44)',
+      'Find the iPhone’s refused sign-in: a typo in setup’s username (#43)',
+      'Fix the poster’s corner on the TV',
+    ])
+  })
+
+  test('a long list keeps to the catalog’s 50 lines of 300 characters', () => {
+    const many: Merged[] = Array.from({ length: 60 }, (_, i) => ({
+      number: i + 100,
+      title: `Change ${i} ${'x'.repeat(i === 0 ? 400 : 10)}`,
+      labels: [],
+      files: ['apps/server/x.ts'],
+    }))
+    const empty = CHANGELOG.replace(
+      /## \[Unreleased\][\s\S]*?(?=## \[0\.1\.0\])/,
+      '## [Unreleased]\n\n',
+    )
+    const { text } = fillUnreleased(empty, many)
+    const notes = notesOf(readChangelog(text).unreleased)
+    expect(notes).toHaveLength(50)
+    expect(Math.max(...notes.map((n) => n.length))).toBeLessThanOrEqual(300)
+    expect(notes[49]).toBe('And 11 more on the release’s page.')
+  })
+
+  test('entries written by hand win', () => {
+    expect(fillUnreleased(CHANGELOG, merged)).toEqual({ text: CHANGELOG, from: 'hand' })
+  })
+
+  test('nothing to release is said plainly', () => {
+    const empty = CHANGELOG.replace(
+      /## \[Unreleased\][\s\S]*?(?=## \[0\.1\.0\])/,
+      '## [Unreleased]\n\n',
+    )
+    expect(() => fillUnreleased(empty, [merged[4] as Merged, merged[5] as Merged])).toThrow(
+      'Nothing to release',
+    )
+  })
+
+  test('the pull request’s number comes from a squash or a merge commit', () => {
+    expect(prNumberOf('Let an account’s username be changed (#46)')).toBe(46)
+    expect(prNumberOf('Merge pull request #39 from highsea-tv/sync/main-0.4.0-into-next')).toBe(39)
+    expect(prNumberOf('Record main’s 0.4.0 squash in next’s history')).toBeUndefined()
   })
 })

@@ -1,11 +1,23 @@
 # SPDX-License-Identifier: AGPL-3.0-only
-# A highsea release (ADR 0050), run by hand with a version and a dry-run switch that's on by default.
+# A highsea release (ADR 0050), run by hand. While highsea is pre-production it's one click from
+# next (ADR 0050's 2026-11-17 section): Run workflow on next, leave the version blank, approve the
+# `release` environment once, and the workflow prepares, checks, builds, publishes and lands it.
 #
-#   1. prepare: the version is SemVer and newer than every tag, and CHANGELOG.md, apps/server,
-#      releases.json and the catalog's CHANGES.md agree (scripts/release.ts check). A real release
-#      must be prepared in a commit on main first; a dry run prepares it in the runner when it isn't.
-#   2. checks: the whole of CI (lint, types, tests, the smoke test, licences, the dependency check,
-#      both platforms' images) and the end-to-end run, as reusable workflows from this commit.
+#   1. prepare: the version is picked (blank: the next patch after the newest tag, or a newer one
+#      already prepared; `minor`, `major` or an explicit SemVer newer than every tag), then
+#      `release.ts prepare` writes it with today's date, unless the commit is already prepared.
+#      An empty Unreleased is filled from the pull requests merged since the last tag; one written
+#      by hand wins. The bumped tree's own checks run (bun.lock, lint of what changed, the tests
+#      that read the version files, `release.ts check`), and the result becomes one release
+#      commit: on next, its parents are next's commit and, when main isn't already its ancestor,
+#      main's, so both branches can fast-forward to it. From main nothing is written: a real
+#      release there must be prepared in a commit first, as before.
+#   2. checks: the whole of CI and the end-to-end run, as reusable workflows from this commit. A
+#      release from next reuses next's own push runs of both for the same commit when they passed
+#      (.github/scripts/reuse-release.sh); the bump only changes versions and notes, which the
+#      checks in 1 and the builds below cover. `checks` passes only when each part passed or was
+#      reused, and every keyed job waits on it, so they all ask for the `release` environment at
+#      the same moment and one approval lets them all go.
 #   3. image: each platform on its own runner, with highsea's keys as build secrets, labels,
 #      provenance and an SBOM. A dry run keeps each as an OCI layout and uploads it; a real one also
 #      pushes it by digest, the way Docker's GitHub Builder distributes a build
@@ -18,13 +30,15 @@
 #      and signed for the updater with TAURI_SIGNING_PRIVATE_KEY (a dry run without it signs with
 #      the development key), then `latest.json` and the installers' SHA-256 sums from them.
 #   7. publish, only when it isn't a dry run: the platforms merged under their tags
-#      (`docker buildx imagetools create`), the catalog deployed to GitHub Pages, and the GitHub
-#      release created with the changelog's section, the Synology package and the desktop app's
-#      installers and feed, which makes the tag.
+#      (`docker buildx imagetools create`), the catalog deployed to GitHub Pages, and then
+#      `github-release`: the tag on the release commit, the GitHub release with the changelog's
+#      section, the Synology package and the desktop app's installers and feed, and, from next,
+#      next and main fast-forwarded to the release commit, which deploys docs.highsea.tv.
 #
-# Jobs that read highsea's keys or the catalog key use the `release` environment, whose required
-# reviewer is the owner, so nothing signed or keyed runs without their approval; its secrets reach
-# only jobs that name it (https://docs.github.com/en/actions/how-tos/deploy/configure-and-manage-deployments/manage-environments).
+# Jobs that read highsea's keys, the catalog key or the deploy key use the `release` environment,
+# whose required reviewer is the owner, so nothing signed, keyed or pushed runs without their
+# approval; its secrets reach only jobs that name it, and only from the branches its policy allows
+# (https://docs.github.com/en/actions/how-tos/deploy/configure-and-manage-deployments/manage-environments).
 # Each action is pinned to a full commit SHA, with its version beside it.
 name: Release
 
@@ -32,14 +46,15 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: The version to release, as SemVer (0.1.0, or 0.2.0-beta.1)
-        required: true
+        description: Blank for the next patch, or minor, major, or a SemVer version (0.5.0, 0.6.0-beta.1)
+        required: false
         type: string
+        default: ''
       dry-run:
         description: Build and check everything, and publish nothing
         required: true
         type: boolean
-        default: true
+        default: false
 
 concurrency:
   group: release
@@ -49,38 +64,125 @@ permissions:
   contents: read
 
 env:
-  VERSION: ${{ inputs.version }}
   IMAGE: ghcr.io/highsea-tv/highsea
 
 jobs:
   prepare:
     runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      # the merged pull requests' labels, for the changelog
+      pull-requests: read
     outputs:
+      version: ${{ steps.version.outputs.version }}
+      commit: ${{ steps.commit.outputs.commit }}
+      bundle: ${{ steps.commit.outputs.bundle }}
       tags: ${{ steps.tags.outputs.tags }}
       prerelease: ${{ steps.tags.outputs.prerelease }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
-          # every tag, so the version is checked against them
+          # every branch and tag, so the version is checked against the tags, the changelog reads
+          # the commits since the newest, and main's commit is there for the release commit
+          # (https://github.com/actions/checkout#fetch-all-history-for-all-tags-and-branches)
           fetch-depth: 0
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version: 1.4.4
       - run: bun install --frozen-lockfile
-      - name: A real release comes from main
-        if: ${{ !inputs.dry-run && github.ref != 'refs/heads/main' }}
+      - name: A real release comes from next or main
+        if: ${{ !inputs.dry-run && github.ref != 'refs/heads/next' && github.ref != 'refs/heads/main' }}
         run: |
-          echo "A release is published from main, not ${GITHUB_REF}." >&2
+          echo "A release is published from next or main, not ${GITHUB_REF}. A dry run can come from any branch." >&2
           exit 1
-      - name: Prepare it here, for a dry run of a version not yet prepared
-        if: ${{ inputs.dry-run }}
+      - name: The version
+        id: version
         run: |
-          if ! bun scripts/release.ts check "$VERSION"; then
-            bun scripts/release.ts prepare "$VERSION"
-            git diff --stat
+          version=$(bun scripts/release.ts version "$WANTED")
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "VERSION=$version" >> "$GITHUB_ENV"
+          echo "Releasing $version (asked for: ${WANTED:-the next patch})"
+        env:
+          WANTED: ${{ inputs.version }}
+      - name: Prepare it, unless the commit already is
+        run: |
+          if bun scripts/release.ts check "$VERSION"; then
+            echo "This commit is already prepared for $VERSION; it's released as it is."
+            echo "NOTES_FROM=the changelog as prepared in the commit" >> "$GITHUB_ENV"
+          elif [ "$GITHUB_REF" = refs/heads/main ] && [ "$DRY_RUN" != true ]; then
+            echo "From main a release must be prepared in a commit first (bun scripts/release.ts prepare $VERSION); from next the workflow prepares it." >&2
+            exit 1
+          else
+            bun scripts/release.ts merged > "$RUNNER_TEMP/merged.json"
+            from=$(bun scripts/release.ts changelog "$RUNNER_TEMP/merged.json")
+            echo "$from"
+            case "$from" in *hand*) echo "NOTES_FROM=Unreleased, written by hand" ;; *) echo "NOTES_FROM=the pull requests merged since the last tag" ;; esac >> "$GITHUB_ENV"
+            bun scripts/release.ts prepare "$VERSION" --date "$(date -u +%Y-%m-%d)"
           fi
-      - name: The release is prepared and agrees with itself
-        run: bun scripts/release.ts check "$VERSION"
+          git status --short
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DRY_RUN: ${{ inputs.dry-run }}
+      # The bump changes versions, notes, the seed, openapi.json and bun.lock, and CI's run was of
+      # the commit before it, so what reads those files runs again here on the bumped tree: the
+      # lockfile agrees with the workspaces, what prepare wrote is formatted, the API description
+      # and the seed are current, and the release agrees with itself and the tags
+      - name: The bumped tree still passes what the bump touches
+        run: |
+          bun install --frozen-lockfile
+          git diff --name-only -z --diff-filter=d HEAD | xargs -0 -r bunx biome check --no-errors-on-unmatched
+          bun test --isolate apps/server/test/api.test.ts packages/catalog/test/signing.test.ts \
+            scripts/release.test.ts
+          bun scripts/release.ts check "$VERSION"
+      # One commit for the release. From next, its first parent is the commit the run started
+      # from, and when main isn't its ancestor yet (each merge of next into main left a merge
+      # commit on main alone), main's commit is its second parent, so next and main both
+      # fast-forward to it after publishing. That's only right when main holds nothing next lacks:
+      # merging main into this commit must give this commit's own tree (git-merge-tree(1)
+      # --write-tree), or the release stops. From main, the commit is main's own.
+      - name: The release commit
+        id: commit
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          if [ "$GITHUB_REF" = refs/heads/main ]; then
+            echo "commit=$GITHUB_SHA" >> "$GITHUB_OUTPUT"
+            echo "bundle=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git add -A
+          tree=$(git write-tree)
+          parents=(-p "$GITHUB_SHA")
+          main=$(git rev-parse origin/main)
+          if ! git merge-base --is-ancestor "$main" "$GITHUB_SHA"; then
+            merged=$(git merge-tree --write-tree "$GITHUB_SHA" "$main") \
+              || { echo "main and $GITHUB_REF_NAME conflict; merge main into next first." >&2; exit 1; }
+            if [ "$merged" != "$(git rev-parse "$GITHUB_SHA^{tree}")" ]; then
+              echo "main has changes $GITHUB_REF_NAME lacks, so it can't fast-forward to the release; merge main into next first." >&2
+              exit 1
+            fi
+            parents+=(-p "$main")
+          fi
+          if [ "$tree" = "$(git rev-parse "$GITHUB_SHA^{tree}")" ] && [ "${#parents[@]}" -eq 2 ]; then
+            echo "commit=$GITHUB_SHA" >> "$GITHUB_OUTPUT"
+            echo "bundle=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          commit=$(git commit-tree "$tree" "${parents[@]}" -F - <<MSG
+          Release $VERSION, dated $(date -u +%Y-%m-%d)
+
+          - The changelog's $VERSION section, from $NOTES_FROM
+          - The versions, the catalog's releases.json and CHANGES.md, the seed, openapi.json and
+            bun.lock, written by scripts/release.ts prepare
+          - Made by the Release workflow: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
+          MSG
+          )
+          git branch release-commit "$commit"
+          git bundle create "$RUNNER_TEMP/release.bundle" release-commit "^$GITHUB_SHA" "^$main"
+          echo "commit=$commit" >> "$GITHUB_OUTPUT"
+          echo "bundle=true" >> "$GITHUB_OUTPUT"
+          git log -1 --format='%H%n%P%n%n%B' "$commit"
+          git diff --stat "$GITHUB_SHA" "$commit"
       - name: Tags and notes
         id: tags
         run: |
@@ -95,47 +197,119 @@ jobs:
             echo
             echo "Image tags: $(bun scripts/release.ts tags "$VERSION" | paste -sd ' ')"
             echo
+            echo "Notes from: ${NOTES_FROM}"
+            echo
+            echo "Release commit: \`$COMMIT\` on \`$GITHUB_SHA\`"
+            echo
             bun scripts/release.ts notes "$VERSION"
           } >> "$GITHUB_STEP_SUMMARY"
-      # what prepare wrote, at its paths, so the image and the catalog build from it in a dry run too
+        env:
+          COMMIT: ${{ steps.commit.outputs.commit }}
+      # what prepare wrote, at its paths, so the image, the catalog and the desktop app build from
+      # it; the bundle carries the commit itself to github-release
       - name: The prepared files
         run: |
           mkdir -p "$RUNNER_TEMP/release-files"
-          cp --parents CHANGELOG.md apps/server/package.json catalog/indexers/releases.json \
-            catalog/indexers/CHANGES.md apps/desktop/package.json apps/desktop/src-tauri/tauri.conf.json \
-            apps/desktop/src-tauri/Cargo.toml apps/desktop/src-tauri/Cargo.lock "$RUNNER_TEMP/release-files/"
-          cp -r --parents packages/catalog/seed "$RUNNER_TEMP/release-files/"
+          # the changelog always, so the artifact is never empty when the commit was prepared already
+          cp --parents CHANGELOG.md "$RUNNER_TEMP/release-files/"
+          git diff --name-only -z --diff-filter=d "$GITHUB_SHA" | xargs -0 -r cp --parents -t "$RUNNER_TEMP/release-files/"
+          (cd "$RUNNER_TEMP/release-files" && find . -type f | sort | head -50)
           bun scripts/release.ts notes "$VERSION" > "$RUNNER_TEMP/release-notes.md"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: release-files
           path: ${{ runner.temp }}/release-files/
+          include-hidden-files: true
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: release-notes
           path: ${{ runner.temp }}/release-notes.md
+      - if: ${{ steps.commit.outputs.bundle == 'true' }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: release-bundle
+          path: ${{ runner.temp }}/release.bundle
+
+  # Whether next already ran CI and the end-to-end run for this commit and passed. Their push runs
+  # on next are of exactly this SHA and so of this tree and these workflow files, and the bump on
+  # top changes only versions and notes, which prepare's own checks and the builds below cover
+  # (ADR 0050's 2026-11-17 section). Reading other runs needs `actions: read`
+  # (https://docs.github.com/en/rest/actions/workflow-runs).
+  reuse:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      ci: ${{ steps.ci.outputs.reused }}
+      e2e: ${{ steps.e2e.outputs.reused }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - id: ci
+        run: bash .github/scripts/reuse-release.sh ci.yml 45
+        env: &reuse-env
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          REF: ${{ github.ref }}
+          SHA: ${{ github.sha }}
+      - id: e2e
+        run: bash .github/scripts/reuse-release.sh e2e.yml 45
+        env: *reuse-env
 
   # The heavy jobs in ci.yml and e2e.yml read next's runs to reuse a result on the next → main pull
   # request, which needs `actions: read`; a called workflow can only lower the permissions its
   # caller gives, so they're given here
   # (https://docs.github.com/en/actions/reference/workflows-and-actions/reusing-workflow-configurations).
-  # A release's event isn't a pull request, so it never reuses anything and runs every job whole.
+  # A release's event isn't a pull request, so inside them nothing is reused; the release skips a
+  # whole call instead when `reuse` found next's run of it passed. A job skipped by its `if:`
+  # reports success, which is why `checks` below looks at `reuse` too.
   ci:
-    needs: prepare
+    needs: [prepare, reuse]
+    if: ${{ needs.reuse.outputs.ci != 'true' }}
     uses: ./.github/workflows/ci.yml
     permissions:
       contents: read
       actions: read
 
   e2e:
-    needs: prepare
+    needs: [prepare, reuse]
+    if: ${{ needs.reuse.outputs.e2e != 'true' }}
     uses: ./.github/workflows/e2e.yml
     permissions:
       contents: read
       actions: read
 
+  # Every check, passed or reused; the keyed jobs wait on this one alone, so they reach the
+  # `release` environment together and one approval covers them (GitHub asks for each job as it
+  # reaches the environment). It runs whatever the others did (`!cancelled()`) and fails unless
+  # each result is right: a job whose `needs` failed is skipped, and a skipped job counts as
+  # passing (https://docs.github.com/en/actions/reference/workflows-and-actions/contexts#needs-context,
+  # https://docs.github.com/en/actions/reference/workflows-and-actions/expressions#status-check-functions).
+  checks:
+    if: ${{ !cancelled() }}
+    needs: [prepare, reuse, ci, e2e, spk]
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Every check passed, or passed on next for this commit
+        run: |
+          ok=true
+          check() { if [ "$2" = success ] || { [ "$2" = skipped ] && [ "$3" = true ]; }; then echo "$1: $2"; else echo "$1: $2" >&2; ok=false; fi; }
+          check prepare "$PREPARE" false
+          check ci "$CI" "$CI_REUSED"
+          check e2e "$E2E" "$E2E_REUSED"
+          check spk "$SPK" "$PRERELEASE"
+          $ok
+        env:
+          PREPARE: ${{ needs.prepare.result }}
+          CI: ${{ needs.ci.result }}
+          CI_REUSED: ${{ needs.reuse.outputs.ci }}
+          E2E: ${{ needs.e2e.result }}
+          E2E_REUSED: ${{ needs.reuse.outputs.e2e }}
+          SPK: ${{ needs.spk.result }}
+          PRERELEASE: ${{ needs.prepare.outputs.prerelease }}
+
   image:
-    needs: [prepare, ci, e2e]
+    needs: [prepare, checks]
     environment: release
     strategy:
       matrix:
@@ -201,10 +375,10 @@ jobs:
         with:
           context: .
           platforms: ${{ matrix.platform }}
-          build-args: VERSION=${{ inputs.version }}
+          build-args: VERSION=${{ needs.prepare.outputs.version }}
           labels: |
-            org.opencontainers.image.version=${{ inputs.version }}
-            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=${{ needs.prepare.outputs.version }}
+            org.opencontainers.image.revision=${{ needs.prepare.outputs.commit }}
             org.opencontainers.image.created=${{ steps.meta.outputs.created }}
           # BuildKit leaves a secret's contents out of the cache key, so a cached layer from CI,
           # built without the keys, would be reused here; a release builds without the cache
@@ -252,7 +426,7 @@ jobs:
           retention-days: 7
 
   catalog:
-    needs: [prepare, ci, e2e]
+    needs: [prepare, checks]
     runs-on: ubuntu-24.04
     environment: release
     steps:
@@ -296,6 +470,8 @@ jobs:
     if: ${{ needs.prepare.outputs.prerelease == 'false' }}
     needs: prepare
     runs-on: ubuntu-24.04
+    env:
+      VERSION: ${{ needs.prepare.outputs.version }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
@@ -317,7 +493,7 @@ jobs:
   # installer stays unsigned until 1.0 (the owner's answer of 2026-10-29)
   desktop:
     if: ${{ needs.prepare.outputs.prerelease == 'false' }}
-    needs: [prepare, ci]
+    needs: [prepare, checks]
     environment: release
     strategy:
       matrix:
@@ -414,6 +590,8 @@ jobs:
   desktop-feed:
     needs: [prepare, desktop]
     runs-on: ubuntu-24.04
+    env:
+      VERSION: ${{ needs.prepare.outputs.version }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
@@ -445,6 +623,8 @@ jobs:
     if: ${{ !inputs.dry-run }}
     needs: [prepare, image, catalog]
     runs-on: ubuntu-24.04
+    env:
+      VERSION: ${{ needs.prepare.outputs.version }}
     permissions:
       contents: read
       packages: write
@@ -490,15 +670,90 @@ jobs:
       - id: deploy
         uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4.0.5
 
+  # The tag, the GitHub release and, from next, next and main moved to the release commit. It
+  # names the `release` environment, for the deploy key, and waits on `checks` like the other
+  # keyed jobs so the owner's one approval covers it too; then it waits, in its own steps, for
+  # everything it publishes after (merge, pages and, for a stable release, spk and desktop-feed)
+  # and stops unless each passed, so a failed check never publishes. The jobs' results come from
+  # the run's own jobs (https://docs.github.com/en/rest/actions/workflow-jobs#list-jobs-for-a-workflow-run-attempt).
+  #
+  # next and main are protected by rulesets that require pull requests. The deploy key in the
+  # `release` environment, RELEASE_DEPLOY_KEY, is the rulesets' one bypass for a workflow (actor
+  # type DeployKey, https://docs.github.com/en/rest/repos/rules#create-a-repository-ruleset), and
+  # actions/checkout configures git to push with it (`ssh-key`,
+  # https://github.com/actions/checkout#usage). A push with a deploy key, unlike one with
+  # GITHUB_TOKEN, starts the branches' own workflows
+  # (https://docs.github.com/en/actions/concepts/security/github_token), so next runs CI on the
+  # release commit and main's push deploys docs.highsea.tv (ADR 0050's 2026-10-23 section).
   github-release:
-    # spk is skipped for a prerelease, which would skip this too without the explicit check
-    # (https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#jobsjob_idneeds)
-    if: ${{ !cancelled() && !inputs.dry-run && needs.merge.result == 'success' && needs.pages.result == 'success' && ((needs.spk.result == 'success' && needs.desktop-feed.result == 'success') || needs.prepare.outputs.prerelease == 'true') }}
-    needs: [prepare, merge, pages, spk, desktop-feed]
+    if: ${{ !cancelled() && !inputs.dry-run && needs.checks.result == 'success' }}
+    needs: [prepare, checks]
     runs-on: ubuntu-24.04
+    environment: release
+    timeout-minutes: 240
     permissions:
       contents: write
+      actions: read
+    env:
+      VERSION: ${{ needs.prepare.outputs.version }}
+      COMMIT: ${{ needs.prepare.outputs.commit }}
+      FROM_NEXT: ${{ github.ref == 'refs/heads/next' }}
     steps:
+      - name: The deploy key is there, for a release from next
+        if: ${{ github.ref == 'refs/heads/next' }}
+        run: |
+          if [ -z "$KEY" ]; then
+            echo "The release environment needs RELEASE_DEPLOY_KEY, a deploy key with write access that the next and main rulesets let bypass them (ADR 0050's 2026-11-17 section)." >&2
+            exit 1
+          fi
+        env:
+          KEY: ${{ secrets.RELEASE_DEPLOY_KEY }}
+      - name: Everything before the release passed
+        run: |
+          wanted=(merge pages)
+          if [ "$PRERELEASE" = false ]; then wanted+=(spk desktop-feed); fi
+          deadline=$(($(date +%s) + 200 * 60))
+          while :; do
+            jobs=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/attempts/$GITHUB_RUN_ATTEMPT/jobs?per_page=100" --paginate \
+              --jq '.jobs[] | [.name, .status, (.conclusion // "")] | @tsv') || jobs=''
+            waiting=()
+            for name in "${wanted[@]}"; do
+              line=$(awk -F'\t' -v n="$name" '$1 == n' <<< "$jobs" | head -1)
+              status=$(cut -f2 <<< "$line")
+              conclusion=$(cut -f3 <<< "$line")
+              if [ "$status" = completed ]; then
+                if [ "$conclusion" != success ]; then
+                  echo "$name ended ${conclusion:-without a result}, so nothing is released." >&2
+                  exit 1
+                fi
+              else
+                waiting+=("$name")
+              fi
+            done
+            [ "${#waiting[@]}" -eq 0 ] && break
+            if [ "$(date +%s)" -ge "$deadline" ]; then echo "Still waiting for ${waiting[*]}; nothing is released." >&2; exit 1; fi
+            echo "Waiting for ${waiting[*]}"
+            sleep 30
+          done
+          echo "${wanted[*]} passed."
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PRERELEASE: ${{ needs.prepare.outputs.prerelease }}
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+          ssh-key: ${{ github.ref == 'refs/heads/next' && secrets.RELEASE_DEPLOY_KEY || '' }}
+      - if: ${{ needs.prepare.outputs.bundle == 'true' }}
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: release-bundle
+          path: ${{ runner.temp }}
+      - name: The release commit, from prepare
+        if: ${{ needs.prepare.outputs.bundle == 'true' }}
+        run: |
+          git bundle verify "$RUNNER_TEMP/release.bundle"
+          git fetch "$RUNNER_TEMP/release.bundle" release-commit
+          [ "$(git rev-parse FETCH_HEAD)" = "$COMMIT" ] || { echo "The bundle holds $(git rev-parse FETCH_HEAD), not $COMMIT." >&2; exit 1; }
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: release-notes
@@ -513,14 +768,19 @@ jobs:
         with:
           name: desktop
           path: ${{ runner.temp }}/assets
-      # creating the release makes the tag on this commit, with the Synology package attached
+      # From next the tag is pushed first, on the release commit, which isn't on a branch yet;
+      # from main, creating the release makes the tag on main's commit
       # (https://cli.github.com/manual/gh_release_create)
-      - name: The release and its tag
+      - name: The tag
+        if: ${{ github.ref == 'refs/heads/next' }}
+        run: git push origin "$COMMIT:refs/tags/v$VERSION"
+      - name: The release
         run: |
           kind=()
           if [ "$PRERELEASE" = true ]; then kind+=(--prerelease); fi
           # GitHub's Latest follows the image's `latest`, so a fix to an older line doesn't take it
           if grep -qx latest <<< "$TAGS"; then kind+=(--latest); else kind+=(--latest=false); fi
+          if [ "$FROM_NEXT" = true ]; then kind+=(--verify-tag); else kind+=(--target "$COMMIT"); fi
           shopt -s nullglob
           # the package and its manifest, which packages.highsea.tv reads from the Latest release; the
           # desktop app's installers, their sums and the updater's latest.json, which the app reads
@@ -529,9 +789,36 @@ jobs:
             "$RUNNER_TEMP"/assets/*.dmg "$RUNNER_TEMP"/assets/*.app.tar.gz "$RUNNER_TEMP"/assets/*-setup.exe \
             "$RUNNER_TEMP"/assets/*.AppImage "$RUNNER_TEMP"/assets/*.deb "$RUNNER_TEMP"/assets/*.rpm \
             "$RUNNER_TEMP"/assets/latest.json "$RUNNER_TEMP"/assets/SHA256SUMS)
-          gh release create "v$VERSION" "${assets[@]}" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
+          gh release create "v$VERSION" "${assets[@]}" --repo "$GITHUB_REPOSITORY" \
             --title "highsea $VERSION" --notes-file "$RUNNER_TEMP/release-notes.md" "${kind[@]}"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PRERELEASE: ${{ needs.prepare.outputs.prerelease }}
           TAGS: ${{ needs.prepare.outputs.tags }}
+      # next and main to the release commit, by fast-forward: a plain push, which git refuses
+      # unless it's one (git-push(1)). If next moved on during the release, the release commit
+      # is merged into it instead; main must not have moved, since only the owner's merge or a
+      # release changes it, and if it did the owner merges by hand. The release is out either way.
+      - name: next and main at the release commit
+        if: ${{ github.ref == 'refs/heads/next' }}
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          if git push origin "$COMMIT:refs/heads/next"; then
+            echo "next is at $COMMIT."
+          else
+            git fetch origin next
+            git checkout -q --detach origin/next
+            if git merge --no-ff --no-edit -m "Merge the $VERSION release into next" "$COMMIT" && git push origin "HEAD:refs/heads/next"; then
+              echo "::warning::next moved on during the release, so the release commit was merged into it."
+            else
+              echo "::error::v$VERSION is released, but next couldn't take its commit $COMMIT; merge it into next by hand."
+              exit 1
+            fi
+          fi
+          if git push origin "$COMMIT:refs/heads/main"; then
+            echo "main is at $COMMIT."
+          else
+            echo "::error::v$VERSION is released and next has it, but main couldn't fast-forward to $COMMIT; merge next into main by hand."
+            exit 1
+          fi
