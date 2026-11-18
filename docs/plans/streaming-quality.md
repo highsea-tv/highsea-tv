@@ -1,7 +1,7 @@
 # Plan: streaming at a quality that fits the connection
 
-- **Status:** scoped on 2026-11-18 (HT-61), for the owner's review. Nothing is built. The open questions are at the end, each with a recommendation.
-- **Gate:** the owner answers the open questions before stage 1 starts. Each stage is reviewed on its own, and the player's Quality menu (stage 2) is prototyped and approved before it's built, as for any change to a locked screen.
+- **Status:** scoped on 2026-11-18 (HT-61); approved with the owner's answers of 2026-11-18 (HT-62), two of them changes ([below](#the-owners-changes)). Nothing is built. The open questions are at the end as they were asked.
+- **Gate:** stage 1 starts with its first part. Each stage is reviewed on its own. The player's Quality menu (stage 1's second part) is prototyped and approved by the owner before it's built, as for any change to a locked screen, and so are stage 2's Users and Settings › Playback rows.
 - **Parent plan:** [phase-5-real-use.md](phase-5-real-use.md), whose findings log has the finding this answers (2026-11-17: "a minute to resume there is mostly the choice to send the film's own picture"), and [phase-3-server.md](phase-3-server.md)'s standing rules.
 
 ## Read first
@@ -24,7 +24,7 @@ A film started away from home, on a phone over mobile data above all, begins wit
 - **HDR kept as HDR in a transcode.** HDR is tone mapped to SDR when the picture is made again, as today; Jellyfin does the same ("doesn't support HDR to HDR tone-mapping", [Jellyfin: Transcoding](https://jellyfin.org/docs/general/post-install/transcoding/)).
 - **Downloads for offline at a chosen quality.** client-settings.md already draws "Quality for new downloads"; it comes with Downloads (C8), after stage 3, and reuses its ladder.
 - **Music.** Songs direct play or become AAC (the phase 5 plan's part D); they're small enough not to need this.
-- **Per-user caps set by an admin.** The household is the owner and their profiles; [question 9](#open-questions-for-the-owner) keeps it for later.
+- **Caps at home, or per profile.** The admin's cap per user (stage 2) is for away from home and belongs to the account, so it covers every profile on it; at home nothing is capped. A cap for one profile of an account is [question 11](#open-questions-for-the-owner).
 
 ## Where things stand
 
@@ -32,7 +32,7 @@ More of this exists than the finding suggests. What's missing is mostly the proo
 
 - **The decision** (`packages/stream/src/decision/index.ts`): direct play, direct stream, then transcode, in ADR 0051's order. A file whose bitrate (its size over its length, an average) is above the ceiling, or whose picture is taller than it, is transcoded: H.264 at `min(ceiling, tier)`, where the tiers are 2, 4, 12 and 40 Mbit/s at 480p, 720p, 1080p and 4K (`transcodeBitrate`).
 - **The remote ceiling** (Settings › Playback, `playback-settings.ts`): "The most each stream is sent" away from home, 4 to 40 Mbit/s or No limit, **default 8 Mbit/s at 1080p**, per stream. At home there is none.
-- **The person's own caps** (`client-settings.md` › Playback, `keys.ts`): **Quality at home** and **Quality away from home**, each Original, 20, 8, 4 or 2 Mbit/s (`QUALITY_CAPS`), default Original, laid under the server's ceiling (`under` in `playback.ts`). Built and in every app's Settings (`apps/client/src/app/(in)/settings.tsx`).
+- **The person's own caps** (the account's, not a profile's: see [Account and profile](#account-and-profile); `client-settings.md` › Playback, `keys.ts`): **Quality at home** and **Quality away from home**, each Original, 20, 8, 4 or 2 Mbit/s (`QUALITY_CAPS`), default Original, laid under the server's ceiling (`under` in `playback.ts`). Built and in every app's Settings (`apps/client/src/app/(in)/settings.tsx`).
 - **Home or away** (`playback.ts`): an address in `PRIVATE_RANGES` (RFC 1918, RFC 4193, loopback) is home. The address is the one `resolveClient` gives (`packages/network/src/proxies.ts`): the peer, or, from a trusted proxy with **Use X-Forwarded-For and X-Forwarded-Proto** on, the first untrusted address in `X-Forwarded-For`.
 - **One variant per session** (ADR 0051, answer 7). The multivariant playlist lists one `EXT-X-STREAM-INF` with `BANDWIDTH` and, for a transcode, `CODECS` (`hls/playlist.ts`). A change of quality is a new session at the same position.
 - **Transcodes** force a keyframe every 6 s, so their playlist is known before anything is made; direct streams are cut at the source's keyframes (HT-48's index), with short first segments where the source allows (HT-46). On the GPU, `h264_vaapi` with `-rc_mode VBR`, `-b:v` and `-maxrate` at the bitrate and `-bufsize` twice it (`hardware/index.ts`).
@@ -51,12 +51,13 @@ Not verified on the NAS, and the first thing stage 1 checks. The likeliest cause
 
 ## The stages, and their size
 
-Four stages, each shippable alone and each a task of its own. Stage 1 is the smallest step that makes mobile data watchable; the rest raise the quality and the choice.
+Four stages, each shippable alone and each a task of its own. Stage 1 is the smallest step that makes mobile data watchable, in two parts: the first has no new screen; the second is the player's Quality menu, built once the owner has approved its prototype. The rest raise the quality and the choice.
 
 | Stage | What it gives | Rough size | Touches |
 | --- | --- | --- | --- |
-| **1. Away, proved, and mobile data** | Away plays transcoded, proved on the NAS; a lower ceiling on mobile data; the log and Now playing say why | 1 to 2 days | `playback.ts`, the decision, the play request, the phone's network kind, Settings › Playback, Now playing's reasons |
-| **2. Quality in the player, and the upload** | A Quality menu in every player; the owner's upload speed as a total budget; a full house of transcodes offers the original | 3 to 4 days, after a prototype | the prototypes, player.md, the clients' player, Settings › Playback, the runtime's budget |
+| **1a. Away, proved, and mobile data** | Away plays transcoded, proved on the NAS; a lower ceiling on mobile data; stereo below 8 Mbit/s; a lighter version away; the NAS's transcodes measured; the log and Now playing say why | 1 to 2 days | `playback.ts`, the decision, the play request, the phone's network kind, Settings › Playback, Now playing's reasons |
+| **1b. Quality in the player** | A Quality menu in every player | 2 to 3 days, after a prototype the owner approves | the prototypes, player.md, the clients' player, the play request's quality |
+| **2. Limits: the upload and each person** | The owner's upload speed as a total budget; an admin's cap per user away from home; a full house of transcodes offers the original | 2 to 3 days, after prototype changes | the prototypes (Users, Settings › Playback, the player's failed state), users-devices.md, playback-settings.md, the runtime's budget, the user record, the contract |
 | **3. An adaptive ladder** | Automatic quality that follows the link while playing, within a ladder made on demand | 1 to 2 weeks | `hls/playlist.ts`, `runner.ts`, `args.ts`, the session, hls.js and expo-video options, sweeps |
 | **4. Later** | The original in the ladder with its measured peak; I-frame playlists; downloads at a quality | each its own task | the keyframe index, playlists, Downloads (C8) |
 
@@ -110,16 +111,31 @@ Three ways to measure the link, and why the plan uses the player's:
 - **A server-side probe** (timing the segments as highsea sends them) doesn't measure the viewer's link behind a proxy: nginx, with `proxy_buffering` on by default, "receives a response from the proxied server as soon as possible" into its own buffers ([nginx: proxy_buffering](https://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_buffering)), so highsea sees the LAN to the proxy. That DSM's reverse proxy is nginx with its defaults isn't confirmed from Synology's documentation.
 - **A speed test before Play** adds a wait to every start, which HT-46 just removed, and measures one moment of a link that changes.
 
-### By hand (stage 2)
+### By hand (stage 1, second part)
 
-A **Quality** choice in the player: **Automatic** (the route and network kind; from stage 3, the ladder), **Original**, and the caps highsea already names: 20, 8, 4 and 2 Mbit/s, shown as 4K, 1080p, 720p and 480p with their bitrates, as Settings › Playback names its ceilings. Only the choices at or under the server's ceiling are offered away. A choice is a new session at the same position (ADR 0051), so the picture holds while it starts. It's for this play; the person's lasting default stays in Settings › Playback (client-settings.md), which the menu links to. Plex's player has the same per-play choice ("Convert" instead of "Play Original Quality", [Plex: Automatically Adjust Quality](https://support.plex.tv/articles/115007570148-automatically-adjust-quality-when-streaming/)).
+A **Quality** choice in the player: **Automatic** (the route and network kind; from stage 3, the ladder), **Original**, and the caps highsea already names: 20, 8, 4 and 2 Mbit/s, shown as 4K, 1080p, 720p and 480p with their bitrates, as Settings › Playback names its ceilings. Only the choices at or under what applies to this person away are offered: the server's ceiling, and from stage 2 their admin's cap. A choice is a new session at the same position (ADR 0051), so the picture holds while it starts. It's for this play; the person's lasting default stays in Settings › Playback (client-settings.md), which the menu links to. Plex's player has the same per-play choice ("Convert" instead of "Play Original Quality", [Plex: Automatically Adjust Quality](https://support.plex.tv/articles/115007570148-automatically-adjust-quality-when-streaming/)).
+
+## Account and profile
+
+highsea has several user accounts, and each account has several profiles (ADR 0068). Which setting belongs to which, from the code:
+
+- **The account (`users`):** the role and permissions, and the new admin cap. The person's own Quality at home and Quality away from home (`playback.qualityHome`, `playback.qualityAway`, `keys.ts`) are preferences resolved by account and device (`personalization.preferences.resolve(userId, deviceId)`, layers: device, client type, user, defaults): one account's choice, which a device can override, and the same for every profile signed in on it. The server's ceilings are the server's.
+- **The profile (`profiles`):** what is watched: watch history and position (`watch_history`, by `profile_id`), the player's picks for a title (`playback_prefs`, keyed by `profile_id`), the home screen's layout. None of it is a quality setting.
+- **So a quality limit follows the account.** A child's profile on a parent's account is sent what the account is sent. A limit for one profile alone doesn't exist today, and isn't built here; [question 11](#open-questions-for-the-owner) asks whether it should.
 
 ## Limits and fairness (stage 2)
 
+The upload budget, the admin's cap for each user and the full-house offer.
+
 - **The upload as a whole.** A per-stream ceiling doesn't stop three away streams at 8 Mbit/s filling a 20 Mbit/s upload. Settings › Playback gains **Your upload speed** (Mbit/s, unset by default), as Plex's "Internet upload speed": "the total used won't exceed the value set here", using 80% of it for streams ([Plex: Bandwidth and Transcoding Limits](https://support.plex.tv/articles/227715247-server-settings-bandwidth-and-transcoding-limits/)). A new away stream gets the lesser of its ceiling and what's left of the budget, with a reason saying so; streams already playing aren't lowered (a fixed quality can't be, before stage 3). The owner's real upload speed is theirs to give ([question 6](#open-questions-for-the-owner)); highsea doesn't run a speed test against a third party.
-- **Transcodes at once** stays the one processing limit (1 to 8). Its default for this NAS is set from stage 1's measurement.
+- **Transcodes at once** stays the one processing limit (1 to 8): 3 until stage 1's measurement of two and three at once sets it ([question 10](#open-questions-for-the-owner)).
 - **When it's reached:** today the play waits a minute and fails. With quality in the player, the failed state offers **Play original quality** when the original would reach the person at all (a direct stream holds no slot), with its line ("Every transcode is in use. The original may pause on a slow connection."). Recommended in [question 7](#open-questions-for-the-owner).
-- **Per user:** no admin caps now (the household is one account with profiles). Plex has "Remote streams allowed per user"; highsea can add it with sharing to people outside the home.
+- **A cap per user, set by an admin** ([question 9](#open-questions-for-the-owner), the owner's change). An owner or admin sets the most a person's account is sent when away from home, as Plex's per-user remote limits do. It is for people the owner shares highsea with outside the home, and it belongs to the account (a user), so it covers every profile on it, signed in on any device.
+  - **Where:** Users › Edit, for a person with the User role, as a **Quality away from home** choice beside **What they can do**: **No cap** (the default), or 20, 8, 4 or 2 Mbit/s, named as Settings › Playback names its ceilings (4K, 1080p, 720p, 480p). An owner and an admin have none: the server's ceiling already governs them, and a role that runs the server isn't limited by it. The row is a change to the locked Users sheet, so the prototype changes first and the owner approves it (users-devices.md is updated with it).
+  - **How it combines:** the lowest wins. The server's remote ceiling, the cap on the person's account, the account's own Quality away from home and, on mobile data, the mobile-data ceiling are laid on each other with `under` (`playback.ts`), each part on its own (bitrate and height), as the person's cap and the ceiling are today. The plan's own logic gives no reason to let one raise another, and a person can always choose lower in their own Settings or in the player, never above their admin's cap: the Quality choices in Settings and in the player offer only what's at or under it. At home none of them applies.
+  - **The upload budget** is shared by away streams after each stream's cap, so a capped person's stream takes only what it's sent as.
+  - **The full-house offer** (Play original quality) isn't shown to a person with a cap: the original would go past it. For them the failed state keeps the wait and the failure.
+  - **What it touches:** the user record gains the cap (a column through `bun run generate` in `packages/db`, null for no cap), `PATCH /api/v1/users/{id}` and the user in `@highsea-tv/api-contract` carry it (`bun run openapi`), the runtime reads it with the person's settings when a play starts, and Now playing's Why says "Limited by the owner for this account to 4 Mbps." when it's the lowest. The log's `play session started` line names which limit won.
 
 ## What transcoding costs (1 to 3)
 
@@ -148,23 +164,27 @@ Stage 3 adds a new ADR (0069) and changes ADR 0051's "one variant per session".
 
 | Client | Player | At home | Away | What changes |
 | --- | --- | --- | --- | --- |
-| Web | hls.js 1.7.3 (MSE), Safari's own HLS without MSE | Original | the ceiling; route only, no network kind outside Chromium | stage 2's menu; stage 3's ABR options |
+| Web | hls.js 1.7.3 (MSE), Safari's own HLS without MSE | Original | the ceiling; route only, no network kind outside Chromium | stage 1b's menu; stage 3's ABR options |
 | Desktop app | the web's player in Tauri's webview | Original | as the web | as the web |
-| iPhone | AVPlayer via expo-video 58.0.11 | Original | the ceiling, lower on mobile data | sends the network kind (stage 1); menu (2); ladder needs no native code (3) |
-| Apple TV | AVPlayer via expo-video | Original | rare; the ceiling | menu with the remote (2) |
+| iPhone | AVPlayer via expo-video 58.0.11 | Original | the ceiling, lower on mobile data | sends the network kind (1a); menu (1b); ladder needs no native code (3) |
+| Apple TV | AVPlayer via expo-video | Original | rare; the ceiling | menu with the remote (1b) |
 
 HT-46 left AVPlayer's wait for several segments before its first frame (`bufferOptions`) untried; stage 1 tries a shorter forward buffer on the iPhone over mobile data, since a lower bitrate makes each segment smaller anyway.
 
 ## The admin (1, 2)
 
-- **Settings › Playback** (playback-settings.md, Away from home): stage 1 adds **On mobile data** under "The most each stream is sent"; stage 2 adds **Your upload speed**. Both copy in the house voice, for example "Set it to your home's upload speed. highsea uses up to 80% of it for streams away from home."
-- **Now playing** already shows Sent as, Network and Transcoded by. Its Why gains the new reasons: "On mobile data, so it's sent as 720p at 4 Mbps.", "Chosen in the player.", "Your upload is shared by 3 streams, so this one is sent at 5 Mbps." From stage 3, Sent as shows the variant playing now, from the segments asked for, and the history row keeps the lowest and highest.
+
+- **Settings › Playback** (playback-settings.md, Away from home): stage 1a adds **On mobile data** under "The most each stream is sent"; stage 2 adds **Your upload speed**. **Users › Edit** gains **Quality away from home** in stage 2 (users-devices.md). Both copy in the house voice, for example "Set it to your home's upload speed. highsea uses up to 80% of it for streams away from home."
+- **Now playing** already shows Sent as, Network and Transcoded by. Its Why gains the new reasons: "On mobile data, so it's sent as 720p at 4 Mbps.", "Chosen in the player.", "Your upload is shared by 3 streams, so this one is sent at 5 Mbps." Stage 2 adds "Limited by the owner for this account to 4 Mbps." From stage 3, Sent as shows the variant playing now, from the segments asked for, and the history row keeps the lowest and highest.
 - **The `playback` log's** `play session started` line gains `away`, the address it was decided from, the network kind and the ceiling, so the NAS's log answers this plan's first question for every play.
-- The prototypes change for both screens (Settings › Playback's two rows, Now playing's lines) and for the player's Quality menu; listed in each stage's report as locked-screen changes for the owner's approval.
+- The prototypes change for Settings › Playback's two rows, Now playing's lines, the Users › Edit sheet's cap, the player's Quality menu and its failed state's offer. Stage 1a's are Settings › Playback's mobile-data row and Now playing's lines; the Quality menu's (and the failed state's offer, drawn with it) comes before stage 1b is built; the Users row and the upload speed come before stage 2. Each is listed in its report as a locked-screen change for the owner's approval.
 
 ## Stage 1 in full: away, proved, and mobile data
 
-The smallest step that makes mobile data watchable, built on what exists:
+The smallest step that makes mobile data watchable, built on what exists, in two parts. Part 1a has no new screen; part 1b follows once the owner has approved the Quality menu's prototype.
+
+### Part 1a
+
 
 1. **The log line** above, then on the NAS, a play from the iPhone on mobile data: Now playing says Away from home with the carrier's address, and the stream is a transcode at 1080p and 8 Mbit/s. If it says At home, find the documented cause (the proxy's headers, the trusted proxies, the router's loop-back) and fix it before anything else.
 2. **The network kind** from the iPhone in the play request (`PlayRequest`, `@highsea-tv/api-contract`, `bun run openapi`), and **On mobile data** in Settings › Playback, default 4 Mbit/s at 720p, laid under the remote ceiling.
@@ -176,16 +196,24 @@ The smallest step that makes mobile data watchable, built on what exists:
 
 **Only the owner's NAS and phone prove:** the address through DSM's proxy, a carrier's real link, the chip's speed with runs side by side, and the look of a tone-mapped frame.
 
+### Part 1b: the Quality menu
+
+1. **The prototype first.** The player's Quality menu on all three form factors (the TV's with the D-pad) in `design/prototypes`, with the failed state's Play original quality offer, and player.md updated; the owner approves it before anything is built. The player is a locked screen.
+2. **The menu** in the web's and the phone's players and the Apple TV's, with Automatic, Original, 20, 8, 4 and 2 Mbit/s (those at or under the server's ceiling away), a link to Settings › Playback, and a choice that starts a new session at the same position. The play request carries the chosen quality; the server lays it under the ceilings, so a choice can lower but never raise.
+3. **Now playing's** reason "Chosen in the player."
+
+**Tests:** the menu on all three form factors and its sweeps; the decision with a chosen quality under each ceiling.
+
 ## Stages 2 and 3, tests
 
-- **Stage 2:** the prototype's Quality menu on all three form factors (the TV's with the D-pad), approved before building; the runtime's budget with three sessions; the failed state's offer; the clients' sweeps for the player. On the NAS: three away streams under a set upload speed, with Now playing's reasons.
+- **Stage 2:** the Users sheet's and Settings › Playback's prototype changes, approved before building; the runtime's budget with three sessions; the decision with each combination of the admin's cap, the person's own cap, the mobile-data ceiling and the server's ceiling (the lowest wins, pure, every pair), and an owner or admin never capped; the cap in the user's schema and the migration; the Users sheet's tests and sweep; the failed state's offer, absent for a capped person. On the NAS: three away streams under a set upload speed, and one account capped lower than the rest, with Now playing's reasons.
 - **Stage 3:** the multivariant playlist against RFC 8216's rules and Apple's (snapshots plus a checker for `BANDWIDTH`, `AVERAGE-BANDWIDTH`, `CODECS`, `RESOLUTION`); real ffmpeg making two variants of a test film and ffprobe showing their keyframes at the same times; a switch mid-film restarting the run on the new variant; hls.js in Chromium and Firefox through a link that drops from 20 to 3 Mbit/s and back, the level following (`playback.ts` sweep); AVPlayer the same through `avplayer.swift`. On the NAS and the iPhone: a walk with the phone from Wi-Fi to mobile data, and Now playing following the variant.
 
 ## ADRs
 
-- **ADR 0051, a dated section at stage 1:** the network kind in the play request, the mobile-data ceiling, stereo below 8 Mbit/s, a version chosen for the route, and the log's fields. **At stage 2:** the upload budget and the original offered when transcodes are full.
-- **ADR 0052, a dated section at stage 1:** the network kind beside the profile in a play request, as a fact about this play, not the device.
-- **ADR 0056, a dated section at stage 1:** what the DS1520+ sustains with runs side by side, and the tone-mapping finding against Intel's table.
+- **ADR 0051, a dated section at stage 1a:** the network kind in the play request, the mobile-data ceiling, stereo below 8 Mbit/s, a version chosen for the route, and the log's fields. **At stage 1b:** the quality chosen in the player, laid under the ceilings. **At stage 2:** the upload budget, the admin's cap per user (the lowest of the limits wins) and the original offered when transcodes are full.
+- **ADR 0052, a dated section at stage 1a:** the network kind beside the profile in a play request, as a fact about this play, not the device.
+- **ADR 0056, a dated section at stage 1a:** what the DS1520+ sustains with runs side by side, and the tone-mapping finding against Intel's table.
 - **New ADR 0069, at stage 3: an adaptive ladder made on demand.** The variants, one grid, one run per session, the figures declared, and the departures from Apple's specification (no 192 kbit/s variant, no I-frame playlists until stage 4).
 - **I-frame playlists** (Apple's 6.1 asks for them, a MUST, for its own scrubbing UI) aren't needed by highsea's players, which draw trickplay themselves; stage 4 adds them if the Apple TV's native scrubbing is wanted. ADR 0051's current stream doesn't have them either.
 
@@ -239,11 +267,29 @@ Each has a recommendation; the first option is it.
 10. **Transcodes at once on your NAS.**
     - **Recommended:** keep 3 until stage 1 has measured two and three at once, then set it from the result (likely 2 for 4K HDR).
     - Or: set it to 2 now, before measuring.
+11. **A cap for one profile of an account** (new, 2026-11-18, from the owner's correction that an account has several profiles). Stage 2's cap is the account's, so it covers every profile on it.
+    - **Recommended:** the account only for now. Whoever is given an account is the person the owner limits; one of them can lower their own quality, never raise it.
+    - Or: also a cap per profile, set in the same Users sheet beside the account's, the lowest of the two winning. It would let the owner limit a child's profile on a parent's account, but it adds a row for every profile and a second place a limit can come from, and a child can leave for the parent's profile unless that has a PIN.
 
 ## The owner's changes
 
-None yet.
+On 2026-11-18, reviewing this scope, the owner made 3 changes:
+
+1. **The player's Quality menu moves into stage 1** (question 2), and stage 1 ships in two parts: first the parts with no new screen (away proved on the NAS, the mobile-data ceiling, stereo below 8 Mbit/s, a lighter version away, the NAS's measurements), then the Quality menu in the same stage, once the owner has approved its prototype. The menu changes the locked player, so its prototype comes first. See [the stages](#the-stages-and-their-size), [by hand](#by-hand-stage-1-second-part) and [stage 1 in full](#stage-1-in-full-away-proved-and-mobile-data).
+2. **An admin cap per user, away from home, in stage 2** (question 9). It sits in Users › Edit and the lowest limit wins. See [limits and fairness](#limits-and-fairness-stage-2).
+3. **A correction to the plan's description of the product:** highsea supports several user accounts, and each account has several profiles. Question 9 as it was asked says "the household is one account with profiles", which is wrong; it stays as asked. The body now says which setting belongs to the account and which to the profile ([Account and profile](#account-and-profile)), the admin's cap is per account and covers that account's profiles, and whether to cap one profile too is the new [question 11](#open-questions-for-the-owner).
 
 ## The owner's answers
 
-None yet.
+On 2026-11-18 the owner took every recommendation for questions 1 to 10 except 2 and 9:
+
+1. The model: a fixed quality per play now (stages 1 and 2), the adaptive ladder after (stage 3).
+2. **Changed by the owner:** stage 1 includes the player's Quality menu, shipped as its second part after the prototype is approved; the first part is the rest of stage 1, with no new screen.
+3. Away from home's default stays 8 Mbit/s at 1080p per stream.
+4. On mobile data: 4 Mbit/s at 720p.
+5. A lighter version away: yes, and the player says so.
+6. The home's upload speed: a setting in stage 2, unset by default, 80% shared between away streams.
+7. When every transcode is in use: the player's failed state offers Play original quality.
+8. Sound: stereo AAC at 128 kb/s below 8 Mbit/s, 5.1 kept above.
+9. **Changed by the owner:** an admin cap per user, away from home, in stage 2.
+10. Transcodes at once: keep 3 until stage 1 has measured two and three at once.
