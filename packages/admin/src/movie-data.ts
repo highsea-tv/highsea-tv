@@ -108,9 +108,7 @@ export const isNoMetadataKey = (e: unknown) =>
 
 // ---------------------------------------------------------------- the library
 
-/** A page of the library, as the API's default. */
-export const PAGE = 60
-/** The most one request returns (MovieListQuery's `limit`). */
+/** The most one request returns (MovieListQuery's `limit`): the whole library is read in these. */
 const MAX_LIMIT = 200
 
 export type LibraryFilters = {
@@ -122,14 +120,15 @@ export type LibraryFilters = {
 }
 
 /**
- * The first `count` movies for these filters, following the cursor. Show more asks for more, and a
- * live update asks again for everything shown, so a movie added or removed never leaves a gap or a
- * repeat between pages.
+ * The movies for these filters, following the cursor in requests of at most 200: every one of them
+ * unless `count` says fewer. The library reads them all, as the clients' libraries do
+ * (@highsea-tv/client/data's readLibrary), and draws only what's near the screen (HT-57); a live
+ * update reads them all again, so a movie added or removed never leaves a gap or a repeat.
  */
 export async function loadMovies(
   c: Pick<HighseaClient, 'movies'>,
   filters: LibraryFilters,
-  count: number,
+  count = Number.POSITIVE_INFINITY,
 ): Promise<MoviePage> {
   const items: Movie[] = []
   let cursor: string | undefined

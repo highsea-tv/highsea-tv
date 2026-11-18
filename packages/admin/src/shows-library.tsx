@@ -13,6 +13,9 @@ import { useAction, useQuery } from '@highsea-tv/sdk/react'
 // Drawn only when the server serves shows (`Served`, serves.tsx): the routes are drafts the mock
 // answers and the server answers 501. The drafts have no bulk route, so the bulk bar edits,
 // searches and removes each show in turn, as the prototype did.
+//
+// As Movies' (HT-57): the grid and the table draw only what's near the screen, and sorted by title
+// the clients' A–Z index stands beside the frame (./library-grid.tsx).
 import { admin, line } from '@highsea-tv/tokens'
 import {
   Badge,
@@ -41,12 +44,15 @@ import {
   TitleLink,
   toast,
   tokens,
+  useMotionReduced,
   useTheme,
+  type VirtualGridHandle,
+  type VirtualList,
 } from '@highsea-tv/ui/native'
 import { type ComponentRef, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { View } from 'react-native'
+import { LibraryPosters, STUCK, useLetters, WithLetters } from './library-grid.tsx'
 import { Loadable, PosterSkeletons } from './loadable.tsx'
-import { GridItem, PosterGrid } from './media-sections.tsx'
 import { Served } from './serves.tsx'
 import { AdminPage } from './shell.tsx'
 import { airDate, episodesShare, episodesTone, missing, showPath, showState } from './show-data.ts'
@@ -144,7 +150,7 @@ function Library() {
     for (const id of ids) await c.series.remove({ params: { id }, query: {} })
   })
 
-  const all = shows.data ?? []
+  const all = shows.data ?? NONE
   const counts = Object.fromEntries(
     FILTERS.map((k) => [k, all.filter(matches[k]).length]),
   ) as Record<Filter, number>
@@ -170,6 +176,16 @@ function Library() {
     setSelected(next)
   }
   const everyShown = shown.length > 0 && shown.every((s) => selected.has(s.id))
+  const letters = useLetters(shown, sortedOf, sort === 'title')
+  const reduced = useMotionReduced()
+  const posters = useRef<VirtualGridHandle>(null)
+  const rows = useRef<VirtualList>(null)
+  const jump = (l: string) => {
+    const at = letters.firsts.get(l) ?? 0
+    const options = { animated: !reduced, offset: STUCK }
+    if (view === 'grid') posters.current?.toItem(at, options)
+    else rows.current?.scrollToIndex(at, options)
+  }
 
   const bulk = async (label: string, run: () => Promise<unknown>) => {
     try {
@@ -337,129 +353,139 @@ function Library() {
                   </Button>
                 </View>
               )}
-              {shown.length === 0 ? (
-                <View style={{ paddingHorizontal: CELL_X, paddingVertical: tokens.space['8'] }}>
-                  <Text variant="caption" color="text-3" align="center">
-                    {t('noMatch')}
-                  </Text>
-                </View>
-              ) : view === 'grid' ? (
-                <View style={{ padding: CELL_X }}>
-                  <PosterGrid>
-                    {shown.map((s) => (
-                      <GridTile key={s.id} show={s} />
-                    ))}
-                  </PosterGrid>
-                </View>
-              ) : (
-                <Table label={t('title')}>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead width={admin.table.checkColumn}>
-                        <Checkbox
-                          label={t('col.selectAll')}
-                          hideLabel
-                          checked={everyShown}
-                          onCheckedChange={(on) =>
-                            setSelected(on ? new Set(shown.map((s) => s.id)) : new Set())
-                          }
-                        />
-                      </TableHead>
-                      <TableHead>{t('col.title')}</TableHead>
-                      <TableHead>{t('col.network')}</TableHead>
-                      <TableHead>{t('col.status')}</TableHead>
-                      <TableHead numeric>{t('col.seasons')}</TableHead>
-                      <TableHead width={EPISODES_WIDTH}>{t('col.episodes')}</TableHead>
-                      <TableHead>{t('col.next')}</TableHead>
-                      <TableHead numeric>{t('col.size')}</TableHead>
-                      <TableHead>{t('col.monitored')}</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {shown.map((s) => {
-                      const state = showState(s)
-                      const line = t('episodesLine', s.episodes)
-                      return (
-                        <TableRow key={s.id} selected={selected.has(s.id)}>
-                          <TableCell tall>
-                            <Checkbox
-                              label={t('col.select', { title: s.title })}
-                              hideLabel
-                              checked={selected.has(s.id)}
-                              onCheckedChange={(on) => toggle(s.id, on)}
-                            />
-                          </TableCell>
-                          <TableCell tall truncate>
-                            <TitleCell
-                              title={<TitleLink href={showPath(s.id)}>{s.title}</TitleLink>}
-                              detail={s.path}
-                              art={s.art.poster}
-                            />
-                          </TableCell>
-                          <TableCell tall>
-                            <Text size={tokens.adminText.ui.size} color="text-2">
-                              {s.network || t('none')}
-                            </Text>
-                          </TableCell>
-                          <TableCell tall>
-                            <Badge tone={state.tone}>{t(state.label)}</Badge>
-                          </TableCell>
-                          <TableCell tall numeric>
-                            {String(s.seasons)}
-                          </TableCell>
-                          <TableCell tall>
-                            <View style={{ gap: tokens.space['1'] }}>
-                              <Text
-                                size={tokens.adminText.figure.size}
-                                leading={tokens.adminText.figure.leading}
-                                mono
-                                color="text-2"
-                              >
-                                {line}
-                              </Text>
-                              <ProgressBar
-                                value={episodesShare(s)}
-                                tone={episodesTone(s)}
-                                look="panel"
-                                label={t('episodes.label', { title: s.title, ...s.episodes })}
+              <WithLetters
+                shown={sort === 'title' && shown.length > 0}
+                present={letters.present}
+                label={t('letters')}
+                inset={CELL_X}
+                onLetter={jump}
+              >
+                {shown.length === 0 ? (
+                  <View style={{ paddingHorizontal: CELL_X, paddingVertical: tokens.space['8'] }}>
+                    <Text variant="caption" color="text-3" align="center">
+                      {t('noMatch')}
+                    </Text>
+                  </View>
+                ) : view === 'grid' ? (
+                  <View style={{ padding: CELL_X }}>
+                    <LibraryPosters
+                      ref={posters}
+                      items={shown}
+                      keyOf={keyOf}
+                      label={t('title')}
+                      render={(s) => <GridTile show={s} />}
+                    />
+                  </View>
+                ) : (
+                  <Table label={t('title')}>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead width={admin.table.checkColumn}>
+                          <Checkbox
+                            label={t('col.selectAll')}
+                            hideLabel
+                            checked={everyShown}
+                            onCheckedChange={(on) =>
+                              setSelected(on ? new Set(shown.map((s) => s.id)) : new Set())
+                            }
+                          />
+                        </TableHead>
+                        <TableHead>{t('col.title')}</TableHead>
+                        <TableHead>{t('col.network')}</TableHead>
+                        <TableHead>{t('col.status')}</TableHead>
+                        <TableHead numeric>{t('col.seasons')}</TableHead>
+                        <TableHead width={EPISODES_WIDTH}>{t('col.episodes')}</TableHead>
+                        <TableHead>{t('col.next')}</TableHead>
+                        <TableHead numeric>{t('col.size')}</TableHead>
+                        <TableHead>{t('col.monitored')}</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody ref={rows} virtual={sort === 'title'}>
+                      {shown.map((s) => {
+                        const state = showState(s)
+                        const line = t('episodesLine', s.episodes)
+                        return (
+                          <TableRow key={s.id} selected={selected.has(s.id)}>
+                            <TableCell tall>
+                              <Checkbox
+                                label={t('col.select', { title: s.title })}
+                                hideLabel
+                                checked={selected.has(s.id)}
+                                onCheckedChange={(on) => toggle(s.id, on)}
                               />
-                            </View>
-                          </TableCell>
-                          <TableCell tall>
-                            {s.nextAiring ? (
-                              <View>
-                                <Text size={tokens.adminText.ui.size}>
-                                  {airDate(s.nextAiring.aired, locale)}
-                                </Text>
-                                <Text
-                                  size={tokens.adminText.release.size}
-                                  leading={tokens.adminText.release.leading}
-                                  mono
-                                  color="text-3"
-                                >
-                                  {s.nextAiring.code}
-                                </Text>
-                              </View>
-                            ) : (
-                              <Text size={tokens.adminText.ui.size} color="text-3">
-                                {t('none')}
+                            </TableCell>
+                            <TableCell tall truncate>
+                              <TitleCell
+                                title={<TitleLink href={showPath(s.id)}>{s.title}</TitleLink>}
+                                detail={s.path}
+                                art={s.art.poster}
+                              />
+                            </TableCell>
+                            <TableCell tall>
+                              <Text size={tokens.adminText.ui.size} color="text-2">
+                                {s.network || t('none')}
                               </Text>
-                            )}
-                          </TableCell>
-                          <TableCell tall numeric>
-                            {bytes(s.size)}
-                          </TableCell>
-                          <TableCell tall>
-                            <Text size={tokens.adminText.ui.size} color="text-2">
-                              {s.monitored ? t('yes') : t('no')}
-                            </Text>
-                          </TableCell>
-                        </TableRow>
-                      )
-                    })}
-                  </TableBody>
-                </Table>
-              )}
+                            </TableCell>
+                            <TableCell tall>
+                              <Badge tone={state.tone}>{t(state.label)}</Badge>
+                            </TableCell>
+                            <TableCell tall numeric>
+                              {String(s.seasons)}
+                            </TableCell>
+                            <TableCell tall>
+                              <View style={{ gap: tokens.space['1'] }}>
+                                <Text
+                                  size={tokens.adminText.figure.size}
+                                  leading={tokens.adminText.figure.leading}
+                                  mono
+                                  color="text-2"
+                                >
+                                  {line}
+                                </Text>
+                                <ProgressBar
+                                  value={episodesShare(s)}
+                                  tone={episodesTone(s)}
+                                  look="panel"
+                                  label={t('episodes.label', { title: s.title, ...s.episodes })}
+                                />
+                              </View>
+                            </TableCell>
+                            <TableCell tall>
+                              {s.nextAiring ? (
+                                <View>
+                                  <Text size={tokens.adminText.ui.size}>
+                                    {airDate(s.nextAiring.aired, locale)}
+                                  </Text>
+                                  <Text
+                                    size={tokens.adminText.release.size}
+                                    leading={tokens.adminText.release.leading}
+                                    mono
+                                    color="text-3"
+                                  >
+                                    {s.nextAiring.code}
+                                  </Text>
+                                </View>
+                              ) : (
+                                <Text size={tokens.adminText.ui.size} color="text-3">
+                                  {t('none')}
+                                </Text>
+                              )}
+                            </TableCell>
+                            <TableCell tall numeric>
+                              {bytes(s.size)}
+                            </TableCell>
+                            <TableCell tall>
+                              <Text size={tokens.adminText.ui.size} color="text-2">
+                                {s.monitored ? t('yes') : t('no')}
+                              </Text>
+                            </TableCell>
+                          </TableRow>
+                        )
+                      })}
+                    </TableBody>
+                  </Table>
+                )}
+              </WithLetters>
             </TableFrame>
           )
         }
@@ -488,7 +514,7 @@ function GridTile({ show: s }: { show: Series }) {
       : null
   const line = t('episodesLine', s.episodes)
   return (
-    <GridItem gap={tokens.space['2']}>
+    <View style={{ gap: tokens.space['2'] }}>
       <View>
         <Poster
           title={s.title}
@@ -531,9 +557,14 @@ function GridTile({ show: s }: { show: Series }) {
         look="panel"
         label={t('episodes.label', { title: s.title, ...s.episodes })}
       />
-    </GridItem>
+    </View>
   )
 }
+
+/** None yet, the same array each time so the filters aren't run again. */
+const NONE: Series[] = []
+const keyOf = (s: Series) => s.id
+const sortedOf = (s: Series) => s.sortTitle
 
 /** A table cell's side padding (the web's px-3.5), which the toolbars and the grid share. */
 const CELL_X = admin.table.cellX

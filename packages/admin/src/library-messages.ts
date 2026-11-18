@@ -14,7 +14,7 @@ export const library = defineMessages({
   'empty.body': 'Add a movie and highsea finds a release, downloads it and files it here.',
   'empty.discover': 'Discover movies',
   noMatch: 'No movies match. Try another filter.',
-  more: 'Show more',
+  letters: 'Jump to a letter',
   'status.available': 'Available',
   'status.wanted': 'Wanted',
   'status.downloading': 'Downloading',

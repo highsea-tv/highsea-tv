@@ -58,8 +58,9 @@ type MockHandle = MockJump['handle'] & {
   scrollToIndex: (index: number, options?: MockJump['options']) => void
 }
 type MockRef = ((handle: MockHandle | null) => void) | { current: unknown } | undefined
-jest.mock('@highsea-tv/ui', () => {
-  const actual = jest.requireActual('@highsea-tv/ui')
+// the virtual list's own module, which the library's VirtualGrid draws through as well as its index
+jest.mock('../../../packages/ui/src/native/virtual.tsx', () => {
+  const actual = jest.requireActual('../../../packages/ui/src/native/virtual.tsx')
   const { createElement } = require('react')
   return {
     ...actual,
@@ -78,6 +79,13 @@ jest.mock('@highsea-tv/ui', () => {
       }
       return createElement(actual.Virtual, { ...p, ref })
     },
+  }
+})
+jest.mock('@highsea-tv/ui', () => {
+  const actual = jest.requireActual('@highsea-tv/ui')
+  const { createElement } = require('react')
+  return {
+    ...actual,
     Poster: (p: { title: string; ref?: unknown }) => {
       const given = p.ref
       // a ref callback gets a handle whose focus says which film it was
