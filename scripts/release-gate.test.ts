@@ -104,7 +104,13 @@ describe('whether a release may publish', () => {
     expect(BUILDS).toEqual(['checks', 'image', 'catalog', 'spk', 'desktop', 'desktop-feed'])
     const builds = Object.fromEntries(BUILDS.map((job) => [job, 'success']))
     expect(gate(builds, STABLE, BUILDS).go).toBe('yes')
-    expect(gate({ ...builds, spk: 'skipped', desktop: 'skipped', 'desktop-feed': 'skipped' }, PRERELEASE, BUILDS).go).toBe('yes')
+    expect(
+      gate(
+        { ...builds, spk: 'skipped', desktop: 'skipped', 'desktop-feed': 'skipped' },
+        PRERELEASE,
+        BUILDS,
+      ).go,
+    ).toBe('yes')
     expect(gate({ ...builds, 'desktop-feed': 'skipped' }, STABLE, BUILDS).go).toBe('no')
     expect(gate(builds, DRY_RUN, BUILDS).go).toBe('yes')
   })
@@ -200,7 +206,9 @@ describe('a re-run of failed jobs', () => {
 
   test('once the macOS build and everything after it passed: go', () => {
     const done = [
-      ...attempt2.filter((e) => !e.name.startsWith('desktop (macos') && e.name !== 'github-release'),
+      ...attempt2.filter(
+        (e) => !e.name.startsWith('desktop (macos') && e.name !== 'github-release',
+      ),
       entry('desktop (macos-15, universal-apple-darwin)', 'completed', 'success'),
       entry('desktop-feed', 'completed', 'success'),
       entry('publishable', 'completed', 'success'),
@@ -320,14 +328,20 @@ describe('release.yml’s conditions', () => {
   })
 
   test('every build passed: merge, then pages, run; a dry run runs neither', () => {
-    const passed = Object.fromEntries(['prepare', ...BUILDS, 'publishable'].map((j) => [j, 'success']))
+    const passed = Object.fromEntries(
+      ['prepare', ...BUILDS, 'publishable'].map((j) => [j, 'success']),
+    )
     expect(runs('merge', passed, STABLE)).toBe(true)
     expect(runs('pages', { ...passed, merge: 'success' }, STABLE)).toBe(true)
     expect(runs('pages', { ...passed, merge: 'failure' }, STABLE)).toBe(false)
     expect(runs('merge', passed, DRY_RUN)).toBe(false)
     // a prerelease: spk and the desktop app skipped on purpose, and publishable passed
     expect(
-      gate({ ...passed, spk: 'skipped', desktop: 'skipped', 'desktop-feed': 'skipped' }, PRERELEASE, BUILDS).go,
+      gate(
+        { ...passed, spk: 'skipped', desktop: 'skipped', 'desktop-feed': 'skipped' },
+        PRERELEASE,
+        BUILDS,
+      ).go,
     ).toBe('yes')
   })
 
