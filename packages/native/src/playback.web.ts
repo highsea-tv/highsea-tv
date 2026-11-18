@@ -198,7 +198,9 @@ export const usePlayback: Engine<WebPlayer> = (id, fromStart, type = 'movie') =>
         v.addEventListener(
           'loadedmetadata',
           () => {
-            if (s.start) v.currentTime = s.start
+            // Safari's own HLS starts where the playlist says (EXT-X-START, RFC 8216
+            // § 4.3.5.2); a file played directly, or a player that didn't, is moved there
+            if (s.start && Math.abs(v.currentTime - s.start) > 1) v.currentTime = s.start
           },
           { once: true },
         )

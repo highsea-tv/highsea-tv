@@ -7,9 +7,18 @@
 //   length is known before it's made.
 // - A direct stream copies the picture, so it can only be cut at the source's own keyframes. A
 //   segment is the run of pieces from one keyframe to the first at least `SEGMENT_SECONDS` later.
+// - Where a session starts, a direct stream's first segments are shorter (phase 5, A1's finding of
+//   2026-11-17): a player shows nothing until its first segment has arrived whole, so 6 s of a
+//   film's bitrate stood between Play and the picture. RFC 8216 only caps a segment's length at
+//   the target duration (§ 4.3.3.1), so the first `QUICK_SPAN` seconds from the start are cut at
+//   the first keyframe `QUICK_SECONDS` on, where the film has one.
 
 /** Apple's HLS authoring specification recommends 6 s segments (its "Media segmentation" § 1.4). */
 export const SEGMENT_SECONDS = 6
+
+/** The shortest segment where a session starts, and how far from the start they're cut that short. */
+export const QUICK_SECONDS = 2
+export const QUICK_SPAN = 12
 
 export type Segment = {
   /** Seconds into the film, as the segment's own timestamps say. */
@@ -45,19 +54,30 @@ export function pieceStarts(keyframes: readonly number[]): number[] {
  * A direct stream's segments, from the picture's keyframes (seconds into the film, ascending). A
  * segment runs from a piece's start to the first piece starting at least `length` later, so each
  * is as long as the keyframes allow and never shorter than `length`, but the last.
+ *
+ * With `from`, where the session starts, a segment begins at the piece holding it (so the one
+ * before may be shorter than `length`), and the segments beginning within `QUICK_SPAN` seconds of
+ * it need only be `QUICK_SECONDS` long: what the player waits for before its first frame.
  */
 export function keyframeSegments(
   keyframes: readonly number[],
   duration: number,
   length = SEGMENT_SECONDS,
+  from?: number,
 ): Segment[] {
   const starts = pieceStarts(keyframes).filter((t) => t < duration)
+  // the piece holding the start: the last one starting at or before it
+  let quick = -1
+  if (from !== undefined)
+    for (let k = 0; k < starts.length && (starts[k] as number) <= from; k++) quick = k
+  const quickFrom = quick >= 0 ? (starts[quick] as number) : Number.NaN
   const segments: Segment[] = []
   let first = 0
   for (let k = 1; k <= starts.length; k++) {
     const start = starts[first] as number
     const at = k < starts.length ? (starts[k] as number) : duration
-    if (k < starts.length && at - start < length) continue
+    const least = start >= quickFrom && start - quickFrom < QUICK_SPAN ? QUICK_SECONDS : length
+    if (k < starts.length && k !== quick && at - start < Math.min(least, length)) continue
     segments.push({ start, duration: at - start, first, last: k })
     first = k
   }
@@ -83,11 +103,15 @@ const extinf = (seconds: number) => seconds.toFixed(6)
  * The media playlist (RFC 8216 § 4.3.3): every segment from the start, since the film's length is
  * known (`EXT-X-PLAYLIST-TYPE:VOD`, § 4.3.3.5, with `EXT-X-ENDLIST`, § 4.3.3.4), in fragmented MP4
  * with its initialization section (`EXT-X-MAP`, § 4.3.2.5), which needs version 6 or later; 7 is
- * what ffmpeg's muxer writes for fMP4 (§ 7).
+ * what ffmpeg's muxer writes for fMP4 (§ 7). `start` is where the session starts, in seconds.
  */
 export function mediaPlaylist(
   segments: readonly Segment[],
-  { init = 'init.mp4', uri = (i: number) => `${i}.m4s` } = {},
+  {
+    init = 'init.mp4',
+    uri = (i: number) => `${i}.m4s`,
+    start = 0,
+  }: { init?: string; uri?: (i: number) => string; start?: number } = {},
 ): string {
   // each EXTINF, rounded to the nearest integer, at most the target (§ 4.3.3.1)
   const target = Math.max(1, ...segments.map((s) => Math.round(s.duration)))
@@ -98,6 +122,12 @@ export function mediaPlaylist(
     '#EXT-X-MEDIA-SEQUENCE:0',
     '#EXT-X-PLAYLIST-TYPE:VOD',
     '#EXT-X-INDEPENDENT-SEGMENTS',
+    // where the session starts, when that's past the beginning: "By default, clients SHOULD start
+    // playback at this point when beginning a playback session", at that moment rather than its
+    // segment's start with PRECISE (§ 4.3.5.2). A player that takes it loads from there, never the
+    // film's first segment; AVPlayer does, and hls.js is given the same place as its
+    // `startPosition`.
+    ...(start > 0 ? [`#EXT-X-START:TIME-OFFSET=${start.toFixed(3)},PRECISE=YES`] : []),
     `#EXT-X-MAP:URI="${init}"`,
   ]
   segments.forEach((s, i) => {

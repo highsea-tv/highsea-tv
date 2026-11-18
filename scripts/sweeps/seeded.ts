@@ -67,7 +67,8 @@ export async function boot(port: number, { production = false, lan = false } = {
       HIGHSEA_CONFIG_DIR: join(dir, 'config'),
       HIGHSEA_DATA_DIR: dataDir,
       HIGHSEA_DISCOVERY_PORT: String(port + 1),
-      HIGHSEA_LOG_LEVEL: 'warn',
+      // quiet, unless a run reads the log's lines (start-times.ts)
+      HIGHSEA_LOG_LEVEL: process.env.SWEEP_LOG_LEVEL ?? 'warn',
       HIGHSEA_TMDB_REPLAY: '1',
       // the engine opens no socket: grabs join the queue, nothing downloads, nothing reaches the network
       HIGHSEA_TORRENT_OFFLINE: '1',

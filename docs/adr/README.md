@@ -54,7 +54,7 @@ Short records of decisions that shape the system. Each one is immutable once acc
 | [0048](0048-curation.md) | Curation: announcements and featured sections, resolved per person and app | Accepted |
 | [0049](0049-smart-collections.md) | Smart collections: rules compiled to SQL, evaluated when read | Accepted; amended 2026-10-27 |
 | [0050](0050-release-and-versioning.md) | Release and versioning: one SemVer version, two channels, a prepared commit and a gated workflow | Accepted; amended 2026-10-23, 2026-10-28, 2026-10-29 (four times), 2026-11-04, 2026-11-06, 2026-11-15 and 2026-11-17 |
-| [0051](0051-playback-engine.md) | The playback engine: direct play, then direct stream, then HLS transcodes made on demand | Accepted; amended 2026-10-27 and 2026-10-28 (twice) |
+| [0051](0051-playback-engine.md) | The playback engine: direct play, then direct stream, then HLS transcodes made on demand | Accepted; amended 2026-10-27, 2026-10-28 (twice) and 2026-11-17 |
 | [0052](0052-device-profiles.md) | Device profiles: what each client plays, built in and reported, in one shape | Accepted; amended 2026-10-27, 2026-10-28 (twice) and 2026-10-29 (three times) |
 | [0053](0053-clients-build-and-distribution.md) | The clients' build and distribution: Vite at /web, Tauri for desktop, Expo for mobile and TV | Proposed; the web part Accepted 2026-10-28, desktop 2026-10-29; amended 2026-10-29 (three times), 2026-11-03 and 2026-11-04, and by 0061 |
 | [0054](0054-watch-state.md) | Watch state: positions, watched and the player's picks, per person and title | Accepted; amended 2026-11-01 |

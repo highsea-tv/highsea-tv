@@ -11,11 +11,17 @@
 //   the device out, ends their sessions at once (`users.updated`).
 // - A direct stream or a transcode is HLS made on demand (4.1b, ADR 0051): each session has a
 //   folder in the data folder's `transcodes/`, which goes when the session ends. A direct stream's
-//   segments follow the file's keyframes, read once by ffprobe and kept (`file_keyframes`).
+//   segments follow the file's keyframes, read once by ffprobe and kept (`file_keyframes`), after
+//   the import rather than at the first play (`ahead.ts`).
 // - The person's own playback preferences (client-settings.md › Playback, ADR 0027's 2026-11-01
 //   section) start a film in their audio language and with their subtitles, unless they've picked
 //   for that title already, and cap its quality at home and away; the remote ceiling still holds.
-// - Text subtitles are sent as WebVTT, converted once a session; picture subtitles aren't sent.
+// - Text subtitles are sent as WebVTT: the film's own kept from the read after the import, a
+//   sidecar converted once a session; picture subtitles aren't sent.
+// - Where a start's time went is logged, a few lines a play (phase 5, A1's finding of 2026-11-17):
+//   the decision with the start position, a file's keyframes when they had to be read, and the
+//   first segment a player is served, with how long it waited and how long it took to send. The
+//   runner's own lines (ffmpeg's start, its first segment) come through the same source.
 // - Now playing (4.3a) hears each session start, report and end through `hooks`, and staff stop a
 //   session with `stopFor`: its player's next report gets a 404 saying who stopped it and why,
 //   and the person hears `playback.stopped` so it asks at once.
@@ -50,7 +56,6 @@ import {
   type HlsSource,
   mediaPlaylist,
   multivariantPlaylist,
-  readKeyframes,
   type SubtitleRendition,
   scaledSize,
   subtitlePlaylist,
@@ -68,10 +73,11 @@ import { createSessions, type EndReason, type PlaySession } from '@highsea-tv/st
 import type { TrickplayManifest } from '@highsea-tv/stream/trickplay'
 import { toLanguageCode } from '@highsea-tv/subtitles/shared'
 import { and, eq } from 'drizzle-orm'
+import type { Ahead } from './ahead.ts'
 import type { NowPlayingService } from './now-playing.ts'
 import type { Trickplay } from './trickplay.ts'
 
-const { deviceProfiles, fileKeyframes, subtitleFiles } = schema
+const { deviceProfiles, subtitleFiles } = schema
 
 /** The profile for a device that names none and never reported one. */
 const DEFAULT_PROFILE = 'web-chromium'
@@ -119,8 +125,8 @@ export function createPlayback(deps: {
   ceiling(): Ceiling | null
   /** The person's preferences on the device, resolved through ADR 0027's layers. */
   preferences?: (userId: string, deviceId: string | null) => Preferences
-  /** ffprobe's binary, for keyframes. */
-  ffprobe: string
+  /** A file's keyframes and its own text subtitles, read ahead of the first play (`ahead.ts`). */
+  ahead: Pick<Ahead, 'keyframes' | 'subtitle'>
   /** A file's subtitle tracks, as the client API lists them. */
   subtitles(fileId: string): ClientSubtitle[]
   /** The scrubber's previews, by file. */
@@ -143,10 +149,16 @@ export function createPlayback(deps: {
     string,
     { userId: string; by: string; message: string | null; at: number }
   >()
+  /**
+   * Each live HLS session's start, and when its playlist was first answered, until its first
+   * segment is served: what the "first segment served" line counts from.
+   */
+  const served = new Map<string, { startedAt: number; playlistAt: number | null }>()
   const sessions = createSessions({
     now: () => clock.now(),
     onEnd: (s, why: EndReason) => {
       log.debug('play session ended', { session: s.id, why })
+      served.delete(s.id)
       void transcodes.end(s.id)
       const notice = notices.get(s.id)
       deps.hooks?.ended(s, why, notice && { name: notice.by, message: notice.message })
@@ -341,33 +353,6 @@ export function createPlayback(deps: {
     expiresAt: new Date(s.expiresAt).toISOString(),
   })
 
-  /** Keyframes being read now, so two sessions of a file read it once. */
-  const reading = new Map<string, Promise<number[]>>()
-
-  /** A file's keyframes: kept from an earlier read when the file's size is the same, else read. */
-  function keyframes(file: { id: string; path: string; size: number }, index: number) {
-    const kept = db.select().from(fileKeyframes).where(eq(fileKeyframes.fileId, file.id)).get()
-    if (kept && kept.size === file.size) return Promise.resolve(kept.times)
-    const pending = reading.get(file.id)
-    if (pending) return pending
-    const read = readKeyframes(deps.ffprobe, file.path, index)
-      .then((times) => {
-        const row = { size: file.size, times, readAt: clock.now() }
-        try {
-          db.insert(fileKeyframes)
-            .values({ fileId: file.id, ...row })
-            .onConflictDoUpdate({ target: fileKeyframes.fileId, set: row })
-            .run()
-        } catch {
-          // the file left the library while it was read: nothing to keep
-        }
-        return times
-      })
-      .finally(() => reading.delete(file.id))
-    reading.set(file.id, read)
-    return read
-  }
-
   /** Starts a title on a device: the version, the picks, the decision and the session. */
   function play(
     viewer: Viewer,
@@ -376,6 +361,7 @@ export function createPlayback(deps: {
     { address, locale }: { address: string; locale?: string },
   ): ApiSession {
     if (!seesMovies(viewer.libraries)) throw notHere()
+    const asked = clock.now()
     const src = movies.playback.source(tmdbId, viewer.userId, request.versionId)
     const info = src.file.info
     if (!info)
@@ -395,16 +381,16 @@ export function createPlayback(deps: {
       const language = mine['playback.audio']
       if (language !== 'original') audio = audioIn(info, language)
     }
-    const asked =
+    const wanted =
       request.subtitleId !== undefined
         ? request.subtitleId
         : mine && !own
           ? subtitleFor(src.file.id, info, audio, mine)
           : prefs.subtitleId
-    let subtitleId = asked
+    let subtitleId = wanted
     let subtitle: SubtitlePick | null
     try {
-      subtitle = subtitlePick(src.file.id, asked)
+      subtitle = subtitlePick(src.file.id, wanted)
     } catch (e) {
       // a remembered pick from another version is dropped; one asked for now is an error
       if (request.subtitleId !== undefined) throw e
@@ -425,6 +411,7 @@ export function createPlayback(deps: {
       locale,
     }
     const decision = decide(input)
+    const decisionMs = clock.now() - asked
     if (isHls(decision) && !src.duration)
       throw new AppError('conflict', 'That file’s length isn’t known, so it can’t be streamed.', {
         reason: 'no-duration',
@@ -464,17 +451,33 @@ export function createPlayback(deps: {
           }
         : null,
       start,
-      keyframes: () => (video ? keyframes(src.file, video.index) : Promise.resolve([])),
+      keyframes: async () => {
+        if (!video) return []
+        const from = clock.now()
+        const { times, read } = await deps.ahead.keyframes(src.file, video.index)
+        // kept from the read after the import, this takes no time and says nothing
+        if (read)
+          log.info('keyframes read', {
+            session: session.id,
+            keyframes: times.length,
+            ms: clock.now() - from,
+          })
+        return times
+      },
       audio: sound ? { channels: sound.channels, layout: sound.layout } : null,
       burnIn: burnInOf(src.file, info, decision),
     }
     const transcode = transcodes.open(session.id, source)
     if (isHls(decision)) transcode.prepare()
+    served.set(session.id, { startedAt: asked, playlistAt: null })
     log.info('play session started', {
       session: session.id,
       tmdbId,
       method: decision.method,
       profile: profile.id,
+      // where the player starts, in seconds: past 0 is a resume
+      start,
+      decisionMs,
     })
     // how each track would be sent on this device, so the player knows which start a new stream:
     // the decision's own, made with that track picked
@@ -591,7 +594,12 @@ export function createPlayback(deps: {
     const stream = streamOf(token)
     if (!stream) return null
     const { s, t } = stream
-    if (name === 'video') return mediaPlaylist(await t.segments())
+    if (name === 'video') {
+      const segments = await t.segments()
+      const timing = served.get(s.id)
+      if (timing && timing.playlistAt === null) timing.playlistAt = clock.now()
+      return mediaPlaylist(segments, { start: t.source.start })
+    }
     const d = s.decision
     const plan = d.video
     const source = t.source.video
@@ -617,6 +625,29 @@ export function createPlayback(deps: {
   async function segment(token: string, index: number): Promise<string[] | null> {
     const stream = streamOf(token)
     return stream ? stream.t.segment(index) : null
+  }
+
+  /**
+   * A segment was sent whole: the session's first is logged, with how long the player waited for
+   * it to be made, how long it took to send (the network's part) and when the playlist was ready.
+   */
+  function sent(
+    token: string,
+    index: number,
+    took: { waitMs: number; sendMs: number; bytes: number },
+  ) {
+    const s = sessions.verify(token)
+    const timing = s && served.get(s.id)
+    if (!s || !timing) return
+    served.delete(s.id)
+    const now = clock.now()
+    log.info('first segment served', {
+      session: s.id,
+      segment: index,
+      ...took,
+      playlistMs: timing.playlistAt === null ? null : timing.playlistAt - timing.startedAt,
+      sincePlayMs: now - timing.startedAt,
+    })
   }
 
   /** The stream's initialization section. */
@@ -646,12 +677,24 @@ export function createPlayback(deps: {
     return subtitlePlaylist(stream.t.source.duration, `${encodeURIComponent(trackId)}.vtt`)
   }
 
-  /** A text track as WebVTT, converted once a session: the file's path, or null. */
+  /**
+   * A text track as WebVTT: the file's path, or null. The film's own track is kept from the read
+   * after the import, since taking it out reads the whole film (`ahead.ts`); a sidecar, a small
+   * file of its own, is converted once a session.
+   */
   async function subtitle(token: string, trackId: string): Promise<string | null> {
     const s = live(token)
     const from = s && subtitleInput(s, trackId)
-    const t = s && transcodes.get(s.id)
-    return from && t ? t.subtitle(trackId, from.input, from.index) : null
+    if (!s || !from) return null
+    if (from.index !== null) {
+      const asked = clock.now()
+      const { path, made } = await deps.ahead.subtitle(s.file, from.index)
+      if (made)
+        log.info('subtitle converted', { session: s.id, track: trackId, ms: clock.now() - asked })
+      return path
+    }
+    const t = transcodes.get(s.id)
+    return t ? t.subtitle(trackId, from.input, from.index) : null
   }
 
   /** A version's previews for the scrubber; the manifest is null until they're made. */
@@ -689,7 +732,7 @@ export function createPlayback(deps: {
     open,
     /** Whether an address is away from home: the test that applies the remote ceiling. */
     away: (address: string) => !home.has(address),
-    hls: { playlist, segment, init, subtitleList },
+    hls: { playlist, segment, init, subtitleList, sent },
     subtitle,
     /** The live sessions, for Now playing (4.3) and the test page. */
     sessions: () => sessions.list(),

@@ -73,6 +73,7 @@ import {
   ffprobeBinary,
   type LibraryWatch,
   type Media,
+  trackIndex,
   unarAvailable,
   unarBinary,
   vetFiles,
@@ -87,6 +88,7 @@ import {
   type Personalization,
   type WidgetSource,
 } from '@highsea-tv/personalization'
+import { isTextSubtitle } from '@highsea-tv/stream/decision'
 import type { AccelPath } from '@highsea-tv/stream/hardware'
 import { createTranscodes } from '@highsea-tv/stream/hls'
 import { createSubtitles, type RunSync, type Subtitles } from '@highsea-tv/subtitles/movies'
@@ -101,6 +103,7 @@ import {
 import { createTorrentEngine, HASH_WORKER, type TorrentEngine } from '@highsea-tv/torrent'
 import { CommandFailed, createVpn, type Vpn } from '@highsea-tv/vpn'
 import { and, eq } from 'drizzle-orm'
+import { createAhead } from './ahead.ts'
 import { type Automation, createAutomation } from './automation.ts'
 import {
   appliedMigrations,
@@ -781,6 +784,22 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
     root: join(workDir(config), 'trickplay'),
     ffmpeg: ffmpegBinary(),
   })
+  // what a stream needs that takes a read of the whole file (phase 5's A1): each file's keyframes
+  // and its own text subtitles, read after the import, not at the first play
+  const ahead = createAhead({
+    db,
+    jobs,
+    clock,
+    logger,
+    root: join(workDir(config), 'webvtt'),
+    ffmpeg: ffmpegBinary(),
+    ffprobe: ffprobeBinary(),
+    textTracks: (fileId) =>
+      subtitles
+        .clientTracks(fileId)
+        .filter((t) => t.kind === 'embedded' && isTextSubtitle(t.format))
+        .flatMap((t) => trackIndex(fileId, t.id) ?? []),
+  })
   const movies = createMovies(
     {
       db,
@@ -797,6 +816,7 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
           // the subtitles' failure is logged by the import, and the previews are only queued
           afterImport: async (file) => {
             await trickplay.afterImport()
+            await ahead.afterImport()
             await subtitles.hooks.afterImport?.(file)
           },
         },
@@ -813,9 +833,11 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
   movies.jobs.schedule(clock.now())
   scheduleFileFacts({ db, jobs, clock })
   trickplay.start()
+  ahead.start()
 
   // HLS made on demand (4.1b, ADR 0051): one folder per play session in the data folder's
   // `transcodes/`, emptied on boot, since no session outlives the process
+  const playbackLog = logger.child('playback')
   const transcodes = createTranscodes({
     root: join(workDir(config), 'transcodes'),
     ffmpeg: ffmpegBinary(),
@@ -828,6 +850,8 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
     // on on the processor, and its check is marked failed
     hardware: () => hardware.current(),
     onHardwareFailure: (path, log) => hardware.failedPlaying(path, log),
+    // where a start's time went, with the sessions' own lines (System › Logs' `playback`)
+    timings: (message, data) => playbackLog.info(message, data),
   })
   const hardware = createHardware({
     db,
@@ -903,7 +927,7 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
     // personalization is made further down; it's only read once a film starts
     preferences: (userId, deviceId) => personalization.preferences.resolve(userId, deviceId).values,
     hardware: () => hardware.current(),
-    ffprobe: ffprobeBinary(),
+    ahead,
     subtitles: subtitles.clientTracks,
     trickplay,
     hooks: nowPlaying.hooks,

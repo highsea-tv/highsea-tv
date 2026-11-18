@@ -29,10 +29,15 @@
 //   tone maps where `toneMapOn` says. A run on a GPU that fails goes on on the processor from the
 //   first piece it hadn't made, for the rest of the session, and `onHardwareFailure` lets the
 //   runtime mark the path's check failed.
+// - **Timings** (phase 5, A1's finding of 2026-11-17): where a start's time goes, a few lines a
+//   play through `timings`: how long the segments took to work out, each ffmpeg's start with its
+//   position (so a resume, and a player that asks from the film's start first, are visible), its
+//   first segment being whole, and each subtitle's conversion.
 
 import { type ChildProcess, execFile, spawn as nodeSpawn } from 'node:child_process'
 import { existsSync } from 'node:fs'
-import { copyFile, mkdir, readdir, rm, stat } from 'node:fs/promises'
+import { copyFile, mkdir, readdir, rename, rm, stat } from 'node:fs/promises'
+import { setPriority } from 'node:os'
 import { join } from 'node:path'
 import { endWithProcess } from '@highsea-tv/core/children'
 import { unref } from '@highsea-tv/core/timers'
@@ -51,8 +56,16 @@ import {
   type RunInput,
   runArgs,
   subtitleArgs,
+  subtitlesArgs,
 } from './args.ts'
-import { gridSegments, keyframeSegments, pieceStarts, type Segment, segmentAt } from './playlist.ts'
+import {
+  gridSegments,
+  keyframeSegments,
+  pieceStarts,
+  SEGMENT_SECONDS,
+  type Segment,
+  segmentAt,
+} from './playlist.ts'
 
 /** How far a run makes segments past the furthest asked for, before it's paused. */
 export const AHEAD_SECONDS = 30
@@ -142,6 +155,11 @@ type Run = {
   speed: number | null
   /** The GPU path it runs on; null on the processor. */
   accel: Accel | null
+  /** When it was spawned, and the last piece of its first segment: for the timings. */
+  spawnedAt: number
+  firstEnd: number
+  /** Its first segment's timing line is written. */
+  timed: boolean
 }
 
 type Waiter = {
@@ -178,7 +196,11 @@ export type TranscodesOptions = {
   hardware?: () => Hardware
   /** A run on a GPU path failed, and went on on the processor. */
   onHardwareFailure?: (path: AccelPath, log: string[]) => void
+  /** Where a start's time went, a few lines a play; nothing when left out. */
+  timings?: Timings
 }
+
+export type Timings = (message: string, data: Record<string, unknown>) => void
 
 export type Hardware = {
   /** The path whose check passed and Settings › Playback allows; null for the processor. */
@@ -297,12 +319,23 @@ const signal = (child: ChildProcess, name: NodeJS.Signals) => {
   }
 }
 
-const exec = (command: string, args: string[], timeoutMs: number) =>
+/**
+ * A read made ahead of a play, in the background: at the lowest priority, as trickplay's is
+ * (`nice` 19; https://nodejs.org/api/os.html#ossetprioritypid-priority), and stopped by `signal`.
+ */
+export type Background = { low?: boolean; signal?: AbortSignal }
+
+const exec = (command: string, args: string[], timeoutMs: number, background: Background = {}) =>
   new Promise<string>((resolve, reject) => {
-    execFile(
+    const child = execFile(
       command,
       args,
-      { timeout: timeoutMs, maxBuffer: 256 * 1024 * 1024, windowsHide: true },
+      {
+        timeout: timeoutMs,
+        maxBuffer: 256 * 1024 * 1024,
+        windowsHide: true,
+        signal: background.signal,
+      },
       (error, stdout, stderr) => {
         if (error) {
           const lines = String(stderr).trim().split('\n').slice(-LOG_LINES)
@@ -310,11 +343,46 @@ const exec = (command: string, args: string[], timeoutMs: number) =>
         } else resolve(String(stdout))
       },
     )
+    if (background.low && child.pid)
+      try {
+        setPriority(child.pid, 19)
+      } catch {
+        // a platform without priorities still reads it
+      }
   })
 
-/** Reads a film's keyframes with ffprobe, without decoding (`keyframeArgs`). */
-export async function readKeyframes(ffprobe: string, input: string, index: number) {
-  return parseKeyframes(await exec(ffprobe, keyframeArgs(input, index), 15 * 60_000))
+/**
+ * Reads a film's keyframes with ffprobe, without decoding (`keyframeArgs`). It lists every packet
+ * of the picture, so it reads the whole file: seconds from an SSD, minutes for a large film on
+ * spinning disks. The runtime does it after the import, ahead of the first play.
+ */
+export async function readKeyframes(
+  ffprobe: string,
+  input: string,
+  index: number,
+  background?: Background,
+) {
+  return parseKeyframes(await exec(ffprobe, keyframeArgs(input, index), 60 * 60_000, background))
+}
+
+/**
+ * A film's text subtitles as WebVTT, all in one pass over the file (`subtitlesArgs`), each written
+ * beside its place and moved in when whole, so a file that's there is complete.
+ */
+export async function convertSubtitles(
+  ffmpeg: string,
+  input: string,
+  tracks: { index: number; output: string }[],
+  background?: Background,
+) {
+  if (!tracks.length) return
+  const parts = tracks.map((t) => ({ index: t.index, output: `${t.output}.part` }))
+  try {
+    await exec(ffmpeg, subtitlesArgs(input, parts), 60 * 60_000, background)
+    await Promise.all(tracks.map((t) => rename(`${t.output}.part`, t.output)))
+  } finally {
+    await Promise.all(parts.map((p) => rm(p.output, { force: true })))
+  }
 }
 
 type Context = {
@@ -335,6 +403,12 @@ type Context = {
 
 function createTranscode(id: string, source: HlsSource, ctx: Context) {
   const { options, now, spawn, ahead, far, idleMs, log, slots } = ctx
+  const timings: Timings = options.timings ?? (() => {})
+  const opened = now()
+  /** How long the segments took to work out: a direct stream's wait for its keyframes. */
+  let playlistMs: number | null = null
+  /** The ffmpeg runs started so far. */
+  let runs = 0
   // a session keeps the folder it started in, if Settings moves the cache meanwhile
   const dir = join(ctx.root, id)
   const copy = source.decision.video?.action !== 'transcode'
@@ -367,12 +441,15 @@ function createTranscode(id: string, source: HlsSource, ctx: Context) {
       await mkdir(dir, { recursive: true })
       if (copy && source.video) {
         const keyframes = await source.keyframes()
+        playlistMs = now() - opened
         return {
-          segments: keyframeSegments(keyframes, source.duration),
+          // shorter where this session starts, so its first frame waits for less (`playlist.ts`)
+          segments: keyframeSegments(keyframes, source.duration, SEGMENT_SECONDS, source.start),
           times: pieceStarts(keyframes),
         }
       }
       const segments = gridSegments(source.duration)
+      playlistMs = now() - opened
       return { segments, times: segments.map((s) => s.start) }
     })())
 
@@ -417,6 +494,17 @@ function createTranscode(id: string, source: HlsSource, ctx: Context) {
     const was = run.next
     while (has(run.next)) run.next++
     if (run.next > was) ctx.grew()
+    if (!run.timed && run.next >= run.firstEnd) {
+      run.timed = true
+      timings('first segment ready', {
+        session: id,
+        run: runs,
+        piece: run.first,
+        ffmpegMs: now() - run.spawnedAt,
+        playlistMs,
+        sinceOpenMs: now() - opened,
+      })
+    }
     const done = waiters.filter((w) => has(w.piece))
     waiters = waiters.filter((w) => !done.includes(w))
     for (const w of done) w.resolve()
@@ -542,8 +630,21 @@ function createTranscode(id: string, source: HlsSource, ctx: Context) {
       samples: [],
       speed: null,
       accel,
+      spawnedAt: now(),
+      firstEnd: s.last,
+      timed: false,
     }
     run = r
+    runs++
+    timings('ffmpeg started', {
+      session: id,
+      run: runs,
+      method: decision.method,
+      // where in the film it starts: past 0 on the first run is a resume
+      start: input.start,
+      piece: s.first,
+      sinceOpenMs: now() - opened,
+    })
     made = accel?.path ?? null
     failure = null
     child.stderr?.setEncoding('utf8')
@@ -693,8 +794,10 @@ function createTranscode(id: string, source: HlsSource, ctx: Context) {
     if (existing) return existing
     const out = join(dir, `sub-${key.replace(/[^\w-]/g, '_')}.vtt`)
     const made = (async () => {
+      const from = now()
       await mkdir(dir, { recursive: true })
       await exec(options.ffmpeg, subtitleArgs(input, index, out), 10 * 60_000)
+      timings('subtitle converted', { session: id, track: key, ms: now() - from })
       return out
     })()
     made.catch((e: TranscodeError) => {

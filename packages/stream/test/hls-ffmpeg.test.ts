@@ -185,19 +185,24 @@ describe.skipIf(!hasFfmpeg)('HLS with ffmpeg', () => {
   test('a direct stream: segments from keyframes, made when asked, on one timeline from any run', async () => {
     const t = transcodes.open('copy', source({}))
     const segments = await t.segments()
-    expect(segments.slice(0, 3)).toEqual([
-      { start: 0, duration: 7, first: 0, last: 4 },
-      { start: 7, duration: 6, first: 4, last: 7 },
+    // short where the session starts (2 s or the next keyframe after it), 6 s from 12 s on
+    expect(segments.slice(0, 7)).toEqual([
+      { start: 0, duration: 2, first: 0, last: 1 },
+      { start: 2, duration: 2, first: 1, last: 2 },
+      { start: 4, duration: 3, first: 2, last: 4 },
+      { start: 7, duration: 2, first: 4, last: 5 },
+      { start: 9, duration: 2, first: 5, last: 6 },
+      { start: 11, duration: 2, first: 6, last: 7 },
       { start: 13, duration: 6, first: 7, last: 10 },
     ])
-    const files = await t.segment(1)
-    expect(files.map((f) => f.split('/').at(-1))).toEqual(['4.m4s', '5.m4s', '6.m4s'])
+    const files = await t.segment(6)
+    expect(files.map((f) => f.split('/').at(-1))).toEqual(['7.m4s', '8.m4s', '9.m4s'])
     await t.init()
     const video = packets(t.dir, files).filter((p) => p.stream === 0)
-    expect(video[0]).toMatchObject({ pts: 7, key: true })
-    // Matroska keeps milliseconds, so 9 s is 8.999
-    expect(video.filter((p) => p.key).map((p) => Math.round(p.pts))).toEqual([7, 9, 11])
-    expect(video.at(-1)?.pts).toBeCloseTo(13 - 1 / 24, 3)
+    expect(video[0]).toMatchObject({ pts: 13, key: true })
+    // Matroska keeps milliseconds, so 15 s is 14.999
+    expect(video.filter((p) => p.key).map((p) => Math.round(p.pts))).toEqual([13, 15, 17])
+    expect(video.at(-1)?.pts).toBeCloseTo(19 - 1 / 24, 3)
 
     // the end: far past what the paused run made, so a run starts there
     const last = segments.length - 1
@@ -208,11 +213,22 @@ describe.skipIf(!hasFfmpeg)('HLS with ffmpeg', () => {
     expect(decodeTimes(tail[0] as string)[0]).toBe(37 * (videoScale as number))
 
     // the same piece from a run started elsewhere starts at the same time, from the same header
+    // (both runs start at the keyframe at 7 s: the sound's first samples follow a run's start)
+    await t.segment(3)
+    await t.segment(4)
     const before = decodeTimes(join(t.dir, '5.m4s'))
     const other = transcodes.open('copy-again', source({ start: 8 }))
-    const again = await other.segment(1)
+    // a resume at 8 s: a segment begins at the keyframe before it (7 s), short ones after
+    expect((await other.segments()).slice(0, 3)).toEqual([
+      { start: 0, duration: 7, first: 0, last: 4 },
+      { start: 7, duration: 2, first: 4, last: 5 },
+      { start: 9, duration: 2, first: 5, last: 6 },
+    ])
+    await other.segment(1)
+    const again = await other.segment(2)
     expect(other.state()?.first).toBe(4)
-    expect(decodeTimes(again[1] as string)).toEqual(before)
+    expect(again.map((f) => f.split('/').at(-1))).toEqual(['5.m4s'])
+    expect(decodeTimes(again[0] as string)).toEqual(before)
     await other.init()
     expect(readFileSync(join(other.dir, 'header.mp4'))).toEqual(
       readFileSync(join(t.dir, 'header.mp4')),

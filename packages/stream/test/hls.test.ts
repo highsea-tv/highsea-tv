@@ -27,6 +27,7 @@ import {
   segmentAt,
   subtitleArgs,
   subtitlePlaylist,
+  subtitlesArgs,
   transcodeCodecs,
 } from '../src/hls/index.ts'
 import { trickplayArgs, trickplayManifest } from '../src/trickplay/index.ts'
@@ -101,6 +102,44 @@ describe('segments', () => {
     contiguous(s, 27)
   })
 
+  test('where a session starts, a direct stream’s first segments are as short as 2 s', () => {
+    // a keyframe a second, as a disc's picture has
+    const keyframes = Array.from({ length: 40 }, (_, i) => i)
+    const lengths = (from?: number) =>
+      keyframeSegments(keyframes, 40, 6, from).map((s) => `${s.start}+${s.duration}`)
+    expect(lengths()).toEqual(['0+6', '6+6', '12+6', '18+6', '24+6', '30+6', '36+4'])
+    // from the beginning: 12 s of 2 s segments, then 6 s ones
+    expect(lengths(0).slice(0, 8)).toEqual([
+      '0+2',
+      '2+2',
+      '4+2',
+      '6+2',
+      '8+2',
+      '10+2',
+      '12+6',
+      '18+6',
+    ])
+    // a resume: a segment begins at the keyframe before it, and the short ones follow
+    expect(lengths(15.5)).toEqual([
+      '0+6',
+      '6+6',
+      '12+3',
+      '15+2',
+      '17+2',
+      '19+2',
+      '21+2',
+      '23+2',
+      '25+2',
+      '27+6',
+      '33+6',
+      '39+1',
+    ])
+    contiguous(keyframeSegments(keyframes, 40, 6, 15.5), 40)
+    // keyframes further apart than that can't be cut shorter: the same segments either way
+    const sparse = [0, 10.4, 20.8, 31.2]
+    expect(keyframeSegments(sparse, 40, 6, 12)).toEqual(keyframeSegments(sparse, 40))
+  })
+
   test('the segment holding a time', () => {
     const s = gridSegments(60)
     expect(segmentAt(s, 0)).toBe(0)
@@ -153,6 +192,22 @@ describe('playlists, by RFC 8216', () => {
     const text = mediaPlaylist(keyframeSegments([0, 10.427, 20.854, 31.6], 35))
     expect(checkMedia(text)).toBeCloseTo(35, 6)
     expect(text).toContain('#EXT-X-TARGETDURATION:11')
+  })
+
+  test('a resume’s media playlist says where to start, to the moment (§ 4.3.5.2)', () => {
+    const segments = gridSegments(7200)
+    const text = mediaPlaylist(segments, { start: 3604.25 })
+    expect(checkMedia(text)).toBeCloseTo(7200, 6)
+    const lines = text.split('\n')
+    expect(lines).toContain('#EXT-X-START:TIME-OFFSET=3604.250,PRECISE=YES')
+    // once, and before the segments
+    expect(lines.filter((l) => l.startsWith('#EXT-X-START')).length).toBe(1)
+    expect(lines.findIndex((l) => l.startsWith('#EXT-X-START'))).toBeLessThan(
+      lines.findIndex((l) => l.startsWith('#EXTINF')),
+    )
+    // from the beginning there's nothing to say
+    expect(mediaPlaylist(segments)).not.toContain('#EXT-X-START')
+    expect(mediaPlaylist(segments, { start: 0 })).not.toContain('#EXT-X-START')
   })
 
   test('the multivariant playlist: one variant, and the text subtitles as a group', () => {
@@ -431,6 +486,17 @@ describe('ffmpeg’s command lines', () => {
       ...['-map', '0:3', '-c:s', 'webvtt', '-f', 'webvtt', '/t/s/sub.vtt'],
     ])
     expect(subtitleArgs('/m/a.en.srt', null, '/t/s/sub.vtt')).toContain('0:s:0')
+    // a film's own tracks, read ahead of the first play: one pass over the file, an output each
+    expect(
+      subtitlesArgs('/m/a.mkv', [
+        { index: 2, output: '/d/webvtt/f1/9-2.vtt.part' },
+        { index: 3, output: '/d/webvtt/f1/9-3.vtt.part' },
+      ]),
+    ).toEqual([
+      ...['-hide_banner', '-nostdin', '-loglevel', 'error', '-y', '-i', '/m/a.mkv'],
+      ...['-map', '0:2', '-c:s', 'webvtt', '-f', 'webvtt', '/d/webvtt/f1/9-2.vtt.part'],
+      ...['-map', '0:3', '-c:s', 'webvtt', '-f', 'webvtt', '/d/webvtt/f1/9-3.vtt.part'],
+    ])
     expect(keyframeArgs('/m/a.mkv', 0)).toEqual([
       ...['-v', 'error', '-select_streams', '0'],
       ...['-show_entries', 'format=start_time:packet=pts_time,dts_time,flags'],
