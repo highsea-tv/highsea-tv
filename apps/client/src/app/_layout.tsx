@@ -41,6 +41,7 @@ import { useBrandFonts } from '../fonts'
 import { FrameStateContext, useFrameChannel } from '../frame-channel.ts'
 import { HOME_SERVER } from '../host'
 import { SaidProvider } from '../kit.tsx'
+import { APP_ORIENTATION, PLAYER_ORIENTATION } from '../orientation.ts'
 import { ErrorReports } from '../shell/reports.tsx'
 import { mock, transport } from '../transport.ts'
 
@@ -54,7 +55,7 @@ const FramedTheme = createContext<NativeTheme | undefined>(undefined)
 const PLAYER_OPTIONS = {
   presentation: 'fullScreenModal',
   animation: 'fade',
-  orientation: 'all',
+  orientation: PLAYER_ORIENTATION,
 } as const
 
 export default function Layout() {
@@ -229,6 +230,8 @@ function Nav({ phase }: { phase: Phase }) {
       screenOptions={{
         headerShown: false,
         animation: tv ? 'fade' : undefined,
+        // upright everywhere but the player (../orientation.ts)
+        orientation: APP_ORIENTATION,
         contentStyle: { backgroundColor: theme.colors.bg },
       }}
     >
@@ -237,7 +240,7 @@ function Nav({ phase }: { phase: Phase }) {
       </Stack.Protected>
       <Stack.Protected guard={phase === 'in'} redirectTo={start}>
         <Stack.Screen name="(in)" />
-        {/* the player turns with the phone, over everything, and fades in (player.md › Phone) */}
+        {/* the player turns with the phone, over everything, and fades in (player.md › Mobile) */}
         <Stack.Screen name="play/[id]/index" options={PLAYER_OPTIONS} />
         <Stack.Screen name="play/[id]/start" options={PLAYER_OPTIONS} />
         <Stack.Screen name="play/episode/[id]/index" options={PLAYER_OPTIONS} />

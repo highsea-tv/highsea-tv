@@ -15,6 +15,7 @@ import { type WebHost, WebHostProvider } from '@highsea-tv/native/web-host'
 import { ThemeProvider, tokens, useFormFactor } from '@highsea-tv/ui'
 import { type ReactNode, useEffect, useMemo, useState } from 'react'
 import { Platform } from 'react-native'
+import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { FilmMissing } from '../detail/parts.tsx'
 import { pauseMusic } from '../music-player/store.ts'
 import { useReportFailedPlay } from '../shell/reports.tsx'
@@ -67,12 +68,19 @@ export function PlayerScreen({
 }) {
   // a film starting pauses the music, as the prototype's player did (B3)
   useEffect(() => pauseMusic(), [])
+  // the player is a full-screen modal that turns while the screens under it stay upright, so it
+  // measures its own safe area: "You may need to add it in other places like the root of modals
+  // and routes when using react-native-screens"
+  // (https://appandflow.github.io/react-native-safe-area-context/api/safe-area-provider); the
+  // app's provider would keep the upright insets (HT-58)
   return (
-    <ThemeProvider theme={tokens.themes.default}>
-      <MockHost>
-        {/* a new film is a new player: Next up moves from one to the next */}
-        <Player key={`${type}:${id}`} id={Number(id)} fromStart={fromStart} type={type} />
-      </MockHost>
-    </ThemeProvider>
+    <SafeAreaProvider>
+      <ThemeProvider theme={tokens.themes.default}>
+        <MockHost>
+          {/* a new film is a new player: Next up moves from one to the next */}
+          <Player key={`${type}:${id}`} id={Number(id)} fromStart={fromStart} type={type} />
+        </MockHost>
+      </ThemeProvider>
+    </SafeAreaProvider>
   )
 }

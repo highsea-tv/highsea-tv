@@ -289,6 +289,60 @@ describe('the player on the phone', () => {
     await playing({}, `/play/${FILM}/start`)
     expect(player().playing).toBe(true)
   })
+
+  test('Now Playing: the title, its year, and the poster as a file the app loaded with its sign-in', async () => {
+    // the copy of expo-image @highsea-tv/native resolves (Bun's isolated store)
+    const { Image } = require(
+      require.resolve('expo-image', {
+        paths: [require('node:path').resolve(__dirname, '../../../packages/native')],
+      }),
+    ) as typeof import('expo-image')
+    const disk = new Set<string>()
+    const prefetch = jest.spyOn(Image, 'prefetch').mockImplementation(async (uri) => {
+      disk.add(String(uri))
+      return true
+    })
+    const path = jest
+      .spyOn(Image, 'getCachePathAsync')
+      .mockImplementation(async (key) => (disk.has(key) ? '/Caches/poster.jpg' : null))
+    try {
+      await playing()
+      const source = (
+        player() as unknown as {
+          source: { metadata: Record<string, string> }
+        }
+      ).source
+      expect(source.metadata).toEqual({
+        title: 'Tears of Steel',
+        artist: expect.stringMatching(/^\d{4}$/),
+        artwork: 'file:///Caches/poster.jpg',
+      })
+      // loaded into expo-image's disk cache, as the item page's poster is (the mock's posters are
+      // data URIs, so the sign-in's header is now-playing.jest.tsx's to show)
+      expect(prefetch).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({ cachePolicy: 'memory-disk' }),
+      )
+    } finally {
+      prefetch.mockRestore()
+      path.mockRestore()
+    }
+  })
+
+  test('Audio and subtitles turns with the phone, as the player does', async () => {
+    await playing()
+    await fireEvent.press(screen.getByRole('button', { name: 'Audio and subtitles' }))
+    await flush()
+    const sheet = screen.getByRole('header', { name: 'Audio and subtitles' })
+    type Node = { props: Record<string, unknown>; parent: Node | null }
+    let modal: Node | null = sheet as unknown as Node
+    while (modal && !('supportedOrientations' in modal.props)) modal = modal.parent
+    expect(modal?.props.supportedOrientations).toEqual([
+      'portrait',
+      'landscape-left',
+      'landscape-right',
+    ])
+  })
 })
 
 describe('the player with a pointer', () => {

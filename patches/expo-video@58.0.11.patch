@@ -1,3 +1,18 @@
+diff --git a/ios/NowPlayingManager.swift b/ios/NowPlayingManager.swift
+index a8f92a5f4599b8f8a348c6d104c77965afea0892..5d90359f3767bfe7bfe16d6179d9ea65aa6a8174 100644
+--- a/ios/NowPlayingManager.swift
++++ b/ios/NowPlayingManager.swift
+@@ -283,7 +283,9 @@ private func fetchArtwork(url: URL, completion: @escaping (MPMediaItemArtwork?)
+       return
+     }
+ 
+-    guard let data, response is HTTPURLResponse else {
++    // highsea: a file URL answers with a plain URLResponse, not an HTTPURLResponse, and is how the
++    // app hands over a poster it loaded with its own signed-in request (no token in the URL)
++    guard let data, response is HTTPURLResponse || url.isFileURL else {
+       log.warn("[expo-video] Couldn't display the artwork: the response was empty")
+       completion(nil)
+       return
 diff --git a/ios/VideoView.swift b/ios/VideoView.swift
 index 152c74e72c65a447e01e468b137ea8d193771faf..57f571c3f9bfa464ad1c27f1c20b9a80ca27e4f8 100644
 --- a/ios/VideoView.swift

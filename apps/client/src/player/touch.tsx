@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The player on touch (player.md › Phone; the prototype's mobile/player.tsx): touch's composition,
-// since a tap rather than a pointer shows the controls. It turns with the phone. A tap shows or hides the controls; Back, the title, AirPlay, picture in
-// picture and Audio and subtitles sit at the top, Back 10, Play and Forward 10 in the middle, the
+// since a tap rather than a pointer shows the controls. It turns with the phone (../orientation.ts),
+// its sheet with it, and keeps clear of the notch or Dynamic Island and the home indicator by the
+// safe area's insets on every side. A tap shows or hides the controls; Back, the title, AirPlay,
+// picture in picture and Audio and subtitles sit at the top, Back 10, Play and Forward 10 in the middle, the
 // times and the scrubber at the bottom. AirPlay is iOS's own picker (./picture.tsx); while the film
 // plays on another screen, the controls stay up over the dimmed picture and say so. Audio and
 // subtitles is a sheet.
@@ -257,7 +259,7 @@ export function TouchPlayer({
           }}
         />
       ) : null}
-      <Sheet open={panel} onClose={() => setPanel(false)} title={t('tracks')}>
+      <Sheet open={panel} onClose={() => setPanel(false)} title={t('tracks')} turns>
         <TrackLists p={p} />
       </Sheet>
     </View>
