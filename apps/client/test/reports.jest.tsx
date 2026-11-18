@@ -101,7 +101,7 @@ describe('the shell’s error boundary', () => {
     })
     expect(typeof report?.version).toBe('string')
     expect(typeof report?.device).toBe('string')
-    expect((report?.error as { componentStack?: string }).componentStack).toContain('Broken')
+    expect(report?.error).toMatchObject({ componentStack: expect.stringContaining('Broken') })
     // the app, its version, the device, the screen and the error: nothing about the person
     expect(Object.keys(report ?? {}).sort()).toEqual([
       'app',

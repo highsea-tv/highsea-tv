@@ -118,6 +118,8 @@ const USER_ROUTES = [
   'shows.show',
   'shows.watched',
   'system.events',
+  // an app's own error report, to its own server (ADR 0066)
+  'system.sendClientReport',
   'system.server',
 ]
 

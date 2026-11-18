@@ -160,6 +160,13 @@ The order is films, then shows, then music: films are already built and only nee
   - **Published:** the tag `v0.4.2` on `3d87965`; the GitHub release `v0.4.2` (Latest) with `highsea-0.4.2-0001.spk`, the desktop installers, `latest.json` and `SHA256SUMS`; the image `ghcr.io/highsea-tv/highsea:0.4.2`, with `latest` at the same digest (`sha256:0765e13a5c0bad0d4073541802c2bc611ad3a28ba4163722170238e7ac9b8af6`).
   - **On the NAS:** `packages.highsea.tv` offers `0.4.2-0001`, and the owner updated highsea through Package Center. Whether the update asked for the shared folder again (HT-31's choice on an update): not yet reported.
   - **Not built:** updating highsea from the admin stays out for now, on the owner's word of 2026-11-17. [ADR 0057](../adr/0057-installing-without-configuration.md) already records why: no Docker socket and no self-updater, so updates stay the owner's, through Package Center, Docker or a pinned tag.
+- **2026-11-17, A2a, client error reports built (HT-45):** the owner approved starting them on 2026-11-17. ADR 0066 has the decision.
+  - **The route:** `POST /api/v1/system/client-reports`, for anyone signed in, with the app, its version, the device, the screen and the error; the server adds the user id and nothing else about the person. A body over 64 KB is refused unread, each field has its own length, and the newest 200 are kept in `<config>/client-reports/`. Staff list and download them.
+  - **The apps** (the shared shell, so the phone, the TV, the web and the desktop app): an error boundary around the signed-in shell reports a screen that throws and draws "Something went wrong" with **Go home**; a browser also reports the page's `error` and `unhandledrejection` events; a play that fails reports the title, the profile the app named and the server's decision, and the server adds the device's profile. Each failure is sent once, ten a run at most, and a report that can't be sent is dropped.
+  - **The admin:** System › Logs lists them in **Reports from the apps**, below Crash reports and drawn the same; **Download logs** ends with them, a line each.
+  - **Judgement calls:** reports are kept only while General › Diagnostics' **Write crash reports** is on, the owner's one switch for reports (ADR 0047), so the owner turns it on once on the NAS; the reports get a group of their own in Logs, in the crash reports' pattern, rather than sharing their list; the routes and schemas are in `packages/api-contract/src/system.ts` beside the crash reports', and the store is `packages/runtime/src/client-reports.ts`, not the files the Touches line guessed; on the phone and the TV an error outside React's render isn't reported (React Native documents no public way to hear of one).
+  - **Tests:** the route (who may send, the size limit, what's kept, a failed play's profile, Download logs), the store's limit, the admin's group, the client's boundary, a refused report and a failed play (Jest), and the end-to-end run's step 10, which throws in the web app and finds the report in the admin and the download.
+  - **Not built here:** TestFlight (deferred) and the remote-access guide (the owner's changes of 2026-11-17, below).
 
 ## Running highsea on the NAS (A1)
 
@@ -184,6 +191,7 @@ The order is films, then shows, then music: films are already built and only nee
 
 ## Watched everywhere, and the loop (A2a)
 
+- **Changed on 2026-11-17** ([the owner's changes](#the-owners-changes) 2 and 3): TestFlight is deferred and Tailscale is dropped, so the lines on them below stand as scoped, not as what's built.
 - **Every client against the NAS:** the web at `/web`, the desktop app (from the release), the iPhone and the Apple TV, at home by discovery and away through Tailscale on the NAS (answer 4; its package installed by hand from Tailscale's own server, as [Tailscale: Synology](https://tailscale.com/kb/1131/synology) says, with the boot task it documents for DSM 7).
 - **The native apps on the owner's devices:** through TestFlight, the owner joining the Apple Developer Program (answer 6): builds last 90 days ("You can test a build for up to 90 days") and TestFlight covers tvOS ([Apple: TestFlight overview](https://developer.apple.com/help/app-store-connect/test-a-beta-version/testflight-overview)). The release workflow gains a job that uploads the iPhone and Apple TV builds to App Store Connect from the `release` environment, waiting for approval as the other publishing jobs do (ADR 0050, ADR 0059's dated section).
 - **Client error reports** (new ADR 0066):
@@ -374,6 +382,11 @@ Built only when the owner decides to move shows from Sonarr to highsea ([answer 
 On 2026-11-15, reviewing this scope, the owner made 1 change:
 
 1. **Profiles are built in A2** (question 14), so each person's Continue watching is their own from the start on the Apple TV: [Profiles (A2b)](#profiles-a2b), with ADR 0068, and A2 built in two batches. Questions 15 to 17 follow from it, and the owner answered them the same day.
+
+On 2026-11-17, with A1 in real use, the owner made 2 more:
+
+2. **TestFlight is deferred** (answer 6). The owner hasn't joined the Apple Developer Program, having no funds for it now. Until they do, the native apps are tested as before A2: signed by the owner's personal team on their iPhone, where a build stops opening after 7 days, and on the simulators. A2a's TestFlight upload, its release job and the guides' lines on getting the apps wait for it.
+3. **Tailscale is dropped** (answer 4), and highsea is reached in two supported ways only: on the local network, or at an address the owner controls (their own domain or subdomain, through a reverse proxy or highsea's own certificate, [ADR 0026](../adr/0026-network-tls.md)'s section of 2026-11-17). No VPN, tunnel or relay is documented, tested or assumed; they still work, since highsea is an ordinary web server, but aren't supported. The reasons: no third party in the path, a simpler install and guides, and no assumptions about an owner's network. Built-in ACME is the natural follow-up, and the one limit to state in the guide later is carrier-grade NAT, whose owners need a tunnel of their own choosing. The owner's own test address will be `watch.highsea.tv` through DSM's reverse proxy. The remote-access guide isn't written yet.
 
 ## The owner's answers
 
