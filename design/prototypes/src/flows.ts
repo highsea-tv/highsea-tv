@@ -325,6 +325,23 @@ export const flows: Flow[] = [
     },
   ),
   admin(
+    'A3n',
+    'Widgets, next round',
+    '/widgets-next',
+    3,
+    'Drafts for review (HT-47): Recently added three ways, the network’s whole activity, the date and time, the weather, and every widget at every size.',
+    {
+      fidelity: 'reference',
+      ready: true,
+      spec: 'docs/product/dashboard.md',
+      hints: [
+        'Columns and Rows set the size of every widget on the page; each stays within its own range.',
+        'In the Network draft the legend is the filter: All, or one series on its own.',
+        'Every widget at one size, with Data set to Empty or Error, is where the cut-off buttons were.',
+      ],
+    },
+  ),
+  admin(
     'A17',
     'Manual import',
     '/activity/import',

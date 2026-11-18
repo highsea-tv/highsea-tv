@@ -337,4 +337,17 @@ describe('a widget', () => {
     expect(frame.style.gridColumn).toContain('span')
     expect((frame.parentElement as HTMLElement).style.display).toBe('grid')
   })
+
+  test('a widget with rows scrolls what its body can’t hold, up and down only (HT-47)', () => {
+    const { container } = render(
+      <WidgetGrid rows>
+        <WidgetFrame title="Indexers" rows={2}>
+          {null}
+        </WidgetFrame>
+      </WidgetGrid>,
+    )
+    const body = container.querySelector('[data-widget-body]') as HTMLElement
+    expect(body.style.overflowY).toBe('auto')
+    expect(body.style.overflowX).toBe('hidden')
+  })
 })

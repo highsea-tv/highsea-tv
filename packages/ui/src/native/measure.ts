@@ -45,10 +45,19 @@ export function useClip(items: string) {
       }
       setHidden(n)
     }
-    check()
+    // The rows are watched too (HT-47): one that grows after the box was checked (posters whose
+    // width follows the widget's, a title that wraps) moves the rows under it past the edge
+    // without the box resizing or a row being added. Hiding a row doesn't resize it, so this
+    // can't loop, and observing a row twice is one observation
+    // (https://drafts.csswg.org/resize-observer/#dom-resizeobserver-observe).
     const resize = new ResizeObserver(check)
+    const watch = () => {
+      for (const item of rowsOf(items)) resize.observe(item)
+      check()
+    }
+    watch()
     resize.observe(box)
-    const rows = new MutationObserver(check)
+    const rows = new MutationObserver(watch)
     rows.observe(box, { childList: true, subtree: true })
     return () => {
       resize.disconnect()
@@ -70,4 +79,19 @@ export function useWidth(fallback = 1200) {
     if (w > 0) setWidth(w)
   }
   return { onLayout, width }
+}
+
+/**
+ * A View's width and height, for layouts that fit both (a widget's posters are as wide as leaves a
+ * whole row in its height). As `useWidth`: pass `onLayout` to the View. The height is 0 until
+ * measured, and in tests.
+ */
+export function useSize(fallback = 1200) {
+  const [size, setSize] = useState({ width: fallback, height: 0 })
+  const onLayout = (e: LayoutChangeEvent) => {
+    const { width, height } = e.nativeEvent.layout
+    if (width > 0)
+      setSize((was) => (was.width === width && was.height === height ? was : { width, height }))
+  }
+  return { onLayout, ...size }
 }

@@ -33,6 +33,7 @@
     "./transport": "./src/transport.ts",
     "./types": "./src/types.ts",
     "./vpn": "./src/vpn.ts",
+    "./widget-drafts": "./src/widget-drafts.ts",
     "./widgets": "./src/widgets.ts"
   },
   "scripts": {

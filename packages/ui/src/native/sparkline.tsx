@@ -9,7 +9,22 @@ import { View } from 'react-native'
 import Svg, { G, Path } from 'react-native-svg'
 import { useTheme } from './theme.tsx'
 
-export type SparkSeries = { values: number[]; color: ColorRole; fill?: boolean }
+export type SparkSeries = {
+  values: number[]
+  color: ColorRole
+  fill?: boolean
+  /**
+   * A broken line, so a series is told from another without its colour (color.md › Data
+   * visualisation dashes the secondary series): dashes or dots, cut from the stroke's own width.
+   */
+  dash?: 'dashed' | 'dotted'
+}
+
+/** A dash is four strokes long with three between; a dot is a round cap with three between. */
+const DASH = {
+  dashed: [sparkline.stroke * 4, sparkline.stroke * 3],
+  dotted: [0.01, sparkline.stroke * 3],
+} as const
 
 const W = 100
 const H = 32
@@ -40,7 +55,7 @@ export function Sparkline({
     >
       <Svg width="100%" height="100%" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none">
         {series.map((s) => (
-          <G key={`${s.color}-${s.fill ? 1 : 0}`}>
+          <G key={`${s.color}-${s.fill ? 1 : 0}-${s.dash ?? 'solid'}`}>
             {s.fill && s.values.length > 1 ? (
               <Path
                 d={`${path(s.values)} L${W} ${H} L0 ${H} Z`}
@@ -55,6 +70,8 @@ export function Sparkline({
               strokeWidth={sparkline.stroke}
               vectorEffect="non-scaling-stroke"
               strokeLinejoin="round"
+              strokeLinecap={s.dash === 'dotted' ? 'round' : undefined}
+              strokeDasharray={s.dash ? [...DASH[s.dash]] : undefined}
             />
           </G>
         ))}
