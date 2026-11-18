@@ -176,6 +176,20 @@ export async function seed(
   const accept = (link: string, password: string) =>
     api('POST', `/links/${new URL(link).pathname.split('/').pop()}/accept`, { password })
   await accept(joined.link, 'theo theo theo')
+  // Theo's account watches with a second profile, Kit, behind a PIN (ADR 0068), so Who's watching
+  // and Switch profile have someone to switch to
+  const theo = await api<{ token: string }>('POST', '/auth/sign-in', {
+    username: 'theo',
+    password: 'theo theo theo',
+    device,
+  })
+  const kit = await api<{ id: string }>(
+    'POST',
+    '/me/profiles',
+    { name: 'Kit', tone: 'success' },
+    theo.token,
+  )
+  await api('PATCH', `/me/profiles/${kit.id}`, { pin: '2580' }, theo.token)
   const admin = await api<{ link: string }>(
     'POST',
     '/users/invites',

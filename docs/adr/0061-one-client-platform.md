@@ -280,3 +280,7 @@ Part E ([one-client-platform-e.md](../plans/one-client-platform-e.md)) finishes 
 - **E3, the docs and every check:** the design language, the specs, the ADRs and the project's docs describe the platform as built, each client spec naming its screen in `apps/client/src/app/` or `packages/admin/src/`. Every check ran on the branch: the tests, the sweeps (the prototypes', the server's, the player's and the guides'), the simulators, the image with its end-to-end run, and the comparison sheet over every admin screen.
 
 So every client (the web at `/web`, the desktop app, the phone and the TV), its prototype, the admin and the guides' drawn parts draw from one React Native library in one place. Tailwind is left only in the guides' frame and the prototypes' own chrome. What stays for later: Android TV and the stores (4.5c, where 0053's phone and TV part and 0059 become Accepted), and the shows', music's and the admin's Shows screens on a real server, which their phases route. The status stays Proposed until the owner signs off part E.
+
+## 2026-11-18: profiles served (Phase 5's A2b)
+
+The `profiles` group is no longer a draft: the server answers it (ADR 0068) and public info's `sources` lists `profiles`, so the clients draw Who's watching, Switch profile and the TV's profile screens from the server as they did from the mock. One difference from the mock: the profile watching now is each device's, so `current` differs between an account's apps; the mock keeps one per account. Shows, series, music and playlists stay drafts.

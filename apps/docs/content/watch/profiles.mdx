@@ -1,0 +1,49 @@
+---
+title: Profiles
+description: The people who watch with one account, each with their own Continue watching, Watched marks and Home, chosen on each device.
+---
+
+{/* SPDX-License-Identifier: AGPL-3.0-only */}
+{/*
+  Sources:
+  - The apps: apps/client/src/profiles/ (who.tsx, tv.tsx, tv-new.tsx, tv-settings.tsx and
+    messages.ts) and packages/client/src/profiles/index.ts.
+  - The server: packages/auth/src/profiles.ts (the limit, PINs and their rest), the watch state in
+    packages/media/src/shared/watch.ts, and Now playing in packages/runtime/src/now-playing.ts.
+*/}
+
+Written for highsea 0.4.2.
+
+One account can have up to six profiles, so a household that shares an account doesn't share one **Continue watching**. Each profile keeps its own place in every film, its own **Watched** marks, its own **Next up**, the player's picks for audio and subtitles, and its own order of rows on **Home**. A smart collection that looks at what's been watched answers for the profile watching.
+
+Every account starts with its own profile, named as the account is. It can be renamed but not deleted. The other profiles, their names, colours and PINs are the account's, so every app signed in to it lists the same ones.
+
+## Each device watches as its own profile
+
+Choosing a profile changes only the app you chose it on. The Apple TV in the living room can watch as one profile while a phone on the same account watches as another, and each keeps its own place. A newly signed-in app starts as the account's own profile.
+
+Apps and scripts using an API key, and requests let in by a forward-auth proxy, always watch as the account's own profile.
+
+## Switching profile
+
+- **In a browser and the desktop app:** your initial's menu has **Switch profile** when the account has more than one profile. It opens **Who's watching?**, with each profile's circle, a lock on any with a PIN, and **Watching now** under the current one.
+- **On the iPhone:** **You › Switch profile** opens the same list as a sheet.
+- **On the Apple TV:** **Who's watching?** comes up when highsea opens, if **Settings › Profiles › Ask who's watching when highsea opens** is on. It's a setting of that TV only.
+
+Choosing a profile takes you back to **Home**, as that profile.
+
+## Adding, changing and deleting
+
+On the Apple TV, **Who's watching?** has **Add a profile**: give it a **Name** and a **Colour**, then **Add profile**. **Settings › Profiles** lists the account's profiles; choose one to rename it, set or change its PIN, or **Delete profile**. Deleting a profile deletes its watch history and Home with it, on every device; any app that was watching as it goes back to the account's own profile.
+
+## PINs
+
+A PIN is four digits, asked for before anyone watches as that profile, on every device. The profile watching now isn't asked again. A wrong one says **That isn't {name}'s PIN. Try again.**; after five wrong in a row, choosing that profile rests for a minute (**Too many tries. Try again in a minute.**) on every device.
+
+The server keeps only a hash of the PIN, never the PIN itself, so nobody can read it back, the Owner included. Forgot it? Turn it off in **Settings › Profiles** on the TV: anyone signed in to the account can. A PIN keeps a profile's history to its person; it doesn't stop someone who has the account's password.
+
+## What the Owner sees
+
+**Now playing** in the admin names the profile beside the account, as in **Ines · Theo**, when they differ, and so does its history and the **Playback started** notification. **Settings › Users and devices › People** shows how many profiles an account has, after its username, when it has more than its own. The admin's audit log records a profile added or deleted and a PIN set or turned off.
+
+Every profile sees the whole of the account's libraries; profiles for children with their own ratings limits come later.
