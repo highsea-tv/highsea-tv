@@ -9,9 +9,13 @@
 #   1. The event is a pull request from this repository's `next` into `main`. A fork's branch
 #      called next doesn't count: the head repository must be this one.
 #   2. Its head commit is next's commit now (GET /repos/{owner}/{repo}/git/ref/heads/next).
-#   3. main's commit is an ancestor of it (GET /repos/{owner}/{repo}/compare/{base}...{head} says
-#      `ahead` or `identical`), so the pull request's merge commit has exactly next's tree: the
-#      same code, and the same workflow files, as the push run built.
+#   3. The pull request's merge commit, which the run tests (MERGE_SHA, `github.sha`: "the last
+#      merge commit on the GITHUB_REF branch", refs/pull/N/merge,
+#      https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#pull_request),
+#      has exactly the tree of next's commit (GET /repos/{owner}/{repo}/git/commits/{sha}, `tree`):
+#      the same files, the workflow files among them, as the push run built. main keeps a merge
+#      commit of its own for each merge of next, so main is never next's ancestor; once main's
+#      merges hold nothing next lacks, merging next into it again gives next's tree.
 #   4. The push run is this workflow file's (GET /repos/{owner}/{repo}/actions/workflows/{file}/runs),
 #      on next, from this repository, for exactly that SHA. A push run takes its workflow file
 #      from the commit it was pushed with
@@ -24,14 +28,14 @@
 # While a push run for that SHA is still queued or in progress, it waits for it (up to
 # WAIT_MINUTES), since next's run usually started first and finishes before a fresh build would.
 # The REST endpoints: https://docs.github.com/en/rest/actions/workflow-runs,
-# https://docs.github.com/en/rest/actions/workflow-jobs, https://docs.github.com/en/rest/commits/commits#compare-two-commits,
+# https://docs.github.com/en/rest/actions/workflow-jobs, https://docs.github.com/en/rest/git/commits#get-a-commit-object,
 # https://docs.github.com/en/rest/git/refs#get-a-reference. The job needs `actions: read` for the
 # first two and `contents: read` for the others.
 #
 #   bash .github/scripts/reuse-next.sh <workflow file> <job's check name> [minutes to wait]
 #
 # e.g. `reuse-next.sh ci.yml "image (linux/amd64, ubuntu-24.04)" 15`. The rest comes from the
-# environment: REPO, EVENT, BASE_REF, HEAD_REF, HEAD_REPO, BASE_SHA, HEAD_SHA, GH_TOKEN for `gh`,
+# environment: REPO, EVENT, BASE_REF, HEAD_REF, HEAD_REPO, MERGE_SHA, HEAD_SHA, GH_TOKEN for `gh`,
 # and POLL_SECONDS (default 30).
 set -uo pipefail
 
@@ -51,17 +55,16 @@ build() {
 [ "${EVENT:-}" = pull_request ] || build "not a pull request"
 [ "${BASE_REF:-}" = main ] && [ "${HEAD_REF:-}" = next ] || build "not the next → main pull request"
 [ "${HEAD_REPO:-}" = "${REPO:-}" ] || build "the head branch is in another repository"
-[ -n "${HEAD_SHA:-}" ] && [ -n "${BASE_SHA:-}" ] && [ -n "${WORKFLOW:-}" ] && [ -n "${JOB:-}" ] \
+[ -n "${HEAD_SHA:-}" ] && [ -n "${MERGE_SHA:-}" ] && [ -n "${WORKFLOW:-}" ] && [ -n "${JOB:-}" ] \
   || build "an input is missing"
 
 next_sha=$(gh api "repos/$REPO/git/ref/heads/next" --jq '.object.sha') || build "next's commit couldn't be read"
 [ "$next_sha" = "$HEAD_SHA" ] || build "the pull request's head ($HEAD_SHA) isn't next's commit ($next_sha)"
 
-status=$(gh api "repos/$REPO/compare/$BASE_SHA...$HEAD_SHA" --jq '.status') || build "main and next couldn't be compared"
-case "$status" in
-  ahead | identical) ;;
-  *) build "main has commits next doesn't ($status), so the merge isn't next's tree" ;;
-esac
+merge_tree=$(gh api "repos/$REPO/git/commits/$MERGE_SHA" --jq '.tree.sha') || build "the merge commit couldn't be read"
+next_tree=$(gh api "repos/$REPO/git/commits/$HEAD_SHA" --jq '.tree.sha') || build "next's commit couldn't be read"
+[ -n "$merge_tree" ] && [ "$merge_tree" = "$next_tree" ] \
+  || build "the merge into main ($merge_tree) isn't next's tree ($next_tree): main has changes next lacks"
 
 # The push runs of this workflow file on next for exactly this SHA, newest first.
 runs() {
@@ -99,6 +102,6 @@ echo "::notice::$JOB passed on next for this commit ($url), so it isn't built ag
 {
   echo "### $JOB: reused from next"
   echo
-  echo "Passed on next for $HEAD_SHA in $url; main is an ancestor, so this merge is the same tree."
+  echo "Passed on next for $HEAD_SHA in $url; this merge into main has the same tree, $next_tree."
 } >> "$summary"
 echo "reused=true" >> "$out"

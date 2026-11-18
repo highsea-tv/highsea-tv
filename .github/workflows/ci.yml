@@ -120,7 +120,7 @@ jobs:
             echo "::notice::Only the internal docs changed, so the checks are skipped"
           fi
 
-  # Lint, types, the platform under Node, the licences and the dependency check: about two minutes
+  # Lint, types, the licences and the dependency check: about two minutes
   # together, so one job rather than one runner's setup each.
   lint:
     # The fast tier's condition. Skipped only when `changes` says the pull request touches nothing
@@ -158,8 +158,7 @@ jobs:
         run: bun run lint
       - name: Types
         run: bun run typecheck
-      - name: The platform under Node (better-sqlite3, workers, API)
-        run: bun run smoke
+      # the platform under Node runs in the first Bun shard, which has ffmpeg for its subtitle sync
       - name: License audit
         run: bun run licenses
       # cargo-audit for the desktop app's crates (ADR 0058), as RustSec's own prebuilt binary
@@ -281,6 +280,12 @@ jobs:
           bun test --isolate --shard=${{ matrix.shard }}/${{ matrix.of }} \
             --timings="$RUNNER_TEMP/shards/bun-${{ matrix.shard }}.json" \
             --timings=scripts/test-timings.json --update-timings
+      # The platform under Node: better-sqlite3, workers, the API and the subtitle sync, whose
+      # ffmpeg reads a clip, so it runs here beside ffmpeg, in the shard that finished first
+      # (128 s of the slowest 214 s, 2026-11-17)
+      - name: The platform under Node (better-sqlite3, workers, API)
+        if: matrix.runner == 'bun' && matrix.shard == 1
+        run: bun run smoke
       # the same as `bun run test`'s second half, with `--ci` so a missing snapshot fails rather
       # than being written (https://jestjs.io/docs/cli#--ci)
       - name: Tests (Jest)
@@ -408,7 +413,7 @@ jobs:
           BASE_REF: ${{ github.base_ref }}
           HEAD_REF: ${{ github.head_ref }}
           HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          MERGE_SHA: ${{ github.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
       - if: &build steps.reuse.outputs.reused != 'true'
         uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0

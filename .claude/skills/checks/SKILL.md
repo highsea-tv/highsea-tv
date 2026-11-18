@@ -81,8 +81,8 @@ A task's worker runs it before `herdr-task ready`, so a finished worktree keeps 
 
 CI is the full gate. It runs two tiers ([ADR 0062](../../../docs/adr/0062-next-branch-and-ci-by-branch.md)):
 
-- **Fast:** `ci.yml`'s `check` (lint, types, the Bun tests, smoke, licences, audit, the client's web and desktop bundles, the admin's and the docs' builds) on every pull request that changes more than the internal docs, and every push to `next` or `main`, and `catalog.yml` when the catalog changes.
-- **Heavy:** `ci.yml`'s `playback` (`playback.ts`), `leak` and `image`, `e2e.yml`, `desktop.yml` (`build`) and `native.yml` (`ios`, `tvos`, with the client's types and Jest tests) on a push to `next`, the pull request from `next` into `main`, a pull request with the `full-ci` label, and a release. On a task's pull request into `next` without the label they show as skipped.
+- **Fast:** `ci.yml`'s `lint` (lint, types, licences, audit), `tests` (Bun's in 4 shards, the first with smoke, Jest's in 3), `exports` and `builds` side by side, and `check`, which needs them and checks the shards ran every test file once, on every pull request that changes more than the internal docs, and every push to `next` or `main`, and `catalog.yml` when the catalog changes.
+- **Heavy:** `ci.yml`'s `playback` (`playback.ts`), `leak` and `image`, `e2e.yml`, `desktop.yml` (`build`) and `native.yml` (`ios`, `tvos`) on every push to `next`, the pull request from `next` into `main` (each job reusing `next`'s result for the same commit when it passed there), a pull request with the `full-ci` label, and a release. On a task's pull request into `next` without the label they show as skipped.
 
 So a task's pull request proves the fast tier, and the push to `next` after it's merged proves the heavy one. For a change that could break the heavy jobs (packaging, the Dockerfile, the native or desktop builds, the workflows), ask for the `full-ci` label on its pull request rather than running them here.
 

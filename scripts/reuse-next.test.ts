@@ -10,7 +10,7 @@ import { join } from 'node:path'
 const SCRIPT = join(import.meta.dir, '..', '.github', 'scripts', 'reuse-next.sh')
 const REPO = 'highsea-tv/highsea-tv'
 const HEAD = 'a'.repeat(40)
-const BASE = 'b'.repeat(40)
+const MERGE = 'b'.repeat(40)
 
 // `gh api <path> [--jq <filter>]`: the answer for the path without its query, through jq like gh's
 // --jq. An answer `{"__seq": [...]}` gives the next item on each call (a run that finishes later).
@@ -50,10 +50,11 @@ function run(overrides: Partial<Run> = {}): Run {
   }
 }
 
-function answers(o: { next?: string; compare?: string; runs?: unknown; jobs?: unknown } = {}) {
+function answers(o: { next?: string; mergeTree?: string; runs?: unknown; jobs?: unknown } = {}) {
   return {
     [`repos/${REPO}/git/ref/heads/next`]: { object: { sha: o.next ?? HEAD } },
-    [`repos/${REPO}/compare/${BASE}...${HEAD}`]: { status: o.compare ?? 'ahead' },
+    [`repos/${REPO}/git/commits/${HEAD}`]: { tree: { sha: 't'.repeat(40) } },
+    [`repos/${REPO}/git/commits/${MERGE}`]: { tree: { sha: o.mergeTree ?? 't'.repeat(40) } },
     [`repos/${REPO}/actions/workflows/native.yml/runs`]: o.runs ?? { workflow_runs: [run()] },
     [`repos/${REPO}/actions/runs/7/jobs`]: o.jobs ?? {
       jobs: [
@@ -82,7 +83,7 @@ function reuse(table: object, env: Record<string, string> = {}, args: string[] =
       BASE_REF: 'main',
       HEAD_REF: 'next',
       HEAD_REPO: REPO,
-      BASE_SHA: BASE,
+      MERGE_SHA: MERGE,
       HEAD_SHA: HEAD,
       WORKFLOW: 'native.yml',
       JOB: 'ios',
@@ -122,9 +123,19 @@ describe('reusing next’s result on the next → main pull request', () => {
     expect(reuse(answers({ next: 'c'.repeat(40) })).out).toBe('reused=false')
   })
 
-  test('main has commits next doesn’t, so the merge is another tree: built', () => {
-    expect(reuse(answers({ compare: 'diverged' })).out).toBe('reused=false')
-    expect(reuse(answers({ compare: 'behind' })).out).toBe('reused=false')
+  test('main has changes next lacks, so the merge is another tree: built', () => {
+    expect(reuse(answers({ mergeTree: 'u'.repeat(40) })).out).toBe('reused=false')
+  })
+
+  test('main ahead only by its merge commits of next, the same tree: reused', () => {
+    // the merge commit's tree is next's, as for #38 and #41 (git merge-tree, 2026-11-17)
+    expect(reuse(answers({ mergeTree: 't'.repeat(40) })).out).toBe('reused=true')
+  })
+
+  test('the merge commit can’t be read: built', () => {
+    const table = answers()
+    delete (table as Record<string, unknown>)[`repos/${REPO}/git/commits/${MERGE}`]
+    expect(reuse(table).out).toBe('reused=false')
   })
 
   test('a run for another SHA, event, branch, file or repository: built', () => {

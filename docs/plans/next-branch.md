@@ -72,8 +72,8 @@ Each job falls in one of two tiers:
 
 | Tier | Jobs | When it runs |
 | --- | --- | --- |
-| Fast | `ci.yml`'s `check` (lint, types, the Bun tests, the platform under Node, licences, the dependency check, the client exports, the admin's and the docs' builds), and `catalog.yml` when the catalog changes | every pull request that changes more than the internal docs (since 2026-11-17), and every push to `next` or `main` |
-| Heavy | `ci.yml`'s `playback`, `leak` and `image`; `e2e.yml`; `desktop.yml`; `native.yml` | a push to `next`, a pull request into `main`, a pull request with the `full-ci` label, and a release |
+| Fast | `ci.yml`'s `lint` (lint, types, licences, the dependency check), `tests` (Bun's in 4 shards, the first with the platform under Node, Jest's in 2), `exports` and `builds` side by side since 2026-11-17, and `check`, which needs them; `catalog.yml` when the catalog changes | every pull request that changes more than the internal docs (since 2026-11-17), and every push to `next` or `main` |
+| Heavy | `ci.yml`'s `playback`, `leak` and `image`; `e2e.yml`; `desktop.yml`; `native.yml` | every push to `next` (whatever it changed, since 2026-11-17), a pull request into `main` (each job reusing `next`'s result for the same commit when it passed there), a pull request with the `full-ci` label, and a release |
 
 - **How:**
   - Each heavy workflow keeps its own paths.
@@ -86,10 +86,16 @@ Each job falls in one of two tiers:
   - Their jobs carry one condition: run unless the event is a pull request into another branch without the label.
   - `ci.yml`'s heavy jobs get the same condition, and `check` has none.
   - The condition is written once, in a comment at the top of each workflow, with its reason.
-- **Pushes to `next`:** the existing `cancel-in-progress` means that when the owner accepts three tasks in a row, only the last push's heavy run finishes. That's one full run for the round instead of three.
+- **Pushes to `next`:** the existing `cancel-in-progress` means that when the owner accepts three tasks in a row, only the last push's heavy run finishes. That's one full run for the round instead of three. (Since 2026-11-17 a push to `next` is never cancelled: the pull request into `main` reuses `next`'s run for its exact commit.)
 - **A pull request that changes only the internal docs** (`docs/**`, `.claude/**`, `README.md`, `CLAUDE.md`, the list `paths-ignore` gives pushes) skips `check`, since 2026-11-17. A first job, `changes`, lists the pull request's files with `git diff --name-only` from where it branched to its head, and `check`'s `if:` skips it when every file is on the list. A job skipped by its `if:` reports success, so the required check isn't left pending as a path filter would leave it ([Troubleshooting required status checks › Handling skipped but required checks](https://docs.github.com/en/pull-requests/how-tos/merge-and-close-pull-requests/troubleshooting-required-status-checks#handling-skipped-but-required-checks)). A job whose `needs` failed is skipped too, and would pass the same way, so `check` also runs when `changes` fails (`!cancelled()`, [Expressions › Status check functions](https://docs.github.com/en/actions/reference/workflows-and-actions/expressions#status-check-functions)). Any event but `pull_request` runs `check` as before.
 - **A push to `main`** runs only `check` (answer 3): the pull request from `next` already ran everything on the same result, and a release runs it all again.
 - **`release.yml`** keeps calling `ci.yml` and `e2e.yml` through `workflow_call`. The tier condition lets a called run through whole, since its event is `workflow_dispatch`, not `pull_request`.
+- **Since 2026-11-17 (HT-40), the wait is cut** (ADR 0062's second section of that date):
+  - **The fast tier runs side by side:** `check`'s old steps are `lint`, `tests`, `exports` and `builds`, which start together. `tests` is a matrix of Bun's `--shard=1/4` to `4/4`, balanced by `scripts/test-timings.json`, and Jest's `--shard=1/2` and `2/2`. `check` keeps its name, needs the four, and fails unless each passed and the shards between them ran every test file exactly once (`scripts/test-shards.ts`).
+  - **cargo-audit** is RustSec's prebuilt binary through `taiki-e/install-action`, checked by its SHA-256, instead of `cargo install` on every run.
+  - **The pull request from `next` into `main` reuses `next`'s results:** each heavy job first runs `.github/scripts/reuse-next.sh`, which passes the job without building when the same job passed in `next`'s push run for the same commit, the pull request's head is `next`'s commit, and merging it into `main` gives `next`'s tree; it waits for `next`'s run when that's still going, and builds in every other case. So a push to `next` runs every heavy workflow whatever it changed, and pull requests keep the path filters. A release never reuses anything.
+  - **Concurrency:** a pull request's newer run cancels its older one; pushes to `next` and `main` and releases are each in a group of their own, so nothing cancels them, a pending run included.
+  - **iOS and tvOS:** the iPhone job no longer repeats the client's types and Jest tests, which the fast tier runs; both compile through ccache, kept between runs per Xcode build.
 - **Checked by:** `actionlint` on the workflows. Then one pull request into `next` that runs only `check`, the same pull request with `full-ci` added that runs everything, and the first push to `next` that runs everything.
 
 ## Branch rules (A)
