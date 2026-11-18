@@ -5,7 +5,14 @@
 // what's in git, and the release workflow checks it before building anything:
 //
 //   bun scripts/release.ts prepare 0.1.0 [--date 2026-11-02]   Unreleased becomes 0.1.0, and the
-//       server's version, the catalog's releases.json, its CHANGES.md and the seed follow
+//       server's version, the catalog's releases.json, its CHANGES.md, bun.lock and the seed follow
+//   bun scripts/release.ts version [patch|minor|major|0.1.0]   the version to release: blank or
+//       `patch` is the next patch after the newest tag (or a newer version already prepared), and
+//       an explicit one must be newer than every tag
+//   bun scripts/release.ts merged          the pull requests merged since the newest tag, as JSON,
+//       from git and, where it answers, GitHub's API (titles, labels)
+//   bun scripts/release.ts changelog <merged.json>   fills an empty Unreleased from them; entries
+//       written by hand win
 //   bun scripts/release.ts check 0.1.0     everything prepare writes is there and agrees, and the
 //       version is newer than every tag
 //   bun scripts/release.ts notes 0.1.0     the changelog's section, for the GitHub release
@@ -45,6 +52,19 @@ const FILES = {
   desktopLock: 'apps/desktop/src-tauri/Cargo.lock',
   desktopPackage: 'apps/desktop/package.json',
   clientPackage: 'apps/client/package.json',
+  lock: 'bun.lock',
+}
+
+/** The workspaces in bun.lock that carry the release's version, by the package.json prepare sets. */
+const LOCK_WORKSPACES = ['apps/server', 'apps/desktop', 'apps/client'] as const
+
+/** A workspace's entry in bun.lock: its key, its name line, then its version line. */
+const lockVersion = (workspace: string) =>
+  new RegExp(`("${workspace}": \\{\\n\\s*"name": "[^"]+",\\n\\s*"version": ")([^"]+)(")`)
+
+/** bun.lock with each released workspace at the version, so `bun install --frozen-lockfile` agrees. */
+export function withLockVersions(lock: string, version: string): string {
+  return LOCK_WORKSPACES.reduce((text, w) => text.replace(lockVersion(w), `$1${version}$3`), lock)
 }
 
 /** The desktop app's crate in Cargo.toml and Cargo.lock: its name line, then its version line. */
@@ -65,6 +85,10 @@ function desktopVersions(files: Files): [string, string | null][] {
     [FILES.desktopLock, files.desktopLock.match(CRATE_VERSION)?.[2] ?? null],
     [FILES.desktopPackage, json(files.desktopPackage)],
     [FILES.clientPackage, json(files.clientPackage)],
+    ...LOCK_WORKSPACES.map((w): [string, string | null] => [
+      `${FILES.lock} (${w})`,
+      files.lock.match(lockVersion(w))?.[2] ?? null,
+    ]),
   ]
 }
 
@@ -314,7 +338,164 @@ export function prepare(version: string, date: string, files: Files, tags: strin
     desktopLock: files.desktopLock.replace(CRATE_VERSION, `$1${version}$3`),
     desktopPackage: withJsonVersion(files.desktopPackage, version),
     clientPackage: withJsonVersion(files.clientPackage, version),
+    lock: withLockVersions(files.lock, version),
   }
+}
+
+/**
+ * The version to release (2026-11-17, ADR 0050's section of that date). Blank or `patch` is the
+ * next patch after the newest `v*` tag, unless a newer version is already prepared (`prepared`,
+ * apps/server's), which a hand-prepared release keeps; `minor` and `major` step those parts;
+ * anything else must be a SemVer version newer than every tag. A step from a pre-release finishes
+ * it first, as SemVer orders them (§ 11): after `0.5.0-beta.1`, a patch or minor is `0.5.0`.
+ */
+export function pickVersion(input: string, tags: string[], prepared?: string): string {
+  const wanted = input.trim()
+  const newest = taggedVersions(tags)[0]
+  if (wanted && !['patch', 'minor', 'major'].includes(wanted)) {
+    if (!isVersion(wanted))
+      throw new Error(`${wanted} isn’t patch, minor, major or a SemVer version like 0.1.0.`)
+    if (newest && compareAppVersions(wanted, newest) <= 0)
+      throw new Error(`${wanted} isn’t newer than v${newest}, the newest tag.`)
+    return wanted
+  }
+  const step = (wanted || 'patch') as 'patch' | 'minor' | 'major'
+  if (
+    step === 'patch' &&
+    prepared &&
+    isVersion(prepared) &&
+    (!newest || compareAppVersions(prepared, newest) > 0)
+  )
+    return prepared
+  const [, ma, mi, pa, pre] = SEMVER.exec(newest ?? '0.0.0') as RegExpExecArray
+  const [major, minor, patch] = [Number(ma), Number(mi), Number(pa)]
+  if (step === 'major')
+    return pre && minor === 0 && patch === 0 ? `${major}.0.0` : `${major + 1}.0.0`
+  if (step === 'minor')
+    return pre && patch === 0 ? `${major}.${minor}.0` : `${major}.${minor + 1}.0`
+  return pre ? `${major}.${minor}.${patch}` : `${major}.${minor}.${patch + 1}`
+}
+
+/** A pull request merged into next, as `merged` lists it and `changelog` reads it. */
+export type Merged = {
+  number?: number
+  title: string
+  labels: string[]
+  files: string[]
+}
+
+/**
+ * Paths that never reach an owner: the internal docs, notes for Claude (`.claude/`, CLAUDE.md and
+ * AGENTS.md), CI and the repository's scripts (2026-11-17). A pull request that touches only these is left out of the changelog.
+ */
+const INTERNAL = [/^docs\//, /^\.claude\//, /^\.github\//, /^scripts\//, /^(CLAUDE|AGENTS)\.md$/]
+
+export const isInternal = (files: string[]) =>
+  files.length > 0 && files.every((f) => INTERNAL.some((p) => p.test(f)))
+
+/** A release's own commits, which the changelog doesn't list. */
+const RELEASE_TITLE = /^(Prepare|Release) v?\d+\.\d+\.\d+/
+
+type Group = 'Added' | 'Changed' | 'Fixed'
+
+/**
+ * Where an entry goes: a label first (`bug` or `fix` to Fixed; `feature`, `enhancement` or `added`
+ * to Added; `changed` to Changed), then the title's first word, and Changed otherwise.
+ */
+export function groupOf(pr: Merged): Group {
+  const labels = pr.labels.map((l) => l.toLowerCase())
+  if (labels.some((l) => ['bug', 'fix', 'fixed'].includes(l))) return 'Fixed'
+  if (labels.some((l) => ['feature', 'enhancement', 'added'].includes(l))) return 'Added'
+  if (labels.includes('changed')) return 'Changed'
+  if (/^(fix|fixes|fixed)\b/i.test(pr.title) || /\bbug\b/i.test(pr.title)) return 'Fixed'
+  if (/^(add|adds|let|lets|allow|allows|support|supports|show|shows|introduce)\b/i.test(pr.title))
+    return 'Added'
+  return 'Changed'
+}
+
+/** The Unreleased body for these pull requests, grouped as Keep a Changelog groups them. */
+export function changelogEntries(merged: Merged[]): string {
+  const groups: Record<Group, string[]> = { Added: [], Changed: [], Fixed: [] }
+  for (const pr of merged) {
+    if (RELEASE_TITLE.test(pr.title) || isInternal(pr.files)) continue
+    const title = pr.title.replace(/\s*\(#\d+\)$/, '').trim()
+    const link = pr.number ? ` ([#${pr.number}](${REPOSITORY}/pull/${pr.number}))` : ''
+    groups[groupOf(pr)].push(`- ${title}${link}`)
+  }
+  return (Object.keys(groups) as Group[])
+    .filter((g) => groups[g].length)
+    .map((g) => `### ${g}\n\n${groups[g].join('\n')}`)
+    .join('\n\n')
+}
+
+/**
+ * The changelog with an empty Unreleased filled from the pull requests merged since the last tag.
+ * An Unreleased someone has written already wins, unchanged.
+ */
+export function fillUnreleased(
+  text: string,
+  merged: Merged[],
+): { text: string; from: 'hand' | 'pull requests' } {
+  if (readChangelog(text).unreleased) return { text, from: 'hand' }
+  const body = changelogEntries(merged)
+  if (!body)
+    throw new Error(
+      'Nothing to release: the changelog’s Unreleased is empty and no pull request since the last tag changed anything outside docs/, .claude/, .github/ and scripts/.',
+    )
+  if (!/^## \[Unreleased\][^\n]*$/im.test(text))
+    throw new Error('The changelog has no ## [Unreleased] heading.')
+  return {
+    text: text.replace(/^## \[Unreleased\][^\n]*\n+/im, `## [Unreleased]\n\n${body}\n\n`),
+    from: 'pull requests',
+  }
+}
+
+/** The pull request number in a squash merge's subject (`… (#48)`) or a merge commit's. */
+export function prNumberOf(subject: string): number | undefined {
+  const n = /\(#(\d+)\)$/.exec(subject)?.[1] ?? /^Merge pull request #(\d+) /.exec(subject)?.[1]
+  return n ? Number(n) : undefined
+}
+
+/**
+ * The pull requests merged into this branch since the newest tag: its first-parent commits, each
+ * with the files it changed from git and its subject, which a squash merge takes from the pull
+ * request's title as the owner left it (GitHub's own title may still carry a task's id), and the
+ * pull request's labels from GitHub's API where it answers
+ * (https://docs.github.com/en/rest/pulls/pulls#get-a-pull-request). A merge commit's subject
+ * names only the branch, so it takes the pull request's title.
+ */
+function mergedSinceTag(): Merged[] {
+  const newest = taggedVersions(gitTags())[0]
+  const git = (...args: string[]) => execFileSync('git', args, { cwd: ROOT, encoding: 'utf8' })
+  const range = newest ? [`v${newest}..HEAD`] : ['HEAD']
+  const commits = git('log', '--first-parent', '--format=%H%x09%s', ...range)
+    .split('\n')
+    .filter(Boolean)
+    .map((line) => line.split('\t') as [string, string])
+  const repo = process.env.GITHUB_REPOSITORY ?? REPOSITORY.replace('https://github.com/', '')
+  return commits.reverse().map(([sha, subject]) => {
+    const number = prNumberOf(subject)
+    const files = git('diff', '--name-only', '--no-renames', `${sha}^1`, sha)
+      .split('\n')
+      .filter(Boolean)
+    let title = subject
+    let labels: string[] = []
+    if (number)
+      try {
+        const pr = JSON.parse(
+          execFileSync(
+            'gh',
+            ['api', `repos/${repo}/pulls/${number}`, '--jq', '{title, labels: [.labels[].name]}'],
+            { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] },
+          ),
+        ) as { title: string; labels: string[] }
+        labels = pr.labels
+        if (subject.startsWith('Merge pull request #')) title = pr.title
+      } catch {
+        // no gh, or no answer: the subject alone, and no labels
+      }
+    return { number, title, labels, files }
+  })
 }
 
 /** The development key's public half (apps/desktop/keys/development.key.pub). */
@@ -414,6 +595,21 @@ if (import.meta.main) {
       console.log(
         `Prepared ${version} (${date}): ${Object.values(FILES).join(', ')}, the seed and apps/server/openapi.json.`,
       )
+    } else if (command === 'version') {
+      const server = JSON.parse(readFiles().server) as { version?: string }
+      console.log(pickVersion(version, gitTags(), server.version))
+    } else if (command === 'merged') {
+      console.log(JSON.stringify(mergedSinceTag(), null, 2))
+    } else if (command === 'changelog') {
+      if (!version) throw new Error('Usage: bun scripts/release.ts changelog <merged.json>')
+      const merged = JSON.parse(readFileSync(version, 'utf8')) as Merged[]
+      const { text, from } = fillUnreleased(readFiles().changelog, merged)
+      writeFileSync(join(ROOT, FILES.changelog), text)
+      console.log(
+        from === 'hand'
+          ? 'The changelog’s Unreleased has entries written by hand; they stand.'
+          : 'The changelog’s Unreleased is written from the pull requests merged since the last tag.',
+      )
     } else if (command === 'check') {
       const problems = problemsOf(version, readFiles(), gitTags())
       for (const p of problems) console.error(p)
@@ -455,7 +651,7 @@ if (import.meta.main) {
       console.log(imageTags(version, taggedVersions(gitTags())).join('\n'))
     } else {
       console.error(
-        'Usage: bun scripts/release.ts prepare <version> [--date YYYY-MM-DD], check|notes|tags <version>, feed <version> <dir>, trust, or desktop-key',
+        'Usage: bun scripts/release.ts prepare <version> [--date YYYY-MM-DD], version [patch|minor|major|<version>], merged, changelog <merged.json>, check|notes|tags <version>, feed <version> <dir>, trust, or desktop-key',
       )
       process.exit(2)
     }
