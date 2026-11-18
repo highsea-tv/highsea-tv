@@ -6,13 +6,15 @@
 // Dismiss. Each is announced politely as it appears (./announce). It stays 5 s, or 10 s with an
 // action (accessibility.md#operable, WCAG 2.2.1), and its time stops while a pointer is over it
 // or focus is in it. Toasts never play sounds themselves. The phone and the TV have no stack:
-// they show a Toast where they stand (toast.tsx).
+// they show a Toast where they stand (toast.tsx). The stack is drawn above every sheet and dialog
+// (./above-modals), so a change saved in one shows its toast (HT-44).
 
 import { useT } from '@highsea-tv/i18n/react'
 import type { ColorRole } from '@highsea-tv/tokens'
 import { line, overlay } from '@highsea-tv/tokens'
 import { type ReactNode, useEffect, useRef, useSyncExternalStore } from 'react'
 import { Platform, View, type ViewStyle } from 'react-native'
+import { AboveModals } from './above-modals'
 import { announce } from './announce'
 import { Button } from './button.tsx'
 import { Icon } from './icon.tsx'
@@ -204,25 +206,27 @@ export function Toaster({ label = 'Notifications' }: { label?: string }) {
   const compact = theme.formFactor.widthClass === 'compact'
   if (!list.length) return null
   return (
-    <View
-      role="region"
-      aria-label={label}
-      style={
-        {
-          position: Platform.OS === 'web' ? 'fixed' : 'absolute',
-          bottom: 0,
-          right: 0,
-          left: compact ? 0 : undefined,
-          width: compact ? undefined : overlay.toaster,
-          zIndex: 60,
-          gap: tokens.space['2'],
-          padding: compact ? tokens.space['4'] : tokens.space['6'],
-        } as unknown as ViewStyle
-      }
-    >
-      {list.map((e) => (
-        <ToastItem key={e.id} entry={e} />
-      ))}
-    </View>
+    <AboveModals>
+      <View
+        role="region"
+        aria-label={label}
+        style={
+          {
+            position: Platform.OS === 'web' ? 'fixed' : 'absolute',
+            bottom: 0,
+            right: 0,
+            left: compact ? 0 : undefined,
+            width: compact ? undefined : overlay.toaster,
+            zIndex: 60,
+            gap: tokens.space['2'],
+            padding: compact ? tokens.space['4'] : tokens.space['6'],
+          } as unknown as ViewStyle
+        }
+      >
+        {list.map((e) => (
+          <ToastItem key={e.id} entry={e} />
+        ))}
+      </View>
+    </AboveModals>
   )
 }

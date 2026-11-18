@@ -77,6 +77,11 @@ The admin lays out by the clients' one rule ([spacing-layout › Width classes](
 | regular (≥ 768) | Full sidebar; 4-column widget grid; forms and settings in their columns; Settings' areas beside an area's page from 1136 and a menu above it below that ([Width classes](../spacing-layout.md#width-classes)) |
 | compact (< 768) | The sidebar becomes a menu sheet behind a top-bar button; 1-column widgets; tables become stacked rows |
 
+## Sheets and toasts
+
+- **Side sheets float off the edge,** as the TV's side dialog does: the detail, account and menu sheets stand `space-6` (24) from the window's top, bottom and outer edge, `radius-xl` at every corner, `s3` at level 4 ([elevation](../elevation.md)). A narrow window keeps `space-8` (32) of scrim beside the sheet, past that gap. The owner's change of 2026-11-17 (HT-44), to a layout that was locked.
+- **Toasts show above every sheet and dialog,** so a change saved in one is confirmed where it was made. The stack keeps its own `space-6` gap, so a toast lines up with a sheet's edge.
+
 ## Sound
 
 Admin sound is off by default (see [sound › defaults](../sound.md#defaults)). When enabled, admin uses the same pack with all event volumes reduced by 6 dB.
