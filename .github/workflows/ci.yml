@@ -185,8 +185,9 @@ jobs:
   # (https://bun.com/docs/test/parallel); each file still runs isolated, as `bun run test` runs it.
   # The client's Jest tests split the same way with Jest's own `--shard`
   # (https://jestjs.io/docs/cli#--shard). Each shard keeps the list of files it ran, and `check`
-  # fails unless every test file ran exactly once (scripts/test-shards.ts). To refresh the
-  # durations: `bun test --isolate --timings=scripts/test-timings.json --update-timings`.
+  # fails unless every test file ran exactly once (scripts/test-shards.ts). The durations are CI's
+  # own, from a run's `shard-bun-*` artifacts; to refresh them, merge those files' `files`:
+  # `jq -s '{version: 1, files: (map(.files) | add)}' bun-*.json > scripts/test-timings.json`.
   tests:
     name: tests (${{ matrix.runner }} ${{ matrix.shard }}/${{ matrix.of }})
     needs: changes
