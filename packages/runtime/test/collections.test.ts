@@ -341,11 +341,11 @@ const def = (over: Partial<CollectionDef> = {}): CollectionDef => ({
 })
 
 const saved = new Map<string, CollectionDef>()
-const run = (d: CollectionDef, userId: string | null = null) =>
-  library.evaluate(d, (id) => saved.get(id) ?? null, userId)
+const run = (d: CollectionDef, profileId: string | null = null) =>
+  library.evaluate(d, (id) => saved.get(id) ?? null, profileId)
 /** The TMDB ids a condition matches for the reader, in title order. */
-const match = (c: RuleCondition, userId: string | null = null) =>
-  run(def({ rules: group('all', c) }), userId)
+const match = (c: RuleCondition, profileId: string | null = null) =>
+  run(def({ rules: group('all', c) }), profileId)
     .map((m) => m.tmdbId)
     .sort((a, b) => a - b)
 
@@ -523,7 +523,7 @@ describe('every field and comparison', () => {
   })
 
   test('watch state is the reader’s: watched, not watched and played lately', () => {
-    for (const id of ['ruth', 'sam'])
+    for (const id of ['ruth', 'sam']) {
       raw.run(
         `INSERT INTO users (id, username, display_name, role, webauthn_id, created_at, updated_at)
          VALUES (?, ?, ?, 'user', ?, 0, 0)`,
@@ -532,11 +532,21 @@ describe('every field and comparison', () => {
         id,
         `w-${id}`,
       )
-    const watched = (user: string, tmdb: number, played: boolean, at: number | null) =>
+      // the account's own profile shares its id (ADR 0068)
       raw.run(
-        `INSERT INTO watch_history (user_id, item_id, played, play_count, last_played_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?)`,
-        user,
+        `INSERT INTO profiles (id, user_id, name, tone, main, created_at, updated_at)
+         VALUES (?, ?, ?, 'accent', 1, 0, 0)`,
+        id,
+        id,
+        id,
+      )
+    }
+    const watched = (profile: string, tmdb: number, played: boolean, at: number | null) =>
+      raw.run(
+        `INSERT INTO watch_history (user_id, profile_id, item_id, played, play_count, last_played_at, updated_at)
+         VALUES ((SELECT user_id FROM profiles WHERE id = ?), ?, ?, ?, ?, ?, ?)`,
+        profile,
+        profile,
         `itm_${tmdb}`,
         played ? 1 : 0,
         played ? 1 : 0,
@@ -563,6 +573,29 @@ describe('every field and comparison', () => {
       SPRING,
     ])
     expect(match(cond('lastPlayed', 'inLast', 30))).toEqual([])
+  })
+
+  test('watch rules read the profile watching, not the account (ADR 0068)', () => {
+    raw.run(
+      `INSERT INTO users (id, username, display_name, role, webauthn_id, created_at, updated_at)
+       VALUES ('ines', 'ines', 'Ines', 'user', 'w-ines', 0, 0)`,
+    )
+    raw.run(
+      `INSERT INTO profiles (id, user_id, name, tone, main, created_at, updated_at)
+       VALUES ('ines', 'ines', 'Ines', 'accent', 1, 0, 0), ('prf_theo', 'ines', 'Theo', 'info', 0, 1, 1)`,
+    )
+    raw.run(
+      `INSERT INTO watch_history (user_id, profile_id, item_id, played, play_count, last_played_at, updated_at)
+       VALUES ('ines', 'prf_theo', ?, 1, 1, ?, ?)`,
+      `itm_${SINTEL}`,
+      NOW - DAY,
+      NOW,
+    )
+    expect(match(cond('watched', 'is', 'yes'), 'prf_theo')).toEqual([SINTEL])
+    expect(match(cond('lastPlayed', 'inLast', 30), 'prf_theo')).toEqual([SINTEL])
+    // the account's own profile hasn't watched it
+    expect(match(cond('watched', 'is', 'yes'), 'ines')).toEqual([])
+    expect(match(cond('lastPlayed', 'inLast', 30), 'ines')).toEqual([])
     // a collection named in a rule is answered for the same reader
     saved.set(
       'sc-ruth-seen',

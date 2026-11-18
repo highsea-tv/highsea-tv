@@ -138,6 +138,7 @@ export function authenticateApiKey(ctx: Ctx, secret: string): Principal | null {
   return {
     user: capped,
     deviceId: null,
+    profileId: user.id,
     via: 'key',
     scope: row.scope === 'read' ? 'read' : 'full',
     method: 'password',

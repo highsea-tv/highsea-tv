@@ -55,6 +55,7 @@ const OWNER = {
   libraries: 'all',
   twoFactor: false,
   passkeys: 0,
+  profiles: 1,
   hasPassword: true,
   email: null,
   lastSeen: null,

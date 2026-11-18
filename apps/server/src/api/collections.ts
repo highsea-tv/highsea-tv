@@ -63,18 +63,24 @@ export function registerCollections(app: OpenAPIHono<Env>) {
 
   // ----------------------------------------------------- the apps' own reads
 
-  app.openapi(routes.library.collections, (c) =>
-    c.json(collections(c).forApps(me(c).user.id, c.req.valid('query').client ?? 'web'), 200),
-  )
+  app.openapi(routes.library.collections, (c) => {
+    const p = me(c)
+    return c.json(
+      collections(c).forApps(p.user.id, c.req.valid('query').client ?? 'web', p.profileId),
+      200,
+    )
+  })
 
-  app.openapi(routes.library.collection, (c) =>
-    c.json(
+  app.openapi(routes.library.collection, (c) => {
+    const p = me(c)
+    return c.json(
       collections(c).page(
         c.req.valid('param').id,
-        me(c).user.id,
+        p.user.id,
         c.req.valid('query').client ?? 'web',
+        p.profileId,
       ),
       200,
-    ),
-  )
+    )
+  })
 }

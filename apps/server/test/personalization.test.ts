@@ -361,6 +361,7 @@ describe('appearance', () => {
       'subtitles',
       'curation',
       'playback',
+      'profiles',
     ])
   })
 })

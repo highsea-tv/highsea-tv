@@ -8,6 +8,7 @@ import { type AuthDeps, createContext, listAudit, type RequestMeta } from './con
 import { createOidc, oidcOffered } from './oidc.ts'
 import { createPairing } from './pairing.ts'
 import * as passkeys from './passkeys.ts'
+import { createProfiles } from './profiles.ts'
 import { authenticateProxy } from './proxy-auth.ts'
 import * as security from './security.ts'
 import * as sessions from './sessions.ts'
@@ -34,6 +35,14 @@ export {
 } from './pairing.ts'
 export type { PasskeyView, RelyingParty } from './passkeys.ts'
 export { ARGON2, hashPassword, PASSWORD_MAX, PASSWORD_MIN, verifyPassword } from './passwords.ts'
+export {
+  MAX_PROFILES,
+  mainProfileId,
+  PIN_REST_MS,
+  PIN_TRIES,
+  type ProfilesView,
+  type ProfileView,
+} from './profiles.ts'
 export { createRateLimiter, LIMITS } from './rate-limit.ts'
 export { ALL_LIBRARIES, canManageUsers, isStaff, LIBRARIES, may, ROLE_DEFAULTS } from './roles.ts'
 export { newCode, newSecret, normalizeCode, verifier } from './secrets.ts'
@@ -62,6 +71,7 @@ export function createAuth(deps: AuthDeps) {
   const signIn = createSignIn(ctx)
   const oidc = createOidc(ctx)
   const pairing = createPairing(ctx)
+  const profiles = createProfiles(ctx)
 
   return {
     ctx,
@@ -103,6 +113,7 @@ export function createAuth(deps: AuthDeps) {
     signIn,
     oidc,
     pairing,
+    profiles,
 
     passkeys: {
       relyingParty: (origin?: string) => passkeys.relyingParty(ctx, origin),

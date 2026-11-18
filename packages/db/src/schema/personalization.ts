@@ -3,7 +3,7 @@
 // the owner's themes and sound packs, and files the owner uploads (the server's mark). The
 // server-wide choices (default theme, accent, sound defaults) are the `appearance` settings row.
 import { blob, index, integer, primaryKey, sqliteTable, text } from 'drizzle-orm/sqlite-core'
-import { devices, ROLES, users } from './auth.ts'
+import { devices, profiles, ROLES, users } from './auth.ts'
 
 /**
  * One row per layer: `user`, `client:{type}` (all of a person's TVs) or `device:{id}`. A device's
@@ -38,15 +38,22 @@ export const widgetLayouts = sqliteTable(
   (t) => [index('widget_layouts_user').on(t.userId)],
 )
 
-/** A person's home screen: row order and hidden rows, by row id. */
-export const homeLayouts = sqliteTable('home_layouts', {
-  userId: text('user_id')
-    .primaryKey()
-    .references(() => users.id, { onDelete: 'cascade' }),
-  order: text('order', { mode: 'json' }).notNull(),
-  hidden: text('hidden', { mode: 'json' }).notNull(),
-  updatedAt: integer('updated_at').notNull(),
-})
+/** A profile's home screen: row order and hidden rows, by row id (per profile since ADR 0068). */
+export const homeLayouts = sqliteTable(
+  'home_layouts',
+  {
+    profileId: text('profile_id')
+      .primaryKey()
+      .references(() => profiles.id, { onDelete: 'cascade' }),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    order: text('order', { mode: 'json' }).notNull(),
+    hidden: text('hidden', { mode: 'json' }).notNull(),
+    updatedAt: integer('updated_at').notNull(),
+  },
+  (t) => [index('home_layouts_user').on(t.userId)],
+)
 
 /** The owner's themes: a `ThemeInput` for the theme engine, audited before it's saved. */
 export const themes = sqliteTable('themes', {

@@ -22,6 +22,7 @@ const decision: PlaybackDecision = {
 
 const input = (o: Partial<SessionInput> = {}): SessionInput => ({
   userId: 'u1',
+  profileId: 'u1',
   deviceId: 'd1',
   itemId: 'i1',
   tmdbId: 603,

@@ -279,10 +279,10 @@ export function createCollectionLibrary(deps: {
   }
 
   return {
-    evaluate(def, lookup, userId) {
+    evaluate(def, lookup, profileId) {
       return db
         .all<{ itemId: string; tmdbId: number; playable: number }>(
-          collectionQuery(def, lookup, clock.now(), ratings(), userId ?? null),
+          collectionQuery(def, lookup, clock.now(), ratings(), profileId ?? null),
         )
         .map((r) => ({ itemId: r.itemId, tmdbId: r.tmdbId, playable: !!r.playable }))
     },
@@ -313,7 +313,7 @@ export function createCollectionLibrary(deps: {
           out.set(r.id, r.tmdbId)
       return out
     },
-    items: (tmdbIds, userId) => movies.client.byIds(tmdbIds, userId),
+    items: (tmdbIds, profileId) => movies.client.byIds(tmdbIds, profileId),
     options,
     people,
     personNames,

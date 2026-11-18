@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The drafted routes (one-client-platform-b.md › B3, the owner's answer 1): shows, music,
-// playlists and profiles are declared in the contract so the SDK and the prototypes' mock answer
+// The drafted routes (one-client-platform-b.md › B3, the owner's answer 1): shows, music and
+// playlists are declared in the contract so the SDK and the prototypes' mock answer
 // them, but this server doesn't have them yet. Each is registered here, so it's in the OpenAPI
 // document with its `x-highsea-draft` mark, the guard still answers it first (signed out is 401),
 // and then it answers 501 Not Implemented, the server lacking what's needed (RFC 9110 § 15.6.2),
 // in the usual error body. An episode's address on the films' routes (`/items/episode/…`) answers
-// the same. The apps never call these here: public info's `sources` doesn't list shows, music or
-// profiles, so they hide everything of theirs.
+// the same. The apps never call these here: public info's `sources` doesn't list shows or music,
+// so they hide everything of theirs. Profiles were drafts until Phase 5's A2b (ADR 0068).
 import { DRAFT_REASON, ITEMS, isDraft, routes } from '@highsea-tv/api-contract'
 import { AppError } from '@highsea-tv/core'
 import type { OpenAPIHono, RouteConfig } from '@hono/zod-openapi'

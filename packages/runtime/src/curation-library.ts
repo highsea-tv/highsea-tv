@@ -98,8 +98,8 @@ export function createCurationLibrary(deps: {
       )
       .map((r) => r.tmdbId)
 
-  const items = (tmdbIds: number[], userId: string): ReturnType<CurationLibrary['items']> =>
-    movies.client.byIds(tmdbIds, userId)
+  const items = (tmdbIds: number[], profileId: string): ReturnType<CurationLibrary['items']> =>
+    movies.client.byIds(tmdbIds, profileId)
 
   return {
     itemIds: byTmdb,
@@ -126,13 +126,13 @@ export function createCurationLibrary(deps: {
       return { tmdbIds: total ? pickWhere(where, order, limit) : [], total }
     },
     items,
-    builtIn(userId) {
-      // Continue watching: started and not finished, most recent first (playback writes it, 4.1a)
+    builtIn(profileId) {
+      // Continue watching: the profile's, started and not finished, most recent first (4.1a, ADR 0068)
       const started = db
         .all<{ tmdbId: number }>(
           sql`SELECT mi.tmdb_id AS tmdbId FROM watch_positions w
             JOIN media_items mi ON mi.id = w.item_id
-            WHERE w.user_id = ${userId} AND ${HAS_FILE}
+            WHERE w.profile_id = ${profileId} AND ${HAS_FILE}
             ORDER BY w.updated_at DESC LIMIT ${ROW_MAX}`,
         )
         .map((r) => r.tmdbId)
@@ -140,7 +140,7 @@ export function createCurationLibrary(deps: {
         {
           id: 'continue',
           title: null,
-          items: items(started, userId).filter((m) => m.progress !== null),
+          items: items(started, profileId).filter((m) => m.progress !== null),
         },
       ]
       for (const r of homeRows(db)) {
@@ -148,7 +148,7 @@ export function createCurationLibrary(deps: {
           rows.push({
             id: 'recent',
             title: null,
-            items: items(pickWhere(sql`1 = 1`, sql`mi.added_at DESC, mi.id`, ROW_MAX), userId),
+            items: items(pickWhere(sql`1 = 1`, sql`mi.added_at DESC, mi.id`, ROW_MAX), profileId),
           })
         else if (r.id.startsWith('genre:')) {
           const genreId = Number(r.id.slice('genre:'.length))
@@ -159,7 +159,7 @@ export function createCurationLibrary(deps: {
             title: r.title,
             items: items(
               pickWhere(where, sql`mi.rating DESC, mi.sort_title, mi.id`, ROW_MAX),
-              userId,
+              profileId,
             ),
           })
         }

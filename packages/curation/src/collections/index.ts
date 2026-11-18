@@ -89,17 +89,18 @@ export type CollectionLibrary = {
   /**
    * What a collection holds now, in its order and after its limit. `lookup` answers for the
    * collections its rules name; one that names a collection already being answered matches nothing.
-   * The watch rules read `userId`'s watch state; for null, no one has watched anything.
+   * The watch rules read `profileId`'s watch state (ADR 0068); for null, no one has watched
+   * anything.
    */
   evaluate(
     def: CollectionDef,
     lookup: (id: string) => CollectionDef | null,
-    userId?: string | null,
+    profileId?: string | null,
   ): Member[]
   itemIds(tmdbIds: number[]): Map<number, string>
   tmdbIds(itemIds: string[]): Map<string, number>
-  /** Titles as the apps see them, with this person's watch state, in this order. */
-  items(tmdbIds: number[], userId: string): ClientItem[]
+  /** Titles as the apps see them, with this profile's watch state, in this order. */
+  items(tmdbIds: number[], profileId: string): ClientItem[]
   /** A field's choices from what's in the library, for the fields the library knows. */
   options(field: RuleField): Option[]
   /** People credited here, by name; for a role field, only in that role. */
@@ -258,8 +259,8 @@ export function createCollections(deps: {
    * What a collection holds now for whoever reads it (their watch state; null for no one's, as the
    * admin's counts are); another named in its rules is answered from what's saved.
    */
-  function evaluate(def: CollectionDef, saved = defs(), userId: string | null = null): Member[] {
-    return library.evaluate(def, (id) => (id === def.id ? def : (saved.get(id) ?? null)), userId)
+  function evaluate(def: CollectionDef, saved = defs(), profileId: string | null = null): Member[] {
+    return library.evaluate(def, (id) => (id === def.id ? def : (saved.get(id) ?? null)), profileId)
   }
 
   function draftDef(input: SmartCollectionInput, id: string): CollectionDef {
@@ -474,13 +475,13 @@ export function createCollections(deps: {
   }
 
   /** A collection of the server's as the apps see it: what can be played, in its own order. */
-  function forApps(row: Row, saved: Map<string, CollectionDef>, userId: string) {
+  function forApps(row: Row, saved: Map<string, CollectionDef>, profileId: string) {
     const def = saved.get(row.id) as CollectionDef
-    const ids = evaluate(def, saved, userId)
+    const ids = evaluate(def, saved, profileId)
       .filter((m) => m.playable)
       .map((m) => m.tmdbId)
     if (!ids.length) return null
-    const items = library.items(ids, userId)
+    const items = library.items(ids, profileId)
     const first = items[0] as ClientItem
     const collection: LibraryCollection = {
       id: row.id,
@@ -664,30 +665,31 @@ export function createCollections(deps: {
 
     /**
      * Library › Collections: the server's collections this person on this app is in the audience
-     * for and can play something in, in the admin's order, then TMDB's with titles here.
+     * for and can play something in, in the admin's order, then TMDB's with titles here. The
+     * audience is the account's; the watch rules read the profile watching (ADR 0068).
      */
-    forApps(userId: string, client: ClientType): LibraryCollection[] {
+    forApps(userId: string, client: ClientType, profileId = userId): LibraryCollection[] {
       const v = viewer(userId)
       const saved = defs()
       const own = rows()
         .filter((r) => reaches(r.audience as Audience, v, client))
-        .flatMap((r) => forApps(r, saved, userId)?.collection ?? [])
+        .flatMap((r) => forApps(r, saved, profileId)?.collection ?? [])
       return [...own, ...library.tmdbCollections().map(tmdbForApps)]
     },
 
     /** A collection's page: the server's (`sc-…`) or TMDB's (its number). */
-    page(id: string, userId: string, client: ClientType) {
+    page(id: string, userId: string, client: ClientType, profileId = userId) {
       const gone = () => new AppError('not-found', 'There’s no collection with that id.')
       if (isSmartId(id)) {
         const row = db.select().from(smartCollections).where(eq(smartCollections.id, id)).get()
         if (!row || !reaches(row.audience as Audience, viewer(userId), client)) throw gone()
-        const found = forApps(row, defs(), userId)
+        const found = forApps(row, defs(), profileId)
         if (!found) throw gone()
         return found
       }
       const c = library.tmdbCollections().find((x) => String(x.id) === id)
       if (!c) throw gone()
-      return { collection: tmdbForApps(c), items: library.items(c.tmdbIds, userId) }
+      return { collection: tmdbForApps(c), items: library.items(c.tmdbIds, profileId) }
     },
 
     // ---------------------------------------------------------- featured sections
@@ -699,12 +701,12 @@ export function createCollections(deps: {
     playable(
       id: string,
       limit: number,
-      userId: string | null = null,
+      profileId: string | null = null,
     ): { tmdbIds: number[]; total: number } {
       const saved = defs()
       const def = saved.get(id)
       if (!def) return { tmdbIds: [], total: 0 }
-      const ids = evaluate(def, saved, userId)
+      const ids = evaluate(def, saved, profileId)
         .filter((m) => m.playable)
         .map((m) => m.tmdbId)
       return { tmdbIds: ids.slice(0, limit), total: ids.length }

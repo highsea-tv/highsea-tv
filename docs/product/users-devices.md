@@ -21,7 +21,7 @@ A settings area ([settings.md](settings.md#layout)) with line tabs: **People**, 
 
 - **People** (a table, stacked rows on a phone):
   - "5 people · 1 invited";
-  - each person: the initial in a disc, the name and `@username`, **Invited** until they join; the role (Owner, Admin, User); the libraries ("All libraries" or the ones chosen); two-step verification (On, Off); last seen ("Just now", "3h ago", "Hasn't joined yet");
+  - each person: the initial in a disc, the name and `@username`, followed by "· 3 profiles" when the account has more than its own (Phase 5's A2b, ADR 0068; `User.profiles`), **Invited** until they join; the role (Owner, Admin, User); the libraries ("All libraries" or the ones chosen); two-step verification (On, Off); last seen ("Just now", "3h ago", "Hasn't joined yet");
   - **Edit** and a More menu: **Send a password reset**, **Turn off two-step** (when it's on), **Remove** (or, for an invite, **Copy the invite link** and **Cancel the invite**). These are the owner's alone, and the owner's own row has none.
 - **Edit** opens a sheet from the right: **Username** first, with "They sign in with this. Their devices stay signed in." (the owner's approved change to the locked sheet, 2026-11-17, HT-37); **Role** (Admin or User, each with what it means); for a User, **What they can do** (Ask for titles, Download for offline), reset to the role's defaults when the role changes, and **Libraries**: "All, now and later" or **Choose** (Movies; "TV shows, music and books join this list when the server has them"); **Save**. An admin can do everything except manage people, security, backups and ownership, and sees every library, so neither section shows for Admin.
 - **Invite someone** (a dialog): Name, Email (optional: "Leave it empty to share a link yourself"), Role (Admin or User), Libraries (for a User), **Create invite link** (or **Send invite** with an email). Then the link itself, with **Copy link**: "Send them this link. It works once, for 7 days, and lets them choose a password."
@@ -92,7 +92,7 @@ As built in Phase 3 (ADR 0023); each route's access is in the OpenAPI document.
 
 ## Open questions
 
-- **Managed profiles without passwords** (children on a shared TV): a profile picker on the TV, instead of an account each?
+- **Managed profiles without passwords** (children on a shared TV): answered by profiles (Phase 5's A2b, ADR 0068). Each account has up to six, each with its own watch state and Home and an optional PIN, chosen per device in the apps. The admin counts them in People and names the profile watching in Now playing; managing someone's profiles from the admin, and kids' profiles with their own ratings, are later.
 - **Content rating limits** for a user: a per-person setting on User, later.
 - **Invite by QR** for a TV in the same room?
 - **Key scopes:** are read and full enough, or do scripts need per-area scopes (downloads only)?

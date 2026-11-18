@@ -33,6 +33,8 @@ export const User = z
     libraries: Libraries,
     twoFactor: z.boolean(),
     passkeys: z.number().int(),
+    /** How many profiles watch with the account, its own included (ADR 0068). */
+    profiles: z.number().int(),
     hasPassword: z.boolean(),
     email: z.string().nullable(),
     lastSeen: IsoDate.nullable(),

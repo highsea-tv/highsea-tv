@@ -1402,124 +1402,6 @@
           "name"
         ]
       },
-      "Profiles": {
-        "type": "object",
-        "properties": {
-          "profiles": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Profile"
-            }
-          },
-          "current": {
-            "type": "string"
-          },
-          "max": {
-            "type": "integer"
-          }
-        },
-        "required": [
-          "profiles",
-          "current",
-          "max"
-        ]
-      },
-      "Profile": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
-          },
-          "tone": {
-            "type": "string",
-            "enum": [
-              "accent",
-              "info",
-              "success",
-              "warning",
-              "danger"
-            ]
-          },
-          "hasPin": {
-            "type": "boolean"
-          },
-          "main": {
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "id",
-          "name",
-          "tone",
-          "hasPin",
-          "main"
-        ]
-      },
-      "NewProfile": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 40
-          },
-          "tone": {
-            "type": "string",
-            "enum": [
-              "accent",
-              "info",
-              "success",
-              "warning",
-              "danger"
-            ]
-          }
-        },
-        "required": [
-          "name",
-          "tone"
-        ]
-      },
-      "ProfilePatch": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 40
-          },
-          "tone": {
-            "type": "string",
-            "enum": [
-              "accent",
-              "info",
-              "success",
-              "warning",
-              "danger"
-            ]
-          },
-          "pin": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "pattern": "^\\d{4}$",
-            "example": "2580"
-          }
-        }
-      },
-      "ChooseProfile": {
-        "type": "object",
-        "properties": {
-          "pin": {
-            "type": "string",
-            "pattern": "^\\d{4}$",
-            "example": "2580"
-          }
-        }
-      },
       "DiscoverSeries": {
         "type": "object",
         "properties": {
@@ -2927,6 +2809,9 @@
           "passkeys": {
             "type": "integer"
           },
+          "profiles": {
+            "type": "integer"
+          },
           "hasPassword": {
             "type": "boolean"
           },
@@ -2962,6 +2847,7 @@
           "libraries",
           "twoFactor",
           "passkeys",
+          "profiles",
           "hasPassword",
           "email",
           "lastSeen",
@@ -5775,6 +5661,124 @@
           "name",
           "builtIn"
         ]
+      },
+      "Profiles": {
+        "type": "object",
+        "properties": {
+          "profiles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Profile"
+            }
+          },
+          "current": {
+            "type": "string"
+          },
+          "max": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "profiles",
+          "current",
+          "max"
+        ]
+      },
+      "Profile": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "tone": {
+            "type": "string",
+            "enum": [
+              "accent",
+              "info",
+              "success",
+              "warning",
+              "danger"
+            ]
+          },
+          "hasPin": {
+            "type": "boolean"
+          },
+          "main": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "tone",
+          "hasPin",
+          "main"
+        ]
+      },
+      "NewProfile": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 40
+          },
+          "tone": {
+            "type": "string",
+            "enum": [
+              "accent",
+              "info",
+              "success",
+              "warning",
+              "danger"
+            ]
+          }
+        },
+        "required": [
+          "name",
+          "tone"
+        ]
+      },
+      "ProfilePatch": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 40
+          },
+          "tone": {
+            "type": "string",
+            "enum": [
+              "accent",
+              "info",
+              "success",
+              "warning",
+              "danger"
+            ]
+          },
+          "pin": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^\\d{4}$",
+            "example": "2580"
+          }
+        }
+      },
+      "ChooseProfile": {
+        "type": "object",
+        "properties": {
+          "pin": {
+            "type": "string",
+            "pattern": "^\\d{4}$",
+            "example": "2580"
+          }
+        }
       },
       "DiscoverPage": {
         "type": "object",
@@ -9050,11 +9054,18 @@
               },
               "displayName": {
                 "type": "string"
+              },
+              "profile": {
+                "type": [
+                  "string",
+                  "null"
+                ]
               }
             },
             "required": [
               "id",
-              "displayName"
+              "displayName",
+              "profile"
             ]
           },
           "deviceName": {
@@ -9244,11 +9255,18 @@
               },
               "displayName": {
                 "type": "string"
+              },
+              "profile": {
+                "type": [
+                  "string",
+                  "null"
+                ]
               }
             },
             "required": [
               "id",
-              "displayName"
+              "displayName",
+              "profile"
             ]
           },
           "deviceName": {
@@ -16982,410 +17000,6 @@
         }
       }
     },
-    "/api/v1/me/profiles": {
-      "get": {
-        "tags": [
-          "Profiles"
-        ],
-        "summary": "Your account’s profiles, and the one watching now (draft)",
-        "description": "Drafted: the server answers 501 until it has profiles.",
-        "x-highsea-access": "user",
-        "security": [
-          {
-            "session": []
-          },
-          {
-            "bearer": []
-          }
-        ],
-        "x-highsea-draft": true,
-        "responses": {
-          "200": {
-            "description": "The profiles",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Profiles"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "501": {
-            "description": "Drafted: the server doesn’t serve this yet",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "Profiles"
-        ],
-        "summary": "Add a profile (draft)",
-        "description": "409 once the account has its most. Drafted: the server answers 501 until it has profiles.",
-        "x-highsea-access": "user",
-        "security": [
-          {
-            "session": []
-          },
-          {
-            "bearer": []
-          }
-        ],
-        "x-highsea-draft": true,
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/NewProfile"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "The new profile",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Profile"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "invalid",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "501": {
-            "description": "Drafted: the server doesn’t serve this yet",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/me/profiles/{id}": {
-      "patch": {
-        "tags": [
-          "Profiles"
-        ],
-        "summary": "Rename a profile, change its colour, or set or turn off its PIN (draft)",
-        "description": "Drafted: the server answers 501 until it has profiles.",
-        "x-highsea-access": "user",
-        "security": [
-          {
-            "session": []
-          },
-          {
-            "bearer": []
-          }
-        ],
-        "x-highsea-draft": true,
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "id",
-            "in": "path"
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ProfilePatch"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "The profile",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Profile"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "invalid",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "not-found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "501": {
-            "description": "Drafted: the server doesn’t serve this yet",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      },
-      "delete": {
-        "tags": [
-          "Profiles"
-        ],
-        "summary": "Delete a profile and its watch history (draft)",
-        "description": "409 for the account’s own profile. Drafted: the server answers 501 until it has profiles.",
-        "x-highsea-access": "user",
-        "security": [
-          {
-            "session": []
-          },
-          {
-            "bearer": []
-          }
-        ],
-        "x-highsea-draft": true,
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "id",
-            "in": "path"
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Done"
-          },
-          "401": {
-            "description": "unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "not-found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "501": {
-            "description": "Drafted: the server doesn’t serve this yet",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/me/profiles/{id}/choose": {
-      "post": {
-        "tags": [
-          "Profiles"
-        ],
-        "summary": "Watch as a profile, with its PIN when it has one (draft)",
-        "description": "A wrong PIN is 403 with `{ field: 'pin', reason: 'wrong-pin' }` (not 401, which would say the app isn't signed in: RFC 9110 § 15.5.2); after five wrong in a row, 429 with `{ reason: 'rate-limited', retryAfter: 60 }` for a minute. The profile watching now needs no PIN. Drafted: the server answers 501 until it has profiles.",
-        "x-highsea-access": "user",
-        "security": [
-          {
-            "session": []
-          },
-          {
-            "bearer": []
-          }
-        ],
-        "x-highsea-draft": true,
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "id",
-            "in": "path"
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ChooseProfile"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "The profiles, with this one watching",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Profiles"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "invalid",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "forbidden",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "not-found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "rate-limited",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "501": {
-            "description": "Drafted: the server doesn’t serve this yet",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/v1/discover/shows": {
       "get": {
         "tags": [
@@ -24702,6 +24316,353 @@
           },
           "409": {
             "description": "conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/me/profiles": {
+      "get": {
+        "tags": [
+          "Profiles"
+        ],
+        "summary": "Your account’s profiles, and the one watching now on this device",
+        "x-highsea-access": "user",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The profiles",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Profiles"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Profiles"
+        ],
+        "summary": "Add a profile",
+        "description": "409 once the account has its most.",
+        "x-highsea-access": "user",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewProfile"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The new profile",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Profile"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/me/profiles/{id}": {
+      "patch": {
+        "tags": [
+          "Profiles"
+        ],
+        "summary": "Rename a profile, change its colour, or set or turn off its PIN",
+        "x-highsea-access": "user",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProfilePatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The profile",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Profile"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Profiles"
+        ],
+        "summary": "Delete a profile and its watch history",
+        "description": "409 for the account’s own profile. Its watch state and Home go with it, and the devices watching as it go back to the account’s own.",
+        "x-highsea-access": "user",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Done"
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/me/profiles/{id}/choose": {
+      "post": {
+        "tags": [
+          "Profiles"
+        ],
+        "summary": "Watch as a profile on this device, with its PIN when it has one",
+        "description": "A wrong PIN is 403 with `{ field: 'pin', reason: 'wrong-pin' }` (not 401, which would say the app isn't signed in: RFC 9110 § 15.5.2); after five wrong in a row, 429 with `{ reason: 'rate-limited', retryAfter: 60 }` for a minute. The profile watching now needs no PIN. Only this device changes; the account's other apps stay as they are. A request with no device of its own (an API key, a forward-auth proxy's) is 403 with `reason: 'no-device'`.",
+        "x-highsea-access": "user",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChooseProfile"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The profiles, with this one watching",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Profiles"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "rate-limited",
             "content": {
               "application/json": {
                 "schema": {

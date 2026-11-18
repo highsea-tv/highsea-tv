@@ -16,7 +16,7 @@ import {
   text,
   uniqueIndex,
 } from 'drizzle-orm/sqlite-core'
-import { users } from './auth.ts'
+import { profiles, users } from './auth.ts'
 
 export const MEDIA_TYPES = ['movie'] as const
 export type MediaType = (typeof MEDIA_TYPES)[number]
@@ -271,13 +271,19 @@ export const versions = sqliteTable(
   ],
 )
 
-/** Where each person stopped, per item. Written by playback in Phase 4; read by the client API now. */
+/**
+ * Where each profile stopped, per item (ADR 0054, per profile since ADR 0068). Written by playback
+ * in Phase 4; read by the client API now.
+ */
 export const watchPositions = sqliteTable(
   'watch_positions',
   {
     userId: text('user_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
+    profileId: text('profile_id')
+      .notNull()
+      .references(() => profiles.id, { onDelete: 'cascade' }),
     itemId: text('item_id')
       .notNull()
       .references(() => mediaItems.id, { onDelete: 'cascade' }),
@@ -286,8 +292,8 @@ export const watchPositions = sqliteTable(
     updatedAt: integer('updated_at').notNull(),
   },
   (t) => [
-    primaryKey({ columns: [t.userId, t.itemId] }),
-    index('watch_positions_recent').on(t.userId, t.updatedAt),
+    primaryKey({ columns: [t.profileId, t.itemId] }),
+    index('watch_positions_recent').on(t.profileId, t.updatedAt),
   ],
 )
 

@@ -32,6 +32,7 @@ export const userView = (u: UserView): User => ({
   libraries: u.libraries,
   twoFactor: u.twoFactor,
   passkeys: u.passkeys,
+  profiles: u.profiles,
   hasPassword: u.hasPassword,
   email: u.email,
   lastSeen: isoOrNull(u.lastSeenAt),

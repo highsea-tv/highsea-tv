@@ -34,7 +34,7 @@ import {
 import { type PlaybackDecision, streamT } from '@highsea-tv/stream/decision'
 import type { Transcodes } from '@highsea-tv/stream/hls'
 import type { EndReason, PlaySession } from '@highsea-tv/stream/sessions'
-import { and, desc, eq, gte, lt } from 'drizzle-orm'
+import { and, desc, eq, gte, isNull, lt } from 'drizzle-orm'
 import { z } from 'zod'
 
 const { playbackHistory, users } = schema
@@ -56,6 +56,8 @@ export const JOIN_MS = 2 * MINUTE
 
 /** What's known when a session starts, kept beside it while it lives. */
 type Facts = {
+  /** The profile watching, by name, as it was when the session started (ADR 0068). */
+  profile: string | null
   deviceName: string
   client: ClientType
   year: number | null
@@ -128,6 +130,8 @@ export function createNowPlaying(deps: {
   /** The live sessions, from playback. */
   live(): PlaySession[]
   displayName(userId: string): string | null
+  /** A profile's name, or null when it's gone (ADR 0068). */
+  profileName(profileId: string): string | null
   device(deviceId: string): { name: string; client: ClientType } | null
   poster(tmdbId: number): string | null
   /** A new watch began: not a restart for another track, which joins the one before. */
@@ -135,6 +139,8 @@ export function createNowPlaying(deps: {
     sessionId: string
     tmdbId: number
     person: string
+    /** The profile watching, by name (ADR 0068). */
+    profile: string | null
     device: string
     method: 'direct-play' | 'direct-stream' | 'transcode'
     sent: string
@@ -172,7 +178,11 @@ export function createNowPlaying(deps: {
     const method = s.decision.method === 'unplayable' ? 'direct-play' : s.decision.method
     return {
       id: s.id,
-      user: { id: s.userId, displayName: deps.displayName(s.userId) ?? 'Someone' },
+      user: {
+        id: s.userId,
+        displayName: deps.displayName(s.userId) ?? 'Someone',
+        profile: f.profile,
+      },
       deviceName: f.deviceName,
       client: f.client,
       item: { tmdbId: s.tmdbId, title: s.title, year: f.year, poster: f.poster },
@@ -228,6 +238,7 @@ export function createNowPlaying(deps: {
     if (s.decision.method === 'unplayable') return
     const device = s.deviceId ? deps.device(s.deviceId) : null
     facts.set(s.id, {
+      profile: deps.profileName(s.profileId),
       deviceName: device?.name ?? 'Unknown device',
       client: device?.client ?? 'web',
       year: file.year,
@@ -243,6 +254,7 @@ export function createNowPlaying(deps: {
         sessionId: s.id,
         tmdbId: s.tmdbId,
         person: deps.displayName(s.userId) ?? 'Someone',
+        profile: f.profile,
         device: f.deviceName,
         method: s.decision.method,
         sent: f.sent,
@@ -298,6 +310,9 @@ export function createNowPlaying(deps: {
       .where(
         and(
           eq(playbackHistory.userId, s.userId),
+          f.profile === null
+            ? isNull(playbackHistory.profileName)
+            : eq(playbackHistory.profileName, f.profile),
           eq(playbackHistory.tmdbId, s.tmdbId),
           eq(playbackHistory.deviceName, f.deviceName),
           gte(playbackHistory.endedAt, now - JOIN_MS),
@@ -315,6 +330,7 @@ export function createNowPlaying(deps: {
         (o) =>
           o.id !== s.id &&
           o.userId === s.userId &&
+          o.profileId === s.profileId &&
           o.tmdbId === s.tmdbId &&
           facts.get(o.id)?.deviceName === f.deviceName,
       )
@@ -343,6 +359,7 @@ export function createNowPlaying(deps: {
       .values({
         id: randomUUID(),
         userId: s.userId,
+        profileName: f.profile,
         deviceName: f.deviceName,
         client: f.client,
         itemId: s.itemId,
@@ -377,7 +394,7 @@ export function createNowPlaying(deps: {
       .all()
     return rows.map(({ row, displayName }) => ({
       id: row.id,
-      user: { id: row.userId, displayName },
+      user: { id: row.userId, displayName, profile: row.profileName },
       deviceName: row.deviceName,
       client: row.client,
       item: {

@@ -74,10 +74,10 @@ export type CurationLibrary = {
   withFile(tmdbIds: number[]): Set<number>
   /** What a rule picks now: titles with a file, best first, at most `limit`, and how many in all. */
   pick(pick: LibraryPick, limit: number): { tmdbIds: number[]; total: number }
-  /** Titles as the apps see them, with this person's watch state, in this order. */
-  items(tmdbIds: number[], userId: string): ClientItem[]
+  /** Titles as the apps see them, with this profile's watch state (ADR 0068), in this order. */
+  items(tmdbIds: number[], profileId: string): ClientItem[]
   /** The rows under the featured ones: Continue watching, then Recently added and genres. */
-  builtIn(userId: string): BuiltInRow[]
+  builtIn(profileId: string): BuiltInRow[]
   ruleOptions(): Omit<RuleOptions, 'smart'>
 }
 
@@ -85,9 +85,13 @@ export type CurationLibrary = {
 export type SmartSource = {
   /**
    * What can be played, in the collection's order, at most `limit`, and how many in all; its watch
-   * rules read `userId`'s watch state (null for no one's).
+   * rules read `profileId`'s watch state (null for no one's).
    */
-  playable(id: string, limit: number, userId?: string | null): { tmdbIds: number[]; total: number }
+  playable(
+    id: string,
+    limit: number,
+    profileId?: string | null,
+  ): { tmdbIds: number[]; total: number }
   exists(id: string): boolean
   names(): { id: string; name: string }[]
   /** Changes whenever any collection does. */
@@ -114,8 +118,8 @@ export function createCuration(deps: {
   jobs: JobQueue
   logger: Logger
   library: CurationLibrary
-  /** A person's own order and hidden rows (`/me/home`). */
-  arrangement(userId: string): { order: string[]; hidden: string[] }
+  /** A profile's own order and hidden rows (`/me/home`, per profile since ADR 0068). */
+  arrangement(who: { userId: string; profileId: string }): { order: string[]; hidden: string[] }
   /** The server's own collections; without them a collection rule names TMDB's only. */
   smart?: SmartSource
 }) {
@@ -222,12 +226,12 @@ export function createCuration(deps: {
 
   /**
    * TMDB ids a source picks now, with a file, in order, and how many in all. A collection's watch
-   * rules read `userId`'s watch state (null, the admin's list of sections, for no one's).
+   * rules read `profileId`'s watch state (null, the admin's list of sections, for no one's).
    */
   function picks(
     source: FeaturedSource,
     limit = SECTION_MAX,
-    userId: string | null = null,
+    profileId: string | null = null,
   ): { tmdbIds: number[]; total: number } {
     if (source.kind === 'manual') {
       const playable = library.withFile(source.itemIds)
@@ -237,13 +241,17 @@ export function createCuration(deps: {
     const pick = rulePick(source)
     if (!pick) return { tmdbIds: [], total: 0 }
     if (pick.rule === 'smart')
-      return deps.smart?.playable(pick.collectionId, limit, userId) ?? { tmdbIds: [], total: 0 }
+      return deps.smart?.playable(pick.collectionId, limit, profileId) ?? { tmdbIds: [], total: 0 }
     return library.pick(pick, limit)
   }
 
-  function homeItems(tmdbIds: number[], overrides: FeaturedOverride[], userId: string): HomeItem[] {
+  function homeItems(
+    tmdbIds: number[],
+    overrides: FeaturedOverride[],
+    profileId: string,
+  ): HomeItem[] {
     const by = new Map(overrides.map((o) => [o.itemId, o]))
-    return library.items(tmdbIds, userId).map((m) => {
+    return library.items(tmdbIds, profileId).map((m) => {
       const o = by.get(m.id)
       return {
         ...m,
@@ -264,18 +272,29 @@ export function createCuration(deps: {
    * A person's home screen on one kind of app (client-home.md): the live featured sections in
    * their audience, the first hero on top and later ones as rows, Continue watching right after
    * the hero, then the built-in rows; then their own order and hidden rows. Empty rows are left out.
+   * The audience is the account's; watch state and the order are the profile's (ADR 0068).
    */
-  function homeFor(v: Viewer, client: ClientType, all: Section[], now: number): HomeSection[] {
+  function homeFor(
+    v: Viewer,
+    client: ClientType,
+    all: Section[],
+    now: number,
+    profileId: string,
+  ): HomeSection[] {
     let hero = false
     const featured = visibleSections(all, v, client, now).flatMap((s): HomeSection[] => {
-      const items = homeItems(picks(s.source, SECTION_MAX, v.id).tmdbIds, s.overrides, v.id)
+      const items = homeItems(
+        picks(s.source, SECTION_MAX, profileId).tmdbIds,
+        s.overrides,
+        profileId,
+      )
       if (!items.length) return []
       const layout = s.layout === 'hero' && !hero ? 'hero' : s.layout === 'hero' ? 'row' : s.layout
       if (layout === 'hero') hero = true
       return [{ id: s.id, title: s.title, suffix: s.tagline, layout, items }]
     })
     const builtIn = library
-      .builtIn(v.id)
+      .builtIn(profileId)
       .filter((r) => r.items.length > 0)
       .map(
         (r): HomeSection => ({
@@ -294,7 +313,7 @@ export function createCuration(deps: {
       ...builtIn.filter((r) => r.id !== 'continue'),
     ]
     // the person's own order and hidden rows (client-settings.md › Home screen); the hero stays
-    const own = deps.arrangement(v.id)
+    const own = deps.arrangement({ userId: v.id, profileId })
     const shown = rows.filter((r) => !own.hidden.includes(r.id))
     const pos = (r: HomeSection, i: number) => {
       const j = own.order.indexOf(r.id)
@@ -766,8 +785,9 @@ export function createCuration(deps: {
 
     // ---------------------------------------------------------- the apps
 
-    home(userId: string, client: ClientType): HomeSection[] {
-      return homeFor(viewer(userId), client, allSections(), clock.now())
+    /** Home for the account on one kind of app, as the profile watching (its own by default). */
+    home(userId: string, client: ClientType, profileId = userId): HomeSection[] {
+      return homeFor(viewer(userId), client, allSections(), clock.now(), profileId)
     },
 
     activeAnnouncements(userId: string, client: ClientType): ClientAnnouncement[] {
@@ -845,7 +865,7 @@ export function createCuration(deps: {
           updatedAt: now,
         }
         return {
-          sections: homeFor(v, input.client, allSections(), now),
+          sections: homeFor(v, input.client, allSections(), now, v.id),
           announcements: announcementsFor(v, input.client, [draft], new Set()),
           reaches: reaches(a.audience, v, input.client),
         }
@@ -865,7 +885,7 @@ export function createCuration(deps: {
       if (s.source.kind === 'rule' && !rulePick(s.source))
         draft.source = { kind: 'manual', itemIds: [] }
       return {
-        sections: homeFor(v, input.client, [...saved.filter((x) => x.id !== id), draft], now),
+        sections: homeFor(v, input.client, [...saved.filter((x) => x.id !== id), draft], now, v.id),
         announcements: [],
         reaches: reaches(s.audience, v, input.client),
       }

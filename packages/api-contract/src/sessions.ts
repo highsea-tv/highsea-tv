@@ -27,7 +27,15 @@ export const StoppedDetails = z
   })
   .openapi('StoppedDetails')
 
-const Person = z.object({ id: z.string(), displayName: z.string() })
+const Person = z.object({
+  id: z.string(),
+  displayName: z.string(),
+  /**
+   * The profile that watched (ADR 0068), by its name then; null for a watch recorded before
+   * profiles.
+   */
+  profile: z.string().nullable(),
+})
 
 const Title = z.object({
   /** Null when the title has left the library since. */

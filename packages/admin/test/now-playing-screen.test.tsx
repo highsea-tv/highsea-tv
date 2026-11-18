@@ -31,7 +31,7 @@ const { NowPlayingPage } = await import('../src/now-playing.tsx')
 
 const session = (over: Partial<StreamSession>): StreamSession => ({
   id: 's1',
-  user: { id: 'u1', displayName: 'Sam' },
+  user: { id: 'u1', displayName: 'Sam', profile: null },
   deviceName: 'Living room TV',
   client: 'tvos',
   item: { tmdbId: 45745, title: 'Sintel', year: 2010, poster: null },
@@ -55,7 +55,7 @@ const session = (over: Partial<StreamSession>): StreamSession => ({
 
 const record = (over: Partial<WatchRecord>): WatchRecord => ({
   id: 'h1',
-  user: { id: 'u1', displayName: 'Sam' },
+  user: { id: 'u1', displayName: 'Sam', profile: null },
   deviceName: 'Living room TV',
   client: 'tvos',
   item: { tmdbId: 45745, title: 'Sintel', year: 2010, poster: null },
@@ -146,7 +146,7 @@ describe('Now playing', () => {
         session({}),
         session({
           id: 's2',
-          user: { id: 'u2', displayName: 'Noor' },
+          user: { id: 'u2', displayName: 'Noor', profile: null },
           deviceName: 'Phone',
           client: 'ios',
           item: { tmdbId: null, title: 'Old film', year: null, poster: null },
@@ -159,7 +159,7 @@ describe('Now playing', () => {
         }),
         session({
           id: 's3',
-          user: { id: 'u3', displayName: 'Ali' },
+          user: { id: 'u3', displayName: 'Ali', profile: null },
           method: 'transcode',
           state: 'waiting',
           reasons: ['The browser can’t play DTS.'],
@@ -167,7 +167,8 @@ describe('Now playing', () => {
         // on the graphics chip (4.3b)
         session({
           id: 's4',
-          user: { id: 'u4', displayName: 'Jo' },
+          // watching as one of the account's other profiles (ADR 0068)
+          user: { id: 'u4', displayName: 'Jo', profile: 'Kit' },
           method: 'transcode',
           hardware: 'vaapi',
           speed: 5.2,
@@ -196,7 +197,8 @@ describe('Now playing', () => {
     // the title left the library: no link
     expect(within(noor).queryByRole('link', { name: 'Old film' })).toBeNull()
 
-    const jo = page.getByRole('listitem', { name: 'Jo, Sintel' })
+    const jo = page.getByRole('listitem', { name: 'Jo · Kit, Sintel' })
+    expect(within(jo).getByText(/^Jo · Kit · /)).toBeTruthy()
     expect(within(jo).getByText('VAAPI, 5.2× real time')).toBeTruthy()
 
     const ali = page.getByRole('listitem', { name: 'Ali, Sintel' })
@@ -228,7 +230,7 @@ describe('Now playing', () => {
       record({}),
       record({
         id: 'h2',
-        user: { id: 'u2', displayName: 'Noor' },
+        user: { id: 'u2', displayName: 'Noor', profile: null },
         finished: false,
         watched: 1500,
         network: 'remote',

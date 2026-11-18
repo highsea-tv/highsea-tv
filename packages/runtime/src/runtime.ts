@@ -3,6 +3,7 @@
 import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { networkInterfaces } from 'node:os'
 import { join, resolve } from 'node:path'
+import type { ServerSource } from '@highsea-tv/api-contract'
 import { type Auth, createAuth, type Issued, type RequestMeta } from '@highsea-tv/auth'
 import {
   CATALOG_SETTINGS_KEY,
@@ -210,7 +211,7 @@ export type PublicInfo = {
    * What this server can do so far. Clients show a widget only when its source is here, so a
    * server keeps working while later milestones add the rest.
    */
-  sources: WidgetSource[]
+  sources: ServerSource[]
   /** The data providers to credit in each app's About. */
   attributions: Attribution[]
 }
@@ -610,7 +611,8 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
       publicUrl: network.externalUrl(),
       setupComplete: isSetupComplete(db),
       auth: auth.methods(origin),
-      sources: SOURCES,
+      // profiles are served since A2b (ADR 0068); shows and music are still drafts
+      sources: [...SOURCES, 'profiles'],
       attributions: ATTRIBUTIONS,
     }
   }
@@ -903,6 +905,7 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
         return null
       }
     },
+    profileName: (profileId) => auth.profiles.nameOf(profileId),
     device: (deviceId) => auth.devices.find(deviceId),
     poster: (tmdbId) => metadata.cachedMovie(tmdbId)?.art.poster ?? null,
     onStarted: (p) => notify?.playbackStarted(p),
@@ -1205,7 +1208,7 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
     logger,
     library: createCurationLibrary({ db, clock, movies }),
     smart: collections,
-    arrangement: (userId) => personalization.home.layout(userId),
+    arrangement: (who) => personalization.home.layout(who),
   })
   curation.defineJobs()
   curation.schedule(clock.now())

@@ -41,6 +41,7 @@ export type UserOut = {
   libraries: User['libraries']
   twoFactor: boolean
   passkeys: number
+  profiles: number
   hasPassword: boolean
   email: string | null
   lastSeen: string | null

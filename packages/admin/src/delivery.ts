@@ -32,6 +32,15 @@ export const behind = (s: StreamSession) =>
   s.speed !== null &&
   s.speed < 1
 
+/**
+ * Who's watching: the account, and the profile beside it when it isn't named as the account is
+ * (ADR 0068), as the playback started notification says it.
+ */
+export const watcher = (user: { displayName: string; profile: string | null }) =>
+  user.profile && user.profile !== user.displayName
+    ? `${user.displayName} · ${user.profile}`
+    : user.displayName
+
 export const mbps = (n: number) => `${n.toFixed(n < 10 ? 1 : 0)} Mbps`
 
 /** 1:02:07 or 6:52, for a position in a film. */

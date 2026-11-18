@@ -179,6 +179,7 @@ describe('the guides', () => {
       'watch/index',
       'watch/iphone',
       'watch/playing',
+      'watch/profiles',
     ])
   })
 

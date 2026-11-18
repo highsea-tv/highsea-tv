@@ -1026,6 +1026,8 @@ export function createMockFetch(options: TransportOptions = {}): MockTransport {
     libraries: u.libraries,
     twoFactor: u.twoFactor,
     passkeys: 0,
+    // each mock account starts with the four profiles the prototype seeded (profiles.ts)
+    profiles: profilesOf(srv(), u.id).list().profiles.length,
     hasPassword: !u.invited,
     email: null,
     lastSeen: u.lastSeen && wall(u.lastSeen),

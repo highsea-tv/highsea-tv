@@ -3,13 +3,14 @@
 // serves profiles; elsewhere the address goes to Who's watching.
 import { useFormFactor } from '@highsea-tv/ui'
 import { type Href, Redirect } from 'expo-router'
-import { useProfilesState } from '../../../profiles/state.tsx'
+import { useProfilesKnown, useProfilesState } from '../../../profiles/state.tsx'
 import { TvNewProfile } from '../../../profiles/tv-new.tsx'
 
 export default function NewProfile() {
   const p = useProfilesState()
+  const known = useProfilesKnown()
   const tv = useFormFactor().input === 'tv'
-  if (!p) return <Redirect href="/" />
+  if (!p) return known ? <Redirect href="/" /> : null
   if (!tv) return <Redirect href={'/who' as Href} />
   if (!p.ready) return null
   return <TvNewProfile />

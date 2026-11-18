@@ -76,7 +76,7 @@ import type { ReactNode } from 'react'
 import { createContext, useContext, useState } from 'react'
 import { View, type ViewStyle } from 'react-native'
 import { widgets as messages } from './dashboard-messages.ts'
-import { behind, mbps, methodTone } from './delivery.ts'
+import { behind, mbps, methodTone, watcher } from './delivery.ts'
 import { type QueueFilter, queueFilters, torrentTone } from './downloads-status.ts'
 import { foldersOnDisk, releasesByDay } from './library-figures.ts'
 import { torrentState } from './movie-detail-messages.ts'
@@ -1469,7 +1469,7 @@ function NowPlaying(props: WidgetProps) {
                       )}
                     </View>
                     <Text variant="caption" color="text-3" numberOfLines={1}>
-                      {`${x.user.displayName} · ${x.deviceName}${x.state === 'paused' && !x.stopped ? t('playing.paused') : ''}`}
+                      {`${watcher(x.user)} · ${x.deviceName}${x.state === 'paused' && !x.stopped ? t('playing.paused') : ''}`}
                     </Text>
                     <ProgressBar
                       look="panel"

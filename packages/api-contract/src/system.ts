@@ -46,6 +46,7 @@ export const Attribution = z
 export const CLIENT_SOURCES = ['shows', 'music', 'profiles'] as const
 export const SERVER_SOURCES = [...WIDGET_SOURCES, ...CLIENT_SOURCES] as const
 export type ClientSource = (typeof CLIENT_SOURCES)[number]
+export type ServerSource = (typeof SERVER_SOURCES)[number]
 
 export const PublicInfo = z
   .object({

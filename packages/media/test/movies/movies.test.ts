@@ -351,6 +351,7 @@ describe('deleting', () => {
     db.insert(schema.watchPositions)
       .values({
         userId: u,
+        profileId: u,
         itemId: item?.id as string,
         positionSeconds: 60,
         durationSeconds: 900,
@@ -559,6 +560,7 @@ describe('the client API', () => {
     db.insert(schema.watchPositions)
       .values({
         userId: u,
+        profileId: u,
         itemId: sintel?.id as string,
         positionSeconds: 300,
         durationSeconds: 900,
@@ -615,7 +617,7 @@ describe('the client API', () => {
     await add(GRAN_DILLAMA)
     await add(METROPOLIS)
     const u = person()
-    const caminandes = await movies.client.search('caminandes', { userId: u, mayRequest: false })
+    const caminandes = await movies.client.search('caminandes', { profileId: u, mayRequest: false })
     expect(caminandes.sections.map((s) => s.kind)).toEqual(['movies', 'collections'])
     const collection = caminandes.sections[1]
     expect(collection?.kind === 'collections' && collection.items[0]).toMatchObject({
@@ -623,7 +625,7 @@ describe('the client API', () => {
       count: 2,
       years: '2013',
     })
-    const lang = await movies.client.search('lang', { userId: u, mayRequest: false })
+    const lang = await movies.client.search('lang', { profileId: u, mayRequest: false })
     expect(lang.sections[0]?.kind).toBe('people')
     expect(lang.sections[0]?.kind === 'people' && lang.sections[0].items[0]).toMatchObject({
       id: 68,
@@ -634,7 +636,7 @@ describe('the client API', () => {
     expect(
       lang.sections.find((s) => s.kind === 'movies')?.items.map((i) => (i as { id: number }).id),
     ).toEqual([METROPOLIS])
-    expect(await movies.client.search('  ', { userId: u, mayRequest: true })).toEqual({
+    expect(await movies.client.search('  ', { profileId: u, mayRequest: true })).toEqual({
       sections: [],
     })
   })
@@ -643,7 +645,7 @@ describe('the client API', () => {
     const { movies, add, person } = await start()
     await add(LLAMA_DRAMA)
     const u = person()
-    const r = await movies.client.search('caminandes', { userId: u, mayRequest: true })
+    const r = await movies.client.search('caminandes', { profileId: u, mayRequest: true })
     const discover = r.sections.find((s) => s.kind === 'discover')
     expect(discover?.items.length).toBeGreaterThan(0)
     expect(discover?.items.some((m) => (m as { id: number }).id === LLAMA_DRAMA)).toBe(false)
@@ -658,7 +660,7 @@ describe('the client API', () => {
       updatedAt: 0,
     })
     expect(
-      await offline.movies.client.search('caminandes', { userId: 'x', mayRequest: true }),
+      await offline.movies.client.search('caminandes', { profileId: 'x', mayRequest: true }),
     ).toEqual({
       sections: [],
     })

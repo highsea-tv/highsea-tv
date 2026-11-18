@@ -22,6 +22,11 @@ const TOUCH_EVERY = 60_000
 export type Principal = {
   user: UserView
   deviceId: string | null
+  /**
+   * The profile watching now (ADR 0068): the device's choice, else the account's own, whose id is
+   * the account's. Watch state is read and written as it.
+   */
+  profileId: string
   via: 'session' | 'token' | 'key' | 'proxy'
   /** API keys may be read-only; everything else is full. */
   scope: 'read' | 'full'
@@ -112,6 +117,7 @@ export function authenticateDevice(ctx: Ctx, secret: string, meta?: RequestMeta)
   return {
     user,
     deviceId: row.id,
+    profileId: row.profileId ?? row.userId,
     via: row.kind,
     scope: 'full',
     method: row.method,

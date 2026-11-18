@@ -85,10 +85,16 @@ export function registerPersonalization(app: OpenAPIHono<Env>) {
 
   // ---------------------------------------------------------------- home
 
-  app.openapi(routes.home.layout, (c) => c.json(p13n(c).home.layout(me(c).user.id), 200))
+  // each profile arranges its own Home (ADR 0068)
+  const owner = (c: Context<Env>) => {
+    const p = me(c)
+    return { userId: p.user.id, profileId: p.profileId }
+  }
+
+  app.openapi(routes.home.layout, (c) => c.json(p13n(c).home.layout(owner(c)), 200))
 
   app.openapi(routes.home.saveLayout, (c) =>
-    c.json(p13n(c).home.save(me(c).user.id, c.req.valid('json')), 200),
+    c.json(p13n(c).home.save(owner(c), c.req.valid('json')), 200),
   )
 
   // ---------------------------------------------------------------- appearance
