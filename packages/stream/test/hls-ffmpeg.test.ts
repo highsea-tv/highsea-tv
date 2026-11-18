@@ -277,6 +277,43 @@ describe.skipIf(!hasFfmpeg)('HLS with ffmpeg', () => {
     await transcodes.end('open-gop')
   })
 
+  test('a piece past a run’s first keeps its keyframe’s own time, after its leading frames (HT-59)', async () => {
+    // ffmpeg's HLS muxer fragments in DASH mode, which moved each fragment's first sample to where
+    // the last one ended unless `skip_sidx` is set: an open GOP's keyframe showed three frames
+    // early, before the leading frames that come before it
+    const film = join(dir, 'open-gop-later.mkv')
+    run(ffmpeg, [
+      ...['-v', 'error', '-y', '-f', 'lavfi', '-i', `testsrc2=size=320x180:rate=24:duration=12`],
+      ...['-c:v', 'libx264', '-preset', 'veryfast', '-bf', '3', '-pix_fmt', 'yuv420p'],
+      ...['-x264-params', 'open-gop=1', '-g', '48', '-keyint_min', '48', '-sc_threshold', '0'],
+      film,
+    ])
+    const t = transcodes.open(
+      'open-gop-later',
+      source({
+        input: film,
+        duration: 12,
+        decision: { ...decision({ action: 'copy' }), audio: null },
+        start: 0,
+        keyframes: () => readKeyframes(ffprobe, film, 0),
+      }),
+    )
+    const segments = await t.segments()
+    await t.segment(0)
+    const at = segments.findIndex((s) => s.start >= 4)
+    const files = await t.segment(at)
+    await t.init()
+    const video = packets(t.dir, files).filter((p) => p.stream === 0)
+    const start = segments[at]?.start ?? 0
+    // the keyframe, then its three leading frames in decode order, each shown before it, as in
+    // the film (a run from the film's start shifts every time by its B-frame delay, a frame or two)
+    const [key, ...leading] = video.slice(0, 4)
+    expect(key?.key).toBe(true)
+    expect(Math.abs((key?.pts ?? 0) - start)).toBeLessThan(0.1)
+    for (const l of leading) expect(l.pts).toBeLessThan(key?.pts ?? 0)
+    await transcodes.end('open-gop-later')
+  })
+
   test('the init, asked for as a seek restarts the run, comes from the new run', async () => {
     const t = transcodes.open('init-restart', source({}))
     t.prepare()
