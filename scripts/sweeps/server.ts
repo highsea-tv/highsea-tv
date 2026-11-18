@@ -40,6 +40,8 @@ const VARIANTS = [
 const WIDTHS = [1440, 390]
 // SWEEP_SHOTS=<folder>: also save each page, default theme, at each width (for checkpoint reports)
 const SHOTS = process.env.SWEEP_SHOTS
+// SWEEP_ONLY=<regex>: only the visits whose name matches, e.g. `^(admin:)?dashboard` (setup still runs)
+const ONLY = process.env.SWEEP_ONLY ? new RegExp(process.env.SWEEP_ONLY) : undefined
 
 // ---------------------------------------------------------------- the server
 
@@ -177,9 +179,10 @@ async function serverRendered(
 }
 
 async function sweep(
-  visits: Visit[],
+  all: Visit[],
   context: (options?: BrowserContextOptions) => Promise<BrowserContext>,
 ) {
+  const visits = ONLY ? all.filter((v) => ONLY.test(v.name)) : all
   if (only !== 'keyboard') {
     await serverRendered(visits, context)
     const jobs = visits.flatMap((v) => WIDTHS.flatMap((w) => VARIANTS.map((q) => ({ v, w, q }))))
