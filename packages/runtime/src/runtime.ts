@@ -357,6 +357,8 @@ export type Runtime = {
   status(): SystemStatus
   /** What needs attention, for the server card and System › Health. */
   issues(): HealthIssue[]
+  /** Dismisses a check that can be dismissed, for good; false for any other id. */
+  dismissIssue(id: string): boolean
   health(): HealthReport
   /**
    * The owner's tools (8b, ADR 0047): General's settings, the log and its level, crash reports,
@@ -1513,6 +1515,11 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
         ]),
       }
     },
+    dismissIssue(id) {
+      if (id !== 'reverse-proxy' || !network.proxyNotice()) return false
+      network.dismissProxyNotice()
+      return true
+    },
     issues() {
       const out: HealthIssue[] = []
       const report = runtime.health()
@@ -1547,6 +1554,24 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
             'The external URL isn’t HTTPS: passwords cross the internet unencrypted, and passkeys can’t work there.',
           since: startedAt,
         })
+      // a reverse proxy highsea isn't set for (HT-53): an offer the owner confirms, never applied
+      const proxy = network.proxyNotice()
+      if (proxy) {
+        const query = new URLSearchParams({
+          proxy: '1',
+          externalUrl: proxy.externalUrl,
+          trustedProxies: proxy.trustedProxies,
+        })
+        out.push({
+          id: 'reverse-proxy',
+          source: 'Network',
+          level: 'notice',
+          message: `A reverse proxy looks to be in front of highsea, for ${proxy.host}. Set highsea up for it, so it knows who’s visiting and whether they came over HTTPS.`,
+          since: proxy.since,
+          action: { kind: 'reverse-proxy', path: `/settings/network?${query}` },
+          dismissible: true,
+        })
+      }
       // no key from the owner or the image (install-simplicity.md B): nothing new can be found
       const key = metadata.settings.get().key
       if (!key.set && !key.builtIn)

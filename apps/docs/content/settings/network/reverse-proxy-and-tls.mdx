@@ -13,6 +13,14 @@ description: Serve highsea over HTTPS through a reverse proxy you run or with it
     (HTTPS starts with the server), compose.yaml at the repository's root.
   - Caddy's reverse_proxy and the X-Forwarded headers it sets:
     https://caddyserver.com/docs/caddyfile/directives/reverse_proxy
+  - HTTPS only (HT-53): packages/network/src/front-door.ts, apps/server/src/http.ts; HSTS, RFC 6797,
+    https://www.rfc-editor.org/rfc/rfc6797 ; Caddy's automatic HTTP-to-HTTPS redirects,
+    https://caddyserver.com/docs/automatic-https
+  - DSM's reverse proxy: Synology's Login Portal › Advanced help,
+    https://kb.synology.com/en-global/DSM/help/DSM/AdminCenter/system_login_portal_advanced?version=7 ;
+    the nginx configuration DSM writes for a rule, with its HSTS header and X-Forwarded-Proto,
+    https://www.synoforum.com/resources/synology-reverse-proxy-under-the-hood.135/ ; certificates,
+    https://kb.synology.com/en-global/DSM/help/DSM/AdminCenter/connection_certificate?version=7
   - Certificates: certbot, https://certbot.eff.org/ ; tailscale cert,
     https://tailscale.com/kb/1153/enabling-https
 */}
@@ -47,6 +55,42 @@ Then, in highsea:
 2. Enter the proxy's address as the **External URL**.
 3. Under **Trusted proxies**, enter the proxy's address, or a range that holds it.
 4. Turn on **Use X-Forwarded-For and X-Forwarded-Proto**.
+
+### When highsea notices your proxy
+
+If you set the proxy up first, highsea notices requests that come through one. **System › Health** then shows a notice from Network, "A reverse proxy looks to be in front of highsea, for" the name people used, with two buttons:
+
+- **Set it up** opens this page with the steps above filled in: **My proxy handles it**, the name as the **External URL**, the address the proxy connects from under **Trusted proxies**, and the switch on. Check them, then save. Nothing changes until you do.
+- **Dismiss** hides the notice for good.
+
+highsea doesn't make the change on its own. Anyone can send the headers a proxy sends, so believing them is a choice only you can make, for the proxy you know is yours.
+
+## HTTPS only
+
+When **TLS** is **My proxy handles it**, the forwarded headers are on, and the **External URL** starts with `https://`, highsea keeps people on HTTPS:
+
+- A request your proxy says came over plain HTTP is sent to the External URL, with the same path.
+- Answers over HTTPS for the External URL's name tell browsers to use only HTTPS there for the next year (the `Strict-Transport-Security` header). It covers that name alone, not the other names on your domain.
+
+Your own network's plain address, such as `http://192.168.1.20:3000`, keeps working: those requests don't come through the proxy, so nothing redirects them.
+
+For a plain HTTP request to reach highsea at all, the proxy has to take it on port 80 and pass it on with `X-Forwarded-Proto`. Caddy doesn't: it redirects port 80 to HTTPS itself.
+
+## On a Synology NAS
+
+DSM, the NAS's own system, has a reverse proxy built in, under **Control Panel › Login Portal › Advanced › Reverse Proxy**. It passes `X-Forwarded-For` and `X-Forwarded-Proto` on, so highsea works behind it as above. On your router, forward ports 443 and 80 to the NAS, and point your name's DNS record at your home's address.
+
+1. Get a certificate for the name in **Control Panel › Security › Certificate**: **Add**, then **Get a certificate from Let's Encrypt**. DSM renews it on its own.
+2. In **Reverse Proxy**, **Create** a rule for HTTPS:
+   - **Source:** protocol **HTTPS**, hostname your name (such as `watch.example.net`), port **443**.
+   - **Destination:** protocol **HTTP**, hostname **localhost**, port **3000**.
+   - Leave **Enable HSTS** off. DSM's own header also covers every other name on your domain and asks browsers' preload lists to include it. highsea sends a narrower one itself, as [HTTPS only](#https-only) says.
+3. **Create** a second rule for plain HTTP, which highsea redirects:
+   - **Source:** protocol **HTTP**, the same hostname, port **80**.
+   - **Destination:** the same as the first rule.
+4. Back in **Certificate**, choose **Settings** and give the rule's name the certificate from step 1.
+
+Then set highsea up for it, as in [Through a reverse proxy](#through-a-reverse-proxy), or open it through the name once and use the notice's **Set it up**. DSM's proxy runs on the NAS itself, so it reaches highsea from `127.0.0.1`, or from the container network's gateway, such as `172.17.0.1`, if highsea runs in Container Manager without host networking. The notice fills in the address it saw.
 
 ## Trusted proxies
 

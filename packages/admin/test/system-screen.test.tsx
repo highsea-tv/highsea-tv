@@ -10,8 +10,9 @@ import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test'
 import type { ReactNode } from 'react'
 import { shown } from './modal.ts'
 
+const pushed: string[] = []
 mock.module('../src/navigation.tsx', () => ({
-  useRouter: () => ({ push: () => {} }),
+  useRouter: () => ({ push: (href: string) => pushed.push(href) }),
   usePathname: () => '/',
   useSearchParams: () => new URLSearchParams(),
 }))
@@ -104,7 +105,15 @@ const LOG = [
 
 type State = {
   sources: string[]
-  health: { id: string; source: string; level: string; message: string; since: string }[]
+  health: {
+    id: string
+    source: string
+    level: string
+    message: string
+    since: string
+    action?: { kind: string; path: string }
+    dismissible?: boolean
+  }[]
   tasks: Record<string, unknown>[]
   queue: ReturnType<typeof queueItem>[]
   torrents: { downRate: number; upRate: number; state: string }[]
@@ -240,6 +249,9 @@ async function api(url: string, init: RequestInit = {}): Promise<Response> {
       return json({ version: null, lastCheck: null, available: null })
     case 'GET /api/v1/system/health':
       return json(state.health)
+    case 'POST /api/v1/system/health/reverse-proxy/dismiss':
+      state.health = state.health.filter((h) => h.id !== 'reverse-proxy')
+      return new Response(null, { status: 204 })
     case 'GET /api/v1/system/tasks':
       return json(state.tasks)
     case 'POST /api/v1/system/tasks/indexers.rss/run':
@@ -405,6 +417,47 @@ describe('System › Health', () => {
     expect(
       within(page.getByRole('list', { name: 'Health checks' })).getByText('Warning'),
     ).toBeTruthy()
+  })
+})
+
+describe('System › Health’s reverse proxy notice (HT-53)', () => {
+  const notice = {
+    id: 'reverse-proxy',
+    source: 'Network',
+    level: 'notice',
+    message:
+      'A reverse proxy looks to be in front of highsea, for watch.example.net. Set highsea up for it, so it knows who’s visiting and whether they came over HTTPS.',
+    since: new Date(Date.now() - 60_000).toISOString(),
+    action: {
+      kind: 'reverse-proxy',
+      path: '/settings/network?proxy=1&externalUrl=https%3A%2F%2Fwatch.example.net&trustedProxies=127.0.0.1',
+    },
+    dismissible: true,
+  }
+
+  test('the owner opens Settings › Network set for it, or dismisses it', async () => {
+    pushed.length = 0
+    state.health = [notice]
+    const { page, user } = await open(<System tab="health" />)
+    const list = page.getByRole('list', { name: 'Health checks' })
+    expect(within(list).getByText('Notice')).toBeTruthy()
+    expect(within(list).getByText(/for watch\.example\.net/)).toBeTruthy()
+    await user.click(within(list).getByRole('button', { name: 'Set it up' }))
+    expect(pushed).toEqual([notice.action.path])
+
+    await user.click(within(list).getByRole('button', { name: 'Dismiss' }))
+    await settle()
+    expect(requested('/api/v1/system/health/reverse-proxy/dismiss')).toHaveLength(1)
+    expect(page.getByText('Everything’s healthy')).toBeTruthy()
+  })
+
+  test('an admin sees it without the owner’s buttons', async () => {
+    role = 'admin'
+    state.health = [notice]
+    const { page } = await open(<System tab="health" />)
+    expect(page.getByText(/for watch\.example\.net/)).toBeTruthy()
+    expect(page.queryByRole('button', { name: 'Set it up' })).toBeNull()
+    expect(page.queryByRole('button', { name: 'Dismiss' })).toBeNull()
   })
 })
 

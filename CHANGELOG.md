@@ -7,6 +7,19 @@ While highsea is at 0.x, any release may change how something works. When one do
 
 ## [Unreleased]
 
+## [0.4.3] - 2026-11-18
+
+### Changed
+
+- Run scoped checks in tasks and leave the full gate to CI ([#50](https://github.com/highsea-tv/highsea-tv/pull/50))
+- Cut CI's wait: shard the tests, cache cargo-audit, reuse next's results ([#48](https://github.com/highsea-tv/highsea-tv/pull/48))
+- HT-44 Toasts above sheets, floating side sheets, 0.4.2 recorded ([#51](https://github.com/highsea-tv/highsea-tv/pull/51))
+- HT-45 Client error reports (A2a) ([#53](https://github.com/highsea-tv/highsea-tv/pull/53))
+- HT-46 Faster playback start and resume, with timings in the logs ([#54](https://github.com/highsea-tv/highsea-tv/pull/54))
+- HT-48 Read keyframes from the file's index, not the whole film ([#56](https://github.com/highsea-tv/highsea-tv/pull/56))
+- HT-49 Send a film's own subtitles in segments, in step with the picture ([#57](https://github.com/highsea-tv/highsea-tv/pull/57))
+- HT-47 Prototype the dashboard widgets' next round ([#55](https://github.com/highsea-tv/highsea-tv/pull/55))
+
 ## [0.4.2] - 2026-11-17
 
 ### Added
@@ -141,7 +154,9 @@ While highsea is at 0.x, any release may change how something works. When one do
 - A one-time migration from Radarr and qBittorrent in Settings › Migration.
 - Images for amd64 and arm64 at `ghcr.io/highsea-tv/highsea`, with compose files and templates for Unraid, TrueNAS and Synology.
 
-[unreleased]: https://github.com/highsea-tv/highsea-tv/compare/v0.4.2...HEAD
+
+[unreleased]: https://github.com/highsea-tv/highsea-tv/compare/v0.4.3...HEAD
+[0.4.3]: https://github.com/highsea-tv/highsea-tv/compare/v0.4.2...v0.4.3
 [0.4.2]: https://github.com/highsea-tv/highsea-tv/compare/v0.4.1...v0.4.2
 [0.4.1]: https://github.com/highsea-tv/highsea-tv/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/highsea-tv/highsea-tv/compare/v0.3.0...v0.4.0

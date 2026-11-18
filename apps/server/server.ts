@@ -64,6 +64,7 @@ if (tryPage)
   log.warn('The playback test page is on at /stream/try', { env: 'HIGHSEA_PLAYBACK_TRY' })
 const handlers = {
   api: createApi(runtime),
+  network: runtime.network,
   next: handle,
   stream: createStream(runtime, { tryPage }),
   // the client's web export (apps/client/dist, ADR 0061); `bun run web` serves it with Expo's dev
