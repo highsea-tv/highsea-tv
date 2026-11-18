@@ -3,12 +3,13 @@
 // reports, updates, /metrics, and their settings: General, Backups and Metrics.
 import { createReadStream } from 'node:fs'
 import { Readable } from 'node:stream'
-import { routes } from '@highsea-tv/api-contract'
+import { CLIENT_REPORT_MAX, routes } from '@highsea-tv/api-contract'
 import { isStaff } from '@highsea-tv/auth'
 import { AppError, iso, jsonLine, type LogEntry } from '@highsea-tv/core'
 import { type Backup, METRICS_CONTENT_TYPE } from '@highsea-tv/runtime'
 import type { OpenAPIHono } from '@hono/zod-openapi'
 import type { Context } from 'hono'
+import { bodyLimit } from 'hono/body-limit'
 import { actor, type Env, me } from './guard.ts'
 
 const backupView = (b: Backup) => ({
@@ -27,12 +28,16 @@ const entryView = (e: LogEntry) => {
   return { ...plain, at: iso(e.at) }
 }
 
-/** Files one after another as a web stream, so a large backup or log isn't read into memory. */
-const streamOf = (paths: string[]) =>
+/**
+ * Files one after another as a web stream, so a large backup or log isn't read into memory, then
+ * any lines to end it with.
+ */
+const streamOf = (paths: string[], after?: () => Iterable<string>) =>
   Readable.toWeb(
     Readable.from(
       (async function* () {
         for (const path of paths) yield* createReadStream(path)
+        if (after) for (const line of after()) yield Buffer.from(line)
       })(),
     ),
   ) as unknown as ReadableStream
@@ -45,6 +50,17 @@ const attachment = (name: string) => ({
 })
 
 export function registerOperations(app: OpenAPIHono<Env>) {
+  // a client report over its limit is refused before it's read (Hono, Body Limit Middleware,
+  // https://hono.dev/docs/middleware/builtin/body-limit)
+  app.use(
+    routes.system.sendClientReport.path,
+    bodyLimit({
+      maxSize: CLIENT_REPORT_MAX,
+      onError: () => {
+        throw new AppError('invalid', 'That report is too large.', { reason: 'size' })
+      },
+    }),
+  )
   const ops = (c: Context<Env>) => c.get('runtime').operations
   const audit = (c: Context<Env>, action: string, target?: string) =>
     c.get('runtime').auth.ctx.audit({
@@ -111,10 +127,16 @@ export function registerOperations(app: OpenAPIHono<Env>) {
 
   app.openapi(routes.system.downloadLogs, (c) => {
     const day = new Date(c.get('runtime').clock.now()).toISOString().slice(0, 10)
-    return c.body(streamOf(ops(c).logs.paths()), 200, {
-      'content-type': 'application/x-ndjson',
-      ...attachment(`highsea-logs-${day}.jsonl`),
-    }) as never
+    // the apps' reports end the download, each as a line of its own (ADR 0066)
+    const reports = ops(c).clientReports
+    return c.body(
+      streamOf(ops(c).logs.paths(), () => reports.lines()),
+      200,
+      {
+        'content-type': 'application/x-ndjson',
+        ...attachment(`highsea-logs-${day}.jsonl`),
+      },
+    ) as never
   })
 
   app.openapi(routes.system.crashes, (c) =>
@@ -129,6 +151,44 @@ export function registerOperations(app: OpenAPIHono<Env>) {
   app.openapi(routes.system.crash, (c) => {
     const { id } = c.req.valid('param')
     const path = ops(c).crashes.path(id)
+    return c.body(streamOf([path]), 200, {
+      'content-type': 'application/json',
+      ...attachment(`${id}.json`),
+    }) as never
+  })
+
+  // ---------------------------------------------------------------- what the apps report
+
+  app.openapi(routes.system.clientReports, (c) =>
+    c.json(
+      ops(c)
+        .clientReports.list()
+        .map((r) => ({ ...r, at: iso(r.at) })),
+      200,
+    ),
+  )
+
+  app.openapi(routes.system.sendClientReport, (c) => {
+    const p = me(c)
+    const input = c.req.valid('json')
+    // a failed play is reproduced from the profile the server decided with (ADR 0052): the
+    // built-in one the app named, with what the device reported over it
+    let deviceProfile: unknown
+    if (input.kind === 'play')
+      try {
+        deviceProfile = c
+          .get('runtime')
+          .playback.profileFor(p.deviceId, input.play?.profile ?? undefined)
+      } catch {
+        // a profile the server doesn't know: the report says its name
+      }
+    ops(c).clientReports.record(input, { userId: p.user.id, deviceProfile })
+    return c.body(null, 204)
+  })
+
+  app.openapi(routes.system.clientReport, (c) => {
+    const { id } = c.req.valid('param')
+    const path = ops(c).clientReports.path(id)
     return c.body(streamOf([path]), 200, {
       'content-type': 'application/json',
       ...attachment(`${id}.json`),

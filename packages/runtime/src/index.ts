@@ -3,6 +3,7 @@
 // workers, booted once by the server entry and shared through `getRuntime()`.
 export * from './automation.ts'
 export * from './backups.ts'
+export * from './client-reports.ts'
 export * from './config.ts'
 export * from './container-network.ts'
 export * from './crashes.ts'

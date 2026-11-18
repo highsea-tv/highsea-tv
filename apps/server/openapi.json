@@ -3441,6 +3441,386 @@
           "size"
         ]
       },
+      "ClientReport": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-10-17T20:15:00.000Z"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "error",
+              "play"
+            ]
+          },
+          "app": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          },
+          "device": {
+            "type": "string"
+          },
+          "screen": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "size": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "at",
+          "kind",
+          "app",
+          "version",
+          "device",
+          "screen",
+          "message",
+          "size"
+        ]
+      },
+      "ClientReportInput": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "error",
+              "play"
+            ]
+          },
+          "app": {
+            "type": "string",
+            "enum": [
+              "web",
+              "desktop",
+              "ios",
+              "android",
+              "tvos",
+              "androidtv"
+            ]
+          },
+          "version": {
+            "type": "string",
+            "maxLength": 32,
+            "example": "0.4.2"
+          },
+          "device": {
+            "type": "string",
+            "maxLength": 400,
+            "example": "Apple TV 4K · tvOS 26.1"
+          },
+          "screen": {
+            "type": "string",
+            "maxLength": 200,
+            "example": "/movies/603"
+          },
+          "error": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "maxLength": 100
+              },
+              "message": {
+                "type": "string",
+                "maxLength": 2000
+              },
+              "stack": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 16000
+              },
+              "componentStack": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 8000
+              }
+            },
+            "required": [
+              "name",
+              "message",
+              "stack"
+            ]
+          },
+          "play": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "movie",
+                  "episode"
+                ]
+              },
+              "id": {
+                "type": "integer"
+              },
+              "versionId": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 64
+              },
+              "audioId": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 128
+              },
+              "subtitleId": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 128
+              },
+              "profile": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 64
+              },
+              "sessionId": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 64
+              },
+              "decision": {
+                "$ref": "#/components/schemas/PlaybackDecision"
+              },
+              "position": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "minimum": 0
+              }
+            },
+            "required": [
+              "type",
+              "id",
+              "versionId",
+              "audioId",
+              "subtitleId",
+              "profile",
+              "sessionId",
+              "decision",
+              "position"
+            ]
+          }
+        },
+        "required": [
+          "kind",
+          "app",
+          "version",
+          "device",
+          "screen",
+          "error"
+        ]
+      },
+      "PlaybackDecision": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "method": {
+            "type": "string",
+            "enum": [
+              "direct-play",
+              "direct-stream",
+              "transcode",
+              "unplayable"
+            ]
+          },
+          "container": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "video": {
+            "oneOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "action": {
+                    "type": "string",
+                    "enum": [
+                      "copy"
+                    ]
+                  }
+                },
+                "required": [
+                  "action"
+                ]
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "action": {
+                    "type": "string",
+                    "enum": [
+                      "transcode"
+                    ]
+                  },
+                  "codec": {
+                    "type": "string",
+                    "enum": [
+                      "h264"
+                    ]
+                  },
+                  "height": {
+                    "type": "integer"
+                  },
+                  "bitrate": {
+                    "type": "integer"
+                  },
+                  "toSdr": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "action",
+                  "codec",
+                  "height",
+                  "bitrate",
+                  "toSdr"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "audio": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "action": {
+                "type": "string",
+                "enum": [
+                  "copy",
+                  "transcode"
+                ]
+              },
+              "codec": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "channels": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "action",
+              "codec",
+              "channels"
+            ]
+          },
+          "subtitle": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "delivery": {
+                "type": "string",
+                "enum": [
+                  "external",
+                  "embedded",
+                  "burn-in",
+                  "unavailable"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "delivery"
+            ]
+          },
+          "bitrate": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "reasons": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlaybackReason"
+            }
+          }
+        },
+        "required": [
+          "method",
+          "container",
+          "video",
+          "audio",
+          "subtitle",
+          "bitrate",
+          "reasons"
+        ]
+      },
+      "PlaybackReason": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "accepted",
+              "rejected",
+              "warning"
+            ]
+          },
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "code",
+          "message"
+        ]
+      },
       "Updates": {
         "type": "object",
         "properties": {
@@ -8067,185 +8447,6 @@
           "start",
           "duration",
           "expiresAt"
-        ]
-      },
-      "PlaybackDecision": {
-        "type": "object",
-        "properties": {
-          "method": {
-            "type": "string",
-            "enum": [
-              "direct-play",
-              "direct-stream",
-              "transcode",
-              "unplayable"
-            ]
-          },
-          "container": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "video": {
-            "oneOf": [
-              {
-                "type": "object",
-                "properties": {
-                  "action": {
-                    "type": "string",
-                    "enum": [
-                      "copy"
-                    ]
-                  }
-                },
-                "required": [
-                  "action"
-                ]
-              },
-              {
-                "type": "object",
-                "properties": {
-                  "action": {
-                    "type": "string",
-                    "enum": [
-                      "transcode"
-                    ]
-                  },
-                  "codec": {
-                    "type": "string",
-                    "enum": [
-                      "h264"
-                    ]
-                  },
-                  "height": {
-                    "type": "integer"
-                  },
-                  "bitrate": {
-                    "type": "integer"
-                  },
-                  "toSdr": {
-                    "type": "boolean"
-                  }
-                },
-                "required": [
-                  "action",
-                  "codec",
-                  "height",
-                  "bitrate",
-                  "toSdr"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "audio": {
-            "type": [
-              "object",
-              "null"
-            ],
-            "properties": {
-              "id": {
-                "type": "string"
-              },
-              "action": {
-                "type": "string",
-                "enum": [
-                  "copy",
-                  "transcode"
-                ]
-              },
-              "codec": {
-                "type": [
-                  "string",
-                  "null"
-                ]
-              },
-              "channels": {
-                "type": [
-                  "integer",
-                  "null"
-                ]
-              }
-            },
-            "required": [
-              "id",
-              "action",
-              "codec",
-              "channels"
-            ]
-          },
-          "subtitle": {
-            "type": [
-              "object",
-              "null"
-            ],
-            "properties": {
-              "id": {
-                "type": "string"
-              },
-              "delivery": {
-                "type": "string",
-                "enum": [
-                  "external",
-                  "embedded",
-                  "burn-in",
-                  "unavailable"
-                ]
-              }
-            },
-            "required": [
-              "id",
-              "delivery"
-            ]
-          },
-          "bitrate": {
-            "type": [
-              "integer",
-              "null"
-            ]
-          },
-          "reasons": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/PlaybackReason"
-            }
-          }
-        },
-        "required": [
-          "method",
-          "container",
-          "video",
-          "audio",
-          "subtitle",
-          "bitrate",
-          "reasons"
-        ]
-      },
-      "PlaybackReason": {
-        "type": "object",
-        "properties": {
-          "kind": {
-            "type": "string",
-            "enum": [
-              "accepted",
-              "rejected",
-              "warning"
-            ]
-          },
-          "code": {
-            "type": "string"
-          },
-          "message": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "kind",
-          "code",
-          "message"
         ]
       },
       "PlaySubtitle": {
@@ -19656,6 +19857,190 @@
           "System"
         ],
         "summary": "Download a crash report, to attach to an issue",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The report",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/system/client-reports": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "summary": "Reports the apps sent, newest first",
+        "description": "Errors nothing handled and plays that failed, sent by the apps signed in here (ADR 0066). Kept when General › Diagnostics’ switch is on, the newest 200. Nothing is sent anywhere.",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Reports",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ClientReport"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "System"
+        ],
+        "summary": "Report an error or a failed play from an app",
+        "description": "An app tells its own server what failed, with the app, its version, the device, the screen and the error; the server adds who sent it, and for a failed play the device’s profile. At most 64 KB. Kept only when General › Diagnostics’ switch is on; answered 204 either way.",
+        "x-highsea-access": "user",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClientReportInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Done"
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/system/client-reports/{id}": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "summary": "Download a report an app sent",
         "x-highsea-access": "staff",
         "security": [
           {

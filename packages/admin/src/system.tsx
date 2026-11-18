@@ -9,6 +9,7 @@
 import {
   API_PREFIX,
   type Backup,
+  type ClientReport,
   type CrashReport,
   DOWNLOAD_TOPICS,
   type HealthCheck,
@@ -23,7 +24,7 @@ import {
 import { bytes, duration, percent } from '@highsea-tv/core/format'
 import { useLocale, useT } from '@highsea-tv/i18n/react'
 import type { ApiError } from '@highsea-tv/sdk'
-import { useAction, useClient, useQuery } from '@highsea-tv/sdk/react'
+import { type Query, useAction, useClient, useQuery } from '@highsea-tv/sdk/react'
 import { admin, line } from '@highsea-tv/tokens'
 import {
   Badge,
@@ -864,19 +865,44 @@ function Logs() {
         </Loadable>
       </TableFrame>
       <Crashes />
+      <ClientReports />
     </View>
   )
 }
 
-/** Crash reports, each to download and attach to an issue; whether they're written is General's. */
-function Crashes() {
+/** A report's row: what failed, then when, where from and its size, and its download. */
+type ReportRow = { id: string; message: string; at: string; origin: string; size: number }
+
+/**
+ * A group of reports, each to download and attach to an issue: the server's own crash reports and
+ * what the apps sent (ADR 0066) are drawn the same.
+ */
+function Reports<R>({
+  title,
+  description,
+  label,
+  none,
+  what,
+  query,
+  row,
+  href,
+  downloadLabel,
+  children,
+}: {
+  title: string
+  description: string
+  label: string
+  none: string
+  what: string
+  query: Query<R[]>
+  row: (r: R) => ReportRow
+  href: (id: string) => string
+  downloadLabel: (r: R, at: string) => string
+  children?: ReactNode
+}) {
   const t = useT(messages)
   const theme = useTheme()
   const locale = useLocale()
-  const crashes = useQuery('system:crashes', (c) => c.system.crashes(), [OPERATIONS_TOPICS.logs])
-  const general = useQuery('settings:general', (c) => c.settings.general(), [
-    OPERATIONS_TOPICS.settings,
-  ])
   const when = new Intl.DateTimeFormat(dateLocale(locale), {
     day: 'numeric',
     month: 'short',
@@ -884,19 +910,18 @@ function Crashes() {
     minute: '2-digit',
   })
   return (
-    <Group title={t('crashes.title')} description={t('crashes.description')}>
-      {general.data && !general.data.crashReports ? (
-        <TextLink href="/settings/general">{t('crashes.off')}</TextLink>
-      ) : null}
-      <Loadable query={crashes} what={t('crashes.what')}>
-        {(cs: CrashReport[]) =>
-          cs.length === 0 ? (
+    <Group title={title} description={description}>
+      {children}
+      <Loadable query={query} what={what}>
+        {(rs: R[]) =>
+          rs.length === 0 ? (
             <Text variant="caption" color="text-3">
-              {t('crashes.none')}
+              {none}
             </Text>
           ) : (
-            <View role="list" aria-label={t('crashes.label')} style={{ gap: sp['2'] }}>
-              {cs.map((c) => {
+            <View role="list" aria-label={label} style={{ gap: sp['2'] }}>
+              {rs.map((r) => {
+                const c = row(r)
                 const at = when.format(new Date(c.at))
                 return (
                   <View
@@ -937,9 +962,9 @@ function Crashes() {
                       size="sm"
                       variant="ghost"
                       icon="download"
-                      href={`${API_PREFIX}/system/crashes/${encodeURIComponent(c.id)}`}
+                      href={href(c.id)}
                       follow="download"
-                      accessibilityLabel={t('crashes.downloadLabel', { at })}
+                      accessibilityLabel={downloadLabel(r, at)}
                     >
                       {t('crashes.download')}
                     </Button>
@@ -951,6 +976,62 @@ function Crashes() {
         }
       </Loadable>
     </Group>
+  )
+}
+
+/** Crash reports, each to download and attach to an issue; whether they're written is General's. */
+function Crashes() {
+  const t = useT(messages)
+  const crashes = useQuery('system:crashes', (c) => c.system.crashes(), [OPERATIONS_TOPICS.logs])
+  const general = useQuery('settings:general', (c) => c.settings.general(), [
+    OPERATIONS_TOPICS.settings,
+  ])
+  return (
+    <Reports<CrashReport>
+      title={t('crashes.title')}
+      description={t('crashes.description')}
+      label={t('crashes.label')}
+      none={t('crashes.none')}
+      what={t('crashes.what')}
+      query={crashes}
+      row={(c) => c}
+      href={(id) => `${API_PREFIX}/system/crashes/${encodeURIComponent(id)}`}
+      downloadLabel={(_, at) => t('crashes.downloadLabel', { at })}
+    >
+      {general.data && !general.data.crashReports ? (
+        <TextLink href="/settings/general">{t('crashes.off')}</TextLink>
+      ) : null}
+    </Reports>
+  )
+}
+
+/**
+ * What the apps sent (ADR 0066): errors nothing handled and plays that failed, beside the server's
+ * own crash reports and drawn as they are. Kept under the same switch, which Crash reports names.
+ */
+function ClientReports() {
+  const t = useT(messages)
+  const reports = useQuery('system:client-reports', (c) => c.system.clientReports(), [
+    OPERATIONS_TOPICS.logs,
+  ])
+  return (
+    <Reports<ClientReport>
+      title={t('reports.title')}
+      description={t('reports.description')}
+      label={t('reports.label')}
+      none={t('reports.none')}
+      what={t('reports.what')}
+      query={reports}
+      row={(r) => ({
+        id: r.id,
+        message: r.message,
+        at: r.at,
+        origin: `${r.app} ${r.version} ${r.screen}`,
+        size: r.size,
+      })}
+      href={(id) => `${API_PREFIX}/system/client-reports/${encodeURIComponent(id)}`}
+      downloadLabel={(r, at) => t('reports.downloadLabel', { app: r.app, at })}
+    />
   )
 }
 

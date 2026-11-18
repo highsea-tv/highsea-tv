@@ -3,8 +3,19 @@
 // .md), and the event stream. Checkpoint 8b adds the owner's tools (ADR 0047): backups, the log and
 // crash reports, updates, and /metrics for Prometheus.
 import { createRoute, z } from '@hono/zod-openapi'
-import { API_PREFIX, access, errors, IdParam, IsoDate, IsoDay, json, noContent } from './common.ts'
+import {
+  API_PREFIX,
+  access,
+  body,
+  errors,
+  IdParam,
+  IsoDate,
+  IsoDay,
+  json,
+  noContent,
+} from './common.ts'
 import { Branding, WIDGET_SOURCES } from './personalization.ts'
+import { PlaybackDecision } from './playback.ts'
 
 export const Health = z
   .object({
@@ -179,6 +190,68 @@ export const CrashReport = z
     size: z.number().int(),
   })
   .openapi('CrashReport')
+
+/** A client report's body, at most: 64 KB (ADR 0066). The server refuses a larger one unread. */
+export const CLIENT_REPORT_MAX = 64 * 1024
+
+/**
+ * What a client sends its own server when something fails (ADR 0066): an error nothing handled, or
+ * a play that failed. It names the app, its version, the device, the screen and the error, and
+ * nothing about the person: the server adds who sent it from the sign-in. Fields it doesn't list
+ * are dropped, and each has a length the server holds it to.
+ */
+export const ClientReportInput = z
+  .object({
+    /** `error`: an error nothing handled. `play`: a play that failed. */
+    kind: z.enum(['error', 'play']),
+    /** The kind of app, as a device's `client` names it. */
+    app: z.enum(['web', 'desktop', 'ios', 'android', 'tvos', 'androidtv']),
+    version: z.string().max(32).openapi({ example: '0.4.2' }),
+    /** The device's model and system, or the browser's user agent. */
+    device: z.string().max(400).openapi({ example: 'Apple TV 4K · tvOS 26.1' }),
+    /** The screen's address in the app. */
+    screen: z.string().max(200).openapi({ example: '/movies/603' }),
+    error: z.object({
+      name: z.string().max(100),
+      message: z.string().max(2000),
+      stack: z.string().max(16_000).nullable(),
+      /** React's component stack, from an error boundary. */
+      componentStack: z.string().max(8000).nullable().optional(),
+    }),
+    /** A failed play: what was asked for and what the server decided, to reproduce it. */
+    play: z
+      .object({
+        type: z.enum(['movie', 'episode']),
+        id: z.number().int(),
+        versionId: z.string().max(64).nullable(),
+        audioId: z.string().max(128).nullable(),
+        subtitleId: z.string().max(128).nullable(),
+        /** The built-in profile the app started from. */
+        profile: z.string().max(64).nullable(),
+        /** The play session, when the server had answered with one. */
+        sessionId: z.string().max(64).nullable(),
+        decision: PlaybackDecision.nullable(),
+        /** Where the stream was, in seconds. */
+        position: z.number().nonnegative().nullable(),
+      })
+      .optional(),
+  })
+  .openapi('ClientReportInput')
+
+export const ClientReport = z
+  .object({
+    id: z.string(),
+    at: IsoDate,
+    kind: z.enum(['error', 'play']),
+    app: z.string(),
+    version: z.string(),
+    device: z.string(),
+    screen: z.string(),
+    /** The error's name and first line. */
+    message: z.string(),
+    size: z.number().int(),
+  })
+  .openapi('ClientReport')
 
 export const AppRelease = z
   .object({
@@ -455,6 +528,42 @@ export const system = {
       ...errors('unauthorized', 'forbidden', 'not-found'),
     },
   }),
+  clientReports: createRoute({
+    method: 'get',
+    path: `${API_PREFIX}/system/client-reports`,
+    tags: ['System'],
+    summary: 'Reports the apps sent, newest first',
+    description:
+      'Errors nothing handled and plays that failed, sent by the apps signed in here (ADR 0066). Kept when General › Diagnostics’ switch is on, the newest 200. Nothing is sent anywhere.',
+    ...access('staff'),
+    responses: {
+      200: json(z.array(ClientReport), 'Reports'),
+      ...errors('unauthorized', 'forbidden'),
+    },
+  }),
+  sendClientReport: createRoute({
+    method: 'post',
+    path: `${API_PREFIX}/system/client-reports`,
+    tags: ['System'],
+    summary: 'Report an error or a failed play from an app',
+    description:
+      'An app tells its own server what failed, with the app, its version, the device, the screen and the error; the server adds who sent it, and for a failed play the device’s profile. At most 64 KB. Kept only when General › Diagnostics’ switch is on; answered 204 either way.',
+    ...access('user'),
+    request: body(ClientReportInput),
+    responses: { ...noContent, ...errors('invalid', 'unauthorized', 'forbidden') },
+  }),
+  clientReport: createRoute({
+    method: 'get',
+    path: `${API_PREFIX}/system/client-reports/{id}`,
+    tags: ['System'],
+    summary: 'Download a report an app sent',
+    ...access('staff'),
+    request: { params: IdParam },
+    responses: {
+      200: binary('application/json', 'The report'),
+      ...errors('unauthorized', 'forbidden', 'not-found'),
+    },
+  }),
   updates: createRoute({
     method: 'get',
     path: `${API_PREFIX}/system/updates`,
@@ -491,4 +600,6 @@ export type BackupList = z.infer<typeof BackupList>
 export type LogEntry = z.infer<typeof LogEntry>
 export type Logs = z.infer<typeof Logs>
 export type CrashReport = z.infer<typeof CrashReport>
+export type ClientReportInput = z.infer<typeof ClientReportInput>
+export type ClientReport = z.infer<typeof ClientReport>
 export type Updates = z.infer<typeof Updates>

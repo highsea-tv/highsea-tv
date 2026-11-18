@@ -133,6 +133,13 @@ export const system = defineMessages({
   'crashes.off': 'Crash reports are off. Turn them on in General, under Diagnostics.',
   'crashes.download': 'Download report',
   'crashes.downloadLabel': 'Download the report from {at}',
+  'reports.title': 'Reports from the apps',
+  'reports.description':
+    'Errors and plays that failed in the apps signed in here, with the app, the device and the screen. Kept while crash reports are on, the newest 200. Nothing is sent anywhere.',
+  'reports.what': 'the apps’ reports',
+  'reports.label': 'Reports from the apps',
+  'reports.none': 'No reports from the apps.',
+  'reports.downloadLabel': 'Download the {app} report from {at}',
   // ---------------------------------------------------------------- events
   'events.intro':
     'What the server tells every connected app, live. Apps refresh what they show from these.',

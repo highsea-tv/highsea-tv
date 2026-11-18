@@ -27,6 +27,7 @@ import {
   createBackups,
   defaultBackupSettings,
 } from './backups.ts'
+import { CLIENT_REPORTS_KEPT, createClientReports } from './client-reports.ts'
 import { createCrashReports } from './crashes.ts'
 import { LOGS_PRUNE_JOB, LOGS_TOPIC, type LogFiles, type LogQuery, queryLogs } from './logs.ts'
 import { createRegistry, type Labels } from './metrics.ts'
@@ -190,6 +191,16 @@ export function createOperations(deps: OperationsDeps) {
     clock,
     enabled: () => general().crashReports,
     recentLog: () => deps.logs.entries(),
+  })
+
+  // what the apps send (ADR 0066): kept under the same switch, the newest 200
+  const clientReports = createClientReports({
+    dir: `${deps.configDir}/client-reports`,
+    version: deps.version,
+    clock,
+    enabled: () => general().crashReports,
+    keep: CLIENT_REPORTS_KEPT,
+    kept: announceLogs,
   })
 
   // ------------------------------------------------------------ updates
@@ -433,6 +444,7 @@ export function createOperations(deps: OperationsDeps) {
     },
 
     crashes,
+    clientReports,
     updates,
     announceUpdate,
 
