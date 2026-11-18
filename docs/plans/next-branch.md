@@ -95,7 +95,7 @@ Each job falls in one of two tiers:
   - **cargo-audit** is RustSec's prebuilt binary through `taiki-e/install-action`, checked by its SHA-256, instead of `cargo install` on every run.
   - **The pull request from `next` into `main` reuses `next`'s results:** each heavy job first runs `.github/scripts/reuse-next.sh`, which passes the job without building when the same job passed in `next`'s push run for the same commit, the pull request's head is `next`'s commit, and merging it into `main` gives `next`'s tree; it waits for `next`'s run when that's still going, and builds in every other case. So a push to `next` runs every heavy workflow whatever it changed, and pull requests keep the path filters. A release never reuses anything.
   - **Concurrency:** a pull request's newer run cancels its older one; pushes to `next` and `main` and releases are each in a group of their own, so nothing cancels them, a pending run included.
-  - **iOS and tvOS:** the iPhone job no longer repeats the client's types and Jest tests, which the fast tier runs; both compile through ccache, kept between runs per Xcode build.
+  - **iOS and tvOS:** the iPhone job no longer repeats the client's types and Jest tests, which the fast tier runs. No compiler cache: React Native's ccache wrapper ran plain clang under `xcodebuild` (0 calls in #48's run), so it was taken out again.
 - **Checked by:** `actionlint` on the workflows. Then one pull request into `next` that runs only `check`, the same pull request with `full-ci` added that runs everything, and the first push to `next` that runs everything.
 
 ## Branch rules (A)

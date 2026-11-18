@@ -18,22 +18,17 @@
 # job repeated what Linux had already checked. Jest's preset is iOS's whatever the host
 # (apps/client/jest.config.js), so the host changes nothing.
 #
-# The Objective-C and C++ the pods compile go through ccache, React Native's documented compiler
-# cache (https://reactnative.dev/docs/build-speed#local-caches): with ccache on the PATH,
-# `USE_CCACHE=1` at `pod install` (which prebuild runs) makes the Podfile wrap clang with React
-# Native's own ccache scripts and settings (the Expo template's Podfile, `ccache_enabled?`; React
-# Native's scripts/xcode/ccache.conf). ccache keys each result by the compiler, its arguments and
-# the source and headers it reads, so a changed header or flag is a miss and compiles again
-# (https://ccache.dev/manual/latest.html#_how_ccache_works). React Native's page warns of stale
-# results on CI when the compiler check goes by timestamps. Here clang is called through
-# /usr/bin/clang, Xcode's shim, whose timestamp stays the same when the image's Xcode changes, so
-# the cache's key holds the Xcode build (`xcodebuild -version`): another Xcode starts from an empty
-# cache and is never served an older one's objects. Nothing built here ships: the job shows the
-# app compiles, and a release doesn't build it. Its folder is kept between runs
-# (https://github.com/actions/cache), one per platform; a run restores the newest and saves its
-# own. Swift isn't cached. The other caches were considered and left out: Pods and the generated
-# project (`prebuild --clean` makes them anew, and pod install took under 3 minutes), and
-# DerivedData (a fresh checkout's new timestamps rebuild it anyway, and its paths are absolute).
+# No compiler or build cache, on what one run showed (2026-11-17, #48). React Native documents
+# ccache (https://reactnative.dev/docs/build-speed#local-caches), and with `USE_CCACHE=1` at
+# `pod install` the Podfile does point every pod's clang at React Native's
+# scripts/xcode/ccache-clang.sh, which runs `exec $CCACHE_BINARY clang "$@"`. But `CCACHE_BINARY`
+# is an Xcode build setting, and Xcode doesn't give its build settings to the compiler's
+# environment (react-native issue #46126), so the script ran clang directly: the run's 1,290
+# compiles left ccache with 0 calls, 0 files and an empty folder. A cache that never fills only
+# costs time and the repository's 10 GB of caches. The other caches were considered and left out:
+# Pods and the generated project (`prebuild --clean` makes them anew, and `pod install` took about
+# a minute), and DerivedData (a fresh checkout's new timestamps rebuild it, and its paths are
+# absolute). Nothing built here ships: the job shows the app compiles, and a release doesn't build it.
 #
 # The runner's Xcode must be one Expo SDK 58 supports, so the image is macOS 26's
 # (https://github.com/actions/runner-images). Each action is pinned to a full commit SHA, with its
@@ -96,9 +91,6 @@ jobs:
     permissions: &reuse-permissions
       contents: read
       actions: read
-    env:
-      HOMEBREW_NO_AUTO_UPDATE: '1'
-      HOMEBREW_NO_INSTALL_CLEANUP: '1'
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       # On the next → main pull request: passed on next for this commit? Then every step after
@@ -131,22 +123,6 @@ jobs:
       - name: The bundle carries no web renderer
         if: *build
         run: bun scripts/bundles.ts client-phone
-      # ccache from Homebrew, which GitHub's macOS images carry, its counters zeroed so the build's
-      # hits show below, and the Xcode build for the cache's key (the header above)
-      - name: ccache
-        if: *build
-        id: ccache
-        run: |
-          brew install ccache
-          ccache --zero-stats
-          echo "xcode=$(xcodebuild -version | tr -cs 'A-Za-z0-9.' '-')" >> "$GITHUB_OUTPUT"
-      - name: ccache's folder from the last build
-        if: *build
-        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
-        with:
-          path: ~/Library/Caches/ccache
-          key: ccache-ios-${{ steps.ccache.outputs.xcode }}-${{ github.run_id }}
-          restore-keys: ccache-ios-${{ steps.ccache.outputs.xcode }}-
       # the generated project, with its pods installed (prebuild runs `pod install`)
       - name: The iOS project
         if: *build
@@ -154,7 +130,6 @@ jobs:
         env:
           CI: '1'
           EXPO_NO_TELEMETRY: '1'
-          USE_CCACHE: '1'
         run: bun run prebuild
       - name: Licences, with the pods
         if: *build
@@ -166,17 +141,6 @@ jobs:
           xcodebuild -workspace highsea.xcworkspace -scheme highsea -configuration Release \
             -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
             -derivedDataPath build CODE_SIGN_IDENTITY=- CODE_SIGNING_REQUIRED=NO build
-      - name: ccache's hits
-        if: *build
-        run: ccache --show-stats --verbose
-      # a key of its own per run, since a cache's key can't be written twice
-      # (https://github.com/actions/cache/blob/main/save/README.md)
-      - name: Keep ccache's folder
-        if: *build
-        uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
-        with:
-          path: ~/Library/Caches/ccache
-          key: ccache-ios-${{ steps.ccache.outputs.xcode }}-${{ github.run_id }}-${{ github.run_attempt }}
 
   tvos:
     if: *heavy
@@ -185,9 +149,6 @@ jobs:
     # may wait 20 for next's run first
     timeout-minutes: 60
     permissions: *reuse-permissions
-    env:
-      HOMEBREW_NO_AUTO_UPDATE: '1'
-      HOMEBREW_NO_INSTALL_CLEANUP: '1'
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - name: Reuse next's result for this commit
@@ -209,27 +170,12 @@ jobs:
       - name: The bundle carries no web renderer
         if: *build
         run: bun scripts/bundles.ts client-tv
-      - name: ccache
-        if: *build
-        id: ccache
-        run: |
-          brew install ccache
-          ccache --zero-stats
-          echo "xcode=$(xcodebuild -version | tr -cs 'A-Za-z0-9.' '-')" >> "$GITHUB_OUTPUT"
-      - name: ccache's folder from the last build
-        if: *build
-        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
-        with:
-          path: ~/Library/Caches/ccache
-          key: ccache-tvos-${{ steps.ccache.outputs.xcode }}-${{ github.run_id }}
-          restore-keys: ccache-tvos-${{ steps.ccache.outputs.xcode }}-
       - name: The tvOS project
         if: *build
         working-directory: apps/client
         env:
           CI: '1'
           EXPO_NO_TELEMETRY: '1'
-          USE_CCACHE: '1'
         run: bun run prebuild:tv
       - name: Licences, with the pods
         if: *build
@@ -241,12 +187,3 @@ jobs:
           xcodebuild -workspace highsea.xcworkspace -scheme highsea -configuration Release \
             -sdk appletvsimulator -destination 'generic/platform=tvOS Simulator' \
             -derivedDataPath build CODE_SIGN_IDENTITY=- CODE_SIGNING_REQUIRED=NO build
-      - name: ccache's hits
-        if: *build
-        run: ccache --show-stats --verbose
-      - name: Keep ccache's folder
-        if: *build
-        uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
-        with:
-          path: ~/Library/Caches/ccache
-          key: ccache-tvos-${{ steps.ccache.outputs.xcode }}-${{ github.run_id }}-${{ github.run_attempt }}
