@@ -12,7 +12,7 @@ import { useT } from '@highsea-tv/i18n/react'
 import { line, sheet } from '@highsea-tv/tokens'
 import { type ReactNode, useEffect, useId, useRef, useSyncExternalStore } from 'react'
 import { Modal, Platform, Pressable, View } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Button } from './button.tsx'
 import { visuallyHidden } from './hidden-heading.tsx'
 import { uiMessages } from './messages.ts'
@@ -139,10 +139,8 @@ export function Sheet(props: SheetProps) {
 /** Every orientation a turning sheet takes, as React Native's Modal names them. */
 const TURNS = ['portrait', 'landscape-left', 'landscape-right'] as const
 
-function PageSheet({ open, onClose, title, children, footer, onDismiss, turns }: SheetProps) {
-  const theme = useTheme()
-  const t = useT(uiMessages)
-  const insets = useSafeAreaInsets()
+function PageSheet(props: SheetProps) {
+  const { open, onClose, onDismiss, turns } = props
   const titleId = useId()
   const { visible, dismissed } = useYielding(open)
   return (
@@ -158,74 +156,108 @@ function PageSheet({ open, onClose, title, children, footer, onDismiss, turns }:
       }}
       {...named(titleId)}
     >
-      {/* iOS presents a page sheet below the status bar (UIModalPresentationPageSheet), while
-          react-native-web's Modal ignores `presentationStyle` and fills the window, so on the web
-          the sheet starts below the top inset as iOS's does, over the page's background */}
-      <View
-        style={{
-          flex: 1,
-          backgroundColor: theme.colors.bg,
-          paddingTop: Platform.OS === 'web' ? insets.top : 0,
-        }}
-      >
-        <View style={{ flex: 1, backgroundColor: theme.colors.s1 }}>
+      {/* a sheet that turns measures its own safe area, since the screens under it stay upright:
+          "You may need to add it in other places like the root of modals and routes when using
+          react-native-screens" (https://appandflow.github.io/react-native-safe-area-context/api/safe-area-provider) */}
+      {turns ? (
+        <SafeAreaProvider>
+          <PageSheetBody {...props} titleId={titleId} />
+        </SafeAreaProvider>
+      ) : (
+        <PageSheetBody {...props} titleId={titleId} />
+      )}
+    </Modal>
+  )
+}
+
+function PageSheetBody({
+  onClose,
+  title,
+  children,
+  footer,
+  titleId,
+}: SheetProps & { titleId: string }) {
+  const theme = useTheme()
+  const t = useT(uiMessages)
+  const insets = useSafeAreaInsets()
+  // a sheet turned with the phone keeps its content clear of the notch or Dynamic Island at the
+  // side (the window's safe area; upright, both are 0, so the sheet is as it was)
+  const side = {
+    left: Math.max(insets.left, tokens.space['4']),
+    right: Math.max(insets.right, tokens.space['4']),
+  }
+  // iOS presents a page sheet below the status bar (UIModalPresentationPageSheet), while
+  // react-native-web's Modal ignores `presentationStyle` and fills the window, so on the web the
+  // sheet starts below the top inset as iOS's does, over the page's background
+  return (
+    <View
+      style={{
+        flex: 1,
+        backgroundColor: theme.colors.bg,
+        paddingTop: Platform.OS === 'web' ? insets.top : 0,
+      }}
+    >
+      <View style={{ flex: 1, backgroundColor: theme.colors.s1 }}>
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            paddingLeft: side.left,
+            paddingRight: side.right,
+            paddingTop: tokens.space['3'],
+            minHeight: sheet.header,
+          }}
+        >
+          <Text
+            variant="title"
+            accessibilityRole="header"
+            aria-level={2}
+            nativeID={titleId}
+            style={{ flex: 1 }}
+          >
+            {title}
+          </Text>
+          <Button
+            variant="ghost"
+            icon="close"
+            iconOnly
+            accessibilityLabel={t('close')}
+            onPress={onClose}
+          />
+        </View>
+        {/* a sheet holds forms: with the default ('never') a tap while the keyboard is up only
+          closes it, so its buttons took two taps; 'handled' lets a button take the tap
+          (https://reactnative.dev/docs/scrollview#keyboardshouldpersisttaps) */}
+        <ScrollView
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={{
+            padding: tokens.space['4'],
+            paddingLeft: side.left,
+            paddingRight: side.right,
+            paddingBottom: footer ? tokens.space['4'] : insets.bottom + tokens.space['6'],
+            gap: tokens.space['3'],
+          }}
+        >
+          {children}
+        </ScrollView>
+        {footer ? (
           <View
             style={{
               flexDirection: 'row',
-              alignItems: 'center',
-              paddingHorizontal: tokens.space['4'],
+              flexWrap: 'wrap',
+              justifyContent: 'flex-end',
+              gap: tokens.space['2'],
+              paddingLeft: side.left,
+              paddingRight: side.right,
               paddingTop: tokens.space['3'],
-              minHeight: sheet.header,
+              paddingBottom: insets.bottom + tokens.space['4'],
             }}
           >
-            <Text
-              variant="title"
-              accessibilityRole="header"
-              aria-level={2}
-              nativeID={titleId}
-              style={{ flex: 1 }}
-            >
-              {title}
-            </Text>
-            <Button
-              variant="ghost"
-              icon="close"
-              iconOnly
-              accessibilityLabel={t('close')}
-              onPress={onClose}
-            />
+            {footer}
           </View>
-          {/* a sheet holds forms: with the default ('never') a tap while the keyboard is up only
-              closes it, so its buttons took two taps; 'handled' lets a button take the tap
-              (https://reactnative.dev/docs/scrollview#keyboardshouldpersisttaps) */}
-          <ScrollView
-            keyboardShouldPersistTaps="handled"
-            contentContainerStyle={{
-              padding: tokens.space['4'],
-              paddingBottom: footer ? tokens.space['4'] : insets.bottom + tokens.space['6'],
-              gap: tokens.space['3'],
-            }}
-          >
-            {children}
-          </ScrollView>
-          {footer ? (
-            <View
-              style={{
-                flexDirection: 'row',
-                flexWrap: 'wrap',
-                justifyContent: 'flex-end',
-                gap: tokens.space['2'],
-                paddingHorizontal: tokens.space['4'],
-                paddingTop: tokens.space['3'],
-                paddingBottom: insets.bottom + tokens.space['4'],
-              }}
-            >
-              {footer}
-            </View>
-          ) : null}
-        </View>
+        ) : null}
       </View>
-    </Modal>
+    </View>
   )
 }
 

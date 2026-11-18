@@ -85,6 +85,13 @@
     "test-renderer": "1.3.0"
   },
   "expo": {
+    "autolinking": {
+      "ios": {
+        "buildFromSource": [
+          "expo-video"
+        ]
+      }
+    },
     "install": {
       "exclude": [
         "react-native"

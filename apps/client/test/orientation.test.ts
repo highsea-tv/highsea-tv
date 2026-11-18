@@ -46,3 +46,19 @@ describe('which way the phone turns', () => {
     expect((await config(true)).orientation).toBeUndefined()
   })
 })
+
+// Now Playing's poster (packages/native/src/now-playing.ts): expo-video takes it as a file URL
+// only with highsea's patch, and the patch reaches the iPhone only when expo-video is built from
+// source rather than from Expo's precompiled framework
+// (https://docs.expo.dev/guides/prebuilt-expo-modules/)
+describe('Now Playing’s artwork on the iPhone', () => {
+  test('expo-video is patched to take a file URL and built from source', () => {
+    const read = (path: string) => readFileSync(new URL(path, import.meta.url), 'utf8')
+    expect(read('../../../patches/expo-video@58.0.11.patch')).toContain(
+      '+    guard let data, response is HTTPURLResponse || url.isFileURL else {',
+    )
+    const pkg = JSON.parse(read('../package.json'))
+    expect(pkg.expo.autolinking.ios.buildFromSource).toContain('expo-video')
+    expect(pkg.dependencies['expo-video']).toBe('58.0.11')
+  })
+})

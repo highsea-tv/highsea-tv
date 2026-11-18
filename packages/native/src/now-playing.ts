@@ -8,8 +8,12 @@
 // server's artwork answers only a signed-in request, so the poster never came (HT-58). So the app
 // loads the poster the way it loads every image, expo-image with this device's token in a header,
 // into expo-image's disk cache (`Image.prefetch`, https://docs.expo.dev/versions/latest/sdk/image/#prefetchurls-cachepolicy),
-// and hands expo-video the cached file's `file://` URL (`Image.getCachePathAsync`), which
-// URLSession reads as it reads any URL, and Media3 on Android likewise; no token goes into a URL.
+// and hands expo-video the cached file's `file://` URL (`Image.getCachePathAsync`); no token goes
+// into a URL. URLSession reads a file URL, but answers it with a plain URLResponse, which expo-video
+// 58.0.11's `fetchArtwork` turned away (it wants an HTTPURLResponse), so highsea's patch to it
+// (patches/expo-video@58.0.11.patch) lets a file URL through, and apps/client builds expo-video
+// from source so the patch reaches the iPhone (`expo.autolinking.ios.buildFromSource`,
+// https://docs.expo.dev/guides/prebuilt-expo-modules/). Media3 on Android loads a file URI as is.
 // MPMediaItemArtwork is then made from the image at its own size
 // (https://developer.apple.com/documentation/mediaplayer/mpmediaitemartwork/init(boundssize:requesthandler:)).
 import { titleLines } from '@highsea-tv/client/player'

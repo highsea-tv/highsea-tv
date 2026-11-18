@@ -80,6 +80,7 @@ mock.module('expo-image', () => ({
 // a Sheet's insets (Menu by touch), which the web's safe area has none of here
 mock.module('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 0, right: 0, bottom: 0, left: 0 }),
+  SafeAreaProvider: ({ children }: { children: unknown }) => children,
 }))
 const none = () => null
 mock.module('react-native-svg', () => ({
