@@ -39,6 +39,11 @@ execFileSync('bun', ['run', 'export:web'], {
 })
 const server = await boot(PORT, { production: true })
 const problems: string[] = []
+/**
+ * The stream's loads that failed, per page, so a timeout can say what the player was refused: the
+ * client shows one message for any fatal hls.js error, so the page alone doesn't say which
+ */
+const refusedLoads = new WeakMap<Page, string[]>()
 
 try {
   const { token } = await seed(server, OWNER, 'Playback script')
@@ -157,12 +162,6 @@ async function importFolder(token: string, folder: string, movieId: number) {
   const refused = ran.results.filter((r) => !r.ok)
   if (refused.length) throw new Error(`not imported: ${JSON.stringify(refused)}`)
 }
-
-/**
- * The stream's loads that failed, per page, so a timeout can say what the player was refused: the
- * client shows one message for any fatal hls.js error, so the page alone doesn't say which
- */
-const refusedLoads = new WeakMap<Page, string[]>()
 
 async function inBrowser(name: string, page: Page, token: string) {
   page.on('pageerror', (e) => problems.push(`${name}: ${e.message}`))
