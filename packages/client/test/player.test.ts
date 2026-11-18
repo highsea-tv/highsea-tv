@@ -16,7 +16,9 @@ import {
   filmUpNext,
   HIDE_MS,
   initialPlayer,
+  isSubtitlePlaylist,
   leavePlayer,
+  mergeCues,
   NUDGE_LIMIT_MS,
   nextChange,
   nextUpIn,
@@ -29,6 +31,8 @@ import {
   REPORT_MS,
   reportDue,
   streamState,
+  subtitleSegments,
+  subtitleSegmentsFor,
   titleLines,
   titlePage,
   trickplayTile,
@@ -254,6 +258,50 @@ describe('subtitles', () => {
     expect(cuesAt(cues, 10.2, 250)).toEqual([])
     expect(cuesAt(cues, 10.25, 250)).toEqual(['One'])
     expect(cuesAt(cues, 9.5, -500)).toEqual(['One'])
+  })
+
+  test('a stream’s subtitle playlist: each segment’s times, beside the playlist', () => {
+    const path = '/stream/hls/tok/subs/fil_1%3A2.m3u8'
+    expect(isSubtitlePlaylist(path)).toBe(true)
+    expect(isSubtitlePlaylist('/stream/subtitles/tok/fil_1%3A2.vtt')).toBe(false)
+    const playlist = [
+      '#EXTM3U',
+      '#EXT-X-VERSION:7',
+      '#EXT-X-TARGETDURATION:6',
+      '#EXT-X-PLAYLIST-TYPE:VOD',
+      '#EXTINF:2.000000,',
+      'fil_1%3A2/0.vtt',
+      '#EXTINF:4.500000,',
+      'fil_1%3A2/1.vtt',
+      '#EXTINF:6.000000,',
+      '/elsewhere/2.vtt',
+      '#EXT-X-ENDLIST',
+      '',
+    ].join('\r\n')
+    const segments = subtitleSegments(playlist, path)
+    expect(segments).toEqual([
+      { start: 0, end: 2, path: '/stream/hls/tok/subs/fil_1%3A2/0.vtt' },
+      { start: 2, end: 6.5, path: '/stream/hls/tok/subs/fil_1%3A2/1.vtt' },
+      { start: 6.5, end: 12.5, path: '/elsewhere/2.vtt' },
+    ])
+    // the one showing and those starting within the next stretch, not the ones before
+    expect(subtitleSegmentsFor(segments, 0, 3)).toEqual([0, 1])
+    expect(subtitleSegmentsFor(segments, 3, 3)).toEqual([1])
+    expect(subtitleSegmentsFor(segments, 3, 4)).toEqual([1, 2])
+    expect(subtitleSegmentsFor(segments, 12.5, 30)).toEqual([])
+  })
+
+  test('a cue across a boundary, in both segments, is kept once', () => {
+    const across = { startTime: 5, endTime: 7, text: 'Across' }
+    const first = [{ startTime: 1, endTime: 2, text: 'One' }, across]
+    const second = [{ ...across }, { startTime: 8, endTime: 9, text: 'Two' }]
+    const merged = mergeCues(first, second)
+    expect(merged.map((c) => c.text)).toEqual(['One', 'Across', 'Two'])
+    // the one in hand stays, so what's drawn of it isn't drawn again
+    expect(merged[1]).toBe(across)
+    expect(mergeCues(merged, second)).toBe(merged)
+    // loaded out of order, they're still in order
+    expect(mergeCues(second, first).map((c) => c.text)).toEqual(['One', 'Across', 'Two'])
   })
 
   test('cue text without WebVTT’s tags and entities', () => {

@@ -310,12 +310,9 @@ export type PlaybackApi<Player> = {
   audio: Choices['audio']
   subtitle: Choices['subtitle']
   /**
-   * The web's: the chosen subtitle's WebVTT at the address the page loads it from, for the
-   * `<track>` the screen puts in the `<video>`. Always null on the phone and the TV, whose engine
-   * loads the file itself with the device's token in a header and gives its `cues`.
+   * The chosen subtitle's cues, loaded around where it's playing (./subtitle-cues.ts), at their
+   * own times: the phone and the TV draw them, the web lays them on its `<video>`'s text track.
    */
-  subtitleUrl: string | null
-  /** Its cues, where the engine reads them itself; on the web the browser reads them (`player`). */
   cues: Cue[]
   /** The chosen subtitle is drawn into the picture by the server. */
   burnt: boolean

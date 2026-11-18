@@ -176,7 +176,14 @@ export function WidgetFrame({
             minHeight: 0,
             minWidth: 0,
             gap: tokens.space['2'] + tokens.space['0.5'],
-            overflow: 'hidden',
+            // What a widget can't shrink (an empty state with its button, a short widget's
+            // figures) scrolls inside the frame rather than being cut at its edge (HT-47): a
+            // flex item that may shrink still fits, so a clipped list is as it was, and one that
+            // may not overflows its scroll container
+            // (https://www.w3.org/TR/css-overflow-3/#overflow-properties). Sideways it clips.
+            ...(web
+              ? ({ overflowX: 'hidden', overflowY: 'auto' } as unknown as ViewStyle)
+              : { overflow: 'hidden' }),
           }}
         >
           {children}

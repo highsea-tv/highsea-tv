@@ -2,9 +2,11 @@
 // The film itself on the web and in the desktop app's webview (the web side of ./picture.tsx): the
 // engine's `<video>` (`@highsea-tv/native/playback`'s web player, whose `attach` is its ref), which
 // react-native-web lets a View hold as it holds an iframe
-// (https://necolas.github.io/react-native-web/docs/multi-platform/). The chosen subtitle is the
-// browser's own: a `<track>` of the session's WebVTT that the browser parses and draws
-// (https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/track), styled by `::cue`
+// (https://necolas.github.io/react-native-web/docs/multi-platform/). The chosen subtitle is drawn
+// by the browser: the engine loads its cues in segments around where it's playing (HT-49), and
+// they're laid on a text track of the page's own (`addTextTrack`,
+// https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement/addTextTrack) as VTTCues
+// (https://developer.mozilla.org/en-US/docs/Web/API/VTTCue/VTTCue), styled by `::cue`
 // (https://developer.mozilla.org/en-US/docs/Web/CSS/::cue). The person's timing moves each cue's
 // times, which a VTTCue lets a page set (https://developer.mozilla.org/en-US/docs/Web/API/TextTrackCue/startTime),
 // and the line moves up while the controls show (`line`, with `snapToLines` off:
@@ -13,7 +15,7 @@
 // so the button is left out there: https://developer.mozilla.org/en-US/docs/Web/API/Picture-in-Picture_API),
 // full screen the Fullscreen API on the page, and the keyboard's and headphones' media keys the
 // Media Session API (https://developer.mozilla.org/en-US/docs/Web/API/Media_Session_API).
-import { SEEK_S } from '@highsea-tv/client/player'
+import { type Cue, SEEK_S } from '@highsea-tv/client/player'
 import { useWebHost } from '@highsea-tv/native/web-host'
 import { scrimOf, useTheme } from '@highsea-tv/ui'
 import { type ReactNode, type RefObject, useEffect, useRef, useState } from 'react'
@@ -41,7 +43,7 @@ type WebPlayer = {
   video: RefObject<HTMLVideoElement | null>
 }
 
-/** The browser draws the subtitle from the `<track>`; the screen draws no lines of its own. */
+/** The browser draws the subtitle from the video's text track; the screen draws no lines of its own. */
 export const DRAWS_CUES: typeof nativeDraws = false
 
 /** Where the subtitle's last line ends, from the top: the prototype's 16% and 22% from the bottom. */
@@ -51,14 +53,15 @@ const LINE = { low: 84, raised: 78 }
 const cueStyle = (text: string) =>
   `video[data-player]::cue{background-color:${scrimOf(60)};color:${text};font-weight:600;font-size:clamp(1rem,2.2vw,1.6rem);line-height:1.3}`
 
-/** Inside Tauri's webview the server's scheme is another origin, which a track loads only with CORS. */
+/** Inside Tauri's webview the server's scheme is another origin, which the video loads only with CORS. */
 const inApp = () => typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window
 
 export const usePicture: typeof nativePicture = (p, o) => {
   const player = p.player as unknown as WebPlayer
   const theme = useTheme()
   const host = useWebHost()
-  const track = useRef<HTMLTrackElement>(null)
+  // the chosen subtitle's text track, and the cue laid on it for each of the engine's
+  const track = useRef<{ text: TextTrack; laid: Map<Cue, VTTCue> } | null>(null)
   const [pip, setPip] = useState(false)
   const [sound, setSound] = useState({ volume: 1, muted: false })
   const [rate, setRate] = useState(1)
@@ -84,37 +87,54 @@ export const usePicture: typeof nativePicture = (p, o) => {
     return () => document.removeEventListener('fullscreenchange', changed)
   }, [])
 
-  // the person's timing and the line's height, laid on each cue from its own times, once the
-  // track has loaded and again on each change; other tracks (Safari's) are turned off
-  const url = p.subtitleUrl
-  const { offsetMs } = p
+  // a text track of the page's own for each subtitle chosen. One added by a script can't be taken
+  // away again (https://html.spec.whatwg.org/multipage/media.html#dom-media-addtexttrack), so the
+  // last one is turned off, as the stream's own (Safari's) are
+  const { cues, offsetMs, subtitle } = p
   const { raised } = o
-  // biome-ignore lint/correctness/useExhaustiveDependencies: a new url is a new <track> (its key), laid out again
+  const chosen = subtitle?.id ?? null
+  // biome-ignore lint/correctness/useExhaustiveDependencies: a new subtitle is a new track; its label and language go with it
   useEffect(() => {
-    const el = track.current
     const v = player.video.current
-    if (!el || !v) return
-    const own = new WeakMap<TextTrackCue, [number, number]>()
-    const lay = () => {
-      for (const t of Array.from(v.textTracks)) if (t !== el.track) t.mode = 'disabled'
-      el.track.mode = 'showing'
-      for (const cue of Array.from(el.track.cues ?? [])) {
-        const times = own.get(cue) ?? [cue.startTime, cue.endTime]
-        own.set(cue, times)
-        cue.startTime = times[0] + offsetMs / 1000
-        cue.endTime = times[1] + offsetMs / 1000
-        if ('line' in cue) {
-          const vtt = cue as VTTCue
-          vtt.snapToLines = false
-          vtt.lineAlign = 'end'
-          vtt.line = raised ? LINE.raised : LINE.low
-        }
-      }
+    if (track.current) track.current.text.mode = 'disabled'
+    track.current = null
+    if (!v || !subtitle || typeof v.addTextTrack !== 'function') return
+    const text = v.addTextTrack('subtitles', subtitle.label, subtitle.language || '')
+    track.current = { text, laid: new Map() }
+  }, [chosen, player.video])
+
+  // each cue laid once, at its own times plus the person's timing, its last line where the
+  // controls leave room; every other track off
+  // biome-ignore lint/correctness/useExhaustiveDependencies: a new subtitle's track is filled when it's made
+  useEffect(() => {
+    const v = player.video.current
+    const t = track.current
+    if (!v || !t || typeof VTTCue === 'undefined') return
+    for (const other of Array.from(v.textTracks)) if (other !== t.text) other.mode = 'disabled'
+    t.text.mode = 'showing'
+    const lay = (cue: VTTCue, c: Cue) => {
+      cue.startTime = c.startTime + offsetMs / 1000
+      cue.endTime = c.endTime + offsetMs / 1000
+      cue.snapToLines = false
+      cue.lineAlign = 'end'
+      cue.line = raised ? LINE.raised : LINE.low
     }
-    lay()
-    el.addEventListener('load', lay)
-    return () => el.removeEventListener('load', lay)
-  }, [url, offsetMs, raised, player.video])
+    // a new session's subtitle starts its cues again: the last session's come off
+    const now = new Set(cues)
+    for (const [c, cue] of t.laid)
+      if (now.has(c)) lay(cue, c)
+      else {
+        t.text.removeCue(cue)
+        t.laid.delete(c)
+      }
+    for (const c of cues) {
+      if (t.laid.has(c)) continue
+      const cue = new VTTCue(c.startTime, c.endTime, c.text)
+      lay(cue, c)
+      t.text.addCue(cue)
+      t.laid.set(c, cue)
+    }
+  }, [cues, offsetMs, raised, chosen, player.video])
 
   // the media keys, and the system's own controls
   const d = p.detail.data
@@ -157,7 +177,7 @@ export const usePicture: typeof nativePicture = (p, o) => {
   const picture: ReactNode = (
     <>
       <style>{cueStyle(theme.colors.text)}</style>
-      {/* biome-ignore lint/a11y/useMediaCaption: the chosen subtitle is its <track>, added when there's one */}
+      {/* biome-ignore lint/a11y/useMediaCaption: the chosen subtitle is a text track the page adds (addTextTrack) */}
       <video
         ref={player.attach}
         data-player=""
@@ -172,19 +192,7 @@ export const usePicture: typeof nativePicture = (p, o) => {
           objectFit: 'contain',
           opacity: o.dim ? 0.35 : 1,
         }}
-      >
-        {url && p.subtitle ? (
-          <track
-            ref={track}
-            key={url}
-            kind="subtitles"
-            src={url}
-            srcLang={p.subtitle.language || undefined}
-            label={p.subtitle.label}
-            default
-          />
-        ) : null}
-      </video>
+      />
     </>
   )
   return {

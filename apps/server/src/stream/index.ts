@@ -9,14 +9,15 @@
 // Since 4.1b it also serves HLS made on demand (ADR 0051) under `/stream/hls/{token}/`: the
 // multivariant playlist `main.m3u8`, the media playlist `video.m3u8`, the initialization section
 // `init.mp4`, the segments `{n}.m4s` (a segment's pieces, sent one after another), and each text
-// subtitle's rendition `subs/{track}.m3u8` with its WebVTT. `/stream/subtitles/{token}/{track}.vtt`
-// is a text track as WebVTT for any session, direct play's too.
+// subtitle's rendition `subs/{track}.m3u8` with its WebVTT segments `subs/{track}/{n}.vtt`, at the
+// picture's own times (HT-49): a segment the session hasn't read yet is a 503 with Retry-After.
+// `/stream/subtitles/{token}/{track}.vtt` is a text track whole, for direct play.
 import { createReadStream } from 'node:fs'
 import { stat } from 'node:fs/promises'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { createRequire } from 'node:module'
 import type { Runtime } from '@highsea-tv/runtime'
-import { TranscodeError } from '@highsea-tv/stream/hls'
+import { NotReadYet, TranscodeError } from '@highsea-tv/stream/hls'
 import { ifRangeAllows, parseRange } from './ranges.ts'
 import { TRY_PAGE } from './try.ts'
 
@@ -170,15 +171,17 @@ export function createStream(
         })
       return
     }
-    const sub = /^subs\/([^/]+)\.(m3u8|vtt)$/.exec(rest)
-    if (sub) {
-      const track = decodeURIComponent(sub[1] as string)
-      if (sub[2] === 'm3u8') {
-        const text = playback.hls.subtitleList(token, track)
-        return text === null ? gone() : sendText(req, res, text, PLAYLIST)
-      }
-      const file = await playback.subtitle(token, track)
-      return file === null ? gone() : sendFiles(req, res, [file], VTT)
+    const list = /^subs\/([^/]+)\.m3u8$/.exec(rest)
+    if (list) {
+      const text = await playback.hls.subtitleList(token, decodeURIComponent(list[1] as string))
+      return text === null ? gone() : sendText(req, res, text, PLAYLIST)
+    }
+    // a text track's segment, cut from what the session has read (HT-49)
+    const cut = /^subs\/([^/]+)\/(\d+)\.vtt$/.exec(rest)
+    if (cut) {
+      const track = decodeURIComponent(cut[1] as string)
+      const text = await playback.hls.subtitleSegment(token, track, Number(cut[2]))
+      return text === null ? gone() : sendText(req, res, text, VTT)
     }
     fail(res, 404, 'There’s nothing here.')
   }
@@ -188,6 +191,11 @@ export function createStream(
     if (res.headersSent) return void res.destroy()
     // past Settings › Playback's limit for a minute (4.3's answer 7): the player says why
     if (e instanceof TranscodeError && e.reason === 'limit') return fail(res, 503, e.message)
+    // a subtitle segment the session hasn't read yet: the player asks again (RFC 9110 § 15.6.4)
+    if (e instanceof NotReadYet) {
+      res.setHeader('retry-after', '2')
+      return fail(res, 503, e.message)
+    }
     if (e instanceof TranscodeError) return fail(res, 500, DIDNT_START)
     log.error('streaming failed', { error: (e as Error).message })
     fail(res, 500, 'Something went wrong.')

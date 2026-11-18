@@ -363,6 +363,77 @@ export function parseCues(text: string): Cue[] {
   return cues
 }
 
+// ---------------------------------------------------------------------------------------------
+// Subtitles in segments (HT-49): a stream's text subtitle is a rendition playlist whose WebVTT
+// segments are cut, as the server reads the film, at the picture's own times (RFC 8216 § 3.5), so
+// the player loads the ones around where it's playing rather than the whole film's. A file played
+// as it is has its subtitle whole, one file, taken as one segment as long as the film.
+
+/** A subtitle's segment: its times in seconds, and its path beside the playlist's. */
+export type SubtitleSegment = { start: number; end: number; path: string }
+
+/** Whether a subtitle's path is a rendition playlist, rather than a whole WebVTT file. */
+export const isSubtitlePlaylist = (path: string) => /\.m3u8(?:[?#]|$)/.test(path)
+
+/**
+ * The segments of a subtitle's media playlist at `path`: each `#EXTINF` duration (RFC 8216
+ * § 4.3.2.1) and the URI after it, one after another from 0. A relative URI is resolved against
+ * the playlist's folder (§ 4.1, RFC 3986 § 5.2), the way the server writes them.
+ */
+export function subtitleSegments(playlist: string, path: string): SubtitleSegment[] {
+  const folder = (path.split(/[?#]/)[0] ?? '').replace(/[^/]*$/, '')
+  const out: SubtitleSegment[] = []
+  let at = 0
+  let duration: number | null = null
+  for (const raw of playlist.split(/\r?\n/)) {
+    const line = raw.trim()
+    if (line.startsWith('#EXTINF:')) duration = Number.parseFloat(line.slice(8))
+    else if (line && !line.startsWith('#') && duration !== null && Number.isFinite(duration)) {
+      const uri = /^[a-z][a-z0-9+.-]*:|^\//i.test(line) ? line : folder + line
+      out.push({ start: at, end: at + duration, path: uri })
+      at += duration
+      duration = null
+    }
+  }
+  return out
+}
+
+/** How far past the playhead a subtitle's segments are loaded: a few of the picture's. */
+export const SUBTITLE_AHEAD_S = 30
+
+/** The segments to have at `t` seconds: the one showing, and those starting within `ahead`. */
+export function subtitleSegmentsFor(
+  segments: readonly SubtitleSegment[],
+  t: number,
+  ahead = SUBTITLE_AHEAD_S,
+): number[] {
+  const out: number[] = []
+  for (let i = 0; i < segments.length; i++) {
+    const s = segments[i] as SubtitleSegment
+    if (s.start >= t + ahead) break
+    if (s.end > t) out.push(i)
+  }
+  return out
+}
+
+/**
+ * Cues from another segment added to those in hand, each once, in the order they start. A cue
+ * that shows across a boundary is in each segment it shows in (RFC 8216 § 3.5), the same times
+ * and text: one is kept, the one already in hand, so a cue drawn keeps its identity.
+ */
+export function mergeCues(have: readonly Cue[], more: readonly Cue[]): Cue[] {
+  const key = (c: Cue) => `${c.startTime}|${c.endTime}|${c.text}`
+  const seen = new Set(have.map(key))
+  const added = more.filter((c) => {
+    const k = key(c)
+    if (seen.has(k)) return false
+    seen.add(k)
+    return true
+  })
+  if (!added.length) return have as Cue[]
+  return [...have, ...added].sort((a, b) => a.startTime - b.startTime || a.endTime - b.endTime)
+}
+
 /** WebVTT cue text without its tags (`<i>`, `<c.yellow>`, `<00:01.000>`), as plain lines. */
 export const cueText = (text: string) =>
   text

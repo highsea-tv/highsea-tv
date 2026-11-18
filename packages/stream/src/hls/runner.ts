@@ -33,10 +33,16 @@
 //   play through `timings`: how long the segments took to work out, each ffmpeg's start with its
 //   position (so a resume, and a player that asks from the film's start first, are visible), its
 //   first segment being whole, and each subtitle's conversion.
+// - **Subtitles in step** (HT-49): each run also writes the film's own text subtitles as WebVTT,
+//   an output each, from the same read (`runArgs`), and a subtitle segment is cut from what the
+//   runs have read (`webvtt.ts`) once they've read past it. A run that starts past the beginning
+//   reads the few seconds before its start for the cues showing there, once its first segment is
+//   out (`leadInArgs`). A subtitle never starts, moves or holds up a run: it waits for the
+//   picture's.
 
 import { type ChildProcess, execFile, spawn as nodeSpawn } from 'node:child_process'
 import { existsSync } from 'node:fs'
-import { copyFile, mkdir, readdir, rename, rm, stat } from 'node:fs/promises'
+import { copyFile, mkdir, readdir, readFile, rename, rm, stat } from 'node:fs/promises'
 import { setPriority } from 'node:os'
 import { join } from 'node:path'
 import { endWithProcess } from '@highsea-tv/core/children'
@@ -52,6 +58,8 @@ import {
   INIT_NAME,
   indexProbeArgs,
   keyframeArgs,
+  LEAD_IN_SECONDS,
+  leadInArgs,
   parseFonts,
   parseIndexProbe,
   parseKeyframes,
@@ -59,6 +67,7 @@ import {
   pieceName,
   type RunInput,
   runArgs,
+  type SubtitleOutput,
   subtitleArgs,
   subtitlesArgs,
   windowArgs,
@@ -79,6 +88,7 @@ import {
   type Segment,
   segmentAt,
 } from './playlist.ts'
+import { type CueBlock, covers, cueBlocks, type Span, webvttSegment } from './webvtt.ts'
 
 /** How far a run makes segments past the furthest asked for, before it's paused. */
 export const AHEAD_SECONDS = 30
@@ -103,6 +113,16 @@ const LOG_LINES = 20
 
 /** The initialization section highsea serves: the first run's, copied once, never rewritten. */
 const HEADER = 'header.mp4'
+/** How long a subtitle segment waits for the runs to read past it before it's answered later. */
+export const SUBTITLE_WAIT_MS = 60_000
+
+/** A subtitle segment the runs haven't read yet: the player asks again (HT-49). */
+export class NotReadYet extends Error {
+  constructor() {
+    super('That part of the film hasn’t been read yet.')
+    this.name = 'NotReadYet'
+  }
+}
 
 export class TranscodeError extends Error {
   /** The last lines ffmpeg wrote, for the log. */
@@ -149,6 +169,8 @@ export type HlsSource = {
     | { kind: 'picture'; index: number }
     | { kind: 'text'; input: string; index: number | null }
     | null
+  /** The film's own text subtitles, by stream index: each run writes them as WebVTT (HT-49). */
+  subtitles?: number[]
 }
 
 type Run = {
@@ -173,6 +195,8 @@ type Run = {
   firstEnd: number
   /** Its first segment's timing line is written. */
   timed: boolean
+  /** It reached the film's end. */
+  done: boolean
 }
 
 type Waiter = {
@@ -181,6 +205,15 @@ type Waiter = {
   reject: (e: Error) => void
   /** Waiting for the initialization section, which any run writes with its first piece. */
   init?: boolean
+}
+
+/** What a run, or a read before one's start, has read of the subtitles: its span, its files. */
+type SubtitleRead = { from: number; to: () => number; files: Map<number, string> }
+
+type SubtitleWaiter = Span & {
+  resolve: () => void
+  reject: (e: Error) => void
+  timer: ReturnType<typeof setTimeout>
 }
 
 export type Spawn = (command: string, args: string[]) => ChildProcess
@@ -499,6 +532,13 @@ function createTranscode(id: string, source: HlsSource, ctx: Context) {
   /** The GPU path the last run took, kept after it reaches the film's end. */
   let made: AccelPath | null = null
   const subtitles = new Map<string, Promise<string>>()
+  /** The film's own text subtitles, which each run writes; what they've read, and who waits. */
+  const tracks = source.subtitles ?? []
+  const reads: SubtitleRead[] = []
+  let subtitleWaiters: SubtitleWaiter[] = []
+  /** The reads before a run's start, numbered for their files, and stopped with the session. */
+  let leadIns = 0
+  const reading = new AbortController()
 
   /**
    * The segments, and when each piece starts: a direct stream's keyframes, a transcode's grid.
@@ -507,7 +547,7 @@ function createTranscode(id: string, source: HlsSource, ctx: Context) {
   let prepared: Promise<{ segments: Segment[]; times: number[] }> | null = null
   const ready = () =>
     (prepared ??= (async () => {
-      await mkdir(dir, { recursive: true })
+      await mkdir(tracks.length ? join(dir, 'subs') : dir, { recursive: true })
       if (copy && source.video) {
         const keyframes = await source.keyframes()
         playlistMs = now() - opened
@@ -573,7 +613,11 @@ function createTranscode(id: string, source: HlsSource, ctx: Context) {
         playlistMs,
         sinceOpenMs: now() - opened,
       })
+      // the cues already showing where it starts, once the picture's first segment is out
+      const first = run.first
+      void ready().then(({ times }) => leadIn(times[first] ?? 0))
     }
+    wakeSubtitles()
     const done = waiters.filter((w) => has(w.piece))
     waiters = waiters.filter((w) => !done.includes(w))
     for (const w of done) w.resolve()
@@ -667,10 +711,14 @@ function createTranscode(id: string, source: HlsSource, ctx: Context) {
       // a GPU that can't tone map this film leaves it to the processor altogether
       if (toneMap === 'cpu') accel = null
     }
+    const at = times[s.first] ?? s.start
+    const files = new Map(
+      tracks.map((index) => [index, join(dir, 'subs', `run-${runs + 1}-${index}.vtt`)]),
+    )
     const input: RunInput = {
       input: source.input,
       dir,
-      start: times[s.first] ?? s.start,
+      start: at,
       startNumber: s.first,
       video: source.video && decision.video ? { ...source.video, plan: decision.video } : null,
       audio: decision.audio
@@ -685,6 +733,7 @@ function createTranscode(id: string, source: HlsSource, ctx: Context) {
       burnIn: burn,
       accel,
       toneMap,
+      subtitles: [...files].map(([index, output]): SubtitleOutput => ({ index, output })),
     }
     // killed if this process ends first: a paused run would otherwise outlive it, stopped
     const child = endWithProcess(spawn(options.ffmpeg, runArgs(input)))
@@ -702,9 +751,19 @@ function createTranscode(id: string, source: HlsSource, ctx: Context) {
       spawnedAt: now(),
       firstEnd: s.last,
       timed: false,
+      done: false,
     }
     run = r
     runs++
+    // read up to the start of its last whole piece: by then ffmpeg has read every cue before it,
+    // since a file's blocks come in time order, and written it, a cue at a time; all of it once
+    // the run has reached the film's end
+    if (files.size)
+      reads.push({
+        from: at,
+        to: () => (r.done ? source.duration : (times[Math.max(r.first, r.next - 1)] ?? at)),
+        files,
+      })
     timings('ffmpeg started', {
       session: id,
       run: runs,
@@ -758,6 +817,8 @@ function createTranscode(id: string, source: HlsSource, ctx: Context) {
     timer = null
     if (counts) slots.release(id)
     if (code === 0 && !error) {
+      r.done = true
+      wakeSubtitles()
       // the film's end: anything still waited for isn't coming
       for (const w of waiters.splice(0))
         has(w.piece) ? w.resolve() : w.reject(new TranscodeError('That segment isn’t there.'))
@@ -881,9 +942,101 @@ function createTranscode(id: string, source: HlsSource, ctx: Context) {
     return made
   }
 
+  /** The spans the runs, and the reads before their starts, have read of the subtitles. */
+  const spans = (): Span[] => reads.map((r) => ({ from: r.from, to: r.to() }))
+
+  /** Subtitle segments waited for that the reads now cover. */
+  function wakeSubtitles() {
+    if (!subtitleWaiters.length) return
+    const read = spans()
+    const done = subtitleWaiters.filter((w) => covers(read, w.from, w.to))
+    subtitleWaiters = subtitleWaiters.filter((w) => !done.includes(w))
+    for (const w of done) {
+      clearTimeout(w.timer)
+      w.resolve()
+    }
+  }
+
+  /**
+   * The `LEAD_IN_SECONDS` before a run's start, read for the cues showing there (`leadInArgs`),
+   * unless an earlier read has them. Its own small read, after the run's first segment, so the
+   * picture never waits for it; a failure leaves those seconds read with no cues, logged.
+   */
+  function leadIn(at: number) {
+    const from = Math.max(0, at - LEAD_IN_SECONDS)
+    if (!tracks.length || ended || at <= 0 || covers(spans(), from, at)) return
+    const n = ++leadIns
+    const files = new Map(
+      tracks.map((index) => [index, join(dir, 'subs', `lead-${n}-${index}.vtt`)]),
+    )
+    const began = now()
+    const outputs = [...files].map(([index, output]) => ({ index, output }))
+    exec(options.ffmpeg, leadInArgs(source.input, from, at, outputs), 2 * 60_000, {
+      signal: reading.signal,
+    })
+      .then(() => {
+        reads.push({ from, to: () => at, files })
+        timings('subtitles before the start read', { session: id, from, ms: now() - began })
+      })
+      .catch((e: TranscodeError) => {
+        if (ended) return
+        reads.push({ from, to: () => at, files: new Map() })
+        log.warn('the subtitles before a start couldn’t be read', {
+          session: id,
+          error: e.message,
+          log: e.log?.join('\n'),
+        })
+      })
+      .finally(wakeSubtitles)
+  }
+
+  /** A WebVTT file's cues; none while it's not there. */
+  const cuesIn = async (path: string | undefined): Promise<CueBlock[]> =>
+    path ? cueBlocks(await readFile(path, 'utf8').catch(() => '')) : []
+
+  /**
+   * Segment `i` of the film's own subtitle at stream `index`, as WebVTT (`webvtt.ts`): every cue
+   * showing in the picture's segment `i`. It waits for the runs to have read from
+   * `LEAD_IN_SECONDS` before the segment, where a cue showing in it may have begun, to its end;
+   * after `SUBTITLE_WAIT_MS` it throws `NotReadYet`. It never starts a run.
+   */
+  async function subtitleSegment(index: number, i: number): Promise<string> {
+    if (ended) throw new TranscodeError('The stream has ended.')
+    if (!tracks.includes(index)) throw new TranscodeError('That subtitle isn’t there.')
+    const { segments } = await ready()
+    if (ended) throw new TranscodeError('The stream has ended.')
+    const s = segments[i]
+    if (!s) throw new TranscodeError('That segment isn’t there.')
+    const end = Math.min(source.duration, s.start + s.duration)
+    const from = Math.max(0, s.start - LEAD_IN_SECONDS)
+    if (!covers(spans(), from, end))
+      await new Promise<void>((resolve, reject) => {
+        const w: SubtitleWaiter = {
+          from,
+          to: end,
+          resolve,
+          reject,
+          timer: setTimeout(() => {
+            subtitleWaiters = subtitleWaiters.filter((x) => x !== w)
+            reject(new NotReadYet())
+          }, SUBTITLE_WAIT_MS),
+        }
+        unref(w.timer)
+        subtitleWaiters.push(w)
+      })
+    const read = reads.filter((r) => r.from < end && r.to() > from)
+    const cues = await Promise.all(read.map((r) => cuesIn(r.files.get(index))))
+    return webvttSegment(cues.flat(), s.start, end)
+  }
+
   /** Stops its ffmpeg and removes its folder. */
   async function end() {
     ended = true
+    reading.abort()
+    for (const w of subtitleWaiters.splice(0)) {
+      clearTimeout(w.timer)
+      w.reject(new TranscodeError('The stream has ended.'))
+    }
     stop('ended')
     if (counts) slots.release(id)
     await rm(dir, { recursive: true, force: true })
@@ -934,6 +1087,7 @@ function createTranscode(id: string, source: HlsSource, ctx: Context) {
     segment,
     init,
     subtitle,
+    subtitleSegment,
     end,
     /** Why the last run failed, for the session (4.3's Now playing). */
     failure: () => failure,

@@ -122,7 +122,10 @@ export const PlaySubtitle = z
     id: z.string(),
     /**
      * The track as WebVTT, for a text track; null for a picture track (PGS, VobSub), which the
-     * device draws itself or can't show. It carries the session's token, as `url` does.
+     * device draws itself or can't show. A stream's (HLS) is a rendition playlist (`.m3u8`) of
+     * WebVTT segments at the picture's own times, cut as the server reads the film (RFC 8216
+     * § 3.5), loaded around where it's playing; a file played as it is has one WebVTT file
+     * (`.vtt`). It carries the session's token, as `url` does.
      */
     url: z.string().nullable(),
     /**

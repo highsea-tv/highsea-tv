@@ -3,7 +3,8 @@
 // production build, with ADR 0040's generated clips, and the client's web player (apps/client's
 // export, one-client-platform-c.md › C1) in Chromium and Firefox.
 // In each, signed in on /web, Big Buck Bunny's MP4 plays directly and Sintel's MKV as HLS (a direct
-// stream); Sintel's English subtitle is turned on and a cue is drawn, the film seeks far ahead and
+// stream); Sintel's English subtitle is turned on and a cue is drawn, then the clip's own track
+// (in segments since HT-49) from the start again with its line, the film seeks far ahead and
 // plays on, and leaving keeps the place and ends the session. Since 4.3a (phase-4-checkpoint-3.md ›
 // Tests), Elephants Dream's PGS subtitle is drawn into the picture by a transcode, its timing hidden
 // with the line saying why, and staff stop Sintel from Now playing with a message the player shows.
@@ -211,29 +212,22 @@ async function inBrowser(name: string, page: Page, token: string) {
     .click()
   await page.keyboard.press('Escape')
   const lines = sintel.cues().map((c) => (c.text ?? '').replace(/\s+/g, ' ').trim())
-  await until(
-    page,
-    'a subtitle cue',
-    // the client hands the chosen subtitle to the browser as a <track> it draws by `::cue`
-    // (apps/client/src/player/picture.web.tsx), so its lines are the showing track's active
-    // cues, not the page's text (https://html.spec.whatwg.org/multipage/media.html#dom-texttrack-activecues)
-    (texts) => {
-      const v = document.querySelector('video')
-      if (!v) return false
-      return Array.from(v.textTracks).some(
-        (t) =>
-          t.mode === 'showing' &&
-          Array.from(t.activeCues ?? []).some((c) => {
-            const line = ((c as VTTCue).text ?? '')
-              .replace(/<[^>]+>/g, '')
-              .replace(/\s+/g, ' ')
-              .trim()
-            return texts.some((x) => x.includes(line) || line.includes(x))
-          }),
-      )
-    },
-    lines,
-  )
+  await until(page, 'a subtitle cue', showing, lines)
+
+  // the clip's own forced track, in segments its stream's runs write as they read the film
+  // (HT-49): from the start again, its one line
+  const own = tracks.findIndex((t) => t.forced)
+  if (own < 0) throw new Error(`Sintel has no track of its own: ${JSON.stringify(tracks)}`)
+  await page.getByRole('button', { name: 'Audio and subtitles' }).click()
+  await subtitles(page)
+    .nth(own + 1)
+    .click()
+  await page.keyboard.press('Escape')
+  await page.evaluate(() => {
+    const v = document.querySelector('video')
+    if (v) v.currentTime = 0
+  })
+  await until(page, 'the film’s own subtitle’s cue', showing, ['Hello.'])
 
   await page.evaluate((t) => {
     const v = document.querySelector('video')
@@ -305,6 +299,28 @@ async function inBrowser(name: string, page: Page, token: string) {
   if (!(await notice.getByText(STOP_MESSAGE).isVisible())) {
     problems.push(`${name}: the stop's message wasn't shown`)
   }
+}
+
+/**
+ * Whether a line of `texts` shows. The client lays the chosen subtitle's cues on a text track of
+ * the page's own that the browser draws by `::cue` (apps/client/src/player/picture.web.tsx), so
+ * its lines are the showing track's active cues, not the page's text
+ * (https://html.spec.whatwg.org/multipage/media.html#dom-texttrack-activecues). Run in the page.
+ */
+function showing(texts: string[]) {
+  const v = document.querySelector('video')
+  if (!v) return false
+  return Array.from(v.textTracks).some(
+    (t) =>
+      t.mode === 'showing' &&
+      Array.from(t.activeCues ?? []).some((c) => {
+        const line = ((c as VTTCue).text ?? '')
+          .replace(/<[^>]+>/g, '')
+          .replace(/\s+/g, ' ')
+          .trim()
+        return !!line && texts.some((x) => x.includes(line) || line.includes(x))
+      }),
+  )
 }
 
 /** The Subtitles list's choices in Audio and subtitles, Off first. */

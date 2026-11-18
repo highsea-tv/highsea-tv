@@ -2,21 +2,14 @@
 // HLS and WebVTT over the real HTTP server (checkpoint 4.1b), on a Matroska clip made here with
 // ffmpeg, so Chrome's profile gets a direct stream: the play response's playlist and subtitles,
 // the multivariant and media playlists, the initialization section and a segment far ahead that
-// play as one file, each text track as WebVTT and as an HLS rendition, the session's folder gone
-// when it ends, the player told "This film didn't start" when ffmpeg fails, and the scrubber's
-// previews made by the `media.trickplay` job and served, the keyframes and subtitles read ahead by
-// `media.ahead`, and a resume's playlist and timing lines. Skipped, and said so, without ffmpeg; the
+// play as one file, a text track as a rendition of WebVTT segments cut from the stream's own read
+// (HT-49) and whole for direct play, the session's folder gone when it ends, the player told "This
+// film didn't start" when ffmpeg fails, and the scrubber's previews made by the `media.trickplay`
+// job and served, the keyframes read ahead by `media.ahead` (and a Matroska film's subtitles left
+// to its streams), and a resume's playlist and timing lines. Skipped, and said so, without ffmpeg; the
 // runs themselves are tested in packages/stream.
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
-import {
-  existsSync,
-  mkdirSync,
-  mkdtempSync,
-  readFileSync,
-  renameSync,
-  rmSync,
-  writeFileSync,
-} from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, renameSync, rmSync, writeFileSync } from 'node:fs'
 import type { AddressInfo } from 'node:net'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -182,7 +175,7 @@ describe.skipIf(!hasFfmpeg)('HLS over HTTP', () => {
           (!session || l.fields?.session === session),
       )
 
-  test('read ahead of the first play: the keyframes kept, the film’s subtitles as WebVTT', async () => {
+  test('read ahead of the first play: the keyframes kept; a Matroska film’s subtitles left to its streams', async () => {
     const file = runtime.db.select().from(schema.mediaFiles).get() as { id: string; size: number }
     const root = join(runtime.config.dataDir, 'webvtt')
     const orphan = join(root, 'fil_gone')
@@ -200,9 +193,9 @@ describe.skipIf(!hasFfmpeg)('HLS over HTTP', () => {
     const kept = runtime.db.select().from(schema.fileKeyframes).get()
     expect(kept).toMatchObject({ fileId: file.id, size: file.size })
     expect(kept?.times.length).toBe(30)
-    const vtt = join(root, file.id, `${file.size}-2.vtt`)
-    expect(readFileSync(vtt, 'utf8')).toContain('00:00.000 --> 00:02.000\nHello.')
-    expect(existsSync(`${vtt}.part`)).toBe(false)
+    // an MKV is never played as it is, and a stream's runs write its subtitles (HT-49), so
+    // nothing reads the film for them
+    expect(existsSync(join(root, file.id))).toBe(false)
     expect(existsSync(orphan)).toBe(false)
     // from the file's index (HT-48), then the subtitles in a job of their own
     expect(logged('read ahead of the first play')[0]?.fields).toMatchObject({
@@ -210,17 +203,17 @@ describe.skipIf(!hasFfmpeg)('HLS over HTTP', () => {
       keyframes: 30,
       from: 'index',
     })
-    expect(logged('subtitles converted ahead of the first play')[0]?.fields).toMatchObject({
-      file: file.id,
-      subtitles: 1,
-    })
+    expect(logged('subtitles converted ahead of the first play')).toEqual([])
 
-    // so a play reads and converts nothing: its subtitle is the kept file
+    // so a play reads nothing but its stream: its subtitle's first segment comes from its run
     const session = await play()
-    const sub = await fetch(`${url}${session.subtitles[0]?.url}`)
+    const base = `${url}${(session.url as string).replace(/main\.m3u8$/, '')}`
+    expect((await fetch(`${base}0.m4s`)).status).toBe(200)
+    const sub = await fetch(`${url}${session.subtitles[0]?.url?.replace(/\.m3u8$/, '/0.vtt')}`)
     expect(await sub.text()).toContain('Hello.')
     expect(logged('keyframes read', session.id)).toEqual([])
     expect(logged('subtitle converted', session.id)).toEqual([])
+    expect(existsSync(join(root, file.id))).toBe(false)
     await api.playback.stop({ params: { id: session.id } })
   })
 
@@ -283,7 +276,7 @@ describe.skipIf(!hasFfmpeg)('HLS over HTTP', () => {
     expect(session.subtitles).toEqual([
       {
         id: 'fil_sintel:2',
-        url: expect.stringMatching(/^\/stream\/subtitles\/[\w.-]+\/fil_sintel%3A2\.vtt$/),
+        url: expect.stringMatching(/^\/stream\/hls\/[\w.-]+\/subs\/fil_sintel%3A2\.m3u8$/),
         delivery: 'external',
       },
     ])
@@ -321,12 +314,21 @@ describe.skipIf(!hasFfmpeg)('HLS over HTTP', () => {
     // on the film's timeline: the last segment starts in the film's last minute's end
     expect(Number(first)).toBeGreaterThan(SECONDS - 15)
 
-    // the subtitle's rendition, and its WebVTT
+    // the subtitle's rendition, a WebVTT segment at each of the picture's (HT-49), and its first,
+    // cut from the run the picture's first segment starts
     const list = await (await fetch(`${base}subs/fil_sintel%3A2.m3u8`)).text()
-    expect(list).toContain('fil_sintel%3A2.vtt')
-    const vtt = await fetch(`${base}subs/fil_sintel%3A2.vtt`)
+    const cues = list.split('\n').filter((l) => l.endsWith('.vtt'))
+    expect(cues).toEqual(segments.map((_, i) => `fil_sintel%3A2/${i}.vtt`))
+    expect(list.split('\n').filter((l) => l.startsWith('#EXTINF'))).toEqual(
+      media.split('\n').filter((l) => l.startsWith('#EXTINF')),
+    )
+    expect((await fetch(`${base}${segments[0]}`)).status).toBe(200)
+    const vtt = await fetch(`${base}subs/fil_sintel%3A2/0.vtt`)
     expect(vtt.headers.get('content-type')).toBe('text/vtt; charset=utf-8')
-    expect(await vtt.text()).toContain('00:00.000 --> 00:02.000\nHello.')
+    expect(await vtt.text()).toBe(
+      'WEBVTT\nX-TIMESTAMP-MAP=LOCAL:00:00:00.000,MPEGTS:0\n\n00:00.000 --> 00:02.000\nHello.\n',
+    )
+    expect((await fetch(`${base}subs/fil_sintel%3A2/${segments.length}.vtt`)).status).toBe(404)
     expect((await fetch(`${base}nothing`)).status).toBe(404)
 
     // leaving ends the session and removes its folder
@@ -338,12 +340,12 @@ describe.skipIf(!hasFfmpeg)('HLS over HTTP', () => {
     expect((await fetch(`${base}video.m3u8`)).status).toBe(404)
   })
 
-  test('a text track as WebVTT, for direct play too', async () => {
+  test('a text track whole, as direct play has it', async () => {
     const session = await play()
-    const vtt = await fetch(`${url}${session.subtitles[0]?.url}`)
+    const token = (session.url as string).split('/')[3]
+    const vtt = await fetch(`${url}/stream/subtitles/${token}/fil_sintel%3A2.vtt`)
     expect(vtt.status).toBe(200)
     expect(await vtt.text()).toMatch(/^WEBVTT/)
-    const token = (session.url as string).split('/')[3]
     expect((await fetch(`${url}/stream/subtitles/${token}/fil_sintel%3A9.vtt`)).status).toBe(404)
     await api.playback.stop({ params: { id: session.id } })
   })

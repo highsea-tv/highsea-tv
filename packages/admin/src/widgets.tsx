@@ -65,6 +65,7 @@ import {
   Tooltip,
   tokens,
   useClip,
+  useSize,
   useTheme,
   useWidth,
   visuallyHidden,
@@ -72,7 +73,7 @@ import {
   WidgetFrame,
 } from '@highsea-tv/ui/native'
 import type { ReactNode } from 'react'
-import { useState } from 'react'
+import { createContext, useContext, useState } from 'react'
 import { View, type ViewStyle } from 'react-native'
 import { widgets as messages } from './dashboard-messages.ts'
 import { behind, mbps, methodTone } from './delivery.ts'
@@ -156,43 +157,103 @@ function Widget<T>({
   const locale = useLocale()
   const title = tw(`${kind}.title`)
   return (
-    <WidgetFrame
-      {...frame}
-      title={title}
-      // while arranging, the header needs its room for the handle and Remove
-      meta={query.status === 'success' && meta && !frame.editing ? meta(query.data) : undefined}
-      actions={actions}
-    >
-      {query.status === 'loading' ? (
-        <View aria-busy style={{ gap: s['2'] + s['0.5'] }}>
-          {skeleton ?? (
-            <>
-              <Skeleton width={admin.skeleton.width.sm} height={admin.skeleton.title} />
-              <SkeletonText lines={2} />
-            </>
-          )}
-        </View>
-      ) : query.status === 'error' ? (
-        <EmptyState
-          size="sm"
-          tone="error"
-          icon="alert"
-          level={4}
-          title={t('error', { widget: title.toLocaleLowerCase(locale) })}
-          action={
-            <Button size="sm" onPress={query.refetch}>
-              {t('retry')}
-            </Button>
-          }
-        >
-          {query.error.message}
-        </EmptyState>
-      ) : (
-        children(query.data)
-      )}
-    </WidgetFrame>
+    <Short.Provider value={isShort(frame)}>
+      <WidgetFrame
+        {...frame}
+        title={title}
+        // while arranging, the header needs its room for the handle and Remove
+        meta={query.status === 'success' && meta && !frame.editing ? meta(query.data) : undefined}
+        actions={actions}
+      >
+        {query.status === 'loading' ? (
+          // Its own key: without one React hands this View's element to the loaded body's first
+          // View, and react-native-web starts observing an element's layout only when it mounts
+          // with `onLayout` (its useElementLayout observes once, on mount), so a body that measures
+          // its width (the Queue's layout, Recently added's columns) never heard its size and drew
+          // for the 1200 fallback at every span (HT-47).
+          <View key="loading" aria-busy style={{ gap: s['2'] + s['0.5'] }}>
+            {skeleton ?? (
+              <>
+                <Skeleton width={admin.skeleton.width.sm} height={admin.skeleton.title} />
+                <SkeletonText lines={2} />
+              </>
+            )}
+          </View>
+        ) : query.status === 'error' ? (
+          <Empty
+            size="sm"
+            tone="error"
+            icon="alert"
+            level={4}
+            title={t('error', { widget: title.toLocaleLowerCase(locale) })}
+            action={
+              <Button size="sm" onPress={query.refetch}>
+                {t('retry')}
+              </Button>
+            }
+          >
+            {query.error.message}
+          </Empty>
+        ) : (
+          children(query.data)
+        )}
+      </WidgetFrame>
+    </Short.Provider>
   )
 }
+
+/**
+ * A widget's empty or error state: in the middle of the body when it fits, from the top when the
+ * body has to scroll to show it all (an auto margin takes the free space and none when there is
+ * none: https://www.w3.org/TR/css-flexbox-1/#auto-margins), so its button is never cut off.
+ */
+function Empty(props: Parameters<typeof EmptyState>[0]) {
+  const short = useContext(Short)
+  // two rows hold the words and the button, not the disc and its room above and below
+  if (short)
+    return (
+      <View
+        role={props.tone === 'error' ? 'alert' : undefined}
+        style={{ marginVertical: 'auto', flexShrink: 0, alignItems: 'center', gap: s['1.5'] }}
+      >
+        <Ui weight={600} align="center" accessibilityRole="header" aria-level={props.level}>
+          {props.title}
+        </Ui>
+        {props.children ? (
+          <Text variant="caption" color="text-2" align="center" numberOfLines={2}>
+            {props.children}
+          </Text>
+        ) : null}
+        {props.action ? (
+          <View
+            style={{
+              alignSelf: 'stretch',
+              flexDirection: 'row',
+              flexWrap: 'wrap',
+              justifyContent: 'center',
+              gap: s['2'],
+              marginTop: s['0.5'],
+            }}
+          >
+            {props.action}
+          </View>
+        ) : null}
+      </View>
+    )
+  return (
+    <View style={{ marginVertical: 'auto', flexShrink: 0 }}>
+      <EmptyState {...props} />
+    </View>
+  )
+}
+
+/**
+ * Whether the widget is at its shortest (two rows, or three in one column, where the words wrap):
+ * its empty state then drops its disc.
+ */
+const Short = createContext(false)
+const isShort = (frame: WidgetProps['frame']) =>
+  frame.rows !== undefined && (frame.rows <= 2 || (frame.rows === 3 && (frame.span ?? 1) === 1))
 
 /** A widget whose source this server doesn't have yet: its frame and what's true without it. */
 function Static({
@@ -204,14 +265,16 @@ function Static({
 }: Omit<WidgetProps, 'settings'> & { kind: WidgetKind; meta?: ReactNode; children: ReactNode }) {
   const tw = useT(widgetMessages)
   return (
-    <WidgetFrame
-      {...frame}
-      title={tw(`${kind}.title`)}
-      meta={frame.editing ? undefined : meta}
-      actions={actions}
-    >
-      {children}
-    </WidgetFrame>
+    <Short.Provider value={isShort(frame)}>
+      <WidgetFrame
+        {...frame}
+        title={tw(`${kind}.title`)}
+        meta={frame.editing ? undefined : meta}
+        actions={actions}
+      >
+        {children}
+      </WidgetFrame>
+    </Short.Provider>
   )
 }
 
@@ -299,10 +362,13 @@ function Rates({ down, up }: { down: ReactNode; up: ReactNode }) {
   )
 }
 
-/** The graph fills what the widget has left below the rates, 48 at least. */
+/**
+ * The graph fills what the widget has left below the rates: 48 where there's room, less in the
+ * smallest widget, where the rates wrap to two lines and a floor of 48 pushed it out of the frame.
+ */
 function Graph({ up, down }: { up: number[]; down: number[] }) {
   return (
-    <View style={{ flex: 1, minHeight: admin.widgets.graphMin }}>
+    <View style={{ flexGrow: 1, flexShrink: 1, flexBasis: admin.widgets.graphMin, minHeight: 0 }}>
       <Sparkline
         height={'100%' as unknown as number}
         series={[
@@ -446,7 +512,7 @@ function StorageOf({ folders, ...props }: WidgetProps & { folders: RootFolder[] 
     >
       {(st) => {
         const disk = st.disks[0]
-        if (!disk) return <EmptyState size="sm" icon="inbox" level={4} title={t('storage.none')} />
+        if (!disk) return <Empty size="sm" icon="inbox" level={4} title={t('storage.none')} />
         const [free, unit] = bytesParts(disk.free)
         // the space files take arrives with importing (checkpoint 6): until then one bar for all
         // of it, and the root folders on the disk with how many movies each holds
@@ -530,7 +596,7 @@ function NoIndexers() {
   const t = useT(messages)
   const router = useRouter()
   return (
-    <EmptyState
+    <Empty
       size="sm"
       icon="indexer"
       level={4}
@@ -542,7 +608,7 @@ function NoIndexers() {
       }
     >
       {t('indexers.noneBody')}
-    </EmptyState>
+    </Empty>
   )
 }
 
@@ -641,9 +707,9 @@ function Subtitles(props: WidgetProps) {
       {source === undefined ? (
         <SkeletonText lines={3} />
       ) : (
-        <EmptyState size="sm" icon="subtitles" level={4} title={t('subtitles.none')}>
+        <Empty size="sm" icon="subtitles" level={4} title={t('subtitles.none')}>
           {t('subtitles.noneBody')}
-        </EmptyState>
+        </Empty>
       )}
     </Static>
   )
@@ -659,9 +725,9 @@ function SubtitleStats(props: WidgetProps) {
     <Widget {...props} kind="subtitles" query={query} meta={() => t('subtitles.meta')}>
       {(st) =>
         st.syncedToday === 0 && st.waiting === 0 ? (
-          <EmptyState size="sm" icon="subtitles" level={4} title={t('subtitles.none')}>
+          <Empty size="sm" icon="subtitles" level={4} title={t('subtitles.none')}>
             {t('subtitles.noneBody')}
-          </EmptyState>
+          </Empty>
         ) : (
           <>
             <Stat
@@ -703,9 +769,9 @@ function Upcoming(props: WidgetProps) {
       {movies === undefined ? (
         <SkeletonText lines={3} />
       ) : (
-        <EmptyState size="sm" icon="calendar" level={4} title={t('upcoming.none', { days })}>
+        <Empty size="sm" icon="calendar" level={4} title={t('upcoming.none', { days })}>
           {t('upcoming.noneBody')}
-        </EmptyState>
+        </Empty>
       )}
     </Static>
   )
@@ -725,9 +791,9 @@ function UpcomingMovies(props: WidgetProps) {
     <Widget {...props} kind="upcoming" query={query} meta={() => t('upcoming.meta', { days })}>
       {(xs) =>
         xs.length === 0 ? (
-          <EmptyState size="sm" icon="calendar" level={4} title={t('upcoming.none', { days })}>
+          <Empty size="sm" icon="calendar" level={4} title={t('upcoming.none', { days })}>
             {t('upcoming.noneBody')}
-          </EmptyState>
+          </Empty>
         ) : (
           <>
             <View ref={clip.ref} role="list" style={[{ gap: s['2'] }, fill]}>
@@ -785,7 +851,7 @@ function NoAnnouncement() {
   const t = useT(messages)
   const router = useRouter()
   return (
-    <EmptyState
+    <Empty
       size="sm"
       icon="announcement"
       level={4}
@@ -868,9 +934,9 @@ function Queue(props: WidgetProps) {
       {source === undefined ? (
         <SkeletonText lines={3} />
       ) : (
-        <EmptyState size="sm" icon="downloads" level={4} title={t('activity.none')}>
+        <Empty size="sm" icon="downloads" level={4} title={t('activity.none')}>
           {t('activity.noneBody')}
-        </EmptyState>
+        </Empty>
       )}
     </Static>
   )
@@ -914,9 +980,9 @@ function QueueLive(props: WidgetProps) {
       {(xs) => {
         if (xs.length === 0)
           return (
-            <EmptyState size="sm" icon="downloads" level={4} title={t('activity.none')}>
+            <Empty size="sm" icon="downloads" level={4} title={t('activity.none')}>
               {t('activity.noneBody')}
-            </EmptyState>
+            </Empty>
           )
         const count = (f: QueueFilter) => xs.filter((q) => queueFilters[f](q.state)).length
         const shown = xs.filter((q) => queueFilters[filter](q.state))
@@ -1007,7 +1073,9 @@ function QueueRows({ items, layout }: { items: QueueItem[]; layout: 'table' | 'm
     )
   const full = layout === 'table'
   return (
-    <View style={{ marginHorizontal: -PAD }}>
+    // out to the body's edge by a header cell's padding, so the columns' words start where the
+    // frame's title does; by the frame's own padding the body cut the first letters (HT-47)
+    <View style={{ marginHorizontal: -s['3'] }}>
       <Table>
         <TableHeader>
           <TableRow>
@@ -1096,9 +1164,9 @@ function RecentlyAdded(props: WidgetProps) {
       {movies === undefined ? (
         <PosterSkeletonRow />
       ) : (
-        <EmptyState size="sm" icon="movie" level={4} title={t('recent.none')}>
+        <Empty size="sm" icon="movie" level={4} title={t('recent.none')}>
           {t('recent.noneBody')}
-        </EmptyState>
+        </Empty>
       )}
     </Static>
   )
@@ -1114,41 +1182,48 @@ function RecentMovies(props: WidgetProps) {
     (c) => c.movies.recent({ query: { limit: RECENT_LIMIT } }),
     MOVIE_TOPICS,
   )
-  const { onLayout, width } = useWidth()
-  const columns = Math.max(2, Math.min(8, Math.floor((width + 12) / 112)))
+  // The posters fit the body both ways (HT-47): as many columns as the width takes at about 100
+  // each, and more of them, so narrower, until a whole row fits the height. Under 72 wide a poster
+  // drops its title and year, which would be cut to a few letters.
+  const { onLayout, width, height } = useSize()
+  const gap = s['3']
+  const widest = (words: number) => (height ? (height - words) / (3 / 2) : Number.POSITIVE_INFINITY)
+  const named = widest(RECENT_WORDS) >= RECENT_NAMED
+  const most = Math.max(admin.widgets.poster, widest(named ? RECENT_WORDS : 0))
+  const columns = Math.max(
+    Math.max(2, Math.min(8, Math.floor((width + gap) / 112))),
+    Math.ceil((width + gap) / (most + gap)),
+  )
+  const poster = Math.floor((width - gap * (columns - 1)) / columns)
   // as many rows of posters as fit the height; a cut-off row is hidden
   const clip = useClip(LIST_ROWS)
   return (
     <Widget {...props} kind="recently-added" query={query} skeleton={<PosterSkeletonRow />}>
       {(xs: Movie[]) =>
         xs.length === 0 ? (
-          <EmptyState size="sm" icon="movie" level={4} title={t('recent.none')}>
+          <Empty size="sm" icon="movie" level={4} title={t('recent.none')}>
             {t('recent.addedBody')}
-          </EmptyState>
+          </Empty>
         ) : (
           <View onLayout={onLayout} style={{ flex: 1, minHeight: 0 }}>
             <View
               ref={clip.ref}
               role="list"
               style={[
-                {
-                  display: 'grid',
-                  gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
-                  alignContent: 'start',
-                  gap: s['3'],
-                } as unknown as ViewStyle,
+                { flexDirection: 'row', flexWrap: 'wrap', alignContent: 'flex-start', gap },
                 fill,
               ]}
             >
               {xs.slice(0, columns * 4).map((m) => (
-                <View key={m.id} role="listitem">
+                <View key={m.id} role="listitem" style={{ width: poster }}>
                   <Poster
                     title={m.title}
                     src={m.art.poster ?? undefined}
                     href={`/movies/${m.id}`}
-                    showTitle
+                    width={poster}
+                    showTitle={named}
                     titleSize="ui"
-                    caption={m.year ? String(m.year) : undefined}
+                    caption={named && m.year ? String(m.year) : undefined}
                   />
                 </View>
               ))}
@@ -1159,6 +1234,10 @@ function RecentMovies(props: WidgetProps) {
     </Widget>
   )
 }
+
+/** The room a poster’s title (two lines at most) and year take under it, and the width under which it drops them. */
+const RECENT_WORDS = 88
+const RECENT_NAMED = 72
 
 // ---------------------------------------------------------------- calendar
 
@@ -1301,7 +1380,7 @@ function SystemHealth(props: WidgetProps) {
     >
       {(xs) =>
         xs.length === 0 ? (
-          <EmptyState size="sm" icon="success" level={4} title={t('health.none')} />
+          <Empty size="sm" icon="success" level={4} title={t('health.none')} />
         ) : (
           <>
             <View ref={clip.ref} role="list" style={[{ gap: s['2'] + s['0.5'] }, fill]}>
@@ -1344,7 +1423,7 @@ function NowPlaying(props: WidgetProps) {
     >
       {(np) =>
         np.sessions.length === 0 ? (
-          <EmptyState size="sm" icon="play" level={4} title={t('playing.none')} />
+          <Empty size="sm" icon="play" level={4} title={t('playing.none')} />
         ) : (
           <>
             <View ref={clip.ref} role="list" style={[{ gap: s['3'] }, fill]}>
