@@ -73,6 +73,7 @@ export async function drawWithReactNativeWeb(): Promise<void> {
     ['tv/engine.tsx', 'tv/engine.web.tsx'],
     ['dom.ts', 'dom.web.ts'],
     ['announce.ts', 'announce.web.ts'],
+    ['above-modals.tsx', 'above-modals.web.tsx'],
     ['embed.tsx', 'embed.web.tsx'],
     ['page-frame.tsx', 'page-frame.web.tsx'],
     ['date-time.tsx', 'date-time.web.tsx'],

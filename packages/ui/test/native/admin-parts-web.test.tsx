@@ -4,7 +4,8 @@
 // lays out as a CSS table with ARIA's roles, a row tints while a pointer is over it and shows its
 // actions, the last row has no line under it, cells centre their content and a path cut to fit
 // gives way to the other columns, whole in a tooltip (HT-3), the toast stack keeps the last three and Dismiss
-// takes one away, and a confirmation runs its action once and closes.
+// takes one away and shows above an open sheet or dialog (HT-44), a side sheet floats off the
+// window's edge, and a confirmation runs its action once and closes.
 import { GlobalRegistrator } from '@happy-dom/global-registrator'
 
 if (!GlobalRegistrator.isRegistered) GlobalRegistrator.register({ url: 'http://localhost/' })
@@ -30,6 +31,8 @@ const {
   TableHead,
   TableHeader,
   TableRow,
+  Dialog,
+  Sheet,
   Toaster,
   toast,
   WidgetFrame,
@@ -219,6 +222,77 @@ describe('the toast stack', () => {
       fireEvent.click(screen.getAllByLabelText('Dismiss')[0] as HTMLElement)
     })
     expect(screen.queryByText('Saved 2')).toBeNull()
+  })
+})
+
+/**
+ * How high `el` is drawn: the z-index of its topmost positioned ancestor below `<body>`, the
+ * stacking context it's painted in among the page's others
+ * (https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_positioned_layout/Stacking_context).
+ */
+function layer(el: Element): number {
+  let z = 0
+  for (let at: Element | null = el; at && at !== document.body; at = at.parentElement) {
+    const style = getComputedStyle(at)
+    const n = Number.parseInt(style.zIndex, 10)
+    if (style.position !== 'static' && Number.isFinite(n)) z = n
+  }
+  return z
+}
+
+describe('a toast over a sheet', () => {
+  const MODALS: [string, () => ReactNode][] = [
+    [
+      'a side sheet',
+      () => (
+        <Sheet open onClose={() => {}} title="Your account" side="right">
+          {null}
+        </Sheet>
+      ),
+    ],
+    ['a dialog', () => <Dialog open onClose={() => {}} title="Edit Ines" />],
+  ]
+  for (const [name, modal] of MODALS) {
+    test(`is drawn above ${name}`, () => {
+      render(
+        <>
+          {modal()}
+          <Toaster />
+        </>,
+      )
+      act(() => {
+        toast.success('Profile saved')
+      })
+      const saved = screen.getByText('Profile saved')
+      // react-native-web's modal box (exports/Modal/ModalContent.js)
+      const dialog = document.querySelector('[aria-modal="true"]') as Element
+      expect(layer(dialog)).toBeGreaterThan(0)
+      expect(layer(saved)).toBeGreaterThan(layer(dialog))
+    })
+  }
+})
+
+describe('a side sheet', () => {
+  test('floats off the window’s top, bottom and outer edge, every corner rounded', () => {
+    render(
+      <Sheet open onClose={() => {}} title="Your account" side="right">
+        {null}
+      </Sheet>,
+    )
+    const title = screen.getByText('Your account')
+    // the panel: the first box round the title with a corner
+    let panel: HTMLElement | null = title
+    while (panel && ['', '0px'].includes(getComputedStyle(panel).borderTopLeftRadius))
+      panel = panel.parentElement
+    const style = getComputedStyle(panel as HTMLElement)
+    for (const corner of ['TopLeft', 'TopRight', 'BottomLeft', 'BottomRight'] as const)
+      expect(style[`border${corner}Radius`]).toBe('28px')
+    expect([style.marginTop, style.marginBottom, style.marginRight, style.marginLeft]).toEqual([
+      '24px',
+      '24px',
+      '24px',
+      '0px',
+    ])
   })
 })
 

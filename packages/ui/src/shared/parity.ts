@@ -8,6 +8,8 @@
 
 /** Drawn per platform, by name, with the reason. */
 export const BOTH: Record<string, string> = {
+  AboveModals:
+    "A pair of platform files since HT-44: on the web a portal into a layer on <body> above react-native-web's Modals (the toast stack over a sheet), and the children where they stand elsewhere, where a Modal is a view controller nothing in the page draws over",
   DateTimeInput:
     "A pair of platform files since D2: the browser's datetime-local in the field's look on the web, a mono Input elsewhere (Curation's schedule)",
   PageFrame:

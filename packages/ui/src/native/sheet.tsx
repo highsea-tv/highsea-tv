@@ -223,12 +223,20 @@ function PageSheet({ open, onClose, title, children, footer, onDismiss }: SheetP
 const SIDE_WIDTH = { right: 416, left: 320 } as const
 /** The space a side sheet leaves beside it in a narrow window (the web's 100vw - 2rem). */
 const SIDE_MARGIN = tokens.space['8']
+/**
+ * A side sheet's gap from the window's top, bottom and outer edge: pulled off the edge as the TV's
+ * side dialog is (tv/detail.tsx's TvSideDialog, half the TV's safe area, about 23 points at
+ * 1080p), at 24, the toast stack's own gap (toaster.tsx), so a toast lines up with the sheet's
+ * edge. The owner's change of 2026-11-17 (HT-44).
+ */
+const SIDE_GAP = tokens.space['6']
 
 /**
- * A pointer's side sheet (web/components/dialog.tsx's SheetContent at `right` or `left`): over the
- * scrim, `s3` with the extra-large corner on its inner side and the fourth elevation, 24 of padding
- * and 20 between its title, body and footer, the whole of it scrolling. Escape and a press on the
- * scrim close it (React Native's Modal `onRequestClose`, which react-native-web calls on Escape).
+ * A pointer's side sheet (web/components/dialog.tsx's SheetContent at `right` or `left`), floating
+ * off the window's edge as the TV's side dialog does (SIDE_GAP): over the scrim, `s3` with the
+ * extra-large corner at all four corners and the fourth elevation, 24 of padding and 20 between its
+ * title, body and footer, the whole of it scrolling. Escape and a press on the scrim close it (React
+ * Native's Modal `onRequestClose`, which react-native-web calls on Escape).
  */
 function SideSheet({
   open,
@@ -268,17 +276,24 @@ function SideSheet({
           ...scrim,
         }}
       >
+        {/* the scrim round it closes it, as the web's overlay does, the gap at the edge included */}
+        <Pressable
+          accessible={false}
+          tabIndex={-1}
+          onPress={onClose}
+          style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 }}
+        />
         <View
           accessibilityViewIsModal
           style={{
             width: width ?? SIDE_WIDTH[side],
-            maxWidth: `calc(100% - ${SIDE_MARGIN}px)` as unknown as number,
-            height: '100%',
+            // a narrow window keeps SIDE_MARGIN of scrim beside it, past the gap at its edge
+            maxWidth: `calc(100% - ${SIDE_MARGIN + SIDE_GAP}px)` as unknown as number,
+            marginVertical: SIDE_GAP,
+            marginRight: side === 'right' ? SIDE_GAP : 0,
+            marginLeft: side === 'left' ? SIDE_GAP : 0,
             backgroundColor: theme.colors.s3,
-            borderTopLeftRadius: side === 'right' ? corner : 0,
-            borderBottomLeftRadius: side === 'right' ? corner : 0,
-            borderTopRightRadius: side === 'left' ? corner : 0,
-            borderBottomRightRadius: side === 'left' ? corner : 0,
+            borderRadius: corner,
             boxShadow: tokens.elevation[4].boxShadow,
             overflow: 'hidden',
           }}
@@ -329,13 +344,6 @@ function SideSheet({
             ) : null}
           </ScrollView>
         </View>
-        {/* the scrim beside it closes it, as the web's overlay does */}
-        <Pressable
-          accessible={false}
-          tabIndex={-1}
-          onPress={onClose}
-          style={{ flex: 1, alignSelf: 'stretch' }}
-        />
       </View>
     </Modal>
   )
