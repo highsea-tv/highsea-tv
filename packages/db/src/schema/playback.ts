@@ -5,16 +5,22 @@
 // Checkpoint 4.1b adds what HLS and the scrubber read of each file: its keyframes and its trickplay;
 // 4.3a, Now playing's 30 days of what was watched.
 import { index, integer, primaryKey, sqliteTable, text } from 'drizzle-orm/sqlite-core'
-import { CLIENT_TYPES, devices, users } from './auth.ts'
+import { CLIENT_TYPES, devices, profiles, users } from './auth.ts'
 import { mediaFiles, mediaItems } from './media.ts'
 
-/** Played or not, how often, and when last; smart collections' watch rules read it (ADR 0049). */
+/**
+ * Played or not, how often, and when last, per profile (ADR 0068); smart collections' watch rules
+ * read it (ADR 0049).
+ */
 export const watchHistory = sqliteTable(
   'watch_history',
   {
     userId: text('user_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
+    profileId: text('profile_id')
+      .notNull()
+      .references(() => profiles.id, { onDelete: 'cascade' }),
     itemId: text('item_id')
       .notNull()
       .references(() => mediaItems.id, { onDelete: 'cascade' }),
@@ -25,18 +31,21 @@ export const watchHistory = sqliteTable(
     updatedAt: integer('updated_at').notNull(),
   },
   (t) => [
-    primaryKey({ columns: [t.userId, t.itemId] }),
-    index('watch_history_last').on(t.userId, t.lastPlayedAt),
+    primaryKey({ columns: [t.profileId, t.itemId] }),
+    index('watch_history_last').on(t.profileId, t.lastPlayedAt),
   ],
 )
 
-/** The player's picks for a title, saved as they change. Track ids are the client API's. */
+/** The player's picks for a title, per profile, saved as they change. Track ids are the client API's. */
 export const playbackPrefs = sqliteTable(
   'playback_prefs',
   {
     userId: text('user_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
+    profileId: text('profile_id')
+      .notNull()
+      .references(() => profiles.id, { onDelete: 'cascade' }),
     itemId: text('item_id')
       .notNull()
       .references(() => mediaItems.id, { onDelete: 'cascade' }),
@@ -48,7 +57,7 @@ export const playbackPrefs = sqliteTable(
     subtitleOffsetMs: integer('subtitle_offset_ms').notNull(),
     updatedAt: integer('updated_at').notNull(),
   },
-  (t) => [primaryKey({ columns: [t.userId, t.itemId] })],
+  (t) => [primaryKey({ columns: [t.profileId, t.itemId] })],
 )
 
 /** The latest profile a device reported, laid over its built-in one (`@highsea-tv/stream`). */
@@ -105,6 +114,8 @@ export const playbackHistory = sqliteTable(
     userId: text('user_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
+    /** The profile that watched, by name as it was then (ADR 0068); null before profiles. */
+    profileName: text('profile_name'),
     deviceName: text('device_name').notNull(),
     client: text('client', { enum: CLIENT_TYPES }).notNull(),
     /** Null once the title has left the library. */

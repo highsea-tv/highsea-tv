@@ -178,3 +178,126 @@ describe('0004_roles', () => {
     raw.close()
   })
 })
+
+describe('0018_profiles', () => {
+  const before = migrations.filter((m) => m.tag < '0018')
+
+  /**
+   * A server from before profiles, as the owner's NAS is: two accounts with watch positions,
+   * history, playback picks, a Home and a signed-in device each, and a Now playing row.
+   */
+  function older(file: string) {
+    const { raw } = openDatabase(file)
+    migrate(raw, { all: before })
+    raw.exec('PRAGMA foreign_keys = OFF')
+    for (const [id, name] of [
+      ['usr_ines', 'Ines'],
+      ['usr_theo', 'Theo'],
+    ]) {
+      raw.run(
+        "INSERT INTO users (id, username, display_name, role, webauthn_id, created_at, updated_at) VALUES (?, ?, ?, 'user', ?, 5, 5)",
+        id,
+        id,
+        name,
+        `w-${id}`,
+      )
+      raw.run(
+        "INSERT INTO devices (id, user_id, kind, token_hash, name, client, app_version, address, method, created_at, last_seen_at) VALUES (?, ?, 'token', ?, 'TV', 'tvos', '1', '::1', 'pairing', 0, 0)",
+        `dev-${id}`,
+        id,
+        `hash-${id}`,
+      )
+      raw.run(
+        "INSERT INTO home_layouts (user_id, \"order\", hidden, updated_at) VALUES (?, '[\"continue\"]', '[]', 0)",
+        id,
+      )
+    }
+    for (const item of ['itm_a', 'itm_b'])
+      raw.run(
+        "INSERT INTO media_items (id, type, tmdb_id, title, sort_title, status, monitored, minimum_availability, quality_profile_id, root_folder, path, added_at, updated_at) VALUES (?, 'movie', ?, ?, ?, 'released', 1, 'released', 'qp', '/m', ?, 0, 0)",
+        item,
+        item === 'itm_a' ? 1 : 2,
+        item,
+        item,
+        `/m/${item}`,
+      )
+    raw.run("INSERT INTO watch_positions VALUES ('usr_ines', 'itm_a', 600, 6000, 10)")
+    raw.run("INSERT INTO watch_positions VALUES ('usr_theo', 'itm_a', 60, 6000, 11)")
+    raw.run("INSERT INTO watch_history VALUES ('usr_ines', 'itm_b', 1, 2, 12, 12)")
+    raw.run(
+      "INSERT INTO playback_prefs VALUES ('usr_ines', 'itm_a', NULL, 'a2', 's1', 250, 13)",
+    )
+    raw.exec('PRAGMA foreign_keys = ON')
+    return raw
+  }
+
+  const state = (raw: ReturnType<typeof older>) => ({
+    profiles: raw.all('SELECT id, user_id, name, tone, pin_hash, main FROM profiles ORDER BY id'),
+    positions: raw.all(
+      'SELECT user_id, profile_id, item_id, position_seconds FROM watch_positions ORDER BY user_id',
+    ),
+    history: raw.all('SELECT user_id, profile_id, item_id, play_count FROM watch_history'),
+    prefs: raw.all('SELECT profile_id, item_id, audio_id, subtitle_offset_ms FROM playback_prefs'),
+    home: raw.all('SELECT profile_id, user_id, "order" FROM home_layouts ORDER BY profile_id'),
+    devices: raw.all('SELECT id, profile_id FROM devices ORDER BY id'),
+  })
+
+  test("moves every account's watch state, picks and Home to its own profile", () => {
+    const raw = older(':memory:')
+    expect(migrate(raw).applied).toContain('0018_profiles')
+    expect(state(raw)).toEqual({
+      profiles: [
+        { id: 'usr_ines', user_id: 'usr_ines', name: 'Ines', tone: 'accent', pin_hash: null, main: 1 },
+        { id: 'usr_theo', user_id: 'usr_theo', name: 'Theo', tone: 'accent', pin_hash: null, main: 1 },
+      ],
+      positions: [
+        { user_id: 'usr_ines', profile_id: 'usr_ines', item_id: 'itm_a', position_seconds: 600 },
+        { user_id: 'usr_theo', profile_id: 'usr_theo', item_id: 'itm_a', position_seconds: 60 },
+      ],
+      history: [{ user_id: 'usr_ines', profile_id: 'usr_ines', item_id: 'itm_b', play_count: 2 }],
+      prefs: [{ profile_id: 'usr_ines', item_id: 'itm_a', audio_id: 'a2', subtitle_offset_ms: 250 }],
+      home: [
+        { profile_id: 'usr_ines', user_id: 'usr_ines', order: '["continue"]' },
+        { profile_id: 'usr_theo', user_id: 'usr_theo', order: '["continue"]' },
+      ],
+      // a device that never chose watches as the account's own
+      devices: [
+        { id: 'dev-usr_ines', profile_id: null },
+        { id: 'dev-usr_theo', profile_id: null },
+      ],
+    })
+    expect(raw.all('PRAGMA foreign_key_check')).toEqual([])
+    raw.close()
+  })
+
+  test('a server started twice over a migrated file changes nothing the second time', () => {
+    const dir = tempDir()
+    const file = join(dir, 'highsea.db')
+    const first = older(file)
+    const result = migrate(first, { backupDir: join(dir, 'backups') })
+    expect(result.applied).toEqual(['0018_profiles'])
+    expect(result.backup).not.toBeNull()
+    const once = state(first)
+    first.close()
+    const again = openDatabase(file).raw
+    expect(migrate(again, { backupDir: join(dir, 'backups') })).toEqual({ applied: [], backup: null })
+    expect(state(again)).toEqual(once)
+    again.close()
+  })
+
+  test("a profile's watch state, picks and Home go with it; a device that chose it goes back to the account's own", () => {
+    const raw = older(':memory:')
+    migrate(raw)
+    raw.run(
+      "INSERT INTO profiles (id, user_id, name, tone, main, created_at, updated_at) VALUES ('prf_kids', 'usr_ines', 'Kids', 'warning', 0, 0, 0)",
+    )
+    raw.run("INSERT INTO watch_positions VALUES ('usr_ines', 'prf_kids', 'itm_b', 30, 6000, 20)")
+    raw.run("UPDATE devices SET profile_id = 'prf_kids' WHERE id = 'dev-usr_ines'")
+    raw.run("DELETE FROM profiles WHERE id = 'prf_kids'")
+    expect(raw.all("SELECT * FROM watch_positions WHERE profile_id = 'prf_kids'")).toEqual([])
+    expect(raw.all("SELECT profile_id FROM devices WHERE id = 'dev-usr_ines'")).toEqual([
+      { profile_id: null },
+    ])
+    raw.close()
+  })
+})
