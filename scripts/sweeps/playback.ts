@@ -298,6 +298,12 @@ async function inBrowser(name: string, page: Page, token: string) {
   // keyframes, so the session's first run starts past the beginning on an open GOP's I-frame
   await server.api('POST', `/items/movie/${TEARS}/progress`, { position: 492 }, token)
   await resume(page, TEARS, 492)
+  // seeks within that play (HT-59), its keyframes 5 s apart: right after the resume to a keyframe,
+  // on between two, back between two, back to a keyframe before the run's start, and far back.
+  // Not in Chromium: Playwright's build decodes H.264 in software, which since Chrome 149 starts a
+  // seek at an open GOP's I-frame and fails on its leading frames (ADR 0051, 2026-11-18, HT-59);
+  // Chrome's hardware decoders, Safari's, Firefox's and AVPlayer play them
+  if (name === 'firefox') for (const t of [500, 527.5, 512.5, 480, 302.5]) await seekTo(page, t)
   await leave(page, TEARS)
 
   // burned in: the PGS track can't be drawn by the browser, so choosing it transcodes with it in
@@ -455,6 +461,23 @@ async function resume(page: Page, id: number, at: number) {
       return !!v && !v.paused && v.currentTime > t + 2
     },
     session.start,
+  )
+}
+
+/** Seeks the playing video to `at` and waits for it to play on past it. */
+async function seekTo(page: Page, at: number) {
+  await page.evaluate((t) => {
+    const v = document.querySelector('video')
+    if (v) v.currentTime = t
+  }, at)
+  await until(
+    page,
+    `playing on from a seek to ${at} s`,
+    (t) => {
+      const v = document.querySelector('video')
+      return !!v && !v.paused && v.currentTime > t + 2 && v.currentTime < t + 30
+    },
+    at,
   )
 }
 

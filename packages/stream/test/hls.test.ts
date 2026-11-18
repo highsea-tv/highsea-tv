@@ -394,7 +394,7 @@ describe('ffmpeg’s command lines', () => {
       ...['-c:a', 'aac', '-ac', '6', '-b:a', '384k'],
       ...['-f', 'hls', '-hls_segment_type', 'fmp4', '-hls_time', '0'],
       ...['-hls_list_size', '0', '-hls_flags', 'temp_file'],
-      ...['-hls_segment_options', 'movflags=+frag_discont'],
+      ...['-hls_segment_options', 'movflags=+frag_discont+skip_sidx'],
       ...['-hls_fmp4_init_filename', 'init.mp4', '-start_number', '100'],
       ...['-hls_segment_filename', '/data/transcodes/s1/%d.m4s'],
       '/data/transcodes/s1/ffmpeg.m3u8',
@@ -499,7 +499,7 @@ describe('ffmpeg’s command lines', () => {
       ...['-c:a', 'copy'],
       ...['-f', 'hls', '-hls_segment_type', 'fmp4', '-hls_time', '0'],
       ...['-hls_list_size', '0', '-hls_flags', 'temp_file'],
-      ...['-hls_segment_options', 'movflags=+frag_discont'],
+      ...['-hls_segment_options', 'movflags=+frag_discont+skip_sidx'],
       ...['-hls_fmp4_init_filename', 'init.mp4', '-start_number', '100'],
       ...['-hls_segment_filename', '/t/s2/%d.m4s', '/t/s2/ffmpeg.m3u8'],
     ])
