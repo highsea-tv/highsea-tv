@@ -350,4 +350,70 @@ describe('a widget', () => {
     expect(body.style.overflowY).toBe('auto')
     expect(body.style.overflowX).toBe('hidden')
   })
+
+  // happy-dom lays nothing out, so the body's heights are given: content 300 tall in a box of 100
+  // overflows, and both 0 (as happy-dom has them) fits (HT-55)
+  const heights = (content: number, box: number) => {
+    const proto = HTMLElement.prototype
+    const own = (el: HTMLElement) => el.dataset.widgetBody !== undefined
+    Object.defineProperty(proto, 'scrollHeight', {
+      configurable: true,
+      get(this: HTMLElement) {
+        return own(this) ? content : 0
+      },
+    })
+    Object.defineProperty(proto, 'clientHeight', {
+      configurable: true,
+      get(this: HTMLElement) {
+        return own(this) ? box : 0
+      },
+    })
+    return () => {
+      delete (proto as { scrollHeight?: number }).scrollHeight
+      delete (proto as { clientHeight?: number }).clientHeight
+    }
+  }
+
+  test('a body that scrolls is a Tab stop named by the widget’s title (HT-55)', () => {
+    const restore = heights(300, 100)
+    try {
+      const { container } = render(
+        <WidgetGrid rows>
+          <WidgetFrame title="Storage" rows={2}>
+            {null}
+          </WidgetFrame>
+        </WidgetGrid>,
+      )
+      const body = container.querySelector('[data-widget-body]') as HTMLElement
+      expect(body.tabIndex).toBe(0)
+      expect(screen.getByRole('group', { name: 'Storage' })).toBe(body)
+      act(() => body.focus())
+      expect(document.activeElement).toBe(body)
+    } finally {
+      // unmounted before the heights go, so a late resize can't report the change
+      cleanup()
+      restore()
+    }
+  })
+
+  test('a body that fits is no Tab stop and has no role (HT-55)', () => {
+    const restore = heights(100, 100)
+    try {
+      const { container } = render(
+        <WidgetGrid rows>
+          <WidgetFrame title="Storage" rows={2}>
+            {null}
+          </WidgetFrame>
+        </WidgetGrid>,
+      )
+      const body = container.querySelector('[data-widget-body]') as HTMLElement
+      expect(body.hasAttribute('tabindex')).toBe(false)
+      expect(body.getAttribute('role')).toBeNull()
+      expect(screen.queryByRole('group', { name: 'Storage' })).toBeNull()
+    } finally {
+      // unmounted before the heights go, so a late resize can't report the change
+      cleanup()
+      restore()
+    }
+  })
 })
