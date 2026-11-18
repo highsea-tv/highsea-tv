@@ -17,6 +17,7 @@ import { type ReactNode, useEffect, useMemo, useState } from 'react'
 import { Platform } from 'react-native'
 import { FilmMissing } from '../detail/parts.tsx'
 import { pauseMusic } from '../music-player/store.ts'
+import { useReportFailedPlay } from '../shell/reports.tsx'
 import { mock } from '../transport.ts'
 import { usePlayerModel } from './parts.tsx'
 import { PointerPlayer } from './pointer.tsx'
@@ -45,6 +46,8 @@ function Player({ id, fromStart, type }: { id: number; fromStart: boolean; type:
   const p = usePlayback(id, fromStart, type)
   const [panel, setPanel] = useState(false)
   const m = usePlayerModel(id, p, panel, type)
+  // a play that fails is reported to the server with its profile and decision (ADR 0066)
+  useReportFailedPlay(p, id, type)
   if (p.detail.status === 'error') return <FilmMissing error={p.detail.error} />
   const props = { id, p, m, panel, setPanel }
   if (input === 'tv') return <TvPlayer {...props} />

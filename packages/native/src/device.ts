@@ -50,3 +50,12 @@ export async function pkce() {
   })
   return { verifier, challenge: base64url(digest) }
 }
+
+/**
+ * The device as a report names it (ADR 0066): its model and system from expo-device
+ * (https://docs.expo.dev/versions/latest/sdk/device/), or in a browser its user agent.
+ */
+export const deviceDescription = () =>
+  Platform.OS === 'web' && typeof navigator !== 'undefined'
+    ? navigator.userAgent
+    : `${Device.modelName ?? 'Unknown'} · ${Device.osName ?? Platform.OS} ${Device.osVersion ?? ''}`.trim()

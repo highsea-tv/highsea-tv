@@ -81,7 +81,7 @@ export const usePlayback: UsePlayback<VideoPlayer> = (id, fromStart, type = 'mov
     p.allowsExternalPlayback = true
   })
 
-  const { session, live, generation, begin, stopped } = useSessionStart({
+  const { session, profile, live, generation, begin, stopped } = useSessionStart({
     client,
     id,
     type,
@@ -258,6 +258,7 @@ export const usePlayback: UsePlayback<VideoPlayer> = (id, fromStart, type = 'mov
     dispatch,
     player,
     session,
+    profile,
     version: c.version,
     audio: c.audio,
     subtitle,

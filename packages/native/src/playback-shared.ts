@@ -166,6 +166,8 @@ export function useSessionStart(o: {
 }) {
   const { client, dispatch, started } = o
   const [session, setSession] = useState<PlaySession | null>(null)
+  // the profile the last start named, for a failed play's report (ADR 0066)
+  const [profile, setProfile] = useState<string | null>(null)
   const live = useRef<PlaySession | null>(null)
   // each start bumps this, so a slow answer to an older one is ended, not played
   const generation = useRef(0)
@@ -183,6 +185,7 @@ export function useSessionStart(o: {
       setSession(null)
       dispatch({ type: 'start', at: Date.now() })
       const profile = await latest.current.profile()
+      if (gen === generation.current) setProfile(profile)
       let s: PlaySession
       try {
         s = await client.playback.play({
@@ -224,7 +227,7 @@ export function useSessionStart(o: {
     [dispatch],
   )
 
-  return { session, live, generation, begin, stopped }
+  return { session, profile, live, generation, begin, stopped }
 }
 
 /**
@@ -301,6 +304,8 @@ export type PlaybackApi<Player> = {
   dispatch: Dispatch<PlayerEvent>
   player: Player
   session: PlaySession | null
+  /** The built-in profile the last start named; null before the first. */
+  profile: string | null
   version: Choices['version']
   audio: Choices['audio']
   subtitle: Choices['subtitle']

@@ -29,6 +29,13 @@ export const notFound = defineMessages({
   home: 'Go home',
 })
 
+/** A screen that failed (./shell/reports.tsx): the error is reported to the person's own server. */
+export const failed = defineMessages({
+  title: 'Something went wrong',
+  body: 'This screen couldn’t be shown. The rest of highsea still works.',
+  home: 'Go home',
+})
+
 /**
  * The owner's announcements, which the shell shows on every destination (connectivity.md ›
  * Announcements, client-home.md › Announcements): the dialog or the TV's screen for one that must

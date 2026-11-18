@@ -3,6 +3,7 @@
 // .md), and the event stream. Checkpoint 8b adds the owner's tools (ADR 0047): backups, the log and
 // crash reports, updates, and /metrics for Prometheus.
 import { createRoute, z } from '@hono/zod-openapi'
+import { ClientType } from './accounts.ts'
 import {
   API_PREFIX,
   access,
@@ -205,7 +206,7 @@ export const ClientReportInput = z
     /** `error`: an error nothing handled. `play`: a play that failed. */
     kind: z.enum(['error', 'play']),
     /** The kind of app, as a device's `client` names it. */
-    app: z.enum(['web', 'desktop', 'ios', 'android', 'tvos', 'androidtv']),
+    app: ClientType,
     version: z.string().max(32).openapi({ example: '0.4.2' }),
     /** The device's model and system, or the browser's user agent. */
     device: z.string().max(400).openapi({ example: 'Apple TV 4K · tvOS 26.1' }),

@@ -3501,15 +3501,7 @@
             ]
           },
           "app": {
-            "type": "string",
-            "enum": [
-              "web",
-              "desktop",
-              "ios",
-              "android",
-              "tvos",
-              "androidtv"
-            ]
+            "$ref": "#/components/schemas/ClientType"
           },
           "version": {
             "type": "string",
@@ -3637,6 +3629,20 @@
           "device",
           "screen",
           "error"
+        ]
+      },
+      "ClientType": {
+        "type": "string",
+        "enum": [
+          "admin",
+          "web",
+          "desktop",
+          "ios",
+          "android",
+          "tvos",
+          "androidtv",
+          "webos",
+          "tizen"
         ]
       },
       "PlaybackDecision": {
@@ -4403,20 +4409,6 @@
           "createdAt",
           "lastSeen",
           "expiresAt"
-        ]
-      },
-      "ClientType": {
-        "type": "string",
-        "enum": [
-          "admin",
-          "web",
-          "desktop",
-          "ios",
-          "android",
-          "tvos",
-          "androidtv",
-          "webos",
-          "tizen"
         ]
       },
       "Invite": {
