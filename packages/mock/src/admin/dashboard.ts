@@ -16,6 +16,7 @@ import { seedProfiles } from '@highsea-tv/quality'
 import type { Output } from '@highsea-tv/sdk'
 import { EPOCH } from '../clock.ts'
 import type { PlayingItem, StreamSession, WatchRecord } from '../sessions.ts'
+import { networkActivity, weather } from '../widget-drafts.ts'
 import { allowed, normalize, type WidgetPlacement, type WidgetRole } from '../widgets.ts'
 import { type AdminKit, type Answers, type Ctx, refuse } from './kit.ts'
 import { rootFolderOf } from './quality.ts'
@@ -37,6 +38,18 @@ export const dashboardMessages = defineMessages({
 const t = createT(dashboardMessages)
 
 const _DAY = 86_400_000
+
+/** What the mock's place search finds: Open-Meteo's answers for these, rounded as the server does. */
+const MOCK_PLACES = [
+  { name: 'Lisbon', detail: 'Lisbon, Portugal', latitude: 38.72, longitude: -9.13 },
+  {
+    name: 'Lisburn',
+    detail: 'Northern Ireland, United Kingdom',
+    latitude: 54.51,
+    longitude: -6.04,
+  },
+  { name: 'Oslo', detail: 'Oslo, Norway', latitude: 59.91, longitude: 10.75 },
+]
 const SEEDED = new Set(seedProfiles().map((p) => p.id))
 const SECOND = 1000
 /** The mock samples the rates every 10 simulated seconds; the server a second at a time. */
@@ -205,6 +218,43 @@ export function dashboardAnswers({ wall, wallMs, userOf }: AdminKit): Answers {
           dropped: body.widgets.filter((w) => !allowed(w.kind, role)).map((w) => w.kind),
         }
       },
+    },
+
+    // the Network and Weather widgets (HT-60), from the time alone as HT-47's drafts drew them
+    widgets: {
+      network: ({ query }) => {
+        const minutes = query.minutes ?? 10
+        const a = networkActivity(Date.now(), minutes, 'mixed')
+        return {
+          minutes,
+          samples: a.samples.map((x) => ({
+            at: new Date(x.at).toISOString(),
+            down: Math.round(x.down),
+            up: Math.round(x.up),
+            streams: Math.round(x.local + x.remote),
+          })),
+          downloads: a.downloads,
+          seeding: a.seeding,
+          streams: a.streams,
+        }
+      },
+      weather: ({ query }) => {
+        const w = weather(Date.now())
+        return {
+          latitude: Math.round(query.latitude * 100) / 100,
+          longitude: Math.round(query.longitude * 100) / 100,
+          timeZone: 'Europe/Lisbon',
+          updatedAt: new Date(w.updatedAt).toISOString(),
+          stale: false,
+          current: w.current,
+          days: w.days.map(({ at, ...d }) => ({
+            day: new Date(at).toISOString().slice(0, 10),
+            ...d,
+          })),
+        }
+      },
+      places: ({ query }) =>
+        MOCK_PLACES.filter((p) => p.name.toLowerCase().startsWith(query.name.toLowerCase())),
     },
 
     system: {

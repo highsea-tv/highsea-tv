@@ -31,6 +31,7 @@ import { registerSubtitles } from './subtitles.ts'
 import { registerSystem } from './system.ts'
 import { registerTags } from './tags.ts'
 import { registerWanted } from './wanted.ts'
+import { registerWidgets } from './widgets.ts'
 
 export type { Env }
 
@@ -96,6 +97,7 @@ export function createApi(runtime: Runtime) {
   registerOperations(app)
   registerAccounts(app)
   registerPersonalization(app)
+  registerWidgets(app)
   registerProfiles(app)
   // Discover's static path and the movie pages' metadata come before `/movies/{id}`
   registerMetadata(app)

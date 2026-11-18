@@ -56,7 +56,6 @@ import { Wanted, type WantedTab } from '@highsea-tv/admin/wanted.tsx'
 import { WidgetsNext } from '@highsea-tv/admin/widgets-next.tsx'
 import { userFor } from '@highsea-tv/mock/mock'
 import { browserStorage, createMockFetch, type MockTransport } from '@highsea-tv/mock/transport'
-import { networkActivity, weather } from '@highsea-tv/mock/widget-drafts'
 import { createClient, type HighseaClient } from '@highsea-tv/sdk'
 import { ClientProvider } from '@highsea-tv/sdk/react'
 import { ThemeProvider } from '@highsea-tv/ui/native'
@@ -242,7 +241,7 @@ export function SharedAdmin() {
         </Route>
         {/* the widgets' next round (HT-47): the prototype's alone, the server has no such page */}
         <Route path="/widgets-next">
-          <WidgetsNext data={{ networkActivity, weather }} />
+          <WidgetsNext />
         </Route>
         <Route path="/movies">
           <MoviesLibrary />

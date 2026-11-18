@@ -19,6 +19,8 @@ export const WIDGET_KINDS = [
   'calendar',
   'system-health',
   'now-playing',
+  'clock',
+  'weather',
 ] as const
 export type WidgetKind = (typeof WIDGET_KINDS)[number]
 
@@ -72,7 +74,7 @@ export type WidgetDefinition = {
 /** Each widget's title and one-line description (ADR 0021): `{kind}.title`, `{kind}.description`. */
 export const widgetMessages = defineMessages({
   'network.title': 'Network',
-  'network.description': 'Download and upload speed over the last 10 minutes.',
+  'network.description': 'Downloads, uploads and streams over the last minutes.',
   'storage.title': 'Storage',
   'storage.description': 'Free space on each disk, and what uses it.',
   'indexers.title': 'Indexers',
@@ -93,7 +95,33 @@ export const widgetMessages = defineMessages({
   'system-health.description': 'Health checks that need attention.',
   'now-playing.title': 'Now playing',
   'now-playing.description': 'Who’s watching what, and how each stream is sent.',
+  'clock.title': 'Date and time',
+  'clock.description': 'The server’s date and time, and yours when they differ.',
+  'weather.title': 'Weather',
+  'weather.description': 'The weather where you choose, from Open-Meteo.',
 })
+
+/** How Recently added draws (HT-47's drafts): Featured is the owner's pick of 2026-11-17. */
+export const RECENT_VARIANTS = ['featured', 'posters', 'list'] as const
+export type RecentVariant = (typeof RECENT_VARIANTS)[number]
+
+export const TEMPERATURE_UNITS = ['celsius', 'fahrenheit'] as const
+export const WIND_UNITS = ['kmh', 'mph', 'ms'] as const
+export type TemperatureUnit = (typeof TEMPERATURE_UNITS)[number]
+export type WindUnit = (typeof WIND_UNITS)[number]
+
+/**
+ * The place a Weather widget shows, as the admin chose it: by Open-Meteo's place search or typed
+ * coordinates. Null until one is chosen, and until then highsea asks nobody for the weather.
+ */
+export const WeatherPlace = z.strictObject({
+  name: z.string().min(1).max(120),
+  /** The region and country, as the place search names them; empty for typed coordinates. */
+  detail: z.string().max(200).default(''),
+  latitude: z.number().min(-90).max(90),
+  longitude: z.number().min(-180).max(180),
+})
+export type WeatherPlace = z.infer<typeof WeatherPlace>
 
 const staff: WidgetRole[] = ['owner', 'admin']
 
@@ -113,13 +141,15 @@ const define = (
 })
 
 export const widgetDefinitions: WidgetDefinition[] = [
+  // HT-60: the whole network's activity in one graph, and wider, as HT-47 drafted it
   define('network', {
-    width: [1, 2],
+    width: [1, 4],
     height: [2, 4],
     defaultSpan: 2,
     defaultRows: 2,
     roles: staff,
-    source: 'downloads',
+    // streams as well as downloads, so it reads the system, which every server has
+    source: 'system',
     settings: z.strictObject({ minutes: z.int().min(5).max(60).default(10) }),
   }),
   define('storage', {
@@ -181,6 +211,8 @@ export const widgetDefinitions: WidgetDefinition[] = [
     defaultRows: 3,
     roles: staff,
     source: 'movies',
+    // a layout saved before HT-60 has no variant, and takes Featured
+    settings: z.strictObject({ variant: z.enum(RECENT_VARIANTS).default('featured') }),
   }),
   define('calendar', {
     width: [1, 4],
@@ -206,6 +238,28 @@ export const widgetDefinitions: WidgetDefinition[] = [
     defaultRows: 3,
     roles: staff,
     source: 'playback',
+  }),
+  // HT-60, drafted in HT-47
+  define('clock', {
+    width: [1, 2],
+    height: [2, 3],
+    defaultSpan: 1,
+    defaultRows: 2,
+    roles: staff,
+    source: 'system',
+  }),
+  define('weather', {
+    width: [1, 2],
+    height: [2, 4],
+    defaultSpan: 1,
+    defaultRows: 3,
+    roles: staff,
+    source: 'system',
+    settings: z.strictObject({
+      place: WeatherPlace.nullable().default(null),
+      temperature: z.enum(TEMPERATURE_UNITS).default('celsius'),
+      wind: z.enum(WIND_UNITS).default('kmh'),
+    }),
   }),
 ]
 

@@ -55,7 +55,7 @@ bun run licenses        # the licence audit
 bun run audit           # the dependency check (exceptions in scripts/audit-exceptions.json)
 ```
 
-The server's development switches (`HIGHSEA_TMDB_REPLAY=1`, `HIGHSEA_TORRENT_OFFLINE=1`, `HIGHSEA_SUBTITLES_FAKE=1`, `HIGHSEA_LISTS_FAKE=1`, `HIGHSEA_PLAYBACK_TRY=1`, `HIGHSEA_HARDWARE_NONE=1`), the image, release and packaging commands are in [docs/architecture.md § Commands](docs/architecture.md#commands). The browser and simulator sweeps are in [scripts/sweeps/README.md](scripts/sweeps/README.md); the `checks` skill says which to run when.
+The server's development switches (`HIGHSEA_TMDB_REPLAY=1`, `HIGHSEA_TORRENT_OFFLINE=1`, `HIGHSEA_SUBTITLES_FAKE=1`, `HIGHSEA_LISTS_FAKE=1`, `HIGHSEA_WEATHER_FAKE=1`, `HIGHSEA_PLAYBACK_TRY=1`, `HIGHSEA_HARDWARE_NONE=1`), the image, release and packaging commands are in [docs/architecture.md § Commands](docs/architecture.md#commands). The browser and simulator sweeps are in [scripts/sweeps/README.md](scripts/sweeps/README.md); the `checks` skill says which to run when.
 
 ## Skills
 

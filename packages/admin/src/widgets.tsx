@@ -22,35 +22,19 @@ import {
   SESSIONS_TOPICS,
   SUBTITLE_TOPICS,
 } from '@highsea-tv/api-contract'
-import {
-  bytes,
-  bytesParts,
-  duration,
-  percent,
-  rate,
-  rateParts,
-  shortDate,
-} from '@highsea-tv/core/format'
+import { bytes, bytesParts, duration, percent, rate, shortDate } from '@highsea-tv/core/format'
 import { useLocale, useT } from '@highsea-tv/i18n/react'
-import {
-  type WidgetKind,
-  type WidgetSource,
-  widgetDefinition,
-  widgetMessages,
-} from '@highsea-tv/personalization/widgets'
-import { type Query, useQuery } from '@highsea-tv/sdk/react'
+import { type WidgetKind, widgetDefinition } from '@highsea-tv/personalization/widgets'
+import { useQuery } from '@highsea-tv/sdk/react'
 import { admin, line } from '@highsea-tv/tokens'
 import {
   Badge,
   Button,
-  EmptyState,
   Icon,
   Poster,
-  Press,
   ProgressBar,
   Skeleton,
   SkeletonText,
-  Sparkline,
   Stat,
   Table,
   TableBody,
@@ -65,36 +49,40 @@ import {
   Tooltip,
   tokens,
   useClip,
-  useSize,
   useTheme,
   useWidth,
   visuallyHidden,
-  type WidgetEditorFrameProps,
-  WidgetFrame,
 } from '@highsea-tv/ui/native'
 import type { ReactNode } from 'react'
-import { createContext, useContext, useState } from 'react'
+import { useState } from 'react'
 import { View, type ViewStyle } from 'react-native'
+import { ClockWidget, WeatherWidget } from './clock-weather-widgets.tsx'
 import { widgets as messages } from './dashboard-messages.ts'
 import { behind, mbps, methodTone, watcher } from './delivery.ts'
 import { type QueueFilter, queueFilters, torrentTone } from './downloads-status.ts'
 import { foldersOnDisk, releasesByDay } from './library-figures.ts'
 import { torrentState } from './movie-detail-messages.ts'
 import { useRouter } from './navigation.tsx'
+import { NetworkWidget } from './network-widget.tsx'
 import { nowPlaying } from './now-playing-messages.ts'
+import { RecentlyAdded } from './recent-widget.tsx'
 import { useNow } from './time.ts'
+import {
+  Empty,
+  Fig,
+  fill,
+  LIST_ROWS,
+  More,
+  Static,
+  Ui,
+  useSource,
+  Widget,
+  type WidgetProps,
+} from './widget-parts.tsx'
 
-export type WidgetProps = {
-  frame: WidgetEditorFrameProps
-  /** The placement's settings, filled from the widget's defaults by the server. */
-  settings: Record<string, unknown>
-  /** Header actions: Remove, in customize mode. */
-  actions?: ReactNode
-}
+export type { WidgetProps } from './widget-parts.tsx'
 
 const s = tokens.space
-const ui = tokens.adminText.ui
-const figure = tokens.adminText.figure
 /** Inside a widget, the frame's padding (its rows reach the frame's edges in Queue). */
 const PAD = tokens.density.widgetPadding
 
@@ -103,18 +91,6 @@ const STORAGE_INTERVAL = 30_000
 
 /** What changes the movie widgets: the library, or one title in it. */
 const MOVIE_TOPICS = [MEDIA_TOPICS.movies, MEDIA_TOPICS.item]
-
-/** A list's rows, as react-native-web draws a `listitem` View (an `<li>`), for the clip. */
-const LIST_ROWS = ':scope > li, :scope > [role="listitem"]'
-
-/**
- * Whether this server has a source yet: `undefined` until public info answers. Every widget asks
- * under one key; the SDK keeps each answer per widget, and it's a small public call.
- */
-function useSource(source: WidgetSource): boolean | undefined {
-  const info = useQuery('public-info', (c) => c.system.publicInfo())
-  return info.status === 'success' ? info.data.sources.includes(source) : undefined
-}
 
 const useMovieSource = () => useSource('movies')
 
@@ -125,184 +101,6 @@ const releaseDay = (day: string, locale: string) => shortDate(`${day}T12:00:00`,
 function Unseen({ children }: { children: string }) {
   return <Text style={visuallyHidden}>{children}</Text>
 }
-
-/** The admin's ui type, 13. */
-function Ui(props: Omit<Parameters<typeof Text>[0], 'size' | 'leading'>) {
-  return <Text size={ui.size} leading={ui.leading} {...props} />
-}
-
-/** A figure in mono 12 (the admin's `figure`). */
-function Fig(props: Omit<Parameters<typeof Text>[0], 'size' | 'leading' | 'mono'>) {
-  return <Text size={figure.size} leading={figure.leading} mono color="text-3" {...props} />
-}
-
-/** A widget's frame, with its data's loading and error states handled. */
-function Widget<T>({
-  kind,
-  frame,
-  actions,
-  meta,
-  query,
-  skeleton,
-  children,
-}: Omit<WidgetProps, 'settings'> & {
-  kind: WidgetKind
-  meta?: (data: T) => ReactNode
-  query: Query<T>
-  skeleton?: ReactNode
-  children: (data: T) => ReactNode
-}) {
-  const t = useT(messages)
-  const tw = useT(widgetMessages)
-  const locale = useLocale()
-  const title = tw(`${kind}.title`)
-  return (
-    <Short.Provider value={isShort(frame)}>
-      <WidgetFrame
-        {...frame}
-        title={title}
-        // while arranging, the header needs its room for the handle and Remove
-        meta={query.status === 'success' && meta && !frame.editing ? meta(query.data) : undefined}
-        actions={actions}
-      >
-        {query.status === 'loading' ? (
-          // Its own key: without one React hands this View's element to the loaded body's first
-          // View, and react-native-web starts observing an element's layout only when it mounts
-          // with `onLayout` (its useElementLayout observes once, on mount), so a body that measures
-          // its width (the Queue's layout, Recently added's columns) never heard its size and drew
-          // for the 1200 fallback at every span (HT-47).
-          <View key="loading" aria-busy style={{ gap: s['2'] + s['0.5'] }}>
-            {skeleton ?? (
-              <>
-                <Skeleton width={admin.skeleton.width.sm} height={admin.skeleton.title} />
-                <SkeletonText lines={2} />
-              </>
-            )}
-          </View>
-        ) : query.status === 'error' ? (
-          <Empty
-            size="sm"
-            tone="error"
-            icon="alert"
-            level={4}
-            title={t('error', { widget: title.toLocaleLowerCase(locale) })}
-            action={
-              <Button size="sm" onPress={query.refetch}>
-                {t('retry')}
-              </Button>
-            }
-          >
-            {query.error.message}
-          </Empty>
-        ) : (
-          children(query.data)
-        )}
-      </WidgetFrame>
-    </Short.Provider>
-  )
-}
-
-/**
- * A widget's empty or error state: in the middle of the body when it fits, from the top when the
- * body has to scroll to show it all (an auto margin takes the free space and none when there is
- * none: https://www.w3.org/TR/css-flexbox-1/#auto-margins), so its button is never cut off.
- */
-function Empty(props: Parameters<typeof EmptyState>[0]) {
-  const short = useContext(Short)
-  // two rows hold the words and the button, not the disc and its room above and below
-  if (short)
-    return (
-      <View
-        role={props.tone === 'error' ? 'alert' : undefined}
-        style={{ marginVertical: 'auto', flexShrink: 0, alignItems: 'center', gap: s['1.5'] }}
-      >
-        <Ui weight={600} align="center" accessibilityRole="header" aria-level={props.level}>
-          {props.title}
-        </Ui>
-        {props.children ? (
-          <Text variant="caption" color="text-2" align="center" numberOfLines={2}>
-            {props.children}
-          </Text>
-        ) : null}
-        {props.action ? (
-          <View
-            style={{
-              alignSelf: 'stretch',
-              flexDirection: 'row',
-              flexWrap: 'wrap',
-              justifyContent: 'center',
-              gap: s['2'],
-              marginTop: s['0.5'],
-            }}
-          >
-            {props.action}
-          </View>
-        ) : null}
-      </View>
-    )
-  return (
-    <View style={{ marginVertical: 'auto', flexShrink: 0 }}>
-      <EmptyState {...props} />
-    </View>
-  )
-}
-
-/**
- * Whether the widget is at its shortest (two rows, or three in one column, where the words wrap):
- * its empty state then drops its disc.
- */
-const Short = createContext(false)
-const isShort = (frame: WidgetProps['frame']) =>
-  frame.rows !== undefined && (frame.rows <= 2 || (frame.rows === 3 && (frame.span ?? 1) === 1))
-
-/** A widget whose source this server doesn't have yet: its frame and what's true without it. */
-function Static({
-  kind,
-  frame,
-  actions,
-  meta,
-  children,
-}: Omit<WidgetProps, 'settings'> & { kind: WidgetKind; meta?: ReactNode; children: ReactNode }) {
-  const tw = useT(widgetMessages)
-  return (
-    <Short.Provider value={isShort(frame)}>
-      <WidgetFrame
-        {...frame}
-        title={tw(`${kind}.title`)}
-        meta={frame.editing ? undefined : meta}
-        actions={actions}
-      >
-        {children}
-      </WidgetFrame>
-    </Short.Provider>
-  )
-}
-
-/** The line under a clipped list: "3 more in System". */
-function More({ count, page, path }: { count: number; page: string; path: string }) {
-  const t = useT(messages)
-  if (!count) return null
-  return (
-    <Press
-      role="link"
-      {...({ href: path } as object)}
-      style={{ alignSelf: 'flex-start', flexShrink: 0, borderRadius: tokens.radius.sm }}
-    >
-      {({ hovered }) => (
-        <Text
-          variant="caption"
-          color={hovered ? 'text' : 'text-3'}
-          style={hovered ? { textDecorationLine: 'underline' } : undefined}
-        >
-          {t('more', { count, page })}
-        </Text>
-      )}
-    </Press>
-  )
-}
-
-/** The box a list fills and is clipped by. */
-const fill: ViewStyle = { minHeight: 0, flex: 1, overflow: 'hidden' }
 
 /** A health or release dot. */
 function Dot({
@@ -324,142 +122,6 @@ function Dot({
         backgroundColor: theme.colors[color ?? 'text-3'],
       }}
     />
-  )
-}
-
-// ---------------------------------------------------------------- network
-
-/**
- * The speeds come a sample a second and have no event of their own (the plan's `tick`): the widget
- * asks again this often.
- */
-const NETWORK_INTERVAL = 2_000
-
-const networkMinutes = (settings: Record<string, unknown>) =>
-  Number(settings.minutes ?? widgetDefinition('network').settings.parse({}).minutes)
-
-function Network(props: WidgetProps) {
-  const source = useSource('downloads')
-  if (source) return <NetworkLive {...props} />
-  return <NetworkIdle {...props} />
-}
-
-/** The two rates side by side, wrapping when narrow; the upload's a little fainter. */
-function Rates({ down, up }: { down: ReactNode; up: ReactNode }) {
-  return (
-    <View
-      style={{
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        alignItems: 'baseline',
-        columnGap: s['6'],
-        rowGap: s['2'],
-      }}
-    >
-      {down}
-      <View style={{ opacity: 0.85 }}>{up}</View>
-    </View>
-  )
-}
-
-/**
- * The graph fills what the widget has left below the rates: 48 where there's room, less in the
- * smallest widget, where the rates wrap to two lines and a floor of 48 pushed it out of the frame.
- */
-function Graph({ up, down }: { up: number[]; down: number[] }) {
-  return (
-    <View style={{ flexGrow: 1, flexShrink: 1, flexBasis: admin.widgets.graphMin, minHeight: 0 }}>
-      <Sparkline
-        height={'100%' as unknown as number}
-        series={[
-          { values: up, color: 'text-3' },
-          { values: down, color: 'accent', fill: true },
-        ]}
-      />
-    </View>
-  )
-}
-
-/** Without downloads: the speeds at zero (dashboard.md › Network, no downloads). */
-function NetworkIdle(props: WidgetProps) {
-  const t = useT(messages)
-  const [zero, unit] = rateParts(0)
-  return (
-    <Static
-      {...props}
-      kind="network"
-      meta={t('network.meta', { minutes: networkMinutes(props.settings) })}
-    >
-      <Rates
-        down={<Stat value={zero} unit={t('network.down', { unit })} caption={t('network.none')} />}
-        up={<Stat value={zero} unit={t('network.up', { unit })} caption={t('network.seeding')} />}
-      />
-      <Graph up={[0, 0]} down={[0, 0]} />
-    </Static>
-  )
-}
-
-/**
- * The prototype's Network: the torrents' rates now, and the sparkline of the last minutes. When
- * the VPN is down the kill switch has stopped every torrent, so the caption says why it's quiet.
- */
-function NetworkLive(props: WidgetProps) {
-  const t = useT(messages)
-  const minutes = networkMinutes(props.settings)
-  const query = useQuery(
-    'widget:network',
-    async (c) => {
-      const [speeds, torrents] = await Promise.all([c.system.speeds(), c.downloads.list()])
-      return {
-        speeds,
-        down: torrents.reduce((s, x) => s + x.downRate, 0),
-        up: torrents.reduce((s, x) => s + x.upRate, 0),
-        active: torrents.filter((x) => x.state === 'downloading').length,
-      }
-    },
-    [DOWNLOAD_TOPICS.queue],
-    { interval: NETWORK_INTERVAL },
-  )
-  const vpn = useQuery('widget:network-vpn', (c) => c.vpn.status(), [DOWNLOAD_TOPICS.vpn])
-  const vpnDown = vpn.data?.state === 'down' || vpn.data?.state === 'failed'
-  return (
-    <Widget {...props} kind="network" query={query} meta={() => t('network.meta', { minutes })}>
-      {(d) => {
-        const [down, downUnit] = rateParts(d.down)
-        const [up, upUnit] = rateParts(d.up)
-        const shown = d.speeds.slice(-minutes * 60)
-        return (
-          <>
-            <Rates
-              down={
-                <Stat
-                  value={down}
-                  unit={t('network.down', { unit: downUnit })}
-                  caption={
-                    vpnDown
-                      ? t('network.vpnDown')
-                      : d.active
-                        ? t('network.downloads', { count: d.active })
-                        : t('network.idle')
-                  }
-                />
-              }
-              up={
-                <Stat
-                  value={up}
-                  unit={t('network.up', { unit: upUnit })}
-                  caption={t('network.seeding')}
-                />
-              }
-            />
-            <Graph
-              up={shown.length ? shown.map((x) => x.up) : [0, 0]}
-              down={shown.length ? shown.map((x) => x.down) : [0, 0]}
-            />
-          </>
-        )
-      }}
-    </Widget>
   )
 }
 
@@ -1148,104 +810,6 @@ function QueueRows({ items, layout }: { items: QueueItem[]; layout: 'table' | 'm
   )
 }
 
-// ---------------------------------------------------------------- recently added
-
-function PosterSkeletonRow() {
-  return (
-    <View style={{ flexDirection: 'row', gap: s['3'] }}>
-      {[0, 1, 2, 3].map((i) => (
-        <View key={i} style={{ flex: 1, aspectRatio: 2 / 3 }}>
-          <Skeleton height="100%" radius={tokens.radius.poster} />
-        </View>
-      ))}
-    </View>
-  )
-}
-
-function RecentlyAdded(props: WidgetProps) {
-  const t = useT(messages)
-  const movies = useMovieSource()
-  if (movies) return <RecentMovies {...props} />
-  return (
-    <Static {...props} kind="recently-added">
-      {movies === undefined ? (
-        <PosterSkeletonRow />
-      ) : (
-        <Empty size="sm" icon="movie" level={4} title={t('recent.none')}>
-          {t('recent.noneBody')}
-        </Empty>
-      )}
-    </Static>
-  )
-}
-
-/** The most the widget shows: eight columns of posters, three rows. */
-const RECENT_LIMIT = 24
-
-function RecentMovies(props: WidgetProps) {
-  const t = useT(messages)
-  const query = useQuery(
-    'widget:recently-added',
-    (c) => c.movies.recent({ query: { limit: RECENT_LIMIT } }),
-    MOVIE_TOPICS,
-  )
-  // The posters fit the body both ways (HT-47): as many columns as the width takes at about 100
-  // each, and more of them, so narrower, until a whole row fits the height. Under 72 wide a poster
-  // drops its title and year, which would be cut to a few letters.
-  const { onLayout, width, height } = useSize()
-  const gap = s['3']
-  const widest = (words: number) => (height ? (height - words) / (3 / 2) : Number.POSITIVE_INFINITY)
-  const named = widest(RECENT_WORDS) >= RECENT_NAMED
-  const most = Math.max(admin.widgets.poster, widest(named ? RECENT_WORDS : 0))
-  const columns = Math.max(
-    Math.max(2, Math.min(8, Math.floor((width + gap) / 112))),
-    Math.ceil((width + gap) / (most + gap)),
-  )
-  const poster = Math.floor((width - gap * (columns - 1)) / columns)
-  // as many rows of posters as fit the height; a cut-off row is hidden
-  const clip = useClip(LIST_ROWS)
-  return (
-    <Widget {...props} kind="recently-added" query={query} skeleton={<PosterSkeletonRow />}>
-      {(xs: Movie[]) =>
-        xs.length === 0 ? (
-          <Empty size="sm" icon="movie" level={4} title={t('recent.none')}>
-            {t('recent.addedBody')}
-          </Empty>
-        ) : (
-          <View onLayout={onLayout} style={{ flex: 1, minHeight: 0 }}>
-            <View
-              ref={clip.ref}
-              role="list"
-              style={[
-                { flexDirection: 'row', flexWrap: 'wrap', alignContent: 'flex-start', gap },
-                fill,
-              ]}
-            >
-              {xs.slice(0, columns * 4).map((m) => (
-                <View key={m.id} role="listitem" style={{ width: poster }}>
-                  <Poster
-                    title={m.title}
-                    src={m.art.poster ?? undefined}
-                    href={`/movies/${m.id}`}
-                    width={poster}
-                    showTitle={named}
-                    titleSize="ui"
-                    caption={named && m.year ? String(m.year) : undefined}
-                  />
-                </View>
-              ))}
-            </View>
-          </View>
-        )
-      }
-    </Widget>
-  )
-}
-
-/** The room a poster’s title (two lines at most) and year take under it, and the width under which it drops them. */
-const RECENT_WORDS = 88
-const RECENT_NAMED = 72
-
 // ---------------------------------------------------------------- calendar
 
 const WEEKDAYS = ['mo', 'tu', 'we', 'th', 'fr', 'sa', 'su'] as const
@@ -1492,7 +1056,7 @@ function NowPlaying(props: WidgetProps) {
 // ---------------------------------------------------------------- registry
 
 export const widgetRenderers: Record<WidgetKind, (props: WidgetProps) => ReactNode> = {
-  network: Network,
+  network: NetworkWidget,
   storage: Storage,
   indexers: Indexers,
   subtitles: Subtitles,
@@ -1503,4 +1067,6 @@ export const widgetRenderers: Record<WidgetKind, (props: WidgetProps) => ReactNo
   calendar: Calendar,
   'system-health': SystemHealth,
   'now-playing': NowPlaying,
+  clock: ClockWidget,
+  weather: WeatherWidget,
 }

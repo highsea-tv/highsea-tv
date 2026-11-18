@@ -44,8 +44,17 @@ function fail(res: ServerResponse, status: number, message: string) {
   res.end(JSON.stringify({ error: { code: status === 404 ? 'not-found' : 'invalid', message } }))
 }
 
+/** Counts the bytes handed to a player, for the dashboard's Network (HT-60). */
+type Meter = (bytes: number) => void
+
 /** Sends files one after another as one body: a segment's pieces, or one file. Returns its bytes. */
-async function sendFiles(req: IncomingMessage, res: ServerResponse, files: string[], type: string) {
+async function sendFiles(
+  req: IncomingMessage,
+  res: ServerResponse,
+  files: string[],
+  type: string,
+  meter?: Meter,
+) {
   const sizes = await Promise.all(files.map(async (f) => (await stat(f)).size))
   const total = sizes.reduce((a, b) => a + b, 0)
   res.writeHead(200, { ...SECURITY, 'content-type': type, 'content-length': String(total) })
@@ -60,6 +69,7 @@ async function sendFiles(req: IncomingMessage, res: ServerResponse, files: strin
       res.once('close', () => body.destroy())
       body.on('error', reject)
       body.on('end', resolve)
+      if (meter) body.on('data', (chunk) => meter(chunk.length))
       body.pipe(res, { end: false })
     })
   }
@@ -89,10 +99,12 @@ export type StreamOptions = {
 }
 
 export function createStream(
-  runtime: Pick<Runtime, 'playback' | 'logger'>,
+  runtime: Pick<Runtime, 'playback' | 'logger'> & Partial<Pick<Runtime, 'networkActivity'>>,
   options: StreamOptions = {},
 ) {
   const log = runtime.logger.child('stream')
+  // what's sent to players, a chunk at a time as it's read into the response
+  const meter: Meter = (bytes) => runtime.networkActivity?.sent(bytes)
 
   async function file(req: IncomingMessage, res: ServerResponse, token: string) {
     const target = runtime.playback.open(token)
@@ -133,6 +145,7 @@ export function createStream(
     })
     if (req.method === 'HEAD' || size === 0) return void res.end()
     const body = createReadStream(target.path, { start, end })
+    body.on('data', (chunk) => meter(chunk.length))
     // a seek closes the connection mid-range: stop reading
     res.on('close', () => body.destroy())
     body.on('error', (e) => {
@@ -152,7 +165,7 @@ export function createStream(
     }
     if (rest === 'init.mp4') {
       const file = await playback.hls.init(token)
-      return file === null ? gone() : sendFiles(req, res, [file], MP4)
+      return file === null ? gone() : sendFiles(req, res, [file], MP4, meter)
     }
     const segment = /^(\d{1,6})\.m4s$/.exec(rest)
     if (segment) {
@@ -161,7 +174,7 @@ export function createStream(
       const files = await playback.hls.segment(token, index)
       if (files === null) return gone()
       const ready = Date.now()
-      const bytes = await sendFiles(req, res, files, MP4)
+      const bytes = await sendFiles(req, res, files, MP4, meter)
       // a whole segment sent: the session's first is its start's last timing line
       if (req.method === 'GET' && res.writableFinished)
         playback.hls.sent(token, index, {

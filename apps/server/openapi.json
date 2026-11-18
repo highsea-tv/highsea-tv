@@ -4804,7 +4804,9 @@
               "recently-added",
               "calendar",
               "system-health",
-              "now-playing"
+              "now-playing",
+              "clock",
+              "weather"
             ]
           },
           "span": {
@@ -4875,7 +4877,9 @@
                     "recently-added",
                     "calendar",
                     "system-health",
-                    "now-playing"
+                    "now-playing",
+                    "clock",
+                    "weather"
                   ]
                 }
               }
@@ -5660,6 +5664,208 @@
           "id",
           "name",
           "builtIn"
+        ]
+      },
+      "NetworkActivity": {
+        "type": "object",
+        "properties": {
+          "minutes": {
+            "type": "integer"
+          },
+          "samples": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NetworkSample"
+            }
+          },
+          "downloads": {
+            "type": "integer"
+          },
+          "seeding": {
+            "type": "integer"
+          },
+          "streams": {
+            "type": "object",
+            "properties": {
+              "local": {
+                "type": "integer"
+              },
+              "remote": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "local",
+              "remote"
+            ]
+          }
+        },
+        "required": [
+          "minutes",
+          "samples",
+          "downloads",
+          "seeding",
+          "streams"
+        ]
+      },
+      "NetworkSample": {
+        "type": "object",
+        "properties": {
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-10-17T20:15:00.000Z"
+          },
+          "down": {
+            "type": "number"
+          },
+          "up": {
+            "type": "number"
+          },
+          "streams": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "at",
+          "down",
+          "up",
+          "streams"
+        ]
+      },
+      "Weather": {
+        "type": "object",
+        "properties": {
+          "latitude": {
+            "type": "number"
+          },
+          "longitude": {
+            "type": "number"
+          },
+          "timeZone": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-10-17T20:15:00.000Z"
+          },
+          "stale": {
+            "type": "boolean"
+          },
+          "current": {
+            "type": "object",
+            "properties": {
+              "temperature": {
+                "type": "number"
+              },
+              "feelsLike": {
+                "type": "number"
+              },
+              "condition": {
+                "type": "string",
+                "enum": [
+                  "clear",
+                  "partly-cloudy",
+                  "cloudy",
+                  "fog",
+                  "drizzle",
+                  "rain",
+                  "showers",
+                  "thunderstorm",
+                  "snow"
+                ]
+              },
+              "wind": {
+                "type": "number"
+              },
+              "humidity": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "temperature",
+              "feelsLike",
+              "condition",
+              "wind",
+              "humidity"
+            ]
+          },
+          "days": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "day": {
+                  "type": "string",
+                  "format": "date",
+                  "example": "1999-03-30"
+                },
+                "high": {
+                  "type": "number"
+                },
+                "low": {
+                  "type": "number"
+                },
+                "condition": {
+                  "type": "string",
+                  "enum": [
+                    "clear",
+                    "partly-cloudy",
+                    "cloudy",
+                    "fog",
+                    "drizzle",
+                    "rain",
+                    "showers",
+                    "thunderstorm",
+                    "snow"
+                  ]
+                },
+                "rain": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "day",
+                "high",
+                "low",
+                "condition",
+                "rain"
+              ]
+            }
+          }
+        },
+        "required": [
+          "latitude",
+          "longitude",
+          "timeZone",
+          "updatedAt",
+          "stale",
+          "current",
+          "days"
+        ]
+      },
+      "WeatherPlaceResult": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "detail": {
+            "type": "string"
+          },
+          "latitude": {
+            "type": "number"
+          },
+          "longitude": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "name",
+          "detail",
+          "latitude",
+          "longitude"
         ]
       },
       "Profiles": {
@@ -23179,7 +23385,7 @@
                     "items": {
                       "$ref": "#/components/schemas/WidgetPlacement"
                     },
-                    "maxItems": 11
+                    "maxItems": 13
                   }
                 },
                 "required": [
@@ -23374,7 +23580,7 @@
                     "items": {
                       "$ref": "#/components/schemas/WidgetPlacement"
                     },
-                    "maxItems": 11
+                    "maxItems": 13
                   }
                 },
                 "required": [
@@ -24316,6 +24522,272 @@
           },
           "409": {
             "description": "conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/widgets/network": {
+      "get": {
+        "tags": [
+          "Dashboard"
+        ],
+        "summary": "The network’s activity: downloads, uploads and streams",
+        "description": "Kept in memory a second at a time for an hour, and averaged to at most 120 samples.",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 60,
+              "description": "10 when absent"
+            },
+            "required": false,
+            "description": "10 when absent",
+            "name": "minutes",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The activity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NetworkActivity"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/widgets/weather": {
+      "get": {
+        "tags": [
+          "Dashboard"
+        ],
+        "summary": "The weather at a place, from Open-Meteo",
+        "description": "The server asks Open-Meteo with the coordinates rounded to two decimals and keeps the answer for 15 minutes. When Open-Meteo can’t be reached the last reading comes back with `stale`.",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": -90,
+              "maximum": 90
+            },
+            "required": false,
+            "name": "latitude",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": -180,
+              "maximum": 180
+            },
+            "required": false,
+            "name": "longitude",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The weather",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Weather"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/widgets/weather/places": {
+      "get": {
+        "tags": [
+          "Dashboard"
+        ],
+        "summary": "Places by name, from Open-Meteo’s place search",
+        "description": "What’s typed is sent to Open-Meteo’s geocoding service.",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 100
+            },
+            "required": true,
+            "name": "name",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-z]{2}$"
+            },
+            "required": false,
+            "name": "language",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Up to five places",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/WeatherPlaceResult"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "unavailable",
             "content": {
               "application/json": {
                 "schema": {

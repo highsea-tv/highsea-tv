@@ -245,11 +245,11 @@ describe('dashboard layouts', () => {
     const owner = createClient(mock, { data: 'populated', role: 'owner', latency: 0 })
     await owner.dashboard.saveLayout([
       { id: 'w-storage', kind: 'storage', span: 1 } as WidgetPlacement,
-      { id: 'w-network', kind: 'network', span: 4, rows: 12 },
+      { id: 'w-clock', kind: 'clock', span: 4, rows: 12 },
     ])
     expect((await owner.dashboard.layout()).widgets).toEqual([
       { id: 'w-storage', kind: 'storage', span: 1, rows: 2, settings: {} },
-      { id: 'w-network', kind: 'network', span: 2, rows: 4, settings: { minutes: 10 } },
+      { id: 'w-clock', kind: 'clock', span: 2, rows: 3, settings: {} },
     ])
   })
 

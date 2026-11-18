@@ -358,6 +358,32 @@ try {
           await p.getByRole('button', { name: 'Add widget' }).first().click()
         },
       },
+      // HT-60's widgets in a draft (never saved: the visits run side by side on one account)
+      {
+        name: 'dashboard:widgets',
+        path: '/',
+        act: async (p) => {
+          await customize(p)
+          for (const widget of ['Recently added', 'Date and time', 'Weather']) {
+            await p.getByRole('button', { name: 'Add widget' }).first().click()
+            await p.getByRole('dialog').getByText(widget, { exact: true }).click()
+          }
+        },
+      },
+      {
+        name: 'dashboard:weather',
+        path: '/',
+        act: async (p) => {
+          await customize(p)
+          await p.getByRole('button', { name: 'Add widget' }).first().click()
+          await p.getByRole('dialog').getByText('Weather', { exact: true }).click()
+          await p.getByRole('button', { name: 'Weather settings' }).click()
+          const sheet = p.getByRole('dialog', { name: 'Weather settings' })
+          await sheet.getByRole('textbox', { name: 'Search for a place' }).fill('Lisbon')
+          await sheet.getByRole('button', { name: 'Search', exact: true }).click()
+          await sheet.getByText('Lisbon, Portugal').click()
+        },
+      },
       {
         name: 'palette',
         path: '/',

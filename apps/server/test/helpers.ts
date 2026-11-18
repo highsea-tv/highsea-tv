@@ -17,6 +17,7 @@ import {
   loadConfig,
   type Runtime,
 } from '@highsea-tv/runtime'
+import { createFakeWeather } from '@highsea-tv/runtime/weather-fake'
 import { ApiError, createClient } from '@highsea-tv/sdk'
 import type { createApi } from '../src/api/app.ts'
 
@@ -47,6 +48,7 @@ export async function bootRuntime(
     restart?: BootOptions['restart']
     clock?: BootOptions['clock']
     containerNetwork?: BootOptions['containerNetwork']
+    weather?: BootOptions['weather']
   } = {},
 ): Promise<Runtime> {
   const dir = mkdtempSync(join(tmpdir(), 'highsea-api-'))
@@ -75,6 +77,8 @@ export async function bootRuntime(
     clock: options.clock,
     // outside a container, whatever this machine is, unless a test plays one
     containerNetwork: options.containerNetwork ?? null,
+    // Open-Meteo is never asked: the fake answers, as HIGHSEA_WEATHER_FAKE=1 does
+    weather: options.weather ?? { fetch: createFakeWeather().fetch },
   })
 }
 

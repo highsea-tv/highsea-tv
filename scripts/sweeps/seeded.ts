@@ -76,6 +76,8 @@ export async function boot(port: number, { production = false, lan = false } = {
       HIGHSEA_HARDWARE_NONE: process.env.HIGHSEA_HARDWARE_NONE ?? '1',
       // the subtitle providers are the fakes in packages/subtitles: no accounts, no network
       HIGHSEA_SUBTITLES_FAKE: '1',
+      // Open-Meteo is the fake in packages/runtime: the Weather widget reaches no network
+      HIGHSEA_WEATHER_FAKE: '1',
     },
     stdio: ['ignore', 'ignore', 'inherit'],
   })
