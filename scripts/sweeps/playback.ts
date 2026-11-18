@@ -158,8 +158,26 @@ async function importFolder(token: string, folder: string, movieId: number) {
   if (refused.length) throw new Error(`not imported: ${JSON.stringify(refused)}`)
 }
 
+/**
+ * The stream's loads that failed, per page, so a timeout can say what the player was refused: the
+ * client shows one message for any fatal hls.js error, so the page alone doesn't say which
+ */
+const refusedLoads = new WeakMap<Page, string[]>()
+
 async function inBrowser(name: string, page: Page, token: string) {
   page.on('pageerror', (e) => problems.push(`${name}: ${e.message}`))
+  const refused: string[] = []
+  refusedLoads.set(page, refused)
+  const path = (url: string) =>
+    new URL(url).pathname.replace(/^(\/stream\/(?:hls|subtitles)\/)[^/]+/, '$1…')
+  page.on('response', (r) => {
+    if (r.status() >= 400 && r.url().includes('/stream/'))
+      refused.push(`${r.status()} ${path(r.url())}`)
+  })
+  page.on('requestfailed', (r) => {
+    if (r.url().includes('/stream/'))
+      refused.push(`${r.failure()?.errorText ?? 'failed'} ${path(r.url())}`)
+  })
   await page.goto('/web/')
   await page.getByLabel('Username').fill(OWNER.username)
   await page.getByLabel('Password').fill(OWNER.password)
@@ -315,7 +333,10 @@ async function until<A>(page: Page, what: string, check: (arg: A) => boolean, ar
     const shown = await page.evaluate(() =>
       document.body.innerText.replace(/\s+/g, ' ').slice(0, 200),
     )
-    throw new Error(`timed out waiting for ${what}: the video ${video}; the page says “${shown}”`)
+    const loads = refusedLoads.get(page)?.slice(-5).join(', ') || 'none'
+    throw new Error(
+      `timed out waiting for ${what}: the video ${video}; the stream's failed loads: ${loads}; the page says “${shown}”`,
+    )
   }
 }
 
