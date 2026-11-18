@@ -3,5 +3,6 @@
 // runs that make segments for a play session. The runtime joins it to the sessions and the
 // library; `apps/server/src/stream/` serves it.
 export * from './args.ts'
+export * from './keyframe-index.ts'
 export * from './playlist.ts'
 export * from './runner.ts'
