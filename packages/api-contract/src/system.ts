@@ -552,7 +552,7 @@ export const system = {
     tags: ['System'],
     summary: 'Reports the apps sent, newest first',
     description:
-      'Errors nothing handled and plays that failed, sent by the apps signed in here (ADR 0066). Kept when General › Diagnostics’ switch is on, the newest 200. Nothing is sent anywhere.',
+      'Errors nothing handled and plays that failed, sent by the apps signed in here (ADR 0066). Always kept, whatever General › Diagnostics’ switch says, the newest 200. Nothing is sent anywhere.',
     ...access('staff'),
     responses: {
       200: json(z.array(ClientReport), 'Reports'),
@@ -565,7 +565,7 @@ export const system = {
     tags: ['System'],
     summary: 'Report an error or a failed play from an app',
     description:
-      'An app tells its own server what failed, with the app, its version, the device, the screen and the error; the server adds who sent it, and for a failed play the device’s profile. At most 64 KB. Kept only when General › Diagnostics’ switch is on; answered 204 either way.',
+      'An app tells its own server what failed, with the app, its version, the device, the screen and the error; the server adds who sent it, and for a failed play the device’s profile. At most 64 KB. Always kept; answered 204.',
     ...access('user'),
     request: body(ClientReportInput),
     responses: { ...noContent, ...errors('invalid', 'unauthorized', 'forbidden') },

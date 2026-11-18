@@ -26,6 +26,7 @@ import {
   type PlayerEvent,
   type PlayerState,
   parseCues,
+  playerFailure,
   playerReducer,
   playNext,
   REPORT_MS,
@@ -475,5 +476,29 @@ describe('Next up after a film', () => {
   test('nothing at all when there’s nothing to offer', () => {
     expect(filmUpNext(null, null, [])).toBeNull()
     expect(countsDown(null)).toBe(false)
+  })
+})
+
+describe('a player that gave up', () => {
+  test('says what hls.js and the element said, in a line (HT-56)', () => {
+    // a decoder's failure, as Chrome gave it on an open GOP's leading frame
+    expect(
+      playerFailure(
+        {
+          type: 'mediaError',
+          details: 'mediaSourceRequiresReset',
+          error: { message: 'The HTMLMediaElement.error attribute is not null.' },
+        },
+        { code: 3, message: 'PipelineStatus::PIPELINE_ERROR_DECODE: Failed to send video packet' },
+      ),
+    ).toBe(
+      'mediaError mediaSourceRequiresReset; The HTMLMediaElement.error attribute is not null.; media error 3: PipelineStatus::PIPELINE_ERROR_DECODE: Failed to send video packet',
+    )
+    expect(
+      playerFailure({ type: 'networkError', details: 'fragLoadError', response: { code: 404 } }),
+    ).toBe('networkError fragLoadError; HTTP 404')
+    expect(playerFailure({}, { code: 4, message: '' })).toBe('media error 4')
+    expect(playerFailure({})).toBe('media error')
+    expect(playerFailure({ details: 'x'.repeat(900) }).length).toBe(500)
   })
 })

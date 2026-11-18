@@ -200,10 +200,7 @@ export async function seed(
   // a new server requires two-step for the owner and admins; the sweep signs in with passwords
   const security = await api<Record<string, unknown>>('GET', '/settings/security', undefined, token)
   await api('PUT', '/settings/security', { ...security, twoFactor: false }, token)
-  // two reports from the apps for System › Logs (ADR 0066): they're kept only while Write crash
-  // reports is on, which goes back to its default afterwards, as the guides' pictures show it
-  const general = await api<Record<string, unknown>>('GET', '/settings/general', undefined, token)
-  await api('PUT', '/settings/general', { ...general, crashReports: true }, token)
+  // two reports from the apps for System › Logs (ADR 0066), kept whatever Write crash reports says
   const from = { version: '0.4.2', device: 'Apple TV 4K (3rd generation), tvOS 26.1' }
   await api(
     'POST',
@@ -245,7 +242,6 @@ export async function seed(
     },
     token,
   )
-  await api('PUT', '/settings/general', general, token)
   const reset = await api<{ link: string }>(
     'POST',
     `/users/${joined.user.id}/password-reset`,

@@ -28,6 +28,8 @@ export type RunInput = {
   start: number
   /** That piece's number, ffmpeg's first file. */
   startNumber: number
+  /** Where the next piece starts, or the film's end for the last: a copy seeks between (`copySeek`). */
+  nextStart?: number
   /** `bitDepth` is the picture's, 8 when left out: a GPU's frames come down to memory in it. */
   video: {
     index: number
@@ -231,9 +233,14 @@ const videoArgs = (video: NonNullable<RunInput['video']>, run: RunInput): string
   const toneMap = run.toneMap ?? null
   const plan = video.plan
   if (plan.action === 'copy')
-    // Apple's players and Chrome want HEVC tagged hvc1 in MP4 (Apple's HLS authoring
-    // specification, "Video" § 1.10)
-    return ['-c:v', 'copy', ...(video.codec === 'hevc' ? ['-tag:v', 'hvc1'] : [])]
+    return [
+      '-c:v',
+      'copy',
+      // Apple's players and Chrome want HEVC tagged hvc1 in MP4 (Apple's HLS authoring
+      // specification, "Video" § 1.10)
+      ...(video.codec === 'hevc' ? ['-tag:v', 'hvc1'] : []),
+      ...['-bsf:v', LEADING_FRAMES],
+    ]
   const size = scaledSize(video, plan.height)
   const level = h264Level(size.height)
   return [
@@ -302,13 +309,43 @@ const audioArgs = (audio: NonNullable<RunInput['audio']>): string[] => {
   ]
 }
 
+/**
+ * Where a copy's input `-ss` asks for, to start at the keyframe that begins the piece at `start`:
+ * halfway to the next piece's keyframe (`next`, the film's end for the last piece). A copy starts
+ * at the keyframe at or before where the demuxer lands ("When doing stream copy … [the part before
+ * the seek point] will be preserved", https://ffmpeg.org/ffmpeg.html#Main-options), and the demuxer
+ * lands before where it's asked: fftools/ffmpeg_demux.c seeks `3*AV_TIME_BASE / 23` early when the
+ * format seeks by decode time and a stream has B-frames (`dts_heuristic`,
+ * https://github.com/FFmpeg/FFmpeg/blob/release/7.1/fftools/ffmpeg_demux.c), as Matroska does, and
+ * 7.1's Matroska seek lands a little earlier again. A seek a millisecond past the keyframe so
+ * started a resumed Matroska film one keyframe early (HT-56); halfway clears both, and stays short
+ * of the next keyframe. Half a second past it when there's no next.
+ */
+export function copySeek(start: number, next?: number): number {
+  return next !== undefined && next > start ? start + (next - start) / 2 : start + 0.5
+}
+
+/**
+ * Drops a copied picture's packets that show before the run's first one (HT-56). In an open GOP
+ * the keyframe Matroska marks is an I-frame that isn't an IDR, and the B-frames after it in
+ * decode order show before it and refer to the GOP before, which a run that starts there doesn't
+ * have: Chrome stops with a decode error on the first of them, and Apple's players draw no
+ * picture. A run from the film's start, or a closed GOP, has none. Later GOPs keep theirs, since
+ * the GOP they refer to is in the run. The noise filter with only `drop` set drops packets and
+ * changes nothing else; `startpts` is the stream's first presentation time
+ * (https://ffmpeg.org/ffmpeg-bitstream-filters.html#noise). The comma is escaped since a
+ * bitstream filter list is separated by commas.
+ */
+export const LEADING_FRAMES = 'noise=drop=lt(pts\\,startpts)'
+
 /** One run of ffmpeg, from `start` on, writing pieces into `dir`. */
 export function runArgs(run: RunInput): string[] {
   const copy = run.video?.plan.action === 'copy'
-  // a copy starts at the keyframe at or before the seek, so a millisecond past the piece's start
-  // lands on its own keyframe however its time was rounded
-  const at = (run.start + (copy ? 0.001 : 0)).toFixed(6)
-  const seek = run.start > 0 ? ['-ss', at] : []
+  const at = (copy ? copySeek(run.start, run.nextStart) : run.start).toFixed(6)
+  // a copy's seek is inside its first GOP, so a sound track it transcodes keeps what's before
+  // it rather than starting there ("-noaccurate_seek … may be useful e.g. when copying some streams
+  // and transcoding the others", https://ffmpeg.org/ffmpeg.html#Advanced-options)
+  const seek = run.start > 0 ? [...(copy ? ['-noaccurate_seek'] : []), '-ss', at] : []
   // a transcode's input seek is exact for the picture, which is decoded, but a copied sound track
   // starts at the keyframe before: `-ss` on the output drops what's before the start, and
   // `-output_ts_offset` puts the film's time back (https://ffmpeg.org/ffmpeg.html#Main-options)

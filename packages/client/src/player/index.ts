@@ -497,6 +497,35 @@ export function baseProfile(userAgent: string, app?: 'mac' | 'windows' | 'linux'
 }
 
 /**
+ * What a player that gave up says, for the failed play's report (HT-56): hls.js's error type and
+ * details, its own reason or error message, the HTTP status of a failed load, and the media
+ * element's own error, which holds the browser's decoder's words when an append is refused
+ * because the element failed first (hls.js's `ErrorData`,
+ * https://github.com/video-dev/hls.js/blob/v1.7.3/docs/API.md#errors; `MediaError.message`,
+ * https://html.spec.whatwg.org/multipage/media.html#dom-mediaerror-message). Kept to a line.
+ */
+export function playerFailure(
+  hls: {
+    type?: string
+    details?: string
+    reason?: string
+    error?: { message?: string } | null
+    response?: { code?: number } | null
+  },
+  media?: { code: number; message: string } | null,
+): string {
+  const parts = [
+    [hls.type, hls.details].filter(Boolean).join(' '),
+    hls.reason,
+    hls.error?.message,
+    hls.response?.code ? `HTTP ${hls.response.code}` : undefined,
+    media ? `media error ${media.code}${media.message ? `: ${media.message}` : ''}` : undefined,
+  ]
+  const line = [...new Set(parts.filter((p): p is string => !!p))].join('; ')
+  return (line || 'media error').slice(0, 500)
+}
+
+/**
  * The report from what the browser says it decodes. `hdr` comes from `decodingInfo()` and the
  * screen (`dynamic-range: high`), which the caller asks, since they're asynchronous.
  */

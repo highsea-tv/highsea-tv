@@ -208,13 +208,22 @@ describe.skipIf(!hasFfmpeg)('HLS over HTTP', () => {
     // so a play reads nothing but its stream: its subtitle's first segment comes from its run
     const session = await play()
     const base = `${url}${(session.url as string).replace(/main\.m3u8$/, '')}`
-    expect((await fetch(`${base}0.m4s`)).status).toBe(200)
+    const first = await fetch(`${base}0.m4s`)
+    expect(first.status).toBe(200)
+    await first.arrayBuffer()
     const sub = await fetch(`${url}${session.subtitles[0]?.url?.replace(/\.m3u8$/, '/0.vtt')}`)
     expect(await sub.text()).toContain('Hello.')
     expect(logged('keyframes read', session.id)).toEqual([])
     expect(logged('subtitle converted', session.id)).toEqual([])
     expect(existsSync(join(root, file.id))).toBe(false)
+    // the segment is counted when its sending ends, as its "first segment served" line is written
+    for (let i = 0; i < 50 && !logged('first segment served', session.id).length; i++)
+      await Bun.sleep(20)
     await api.playback.stop({ params: { id: session.id } })
+    // one segment and gone: a player that gave up, said at warn (HT-56)
+    expect(logged('play session ended early', session.id).map((l) => [l.level, l.fields])).toEqual([
+      ['warn', { session: session.id, why: 'stopped', segments: 1 }],
+    ])
   })
 
   test('a resume: the playlist starts there, and the log says where the start’s time went', async () => {
@@ -263,10 +272,12 @@ describe.skipIf(!hasFfmpeg)('HLS over HTTP', () => {
     expect(served).toMatchObject({ segment: Number(name.split('.')[0]) })
     expect(served.bytes).toBeGreaterThan(0)
     expect(served.sincePlayMs).toBeGreaterThanOrEqual(served.sendMs as number)
-    // once a session: the next segment says nothing more
-    await fetch(`${base}${Number(name.split('.')[0]) + 1}.m4s`)
+    // once a session: the next segment says nothing more. Read whole, as a player does: a
+    // segment counts once it's sent whole, so the stop below can't come before it (HT-56)
+    await (await fetch(`${base}${Number(name.split('.')[0]) + 1}.m4s`)).arrayBuffer()
     expect(logged('first segment served', session.id).length).toBe(1)
     await api.playback.stop({ params: { id: session.id } })
+    expect(logged('play session ended early', session.id)).toEqual([])
   })
 
   test('a direct stream: the playlists, the init and a segment far ahead, played as one file', async () => {

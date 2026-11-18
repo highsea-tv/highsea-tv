@@ -720,6 +720,7 @@ function createTranscode(id: string, source: HlsSource, ctx: Context) {
       dir,
       start: at,
       startNumber: s.first,
+      nextStart: times[s.first + 1] ?? source.duration,
       video: source.video && decision.video ? { ...source.video, plan: decision.video } : null,
       audio: decision.audio
         ? {

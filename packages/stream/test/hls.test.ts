@@ -9,6 +9,7 @@ import { join } from 'node:path'
 import {
   assArgs,
   attachmentArgs,
+  copySeek,
   covers,
   createTranscodes,
   cueBlocks,
@@ -18,6 +19,7 @@ import {
   gridSegments,
   keyframeArgs,
   keyframeSegments,
+  LEADING_FRAMES,
   leadInArgs,
   mediaPlaylist,
   multivariantPlaylist,
@@ -377,16 +379,18 @@ describe('ffmpeg’s command lines', () => {
         dir: '/data/transcodes/s1',
         start: 403.778375,
         startNumber: 100,
+        nextStart: 409.778375,
         video: { ...video, codec: 'hevc', plan: { action: 'copy' } },
         audio: { index: 1, plan: { index: 1, action: 'transcode', codec: 'aac', channels: 6 } },
       }),
     ).toEqual([
       ...['-hide_banner', '-nostdin', '-loglevel', 'warning'],
       ...['-progress', 'pipe:1', '-stats_period', '1'],
-      ...['-ss', '403.779375', '-copyts', '-start_at_zero'],
+      // halfway into the piece's GOP, and a transcoded sound track isn't trimmed to it (`copySeek`)
+      ...['-noaccurate_seek', '-ss', '406.778375', '-copyts', '-start_at_zero'],
       ...['-i', '/m/Film (2001)/Film.mkv', '-map', '0:0', '-map', '0:1'],
       ...['-sn', '-dn', '-map_metadata', '-1', '-map_chapters', '-1'],
-      ...['-c:v', 'copy', '-tag:v', 'hvc1'],
+      ...['-c:v', 'copy', '-tag:v', 'hvc1', '-bsf:v', 'noise=drop=lt(pts\\,startpts)'],
       ...['-c:a', 'aac', '-ac', '6', '-b:a', '384k'],
       ...['-f', 'hls', '-hls_segment_type', 'fmp4', '-hls_time', '0'],
       ...['-hls_list_size', '0', '-hls_flags', 'temp_file'],
@@ -395,6 +399,32 @@ describe('ffmpeg’s command lines', () => {
       ...['-hls_segment_filename', '/data/transcodes/s1/%d.m4s'],
       '/data/transcodes/s1/ffmpeg.m3u8',
     ])
+  })
+
+  test('a copy seeks halfway into its own GOP, short of the next keyframe (HT-56)', () => {
+    // ffmpeg's demuxer lands 3/23 s early for B-frames (fftools/ffmpeg_demux.c), and 7.1's
+    // Matroska seek earlier again: a millisecond past the keyframe started a GOP early
+    expect(copySeek(485.986, 491.825)).toBeCloseTo(488.9055, 9)
+    expect(copySeek(10, 10.1)).toBeCloseTo(10.05, 9)
+    expect(copySeek(485.986)).toBeCloseTo(486.486, 9)
+    expect(copySeek(600, 600)).toBeCloseTo(600.5, 9)
+  })
+
+  test('a copy drops the packets that show before its first, an open GOP’s leading frames (HT-56)', () => {
+    const copy = (start: number) =>
+      runArgs({
+        input: '/m/a.mkv',
+        dir: '/t',
+        start,
+        startNumber: 0,
+        video: { ...video, plan: { action: 'copy' } },
+        audio: null,
+      })
+    // the comma is escaped: a bitstream filter list is separated by commas
+    expect(LEADING_FRAMES).toBe('noise=drop=lt(pts\\,startpts)')
+    expect(copy(60).join(' ')).toContain(`-c:v copy -bsf:v ${LEADING_FRAMES}`)
+    expect(copy(0).join(' ')).toContain(`-bsf:v ${LEADING_FRAMES}`)
+    expect(copy(0)).not.toContain('-noaccurate_seek')
   })
 
   test('a run writes the film’s own text tracks as WebVTT, an output each, from its read', () => {

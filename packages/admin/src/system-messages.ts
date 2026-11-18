@@ -138,7 +138,7 @@ export const system = defineMessages({
   'crashes.downloadLabel': 'Download the report from {at}',
   'reports.title': 'Reports from the apps',
   'reports.description':
-    'Errors and plays that failed in the apps signed in here, with the app, the device and the screen. Kept while crash reports are on, the newest 200. Nothing is sent anywhere.',
+    'Errors and plays that failed in the apps signed in here, with the app, the device and the screen. Kept whether or not crash reports are on, the newest 200. Nothing is sent anywhere.',
   'reports.what': 'the apps’ reports',
   'reports.label': 'Reports from the apps',
   'reports.none': 'No reports from the apps.',

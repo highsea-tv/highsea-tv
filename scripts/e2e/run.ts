@@ -621,8 +621,7 @@ try {
   })
 
   await step('10. An error in the web app, reported to the server and listed in Logs', async () => {
-    const general = await api<Record<string, unknown>>('GET', '/settings/general', undefined, token)
-    await api('PUT', '/settings/general', { ...general, crashReports: true }, token)
+    // kept whatever General › Diagnostics' crash reports switch says (HT-56)
     const context = await (browser as Browser).newContext()
     const page = await context.newPage()
     current = page

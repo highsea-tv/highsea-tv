@@ -1050,7 +1050,8 @@ function Crashes() {
 
 /**
  * What the apps sent (ADR 0066): errors nothing handled and plays that failed, beside the server's
- * own crash reports and drawn as they are. Kept under the same switch, which Crash reports names.
+ * own crash reports and drawn as they are. Always kept: the switch Crash reports names is the
+ * server's own (HT-56).
  */
 function ClientReports() {
   const t = useT(messages)
