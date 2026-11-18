@@ -15,6 +15,7 @@ type Box = {
   getBoundingClientRect(): { bottom: number }
   querySelectorAll?(s: string): Iterable<Row>
 }
+type Scroller = { scrollHeight: number; clientHeight: number; children?: Iterable<unknown> }
 type Observer = { observe(target: unknown, options?: object): void; disconnect(): void }
 type Observe = new (callback: () => void) => Observer
 const dom = globalThis as { ResizeObserver?: Observe; MutationObserver?: Observe }
@@ -65,6 +66,40 @@ export function useClip(items: string) {
     }
   }, [el, items])
   return { ref: ref as (node: unknown) => void, hidden }
+}
+
+/**
+ * Whether a scroll container's content is taller than its box, so it scrolls (a widget's body
+ * then becomes a Tab stop, HT-55). Pass `ref` to the View that scrolls. Re-checks when the box or
+ * any of its children resizes, and when children come and go, since content that grows doesn't
+ * resize the box (https://drafts.csswg.org/resize-observer/#intro). In tests (no layout, both
+ * heights 0) and off the web, false.
+ */
+export function useOverflows() {
+  const [el, ref] = useState<unknown>(null)
+  const [overflows, setOverflows] = useState(false)
+  useLayoutEffect(() => {
+    const box = el as Scroller | null
+    const { ResizeObserver, MutationObserver } = dom
+    if (!box || typeof box.scrollHeight !== 'number' || !ResizeObserver || !MutationObserver) return
+    // a pixel's slack: scrollHeight is rounded to a whole pixel and clientHeight may not be
+    // (https://drafts.csswg.org/cssom-view/#dom-element-scrollheight)
+    const check = () => setOverflows(box.scrollHeight > box.clientHeight + 1)
+    const resize = new ResizeObserver(check)
+    const watch = () => {
+      resize.observe(box)
+      for (const child of box.children ?? []) resize.observe(child)
+      check()
+    }
+    watch()
+    const children = new MutationObserver(watch)
+    children.observe(box, { childList: true })
+    return () => {
+      resize.disconnect()
+      children.disconnect()
+    }
+  }, [el])
+  return { ref: ref as (node: unknown) => void, overflows }
 }
 
 /**
