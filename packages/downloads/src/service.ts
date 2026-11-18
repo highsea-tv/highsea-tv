@@ -1234,6 +1234,12 @@ export function createDownloads(deps: DownloadsDeps) {
 
     // -------------------------------------------------------------- System and the dashboard
 
+    /** The latest total rates, bytes a second: zero before the first sample. */
+    rate() {
+      const s = speeds[speeds.length - 1]
+      return { down: s?.down ?? 0, up: s?.up ?? 0 }
+    },
+
     /** The last 10 minutes of total rates, a sample a second. */
     speeds() {
       return speeds.map((s) => ({ at: iso(s.at), down: s.down, up: s.up }))

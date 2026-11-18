@@ -26,8 +26,18 @@ const reason = (fn: () => unknown) => {
 
 describe('widgets', () => {
   test('normalize keeps a placement in range and fills its settings', () => {
-    const w = normalize({ id: 'a', kind: 'network', span: 4 as 1, rows: 9 })
-    expect(w).toEqual({ id: 'a', kind: 'network', span: 2, rows: 4, settings: { minutes: 10 } })
+    const w = normalize({ id: 'a', kind: 'weather', span: 4 as 1, rows: 9 })
+    expect(w).toEqual({
+      id: 'a',
+      kind: 'weather',
+      span: 2,
+      rows: 4,
+      settings: { place: null, temperature: 'celsius', wind: 'kmh' },
+    })
+    // a Recently added saved before its look was a setting takes Featured (HT-60)
+    expect(normalize({ id: 'r', kind: 'recently-added', span: 3, rows: 3 }).settings).toEqual({
+      variant: 'featured',
+    })
   })
 
   test('settings that no longer parse fall back to the defaults', () => {
@@ -89,7 +99,7 @@ describe('dashboard layouts', () => {
       .set({
         widgets: [
           { id: 'c', kind: 'calendar', span: 2, rows: 3 },
-          { id: 'x', kind: 'weather', span: 1, rows: 2 },
+          { id: 'x', kind: 'stocks', span: 1, rows: 2 },
         ],
       })
       .run()

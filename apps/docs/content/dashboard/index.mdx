@@ -9,10 +9,13 @@ description: The first page after you sign in, and how to arrange its widgets fo
   - In highsea: the admin's Dashboard (packages/admin/src/dashboard.tsx, widgets.tsx) and its
     strings (dashboard-messages.ts); the widget list, sizes and the starting layout
     (packages/personalization/src/widgets.ts); the palette (packages/admin/src/shell.tsx).
+  - Network, Recently added, Date and time and Weather: network-widget.tsx, recent-widget.tsx,
+    clock-weather-widgets.tsx and widget-settings.tsx in packages/admin/src; the sampling in
+    packages/runtime/src/network-activity.ts; Open-Meteo in packages/runtime/src/weather.ts.
   - The product spec docs/product/dashboard.md, for intent.
 */}
 
-Written for highsea 0.1.0.
+Written for highsea 0.4.4.
 
 The **Dashboard** is the first page you see after signing in. It answers two questions at a glance: is everything working, and what's happening right now. It's made of widgets, and each person who opens the admin arranges their own.
 
@@ -28,24 +31,40 @@ Only Owners and Admins open the admin, so only they have a dashboard. Users watc
 
 | Widget | What it shows |
 | --- | --- |
-| **Network** | Download and upload speed now, over a line of the last 10 minutes, with how many films are downloading. While the VPN is down it says "Stopped while the VPN is down". |
+| **Network** | Everything going in and out over the last 10 minutes, in one chart: **Downloads** and **Uploads** from the torrent client, and **Streams**, what the server sends to people watching, direct play and transcodes alike. The legend beside the chart is also its filter: pick **All**, or one line on its own. Where there's room, each line says what's behind it, such as "2 downloads" or "1 local · 1 remote", and "stopped while the VPN is down" when it is. |
 | **Storage** | Free space on the disk that holds your data, a bar of how much is used, and each root folder on it with how many films it holds. |
 | **Indexers** | How many of your indexers are healthy, and each one's state: Healthy, Backing off (with when it retries), Failing or Disabled. |
 | **Subtitles** | Subtitles synced today, how many are still waiting, and the average offset corrected. |
 | **Upcoming** | Monitored films released in the next 14 days, each linked to its page. |
 | **Announcement** | The announcement that's live now, who sees it and when it ends. With none, **Write one** opens [Curation](/curation/announcements/). |
 | **Queue** | Everything downloading, importing or waiting, live, with tabs for All, Downloading, Seeding and Issues. |
-| **Recently added** | Posters of the newest films in the library. |
+| **Recently added** | The newest films in the library, in one of three looks you choose in its settings: **Featured**, the newest one large with its artwork, then the ones before it; **Posters**, whole rows of posters; or **List**, one line each. |
 | **Calendar** | This month as a calendar, with release days marked. |
 | **System health** | Health checks that need attention, each marked OK, Notice, Warning or Error. "Everything looks healthy" when there are none. |
+| **Date and time** | The server's date and time, in its language and time zone (Settings › General), with the week number. When your own time zone differs, it also shows "Your time". |
+| **Weather** | The weather where you choose, from Open-Meteo: now, and the next days. It's off until you choose a place; see [Weather](#weather). |
 | **Now playing** | Who is watching what, with how each stream is sent or **Can't keep up**, the progress, and the Mbps sent in all. "Nobody is watching" when nobody is. See [Now playing](/now-playing/). |
 
 When a widget has more than fits, its last line reads, for example, "3 more in Activity", and links to the page with the rest. A film's title in a widget opens the film's page.
 
 A widget that can't load says so inside its own frame, with **Try again**. The rest of the dashboard keeps working.
 
+## Weather
+
+The **Weather** widget asks for nothing until you give it a place. Add it, then press **Choose a place** (or, while customising, the settings button in its corner). Search for a town by name and pick it from the list, or type a latitude and longitude and press **Use these**. Choose °C or °F and the wind's unit, then **Save**.
+
+![The Weather settings panel with Lisbon chosen, the search field, coordinates, temperature and wind units, and the note on what is sent to Open-Meteo](/images/admin/dashboard/weather-settings.png)
+
+What leaves your server, and when:
+
+- **The forecast.** highsea's server, never your browser, asks [Open-Meteo](https://open-meteo.com/) for the weather at the place's coordinates, rounded to about a kilometre. It asks at most once every 15 minutes for each place, and only while a dashboard shows the widget. Several people looking at the same place share one request.
+- **A search.** What you type in the search field goes to Open-Meteo's place search when you press **Search**, not as you type.
+- **Your location.** Your browser's location is never asked for.
+
+Open-Meteo is free for non-commercial use and keeps its request logs, which may hold the coordinates, for 90 days. Its [terms](https://open-meteo.com/en/terms) have the details. If Open-Meteo can't be reached, the widget keeps showing the last reading and says how old it is. To stop the requests, remove the widget, or choose **Forget this place** in its settings.
+
 ## The starting layout
 
-Until you change it, your dashboard shows Now playing first, then Network, Storage, Indexers, Subtitles, Upcoming and Announcement, with the Queue across the full width below them. Recently added, Calendar and System health are there to add.
+Until you change it, your dashboard shows Now playing first, then Network, Storage, Indexers, Subtitles, Upcoming and Announcement, with the Queue across the full width below them. Recently added, Calendar, System health, Date and time and Weather are there to add.
 
 On a new server most widgets start empty, and say what fills them: "No indexers yet" with **Add indexers**, "The queue is empty", "Nothing added yet". They fill in as you add indexers and films. To change the layout, see [Arrange your dashboard](/dashboard/customize/).

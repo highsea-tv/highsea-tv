@@ -51,7 +51,13 @@ const { shown } = await import('./modal.ts')
 
 // ---------------------------------------------------------------- the fake API
 
-type Placement = { id: string; kind: string; span: number; rows: number }
+type Placement = {
+  id: string
+  kind: string
+  span: number
+  rows: number
+  settings?: Record<string, unknown>
+}
 const place = (kind: string, span = 1, rows = 2): Placement => ({
   id: `w-${kind}`,
   kind,
@@ -61,6 +67,7 @@ const place = (kind: string, span = 1, rows = 2): Placement => ({
 
 let state: {
   widgets: Placement[]
+  stale: boolean
   requests: { method: string; path: string; body?: unknown }[]
 }
 
@@ -90,6 +97,36 @@ async function api(url: string, init: RequestInit = {}): Promise<Response> {
         sources: ['system'],
         attributions: [],
       })
+    case 'GET /api/v1/widgets/network':
+      return json({
+        minutes: 10,
+        samples: [
+          { at: '2026-11-18T12:00:00.000Z', down: 2_000_000, up: 300_000, streams: 0 },
+          { at: '2026-11-18T12:00:05.000Z', down: 2_500_000, up: 250_000, streams: 1_200_000 },
+        ],
+        downloads: 2,
+        seeding: 4,
+        streams: { local: 1, remote: 0 },
+      })
+    case 'GET /api/v1/widgets/weather':
+      return json({
+        latitude: 38.72,
+        longitude: -9.14,
+        timeZone: 'Europe/Lisbon',
+        updatedAt: '2026-11-18T12:00:00.000Z',
+        stale: state.stale,
+        current: { temperature: 17, feelsLike: 16, condition: 'rain', wind: 14, humidity: 72 },
+        days: [
+          { day: '2026-11-18', high: 18, low: 12, condition: 'rain', rain: 80 },
+          { day: '2026-11-19', high: 17, low: 11, condition: 'clear', rain: 0 },
+        ],
+      })
+    case 'GET /api/v1/widgets/weather/places':
+      return json([
+        { name: 'Lisbon', detail: 'Lisbon, Portugal', latitude: 38.72, longitude: -9.13 },
+      ])
+    case 'GET /api/v1/settings/general':
+      return json({ name: 'Harbor', language: 'en-GB', timeZone: 'Pacific/Kiritimati' })
     case 'GET /api/v1/me/dashboard':
       return json(layout(state.widgets))
     case 'PUT /api/v1/me/dashboard':
@@ -110,7 +147,7 @@ async function api(url: string, init: RequestInit = {}): Promise<Response> {
 }
 
 beforeEach(() => {
-  state = { widgets: [place('network'), place('storage')], requests: [] }
+  state = { widgets: [place('network'), place('storage')], requests: [], stale: false }
 })
 afterEach(() => cleanup())
 
@@ -251,5 +288,100 @@ describe('Dashboard', () => {
     await admin.user.click(admin.page.getByRole('button', { name: 'More layout options' }))
     expect(admin.page.getByText('Reset to default')).toBeTruthy()
     expect(admin.page.queryByText('Make this the default for admins')).toBeNull()
+  })
+})
+
+// ---------------------------------------------------------------- the widgets (HT-60)
+
+const asked = (path: string) => state.requests.filter((r) => r.path === path)
+
+describe('the widgets', () => {
+  test('Network’s legend is its filter, with every series’ rate now', async () => {
+    const { user, page } = await open()
+    const legend = within(page.getByRole('radiogroup', { name: 'Show' }))
+    const all = legend.getByRole('radio', { name: /All/ })
+    expect(all.getAttribute('aria-checked')).toBe('true')
+    expect(legend.getByRole('radio', { name: /Streams/ })).toBeTruthy()
+    await user.click(legend.getByRole('radio', { name: /Uploads/ }))
+    expect(legend.getByRole('radio', { name: /Uploads/ }).getAttribute('aria-checked')).toBe('true')
+    expect(all.getAttribute('aria-checked')).toBe('false')
+    expect(page.getByRole('img', { name: /Now: downloads .*, uploads .*, streams/ })).toBeTruthy()
+  })
+
+  test('Weather asks nothing without a place; Choose a place sets one and saves it', async () => {
+    state.widgets = [place('weather', 1, 3)]
+    const { user, page } = await open()
+    expect(page.getByText('No place chosen')).toBeTruthy()
+    expect(asked('/api/v1/widgets/weather')).toHaveLength(0)
+
+    await user.click(page.getByRole('button', { name: 'Choose a place' }))
+    await settle()
+    shown()
+    const sheet = within(page.getByRole('dialog', { name: 'Weather settings' }))
+    expect(sheet.getByText(/Your browser’s location is never used/)).toBeTruthy()
+    await user.type(sheet.getByRole('textbox', { name: 'Search for a place' }), 'Lis')
+    await user.click(sheet.getByRole('button', { name: 'Search' }))
+    await settle()
+    expect(asked('/api/v1/widgets/weather/places')).toHaveLength(1)
+    await user.click(sheet.getByText('Lisbon, Portugal'))
+    await user.click(sheet.getByRole('radio', { name: '°F' }))
+    await user.click(sheet.getByRole('button', { name: 'Save' }))
+    await settle()
+    expect(saves().at(-1)?.body).toEqual({
+      widgets: [
+        expect.objectContaining({
+          kind: 'weather',
+          settings: expect.objectContaining({
+            place: expect.objectContaining({ name: 'Lisbon', latitude: 38.72 }),
+            temperature: 'fahrenheit',
+          }),
+        }),
+      ],
+    })
+    await settle()
+    expect(asked('/api/v1/widgets/weather')).toHaveLength(1)
+    // 17 °C in Fahrenheit, the condition in words, and Open-Meteo's credit
+    expect(page.getByText('63°')).toBeTruthy()
+    expect(page.getByRole('link', { name: 'Weather data by Open-Meteo.com' })).toBeTruthy()
+  })
+
+  test('Weather shows the last reading with its age while Open-Meteo is away', async () => {
+    state.stale = true
+    state.widgets = [
+      {
+        ...place('weather', 2, 3),
+        settings: { place: { name: 'Lisbon', detail: '', latitude: 38.72, longitude: -9.14 } },
+      },
+    ]
+    const { page } = await open()
+    expect(page.getByRole('status').textContent).toMatch(/Open-Meteo can’t be reached/)
+  })
+
+  test('Recently added’s look is its setting, from the gear while customizing', async () => {
+    state.widgets = [place('recently-added', 2, 3)]
+    const { user, page } = await open()
+    await user.click(page.getByRole('button', { name: 'Customize' }))
+    await user.click(page.getByRole('button', { name: 'Recently added settings' }))
+    await settle()
+    shown()
+    const sheet = within(page.getByRole('dialog', { name: 'Recently added settings' }))
+    expect(sheet.getByRole('radio', { name: 'Featured' }).getAttribute('aria-checked')).toBe('true')
+    await user.click(sheet.getByRole('radio', { name: 'List' }))
+    await user.click(sheet.getByRole('button', { name: 'Save' }))
+    await settle()
+    // kept in the draft until Done
+    expect(saves()).toHaveLength(0)
+    await user.click(page.getByRole('button', { name: 'Done' }))
+    await settle()
+    expect(saves().at(-1)?.body).toEqual({
+      widgets: [expect.objectContaining({ settings: { variant: 'list' } })],
+    })
+  })
+
+  test('Date and time is the server’s, with yours when the zones differ', async () => {
+    state.widgets = [place('clock', 1, 3)]
+    const { page } = await open()
+    expect(page.getByText(/Pacific\/Kiritimati · week \d+/)).toBeTruthy()
+    expect(page.getByText(/^Your time /)).toBeTruthy()
   })
 })

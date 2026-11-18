@@ -262,6 +262,14 @@ async function api(url: string, init: RequestInit = {}): Promise<Response> {
       return json(state.torrents)
     case 'GET /api/v1/system/speeds':
       return json(state.speeds)
+    case 'GET /api/v1/widgets/network':
+      return json({
+        minutes: Number(u.searchParams.get('minutes') ?? 10),
+        samples: state.speeds.map((x) => ({ ...x, streams: 0 })),
+        downloads: state.torrents.filter((t) => t.state === 'downloading').length,
+        seeding: state.torrents.filter((t) => t.state === 'seeding').length,
+        streams: { local: 0, remote: 0 },
+      })
     case 'GET /api/v1/subtitles/stats':
       return json(state.subtitleStats)
     case 'GET /api/v1/vpn/status':
@@ -604,7 +612,7 @@ describe('System › Updates', () => {
 describe('the Network widget', () => {
   const Network = widgetRenderers.network
 
-  test('the torrents’ rates now, how many download, and the last minutes’ samples', async () => {
+  test('downloads, uploads and streams now, from the server’s samples', async () => {
     state.torrents = [
       { downRate: 2_000_000, upRate: 500_000, state: 'downloading' },
       { downRate: 0, upRate: 250_000, state: 'seeding' },
@@ -612,21 +620,17 @@ describe('the Network widget', () => {
     state.speeds = [{ at: new Date().toISOString(), down: 2_000_000, up: 750_000 }]
     const { page } = await open(<Network frame={frame('n')} settings={{ minutes: 10 }} />)
     expect(page.getByText('last 10 min')).toBeTruthy()
-    expect(page.getByText('1 download')).toBeTruthy()
-    expect(requested('/api/v1/system/speeds')).toHaveLength(1)
+    expect(page.getByRole('radio', { name: /Downloads/ })).toBeTruthy()
+    expect(page.getByRole('img', { name: /Now: downloads 2\.0 MB\/s/ })).toBeTruthy()
+    expect(requested('/api/v1/widgets/network')).toHaveLength(1)
     expect(requested('/api/v1/vpn/status')).toHaveLength(1)
   })
 
-  test('says it’s stopped while the VPN is down', async () => {
-    state.vpn = 'down'
+  test('draws without the downloads source: streams are the system’s', async () => {
+    state.sources = ['system']
     const { page } = await open(<Network frame={frame('n')} settings={{}} />)
-    expect(page.getByText('Stopped while the VPN is down')).toBeTruthy()
-  })
-
-  test('without the downloads source: zeros, and no calls', async () => {
-    state.sources = ['system', 'movies', 'indexers']
-    const { page } = await open(<Network frame={frame('n')} settings={{}} />)
-    expect(page.getByText('No downloads yet')).toBeTruthy()
+    expect(page.getByRole('radio', { name: /Streams/ })).toBeTruthy()
+    expect(requested('/api/v1/widgets/network')).toHaveLength(1)
     expect(requested('/api/v1/system/speeds')).toHaveLength(0)
   })
 })

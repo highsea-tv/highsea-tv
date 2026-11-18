@@ -36,6 +36,7 @@ export * from './system.ts'
 export * from './tags.ts'
 export * from './vpn.ts'
 export * from './wanted.ts'
+export * from './widgets.ts'
 
 import { apiKeys, audit, auth, devices, links, me, users } from './accounts.ts'
 import { collections, libraryCollections } from './collections.ts'
@@ -77,6 +78,7 @@ import { system } from './system.ts'
 import { tags } from './tags.ts'
 import { vpn } from './vpn.ts'
 import { wanted } from './wanted.ts'
+import { widgets } from './widgets.ts'
 
 /** Every route, by group. The SDK builds its methods from this. */
 export const routes = {
@@ -91,6 +93,7 @@ export const routes = {
   settings: { ...settings, ...downloadSettingsRoutes, ...operationsSettings, ...playbackSettings },
   audit,
   dashboard,
+  widgets,
   preferences,
   home: { ...home, ...clientHome },
   appearance,

@@ -80,6 +80,7 @@ HIGHSEA_TMDB_REPLAY=1 bun run server   # the same, answering TMDB from the recor
 HIGHSEA_TORRENT_OFFLINE=1 bun run server   # the torrent engine opens no sockets: grabs queue, nothing downloads
 HIGHSEA_SUBTITLES_FAKE=1 bun run server    # the subtitle providers are fakes: no accounts, no network
 HIGHSEA_LISTS_FAKE=1 bun run server        # Trakt and generic lists are fakes; Trakt's device code is approved at once
+HIGHSEA_WEATHER_FAKE=1 bun run server      # Open-Meteo's forecast and place search are fakes (the Weather widget)
 HIGHSEA_PLAYBACK_TRY=1 bun run server      # also serves /stream/try, the playback test page (never in the image's defaults)
 HIGHSEA_HARDWARE_NONE=1 bun run server     # no graphics chip is looked for (the sweeps and the guides' screenshots set it)
 bun run --cwd apps/desktop dev   # the desktop app around the client's desktop export (Rust from rust-toolchain.toml); checks add --config '{"identifier":"tv.highsea.desktop.test"}', which keeps its own data folder and keychain service (keychain.rs)

@@ -28,6 +28,7 @@ const runtime = await boot({
   hardware: process.env.HIGHSEA_HARDWARE_NONE === '1' ? bareHost() : undefined,
   subtitles: await fakeSubtitles(),
   lists: await fakeLists(),
+  weather: await fakeWeather(),
   restart: () => void stop('restart', RESTART_EXIT_CODE),
   // Without Docker's TZ, the process takes General's time zone, which setup takes from the browser.
   // Node reads a TZ set while it runs (https://nodejs.org/api/cli.html#tz); a TZ given wins.
@@ -51,6 +52,8 @@ if (process.env.HIGHSEA_HARDWARE_NONE === '1')
   log.warn('No graphics chip is looked for', { env: 'HIGHSEA_HARDWARE_NONE' })
 if (process.env.HIGHSEA_SUBTITLES_FAKE === '1')
   log.warn('Subtitle providers are fakes', { env: 'HIGHSEA_SUBTITLES_FAKE' })
+if (process.env.HIGHSEA_WEATHER_FAKE === '1')
+  log.warn('Open-Meteo is a fake', { env: 'HIGHSEA_WEATHER_FAKE' })
 if (process.env.HIGHSEA_FIXTURES_URL)
   log.warn('Every outside request goes to the fixtures service', { env: 'HIGHSEA_FIXTURES_URL' })
 
@@ -177,4 +180,14 @@ async function fakeLists() {
     traktClientId: FAKE_TRAKT_CLIENT_ID,
     traktClientSecret: FAKE_TRAKT_CLIENT_SECRET,
   }
+}
+
+/**
+ * `HIGHSEA_WEATHER_FAKE=1` answers Open-Meteo's forecast and place search from the fake in
+ * packages/runtime (HT-60), for development and the browser sweeps without the network.
+ */
+async function fakeWeather() {
+  if (process.env.HIGHSEA_WEATHER_FAKE !== '1') return undefined
+  const { createFakeWeather } = await import('@highsea-tv/runtime/weather-fake')
+  return { fetch: createFakeWeather().fetch }
 }

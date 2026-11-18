@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// What the drafted dashboard widgets show in the prototype (HT-47; @highsea-tv/admin's
-// widgets-next.tsx): the network's activity with streams beside the torrents' rates, and the
-// weather. Neither has a route on the server yet, so these aren't answers of the transport: the
-// prototype's host hands them to the page. Made from the time alone, never from a network call, so
-// the same minute always draws the same picture and the drafts move as the clock does.
+// What the Network and Weather widgets show in the prototype, drafted in HT-47 and answered as
+// `widgets.network` and `widgets.weather` since HT-60 (admin/dashboard.ts): the network's activity
+// with streams beside the torrents' rates, and the weather. Made from the time alone, never from a
+// network call, so the same minute always draws the same picture and the widgets move as the clock
+// does.
 
 /** One sample of the network's activity: bytes a second, each way and to the players. */
 export type ActivitySample = {

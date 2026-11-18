@@ -40,11 +40,20 @@ import { View } from 'react-native'
 import { dashboard as messages } from './dashboard-messages.ts'
 import { shell } from './messages.ts'
 import { AdminPage, useShell } from './shell.tsx'
+import { configurable, WidgetSettingsSheet } from './widget-settings.tsx'
+import { widgetSettings as settingsMessages } from './widget-settings-messages.ts'
 import { widgetRenderers } from './widgets.tsx'
 
 const same = (a: WidgetPlacement[], b: WidgetPlacement[]) =>
   a.length === b.length &&
-  a.every((w, i) => w.kind === b[i]?.kind && w.span === b[i]?.span && w.rows === b[i]?.rows)
+  a.every(
+    (w, i) =>
+      w.kind === b[i]?.kind &&
+      w.span === b[i]?.span &&
+      w.rows === b[i]?.rows &&
+      // a widget's own settings (Recently added's look, the weather's place) count as a change
+      JSON.stringify(w.settings ?? {}) === JSON.stringify(b[i]?.settings ?? {}),
+  )
 
 /** The editor's announcements, from the catalog. */
 function useEditorMessages(): Partial<WidgetEditorMessages> {
@@ -79,6 +88,9 @@ export function Dashboard() {
   const [fromDefault, setFromDefault] = useState<WidgetPlacement[] | null>(null)
   const [adding, setAdding] = useState(false)
   const [menu, setMenu] = useState(false)
+  // the widget whose settings sheet is open
+  const [configuring, setConfiguring] = useState<string | null>(null)
+  const tws = useT(settingsMessages)
   const more = useRef<ComponentRef<typeof View>>(null)
   const editorMessages = useEditorMessages()
 
@@ -117,6 +129,25 @@ export function Dashboard() {
   }
 
   const remove = (id: string) => setDraft(items.filter((w) => w.id !== id))
+
+  // a widget's settings: into the draft while customizing, saved at once otherwise (Weather's
+  // "Choose a place" opens them outside customize mode)
+  const configure = async (id: string, settings: Record<string, unknown>) => {
+    const next = items.map((w) => (w.id === id ? { ...w, settings } : w))
+    if (editing) {
+      setDraft(next)
+      return setConfiguring(null)
+    }
+    try {
+      await save.run(next)
+    } catch (e) {
+      return toast.error(tws('saveError'), { description: (e as Error).message })
+    }
+    setConfiguring(null)
+    // the widget draws with its new settings now, not when the layout's event arrives
+    layout.refetch()
+    toast.success(tws('saved'))
+  }
 
   const resetToDefault = async () => {
     const def = await loadDefault.run(role).catch(() => null)
@@ -239,9 +270,25 @@ export function Dashboard() {
                 key={w.id}
                 frame={frame}
                 settings={w.settings ?? {}}
+                configure={configurable(w.kind) ? () => setConfiguring(w.id) : undefined}
                 actions={
                   editing ? (
-                    <View style={{ marginRight: -(tokens.space['1'] + tokens.space['0.5']) }}>
+                    <View
+                      style={{
+                        flexDirection: 'row',
+                        marginRight: -(tokens.space['1'] + tokens.space['0.5']),
+                      }}
+                    >
+                      {configurable(w.kind) ? (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          iconOnly
+                          icon="settings"
+                          accessibilityLabel={tws('title', { widget: title(w.kind) })}
+                          onPress={() => setConfiguring(w.id)}
+                        />
+                      ) : null}
                       <Button
                         variant="ghost"
                         size="sm"
@@ -275,6 +322,12 @@ export function Dashboard() {
           {t('emptyBody')}
         </EmptyState>
       )}
+      <WidgetSettingsSheet
+        widget={items.find((w) => w.id === configuring) ?? null}
+        onClose={() => setConfiguring(null)}
+        onSave={(settings) => configuring && configure(configuring, settings)}
+        saving={save.pending}
+      />
       <Sheet
         open={adding}
         onClose={() => setAdding(false)}

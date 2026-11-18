@@ -127,6 +127,7 @@ import { createListLibrary } from './list-library.ts'
 import { createLogFiles } from './logs.ts'
 import { createMailBrand } from './mail-brand.ts'
 import { createNetworkService, type NetworkService } from './network.ts'
+import { createNetworkActivity, type NetworkActivityService } from './network-activity.ts'
 import { createNotify, HEALTH_EVERY_MS, type Notify } from './notify.ts'
 import { createNowPlaying, type NowPlayingService } from './now-playing.ts'
 import {
@@ -166,6 +167,7 @@ import {
   type Resources,
 } from './system.ts'
 import { createTrickplay } from './trickplay.ts'
+import { createWeather, type WeatherService } from './weather.ts'
 import { createWorkerPool, type WorkerPool } from './workers.ts'
 
 /** Milestone 1 has the server, the movie library, indexers, downloads and subtitles; later checkpoints add theirs (4.3a, playback). */
@@ -302,6 +304,10 @@ export type Runtime = {
   playback: Playback
   /** Now playing (4.3a): the live sessions as the admin shows them, and 30 days of history. */
   nowPlaying: NowPlayingService
+  /** The dashboard's Network (HT-60): the torrents' rates and what `/stream` sends, an hour in memory. */
+  networkActivity: NetworkActivityService
+  /** The dashboard's Weather (HT-60): Open-Meteo, asked by the server and kept 15 minutes. */
+  weather: WeatherService
   /** Settings › Playback: transcodes at once, the encoder, the remote ceiling and the cache (4.3a). */
   playbackSettings: PlaybackSettingsService
   /** Subtitles for the movie library (checkpoint 7a). */
@@ -443,6 +449,11 @@ export type BootOptions = {
    * and the sweeps pass `@highsea-tv/notifications/fake`'s.
    */
   notifications?: { fetch?: Fetch; vapidSubject?: string | null }
+  /**
+   * The Weather widget's fetch (HT-60). By default the outside fetch; tests and the sweeps pass
+   * `@highsea-tv/runtime/weather-fake`'s (`HIGHSEA_WEATHER_FAKE=1`).
+   */
+  weather?: { fetch?: Fetch }
   /**
    * Restarts the server after a restore's marker is written (8b). The server entry stops and exits
    * so Docker's restart policy brings it back; tests pass their own.
@@ -1082,6 +1093,30 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
   // the stall check every few minutes (ADR 0038), as indexers.schedule() does for its jobs
   downloads.schedule()
   const stopDownloads = downloads.start()
+
+  // the dashboard's Network (HT-60): the torrents' rates, and the bytes `/stream` sends
+  const networkActivity = createNetworkActivity({
+    clock,
+    torrents: () => downloads.rate(),
+    counts: () => {
+      const all = downloads.torrents()
+      return {
+        downloads: all.filter((t) => t.state === 'downloading').length,
+        seeding: all.filter((t) => t.state === 'seeding').length,
+      }
+    },
+    streams: () => {
+      const playing = nowPlaying.list().sessions.filter((x) => !x.stopped && x.state !== 'paused')
+      return {
+        local: playing.filter((x) => x.network !== 'remote').length,
+        remote: playing.filter((x) => x.network === 'remote').length,
+      }
+    },
+  })
+  // tests take their samples by hand
+  const stopNetworkActivity = options.manualTicks ? () => {} : networkActivity.start()
+  // the dashboard's Weather (HT-60): asks nothing until a widget has a place
+  const weather = createWeather({ fetch: options.weather?.fetch ?? outside, clock, logger })
   // the watch folder (6b): a timer the runtime owns; tests tick it by hand
   const watchFolder = createWatchFolder({
     clock,
@@ -1328,6 +1363,8 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
     movies,
     playback,
     nowPlaying,
+    networkActivity,
+    weather,
     playbackSettings,
     subtitles,
     catalog,
@@ -1717,6 +1754,7 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
       stopWatchSync()
       watch.stop()
       stopDownloads()
+      stopNetworkActivity()
       stopIpBlocklist()
       await engine.close()
       playback.close()

@@ -326,18 +326,19 @@ export const flows: Flow[] = [
   ),
   admin(
     'A3n',
-    'Widgets, next round',
+    'Widgets at every size',
     '/widgets-next',
     3,
-    'Drafts for review (HT-47): Recently added three ways, the network’s whole activity, the date and time, the weather, and every widget at every size.',
+    'Every dashboard widget at one size, on mock data: HT-47’s drafts, built on real data with HT-60.',
     {
       fidelity: 'reference',
       ready: true,
       spec: 'docs/product/dashboard.md',
       hints: [
         'Columns and Rows set the size of every widget on the page; each stays within its own range.',
-        'In the Network draft the legend is the filter: All, or one series on its own.',
-        'Every widget at one size, with Data set to Empty or Error, is where the cut-off buttons were.',
+        'Recently added and Weather take their settings from the controls, as the settings sheet sets them.',
+        'In Network the legend is the filter: All, or one series on its own.',
+        'With Data set to Empty or Error, each widget shows its empty or error state at that size.',
       ],
     },
   ),

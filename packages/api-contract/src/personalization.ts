@@ -19,6 +19,8 @@ export const WIDGET_KINDS = [
   'calendar',
   'system-health',
   'now-playing',
+  'clock',
+  'weather',
 ] as const
 
 /** What a widget reads. Public info lists the ones this server has so far. */

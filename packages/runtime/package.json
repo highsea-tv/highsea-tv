@@ -5,7 +5,8 @@
   "license": "AGPL-3.0-only",
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./weather-fake": "./src/weather-fake.ts"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json"
