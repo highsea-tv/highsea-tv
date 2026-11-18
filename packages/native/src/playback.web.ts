@@ -162,7 +162,7 @@ export const usePlayback: Engine<WebPlayer> = (id, fromStart, type = 'movie') =>
   // the start's key (`useStarts`)
   const started = useRef<string | null>(null)
 
-  const { session, live, generation, begin, stopped } = useSessionStart({
+  const { session, profile, live, generation, begin, stopped } = useSessionStart({
     client,
     id,
     type,
@@ -356,6 +356,7 @@ export const usePlayback: Engine<WebPlayer> = (id, fromStart, type = 'movie') =>
     dispatch,
     player: { attach, video },
     session,
+    profile,
     version: c.version,
     audio: c.audio,
     subtitle: c.subtitle,

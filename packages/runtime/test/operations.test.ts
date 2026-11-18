@@ -17,6 +17,7 @@ import {
   beginRestore,
   boot,
   compareAppVersions,
+  createClientReports,
   createRegistry,
   DATABASE_NAME,
   getRuntime,
@@ -326,6 +327,59 @@ describe('crash reports', () => {
     expect(text).toContain('a line')
     expect(text).not.toContain('never in a report')
     expect(() => rt.operations.crashes.path('../secret')).toThrow('That crash report is gone.')
+  })
+})
+
+describe('client reports', () => {
+  const report = {
+    kind: 'error' as const,
+    app: 'ios',
+    version: '0.4.2',
+    device: 'iPhone 17 · iOS 26.1',
+    screen: '/',
+    error: { name: 'Error', message: 'boom', stack: null },
+  }
+
+  test('are kept only with the switch on, with who sent them', async () => {
+    const { rt } = await start()
+    const reports = rt.operations.clientReports
+    expect(reports.record(report, { userId: 'u1' })).toBeNull()
+    rt.operations.general.update({ ...rt.operations.general.get(), crashReports: true })
+    const id = reports.record(report, { userId: 'u1' })
+    expect(id).toMatch(/^client-/)
+    expect(reports.list()).toMatchObject([
+      { id, kind: 'error', app: 'ios', message: 'Error: boom' },
+    ])
+    const text = await Bun.file(reports.path(id ?? '')).text()
+    expect(JSON.parse(text)).toMatchObject({ userId: 'u1', server: '0.2.0', screen: '/' })
+    expect(() => reports.path('../secret')).toThrow('That report is gone.')
+  })
+
+  test('the newest are kept and the oldest go', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'highsea-client-reports-'))
+    let now = Date.parse('2026-11-17T10:00:00Z')
+    const kept: number[] = []
+    const reports = createClientReports({
+      dir,
+      version: '0.4.2',
+      clock: { now: () => now },
+      enabled: () => true,
+      keep: 3,
+      kept: () => kept.push(1),
+    })
+    for (let i = 0; i < 5; i++) {
+      now += 1000
+      reports.record({ ...report, screen: `/${i}` }, { userId: 'u1' })
+    }
+    expect(reports.list().map((r) => r.screen)).toEqual(['/4', '/3', '/2'])
+    expect(kept.length).toBe(5)
+    // Download logs' lines, oldest first, as the log's own
+    expect([...reports.lines()].map((l) => JSON.parse(l).fields.report.screen)).toEqual([
+      '/2',
+      '/3',
+      '/4',
+    ])
+    rmSync(dir, { recursive: true, force: true })
   })
 })
 

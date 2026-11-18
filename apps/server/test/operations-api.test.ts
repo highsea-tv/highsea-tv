@@ -6,7 +6,7 @@
 
 import { afterEach, describe, expect, test } from 'bun:test'
 import { readFileSync } from 'node:fs'
-import { STAFF_TOPICS } from '@highsea-tv/api-contract'
+import { CLIENT_REPORT_MAX, STAFF_TOPICS } from '@highsea-tv/api-contract'
 import { createApi } from '../src/api/app.ts'
 import { routeFor } from '../src/api/guard.ts'
 import {
@@ -133,6 +133,145 @@ describe('the log and crash reports', () => {
     expect(report).toMatchObject({ origin: 'api', message: 'Error: the test’s failure' })
     const res = await get(app, `/api/v1/system/crashes/${report?.id}`, ownerToken)
     expect(JSON.parse(await res.text())).toMatchObject({ version: runtime.version })
+  })
+})
+
+describe('client reports', () => {
+  const report = {
+    kind: 'error' as const,
+    app: 'tvos' as const,
+    version: '0.4.2',
+    device: 'Apple TV 4K · tvOS 26.1',
+    screen: '/movies/603',
+    error: { name: 'TypeError', message: 'undefined is not a function', stack: 'at Poster' },
+  }
+  const send = (app: ReturnType<typeof createApi>, body: unknown, token?: string) =>
+    app.request(`${ORIGIN}/api/v1/system/client-reports`, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        ...(token ? { authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify(body),
+    })
+  const on = async (owner: Awaited<ReturnType<typeof started>>['owner']) =>
+    owner.settings.saveGeneral({
+      body: { ...(await owner.settings.general()), crashReports: true },
+    })
+
+  test('anyone signed in sends one; staff read them; nobody signed out does', async () => {
+    const { app, owner, admin, user, userToken, ownerToken } = await started()
+    expect((await send(app, report)).status).toBe(401)
+    // with General › Diagnostics off, a report is answered and not kept
+    await user.system.sendClientReport({ body: report })
+    expect(await owner.system.clientReports()).toEqual([])
+
+    await on(owner)
+    expect((await send(app, report, userToken)).status).toBe(204)
+    const [kept] = await admin.system.clientReports()
+    expect(kept).toMatchObject({
+      kind: 'error',
+      app: 'tvos',
+      version: '0.4.2',
+      device: 'Apple TV 4K · tvOS 26.1',
+      screen: '/movies/603',
+      message: 'TypeError: undefined is not a function',
+    })
+    expect(await failure(user.system.clientReports())).toMatchObject({ code: 'forbidden' })
+    const path = `/api/v1/system/client-reports/${kept?.id}`
+    expect((await get(app, path, userToken)).status).toBe(403)
+    expect((await get(app, '/api/v1/system/client-reports/client-none', ownerToken)).status).toBe(
+      404,
+    )
+    expect((await get(app, path, ownerToken)).headers.get('content-disposition')).toBe(
+      `attachment; filename="${kept?.id}.json"`,
+    )
+  })
+
+  test('what’s kept: the report, the sender’s id, and nothing it didn’t ask for', async () => {
+    const { runtime, app, owner, userToken, ownerToken } = await started()
+    await on(owner)
+    const sent = {
+      ...report,
+      username: 'rui',
+      email: 'rui@example.test',
+      error: { ...report.error, extra: 1 },
+    }
+    expect((await send(app, sent, userToken)).status).toBe(204)
+    const [kept] = await owner.system.clientReports()
+    const file = JSON.parse(
+      await (await get(app, `/api/v1/system/client-reports/${kept?.id}`, ownerToken)).text(),
+    )
+    const rui = runtime.auth.users.list().find((u) => u.username === 'rui')
+    expect(file).toEqual({
+      id: kept?.id,
+      at: kept?.at,
+      server: runtime.version,
+      userId: rui?.id,
+      ...report,
+    })
+    expect(JSON.stringify(file)).not.toContain('example.test')
+
+    // Download logs ends with the reports, a line each
+    const lines = (await (await get(app, '/api/v1/system/logs/download', ownerToken)).text())
+      .trim()
+      .split('\n')
+      .map((l) => JSON.parse(l))
+    expect(lines.at(-1)).toMatchObject({
+      level: 'error',
+      source: 'client',
+      message: 'TypeError: undefined is not a function',
+      fields: { report: { id: kept?.id, screen: '/movies/603' } },
+    })
+  })
+
+  test('a failed play is kept with the decision and the device’s profile', async () => {
+    const { app, owner, userToken, ownerToken } = await started()
+    await on(owner)
+    const play = {
+      type: 'movie' as const,
+      id: 603,
+      versionId: 'v1',
+      audioId: null,
+      subtitleId: null,
+      profile: 'tvos',
+      sessionId: 's1',
+      decision: {
+        method: 'transcode' as const,
+        container: 'mkv',
+        video: { action: 'copy' as const },
+        audio: null,
+        subtitle: null,
+        bitrate: null,
+        reasons: [],
+      },
+      position: 12.5,
+    }
+    const sent = { ...report, kind: 'play', screen: '/play/603', play }
+    const res = await send(app, sent, userToken)
+    expect(res.status).toBe(204)
+    const [kept] = await owner.system.clientReports()
+    expect(kept).toMatchObject({ kind: 'play', screen: '/play/603' })
+    const file = JSON.parse(
+      await (await get(app, `/api/v1/system/client-reports/${kept?.id}`, ownerToken)).text(),
+    )
+    expect(file.play).toMatchObject({ id: 603, profile: 'tvos', decision: { method: 'transcode' } })
+    expect(file.deviceProfile).toMatchObject({ id: 'tvos' })
+  })
+
+  test('its size limit: 64 KB, and each field its own', async () => {
+    const { app, owner, userToken } = await started()
+    await on(owner)
+    const large = { ...report, error: { ...report.error, stack: 'x'.repeat(CLIENT_REPORT_MAX) } }
+    const res = await send(app, large, userToken)
+    expect(res.status).toBe(400)
+    expect(await res.json()).toMatchObject({
+      error: { code: 'invalid', details: { reason: 'size' } },
+    })
+    // under the limit, a field over its own length is refused too
+    const long = { ...report, screen: 'x'.repeat(201) }
+    expect((await send(app, long, userToken)).status).toBe(400)
+    expect(await owner.system.clientReports()).toEqual([])
   })
 })
 

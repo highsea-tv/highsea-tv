@@ -183,6 +183,20 @@ async function api(url: string, init: RequestInit = {}): Promise<Response> {
           size: 1200,
         },
       ])
+    case 'GET /api/v1/system/client-reports':
+      return json([
+        {
+          id: 'client-1',
+          at: '2026-10-21T09:30:00.000Z',
+          kind: 'play',
+          app: 'tvos',
+          version: '0.4.2',
+          device: 'Apple TV 4K · tvOS 26.1',
+          screen: '/play/603',
+          message: 'Error: The stream stopped loading',
+          size: 5200,
+        },
+      ])
     case 'GET /api/v1/settings/general':
       return json({
         language: 'en',
@@ -436,6 +450,13 @@ describe('System › Logs', () => {
     )
     // they're off in General, so the group says where to turn them on
     expect(page.getByRole('link', { name: /Crash reports are off/ })).toBeTruthy()
+    // what the apps sent, beside them and drawn the same
+    const reports = page.getByRole('list', { name: 'Reports from the apps' })
+    expect(within(reports).getByText('Error: The stream stopped loading')).toBeTruthy()
+    expect(within(reports).getByText('tvos 0.4.2 /play/603')).toBeTruthy()
+    const download = within(reports).getByRole('link')
+    expect(download.getAttribute('href')).toBe('/api/v1/system/client-reports/client-1')
+    expect(download.getAttribute('aria-label')).toMatch(/^Download the tvos report from /)
   })
 })
 

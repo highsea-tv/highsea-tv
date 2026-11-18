@@ -1,12 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // System's tabs besides Status and Health, and Settings › Backups, through the mock's transport
 // (one-client-platform-d.md › D3), from the mock's own api in the contract's shapes: Tasks (the
-// mock's scheduled jobs under the server's job types), Logs, Crash reports (the mock writes none),
+// mock's scheduled jobs under the server's job types), Logs, Crash reports (the mock writes none)
+// and the apps' reports (what the mock's apps send while the page is open),
 // Backups with making, restoring and deleting one, Updates, and the backup schedule. Downloading a
 // backup, the log files or a crash report answers 501: those are files, which the mock doesn't keep.
 import {
   type Backup,
   type BackupSettings,
+  type ClientReport,
   LOG_LEVELS,
   type LogEntry,
   OPERATIONS_TOPICS,
@@ -57,6 +59,8 @@ export function systemAnswers({ wall, emit }: AdminKit): Answers {
     nextRun: j.nextRun && wall(j.nextRun),
     lastError: j.state === 'failed' ? j.message : null,
   })
+
+  const clientReports: ClientReport[] = []
 
   const tasksOf = (ctx: Ctx) =>
     ctx.api.system.jobs().flatMap((j) => {
@@ -120,6 +124,26 @@ export function systemAnswers({ wall, emit }: AdminKit): Answers {
         // staff only, as the log is; the mock never fails, so it has no reports to give
         ctx.api.system.logs()
         return []
+      },
+      // what the mock's own apps send (ADR 0066), kept while the page is open
+      clientReports: (_, ctx) => {
+        ctx.api.system.logs()
+        return clientReports
+      },
+      sendClientReport: ({ body }) => {
+        const text = JSON.stringify(body)
+        clientReports.unshift({
+          id: `client-${clientReports.length + 1}`,
+          at: new Date().toISOString(),
+          kind: body.kind,
+          app: body.app,
+          version: body.version,
+          device: body.device,
+          screen: body.screen,
+          message: `${body.error.name}: ${body.error.message}`.split('\n')[0] ?? '',
+          size: text.length,
+        })
+        return undefined
       },
 
       backups: (_, ctx) => {

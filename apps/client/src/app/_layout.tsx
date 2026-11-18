@@ -41,6 +41,7 @@ import { useBrandFonts } from '../fonts'
 import { FrameStateContext, useFrameChannel } from '../frame-channel.ts'
 import { HOME_SERVER } from '../host'
 import { SaidProvider } from '../kit.tsx'
+import { ErrorReports } from '../shell/reports.tsx'
 import { mock, transport } from '../transport.ts'
 
 void SplashScreen.preventAutoHideAsync()
@@ -142,7 +143,10 @@ function SignedInGate() {
     <SessionContext.Provider value={gate.session}>
       <ReachableProvider missing={!gate.session} refetch={gate.refetch}>
         <Themed>
-          <Nav phase="in" />
+          {/* an error no screen handled is reported to this server (../shell/reports.tsx) */}
+          <ErrorReports>
+            <Nav phase="in" />
+          </ErrorReports>
         </Themed>
       </ReachableProvider>
     </SessionContext.Provider>

@@ -19,6 +19,8 @@
 // 9. the artwork at a host name other than localhost, as an owner browses their server: Home's
 //    backdrop and the library's posters on `/web`, and a poster in the admin, each drawn from the
 //    server's own /api/v1/images (TMDB's replay at the fixtures serves the pictures).
+// 10. an error in the web app, reported to its server (ADR 0066), listed in System › Logs and in
+//    Download logs.
 //
 //   HIGHSEA_IMAGE=highsea:ci bun scripts/e2e/run.ts
 //
@@ -570,6 +572,45 @@ try {
     // the admin draws with the same library but its own pages (Next), signed in by the same cookie
     await page.goto(`${ELSEWHERE}/movies`)
     await artwork(page, 'The admin’s Movies', 'poster', refused)
+    await context.close()
+  })
+
+  await step('10. An error in the web app, reported to the server and listed in Logs', async () => {
+    const general = await api<Record<string, unknown>>('GET', '/settings/general', undefined, token)
+    await api('PUT', '/settings/general', { ...general, crashReports: true }, token)
+    const context = await (browser as Browser).newContext()
+    const page = await context.newPage()
+    current = page
+    await page.goto(`${BASE}/web/`)
+    await page.getByLabel('Username').fill(OWNER.username)
+    await page.getByLabel('Password').fill(OWNER.password)
+    await page.getByRole('button', { name: 'Sign in' }).click()
+    await page.getByRole('navigation', { name: 'Main' }).first().waitFor()
+    // an error nothing handles, as a bug in the app would throw it: the page's `error` event
+    const sent = page.waitForResponse(
+      (r) => r.request().method() === 'POST' && r.url().endsWith('/system/client-reports'),
+    )
+    await page.evaluate(() => {
+      setTimeout(() => {
+        throw new Error('the end-to-end run’s error')
+      }, 0)
+    })
+    if ((await sent).status() !== 204) throw new Error('The server didn’t take the app’s report')
+    type Report = { id: string; app: string; screen: string; message: string }
+    const [report] = await api<Report[]>('GET', '/system/client-reports', undefined, token)
+    if (report?.app !== 'web' || !report.message.includes('the end-to-end run’s error'))
+      throw new Error(`The report kept isn’t the app’s: ${JSON.stringify(report)}`)
+    // the admin lists it beside the crash reports, and Download logs ends with it
+    await page.goto(`${BASE}/system/logs`)
+    await page
+      .getByRole('list', { name: 'Reports from the apps' })
+      .getByText('the end-to-end run’s error')
+      .waitFor({ timeout: 30_000 })
+    const logs = await fetch(`${BASE}/api/v1/system/logs/download`, {
+      headers: { authorization: `Bearer ${token}` },
+    })
+    if (!(await logs.text()).includes(report.id))
+      throw new Error('Download logs doesn’t include the app’s report')
     await context.close()
   })
 

@@ -23,6 +23,8 @@ import type { HighseaClient } from '@highsea-tv/sdk'
 import { type Query, useAction, useClient, useQuery } from '@highsea-tv/sdk/react'
 import { useEffect, useMemo, useState } from 'react'
 
+export * from './reports.ts'
+
 /** The topics a title's watch state and the library change on. */
 const LIBRARY = [MEDIA_TOPICS.movies, PLAYBACK_TOPICS.watch]
 
