@@ -1,7 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// Whether a release may publish (release.yml, ADR 0050's 2026-11-18 note): the one rule for which
-// of the release's jobs must have passed, and which may be skipped on purpose. Two places use it:
+// Whether a release may publish (release.yml, ADR 0050's 2026-11-18 notes): the one rule for which
+// of the release's jobs must have passed, and which may be skipped on purpose. Three places use it:
 //
+//   bun scripts/release-gate.ts builds  in `publishable`, from `toJSON(needs)`: it passes only when
+//       every build ended as the release needs, and `merge` and `pages` run only when it passed,
+//       so nothing is published while a build failed, was cancelled or never ran (run
+//       44371744243 pushed the image's tags and deployed the catalog before its macOS build was
+//       cancelled).
 //   bun scripts/release-gate.ts wait   in `github-release`, before the tag: it reads the run's own
 //       jobs (GET /repos/{owner}/{repo}/actions/runs/{run_id}/attempts/{attempt}/jobs,
 //       https://docs.github.com/en/rest/actions/workflow-jobs) until every one the release needs
@@ -12,9 +17,9 @@
 //       (https://docs.github.com/en/actions/reference/workflows-and-actions/contexts#needs-context):
 //       the run fails unless the rule says go, so a dry run proves every build passed.
 //
-// The rule: `checks`, `image` and `catalog` always pass; `spk`, `desktop` and `desktop-feed` pass
-// on a stable release and are skipped on a prerelease (DSM has no place for a prerelease, and the
-// desktop app ships with stable releases); `merge`, `pages` and, once it has run, `github-release`
+// The rule: `checks`, `image`, `catalog` and `publishable` always pass; `spk`, `desktop` and
+// `desktop-feed` pass on a stable release and are skipped on a prerelease (DSM has no place for a
+// prerelease, and the desktop app ships with stable releases); `merge`, `pages` and, once it has run, `github-release`
 // pass on a real release and are skipped on a dry run. A job that is skipped when it should have
 // passed stops the release, like one that failed: GitHub skips every job after a skipped or failed
 // one in its `needs` chain unless its `if:` uses a status function
@@ -22,7 +27,14 @@
 // which is how run 44267473765 skipped every build. `ci` and `e2e` aren't read here: `checks`
 // speaks for them, passed or reused from next.
 //
-// Environment: PRERELEASE and DRY_RUN (`true` or `false`); for `needs`, NEEDS; for `wait`,
+// A re-run of failed jobs works: GitHub re-runs the failed jobs and the jobs that depend on them,
+// and "jobs that aren't included keep their outputs from the previous attempt"
+// (https://docs.github.com/en/actions/how-tos/manage-workflow-runs/re-run-workflows-and-jobs); the
+// jobs API lists those carried-over jobs in the new attempt with their results (run 44371744243's
+// attempt 2 listed `image`, `catalog`, `merge` and the rest as completed, and the cancelled macOS
+// build as running again), and `needs` gives their results too.
+//
+// Environment: PRERELEASE and DRY_RUN (`true` or `false`); for `builds` and `needs`, NEEDS; for `wait`,
 // GH_TOKEN, GITHUB_REPOSITORY, GITHUB_RUN_ID, GITHUB_RUN_ATTEMPT, and WAIT_MINUTES (default 200)
 // and POLL_SECONDS (default 30).
 
@@ -44,11 +56,15 @@ export const JOBS = [
   'spk',
   'desktop',
   'desktop-feed',
+  'publishable',
   'merge',
   'pages',
   'github-release',
 ] as const
 export type Job = (typeof JOBS)[number]
+
+/** The builds: every job before `publishable`, which is what it reads. */
+export const BUILDS = JOBS.slice(0, JOBS.indexOf('publishable'))
 
 /** Whether the release needs `job` to pass (true) or skips it on purpose (false). */
 export function wanted(job: Job, release: Release): boolean {
@@ -143,7 +159,15 @@ async function runJobs(): Promise<Record<string, Result>> {
 
 if (import.meta.main) {
   const command = process.argv[2]
-  if (command === 'needs') {
+  if (command === 'builds') {
+    const { go, lines } = gate(fromNeeds(JSON.parse(process.env.NEEDS ?? '{}')), release(), BUILDS)
+    console.log(lines.join('\n'))
+    if (go !== 'yes') {
+      console.error('A build didn’t end as the release needs, so nothing is published.')
+      process.exit(1)
+    }
+    console.log('Every build the release needs passed, so it may publish.')
+  } else if (command === 'needs') {
     const { go, lines } = gate(fromNeeds(JSON.parse(process.env.NEEDS ?? '{}')), release())
     console.log(lines.join('\n'))
     if (go !== 'yes') {
@@ -181,7 +205,7 @@ if (import.meta.main) {
       await Bun.sleep(Number(process.env.POLL_SECONDS ?? 30) * 1000)
     }
   } else {
-    console.error('bun scripts/release-gate.ts needs|wait')
+    console.error('bun scripts/release-gate.ts builds|needs|wait')
     process.exit(2)
   }
 }
