@@ -55,6 +55,7 @@ export const downloads = defineMessages({
   'vpn.connecting': 'Connecting to {provider}…',
   'vpn.connectingLine': 'Torrents wait until the tunnel is up.',
   'vpn.off': 'No VPN',
+  'vpn.notSetUp': 'The built-in VPN isn’t set up',
   'vpn.offLine': 'Torrents use your own connection. Anyone in the swarm can see your address.',
   'vpn.setUp': 'Set up a VPN',
   'vpn.down': '{provider} is down',

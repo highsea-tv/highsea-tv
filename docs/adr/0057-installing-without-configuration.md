@@ -102,3 +102,12 @@ Consequences:
 
 - A library another app files is protected by highsea's own check (`assertWritable`), not the kernel. Setup adds a library folder that already holds something as one highsea only reads unless the owner turns that off on Review (ADR 0063's section of this date), so finishing setup without a look leaves another app's files as they are.
 - An install of 0.4.0 that highsea managed kept its previews and transcodes at the share's top; after this update they're made again in `/data/highsea`, and the old ones can be deleted. `package.conf`'s `library=` from 0.4.0 is ignored.
+
+## 2026-11-19: the default install on its own network, with avahi seen to (HT-90)
+
+On the owner's decision that the built-in VPN is the default across the board (ADR 0042's section of this date):
+
+- The root `compose.yaml` and the installer's file publish 3000, 6881 (TCP and UDP) and 7368 (UDP) and add `cap_add: [NET_ADMIN]`, in place of `network_mode: host`. The installer writes the machine's name as the container's `hostname`, since off host networking the container's own name would otherwise be what setup suggests as the server's name.
+- The installer still never installs Docker. It does install avahi where the host lacks it, after saying so (ADR 0020's section of this date), keeping this ADR's rule that the install decides in the background and asks nothing.
+- Existing installs: the installer keeps an existing `compose.yaml` as it is, so a host-networked install stays host-networked until its owner changes it.
+- Store installs declare where they came from in `HIGHSEA_INSTALL`, so the server's copy can say how that store fixes a missing capability.

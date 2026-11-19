@@ -1,0 +1,141 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "https://musicbrainz.org/ws/2/artist/ba853904-ae25-4ebb-89d6-c44cfbd71bd2?fmt=json&inc=genres",
+    "credential": "valid"
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json"
+    },
+    "body": {
+      "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b",
+      "id": "ba853904-ae25-4ebb-89d6-c44cfbd71bd2",
+      "sort-name": "Blur",
+      "isnis": ["0000000115335813"],
+      "area": {
+        "name": "United Kingdom",
+        "disambiguation": "",
+        "sort-name": "United Kingdom",
+        "id": "8a754a16-0027-3a29-b6d7-2b40ea0481ed",
+        "type-id": null,
+        "iso-3166-1-codes": ["GB"],
+        "type": null
+      },
+      "gender": null,
+      "disambiguation": "UK alternative rock band",
+      "country": "GB",
+      "ipis": [],
+      "name": "Blur",
+      "gender-id": null,
+      "type": "Group",
+      "begin-area": {
+        "type-id": null,
+        "type": null,
+        "id": "f03d09b3-39dc-4083-afd6-159e3f0d462f",
+        "disambiguation": "Greater London",
+        "sort-name": "London",
+        "name": "London"
+      },
+      "life-span": {
+        "begin": "1990",
+        "ended": false,
+        "end": null
+      },
+      "genres": [
+        {
+          "name": "alternative rock",
+          "disambiguation": "",
+          "id": "ceeaa283-5d7b-4202-8d1d-e25d116b2a18",
+          "count": 19
+        },
+        {
+          "count": 1,
+          "disambiguation": "",
+          "id": "930ef127-3653-4677-9b95-ecc90c7c1a14",
+          "name": "art pop"
+        },
+        {
+          "count": 4,
+          "id": "b7ef058e-6d83-4ca4-8123-9724bff4648b",
+          "disambiguation": "",
+          "name": "art rock"
+        },
+        {
+          "count": 18,
+          "id": "f1c9b874-7ef2-4e79-9419-c0bcb5f33a30",
+          "disambiguation": "",
+          "name": "britpop"
+        },
+        {
+          "name": "experimental rock",
+          "count": 2,
+          "id": "65c97e89-b42b-45c2-a70e-0eca1b8f0ff7",
+          "disambiguation": ""
+        },
+        {
+          "count": 1,
+          "disambiguation": "",
+          "id": "3f08faa9-6c3e-4b6d-b4b8-08eea45954e2",
+          "name": "grunge"
+        },
+        {
+          "count": 15,
+          "id": "ccd19ebf-052c-4afe-8ad9-fbb0a73f94a7",
+          "disambiguation": "",
+          "name": "indie rock"
+        },
+        {
+          "count": 2,
+          "id": "013161b9-3f21-468f-aa1f-28adf1eae085",
+          "disambiguation": "",
+          "name": "madchester"
+        },
+        {
+          "count": 2,
+          "id": "cd99451c-f6d5-47c7-8d49-6c08b51e61aa",
+          "disambiguation": "",
+          "name": "neo-psychedelia"
+        },
+        {
+          "name": "noise rock",
+          "count": 2,
+          "id": "8e5474b7-f445-49a7-866d-0f8e34b0a519",
+          "disambiguation": ""
+        },
+        {
+          "name": "pop rock",
+          "count": 1,
+          "id": "797e2e85-5ffd-495c-a757-8b4079052f0e",
+          "disambiguation": ""
+        },
+        {
+          "id": "bbb1310c-24cb-4fc9-97c4-f93e4549f1e2",
+          "disambiguation": "",
+          "count": 2,
+          "name": "post-grunge"
+        },
+        {
+          "name": "rock",
+          "disambiguation": "",
+          "id": "0e3fc579-2d24-4f20-9dae-736e1ec78798",
+          "count": 2
+        },
+        {
+          "name": "shoegaze",
+          "count": 2,
+          "id": "a4012b2e-5c27-4f81-8781-9ae5998d882c",
+          "disambiguation": ""
+        },
+        {
+          "count": 1,
+          "disambiguation": "",
+          "id": "f2e920a2-a2b4-4688-b9c4-913224e9f140",
+          "name": "slacker rock"
+        }
+      ],
+      "end-area": null
+    }
+  }
+}

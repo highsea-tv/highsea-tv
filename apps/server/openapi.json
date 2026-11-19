@@ -12827,6 +12827,20 @@
           "hostNetwork": {
             "type": "boolean"
           },
+          "install": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "synology",
+              "truenas",
+              "umbrel",
+              "casaos",
+              "unraid",
+              null
+            ]
+          },
           "exitIp": {
             "type": [
               "string",
@@ -12867,6 +12881,7 @@
           "message",
           "needsCapability",
           "hostNetwork",
+          "install",
           "exitIp",
           "country",
           "forwardedPort",
@@ -28679,7 +28694,7 @@
           "Root folders"
         ],
         "summary": "Scan a root folder now",
-        "description": "Queues the library scan of the folder: new folders it matches surely are added where they are, and the rest wait in Library import. For when watching can’t see changes, as on a network share. 409 (`not-yet`) for a shows or music folder, which the server reads from a later release.",
+        "description": "Queues the library scan of the folder: new folders it matches surely are added where they are, and the rest wait in Library import. For when watching can’t see changes, as on a network share. A music folder is read where it is and grouped by its tags.",
         "x-highsea-access": "staff",
         "security": [
           {
@@ -28725,16 +28740,6 @@
           },
           "404": {
             "description": "not-found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "conflict",
             "content": {
               "application/json": {
                 "schema": {

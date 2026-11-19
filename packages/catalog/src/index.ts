@@ -8,6 +8,7 @@ export * from './load.ts'
 export * from './providers.ts'
 export * from './service.ts'
 export * from './signing.ts'
+export * from './stages.ts'
 
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'

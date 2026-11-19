@@ -769,7 +769,8 @@ function QueueRows({ items, layout }: { items: QueueItem[]; layout: 'table' | 'm
                 label={t('activity.progressOf', { title: q.title })}
               />
               <Fig numberOfLines={1}>
-                {q.state === 'downloading'
+                {/* a reason first: one held by the VPN is downloading, but nothing moves (HT-90) */}
+                {q.state === 'downloading' && !q.stateReason
                   ? `${rate(q.downRate)} · ${t('activity.peersOf', { seeds: q.seeds.connected, peers: q.peers.connected })} · ${q.eta ? t('activity.left', { duration: duration(q.eta, locale) }) : dash}`
                   : (q.stateReason ?? bytes(q.size))}
               </Fig>

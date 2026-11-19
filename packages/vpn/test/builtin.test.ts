@@ -282,11 +282,67 @@ describe('the built-in VPN', () => {
     await noTun.vpn.stop()
   })
 
+  test('an install a store wrote says how that store fixes it, not which lines to add', async () => {
+    // HIGHSEA_INSTALL tells them apart (ADR 0042, 2026-11-19)
+    const run = async (install: 'synology' | 'unraid' | null, kernel: string, go?: string) => {
+      const wg = createFakeWireGuard()
+      wg.fail(/^ip link add/, kernel)
+      if (go) wg.fail(/^wireguard-go/, go)
+      const t = testVpn({ runner: wg.runner, install: () => install })
+      await t.vpn.save({ mode: 'builtin', provider: 'proton', config: wgConfig() })
+      t.vpn.start()
+      await t.vpn.settled()
+      const status = t.vpn.status()
+      await t.vpn.stop()
+      return status
+    }
+    const noCap = 'RTNETLINK answers: Operation not permitted'
+    expect(await run('synology', noCap)).toMatchObject({
+      state: 'failed',
+      needsCapability: true,
+      install: 'synology',
+      message:
+        'highsea needs the NET_ADMIN capability to run the tunnel, and this install doesn’t have it yet. Update highsea in Package Center: the update recreates its container with it.',
+    })
+    expect((await run('unraid', noCap)).message).toContain(
+      '--cap-add=NET_ADMIN to Extra Parameters',
+    )
+    expect(await run(null, noCap)).toMatchObject({ needsCapability: true, install: null })
+    // the capability is there (the kernel knew to say "Unknown device type"); the device isn't
+    const noTun = await run(
+      'synology',
+      'Error: Unknown device type.',
+      'ERROR: Failed to create TUN device: no such file or directory',
+    )
+    expect(noTun.needsCapability).toBe(false)
+    expect(noTun.message).toContain('insmod /lib/modules/tun.ko')
+  })
+
+  test('the default, not set up yet, doesn’t connect, and torrents keep their own connection', async () => {
+    const wg = createFakeWireGuard()
+    const t = testVpn({ runner: wg.runner })
+    t.vpn.start()
+    await t.vpn.settled()
+    expect(t.vpn.settings().mode).toBe('builtin')
+    expect(t.vpn.status()).toMatchObject({
+      mode: 'builtin',
+      state: 'off',
+      provider: null,
+      message: null,
+      checks: [],
+    })
+    expect(t.vpn.direct()).toBe(true)
+    // nothing ran, and the engine has the machine's own connection, as with No VPN
+    expect(wg.commands).toEqual([])
+    expect(t.last()).toEqual({ address: null, dns: [] })
+    await t.vpn.stop()
+  })
+
   test('on host networking, won’t start, touching nothing, and says why', async () => {
     const wg = createFakeWireGuard()
     const t = testVpn({ runner: wg.runner, hostNetwork: () => true })
-    // off: the status still says which network highsea is on
-    expect(t.vpn.status()).toMatchObject({ mode: 'off', state: 'off', hostNetwork: true })
+    // not set up: the status still says which network highsea is on
+    expect(t.vpn.status()).toMatchObject({ mode: 'builtin', state: 'off', hostNetwork: true })
     await t.vpn.save({ mode: 'builtin', provider: 'proton', config: wgConfig() })
     t.vpn.start()
     await t.vpn.settled()

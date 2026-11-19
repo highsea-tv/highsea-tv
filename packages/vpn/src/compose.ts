@@ -123,6 +123,9 @@ export function composeFor(input: ComposeInput): string {
       ...publishedPorts.map((p) => `      - ${p}`),
       '    # only on a kernel before Linux 5.6, which has no WireGuard of its own:',
       '    # devices: [/dev/net/tun:/dev/net/tun]',
+      // Bonjour doesn't leave a bridge network, so the apps find highsea through the host's avahi
+      // over the system bus (ADR 0020, 2026-11-19): the line the compose file already has stays.
+      '    # keep /run/dbus:/run/dbus:ro under volumes: the iPhone finds highsea through it',
     ].join('\n')
   const g = gluetunProviders[input.provider] ?? (gluetunProviders.proton as GluetunProvider)
   const key = input.apiKey && SAFE_KEY.test(input.apiKey) ? input.apiKey : '<the API key>'

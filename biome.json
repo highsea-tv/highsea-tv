@@ -18,6 +18,8 @@
       "!apps/docs/public",
       "!apps/server/openapi.json",
       "!packages/catalog/seed",
+      "!catalog/indexers/stages.json",
+      "!catalog/indexers/watch.json",
       "!apps/desktop/src-tauri/gen"
     ]
   },

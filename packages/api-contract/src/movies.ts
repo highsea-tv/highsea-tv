@@ -551,12 +551,12 @@ export const rootFolders = {
     tags: ['Root folders'],
     summary: 'Scan a root folder now',
     description:
-      'Queues the library scan of the folder: new folders it matches surely are added where they are, and the rest wait in Library import. For when watching can’t see changes, as on a network share. 409 (`not-yet`) for a shows or music folder, which the server reads from a later release.',
+      'Queues the library scan of the folder: new folders it matches surely are added where they are, and the rest wait in Library import. For when watching can’t see changes, as on a network share. A music folder is read where it is and grouped by its tags.',
     ...access('staff'),
     request: { params: IdParam },
     responses: {
       ...noContent,
-      ...errors('unauthorized', 'forbidden', 'not-found', 'conflict'),
+      ...errors('unauthorized', 'forbidden', 'not-found'),
     },
   }),
   remove: createRoute({

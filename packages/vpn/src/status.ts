@@ -2,10 +2,10 @@
 // The status Settings › VPN and A8 show, worked out from the settings and what the tunnel last
 // reported. It follows the prototype's `vpnStatus` (packages/mock/src/vpn.ts) row for
 // row; the values are real instead of played.
-import { checkCopy as c, failures, labels } from './copy.ts'
+import { checkCopy as c, labels, needsCapabilityFor } from './copy.ts'
 import type { VpnProviderDefinition } from './providers.ts'
-import type { StoredVpnSettings } from './settings.ts'
-import type { VpnCheck, VpnStatus } from './types.ts'
+import { notSetUp, type StoredVpnSettings } from './settings.ts'
+import type { VpnCheck, VpnInstall, VpnStatus } from './types.ts'
 
 /** What `createVpn` knows about the tunnel, apart from the settings. */
 export type VpnRuntime = {
@@ -74,6 +74,7 @@ export function buildStatus(
   peersIn: number,
   now: number,
   hostNetwork = false,
+  install: VpnInstall | null = null,
 ): VpnStatus {
   const name =
     s.mode === 'builtin'
@@ -88,6 +89,7 @@ export function buildStatus(
     message: null,
     needsCapability: false,
     hostNetwork,
+    install,
     exitIp: null,
     country: null,
     forwardedPort: null,
@@ -96,12 +98,14 @@ export function buildStatus(
       s.mode === 'off' || rt.checkedAt === null ? null : new Date(rt.checkedAt).toISOString(),
   }
   if (s.mode === 'off') return base
+  // the built-in VPN without a provider's file, token or password: not connected, nothing failed
+  if (notSetUp(s)) return { ...base, provider: null, checkedAt: null }
   if (rt.phase === 'failed')
     return {
       ...base,
       state: 'failed',
       message: rt.failure,
-      needsCapability: rt.failure === failures.needsCapability,
+      needsCapability: rt.failure === needsCapabilityFor(install),
     }
   if (rt.phase === 'connecting' || rt.phase === 'off')
     return {

@@ -35,6 +35,7 @@ import {
 } from './format.ts'
 import { type BrokenFile, loadDefinitionFiles } from './load.ts'
 import { SignatureError, sha256, type TrustedKey, verifyEnvelope } from './signing.ts'
+import { type DefinitionStatus, readStatuses } from './stages.ts'
 
 const { catalogDefinitions } = schema
 
@@ -88,6 +89,11 @@ type Installed = {
   changes: CatalogChange[]
   etag: string | null
   installedAt: number
+  /**
+   * Each definition's stage, status and last check, from the bundle (ADR 0069). Missing for a
+   * catalog built before it, or installed by an older server: both read as nothing known.
+   */
+  status?: Record<string, DefinitionStatus>
 }
 
 type Pending = { manifest: Manifest; bundleFile: string }
@@ -109,6 +115,8 @@ export type LoadedDefinition = {
   definition: Definition
   origin: DefinitionOrigin
   logo: string | null
+  /** What its catalog says of it: stage, status and last check. Null for a local one, or unknown. */
+  status: DefinitionStatus | null
 }
 
 export type CatalogStatus = {
@@ -157,12 +165,14 @@ export function createCatalog(deps: CatalogDeps) {
       return i < 0 ? Number.POSITIVE_INFINITY : 2 + i
     }
     const next = new Map<string, LoadedDefinition>()
+    const installed = state().installed
     for (const row of rows.sort((a, b) => rank(a.origin) - rank(b.origin))) {
       if (next.has(row.id) || rank(row.origin) === Number.POSITIVE_INFINITY) continue
       next.set(row.id, {
         definition: row.definition as Definition,
         origin: row.origin as DefinitionOrigin,
         logo: row.logo,
+        status: installed[row.origin]?.status?.[row.id] ?? null,
       })
     }
     effective = next
@@ -272,6 +282,7 @@ export function createCatalog(deps: CatalogDeps) {
       changes: manifest.changes,
       etag,
       installedAt: clock.now(),
+      status: Object.fromEntries(readStatuses(bundle.status)),
     }
     delete s.pending[origin]
     saveState(s)
@@ -586,6 +597,14 @@ export function createCatalog(deps: CatalogDeps) {
 
     definition(id: string): LoadedDefinition | null {
       return effective.get(id) ?? null
+    },
+
+    /**
+     * What the main catalog says of a definition, including one it retired, which is no longer
+     * among `definitions()`: its note says why (ADR 0069). Null when it says nothing.
+     */
+    statusOf(id: string): DefinitionStatus | null {
+      return effective.get(id)?.status ?? state().installed.main?.status?.[id] ?? null
     },
 
     /** The main catalog's installed version, for System › About and A9's header. */

@@ -1,0 +1,16 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "https://musicbrainz.org/ws/2/artist/00000000-0000-4000-8000-000000000000?fmt=json&inc=genres",
+    "credential": "valid"
+  },
+  "response": {
+    "status": 404,
+    "headers": {
+      "content-type": "application/json"
+    },
+    "body": {
+      "error": "Not Found"
+    }
+  }
+}

@@ -67,6 +67,7 @@ import { createJobQueue, type JobQueue } from '@highsea-tv/jobs'
 import { createLists, type Lists } from '@highsea-tv/lists/service'
 import { createTrakt } from '@highsea-tv/lists/trakt'
 import { createMovies, type Movies } from '@highsea-tv/media/movies'
+import { createMusic, type Music } from '@highsea-tv/media/music'
 import {
   checkPath,
   createLibraryWatch,
@@ -104,7 +105,7 @@ import {
   type SyncOutcome,
 } from '@highsea-tv/subtitles/sync'
 import { createTorrentEngine, HASH_WORKER, type TorrentEngine } from '@highsea-tv/torrent'
-import { CommandFailed, createVpn, type Vpn } from '@highsea-tv/vpn'
+import { CommandFailed, createVpn, installFrom, type Vpn, type VpnInstall } from '@highsea-tv/vpn'
 import { and, eq } from 'drizzle-orm'
 import { createAhead } from './ahead.ts'
 import { type Automation, createAutomation } from './automation.ts'
@@ -307,6 +308,8 @@ export type Runtime = {
   movies: Movies
   /** The shows (Phase 5 B): the apps' and the admin's, playback and the library's own scan. */
   shows: Shows
+  /** Music read from the Music root folders (Phase 5 D); not served yet. */
+  music: Music
   /** Play sessions, the decision and `/stream` (checkpoint 4.1a). */
   playback: Playback
   /** Now playing (4.3a): the live sessions as the admin shows them, and 30 days of history. */
@@ -431,6 +434,8 @@ export type BootOptions = {
    * the container is recreated. Tests pass one to play host networking or a bridge.
    */
   containerNetwork?: ContainerNetwork
+  /** How highsea was installed; by default from `HIGHSEA_INSTALL`. */
+  install?: VpnInstall | null
   /**
    * The torrent engine's listening port and DHT. By default Settings › Download client's port and
    * the DHT on; an in-memory runtime (tests) takes any free port and no DHT. `offline` never hands
@@ -678,6 +683,8 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
     imagesDir: join(workDir(config), 'images'),
     builtInKey: config.tmdbKey,
     fanartKey: config.fanartKey,
+    // MusicBrainz's User-Agent: highsea/<version> ( https://highsea.tv ) (ADR 0065)
+    version,
     // uploaded artwork's sizes (HT-66); a failure serves the original
     resizeImage: ffmpegResizer(ffmpegBinary()),
   })
@@ -800,9 +807,9 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
   subtitles.seed()
   subtitles.defineJobs()
   subtitles.schedule()
-  // 0025 gave the shows imported before it their root folder's subtitle profile (HT-92): their
+  // 0026 gave the shows imported before it their root folder's subtitle profile (HT-92): their
   // episodes' wanted rows are written once, at the jobs' pace
-  if (applied.includes('0025_unmatched_dismissed')) subtitles.profileChanged()
+  if (applied.includes('0026_unmatched_dismissed')) subtitles.profileChanged()
   const stopSubtitles = subtitles.start()
   // Node's official builds carry full ICU, which decoding subtitles' legacy encodings needs
   // (https://nodejs.org/api/intl.html)
@@ -891,6 +898,10 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
     media,
   )
   shows.jobs.schedule(clock.now())
+  // music (Phase 5 D, ADR 0065): the Music root folders read where they are, grouped by their tags,
+  // MusicBrainz where they carry an id. Read and kept here; served by the next part of D
+  const music = createMusic({ db, jobs, clock, events, logger, metadata }, media)
+  music.jobs.schedule(clock.now())
   scheduleFileFacts({ db, jobs, clock })
   trickplay.start()
   ahead.start()
@@ -1019,14 +1030,19 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
     onChange: (folder) =>
       media.rootFolders.list('shows').some((r) => isWithin(r.path, folder))
         ? shows.libraryScan.queue(folder)
-        : movies.libraryScan.queue(folder),
+        : media.rootFolders.list('music').some((r) => isWithin(r.path, folder))
+          ? music.libraryScan.queue(folder)
+          : movies.libraryScan.queue(folder),
     watch: options.watch,
     log: logger.child('watch'),
   })
-  // music's folders are watched once the server reads them (part D)
   const syncWatch = () =>
     watch.sync(
-      [...media.rootFolders.list('movies'), ...media.rootFolders.list('shows')].map((f) => f.path),
+      [
+        ...media.rootFolders.list('movies'),
+        ...media.rootFolders.list('shows'),
+        ...media.rootFolders.list('music'),
+      ].map((f) => f.path),
     )
   syncWatch()
   // root folders added or removed announce `settings.updated` (the root folder routes)
@@ -1072,7 +1088,7 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
     portMapping: {
       wanted: () =>
         readSetting<DownloadClientSettings>(db, DOWNLOAD_CLIENT_KEY, DEFAULT_DOWNLOAD_CLIENT)
-          .upnp && vpn.settings().mode === 'off',
+          .upnp && vpn.direct(),
     },
   })
   await engine.start()
@@ -1215,6 +1231,10 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
 
   const containerNetwork =
     options.containerNetwork !== undefined ? options.containerNetwork : detectContainerNetwork()
+  // the store that wrote highsea's compose file or template sets HIGHSEA_INSTALL; a compose file
+  // the owner wrote doesn't (ADR 0042, 2026-11-19)
+  const installKind =
+    options.install !== undefined ? options.install : installFrom(process.env.HIGHSEA_INSTALL)
   const vpn = createVpn({
     db,
     sealer,
@@ -1224,6 +1244,7 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
     fetch: outside,
     providers: () => vpnProviders.providers(),
     hostNetwork: () => containerNetwork === 'host',
+    install: () => installKind,
     // an in-memory runtime (tests, the sweeps) never changes the host's network
     ...(options.memory
       ? {
@@ -1435,6 +1456,7 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
     media,
     movies,
     shows,
+    music,
     playback,
     nowPlaying,
     networkActivity,
@@ -1575,6 +1597,10 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
       const showsFolder = input.folders.shows?.trim() ? resolve(input.folders.shows) : null
       if (showsFolder && media.rootFolders.find(showsFolder, 'shows'))
         shows.libraryScan.queue(showsFolder)
+      // and the music: read where it is, grouped by its tags
+      const musicFolder = input.folders.music?.trim() ? resolve(input.folders.music) : null
+      if (musicFolder && media.rootFolders.find(musicFolder, 'music'))
+        music.libraryScan.queue(musicFolder)
       // the indexer step: added once the owner exists, each tested first. Not awaited, so a slow
       // or unreachable site doesn't hold up Finish for its 30 seconds; they appear on the
       // dashboard as they pass, and one that fails is logged and can be added from Indexers

@@ -1,0 +1,18 @@
+{
+  "about": "Kept by bun run catalog:check: each definition’s status and the counts its rules read (docs/plans/indexer-catalog-upkeep.md). A note may be edited, and a status set to broken by hand when the NAS and a report agree.",
+  "starters": [
+    "internet-archive"
+  ],
+  "definitions": {
+    "internet-archive": {
+      "name": "Internet Archive",
+      "status": "working",
+      "since": null,
+      "note": null,
+      "version": "1.0.0",
+      "firstSeen": "2026-11-19",
+      "passes": 1,
+      "failures": 0
+    }
+  }
+}
