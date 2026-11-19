@@ -183,7 +183,7 @@ export function createShowAdmin(ctx: ShowsDeps, deps: Deps) {
       path: tree.path,
       seasonFolders: tree.seasonFolders,
       addedAt: isoOf(tree.addedAt),
-      art: { poster: art?.poster ?? '', backdrop: art?.backdrop ?? '' },
+      art: { poster: art?.poster ?? '', backdrop: art?.backdrop ?? '', logo: art?.logo ?? null },
       seasons: seasons.filter((s) => s.number !== 0).length,
       episodes: {
         // Sonarr's count: monitored or on disk, so a show no longer monitored still shows its files

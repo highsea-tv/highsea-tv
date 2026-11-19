@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "highsea",
-    "version": "0.4.9",
+    "version": "0.4.10",
     "description": "The highsea server API. Every admin capability is here, with admin scope.",
     "license": {
       "name": "AGPL-3.0-only"
@@ -6364,7 +6364,8 @@
         "type": "string",
         "enum": [
           "movie",
-          "collection"
+          "collection",
+          "show"
         ]
       },
       "ArtworkKindView": {
@@ -7956,6 +7957,12 @@
               },
               "backdrop": {
                 "type": "string"
+              },
+              "logo": {
+                "type": [
+                  "string",
+                  "null"
+                ]
               }
             },
             "required": [

@@ -7,7 +7,9 @@
 // action (accessibility.md#operable, WCAG 2.2.1), and its time stops while a pointer is over it
 // or focus is in it. Toasts never play sounds themselves. The phone and the TV have no stack:
 // they show a Toast where they stand (toast.tsx). The stack is drawn above every sheet and dialog
-// (./above-modals), so a change saved in one shows its toast (HT-44).
+// (./above-modals), so a change saved in one shows its toast (HT-44). A host with something fixed
+// along the window's foot (the admin's status bar) passes its height as `bottomInset`: the stack
+// then stands as far above it as it stands from the window's end edge (HT-105).
 
 import { useT } from '@highsea-tv/i18n/react'
 import type { ColorRole } from '@highsea-tv/tokens'
@@ -200,7 +202,14 @@ const read = () => entries
 const NONE: Entry[] = []
 const none = () => NONE
 
-export function Toaster({ label = 'Notifications' }: { label?: string }) {
+export function Toaster({
+  label = 'Notifications',
+  bottomInset = 0,
+}: {
+  label?: string
+  /** What's fixed along the window's foot, which the stack stands clear of. */
+  bottomInset?: number
+}) {
   const theme = useTheme()
   const list = useSyncExternalStore(subscribe, read, none)
   const compact = theme.formFactor.widthClass === 'compact'
@@ -213,7 +222,7 @@ export function Toaster({ label = 'Notifications' }: { label?: string }) {
         style={
           {
             position: Platform.OS === 'web' ? 'fixed' : 'absolute',
-            bottom: 0,
+            bottom: bottomInset,
             right: 0,
             left: compact ? 0 : undefined,
             width: compact ? undefined : overlay.toaster,

@@ -46,6 +46,12 @@ const problems: string[] = []
  * client shows one message for any fatal hls.js error, so the page alone doesn't say which
  */
 const refusedLoads = new WeakMap<Page, string[]>()
+/**
+ * The subtitle segments and playlists asked for, per page, each with what came back: the server
+ * holds a segment it hasn't read yet for as long as a wait here (`SUBTITLE_WAIT_MS`), so one still
+ * pending is no failed load, and a timeout says which it was (HT-102)
+ */
+const subtitleLoads = new WeakMap<Page, Map<string, { at: number; got: string | null }>>()
 
 try {
   const { token } = await seed(server, OWNER, 'Playback script')
@@ -216,6 +222,22 @@ async function inBrowser(name: string, page: Page, token: string) {
   page.on('requestfailed', (r) => {
     if (r.url().includes('/stream/'))
       refused.push(`${r.failure()?.errorText ?? 'failed'} ${path(r.url())}`)
+  })
+  const subs = new Map<string, { at: number; got: string | null }>()
+  subtitleLoads.set(page, subs)
+  const sub = (url: string) => path(url).replace(/^.*\/subs\//, '')
+  page.on('request', (r) => {
+    if (!r.url().includes('/subs/')) return
+    // asked again: last in the list
+    subs.delete(sub(r.url()))
+    subs.set(sub(r.url()), { at: Date.now(), got: null })
+  })
+  page.on('response', async (r) => {
+    if (!r.url().includes('/subs/')) return
+    const body = await r.text().catch(() => '')
+    const cues = (body.match(/-->/g) ?? []).length
+    const load = subs.get(sub(r.url()))
+    if (load) load.got = `${r.status()}${r.url().endsWith('.vtt') ? `, ${cues} cues` : ''}`
   })
   await page.goto('/web/')
   await page.getByLabel('Username').fill(OWNER.username)
@@ -405,8 +427,16 @@ async function until<A>(page: Page, what: string, check: (arg: A) => boolean, ar
       document.body.innerText.replace(/\s+/g, ' ').slice(0, 200),
     )
     const loads = refusedLoads.get(page)?.slice(-5).join(', ') || 'none'
+    const subs =
+      [...(subtitleLoads.get(page) ?? [])]
+        .slice(-6)
+        .map(
+          ([name, l]) =>
+            `${name} ${l.got ?? `pending ${((Date.now() - l.at) / 1000).toFixed(1)} s`}`,
+        )
+        .join(', ') || 'none'
     throw new Error(
-      `timed out waiting for ${what}: the video ${video}; the stream's failed loads: ${loads}; the page says “${shown}”`,
+      `timed out waiting for ${what}: the video ${video}; the stream's failed loads: ${loads}; the last subtitle loads: ${subs}; the page says “${shown}”`,
     )
   }
 }
