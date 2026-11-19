@@ -79,10 +79,15 @@ export function settingsGeneralAnswers({ wallMs, appearanceOf }: AdminKit): Answ
           language: body.language ?? now.language,
           region: body.region ?? now.region,
           ...(body.key === undefined ? {} : { key: body.key }),
+          ...(body.fanartKey === undefined ? {} : { fanartKey: body.fanartKey }),
         })
       },
       removeMetadataKey: (_, ctx) => {
         ctx.api.settings.removeMetadataKey()
+        return ctx.api.settings.metadata()
+      },
+      removeFanartKey: (_, ctx) => {
+        ctx.api.settings.removeFanartKey()
         return ctx.api.settings.metadata()
       },
       playback: (_, ctx) => ctx.api.settings.get('playback') as PlaybackSettings,

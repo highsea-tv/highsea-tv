@@ -4,7 +4,7 @@
 // still read and anything new throws `no-tmdb-key`.
 import { AppError } from '@highsea-tv/core'
 import { readSetting, schema, writeSetting } from '@highsea-tv/db'
-import { and, asc, eq, inArray, isNotNull, isNull, lt, notInArray, sql } from 'drizzle-orm'
+import { and, asc, eq, inArray, isNotNull, isNull, lt, notInArray, or, sql } from 'drizzle-orm'
 import {
   ARTWORK_KINDS_OF,
   type ArtworkChoice,
@@ -16,6 +16,8 @@ import {
 } from './artwork.ts'
 import { createCache } from './cache.ts'
 import { METADATA_TOPIC, type MetadataDeps } from './context.ts'
+import { FANART_KEY_REJECTED, FANART_UNAVAILABLE } from './fanart/client.ts'
+import { createFanart, type FanartSubject, isFanartFile } from './fanart/source.ts'
 import { createImages, TMDB_IMAGE_BASE } from './images.ts'
 import {
   automaticLogo,
@@ -30,7 +32,14 @@ import { toDiscoverShow, toShowMetadata } from './map-shows.ts'
 import { createSettings, noKeyError } from './settings.ts'
 import { tmdbApi } from './tmdb/api.ts'
 import { type Credential, createTmdbClient, isTmdbNotFound } from './tmdb/client.ts'
-import type { TmdbCollection, TmdbMovie, TmdbPerson, TmdbSeason, TmdbShow } from './tmdb/types.ts'
+import type {
+  TmdbCollection,
+  TmdbImage,
+  TmdbMovie,
+  TmdbPerson,
+  TmdbSeason,
+  TmdbShow,
+} from './tmdb/types.ts'
 import type {
   CacheKind,
   Collection,
@@ -70,7 +79,20 @@ export const JOB_TYPES = {
   purge: 'metadata.purge',
   /** Derives collection rules' facts again (checkpoint 8d): after a region change, or once for rows from before. */
   facts: 'metadata.facts',
+  /** Asks fanart.tv for one title (HT-74): a film TMDB has no logo for. */
+  fanart: 'metadata.fanart',
+  /**
+   * Queues what the library is missing (HT-74): films never fetched, fetched before `images` was
+   * asked for, or without a logo fanart.tv hasn't been asked about. Queued once at boot when there's
+   * any, so an update that needs a refetch starts it within minutes, not at the next daily sweep.
+   */
+  catchUp: 'metadata.catch-up',
 } as const
+
+/** How long after boot the catch-up runs: once the server has settled, well before the sweep. */
+export const CATCH_UP_DELAY_MS = 3 * 60_000
+/** A library film TMDB said it doesn't have is asked again this often (HT-74). */
+export const GONE_RETRY_MS = 7 * DAY
 
 /** The settings row the changes job keeps its last run in. */
 export const CHANGES_STATE_KEY = 'metadata.changes'
@@ -108,7 +130,24 @@ export function createMetadataCore(deps: MetadataDeps) {
     readSetting(db, CONFIGURATION_KEY, { imageBase: TMDB_IMAGE_BASE, fetchedAt: 0 }).imageBase
   const artwork = createArtwork(deps)
   const pick = artwork.pick
-  const images = createImages(deps, client, imageBase, artwork)
+  const fanart = createFanart({
+    db,
+    clock,
+    logger,
+    fetch: deps.fetch,
+    sleep: deps.sleep,
+    keys: () => settings.fanartKeys(),
+  })
+  /** What fanart.tv keys an image owner on: a film by its TMDB id; shows and artists later. */
+  const subjectOf = (owner: string, id: number): [FanartSubject, string] | null =>
+    owner === 'movie' ? ['movie', String(id)] : null
+  const images = createImages(deps, client, imageBase, artwork, {
+    url: (owner, id, file, width) => {
+      const subject = subjectOf(owner, id)
+      return subject ? fanart.urlOf(subject[0], subject[1], file, width) : null
+    },
+    image: fanart.image,
+  })
 
   function requireKey(): Credential {
     const credential = settings.credential()
@@ -178,9 +217,11 @@ export function createMetadataCore(deps: MetadataDeps) {
     const language = settings.language()
     const now = clock.now()
     try {
-      if (kind === 'movie')
-        cache.putMovie(await api.movie(credential, id, language), language, now, settings.region())
-      else if (kind === 'show') {
+      if (kind === 'movie') {
+        const m = await api.movie(credential, id, language)
+        cache.putMovie(m, language, now, settings.region())
+        if (!automaticLogo(m.images?.logos, language)) queueFanart('movie', id)
+      } else if (kind === 'show') {
         const show = await api.show(credential, id, language)
         cache.putShow(show, await fetchSeasons(credential, show, language), language, now)
       } else if (kind === 'person')
@@ -218,6 +259,37 @@ export function createMetadataCore(deps: MetadataDeps) {
    * again, and the sweep queues every such library movie at once.
    */
   const hasImages = (data: unknown) => (data as TmdbMovie).images !== undefined
+
+  /**
+   * Queues fanart.tv for a film TMDB has no logo for, unless it was asked lately (HT-74). Never
+   * waited on: the logo shows once the job has its answer and `metadata.updated` follows.
+   */
+  function queueFanart(subject: FanartSubject, id: number) {
+    if (!fanart.enabled() || !fanart.due(subject, id)) return false
+    jobs.enqueue(JOB_TYPES.fanart, { subject, id }, { dedupeKey: `${subject}:${id}` })
+    return true
+  }
+
+  /** The job: asks fanart.tv, keeps the answer, and announces the film when it found something. */
+  async function refreshFanart(subject: FanartSubject, id: number) {
+    try {
+      const { found } = await fanart.refresh(subject, id)
+      if (found && subject === 'movie') announce('movie', id)
+      return found ? ('found' as const) : ('none' as const)
+    } catch (e) {
+      // down or refusing the key: nothing is written, so the next catch-up or refresh asks again
+      const reason = (e as AppError).details as { reason?: string } | undefined
+      if (reason?.reason === FANART_UNAVAILABLE || reason?.reason === FANART_KEY_REJECTED) {
+        logger.warn('couldn’t ask fanart.tv', { subject, id, reason: reason.reason })
+        return 'skipped' as const
+      }
+      throw e
+    }
+  }
+
+  /** fanart.tv's logo for a film TMDB has none for, from what it answered; null while it's off. */
+  const fanartLogo = (id: number, language: string) => () =>
+    fanart.enabled() ? fanart.logo('movie', id, language) : null
 
   const rowOf = (kind: CacheKind, id: number) =>
     kind === 'movie'
@@ -280,6 +352,7 @@ export function createMetadataCore(deps: MetadataDeps) {
       goneAt: row.goneAt,
       language: row.language,
       pick,
+      fallbackLogo: fanartLogo(id, row.language),
     })
   }
 
@@ -293,6 +366,7 @@ export function createMetadataCore(deps: MetadataDeps) {
           goneAt: row.goneAt,
           language: row.language,
           pick,
+          fallbackLogo: fanartLogo(id, row.language),
         })
       : null
   }
@@ -460,7 +534,7 @@ export function createMetadataCore(deps: MetadataDeps) {
       return {
         poster: data.poster_path ?? null,
         backdrop: data.backdrop_path ?? null,
-        logo: automaticLogo(data.images?.logos, row.language),
+        logo: automaticLogo(data.images?.logos, row.language) ?? fanartLogo(id, row.language)(),
       } satisfies Record<ArtworkKind, string | null>
     }
     const row = await load('collection', id)
@@ -481,37 +555,57 @@ export function createMetadataCore(deps: MetadataDeps) {
       : api.collectionImages(credential, id)
   }
 
+  /**
+   * fanart.tv's choices for the title (HT-74), asked first when its answer is missing or old. The
+   * dialog waits on this, never a film's page; when fanart.tv is off, down or has nothing, it's an
+   * empty list and the dialog shows no fanart.tv section.
+   */
+  async function fanartOptions(owner: ArtworkOwner, id: number, kind: ArtworkKind) {
+    const subject = subjectOf(owner, id)
+    if (!subject || !fanart.enabled()) return []
+    return fanart.options(subject[0], subject[1], kind)
+  }
+
+  async function freshFanart(owner: ArtworkOwner, id: number) {
+    const subject = subjectOf(owner, id)
+    if (!subject || !fanart.enabled() || !fanart.due(subject[0], subject[1])) return
+    await refreshFanart(subject[0], Number(subject[1]))
+  }
+
   const artworkApi = {
     pick,
     /**
-     * Each kind's current, automatic and chosen file, and TMDB's alternatives. When TMDB can't be
-     * asked (no key, unreachable), the options are empty and `optionsError` says why: choosing
-     * still works for uploads and Reset.
+     * Each kind's current, automatic and chosen file, and TMDB's alternatives, then fanart.tv's
+     * (HT-74). When TMDB can't be asked (no key, unreachable), its options are empty and
+     * `optionsError` says why: choosing still works for fanart.tv's, uploads and Reset.
      */
     async view(owner: ArtworkOwner, id: number) {
+      // fanart.tv first, so its logo stands in as the automatic one when TMDB has none
+      const [tmdb] = await Promise.allSettled([tmdbImages(owner, id), freshFanart(owner, id)])
       const automatic = await automaticArt(owner, id)
       const chosen = new Map(artwork.choices(owner, id).map((c) => [c.kind, c]))
       let images: Awaited<ReturnType<typeof tmdbImages>> | null = null
       let optionsError: AppError | null = null
-      try {
-        images = await tmdbImages(owner, id)
-      } catch (e) {
-        if (!(e instanceof AppError)) throw e
-        optionsError = e
-      }
-      const kinds: ArtworkKindView[] = ARTWORK_KINDS_OF[owner].map((kind) => {
+      if (tmdb.status === 'fulfilled') images = tmdb.value
+      else if (tmdb.reason instanceof AppError) optionsError = tmdb.reason
+      else throw tmdb.reason
+      const kinds: ArtworkKindView[] = []
+      for (const kind of ARTWORK_KINDS_OF[owner]) {
         const choice = chosen.get(kind) ?? null
-        return {
+        kinds.push({
           kind,
           current: choice?.file ?? automatic[kind],
           automatic: automatic[kind],
           choice,
-          options: images ? optionsOf(images, kind) : [],
-        }
-      })
+          options: [
+            ...(images ? optionsOf(images, kind) : []),
+            ...(await fanartOptions(owner, id, kind)),
+          ],
+        })
+      }
       return { kinds, optionsError }
     },
-    /** Chooses one of TMDB's images for the title; it must be among the title's own. */
+    /** Chooses one of TMDB's or fanart.tv's images for the title; it must be among the title's own. */
     async choose(
       owner: ArtworkOwner,
       id: number,
@@ -521,12 +615,18 @@ export function createMetadataCore(deps: MetadataDeps) {
     ) {
       checkKind(owner, kind)
       await automaticArt(owner, id)
-      const option = optionsOf(await tmdbImages(owner, id), kind).find((o) => o.file === file)
+      const option = isFanartFile(file)
+        ? (await fanartOptions(owner, id, kind)).find((o) => o.file === file)
+        : optionsOf(await tmdbImages(owner, id), kind).find((o) => o.file === file)
       if (!option)
-        throw new AppError('invalid', 'TMDB has no such image for this title.', {
-          reason: 'not-an-option',
-        })
-      const replaced = artwork.chooseTmdb(owner, id, kind, option, by)
+        throw new AppError(
+          'invalid',
+          isFanartFile(file)
+            ? 'fanart.tv has no such image for this title.'
+            : 'TMDB has no such image for this title.',
+          { reason: 'not-an-option' },
+        )
+      const replaced = artwork.chooseOption(owner, id, kind, option, by)
       if (replaced) images.removeFile(replaced)
       announce(owner, id)
       return option.file
@@ -696,33 +796,106 @@ export function createMetadataCore(deps: MetadataDeps) {
   }
 
   /**
+   * What the library's films are missing (HT-74), read from the data, so asking twice finds the
+   * same and queueing it twice dedupes (ADR 0022):
+   * - `refetch`: films never fetched; fetched before `images` was asked for (their logos are
+   *   missing until they are); and films TMDB answered 404 for, asked again weekly, as an id TMDB
+   *   dropped is sometimes back, and until then the row keeps the answer from before (no images);
+   * - `fanart`: films whose TMDB answer has no logo, which fanart.tv hasn't been asked about
+   *   lately; only while fanart.tv is on.
+   */
+  function libraryGaps() {
+    const now = clock.now()
+    const ref = referenced()
+    const refetch: number[] = []
+    if (settings.credential()) {
+      for (const r of db
+        .select({ id: mediaItems.tmdbId })
+        .from(mediaItems)
+        .where(
+          and(
+            eq(mediaItems.type, 'movie'),
+            notInArray(
+              mediaItems.tmdbId,
+              db.select({ id: movieMetadata.tmdbId }).from(movieMetadata),
+            ),
+          ),
+        )
+        .all())
+        refetch.push(r.id)
+      // SQLite's json_type is NULL for a path that isn't there (https://sqlite.org/json1.html#jtype)
+      for (const r of db
+        .select({ id: movieMetadata.tmdbId })
+        .from(movieMetadata)
+        .where(
+          and(
+            inArray(movieMetadata.tmdbId, ref.library),
+            or(
+              and(
+                isNull(movieMetadata.goneAt),
+                sql`json_type(${movieMetadata.data}, '$.images') is null`,
+              ),
+              lt(movieMetadata.goneAt, now - GONE_RETRY_MS),
+            ),
+          ),
+        )
+        .all())
+        refetch.push(r.id)
+    }
+    const fanartDue: number[] = []
+    if (fanart.enabled())
+      for (const r of db
+        .select({
+          id: movieMetadata.tmdbId,
+          language: movieMetadata.language,
+          logos: sql<string | null>`json_extract(${movieMetadata.data}, '$.images.logos')`,
+        })
+        .from(movieMetadata)
+        .where(
+          and(
+            inArray(movieMetadata.tmdbId, ref.library),
+            isNull(movieMetadata.goneAt),
+            sql`json_type(${movieMetadata.data}, '$.images') is not null`,
+          ),
+        )
+        .all()) {
+        const logos = r.logos ? (JSON.parse(r.logos) as TmdbImage[]) : []
+        if (!automaticLogo(logos, r.language) && fanart.due('movie', r.id)) fanartDue.push(r.id)
+      }
+    return { refetch, fanart: fanartDue }
+  }
+
+  /** Queues what `libraryGaps` finds: refreshes and fanart.tv lookups, each deduped by its id. */
+  function queueLibraryGaps() {
+    const gaps = libraryGaps()
+    for (const id of gaps.refetch) enqueueRefresh('movie', id)
+    for (const id of gaps.fanart) queueFanart('movie', id)
+    return { refetch: gaps.refetch.length, fanart: gaps.fanart.length }
+  }
+
+  /**
+   * The catch-up (HT-74): what an update left the library missing, queued minutes after boot
+   * instead of at the next daily sweep, whose time is kept in the database (`job_schedules`).
+   * The refreshes it queues run at `metadata.refresh`'s concurrency, through the TMDB client's
+   * limiter and its 429 handling, as the sweep's do.
+   */
+  function runCatchUp() {
+    const queued = queueLibraryGaps()
+    if (queued.refetch + queued.fanart) logger.info('metadata catch-up queued', queued)
+    return queued
+  }
+
+  /**
    * The spread full refresh, daily: each run refreshes the oldest 1/25th of what the library refers
    * to, and anything older than 30 days, so every row is refreshed at least monthly without one
-   * large run, and refresh times spread out over the days.
+   * large run, and refresh times spread out over the days. It queues the library's gaps first.
    */
   function runSweep() {
     if (!settings.credential()) return { queued: 0 }
     const now = clock.now()
     const ref = referenced()
-    // library movies with no cached row yet
-    const missing = db
-      .select({ id: mediaItems.tmdbId })
-      .from(mediaItems)
-      .where(
-        and(
-          eq(mediaItems.type, 'movie'),
-          notInArray(
-            mediaItems.tmdbId,
-            db.select({ id: movieMetadata.tmdbId }).from(movieMetadata),
-          ),
-        ),
-      )
-      .all()
-    let queued = 0
-    for (const r of missing) {
-      enqueueRefresh('movie', r.id)
-      queued++
-    }
+    const gaps = queueLibraryGaps()
+    let queued = gaps.refetch + gaps.fanart
     // library shows with no cached row yet
     for (const r of db
       .select({ id: mediaItems.tmdbId })
@@ -735,24 +908,6 @@ export function createMetadataCore(deps: MetadataDeps) {
       )
       .all()) {
       enqueueRefresh('show', r.id)
-      queued++
-    }
-    // library movies cached before `images` was asked for, all at once: their logos are missing
-    // until they're fetched again, and once they are they're never queued for it again. SQLite's
-    // json_type is NULL for a path that isn't there (https://sqlite.org/json1.html#jtype)
-    const imageless = db
-      .select({ id: movieMetadata.tmdbId })
-      .from(movieMetadata)
-      .where(
-        and(
-          inArray(movieMetadata.tmdbId, ref.library),
-          isNull(movieMetadata.goneAt),
-          sql`json_type(${movieMetadata.data}, '$.images') is null`,
-        ),
-      )
-      .all()
-    for (const r of imageless) {
-      enqueueRefresh('movie', r.id)
       queued++
     }
     for (const [kind, table, ids] of [
@@ -830,6 +985,8 @@ export function createMetadataCore(deps: MetadataDeps) {
         .where(lt(imageRows.fetchedAt, cutoff))
         .all(),
     )
+    // fanart.tv's answers for films the library doesn't have, on the same six months
+    fanart.purge('movie', cutoff, new Set(ref.library.all().map((r) => String(r.id))))
     const unique = [...new Map(doomed.map((d) => [`${d.size}${d.path}`, d])).values()]
     purged.images = images.remove(unique)
     if (purged.movies + purged.people + purged.collections + purged.shows + purged.images)
@@ -859,5 +1016,9 @@ export function createMetadataCore(deps: MetadataDeps) {
     runChanges,
     runSweep,
     runPurge,
+    runCatchUp,
+    libraryGaps,
+    refreshFanart,
+    fanart,
   }
 }

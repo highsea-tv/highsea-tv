@@ -103,12 +103,23 @@ export function registerMetadata(app: OpenAPIHono<Env>) {
   app.openapi(routes.settings.metadata, (c) => c.json(metadataSettings(md(c).settings.get()), 200))
 
   app.openapi(routes.settings.saveMetadata, async (c) => {
-    const { key, language, region } = c.req.valid('json')
-    // the key first: TMDB refusing it saves nothing (the contract's "unless every field is")
+    const { key, fanartKey, language, region } = c.req.valid('json')
+    // the keys first: TMDB or fanart.tv refusing one saves nothing (the contract's "unless every
+    // field is"); fanart.tv's is checked before TMDB's is stored, and stored after it
+    if (fanartKey !== undefined) await md(c).settings.checkFanartKey(fanartKey)
     if (key !== undefined) await md(c).settings.setKey(key)
+    if (fanartKey !== undefined) await md(c).settings.setFanartKey(fanartKey, { checked: true })
     if (language !== undefined || region !== undefined) md(c).settings.update({ language, region })
-    audit(c, key !== undefined ? 'settings.metadata-key' : 'settings.metadata')
+    if (fanartKey !== undefined) audit(c, 'settings.fanart-key')
+    if (key !== undefined || fanartKey === undefined)
+      audit(c, key !== undefined ? 'settings.metadata-key' : 'settings.metadata')
     return c.json(metadataSettings(md(c).settings.get()), 200)
+  })
+
+  app.openapi(routes.settings.removeFanartKey, (c) => {
+    const view = md(c).settings.clearFanartKey()
+    audit(c, 'settings.fanart-key-removed')
+    return c.json(metadataSettings(view), 200)
   })
 
   app.openapi(routes.settings.removeMetadataKey, (c) => {

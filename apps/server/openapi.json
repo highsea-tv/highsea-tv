@@ -3081,6 +3081,12 @@
             "minLength": 1,
             "maxLength": 1000
           },
+          "fanartKey": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "example": "a1b2c3d4e5f6a7b8"
+          },
           "language": {
             "type": "string",
             "pattern": "^[a-z]{2}(-[A-Z]{2})?$",
@@ -6446,6 +6452,28 @@
               "builtIn"
             ]
           },
+          "fanart": {
+            "type": "object",
+            "properties": {
+              "set": {
+                "type": "boolean"
+              },
+              "last4": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "project": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "set",
+              "last4",
+              "project"
+            ]
+          },
           "language": {
             "type": "string",
             "pattern": "^[a-z]{2}(-[A-Z]{2})?$",
@@ -6459,6 +6487,7 @@
         },
         "required": [
           "key",
+          "fanart",
           "language",
           "region"
         ]
@@ -6567,6 +6596,7 @@
             "type": "string",
             "enum": [
               "tmdb",
+              "fanart",
               "upload"
             ]
           },
@@ -6624,6 +6654,13 @@
       "ArtworkOption": {
         "type": "object",
         "properties": {
+          "source": {
+            "type": "string",
+            "enum": [
+              "tmdb",
+              "fanart"
+            ]
+          },
           "file": {
             "type": "string",
             "example": "/f89U3ADr1oiB1s9GkdPOEpXUk5H.jpg"
@@ -6646,16 +6683,29 @@
             "type": "integer"
           },
           "voteAverage": {
-            "type": "number"
+            "type": [
+              "number",
+              "null"
+            ]
           },
           "voteCount": {
-            "type": "integer"
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "likes": {
+            "type": [
+              "integer",
+              "null"
+            ]
           },
           "current": {
             "type": "boolean"
           }
         },
         "required": [
+          "source",
           "file",
           "url",
           "language",
@@ -6663,6 +6713,7 @@
           "height",
           "voteAverage",
           "voteCount",
+          "likes",
           "current"
         ]
       },
@@ -26073,8 +26124,8 @@
         "tags": [
           "Settings"
         ],
-        "summary": "Save the TMDB key, the metadata language or the region",
-        "description": "A new key is checked with TMDB first: 400 with `details.reason` `tmdb-key-rejected` when TMDB doesn’t accept it, 503 (`tmdb-unreachable`) when TMDB can’t be reached. Nothing is saved unless every field is. The key is stored encrypted and never returned.",
+        "summary": "Save the TMDB key, the fanart.tv key, the metadata language or the region",
+        "description": "A new key is checked with TMDB first: 400 with `details.reason` `tmdb-key-rejected` when TMDB doesn’t accept it, 503 (`tmdb-unreachable`) when TMDB can’t be reached. A personal fanart.tv key is checked with fanart.tv the same way (`fanart-key-rejected`, `fanart-unavailable`). Nothing is saved unless every field is. Keys are stored encrypted and never returned.",
         "x-highsea-access": "owner",
         "security": [
           {
@@ -26163,6 +26214,56 @@
         ],
         "summary": "Remove the TMDB key",
         "description": "The library and its pages keep working from the cache.",
+        "x-highsea-access": "owner",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Removed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MetadataSettings"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/settings/metadata/fanart": {
+      "delete": {
+        "tags": [
+          "Settings"
+        ],
+        "summary": "Remove the personal fanart.tv key",
+        "description": "fanart.tv stays on while the image carries highsea’s project key.",
         "x-highsea-access": "owner",
         "security": [
           {

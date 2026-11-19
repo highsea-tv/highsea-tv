@@ -183,6 +183,7 @@ export function toMovieMetadata(
     goneAt,
     language = 'en-US',
     pick = noPick,
+    fallbackLogo = () => null,
   }: {
     region: string
     fetchedAt: number
@@ -190,6 +191,8 @@ export function toMovieMetadata(
     /** The metadata language, for the automatic logo. */
     language?: string
     pick?: ArtPick
+    /** The logo when TMDB has none: fanart.tv's (HT-74, ADR 0070), asked only then. */
+    fallbackLogo?: () => string | null
   },
 ): MovieMetadata {
   const releaseDate = date(movie.release_date)
@@ -198,7 +201,7 @@ export function toMovieMetadata(
     {
       poster: movie.poster_path,
       backdrop: movie.backdrop_path,
-      logo: automaticLogo(movie.images?.logos, language),
+      logo: automaticLogo(movie.images?.logos, language) ?? fallbackLogo(),
     },
     pick,
   )

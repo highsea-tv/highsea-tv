@@ -67,6 +67,7 @@ async function api(url: string, init: RequestInit = {}): Promise<Response> {
         language: 'en-GB',
         region: 'GB',
         key: { set: true, last4: 'ab12', builtIn: false },
+        fanart: { set: false, last4: null, project: true },
       })
     case 'GET /api/v1/settings/general':
       return json(state.general)

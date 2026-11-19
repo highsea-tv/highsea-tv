@@ -224,9 +224,20 @@ export function librarySettingsApi(
         d.requireStaff()
         return s.metadata
       },
-      /** A new key is checked with TMDB first; one with "wrong" in it is refused. */
-      save: (input: { language: string; region: string; key?: string }) => {
+      /**
+       * A new key is checked with TMDB first, a fanart.tv key with fanart.tv; one with "wrong" in
+       * it is refused, and nothing is saved.
+       */
+      save: (input: { language: string; region: string; key?: string; fanartKey?: string }) => {
         d.requireOwner()
+        if (input.fanartKey !== undefined) {
+          const key = input.fanartKey.trim()
+          if (/wrong/i.test(key) || !/^[A-Za-z0-9]{8,128}$/.test(key))
+            throw d.fail(400, 'invalid', 'fanart.tv didn’t accept that key.', {
+              field: 'fanartKey',
+              reason: 'fanart-key-rejected',
+            })
+        }
         if (input.key !== undefined) {
           const key = input.key.trim()
           if (/wrong/i.test(key) || key.length < 16)
@@ -236,6 +247,10 @@ export function librarySettingsApi(
             })
           s.metadata.key = { ...s.metadata.key, set: true, last4: key.slice(-4) }
         }
+        if (input.fanartKey !== undefined) {
+          const key = input.fanartKey.trim()
+          s.metadata.fanart = { ...s.metadata.fanart, set: true, last4: key.slice(-4) }
+        }
         s.metadata.language = input.language
         s.metadata.region = input.region
         announce()
@@ -244,6 +259,11 @@ export function librarySettingsApi(
       removeKey: () => {
         d.requireOwner()
         s.metadata.key = { ...s.metadata.key, set: false, last4: null }
+        announce()
+      },
+      removeFanartKey: () => {
+        d.requireOwner()
+        s.metadata.fanart = { ...s.metadata.fanart, set: false, last4: null }
         announce()
       },
     },

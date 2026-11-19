@@ -51,6 +51,8 @@ import { Loadable } from './loadable.tsx'
 import { InlineLink } from './media-sections.tsx'
 import {
   errorReason,
+  FANART_KEY_PAGE,
+  fanartKeyRejected,
   keyRejected,
   maskedKey,
   metadataOptions,
@@ -105,7 +107,13 @@ export function General() {
 }
 
 type Loaded = { metadata: MetadataSettings; general: GeneralSettings; metrics: MetricsSettings }
-type MetadataDraft = { language: string; region: string; key: string | null }
+type MetadataDraft = {
+  language: string
+  region: string
+  key: string | null
+  /** A new personal fanart.tv key (HT-74); null while none is being entered. */
+  fanartKey: string | null
+}
 
 const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b)
 
@@ -118,35 +126,45 @@ function Drafted({ loaded, reload }: { loaded: Loaded; reload: () => void }) {
     language: loaded.metadata.language,
     region: loaded.metadata.region,
     key: null,
+    fanartKey: null,
   }
   const [meta, setMeta] = useState(initialMetadata)
   const [general, setGeneral] = useState(loaded.general)
   const [metrics, setMetrics] = useState(loaded.metrics)
   const [keyError, setKeyError] = useState<string | null>(null)
+  const [fanartError, setFanartError] = useState<string | null>(null)
   const saveMetadata = useAction((c, body: MetadataInput) => c.settings.saveMetadata({ body }))
   const saveGeneral = useAction((c, body: GeneralSettings) => c.settings.saveGeneral({ body }))
   const saveMetrics = useAction((c, body: MetricsSettings) => c.settings.saveMetrics({ body }))
   const metaDirty =
     meta.language !== initialMetadata.language ||
     meta.region !== initialMetadata.region ||
-    (meta.key !== null && meta.key.trim() !== '')
+    (meta.key !== null && meta.key.trim() !== '') ||
+    (meta.fanartKey !== null && meta.fanartKey.trim() !== '')
   const generalDirty = !same(general, loaded.general)
   const metricsDirty = !same(metrics, loaded.metrics)
 
   const submit = async () => {
     if (metaDirty) {
       const key = meta.key?.trim()
+      const fanartKey = meta.fanartKey?.trim()
       try {
         await saveMetadata.run({
           language: meta.language,
           region: meta.region,
           ...(key ? { key } : {}),
+          ...(fanartKey ? { fanartKey } : {}),
         })
       } catch (e) {
         const reason = errorReason(e)
         if (keyRejected(reason)) return setKeyError(t('key.rejected'))
+        if (fanartKeyRejected(reason)) return setFanartError(t('fanart.rejected'))
         return toast.error(t('saveError'), {
-          description: tmdbBusy(reason) ? t('key.unavailable') : (e as Error).message,
+          description: tmdbBusy(reason)
+            ? t('key.unavailable')
+            : reason === 'fanart-unavailable'
+              ? t('fanart.unavailable')
+              : (e as Error).message,
         })
       }
     }
@@ -169,9 +187,11 @@ function Drafted({ loaded, reload }: { loaded: Loaded; reload: () => void }) {
         draft={meta}
         setDraft={(d) => {
           setKeyError(null)
+          setFanartError(null)
           setMeta(d)
         }}
         keyError={keyError}
+        fanartError={fanartError}
         reload={reload}
       />
       <Catalog />
@@ -188,6 +208,7 @@ function Drafted({ loaded, reload }: { loaded: Loaded; reload: () => void }) {
         saving={saveMetadata.pending || saveGeneral.pending || saveMetrics.pending}
         onDiscard={() => {
           setKeyError(null)
+          setFanartError(null)
           setMeta(initialMetadata)
           setGeneral(loaded.general)
           setMetrics(loaded.metrics)
@@ -267,12 +288,14 @@ function Metadata({
   draft,
   setDraft,
   keyError,
+  fanartError,
   reload,
 }: {
   loaded: MetadataSettings
   draft: MetadataDraft
   setDraft: (d: MetadataDraft) => void
   keyError: string | null
+  fanartError: string | null
   reload: () => void
 }) {
   const t = useT(messages)
@@ -380,6 +403,13 @@ function Metadata({
             />
           </Field>
         </Columns>
+        <FanartKey
+          loaded={loaded}
+          draft={draft}
+          setDraft={setDraft}
+          error={fanartError}
+          reload={reload}
+        />
       </Group>
       <ConfirmDialog
         open={removing}
@@ -393,6 +423,123 @@ function Metadata({
           remove.run().then(
             () => {
               toast({ title: t('key.removed') })
+              reload()
+            },
+            (e: Error) => toast.error(t('key.removeFailed'), { description: e.message }),
+          )
+        }
+      />
+    </>
+  )
+}
+
+/**
+ * The owner's personal fanart.tv key (HT-74, ADR 0070), optional: fanart.tv is the second artwork
+ * source, on with highsea's project key or this one. Laid out as the TMDB key's row is.
+ */
+function FanartKey({
+  loaded,
+  draft,
+  setDraft,
+  error,
+  reload,
+}: {
+  loaded: MetadataSettings
+  draft: MetadataDraft
+  setDraft: (d: MetadataDraft) => void
+  error: string | null
+  reload: () => void
+}) {
+  const t = useT(messages)
+  const { role } = useShell()
+  const owner = role === 'owner'
+  const [removing, setRemoving] = useState(false)
+  const remove = useAction((c) => c.settings.removeFanartKey())
+  const f = loaded.fanart
+  const entering = !f.set || draft.fanartKey !== null
+  return (
+    <>
+      <View style={{ gap: s['2'] }}>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: s['2'] }}>
+          <Line weight={500}>{t('fanart.label')}</Line>
+          {f.set ? (
+            <Badge tone="success">{t('fanart.set')}</Badge>
+          ) : (
+            <Badge tone="neutral">{t(f.project ? 'fanart.project' : 'fanart.off')}</Badge>
+          )}
+          {f.set && (
+            <Tooltip content={t('key.masked', { last4: f.last4 ?? '' })}>
+              <Text
+                mono
+                size={figure.size}
+                leading={figure.leading}
+                color="text-2"
+                aria-label={t('key.masked', { last4: f.last4 ?? '' })}
+              >
+                {maskedKey(f.last4)}
+              </Text>
+            </Tooltip>
+          )}
+          {f.set && owner && draft.fanartKey === null && (
+            <View
+              style={{ marginStart: 'auto', flexDirection: 'row', flexWrap: 'wrap', gap: s['2'] }}
+            >
+              <Button size="sm" onPress={() => setDraft({ ...draft, fanartKey: '' })}>
+                {t('key.replace')}
+              </Button>
+              <Button size="sm" variant="danger" onPress={() => setRemoving(true)}>
+                {t('key.remove')}
+              </Button>
+            </View>
+          )}
+        </View>
+        {!f.set && <Note>{t(f.project ? 'fanart.projectBody' : 'fanart.offBody')}</Note>}
+      </View>
+      {entering && owner && (
+        <View style={{ gap: s['2'] }}>
+          <Field label={t('fanart.new')} hint={t('fanart.hint')} error={error ?? undefined}>
+            <Input
+              secureTextEntry
+              value={draft.fanartKey ?? ''}
+              autoComplete="off"
+              autoCapitalize="none"
+              spellCheck={false}
+              mono
+              onChangeText={(fanartKey) => setDraft({ ...draft, fanartKey })}
+            />
+          </Field>
+          <View
+            style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: s['3'] }}
+          >
+            <ExternalLink href={FANART_KEY_PAGE} look="accent">
+              {t('fanart.open')}
+            </ExternalLink>
+            {f.set && (
+              <View style={{ marginStart: 'auto' }}>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onPress={() => setDraft({ ...draft, fanartKey: null })}
+                >
+                  {t('fanart.cancel')}
+                </Button>
+              </View>
+            )}
+          </View>
+        </View>
+      )}
+      <ConfirmDialog
+        open={removing}
+        onClose={() => setRemoving(false)}
+        title={t('fanart.removeTitle')}
+        description={t(f.project ? 'fanart.removeBodyProject' : 'fanart.removeBody')}
+        confirmLabel={t('key.removeConfirm')}
+        cancelLabel={t('key.keep')}
+        destructive
+        onConfirm={() =>
+          remove.run().then(
+            () => {
+              toast({ title: t('fanart.removed') })
               reload()
             },
             (e: Error) => toast.error(t('key.removeFailed'), { description: e.message }),

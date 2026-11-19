@@ -3,7 +3,7 @@
 import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { networkInterfaces } from 'node:os'
 import { join, resolve } from 'node:path'
-import type { ServerSource } from '@highsea-tv/api-contract'
+import { FANART_ATTRIBUTION, type ServerSource } from '@highsea-tv/api-contract'
 import { type Auth, createAuth, type Issued, type RequestMeta } from '@highsea-tv/auth'
 import {
   CATALOG_SETTINGS_KEY,
@@ -197,6 +197,8 @@ const ATTRIBUTIONS: Attribution[] = [
     notice: PROVIDER_INFO.opensubtitles.attribution ?? '',
     url: PROVIDER_INFO.opensubtitles.url,
   },
+  // fanart.tv's API key rules ask for its credit and an invitation to add artwork (ADR 0070)
+  { ...FANART_ATTRIBUTION },
 ]
 
 export type ServerIdentity = { id: string; name: string; createdAt: number }
@@ -666,6 +668,7 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
     fetch: options.fetch ?? globalThis.fetch,
     imagesDir: join(workDir(config), 'images'),
     builtInKey: config.tmdbKey,
+    fanartKey: config.fanartKey,
     // uploaded artwork's sizes (HT-66); a failure serves the original
     resizeImage: ffmpegResizer(ffmpegBinary()),
   })

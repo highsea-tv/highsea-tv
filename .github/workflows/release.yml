@@ -356,10 +356,16 @@ jobs:
               exit 1
             fi
           fi
+          # fanart.tv's project key is optional (ADR 0070): without it, fanart.tv is off until an
+          # owner adds a personal key
+          if [ -z "$FANART" ]; then
+            echo "::warning::The release environment has no HIGHSEA_FANART_KEY; fanart.tv will be off unless an owner adds a personal key."
+          fi
         env:
           OPENSUBTITLES: ${{ secrets.HIGHSEA_OPENSUBTITLES_KEY }}
           TRAKT_ID: ${{ secrets.HIGHSEA_TRAKT_CLIENT_ID }}
           TMDB: ${{ secrets.HIGHSEA_TMDB_READ_TOKEN }}
+          FANART: ${{ secrets.HIGHSEA_FANART_KEY }}
           DRY_RUN: ${{ inputs.dry-run }}
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
@@ -405,6 +411,7 @@ jobs:
             trakt_id=${{ secrets.HIGHSEA_TRAKT_CLIENT_ID }}
             trakt_secret=${{ secrets.HIGHSEA_TRAKT_CLIENT_SECRET }}
             tmdb=${{ secrets.HIGHSEA_TMDB_READ_TOKEN }}
+            fanart=${{ secrets.HIGHSEA_FANART_KEY }}
           provenance: mode=min
           sbom: true
           # A dry run writes an OCI layout to check and keep; a real release pushes by digest, as

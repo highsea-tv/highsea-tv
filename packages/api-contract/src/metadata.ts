@@ -66,6 +66,17 @@ export const TMDB_ATTRIBUTION = {
   url: 'https://www.themoviedb.org',
 } as const
 
+/**
+ * fanart.tv's credit (HT-74, ADR 0070). Its API key rules ask a program for the public to tell its
+ * users about fanart.tv and the images it uses, and to ask them to add artwork of their own
+ * (https://fanart.tv/get-an-api-key/). In English, as the other providers' credits are.
+ */
+export const FANART_ATTRIBUTION = {
+  name: 'fanart.tv',
+  notice: 'Artwork from fanart.tv, made by its community. Add your own at fanart.tv.',
+  url: 'https://fanart.tv',
+} as const
+
 export const Department = z.enum(DEPARTMENTS).openapi('Department')
 
 // ---------------------------------------------------------------- art

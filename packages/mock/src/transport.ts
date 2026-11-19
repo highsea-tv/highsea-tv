@@ -109,6 +109,7 @@ import {
   CLIENT_SOURCES,
   COLLECTION_TOPICS,
   CURATION_TOPICS,
+  FANART_ATTRIBUTION,
   OPERATIONS_TOPICS,
   PLAYBACK_TOPICS,
   RESET_TOPIC,
@@ -1103,6 +1104,7 @@ export function createMockFetch(options: TransportOptions = {}): MockTransport {
               },
             ]
           : []),
+        FANART_ATTRIBUTION,
       ],
     }
   }

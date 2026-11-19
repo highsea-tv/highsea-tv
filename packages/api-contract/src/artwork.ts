@@ -46,10 +46,14 @@ const KindParams = OwnerParams.extend({
   kind: ArtworkKind.openapi({ param: { name: 'kind', in: 'path' }, example: 'poster' }),
 })
 
-/** One of TMDB's images for a kind. */
+/** Where an option comes from: TMDB, or fanart.tv (HT-74, ADR 0070). */
+export const ArtworkSource = z.enum(['tmdb', 'fanart'])
+
+/** One of TMDB's or fanart.tv's images for a kind. */
 export const ArtworkOption = z
   .object({
-    /** TMDB's file name, which choosing sends back. */
+    source: ArtworkSource,
+    /** The file's name, which choosing sends back; fanart.tv's start `/ftv_`. */
     file: z.string().openapi({ example: '/f89U3ADr1oiB1s9GkdPOEpXUk5H.jpg' }),
     /** At a size for the picker's grid. */
     url: ImageUrl,
@@ -57,9 +61,11 @@ export const ArtworkOption = z
     language: z.string().nullable().openapi({ example: 'en' }),
     width: z.number().int(),
     height: z.number().int(),
-    /** TMDB's votes on it, 0 to 10. */
-    voteAverage: z.number(),
-    voteCount: z.number().int(),
+    /** TMDB's votes on it, 0 to 10; null for fanart.tv's. */
+    voteAverage: z.number().nullable(),
+    voteCount: z.number().int().nullable(),
+    /** fanart.tv's likes; null for TMDB's. */
+    likes: z.number().int().nullable(),
     /** The one shown now. */
     current: z.boolean(),
   })
@@ -68,7 +74,7 @@ export const ArtworkOption = z
 /** What an admin chose, and who and when. */
 export const ArtworkChoice = z
   .object({
-    source: z.enum(['tmdb', 'upload']),
+    source: z.enum(['tmdb', 'fanart', 'upload']),
     /** Null once their account is removed. */
     by: z.object({ id: z.string(), name: z.string() }).nullable(),
     at: IsoDate,
@@ -87,7 +93,10 @@ export const ArtworkKindView = z
     automatic: ImageUrl.nullable(),
     /** Null while the automatic choice shows. */
     chosen: ArtworkChoice.nullable(),
-    /** TMDB's images of this kind, best voted first; SVG files are left out. */
+    /**
+     * TMDB's images of this kind, best voted first, then fanart.tv's, most liked first, when it's
+     * on; SVG files are left out.
+     */
     options: z.array(ArtworkOption),
   })
   .openapi('ArtworkKindView')

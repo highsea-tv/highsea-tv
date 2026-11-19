@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Chosen artwork (HT-66): the picker's view of a title's poster, backdrop and logo, choosing another
-// of TMDB's, uploading one, and Reset. Thin handlers over @highsea-tv/metadata's `artwork`; staff
+// of TMDB's or fanart.tv's (HT-74), uploading one, and Reset. Thin handlers over @highsea-tv/metadata's `artwork`; staff
 // only, enforced by the guard from the contract (ADR 0032). Each change goes to the audit log.
 import {
   type ArtworkKindView as ApiKind,
@@ -9,7 +9,12 @@ import {
   routes,
 } from '@highsea-tv/api-contract'
 import { AppError } from '@highsea-tv/core'
-import { type ArtworkKindView, type ArtworkOwner, imageUrl } from '@highsea-tv/metadata'
+import {
+  type ArtworkKindView,
+  type ArtworkOwner,
+  imageUrl,
+  isFanartFile,
+} from '@highsea-tv/metadata'
 import type { OpenAPIHono } from '@hono/zod-openapi'
 import type { Context } from 'hono'
 import { bodyLimit } from 'hono/body-limit'
@@ -95,7 +100,11 @@ export function registerArtwork(app: OpenAPIHono<Env>) {
     const { owner, id, kind } = c.req.valid('param')
     const { file } = c.req.valid('json')
     await md(c).artwork.choose(owner, id, kind, file, me(c).user.id)
-    audit(c, 'artwork.chosen', owner, id, { kind, source: 'tmdb', file })
+    audit(c, 'artwork.chosen', owner, id, {
+      kind,
+      source: isFanartFile(file) ? 'fanart' : 'tmdb',
+      file,
+    })
     return c.json(await view(c, owner, id), 200)
   })
 

@@ -4263,9 +4263,14 @@ export function createApi(srv: MockServer, ctx: Ctx) {
         return value
       },
       metadata: () => library_.metadata.get(),
-      saveMetadata: (input: { language: string; region: string; key?: string }) =>
-        library_.metadata.save(input),
+      saveMetadata: (input: {
+        language: string
+        region: string
+        key?: string
+        fanartKey?: string
+      }) => library_.metadata.save(input),
       removeMetadataKey: () => library_.metadata.removeKey(),
+      removeFanartKey: () => library_.metadata.removeFanartKey(),
     },
   }
 }

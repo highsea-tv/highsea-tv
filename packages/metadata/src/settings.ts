@@ -3,7 +3,8 @@
 // (docs/plans/phase-3-server.md, Data › Secrets) and never returned, and the metadata language and
 // region (owner's decisions 1 and 5). Since 4.3c the image carries highsea's own key, used when the
 // owner hasn't set one (install-simplicity.md, answer 7: the owner chose to ship it, as Jellyfin
-// does); the owner's key always wins.
+// does); the owner's key always wins. Since HT-74 it holds the owner's optional personal fanart.tv
+// key too, sealed the same way (ADR 0070); highsea's project key comes with the image.
 import { AppError } from '@highsea-tv/core'
 import { readSetting, writeSetting } from '@highsea-tv/db'
 import type { MetadataDeps } from './context.ts'
@@ -18,11 +19,16 @@ export type MetadataSettings = {
   keyLast4: string | null
   language: string
   region: string | null
+  /** The owner's personal fanart.tv key (HT-74). */
+  fanartKeySealed: string | null
+  fanartKeyLast4: string | null
 }
 
 export const defaultMetadataSettings: MetadataSettings = {
   keySealed: null,
   keyLast4: null,
+  fanartKeySealed: null,
+  fanartKeyLast4: null,
   language: 'en-US',
   region: null,
 }
@@ -63,9 +69,11 @@ export function createSettings(deps: MetadataDeps) {
     writeSetting(db, METADATA_SETTINGS_KEY, next, clock.now())
 
   const builtIn = deps.builtInKey?.trim() || null
+  const fanartProject = deps.fanartKey?.trim() || null
 
   const view = (s = read()): MetadataSettingsView => ({
     key: { set: !!s.keySealed, last4: s.keyLast4, builtIn: !!builtIn },
+    fanart: { set: !!s.fanartKeySealed, last4: s.fanartKeyLast4, project: !!fanartProject },
     language: s.language,
     region: s.region ?? localeRegion(),
   })
@@ -96,10 +104,40 @@ export function createSettings(deps: MetadataDeps) {
     return value
   }
 
+  /** fanart.tv's keys: highsea's project key and the owner's personal one, either may be absent. */
+  function fanartKeys() {
+    const s = read()
+    return {
+      project: fanartProject,
+      personal: s.fanartKeySealed ? sealer.open(s.fanartKeySealed) : null,
+    }
+  }
+
   return {
     read,
     view,
     credential,
+    fanartKeys,
+
+    /**
+     * Checks a personal fanart.tv key with one request, then stores it sealed. fanart.tv has no
+     * call for checking a key, so `validate` asks for one film: a 401 is the owner's to fix.
+     */
+    async setFanartKey(raw: string, validate: (key: string) => Promise<void>) {
+      const value = raw.trim()
+      if (!/^[A-Za-z0-9]{8,128}$/.test(value))
+        throw new AppError('invalid', 'Paste the personal API key from your fanart.tv account.', {
+          reason: 'fanart-key-rejected',
+        })
+      await validate(value)
+      return view(
+        write({ ...read(), fanartKeySealed: sealer.seal(value), fanartKeyLast4: value.slice(-4) }),
+      )
+    },
+
+    clearFanartKey() {
+      return view(write({ ...read(), fanartKeySealed: null, fanartKeyLast4: null }))
+    },
     language: () => read().language,
     region: () => read().region ?? localeRegion(),
 

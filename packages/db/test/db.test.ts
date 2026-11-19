@@ -289,7 +289,7 @@ describe('0018_profiles', () => {
     const file = join(dir, 'highsea.db')
     const first = older(file)
     const result = migrate(first, { backupDir: join(dir, 'backups') })
-    expect(result.applied).toEqual(['0018_profiles', '0019_artwork', '0020_shows'])
+    expect(result.applied).toEqual(['0018_profiles', '0019_artwork', '0020_shows', '0021_fanart'])
     expect(result.backup).not.toBeNull()
     const once = state(first)
     first.close()
@@ -387,7 +387,7 @@ describe('0020_shows', () => {
   test('leaves every film, version, file and watch position as it was', () => {
     const raw = withFilms(':memory:')
     const was = films(raw)
-    expect(migrate(raw).applied).toEqual(['0020_shows'])
+    expect(migrate(raw).applied).toEqual(['0020_shows', '0021_fanart'])
     expect(films(raw)).toEqual(was)
     expect(raw.all('SELECT count(*) AS n FROM media_items')).toEqual([{ n: 300 }])
     // the new columns are empty on films
@@ -482,6 +482,27 @@ describe('0020_shows', () => {
     )
     raw.run('DELETE FROM show_metadata WHERE tmdb_id = 87108')
     expect(raw.all('SELECT * FROM season_metadata')).toEqual([])
+    raw.close()
+  })
+})
+
+describe('0021_fanart', () => {
+  test('adds fanart.tv’s cache, keyed by subject and id, and the fanart artwork source', () => {
+    const { raw } = openDatabase(':memory:')
+    migrate(raw, { all: migrations.filter((m) => m.tag < '0021') })
+    expect(migrate(raw).applied).toEqual(['0021_fanart'])
+    raw.run(
+      "INSERT INTO fanart_images (subject, external_id, data, fetched_at) VALUES ('movie', '550', NULL, 1)",
+    )
+    expect(() =>
+      raw.run(
+        "INSERT INTO fanart_images (subject, external_id, data, fetched_at) VALUES ('movie', '550', '{}', 2)",
+      ),
+    ).toThrow()
+    raw.run(
+      "INSERT INTO fanart_images (subject, external_id, data, fetched_at) VALUES ('show', '550', '{}', 2)",
+    )
+    expect(raw.all('SELECT count(*) AS n FROM fanart_images')[0]?.n).toBe(2)
     raw.close()
   })
 })
