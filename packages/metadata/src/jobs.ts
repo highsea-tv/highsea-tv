@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The metadata's background jobs (ADR 0022, so each is safe to repeat):
-// - `metadata.refresh` refreshes one movie, person or collection by TMDB id;
+// - `metadata.refresh` refreshes one movie, show (with its seasons), person or collection by TMDB id;
 // - `metadata.changes`, daily, refreshes what TMDB's change lists name;
 // - `metadata.sweep`, daily, spreads a full refresh of what the library refers to over 30 days;
 // - `metadata.purge`, daily, removes what's past TMDB's six-month limit and the library doesn't use;
@@ -16,7 +16,7 @@ import { JOB_TYPES } from './service.ts'
 const DAY = 24 * 60 * 60 * 1000
 
 export const RefreshPayload = z.object({
-  kind: z.enum(['movie', 'person', 'collection']),
+  kind: z.enum(['movie', 'person', 'collection', 'show']),
   id: z.number().int().positive(),
 })
 

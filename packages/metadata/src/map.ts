@@ -53,10 +53,10 @@ export const GENRES: Record<number, string> = {
   37: 'Western',
 }
 
-const text = (s: string | null | undefined) => (s?.trim() ? s.trim() : null)
-const date = (s: string | null | undefined) =>
+export const text = (s: string | null | undefined) => (s?.trim() ? s.trim() : null)
+export const date = (s: string | null | undefined) =>
   s && /^\d{4}-\d{2}-\d{2}/.test(s) ? s.slice(0, 10) : null
-const yearOf = (d: string | null) => (d ? Number(d.slice(0, 4)) : null)
+export const yearOf = (d: string | null) => (d ? Number(d.slice(0, 4)) : null)
 
 export const departmentOf = (d: string | null | undefined): Department =>
   DEPARTMENTS.find((x) => x === d) ?? 'Crew'
@@ -66,7 +66,7 @@ export const departmentOf = (d: string | null | undefined): Department =>
  * every mapping asks it, so a chosen image shows wherever the title does.
  */
 export type ArtPick = (
-  owner: 'movie' | 'collection',
+  owner: 'movie' | 'collection' | 'show',
   id: number,
   kind: 'poster' | 'backdrop' | 'logo',
 ) => string | undefined
@@ -94,19 +94,21 @@ export function automaticLogo(logos: TmdbImage[] | undefined, language: string):
   return best?.file_path ?? null
 }
 
-function art(
+/** A film's or a show's art, with an admin's choice in place of TMDB's. */
+export function art(
   id: number,
   files: { poster?: string | null; backdrop?: string | null; logo?: string | null },
   pick: ArtPick,
+  owner: 'movie' | 'show' = 'movie',
 ) {
-  const poster = pick('movie', id, 'poster') ?? files.poster
-  const backdrop = pick('movie', id, 'backdrop') ?? files.backdrop
-  const logo = pick('movie', id, 'logo') ?? files.logo
+  const poster = pick(owner, id, 'poster') ?? files.poster
+  const backdrop = pick(owner, id, 'backdrop') ?? files.backdrop
+  const logo = pick(owner, id, 'logo') ?? files.logo
   return {
-    poster: imageUrl('movie', id, 'poster', DEFAULT_SIZES.poster, poster),
-    backdrop: imageUrl('movie', id, 'backdrop', DEFAULT_SIZES.backdrop, backdrop),
-    still: imageUrl('movie', id, 'backdrop', DEFAULT_SIZES.still, backdrop),
-    logo: imageUrl('movie', id, 'logo', DEFAULT_SIZES.logo, logo),
+    poster: imageUrl(owner, id, 'poster', DEFAULT_SIZES.poster, poster),
+    backdrop: imageUrl(owner, id, 'backdrop', DEFAULT_SIZES.backdrop, backdrop),
+    still: imageUrl(owner, id, 'backdrop', DEFAULT_SIZES.still, backdrop),
+    logo: imageUrl(owner, id, 'logo', DEFAULT_SIZES.logo, logo),
   }
 }
 
@@ -170,7 +172,7 @@ export function releasesFor(movie: TmdbMovie, region: string): RegionalReleases 
   return { theatrical: earliest([2, 3]), digital: earliest([4]), physical: earliest([5]) }
 }
 
-const photo = (personId: number, path: string | null | undefined) =>
+export const photo = (personId: number, path: string | null | undefined) =>
   imageUrl('person', personId, 'profile', DEFAULT_SIZES.profile, path)
 
 export function toMovieMetadata(

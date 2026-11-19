@@ -563,7 +563,7 @@ describe('the six-month purge', () => {
     await t.metadata.movie(653) // older than 30 days: fetched again, now recent
     t.clock.advance(11 * DAY)
     const purged = t.metadata.jobs.runPurge()
-    expect(purged).toEqual({ movies: 1, people: 2, collections: 0, images: 2 })
+    expect(purged).toEqual({ movies: 1, people: 2, collections: 0, shows: 0, images: 2 })
     const movies = t.db
       .select()
       .from(schema.movieMetadata)
@@ -599,6 +599,7 @@ describe('the six-month purge', () => {
       movies: 0,
       people: 0,
       collections: 0,
+      shows: 0,
       images: 0,
     })
   })
@@ -629,7 +630,7 @@ describe('images', () => {
       { ...base, size: 'w342', file: '../../etc/passwd' },
       { ...base, size: 'w342', file: 'logo.svg' },
       { ...base, size: 'w342', kind: 'banner' },
-      { ...base, size: 'w342', owner: 'show' },
+      { ...base, size: 'w342', owner: 'album' },
       { ...base, size: 'w342', ownerId: -1 },
       { ...base, size: '..' },
     ]) {

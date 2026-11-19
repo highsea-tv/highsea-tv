@@ -8,11 +8,16 @@ import type {
   TmdbChanges,
   TmdbCollection,
   TmdbConfiguration,
+  TmdbEpisode,
+  TmdbFind,
   TmdbImages,
   TmdbMovie,
   TmdbMovieItem,
   TmdbPage,
   TmdbPerson,
+  TmdbSeason,
+  TmdbShow,
+  TmdbShowItem,
 } from './types.ts'
 
 /**
@@ -35,6 +40,17 @@ export const imageLanguages = (language: string) => {
   const lang = language.split('-')[0]?.toLowerCase() || 'en'
   return [...new Set([lang, 'en']), 'null'].join(',')
 }
+/**
+ * One show request is the whole show but its episodes (ADR 0064): `aggregate_credits` for the cast
+ * across every season, `content_ratings` for the certification, `external_ids` for TheTVDB's and
+ * IMDb's ids, and `images` for the automatic logo, as a movie's request appends them
+ * ([TV series details](https://developer.themoviedb.org/reference/tv-series-details),
+ * [Append to response](https://developer.themoviedb.org/docs/append-to-response)).
+ */
+export const SHOW_APPEND =
+  'aggregate_credits,content_ratings,external_ids,videos,recommendations,keywords,images'
+/** A season is one request with its episodes; `external_ids` gives the season's TheTVDB id. */
+export const SEASON_APPEND = 'external_ids'
 export const PERSON_APPEND = 'movie_credits,external_ids'
 
 /** Discover's lists and their endpoints. Trending takes no region. */
@@ -66,6 +82,39 @@ export function tmdbApi(client: TmdbClient) {
      * Every image TMDB has for a movie, in every language: neither `language` nor
      * `include_image_language` is sent, so nothing is filtered (the artwork picker, HT-66).
      */
+    show: (c: Credential, id: number, language: string) =>
+      client.json<TmdbShow>(c, `/3/tv/${id}`, {
+        append_to_response: SHOW_APPEND,
+        include_image_language: imageLanguages(language),
+        language,
+      }),
+    /** A season with its episodes ([TV season details](https://developer.themoviedb.org/reference/tv-season-details)). */
+    season: (c: Credential, id: number, season: number, language: string) =>
+      client.json<TmdbSeason>(c, `/3/tv/${id}/season/${season}`, {
+        append_to_response: SEASON_APPEND,
+        language,
+      }),
+    /** One episode with its external ids ([TV episode details](https://developer.themoviedb.org/reference/tv-episode-details)). */
+    episode: (c: Credential, id: number, season: number, episode: number, language: string) =>
+      client.json<TmdbEpisode>(c, `/3/tv/${id}/season/${season}/episode/${episode}`, {
+        append_to_response: 'external_ids',
+        language,
+      }),
+    /** Every image TMDB has for a show, unfiltered, as `movieImages` (the artwork picker). */
+    showImages: (c: Credential, id: number) => client.json<TmdbImages>(c, `/3/tv/${id}/images`),
+    searchShows: (c: Credential, query: string, page: number, language: string) =>
+      client.json<TmdbPage<TmdbShowItem>>(c, '/3/search/tv', {
+        query,
+        page,
+        language,
+        include_adult: false,
+      }),
+    /**
+     * `GET /3/find/{id}?external_source=tvdb_id`: the show, season or episode a TheTVDB id is
+     * ([Find by ID](https://developer.themoviedb.org/reference/find-by-id)).
+     */
+    findTvdb: (c: Credential, tvdbId: number, language: string) =>
+      client.json<TmdbFind>(c, `/3/find/${tvdbId}`, { external_source: 'tvdb_id', language }),
     movieImages: (c: Credential, id: number) => client.json<TmdbImages>(c, `/3/movie/${id}/images`),
     collectionImages: (c: Credential, id: number) =>
       client.json<TmdbImages>(c, `/3/collection/${id}/images`),
@@ -119,10 +168,13 @@ export function tmdbApi(client: TmdbClient) {
         total_pages: number
         total_results: number
       }>(c, `/3/list/${encodeURIComponent(id)}`, { language, page }),
-    /** Ids changed between two dates (`YYYY-MM-DD`), up to 14 days apart, 100 a page. */
+    /**
+     * Ids changed between two dates (`YYYY-MM-DD`), up to 14 days apart, 100 a page; `tv` is
+     * [TV changes](https://developer.themoviedb.org/reference/changes-tv-list).
+     */
     changes: (
       c: Credential,
-      kind: 'movie' | 'person',
+      kind: 'movie' | 'person' | 'tv',
       startDate: string,
       endDate: string,
       page: number,

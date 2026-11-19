@@ -46,13 +46,19 @@ export function createMetadata(deps: MetadataDeps) {
     discover: core.discover,
     movie: core.movie,
     cachedMovie: core.cachedMovie,
+    /** A show with its seasons and episodes (ADR 0064); `cachedShow` without asking TMDB. */
+    show: core.show,
+    cachedShow: core.cachedShow,
     recommendations: core.recommendations,
     collection: core.collection,
     person: core.person,
     images: { get: core.images.get },
     /** Artwork an admin chose (HT-66): the picker's view, choosing, uploading and Reset. */
     artwork: core.artwork,
-    /** Queues `metadata.refresh` for a movie (or a person or collection); returns the job's id. */
+    /**
+     * Queues `metadata.refresh` for a movie (or a show, person or collection); returns the job's
+     * id. A show's refresh fetches its seasons too, and announces `show:{id}`.
+     */
     refresh: (tmdbId: number, kind: CacheKind = 'movie') => core.enqueueRefresh(kind, tmdbId),
     /** The same refresh, now, for callers that wait on it (tests, the job). */
     refreshNow: core.refreshNow,
@@ -94,6 +100,7 @@ export * from './image-url.ts'
 export type { CachedImage } from './images.ts'
 export { TMDB_IMAGE_BASE } from './images.ts'
 export { type ArtPick, collectionArt, GENRES } from './map.ts'
+export { TV_GENRES } from './map-shows.ts'
 export * from './recording.ts'
 export {
   type ArtworkKindView,
