@@ -60,6 +60,15 @@ on:
         type: boolean
         default: false
 
+# The release's runners come from the same pool as CI's, and GitHub has no priority among queued
+# jobs or workflows: a job waits for a free runner of its label, and GitHub Free runs at most 5
+# macOS jobs at once across the account (https://docs.github.com/en/actions/reference/limits).
+# Nothing here can be ordered or grouped to jump that queue: `concurrency` only cancels or holds
+# runs in the same group, never another workflow's. What keeps the macOS job's wait short is
+# CI's own concurrency since 2026-11-19 (ci.yml's note): a push to next cancels next's older runs,
+# so at most one Native run (ios and tvos) and one Desktop run (one macOS job) hold macOS runners,
+# leaving the release's `desktop (macos-15)` room. On 2026-11-19, before it, four Native runs held
+# them, and the 0.4.7 release waited 27 minutes for one.
 concurrency:
   group: release
   cancel-in-progress: false
@@ -73,6 +82,8 @@ env:
 jobs:
   prepare:
     runs-on: ubuntu-24.04
+    # under a minute in the last six releases (2026-11-18 and 19)
+    timeout-minutes: 15
     permissions:
       contents: read
       # the merged pull requests' labels, for the changelog
@@ -241,6 +252,9 @@ jobs:
   # (https://docs.github.com/en/rest/actions/workflow-runs).
   reuse:
     runs-on: ubuntu-24.04
+    # up to 13 minutes in the last six releases (2026-11-18 and 19), and it may wait 45 for each of
+    # next's two runs
+    timeout-minutes: 100
     permissions:
       contents: read
       actions: read
@@ -293,6 +307,8 @@ jobs:
     if: ${{ !cancelled() }}
     needs: [prepare, reuse, ci, e2e, spk]
     runs-on: ubuntu-24.04
+    # seconds in the last six releases (2026-11-18 and 19)
+    timeout-minutes: 5
     steps:
       - name: Every check passed, or passed on next for this commit
         run: |
@@ -337,6 +353,8 @@ jobs:
             runner: ubuntu-24.04-arm
             name: arm64
     runs-on: ${{ matrix.runner }}
+    # 6 minutes at most in the last six releases (2026-11-18 and 19); ci.yml's `image` has 30
+    timeout-minutes: 30
     permissions:
       contents: read
       packages: write
@@ -452,6 +470,8 @@ jobs:
     needs: [prepare, checks]
     if: ${{ !cancelled() && needs.prepare.result == 'success' && needs.checks.result == 'success' }}
     runs-on: ubuntu-24.04
+    # under a minute in the last six releases (2026-11-18 and 19)
+    timeout-minutes: 10
     environment: release
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
@@ -494,6 +514,8 @@ jobs:
     if: ${{ needs.prepare.outputs.prerelease == 'false' }}
     needs: prepare
     runs-on: ubuntu-24.04
+    # under a minute in the last six releases (2026-11-18 and 19)
+    timeout-minutes: 10
     env:
       VERSION: ${{ needs.prepare.outputs.version }}
     steps:
@@ -531,6 +553,9 @@ jobs:
           - runner: ubuntu-24.04
             target: x86_64-unknown-linux-gnu
     runs-on: ${{ matrix.runner }}
+    # up to 21 minutes on Linux and 16 on macOS in the last six releases (2026-11-18 and 19), and
+    # its apt step is bounded at 15
+    timeout-minutes: 50
     defaults:
       run:
         shell: bash
@@ -543,13 +568,17 @@ jobs:
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version: 1.4.4
+      # as desktop.yml installs them, through the shared apt steps (.github/scripts/apt.sh): the
+      # 0.4.7 release's run spent 28 minutes here on a slow mirror (2026-11-19)
       - name: Linux libraries
         if: runner.os == 'Linux'
+        timeout-minutes: 15
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends libwebkit2gtk-4.1-dev build-essential \
+          bash .github/scripts/apt.sh update
+          bash .github/scripts/apt.sh install libwebkit2gtk-4.1-dev build-essential \
             file libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev libdbus-1-dev
       - name: Rust, and both Mac targets
+        timeout-minutes: 10
         working-directory: apps/desktop/src-tauri
         run: |
           rustup show active-toolchain || rustup toolchain install
@@ -617,6 +646,8 @@ jobs:
     needs: [prepare, desktop]
     if: ${{ !cancelled() && needs.prepare.result == 'success' && needs.desktop.result == 'success' }}
     runs-on: ubuntu-24.04
+    # under a minute in the last six releases (2026-11-18 and 19)
+    timeout-minutes: 10
     env:
       VERSION: ${{ needs.prepare.outputs.version }}
     steps:
@@ -660,6 +691,8 @@ jobs:
     if: ${{ !cancelled() }}
     needs: [prepare, checks, image, catalog, spk, desktop, desktop-feed]
     runs-on: ubuntu-24.04
+    # under a minute in the last six releases (2026-11-18 and 19)
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
@@ -698,6 +731,8 @@ jobs:
         && needs.publishable.result == 'success' }}
     needs: [prepare, publishable]
     runs-on: ubuntu-24.04
+    # about a minute in the last six releases (2026-11-18 and 19)
+    timeout-minutes: 15
     env:
       VERSION: ${{ needs.prepare.outputs.version }}
     permissions:
@@ -737,6 +772,8 @@ jobs:
         && needs.merge.result == 'success' }}
     needs: [publishable, merge]
     runs-on: ubuntu-24.04
+    # under a minute in the last six releases (2026-11-18 and 19)
+    timeout-minutes: 10
     permissions:
       pages: write
       id-token: write
@@ -911,6 +948,8 @@ jobs:
       - pages
       - github-release
     runs-on: ubuntu-24.04
+    # seconds in the last six releases (2026-11-18 and 19)
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0

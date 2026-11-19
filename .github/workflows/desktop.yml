@@ -37,12 +37,14 @@ on:
       - 'bun.lock'
       - '.github/workflows/desktop.yml'
 
-# A pull request's newer run cancels its older one; a push to next is never cancelled, each in a
-# group of its own (ci.yml's note on `concurrency`,
-# https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#concurrency)
+# A pull request's newer run cancels its older one, and since 2026-11-19 so does a push to next:
+# the group is the branch's, so only next's newest commit keeps a run, and nothing reads a
+# superseded commit's run (ci.yml's note on `concurrency`,
+# https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#concurrency).
+# Anything else, a release among them, is in a group of its own and never cancelled.
 concurrency:
-  group: desktop-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  group: desktop-${{ (github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/next')) && github.ref || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/next') }}
 
 permissions:
   contents: read
@@ -103,15 +105,21 @@ jobs:
         with:
           bun-version: 1.4.4
       # Tauri's Linux prerequisites (https://v2.tauri.app/start/prerequisites/#linux), and D-Bus for
-      # the Secret Service the keychain uses there
+      # the Secret Service the keychain uses there, through the shared apt steps, which try another
+      # mirror when one is slow (.github/scripts/apt.sh); about a minute on a good run
       - name: Linux libraries
         if: runner.os == 'Linux' && steps.reuse.outputs.reused != 'true'
+        timeout-minutes: 15
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends libwebkit2gtk-4.1-dev build-essential \
+          bash .github/scripts/apt.sh update
+          bash .github/scripts/apt.sh install libwebkit2gtk-4.1-dev build-essential \
             file libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev libdbus-1-dev
+      # rustup gives each component's download 180 s (RUSTUP_DOWNLOAD_TIMEOUT,
+      # https://rust-lang.github.io/rustup/environment-variables.html); the step's limit bounds the
+      # whole, about 10 s on a good run
       - if: *build
         name: Rust, and both Mac targets
+        timeout-minutes: 10
         working-directory: apps/desktop/src-tauri
         run: |
           rustup show active-toolchain || rustup toolchain install
