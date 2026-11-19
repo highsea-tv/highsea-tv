@@ -641,6 +641,9 @@ jobs:
       - name: The user its entrypoint runs highsea as
         if: *build
         run: bun scripts/image.ts user highsea:ci
+      - name: The TUN device the built-in VPN makes its interface on
+        if: *build
+        run: bun scripts/image.ts tun highsea:ci
       # The same build again from the cache, exported as an OCI layout with what a release pushes:
       # BuildKit's provenance (mode=min, its default) and the SBOM, which is opt-in
       # (https://docs.docker.com/build/metadata/attestations/). `tar=false` writes a folder

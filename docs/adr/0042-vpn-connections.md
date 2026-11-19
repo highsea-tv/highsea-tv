@@ -128,3 +128,27 @@ Consequences:
 - The image carries libcap2-bin (BSD-3-Clause or GPL-2.0, in `docker/NOTICE`).
 - A host-networked install from before keeps working. Settings › VPN gives it the lines when the built-in VPN is chosen.
 - What was not proven in the repository is listed in HT-90's pull request: the capability and device on the DS1520+, and Test's four checks there.
+
+## 2026-11-19: wireguard-go's own words, and a TUN device of the container's own (HT-98)
+
+On 0.4.8 the DS1520+ got past the capability, then logged `start wireguard-go failed: ┌────…`, and Settings › VPN asked for DSM's Task Scheduler task, though DSM had loaded tun. Reproduced on Docker Desktop (Linux 6.x, Debian trixie's wireguard-go 0.0.20231211): a container run as uid 201309 with only NET_ADMIN, a root-owned 0600 `/dev/net/tun` mounted in, prints the same box and exits 1.
+
+- **The error was the wrong stream.** From wireguard-go's `main.go` and `device/logger.go`: on Linux it prints a box to stderr on every start ("Running wireguard-go is not required because this kernel has first class support for WireGuard"), unless `WG_PROCESS_FOREGROUND=1`, which also keeps it in the foreground, so it can't be quieted for a daemon. Its logger writes to stdout, errors only by default. highsea read only stderr's first line. `run()` now reads wireguard-go's stdout and stderr, drops the box and the logger's prefix, and keeps the last three lines (`wireguardGoOutput`). The real error was `Failed to create TUN device: permission denied`.
+- **Failures told apart by what wireguard-go says** (`wireguardGoFailure`, from its `tun/tun_linux.go`), and only on its "Failed to create TUN device" line:
+  - "/dev/net/tun does not exist": no device node (`no-device`);
+  - "no such device" (ENODEV, the misc driver for 10:200 isn't there): the host hasn't loaded tun (`no-module`), the only case that names DSM's Task Scheduler task;
+  - "permission denied" (EACCES, the node's mode) or "operation not permitted" (EPERM, the device cgroup): `device-denied`;
+  - anything else in wireguard-go's own words.
+- **The cause: DSM's `/dev/net/tun` is root's, mode 0600,** and Container Manager runs the package's container as the package's user, so it can't be opened. The kernel's tuntap documentation: opening the node takes its file permission, and making a non-persistent interface takes CAP_NET_ADMIN; mode 0666 is safe, since CAP_NET_ADMIN is still needed ([tuntap](https://docs.kernel.org/networking/tuntap.html)).
+- **The fix: the container makes its own node, as the package's user.**
+  - The package's compose mounts a tmpfs at `/dev/net` (`/dev/net:dev,mode=1777`) instead of DSM's `/dev/net`, and allows `c 10:200 rwm` in the device cgroup ([compose's tmpfs](https://docs.docker.com/reference/compose-file/services/#tmpfs); [the device controller](https://docs.kernel.org/admin-guide/cgroup-v1/devices.html)). `dev` is needed: Docker mounts a tmpfs `nodev` by default (seen in `/proc/mounts`), and compose passes the option to the engine.
+  - The image's capped setpriv (now `setpriv-caps`) holds `cap_net_admin,cap_mknod+p`. The entrypoint, as a non-root user with no `/dev/net/tun` and a writable `/dev/net`, raises CAP_MKNOD for one `mknod -m 0666 /dev/net/tun c 10 200` ([mknod(2)](https://man7.org/linux/man-pages/man2/mknod.2.html)). Node still gets only CAP_NET_ADMIN.
+  - DSM's own node isn't touched, and the host's `/dev/net` is no longer mounted, so `preinst`'s `HIGHSEA_TUN`, the `no-tun` folder and `start-stop-status`'s switch are gone.
+- **Why this is the narrowest:**
+  - CAP_DAC_OVERRIDE, kept as NET_ADMIN is, would let node and everything it runs (ffmpeg and unar on downloaded files among them) pass every file permission in the container. Set on wireguard-go alone, it would keep it for the daemon's life.
+  - CAP_MKNOD is used once, at start, for one node in a folder of the container's own. Node could raise it again through setpriv, but the device cgroup still decides what can be opened: Docker's defaults, 10:200 and the render nodes.
+  - The package can't do it on the host. DSM 7 runs packages that Synology hasn't signed without root ("Synology has added a strict requirement on DSM 7.0 to prevent packages not signed by Synology from running with root privileges"; DSM 7 Developer Guide › Privilege: `run-as` `package`). A privilege `tool` with file capabilities needs a native binary, and the package is `noarch`.
+  - So loading `tun.ko`, when DSM hasn't, stays the owner's one step: the Task Scheduler task, shown only for "no such device". Opening the device from a container may load the module on its own through the kernel's `char-major-10-200` alias, where DSM's modprobe knows it. Not shown here.
+- **The other installs are unchanged.** They start as root: the entrypoint makes a 0666 node in the container's own `/dev` where there's none, and switches to PUID. `bun scripts/image.ts tun` runs the built image both ways (as the package does, and as root with PUID) and fails unless wireguard-go makes `hswg0`. CI runs it after the user check.
+- **The kill switch is unchanged.** A tunnel that doesn't come up leaves the binding empty, and torrents wait.
+

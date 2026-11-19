@@ -98,7 +98,12 @@ export function teardownPlan(): Command[] {
 /** Why the tunnel couldn't come up, for the status's copy. */
 export type TunnelFailure =
   | { kind: 'capability' }
+  /** No /dev/net/tun in the container. */
   | { kind: 'no-device' }
+  /** /dev/net/tun is there, but the host hasn't loaded the tun module behind it. */
+  | { kind: 'no-module' }
+  /** /dev/net/tun is there, but highsea isn't allowed to open it. */
+  | { kind: 'device-denied' }
   | { kind: 'not-installed' }
   | { kind: 'platform' }
   | { kind: 'other'; message: string }
@@ -110,6 +115,30 @@ export class TunnelError extends Error {
     this.name = 'TunnelError'
     this.failure = failure
   }
+}
+
+/**
+ * What wireguard-go's failure to start means, from its own words (`wireguardGoOutput`). Called
+ * once the kernel has answered "Unknown device type", so highsea has NET_ADMIN (without it the
+ * kernel refuses first, with "Operation not permitted"), and what's left is the TUN device. From
+ * wireguard-go's tun/tun_linux.go, `CreateTUN`, which opens /dev/net/tun and asks for an interface
+ * with TUNSETIFF:
+ * - "/dev/net/tun does not exist" (its own words for ENOENT): no device node;
+ * - "no such device" (ENODEV): the node is there, but no driver answers for 10:200, so the host
+ *   hasn't loaded tun (the kernel's misc devices: drivers/char/misc.c, misc_open);
+ * - "permission denied" (EACCES): the node's mode doesn't let highsea's user open it (open(2));
+ *   "operation not permitted" (EPERM): the container's device cgroup doesn't allow 10:200
+ *   (https://docs.kernel.org/admin-guide/cgroup-v1/devices.html).
+ * Anything else is passed on in wireguard-go's words (ADR 0042, 2026-11-19, HT-98).
+ */
+export function wireguardGoFailure(said: string): TunnelFailure {
+  // only its "Failed to create TUN device" line is the device: "UAPI listen error: permission
+  // denied", say, is its control socket
+  const tun = /Failed to create TUN device: (.*)/i.exec(said)?.[1] ?? ''
+  if (/does not exist|no such file or directory/i.test(tun)) return { kind: 'no-device' }
+  if (/no such device(?! or)/i.test(tun)) return { kind: 'no-module' }
+  if (/permission denied|operation not permitted/i.test(tun)) return { kind: 'device-denied' }
+  return { kind: 'other', message: `start wireguard-go failed: ${said}` }
 }
 
 function asTunnelError(e: unknown): TunnelError {
@@ -155,11 +184,8 @@ export function createTunnel(runner: Runner) {
       await run(runner, ops.linkAddUserspace())
       return 'userspace'
     } catch (e) {
-      // Here the kernel answered "Unknown device type", so highsea has NET_ADMIN (without it the
-      // kernel refuses first, with "Operation not permitted"). wireguard-go failing now is the TUN
-      // device: missing, or one highsea can't open ("Permission denied"), ADR 0042, 2026-11-19
       if (e instanceof CommandFailed && e.kind !== 'platform' && e.kind !== 'not-installed')
-        throw new TunnelError({ kind: 'no-device' }, e.message)
+        throw new TunnelError(wireguardGoFailure(e.stderr), e.message)
       throw asTunnelError(e)
     }
   }

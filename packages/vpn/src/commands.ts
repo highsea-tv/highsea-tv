@@ -25,7 +25,8 @@
 // - wg(8): `wg set hswg0 private-key FILE`, `wg set hswg0 peer KEY [preshared-key FILE]
 //   [endpoint HOST:PORT] allowed-ips LIST persistent-keepalive N`, `wg show hswg0 latest-handshakes`;
 // - wireguard-go: `wireguard-go hswg0`, which creates the interface on /dev/net/tun and runs in the
-//   background (https://git.zx2c4.com/wireguard-go/about/).
+//   background (https://git.zx2c4.com/wireguard-go/about/). Its failures are on stdout, not
+//   stderr: see `wireguardGoOutput`.
 import { spawn } from 'node:child_process'
 import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { isIP } from 'node:net'
@@ -342,9 +343,40 @@ export function spawnRunner(timeoutMs = 15_000): Runner {
     })
 }
 
+/** A line of the box wireguard-go prints on Linux before anything else (main.go, `warning()`). */
+const WIREGUARD_GO_BOX = /^[┌│└]/
+/** Its logger's prefix: the level, the interface and the date (log.Ldate|log.Ltime). */
+const WIREGUARD_GO_PREFIX = /^(?:ERROR|DEBUG): \(\S*\) \d{4}\/\d{2}\/\d{2} \d{2}:\d{2}:\d{2} /
+
+/**
+ * What wireguard-go said about a failure, in its own words. From its source
+ * (https://git.zx2c4.com/wireguard-go/tree/main.go, device/logger.go): on Linux it prints a box to
+ * stderr on every start ("Running wireguard-go is not required because this kernel has first class
+ * support for WireGuard"), whatever happens next, unless WG_PROCESS_FOREGROUND=1, which also keeps
+ * it in the foreground, so it can't be quieted here; and its logger writes to stdout
+ * (`log.New(os.Stdout, "ERROR: (hswg0) ", …)`), errors only by default, so "Failed to create TUN
+ * device: permission denied" is on stdout. The box is dropped, the logger's prefix taken off, and
+ * the last three lines kept.
+ */
+export function wireguardGoOutput(stdout: string, stderr: string): string {
+  return `${stdout}\n${stderr}`
+    .split('\n')
+    .map((l) => l.trim())
+    .filter((l) => l && !WIREGUARD_GO_BOX.test(l))
+    .map((l) => l.replace(WIREGUARD_GO_PREFIX, ''))
+    .slice(-3)
+    .join('; ')
+}
+
 /** Runs a command and throws `CommandFailed` when it exits with an error. */
 export async function run(runner: Runner, cmd: Command): Promise<string> {
   const result = await runner(cmd)
-  if (result.code !== 0) throw new CommandFailed(cmd.op, failureKind(result.stderr), result.stderr)
+  if (result.code !== 0) {
+    const said =
+      cmd.program === 'wireguard-go'
+        ? wireguardGoOutput(result.stdout, result.stderr) || `it exited with code ${result.code}`
+        : result.stderr
+    throw new CommandFailed(cmd.op, failureKind(said), said)
+  }
   return result.stdout
 }

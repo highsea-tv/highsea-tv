@@ -199,25 +199,52 @@ describe('The tunnel', () => {
     expect(e.failure).toEqual({ kind: 'capability' })
   })
 
-  test('without the kernel module or /dev/net/tun, says so', async () => {
-    const wg = createFakeWireGuard()
-    wg.fail(/^ip link add/, 'Error: Unknown device type.')
-    wg.fail(/^wireguard-go/, 'ERROR: Failed to create TUN device: no such file or directory')
-    const e = await createTunnel(wg.runner)
-      .up(spec())
-      .catch((x) => x)
-    expect(e.failure).toEqual({ kind: 'no-device' })
+  test('tells a missing TUN device, an unloaded module and one it can’t open apart', async () => {
+    // wireguard-go's own words for each (tun/tun_linux.go, CreateTUN), after the kernel's "Unknown
+    // device type" showed NET_ADMIN was there
+    const failure = async (error: string) => {
+      const wg = createFakeWireGuard()
+      wg.fail(/^ip link add/, 'Error: Unknown device type.')
+      wg.failWireguardGo(error)
+      const e = await createTunnel(wg.runner)
+        .up(spec())
+        .catch((x) => x)
+      expect(e).toBeInstanceOf(TunnelError)
+      return e as TunnelError
+    }
+    expect(
+      (
+        await failure(
+          'Failed to create TUN device: CreateTUN("hswg0") failed; /dev/net/tun does not exist',
+        )
+      ).failure,
+    ).toEqual({ kind: 'no-device' })
+    expect((await failure('Failed to create TUN device: no such device')).failure).toEqual({
+      kind: 'no-module',
+    })
+    expect((await failure('Failed to create TUN device: permission denied')).failure).toEqual({
+      kind: 'device-denied',
+    })
+    expect((await failure('Failed to create TUN device: operation not permitted')).failure).toEqual(
+      { kind: 'device-denied' },
+    )
   })
 
-  test('a TUN device highsea can’t open is the device, not the capability', async () => {
-    // the kernel's "Unknown device type" means NET_ADMIN was there; a 0600 /dev/net/tun isn't it
+  test('wireguard-go’s box is never the error: its own last words are', async () => {
+    // HT-98: the NAS logged "start wireguard-go failed: ┌───…", the first line of the box
     const wg = createFakeWireGuard()
     wg.fail(/^ip link add/, 'Error: Unknown device type.')
-    wg.fail(/^wireguard-go/, 'ERROR: Failed to create TUN device: permission denied')
-    const e = await createTunnel(wg.runner)
+    wg.failWireguardGo(
+      'UAPI listen error: listen unix /var/run/wireguard/hswg0.sock: bind: read-only file system',
+    )
+    const e = (await createTunnel(wg.runner)
       .up(spec())
-      .catch((x) => x)
-    expect(e.failure).toEqual({ kind: 'no-device' })
+      .catch((x) => x)) as TunnelError
+    expect(e.message).toBe(
+      'start wireguard-go failed: UAPI listen error: listen unix /var/run/wireguard/hswg0.sock: bind: read-only file system',
+    )
+    expect(e.failure).toEqual({ kind: 'other', message: e.message })
+    expect(e.message).not.toMatch(/[┌│└]|first class support/)
   })
 
   test('a failure halfway takes everything down again', async () => {

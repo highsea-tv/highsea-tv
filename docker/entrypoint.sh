@@ -16,15 +16,22 @@
 # across execve (capabilities(7), "Ambient capability set"). Without the capability, nothing changes.
 #
 # A container that starts as a non-root user (the Synology package's) can't use setpriv's --reuid,
-# so it raises the same two sets through the image's copy of setpriv that holds CAP_NET_ADMIN in its
-# file permitted set (the Dockerfile says why), tried once with `true` first so a refusal never stops
-# the server. The TUN device wireguard-go needs, on kernels without WireGuard, is made here when the
-# container starts as root and doesn't have one: the compose files allow its numbers (10:200) with
+# so it raises the same two sets through the image's copy of setpriv that holds CAP_NET_ADMIN and
+# CAP_MKNOD in its file permitted set (the Dockerfile says why), tried once with `true` first so a
+# refusal never stops the server. The TUN device wireguard-go needs, on kernels without WireGuard, is
+# made here when the container doesn't have one: as root, in the container's own /dev; as a non-root
+# user, in the /dev/net the compose file mounts for it (a tmpfs of the container's own, writable and
+# without nodev), with CAP_MKNOD raised for mknod alone, never for node. Mode 0666, as the kernel's
+# tuntap documentation says is safe, since making or joining an interface still takes CAP_NET_ADMIN
+# (https://docs.kernel.org/networking/tuntap.html, "Device creation"; mknod(2): CAP_MKNOD). Never
+# the host's node: DSM's is root's, 0600, which the package's user can't open (HT-98). The compose
+# files allow its numbers (10:200) with the compose files allow its numbers (10:200) with
 # device_cgroup_rules rather than passing the host's node with `devices:`, which stops a container
 # from starting on a host that hasn't loaded the tun module
 # (https://docs.docker.com/reference/cli/docker/container/run/#device-cgroup-rule;
-# /dev/net/tun as 10:200 in the kernel's Documentation/admin-guide/devices.txt). A mknod refused,
-# or a host without the module, leaves no device, and Settings › VPN says so (ADR 0042, 2026-11-19).
+# /dev/net/tun as 10:200 in the kernel's Documentation/admin-guide/devices.txt). A mknod refused
+# leaves no device, a host without the module one that answers "no such device", and Settings › VPN
+# says which (ADR 0042, 2026-11-19).
 set -eu
 mkdir -p "$HIGHSEA_CONFIG_DIR" "$HIGHSEA_DATA_DIR"
 capbnd="$(sed -n 's/^CapBnd:[[:space:]]*//p' /proc/self/status 2>/dev/null || true)"
@@ -75,7 +82,12 @@ if [ "$(id -u)" = "0" ] && [ "${PUID:-0}" != "0" ]; then
   exec gosu "$PUID:$PGID" "$@"
 fi
 cd /app/apps/server
-capped=/usr/local/lib/highsea/setpriv-net-admin
+capped=/usr/local/lib/highsea/setpriv-caps
+if [ "$(id -u)" != "0" ] && [ ! -e /dev/net/tun ] && [ -d /dev/net ] && [ -w /dev/net ] &&
+  [ -x "$capped" ]; then
+  "$capped" --inh-caps=+mknod --ambient-caps=+mknod -- mknod -m 0666 /dev/net/tun c 10 200 2>/dev/null ||
+    echo "highsea couldn't make its TUN device in /dev/net. Settings › VPN says what to do." >&2
+fi
 if [ "$(id -u)" != "0" ] && [ -n "$net_admin" ] && [ -x "$capped" ] &&
   "$capped" --inh-caps=+net_admin --ambient-caps=+net_admin -- true 2>/dev/null; then
   exec "$capped" --inh-caps=+net_admin --ambient-caps=+net_admin -- "$@"
