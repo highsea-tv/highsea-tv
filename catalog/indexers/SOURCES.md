@@ -15,4 +15,5 @@ The Internet Archive's logo is a plain drawing made for highsea, not the Archive
 1. Write it from the site's own documentation, or from its pages if there's no API, and say which in `source.documentation`.
 2. Use `CC0-1.0` or `MIT` as its `license`.
 3. Run `bun run catalog:build`. It validates every definition and fails with each problem listed.
-4. Add a line to `CHANGES.md` under a new version.
+4. Run `bun run catalog:verify <id>` from your own connection (the README has what it checks). It must say Working. If it says Challenge, the site puts a Cloudflare page or a captcha in front of highsea, which the engine can't pass, so leave the definition out. Commit the `verified.json` it wrote along with the definition.
+5. Add a line to `CHANGES.md` under a new version.

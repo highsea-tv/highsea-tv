@@ -1,0 +1,50 @@
+{
+  "about": "Written by bun run catalog:verify: each definition checked against its real site, with the date. Don’t edit by hand.",
+  "definitions": {
+    "generic-rss": {
+      "name": "Torrent feed",
+      "version": "1.0.0",
+      "channel": "stable",
+      "result": "skipped",
+      "reason": "It’s private: it needs an account.",
+      "checked": "2026-11-19",
+      "verified": null,
+      "counts": {
+        "probes": 0,
+        "working": 0,
+        "releases": 0,
+        "withSize": 0
+      }
+    },
+    "generic-torznab": {
+      "name": "Torznab",
+      "version": "1.0.0",
+      "channel": "stable",
+      "result": "skipped",
+      "reason": "It’s private: it needs an account.",
+      "checked": "2026-11-19",
+      "verified": null,
+      "counts": {
+        "probes": 0,
+        "working": 0,
+        "releases": 0,
+        "withSize": 0
+      }
+    },
+    "internet-archive": {
+      "name": "Internet Archive",
+      "version": "1.0.0",
+      "channel": "stable",
+      "result": "working",
+      "reason": null,
+      "checked": "2026-11-19",
+      "verified": "2026-11-19",
+      "counts": {
+        "probes": 2,
+        "working": 2,
+        "releases": 200,
+        "withSize": 200
+      }
+    }
+  }
+}
