@@ -1,8 +1,8 @@
 # Plan: keeping the indexer catalog fresh and accurate
 
-- **Status:** scoped on 2026-11-19 (HT-78), docs only. Nothing is built. Waiting for the owner's answers to the [open questions](#open-questions-for-the-owner).
+- **Status:** scoped on 2026-11-19 (HT-78), docs only, and approved the same day with [the owner's answers](#the-owners-answers) (HT-81), two of them [changes](#the-owners-changes): challenge solving is a later, optional part ([question 9](#open-questions-for-the-owner)), and private trackers are native definitions, never through Prowlarr or Jackett ([question 11](#open-questions-for-the-owner)). Nothing is built yet.
 - **Asked for by the owner on 2026-11-19:** "let's also make a plan moving forward for how we are going to actively maintain our own list of indexers that stays fresh and accurate."
-- **Gate:** each part below is reviewed on its own. The parts that change a locked admin screen (C and D) are prototyped and approved first, as for any change to a locked layout.
+- **Gate:** each part below is reviewed on its own. The parts that change a locked admin screen (C and D) are prototyped and approved first, as for any change to a locked layout; the owner's approval of 2026-11-19 is to prototype C's change to A9, and the prototype still needs their sign-off before it's built.
 - **Parent plans:** [phase-5-real-use.md](phase-5-real-use.md), whose real use is where a broken indexer is first felt, and [phase-3-server.md](phase-3-server.md)'s standing rules. The catalog itself was built in [phase-3-checkpoint-5.md](phase-3-checkpoint-5.md).
 
 ## Read first
@@ -22,7 +22,8 @@ highsea's own indexer catalog stays honest without anyone watching it by hand ev
 
 - **Writing the next definitions.** HT-77 writes the four film indexers; the TV and anime ones come with shows' downloading (Phase 5's part C1). This plan sets the order and the bar, not the definitions.
 - **Usenet.** The roadmap keeps it for later. The Newznab kind is built and the catalog lists no Newznab definitions ([phase-3-checkpoint-5.md, answer 2](phase-3-checkpoint-5.md#open-questions-for-the-owner)). See [Private trackers, Usenet and Newznab](#private-and-semi-private-trackers-usenet-and-newznab).
-- **Solving browser challenges** (Cloudflare's and the like). The roadmap lists challenge solving as a later item; this plan recommends keeping it out ([question 9](#open-questions-for-the-owner)).
+- **Solving browser challenges** (Cloudflare's and the like) now. The owner's answer of 2026-11-19 is "your own solver, later": a later, optional part (F4), with no catalog definition relying on it ([question 9](#open-questions-for-the-owner)).
+- **Private trackers' definitions now.** They are a planned later part, G, which needs sign-in support in the engine and a member to verify each one; nothing is written here ([question 11](#open-questions-for-the-owner)).
 - **Anime's own numbering and mappings.** A later part of shows (the owner, 2026-11-19, HT-71). Anime indexers wait for shows' downloading like the TV ones.
 - **A highsea service that receives anything from servers.** highsea publishes the catalog as static files on GitHub Pages (ADR 0050) and runs no service of its own. This plan doesn't add one ([question 2](#open-questions-for-the-owner)).
 
@@ -38,11 +39,11 @@ highsea's own indexer catalog stays honest without anyone watching it by hand ev
 - **In flight, #80 (HT-75):** `bun run catalog:verify [id…]` searches each public definition on its real site through the engine's own `runSearch` and `fetchRelease`, fetches and parses the first release's torrent or magnet, names a Cloudflare challenge as one, and writes `catalog/indexers/verified.json` (per definition: version, result, reason, `checked`, and `verified`, the last date this version worked). The file never reaches a bundle. Its pull request leaves out a "Verified" date in the admin, because servers would only see it with a new catalog version, and a scheduled CI run, because many public sites challenge datacentre addresses and GitHub may delay or switch off scheduled workflows ([GitHub: the `schedule` event](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule)). It also lists what the engine lacks for HTML sites: a details-page step, pagination, and dates in a site's own format.
 - **The licence rule, which is firm:** Prowlarr's definitions have no licence (GitHub's API returns `license: null`), so by default "no one may reproduce, distribute, or create derivative works" ([GitHub Docs: Licensing a repository](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/licensing-a-repository)). Jackett's are GPL-2.0 with no "or later", and "the GNU AGPL is not compatible with GPLv2" ([FSF licence list](https://www.gnu.org/licenses/license-list.html#AGPLv3.0)). Even an MIT or Apache source would force its own licence on the copy, never CC0. So highsea writes each definition from the site's own documentation or its pages as served, under CC0-1.0 or MIT. Other projects' lists show which sites exist, nothing more.
 - **The candidates as researched on 2026-11-19:** seven of the ten most reliable public sites have official API documentation (Internet Archive, YTS, EZTV, Knaben, BitSearch, AnimeTosho, Torrents-CSV); Nyaa, showRSS, SubsPlease and Tokyo Toshokan have plain RSS without docs; The Pirate Bay's `apibay.org` answers JSON but is undocumented; LimeTorrents, Torlock, TorrentDownloads and TheRARBG are HTML-only for search; 1337x answered with a confirmed Cloudflare challenge. Eight more sites couldn't be confirmed as up. Each result was one request from one residential address on one day.
-- **The owner's approvals so far:** the film indexers first (HT-77); TV and anime (EZTV, Nyaa, AnimeTosho, showRSS, SubsPlease) wait for shows' downloading; apibay is held for the owner's word; HTML-only and challenged sites are later.
+- **The owner's approvals so far:** the film indexers first (HT-77); TV and anime (EZTV, Nyaa, AnimeTosho, showRSS, SubsPlease) wait for shows' downloading; apibay is held for the owner's word (given on 2026-11-19: Beta, after TV and anime); HTML-only sites are later, and challenged sites wait for the owner's own solver (F4).
 
 ## The parts, and their size
 
-Six parts. A to E are upkeep and each is a task of its own; F is the growth that runs alongside, in batches. None needs the others to start except where the table says so.
+Seven parts. A to E are upkeep and each is a task of its own; F is the growth that runs alongside, in batches; G is native private-tracker definitions, a later part. None needs the others to start except where the table says so.
 
 | Part | What it gives | Rough size | Needs the owner | When |
 | --- | --- | --- | --- | --- |
@@ -51,7 +52,8 @@ Six parts. A to E are upkeep and each is a task of its own; F is the growth that
 | **C. Verified, broken and retired, on servers** | Each definition carries when it was last seen working and a status; the admin says "Broken: …" or "Retired: …" in words; a Report link on a failing indexer | 2 days, after a prototype | Approves the prototype of A9's changes | After A; alongside B |
 | **D. Addresses** | Mirrors tried in order when the first address can't be reached; the owner can choose the address; domain moves handled as a routine fix | 1 day, after a prototype | Approves the Edit dialog's change | When a site in the catalog first moves, or with F2 |
 | **E. Contributions** | A public guide to writing a definition and testing it in `/config/definitions`; issue forms for a new and a broken indexer; a pull request checklist | Half a day, docs | Reviews the guide | Any time after C |
-| **F. Growth** | F1, the film indexers (HT-77, in flight); F2, TV and anime with Phase 5's C1; F3, the engine's HTML gaps, then HTML sites; F4, challenged sites (recommended never) | F2 1 to 2 days, F3 2 to 3 days | apibay ([question 10](#open-questions-for-the-owner)); each batch's review | F2 with C1; F3 after F2 |
+| **F. Growth** | F1, the film indexers (HT-77, in flight); F2, TV and anime with Phase 5's C1; F3, the engine's HTML gaps, then HTML sites; F4, the owner's own challenge solver, later and optional | F2 1 to 2 days, F3 2 to 3 days | Each batch's review; apibay's word is given ([question 10](#open-questions-for-the-owner)) | F2 with C1; F3 after F2; F4 later |
+| **G. Private trackers** | Sign-in support in the engine, then native definitions one tracker at a time, each written from the tracker's own API documentation and verified by a member | Scoped when it starts | A member with an account for each tracker; the review of each | Later, after F2 and C; its own plan |
 
 **Tied into Phase 5:** A and B are small and can go between Phase 5's parts as tasks of their own, the way HT-75 and HT-77 do. F2 is part of C1's scope (shows' monitoring and downloading need TV indexers), so Phase 5's C1 names this plan. C and D change A9, a locked screen, so each starts with a prototype.
 
@@ -69,12 +71,12 @@ A definition breaks in four ways: the site moves (a new domain), changes its API
 
 - **Not on GitHub's hosted runners.** Many public torrent sites challenge datacentre addresses, so a run there reports challenges for definitions that work from a home (HT-75's finding). GitHub also runs scheduled workflows only on the default branch, may delay them, and turns them off in a public repository after 60 days without activity ([the `schedule` event](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule)).
 - **Not on a self-hosted runner.** The repository is public, and GitHub says "self-hosted runners should almost never be used for public repositories on GitHub, because any user can open pull requests against the repository and compromise the environment" ([GitHub: Secure use reference](https://docs.github.com/en/actions/reference/security/secure-use)).
-- **From the owner's own connection,** the one highsea really searches from, on a schedule on a machine the owner controls ([question 1](#open-questions-for-the-owner)). **Recommended:** a weekly run on the owner's Mac by launchd ([Apple: Scheduling timed jobs](https://developer.apple.com/library/archive/documentation/MacOSX/Conceptual/BPSystemStartup/Chapters/ScheduledJobs.html)), which writes `verified.json` and keeps one GitHub issue up to date (below). It never gates anything and never pushes; the owner commits `verified.json` with the next catalog change.
+- **From the owner's own connection,** the one highsea really searches from, on a schedule on a machine the owner controls ([question 1](#open-questions-for-the-owner)). **Decided (2026-11-19):** a weekly run on the owner's Mac by launchd ([Apple: Scheduling timed jobs](https://developer.apple.com/library/archive/documentation/MacOSX/Conceptual/BPSystemStartup/Chapters/ScheduledJobs.html)), which writes `verified.json` and keeps one GitHub issue up to date (below). It never gates anything and never pushes; the owner commits `verified.json` with the next catalog change.
 - **Rate limits:** each probe is a few requests at most, inside each definition's own `rateLimit`, once a week. BitSearch allows 200 requests a day per address without a key ([BitSearch API](https://bitsearch.eu/api)), so a weekly check takes a tiny share of it.
 
 ### 2. The owner's own server (C)
 
-The owner's NAS is the first real server, and every server already tracks its indexers' health (ADR 0035). **Recommended:** the owner installs every public catalog indexer on the NAS, enabled, so a site that breaks shows up in A9 there within hours, between weekly checks. It's the same signal every owner gets; the NAS just has them all.
+The owner's NAS is the first real server, and every server already tracks its indexers' health (ADR 0035). **Decided:** the owner installs every public catalog indexer on the NAS, enabled, so a site that breaks shows up in A9 there within hours, between weekly checks. It's the same signal every owner gets; the NAS just has them all.
 
 ### 3. Owners telling us, by choice (C)
 
@@ -82,7 +84,7 @@ When an indexer has been failing for a day, A9's row offers **Report a problem**
 
 ### 4. No anonymous health signals (C)
 
-**Recommended: none** ([question 2](#open-questions-for-the-owner)). An opt-in count of failures per definition would find breakage sooner, but:
+**Decided: none** ([question 2](#open-questions-for-the-owner)). An opt-in count of failures per definition would find breakage sooner, but:
 - highsea has nowhere to send it: the catalog is static files on Pages and there's no service to receive, store or answer anything;
 - it would be the first thing a highsea server sends about what it does, and owners coming from the *arr apps self-host to keep that at home; the brand's promise is "Your own streaming platform, fully yours" ([brief.md § 1](../brand/brief.md#1-positioning));
 - what an indexer is used for is sensitive in itself, and even counts by definition id show who uses which site.
@@ -157,22 +159,26 @@ And every definition, at any rung:
 - carries `license` CC0-1.0 or MIT, `source.author` and `source.documentation`, and a line in `SOURCES.md`;
 - isn't a clone of a closed site.
 
-**Undocumented APIs** (apibay, the JSON backend of The Pirate Bay) sit with HTML: they're the site's own pages as served, so writing from them is allowed, but they can change without notice and nobody promised them to anyone. **Recommended:** beta only, after the documented ones, marked "Unofficial API" in its description ([question 10](#open-questions-for-the-owner)).
+**Undocumented APIs** (apibay, the JSON backend of The Pirate Bay) sit with HTML: they're the site's own pages as served, so writing from them is allowed, but they can change without notice and nobody promised them to anyone. **Decided (2026-11-19):** apibay goes on Beta only, after the documented ones and after TV and anime, marked "Unofficial API" in its description ([question 10](#open-questions-for-the-owner)).
 
 ### The order
 
 1. **F1, films** (HT-77, in flight): YTS, Knaben, BitSearch, Torrents-CSV, all with documented APIs.
 2. **F2, TV and anime, with Phase 5's C1:** EZTV (documented, searched by IMDb id, with its RSS for the latest), AnimeTosho (documented Torznab; its feed host didn't resolve on 2026-11-19, so it's checked first), Nyaa and SubsPlease (RSS), showRSS (RSS, latest only). Anime's search waits for anime's own part of shows, but these feeds' latest releases work for RSS sync as soon as C1 has it.
-3. **apibay** on Beta, if the owner says so.
+3. **apibay** on Beta, after TV and anime (the owner's word, 2026-11-19).
 4. **F3, the engine's HTML gaps, then HTML sites.** HT-75 listed what's missing: a details-page step (a field read from each release's own page, ideally only for the release being grabbed), pagination, and dates in a site's own format. Each is a schema addition within engine major 1, so older servers skip definitions that need it (`minEngineVersion`, ADR 0007). Then LimeTorrents, Torlock, TorrentDownloads and TheRARBG, each on Beta first. HTML definitions break most often, so they're added only as many as the weekly check can watch.
-5. **F4, challenged sites:** recommended never ([question 9](#open-questions-for-the-owner)). Passing a Cloudflare challenge means running a browser that pretends to be a person, against a site that asked not to be scraped by machines. Knaben's API already reaches 1337x's listings among others ("the `t` parameter filters by source tracker", [Knaben API](https://knaben.org/api/v2)), which covers most of what 1337x would add.
+5. **F4, challenged sites: your own solver, later** (the owner's change, 2026-11-19, [question 9](#open-questions-for-the-owner)). highsea doesn't solve a browser challenge itself, and the catalog lists no site that needs one. Later, and optionally, an owner who runs a challenge solver of their own (FlareSolverr's kind) can point highsea at it in Settings, and a search that meets a challenge goes through it. Rules for it:
+   - **Optional and off by default.** highsea ships no solver and starts none; without one, a challenged site simply reports "Behind a browser challenge", as `catalog:verify` already names it.
+   - **No catalog definition relies on it.** Every definition passes `catalog:verify` without a solver, so the catalog stays honest for owners who run none. A site that works only through a solver may be added as a Local definition by the owner who wants it, never to the catalog.
+   - **It is a client of the owner's solver, nothing more:** an address and a timeout, the request handed over and the answer read back, written from the solver's own documentation when F4 starts. It gets its own scope and the owner's review, and waits behind F3.
+   - Meanwhile Knaben's API already reaches 1337x's listings among others ("the `t` parameter filters by source tracker", [Knaben API](https://knaben.org/api/v2)), which covers most of what 1337x would add.
 
 ### The cadence
 
 - **Weekly:** the check from the owner's connection; the issue updated.
 - **When something breaks:** a fix as soon as one is written, published on its own (A), under a day to servers.
 - **Monthly:** the watch over other projects' lists (below); the candidates file reviewed; anything on Beta for a week with two passes moved to stable in one publish.
-- **New definitions:** in batches of two to four, each batch a task, each on Beta first. One maintainer can watch about as many definitions as the weekly check's table fits on a phone: tens, not hundreds. The catalog grows to cover films, TV and anime well, not to match Prowlarr's 585.
+- **New definitions:** in batches of two to four, each batch a task, each on Beta first. One maintainer can watch about as many definitions as the weekly check's table fits on a phone: tens, not hundreds. The catalog grows to cover films, TV and anime well, not to match the size of other projects' lists.
 
 ## Sources of truth (B)
 
@@ -223,13 +229,18 @@ E writes: a public guide in `apps/docs/content/indexers/` ("Write a definition",
 
 ## Private and semi-private trackers, Usenet and Newznab
 
-- **Private and semi-private trackers: through Torznab now, native definitions only one by one.** The generic Torznab definition already reaches every tracker Prowlarr or Jackett knows, with the owner's own key and their own setup. A native definition needs documentation that's usually behind a member's sign-in, a tracker's rules that allow API clients, and a member to keep checking it, since `catalog:verify` skips private definitions. **Recommended:** accept one when a member writes it from the tracker's own API documentation, cites it, and the tracker's rules allow it; never write them unasked ([question 11](#open-questions-for-the-owner)). Seeding rules per tracker are already built (checkpoint 6a).
+- **Private and semi-private trackers: native definitions, a planned later part (G)** (the owner's change, 2026-11-19, [question 11](#open-questions-for-the-owner)). highsea replaces Prowlarr and Jackett; it doesn't ask owners to run either beside it, and this plan leans on neither. A private tracker's search is a native definition, in highsea's own format, like any other. The generic Torznab definition stays only for a feed a tracker or site serves itself, with the key the site gives its members. Part G:
+  - **Sign-in support in the engine first.** The format has an API key, a cookie and a form login (ADR 0033). G starts by listing what the first trackers' own documentation asks for beyond that (a passkey in the address, a token endpoint, a session that expires and signs in again, a refusal of automated sign-in) and adds only what a documented tracker needs, as a schema addition within the engine's major version (`minEngineVersion`, ADR 0007). Two-factor sign-in and solving anything for a person are not part of it.
+  - **Each definition written from the tracker's own API documentation,** cited in `source.documentation`, never from another project's definition, and only where the tracker's rules allow API clients. Documentation is often behind a member's sign-in, so a member supplies it.
+  - **Verified by a member with an account.** highsea can't test without one, and `catalog:verify` skips private definitions. The gate for a definition is a member who writes or reads it against the documentation, runs it on their own account, and says so in the pull request; it goes on Beta, and the maintainer records who verified it and when in `candidates.yml`. Without a member to keep checking it, it isn't added, and a private definition no member has checked in 90 days is marked "Not checked recently" rather than Broken.
+  - **Never unasked.** Trackers are taken one at a time, when a member offers; nothing is written on spec. Seeding rules per tracker are already built (checkpoint 6a).
+  - G gets its own plan when a member and a tracker are ready. It follows F2 and C, since the verified date and the status are what show a member's check.
 - **Usenet and Newznab: with Usenet.** Newznab indexers all need accounts and are useless without a Usenet download client, which the roadmap keeps for later. When Usenet comes, the catalog adds a generic Newznab definition first, like the Torznab one, and the bar above applies to any named one.
 
 ## What highsea ships by default
 
 - **The `starter` flag** puts a public definition in setup's indexer step, checked by default ([setup.md](../product/setup.md), step 5: "Public indexers checked"). Today only the Internet Archive has it.
-- **Recommended:** `starter` stays for sources whose whole catalog is lawful to share, like the Internet Archive's public domain and openly licensed films. General public torrent indexers are never `starter` and never on by default: the owner adds each in A9, knowing what it is ([question 4](#open-questions-for-the-owner)). Setup keeps working with no general indexer, as it does today.
+- **Decided (2026-11-19):** `starter` stays for sources whose whole catalog is lawful to share, like the Internet Archive's public domain and openly licensed films. General public torrent indexers are never `starter` and never on by default: the owner adds each in A9, knowing what it is ([question 4](#open-questions-for-the-owner)). Setup keeps working with no general indexer, as it does today.
 - **What A9 says** about a general public indexer, in the brief's voice ([brief.md § 6](../brand/brief.md#6-voice-and-tone)), as its description's last line: "A public site that lists torrents other people share. Check you have the right to download what you grab." Plain, once, no warning colours, and nothing about the law of any one country.
 - **The guides** say the same in Indexers › Add an indexer, and that highsea neither hosts nor checks what an indexer lists.
 
@@ -238,7 +249,8 @@ E writes: a public guide in `apps/docs/content/indexers/` ("Write a definition",
 - **New: "Keeping the indexer catalog fresh"** (the next free number when it's written; 0069 at the time of writing): catalog-only publishes; verified dates and a status carried in the signed bundle; Beta before stable and the broken-fix exception; the weekly check from a home connection, never CI; no health signals from servers; the bar for adding a definition and its rungs; names-only watching of other projects. Written with part A and extended by C.
 - **ADR 0034, a dated section (A, C):** the catalog publishes without a release, and the bundle carries `verified` and `status` per definition.
 - **ADR 0050, a dated section (A):** a catalog-only publish beside the release, from the same job, with its own `CHANGES.md` version and `releases.json` unchanged.
-- **ADR 0033, a dated section (D, F3):** the engine falls back through `links`; the HTML additions (details page, pagination, date formats) and their engine version.
+- **ADR 0033, a dated section (D, F3, G):** the engine falls back through `links`; the HTML additions (details page, pagination, date formats) and their engine version; later, the sign-in additions private trackers need.
+- **A later ADR (F4, G):** the optional challenge-solver address, and native private-tracker definitions with a member's verification, each when its part is scoped.
 - **ADR 0035, a dated section (C):** a broken definition keeps its backoff and gains the catalog's note; Report a problem.
 
 ## Risks
@@ -299,8 +311,26 @@ E writes: a public guide in `apps/docs/content/indexers/` ("Write a definition",
 
 ## The owner's changes
 
-None yet.
+On 2026-11-19, reviewing this scope, the owner made 3 changes:
+
+1. **Browser challenges: "your own solver, later", not never** (question 9). Not part of the catalog and not built now, but a later, optional part: an owner may point highsea at a challenge solver they run themselves, with no catalog definition relying on it. [F4](#the-order) and [Out of scope](#out-of-scope) say so, and the table's row for F follows.
+2. **highsea replaces Prowlarr and Jackett; it doesn't integrate with them** (question 11). In the owner's words: "highsea is not meant to integrate with other apps like Prowlarr or Jackett - highsea is and has always been meant to *replace* them". Asked what that means for private trackers, they chose native definitions as a planned later part: sign-in support in the engine, each definition written from the tracker's own API documentation and verified by a member with an account, since highsea can't test without one; the generic Torznab connector stays only for a feed a tracker serves itself. This plan no longer relies on Prowlarr or Jackett anywhere: [part G](#the-parts-and-their-size) and [Private and semi-private trackers](#private-and-semi-private-trackers-usenet-and-newznab) are new, and the generic Torznab definition's text and the guides stop suggesting a feed from either app. **It reaches beyond this plan:** the same rule applies to every plan, guide and screen (the roadmap carries a dated note, and `docs/status.md` records it); migrating from those apps stays a separate, fine thing.
+3. **Prototype a change to the locked A9** (question 13). The owner approved prototyping "Checked working on …" and Broken or Retired in the Indexers screen. The prototype still needs their sign-off before it's built ([part C](#the-parts-and-their-size)).
 
 ## The owner's answers
 
-Not yet answered.
+On 2026-11-19 the owner took every recommendation for questions 1 to 13 except 9 and 11, which they changed:
+
+1. **The weekly check runs on the owner's Mac** (launchd), keeping one "Catalog check" issue up to date; the NAS with every public indexer is the second signal.
+2. **No health signals from servers.** A Report a problem link on a failing indexer opens a pre-filled GitHub issue the owner chooses to send.
+3. **A separate hand-run catalog workflow,** with the `release` environment's approval each time.
+4. **Public indexers are never on by default.** `starter` stays for lawful-to-share sources.
+5. **A broken definition keeps being searched under backoff,** says why, and is retired after 30 days with no fix.
+6. **A week on Beta and two passing weekly checks;** a fix to an already broken stable definition may skip Beta.
+7. **The owner's NAS follows Beta.**
+8. **Other projects' lists are watched monthly** by a script, file names only.
+9. **Changed by the owner:** sites behind a browser challenge: **your own solver, later.** Not never: later and optional, an owner may point highsea at a solver they run themselves, with no catalog definition relying on it ([F4](#the-order)).
+10. **apibay on Beta, after TV and anime,** marked "Unofficial API".
+11. **Changed by the owner:** private trackers are **native definitions as a planned later part (G)**, not through Prowlarr or Jackett: sign-in support in the engine, each written from the tracker's own API documentation and verified by a member with an account. The generic Torznab connector stays only for a feed a tracker serves itself.
+12. **CC0-1.0 by default, MIT allowed,** stated by a checkbox in the pull request.
+13. **"Checked working on …" and Broken or Retired in A9,** prototyped first (the owner's approval to prototype a change to the locked A9; the prototype still needs their sign-off).

@@ -1,6 +1,6 @@
 ---
 title: Add an indexer
-description: Add indexers from highsea's signed catalog, set up private trackers, Prowlarr and Jackett through Torznab, and load your own local definitions.
+description: Add indexers from highsea's signed catalog, set up private trackers, add a Torznab feed a tracker serves itself, and load your own local definitions.
 ---
 
 {/* SPDX-License-Identifier: AGPL-3.0-only */}
@@ -52,16 +52,16 @@ highsea tests the indexer before saving anything. If the test fails, the form st
 
 Passwords and keys stay on your server, sealed with the server's own key. When you edit an indexer later, its secret fields show empty; leave them empty to keep what's saved.
 
-### Prowlarr, Jackett and other Torznab feeds
+### Torznab feeds
 
-If you already run Prowlarr or Jackett, add its indexers through **Torznab** in the catalog:
+Some trackers and sites serve a Torznab feed of their own. If yours does, add it through **Torznab** in the catalog:
 
 1. Find **Torznab** and select **Set up**.
-2. For **Address**, copy the indexer's Torznab feed from Prowlarr or Jackett, without `/api` at the end.
-3. For **API key**, copy the key Prowlarr or Jackett shows in its settings.
+2. For **Address**, enter the feed's address from the tracker's or site's own pages or API documentation, without `/api` at the end.
+3. For **API key**, enter the key the tracker or site shows in your account.
 4. Select **Test and save**.
 
-Add each Prowlarr or Jackett indexer this way, one feed each.
+Add each feed this way, one at a time.
 
 For a tracker that offers a plain RSS feed of torrents, use **Torrent feed** and paste the feed's full address. Private feeds often carry your passkey in the address, so highsea keeps it sealed like a password.
 
