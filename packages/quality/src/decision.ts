@@ -116,15 +116,32 @@ const accepted = (message: string): DecisionReason => ({ kind: 'accepted', messa
 const rejected = (message: string): DecisionReason => ({ kind: 'rejected', message })
 const warning = (message: string): DecisionReason => ({ kind: 'warning', message })
 
-const qualitySpec: Specification = {
+/**
+ * Whether the profile allows the quality. `atImport`: a file on disk, whose quality the probe has
+ * already completed; a release still to be grabbed whose name gives none says that a grab anyway
+ * reads it from the file (FORCED_IMPORT_SPECS in @highsea-tv/media's film import).
+ */
+const qualityCheck = (atImport: boolean): Specification => ({
   id: 'quality',
   evaluate: ({ profile, quality, t }) => {
     if (!isAllowed(profile, quality))
-      return [rejected(t('quality.notAllowed', { quality, profile: profile.name }))]
+      return [
+        rejected(
+          t(quality === 'Unknown' && !atImport ? 'quality.unknown' : 'quality.notAllowed', {
+            quality,
+            profile: profile.name,
+          }),
+        ),
+      ]
     const target = profileItem(profile, quality)?.item.name === profile.cutoff
     return [accepted(t(target ? 'quality.target' : 'quality.allowed', { quality }))]
   },
-}
+})
+
+const qualitySpec = qualityCheck(false)
+
+/** The quality check for a file being imported: the plain reason, as there's no grab left to take. */
+export const fileQualitySpec = qualityCheck(true)
 
 const sizeSpec: Specification = {
   id: 'size',

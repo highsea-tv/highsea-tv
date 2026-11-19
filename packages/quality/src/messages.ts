@@ -9,6 +9,8 @@ export const qualityMessages = defineMessages({
   'quality.target': 'Matches target {quality}',
   'quality.allowed': 'Matches {quality}',
   'quality.notAllowed': '{quality} isn’t allowed in {profile}',
+  'quality.unknown':
+    'Unknown quality: the name doesn’t say, and {profile} doesn’t allow Unknown. Grab anyway and highsea reads the quality from the file',
   // Sizes
   'size.tooLarge': 'Too large: {size}, the limit is {limit} for {runtime}',
   'size.tooSmall': 'Too small: {size}, the minimum is {limit} for {runtime}',
