@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Change artwork (HT-66): a film's or a collection's poster, backdrop and logo. A tab per kind; the
 // image shown now, who chose it and when; Upload and Reset; then TMDB's others, best voted first,
-// with their language and size and the current one marked. Choosing one is a tap. Drawn from the
+// with their language and size and the current one marked, then fanart.tv's when it has some (HT-74).
+// Choosing one is a tap. Drawn from the
 // library's parts (Dialog, Tabs, Press, Image, Badge, Banner), as every admin dialog is; the
 // prototype draws this same file over the mock (packages/mock's admin/artwork.ts).
 import {
@@ -154,13 +155,25 @@ function Picker({ owner, id }: { owner: ArtworkOwner; id: number }) {
             </Banner>
           ) : (
             <Options
+              source="tmdb"
               kind={kind}
               owner={owner}
-              options={k.options}
+              options={k.options.filter((o) => o.source === 'tmdb')}
               disabled={busy}
               onChoose={(o) => choose.run(o.file).then(done('chosen'), failed)}
             />
           )}
+          {/* fanart.tv's only when it has some: off, down or empty shows nothing (HT-74) */}
+          {k.options.some((o) => o.source === 'fanart') ? (
+            <Options
+              source="fanart"
+              kind={kind}
+              owner={owner}
+              options={k.options.filter((o) => o.source === 'fanart')}
+              disabled={busy}
+              onChoose={(o) => choose.run(o.file).then(done('chosen'), failed)}
+            />
+          ) : null}
         </>
       )}
     </View>
@@ -190,11 +203,17 @@ function Shown({
   const s = tokens.space
   const c = view.chosen
   const state = c
-    ? t(c.source === 'upload' ? 'state.upload' : 'state.tmdb', {
+    ? t(`state.${c.source}`, {
         name: c.by?.name ?? t('state.someone'),
         when: relative(c.at),
       })
-    : t(view.automatic ? 'state.automatic' : 'state.automaticNone')
+    : t(
+        !view.automatic
+          ? 'state.automaticNone'
+          : view.automatic.includes('/ftv_')
+            ? 'state.automaticFanart'
+            : 'state.automatic',
+      )
   return (
     <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-start', gap: s['5'] }}>
       <Frame kind={kind} src={view.current} width={SHOWN[kind]} alt={t(`kind.${kind}`)} />
@@ -231,14 +250,19 @@ function Shown({
   )
 }
 
-/** TMDB's other images of the kind, best voted first; a tap chooses one. */
+/**
+ * One source's images of the kind: TMDB's, best voted first, or fanart.tv's, most liked first; a
+ * tap chooses one.
+ */
 function Options({
+  source,
   kind,
   owner,
   options,
   disabled,
   onChoose,
 }: {
+  source: 'tmdb' | 'fanart'
   kind: ArtworkKind
   owner: ArtworkOwner
   options: ArtworkOption[]
@@ -251,15 +275,16 @@ function Options({
   const languages = new Intl.DisplayNames([locale], { type: 'language' })
   const language = (code: string | null) =>
     code ? (languages.of(code) ?? code.toUpperCase()) : t('option.noLanguage')
+  const heading = source === 'tmdb' ? 'fromTmdb' : 'fromFanart'
   return (
-    <View role="region" aria-label={t('fromTmdb')} style={{ gap: s['3'] }}>
+    <View role="region" aria-label={t(heading)} style={{ gap: s['3'] }}>
       <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: s['2'] }}>
         <Text variant="title" role="heading" aria-level={3}>
-          {t('fromTmdb')}
+          {t(heading)}
         </Text>
         {options.length ? (
           <Text variant="caption" color="text-3">
-            {t('fromTmdb.count', { count: options.length })}
+            {t(`${heading}.count`, { count: options.length })}
           </Text>
         ) : null}
       </View>
@@ -278,6 +303,7 @@ function Options({
               aria-checked={o.current}
               aria-label={t('option.label', {
                 kind: t(`kind.${kind}`),
+                source: t(`source.${o.source}`),
                 language: language(o.language),
                 width: o.width,
                 height: o.height,

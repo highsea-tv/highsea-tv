@@ -9,7 +9,7 @@ export const vpn = defineMessages({
   saved: 'Settings saved',
   saveError: 'Couldn’t save',
   'mode.legend': 'Mode',
-  'mode.builtin': 'highsea connects',
+  'mode.builtin': 'Built-in VPN',
   'mode.builtin.line':
     'highsea runs a WireGuard tunnel to your provider. Only torrents use it, and they can’t leave outside it.',
   'mode.container': 'A VPN container',
@@ -50,8 +50,16 @@ export const vpn = defineMessages({
   reconnect: 'Reconnect',
   reconnectError: 'Couldn’t reconnect',
   checkedAgo: 'Checked {ago}',
+  // HT-82: Test, in the other settings pages' pattern, for the settings on the page
+  test: 'Test',
+  'test.hint':
+    'Tries these settings without saving them. The built-in VPN brings its tunnel up for a moment; torrents don’t use it.',
+  'test.ok': 'These settings work.',
+  'test.okWarnings': 'These settings work. A line below has a warning.',
+  'test.failed': 'These settings don’t work yet. The line marked below says why.',
+  'test.results': 'Test results',
   // one-compose-file.md's part B, approved 2026-11-07: the status points to the mode's compose lines
-  capabilityHelp: 'Compose for highsea connects, under Connection, has the lines to add.',
+  capabilityHelp: 'Compose for the built-in VPN, under Connection, has the lines to add.',
   composeLines: 'Compose lines',
   copy: 'Copy',
   copied: 'Copied',
@@ -89,14 +97,14 @@ export const vpn = defineMessages({
     'A gluetun service for your compose file, with highsea joined to its network. Fill in what your provider gives you; highsea never gets the Docker socket.',
   composeBlock: 'Compose block',
   composeError: 'Couldn’t make the compose block.',
-  'compose.builtin': 'Compose for highsea connects',
+  'compose.builtin': 'Compose for the built-in VPN',
   'compose.builtin.body':
     'The lines highsea’s service needs for the tunnel. Add them to highsea in your compose file, take out network_mode: host, then recreate the container. The capability reaches only highsea’s own container, not the host. Apps on your network still find the server by its broadcast on port 7368.',
 
   'behaviour.title': 'Behaviour',
   stopWhenDown: 'Stop torrents when the VPN is down',
   'stopWhenDown.builtin':
-    'Always on when highsea connects: a packet from the tunnel’s address can’t leave any other way.',
+    'Always on with the built-in VPN: a packet from the tunnel’s address can’t leave any other way.',
   'stopWhenDown.container': 'Always on in a VPN container: it has no other route.',
   'stopWhenDown.interface': 'Torrents stop the moment the interface or its address goes.',
   useForwardedPort: 'Use the forwarded port',

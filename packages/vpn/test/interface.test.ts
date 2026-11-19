@@ -54,7 +54,7 @@ describe('An interface on this machine', () => {
         'killSwitch',
         'warn',
         'Bound to wg0',
-        'Your system’s routing decides the path; a VPN container or highsea connects guarantees it.',
+        'Your system’s routing decides the path; a VPN container or the built-in VPN guarantees it.',
       ],
       [
         'portForwarding',

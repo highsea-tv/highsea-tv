@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "5f0a7976-7766-4cfb-b9ab-8401b593ddb0",
+  "id": "c48e0223-c242-4e91-ab88-c9e99ca118ba",
   "prevId": "9cd1775c-39bd-4e08-92fc-a7a9621241b4",
   "tables": {
     "account_links": {
@@ -3413,6 +3413,52 @@
       "uniqueConstraints": {},
       "checkConstraints": {}
     },
+    "fanart_images": {
+      "name": "fanart_images",
+      "columns": {
+        "subject": {
+          "name": "subject",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "external_id": {
+          "name": "external_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "data": {
+          "name": "data",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "fetched_at": {
+          "name": "fetched_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "fanart_images_subject_external_id_pk": {
+          "columns": [
+            "subject",
+            "external_id"
+          ],
+          "name": "fanart_images_subject_external_id_pk"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
     "history": {
       "name": "history",
       "columns": {
@@ -6313,92 +6359,6 @@
             "item_id"
           ],
           "name": "playback_prefs_profile_id_item_id_pk"
-        }
-      },
-      "uniqueConstraints": {},
-      "checkConstraints": {}
-    },
-    "show_dismissals": {
-      "name": "show_dismissals",
-      "columns": {
-        "user_id": {
-          "name": "user_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "profile_id": {
-          "name": "profile_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "item_id": {
-          "name": "item_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "dismissed_at": {
-          "name": "dismissed_at",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "show_dismissals_user_id_users_id_fk": {
-          "name": "show_dismissals_user_id_users_id_fk",
-          "tableFrom": "show_dismissals",
-          "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "show_dismissals_profile_id_profiles_id_fk": {
-          "name": "show_dismissals_profile_id_profiles_id_fk",
-          "tableFrom": "show_dismissals",
-          "tableTo": "profiles",
-          "columnsFrom": [
-            "profile_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "show_dismissals_item_id_media_items_id_fk": {
-          "name": "show_dismissals_item_id_media_items_id_fk",
-          "tableFrom": "show_dismissals",
-          "tableTo": "media_items",
-          "columnsFrom": [
-            "item_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {
-        "show_dismissals_profile_id_item_id_pk": {
-          "columns": [
-            "profile_id",
-            "item_id"
-          ],
-          "name": "show_dismissals_profile_id_item_id_pk"
         }
       },
       "uniqueConstraints": {},

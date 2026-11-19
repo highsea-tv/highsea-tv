@@ -22,6 +22,7 @@ export type { IndexerRelease } from './release.ts'
 export {
   DEFAULT_MINIMUM_SEEDERS,
   flagsOf,
+  type LeftOutReason,
   matchesMovie,
   RELEASES_TTL_MS,
   type ReleaseView,

@@ -5,16 +5,28 @@ import type { Page } from 'playwright-core'
 import type { Area } from '../shot.ts'
 
 const mode = (name: RegExp) => (p: Page) => p.getByRole('radio', { name }).click()
-// highsea connects' fields wait for the provider list; the shot waits for them
+// The built-in VPN’s fields wait for the provider list; the shot waits for them
 const connects = async (p: Page) => {
-  await mode(/highsea connects/)(p)
+  await mode(/Built-in VPN/)(p)
   await p.getByText('WireGuard configuration', { exact: true }).first().waitFor()
 }
 const provider = (name: string) => async (p: Page) => {
-  await mode(/highsea connects/)(p)
+  await mode(/Built-in VPN/)(p)
   await p.getByRole('button', { name: 'Provider', exact: true }).click()
   await p.getByRole('menuitemradio', { name, exact: true }).click()
 }
+// a made-up NordVPN file in the shape the guide shows: example keys, no real server
+const KEY = (n: number) => Buffer.alloc(32, n).toString('base64')
+const NORD_EXAMPLE = `[Interface]
+PrivateKey = ${KEY(1)}
+Address = 10.5.0.2/32
+DNS = 103.86.96.100, 103.86.99.100
+
+[Peer]
+PublicKey = ${KEY(2)}
+AllowedIPs = 0.0.0.0/0
+Endpoint = nl1.example.test:51820
+`
 // tall enough that the save bar sits below the form rather than over it
 const connection = (p: Page) => p.getByRole('region', { name: 'Connection' })
 
@@ -33,7 +45,7 @@ export default {
       path: '/settings/vpn',
       act: async (p) => {
         await connects(p)
-        await p.getByText('Compose for highsea connects').click()
+        await p.getByText('Compose for the built-in VPN').click()
         await p.getByText('cap_add: [NET_ADMIN]').first().waitFor()
       },
       crop: connection,
@@ -52,6 +64,21 @@ export default {
       act: provider('AirVPN'),
       crop: connection,
       height: 1400,
+    },
+    {
+      // Test on the shot's machine: the seeded server isn't on Linux, so the tunnel line says so
+      // before any command runs or anything leaves the machine
+      name: 'test',
+      path: '/settings/vpn',
+      act: async (p) => {
+        await provider('NordVPN')(p)
+        await p.getByRole('button', { name: 'Paste instead' }).click()
+        await p.getByLabel('Paste the configuration').fill(NORD_EXAMPLE)
+        await p.getByRole('button', { name: 'Test', exact: true }).click()
+        await p.getByRole('list', { name: 'Test results' }).waitFor()
+      },
+      crop: connection,
+      height: 1600,
     },
     {
       name: 'container',
@@ -74,7 +101,7 @@ export default {
     {
       name: 'behaviour',
       path: '/settings/vpn',
-      act: mode(/highsea connects/),
+      act: mode(/Built-in VPN/),
       crop: (p) => p.getByRole('region', { name: 'Behaviour' }),
       height: 1400,
     },

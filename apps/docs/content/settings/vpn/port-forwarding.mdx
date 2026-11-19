@@ -26,13 +26,13 @@ Torrents use the forwarded port while **Use the forwarded port** is on, which it
 
 - **Proton VPN** and **Private Internet Access**: highsea asks the provider for a port once connected, keeps it renewed, and moves torrents to it. If the provider doesn't forward one, highsea tries again every minute and the check warns.
 - **AirVPN**, **Windscribe** and **Another WireGuard provider**: reserve a port with your provider and type it into **Forwarded port**. Leave the field empty if there isn't one.
-- **Mullvad**, **IVPN** and **Surfshark** don't forward ports.
+- **Mullvad**, **IVPN**, **Surfshark** and **NordVPN** don't forward ports. NordVPN forwards them only with its Dedicated Server add-on, which highsea doesn't set up.
 - **A VPN container**: highsea uses the port gluetun reports. Turn it on in gluetun; see [A VPN container](/settings/vpn/container/#port-forwarding).
 - **An interface on this machine**: forward the port through your tunnel yourself, if your provider allows it.
 
 For AirVPN, Windscribe and another provider, the field is under the configuration file:
 
-![highsea connects with AirVPN chosen: its steps, which end with reserving a port under Client Area › Forwarded ports, then WireGuard configuration and an empty Forwarded port field marked Optional](/images/admin/settings-vpn/forwarded-port.png)
+![The built-in VPN with AirVPN chosen: its steps, which end with reserving a port under Client Area › Forwarded ports, then WireGuard configuration and an empty Forwarded port field marked Optional](/images/admin/settings-vpn/forwarded-port.png)
 
 ## Checking it
 

@@ -178,7 +178,7 @@ A root folder that can't be read is skipped whole. A new folder under the root g
 
 **An episode plays through films' path:** the same play decision, sessions and stream token, so direct play, direct stream and transcode come with no new code. Next episode is the next one with a file, in its season and then the next season's first; a special's next is the following special. The place is kept per profile and per episode; a season's and a show's are read from their episodes, and marking a season or the show writes each episode, specials left out of a whole show's mark. Past 90% counts as watched, films' rule; in a multi-episode file, past 90% of the whole file marks the episode playing.
 
-**Taking a show off Continue watching** is a row in `show_dismissals` (migration `0023_show_dismissals`, additions only), dropped when any of its episodes is played again, and gone with the show. Continue watching and Next up both read it.
+**Taking a show off Continue watching** is a row in `show_dismissals` (migration `0024_show_dismissals`, additions only), dropped when any of its episodes is played again, and gone with the show. Continue watching and Next up both read it.
 
 **Home and Search:** Continue watching takes episodes beside films, the latest played first. Next up, New episodes and Recently added shows are rows of their own, only when an episode has a file, so a server without shows looks as before. Search ranks shows and episodes among films' kinds by the best name's match, Discover last.
 

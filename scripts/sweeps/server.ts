@@ -453,7 +453,7 @@ try {
       {
         name: 'settings:vpn:connects',
         path: '/settings/vpn',
-        act: (p) => p.getByRole('radio', { name: /highsea connects/ }).click(),
+        act: (p) => p.getByRole('radio', { name: /Built-in VPN/ }).click(),
       },
       { name: 'settings:downloads', path: '/settings/downloads' },
       // 6b: the importers, and A17's library mode on the root folder seeded above

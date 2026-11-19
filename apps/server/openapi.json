@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "highsea",
-    "version": "0.4.5",
+    "version": "0.4.6",
     "description": "The highsea server API. Every admin capability is here, with admin scope.",
     "license": {
       "name": "AGPL-3.0-only"
@@ -2563,6 +2563,12 @@
             "type": "string",
             "minLength": 1,
             "maxLength": 1000
+          },
+          "fanartKey": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "example": "a1b2c3d4e5f6a7b8"
           },
           "language": {
             "type": "string",
@@ -6052,6 +6058,28 @@
               "builtIn"
             ]
           },
+          "fanart": {
+            "type": "object",
+            "properties": {
+              "set": {
+                "type": "boolean"
+              },
+              "last4": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "project": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "set",
+              "last4",
+              "project"
+            ]
+          },
           "language": {
             "type": "string",
             "pattern": "^[a-z]{2}(-[A-Z]{2})?$",
@@ -6065,6 +6093,7 @@
         },
         "required": [
           "key",
+          "fanart",
           "language",
           "region"
         ]
@@ -6173,6 +6202,7 @@
             "type": "string",
             "enum": [
               "tmdb",
+              "fanart",
               "upload"
             ]
           },
@@ -6230,6 +6260,13 @@
       "ArtworkOption": {
         "type": "object",
         "properties": {
+          "source": {
+            "type": "string",
+            "enum": [
+              "tmdb",
+              "fanart"
+            ]
+          },
           "file": {
             "type": "string",
             "example": "/f89U3ADr1oiB1s9GkdPOEpXUk5H.jpg"
@@ -6252,16 +6289,29 @@
             "type": "integer"
           },
           "voteAverage": {
-            "type": "number"
+            "type": [
+              "number",
+              "null"
+            ]
           },
           "voteCount": {
-            "type": "integer"
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "likes": {
+            "type": [
+              "integer",
+              "null"
+            ]
           },
           "current": {
             "type": "boolean"
           }
         },
         "required": [
+          "source",
           "file",
           "url",
           "language",
@@ -6269,6 +6319,7 @@
           "height",
           "voteAverage",
           "voteCount",
+          "likes",
           "current"
         ]
       },
@@ -11165,12 +11216,47 @@
                 "message"
               ]
             }
+          },
+          "leftOut": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "indexerId": {
+                  "type": "string"
+                },
+                "indexer": {
+                  "type": "string"
+                },
+                "reason": {
+                  "type": "string",
+                  "enum": [
+                    "other-movie",
+                    "duplicate"
+                  ]
+                },
+                "count": {
+                  "type": "integer"
+                },
+                "found": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "indexerId",
+                "indexer",
+                "reason",
+                "count",
+                "found"
+              ]
+            }
           }
         },
         "required": [
           "releases",
           "searched",
-          "failed"
+          "failed",
+          "leftOut"
         ]
       },
       "Release": {
@@ -12959,6 +13045,25 @@
             "maxLength": 1000
           }
         }
+      },
+      "VpnTestResult": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "description": "No line failed; a warning still passes"
+          },
+          "checks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/VpnCheck"
+            }
+          }
+        },
+        "required": [
+          "ok",
+          "checks"
+        ]
       },
       "SpeedSample": {
         "type": "object",
@@ -26314,8 +26419,8 @@
         "tags": [
           "Settings"
         ],
-        "summary": "Save the TMDB key, the metadata language or the region",
-        "description": "A new key is checked with TMDB first: 400 with `details.reason` `tmdb-key-rejected` when TMDB doesn’t accept it, 503 (`tmdb-unreachable`) when TMDB can’t be reached. Nothing is saved unless every field is. The key is stored encrypted and never returned.",
+        "summary": "Save the TMDB key, the fanart.tv key, the metadata language or the region",
+        "description": "A new key is checked with TMDB first: 400 with `details.reason` `tmdb-key-rejected` when TMDB doesn’t accept it, 503 (`tmdb-unreachable`) when TMDB can’t be reached. A personal fanart.tv key is checked with fanart.tv the same way (`fanart-key-rejected`, `fanart-unavailable`). Nothing is saved unless every field is. Keys are stored encrypted and never returned.",
         "x-highsea-access": "owner",
         "security": [
           {
@@ -26404,6 +26509,56 @@
         ],
         "summary": "Remove the TMDB key",
         "description": "The library and its pages keep working from the cache.",
+        "x-highsea-access": "owner",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Removed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MetadataSettings"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/settings/metadata/fanart": {
+      "delete": {
+        "tags": [
+          "Settings"
+        ],
+        "summary": "Remove the personal fanart.tv key",
+        "description": "fanart.tv stays on while the image carries highsea’s project key.",
         "x-highsea-access": "owner",
         "security": [
           {
@@ -36143,6 +36298,86 @@
           },
           "403": {
             "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/settings/vpn/test": {
+      "post": {
+        "tags": [
+          "Settings"
+        ],
+        "summary": "Try these VPN settings without saving them",
+        "description": "One line each for the tunnel, the exit address, names and port forwarding. The built-in VPN brings its tunnel up for the test and takes it down after; torrents never use it. With the built-in VPN connected, the same settings are checked in place, and other ones are refused with 409. 400 with `details.field` for what a save would refuse.",
+        "x-highsea-access": "owner",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VpnSettingsInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "How it went",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VpnTestResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "conflict",
             "content": {
               "application/json": {
                 "schema": {

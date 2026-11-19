@@ -295,7 +295,8 @@ describe('0018_profiles', () => {
       '0020_shows',
       '0021_web_seeds',
       '0022_unmatched_files',
-      '0023_show_dismissals',
+      '0023_fanart',
+      '0024_show_dismissals',
     ])
     expect(result.backup).not.toBeNull()
     const once = state(first)
@@ -398,7 +399,8 @@ describe('0020_shows', () => {
       '0020_shows',
       '0021_web_seeds',
       '0022_unmatched_files',
-      '0023_show_dismissals',
+      '0023_fanart',
+      '0024_show_dismissals',
     ])
     expect(films(raw)).toEqual(was)
     expect(raw.all('SELECT count(*) AS n FROM media_items')).toEqual([{ n: 300 }])
@@ -542,7 +544,11 @@ describe('0020_shows', () => {
     test('adds the table and leaves the films and the show’s rows as they were', () => {
       const raw = withShow()
       const was = all(raw)
-      expect(migrate(raw).applied).toEqual(['0022_unmatched_files', '0023_show_dismissals'])
+      expect(migrate(raw).applied).toEqual([
+        '0022_unmatched_files',
+        '0023_fanart',
+        '0024_show_dismissals',
+      ])
       expect(all(raw)).toEqual(was)
       expect(raw.all('SELECT count(*) AS n FROM unmatched_files')).toEqual([{ n: 0 }])
       expect(raw.all('PRAGMA foreign_key_check')).toEqual([])
@@ -568,16 +574,17 @@ describe('0020_shows', () => {
     })
 
     // HT-83 (Phase 5 B): a show taken off Continue watching and Next up, per profile
-    describe('0023_show_dismissals', () => {
-      /** The show above, with #79's unmatched files and a watch position, migrated up to 0022. */
+    describe('0024_show_dismissals', () => {
+      /** The show above, with #79's unmatched files and a watch position, migrated up to 0023. */
       function withUnmatched() {
-        const raw = withShow('0023')
+        const raw = withShow('0024')
         raw.run(
           "INSERT INTO unmatched_files (path, kind, root_folder, item_id, reason, message, size, found_at) VALUES ('/media/shows/Chernobyl (2019)/Recap.mkv', 'episode-file', '/media/shows', 'itm_show', 'no-episode-number', 'No number.', 10, 1)",
         )
-        const [profile] = raw.all<{ id: string; user_id: string }>(
-          'SELECT id, user_id FROM profiles LIMIT 1',
-        )
+        const [profile] = raw.all('SELECT id, user_id FROM profiles LIMIT 1') as {
+          id: string
+          user_id: string
+        }[]
         if (profile)
           raw.run(
             'INSERT INTO watch_positions (user_id, profile_id, item_id, position_seconds, duration_seconds, updated_at) VALUES (?, ?, ?, 600, 3600, 1)',
@@ -595,7 +602,7 @@ describe('0020_shows', () => {
       test('adds the table and leaves the films, the show and its unmatched files as they were', () => {
         const { raw } = withUnmatched()
         const was = everything(raw)
-        expect(migrate(raw).applied).toEqual(['0023_show_dismissals'])
+        expect(migrate(raw).applied).toEqual(['0024_show_dismissals'])
         expect(everything(raw)).toEqual(was)
         expect(raw.all('SELECT count(*) AS n FROM show_dismissals')).toEqual([{ n: 0 }])
         expect(raw.all('PRAGMA foreign_key_check')).toEqual([])
@@ -631,6 +638,27 @@ describe('0020_shows', () => {
     )
     raw.run('DELETE FROM show_metadata WHERE tmdb_id = 87108')
     expect(raw.all('SELECT * FROM season_metadata')).toEqual([])
+    raw.close()
+  })
+})
+
+describe('0023_fanart', () => {
+  test('adds fanart.tv’s cache, keyed by subject and id, and the fanart artwork source', () => {
+    const { raw } = openDatabase(':memory:')
+    migrate(raw, { all: migrations.filter((m) => m.tag < '0023') })
+    expect(migrate(raw).applied).toEqual(['0023_fanart', '0024_show_dismissals'])
+    raw.run(
+      "INSERT INTO fanart_images (subject, external_id, data, fetched_at) VALUES ('movie', '550', NULL, 1)",
+    )
+    expect(() =>
+      raw.run(
+        "INSERT INTO fanart_images (subject, external_id, data, fetched_at) VALUES ('movie', '550', '{}', 2)",
+      ),
+    ).toThrow()
+    raw.run(
+      "INSERT INTO fanart_images (subject, external_id, data, fetched_at) VALUES ('show', '550', '{}', 2)",
+    )
+    expect(raw.all('SELECT count(*) AS n FROM fanart_images')[0]?.n).toBe(2)
     raw.close()
   })
 })

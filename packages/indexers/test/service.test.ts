@@ -4,6 +4,7 @@ import { schema } from '@highsea-tv/db'
 import type { Definition } from '@highsea-tv/schemas/indexers'
 import { BACKOFF_STEPS_MS, FAILING_AFTER_MS } from '../src/health.ts'
 import { HEALTH_TOPIC, INDEXERS_TOPIC } from '../src/index.ts'
+import type { SearchInput } from '../src/search.ts'
 import {
   FAKE_CREDENTIALS,
   FAKE_ORIGIN,
@@ -396,6 +397,82 @@ describe('interactive search', () => {
       'Big.Buck.Bunny.2008.1080p.BluRay.x264-GRP',
     )
     expect(result.releases).toHaveLength(4)
+    // and said, not dropped without a word (HT-85)
+    expect(result.leftOut).toEqual([
+      expect.objectContaining({
+        indexer: 'Torrent feed',
+        reason: 'other-movie',
+        count: 2,
+        found: 6,
+      }),
+    ])
+  })
+
+  // HT-85: on 2026-11-19 the Internet Archive answered the definition's search for His Girl Friday
+  // (1940) with its newest films, as if the title and year weren't asked. None is the film, so the
+  // search listed nothing and said nothing; now it says what was left out, and logs every search.
+  const hisGirlFriday = (): SearchInput => ({
+    ...sintelSearch(any),
+    tmdbId: 3085,
+    imdbId: 'tt0032599',
+    title: 'His Girl Friday',
+    year: 1940,
+    movie: { title: 'His Girl Friday', year: 1940, runtimeMinutes: 92, originalLanguage: 'en' },
+  })
+
+  test('an Archive answer that ignored the query is left out, and the answer says so', async () => {
+    const t = setup({ definitions: [catalogDefinition('internet-archive')] })
+    await t.indexers.add('internet-archive')
+    t.fake.misbehave({ kind: 'ignores-query' })
+    const result = await t.indexers.search(hisGirlFriday())
+    const asked = t.fake.requests.at(-1)?.url.searchParams.get('q')
+    expect(asked).toContain('title:(His Girl Friday) AND year:1940')
+    expect(result.releases).toEqual([])
+    expect(result.searched).toBe(1)
+    expect(result.failed).toEqual([])
+    expect(result.leftOut).toEqual([
+      {
+        indexerId: expect.any(String),
+        indexer: 'Internet Archive',
+        reason: 'other-movie',
+        count: 5,
+        found: 5,
+      },
+    ])
+    const line = t.logs.entries().find((e) => e.message === 'searched for releases')
+    expect(line).toMatchObject({
+      level: 'info',
+      fields: {
+        tmdbId: 3085,
+        title: 'His Girl Friday',
+        year: 1940,
+        releases: 0,
+        approved: 0,
+        indexers: [
+          {
+            indexer: 'Internet Archive',
+            by: 'title',
+            found: 5,
+            matched: 0,
+            otherMovie: 5,
+            duplicate: 0,
+          },
+        ],
+      },
+    })
+  })
+
+  test('a search that finds the film logs what each indexer found and matched', async () => {
+    const t = setup({ definitions: [catalogDefinition('internet-archive')] })
+    await t.indexers.add('internet-archive')
+    const result = await t.indexers.search(sintelSearch(any))
+    expect(result.releases.map((r) => r.title)).toEqual(['Sintel 2010'])
+    expect(result.leftOut).toEqual([])
+    const line = t.logs.entries().find((e) => e.message === 'searched for releases')
+    expect(line?.fields).toMatchObject({
+      releases: 1,
+      indexers: [{ indexer: 'Internet Archive', found: 1, matched: 1, otherMovie: 0 }],
+    })
   })
 
   test('prune drops expired results', async () => {

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// highsea connects' state machine on a fake clock, with a fake `ip` and `wg`, a fake PIA and a
+// The built-in VPN’s state machine on a fake clock, with a fake `ip` and `wg`, a fake PIA and a
 // fake NAT-PMP: connecting until the first handshake, the binding only once the checks pass, the
 // checks that stop torrents, the handshake lost and the reconnect, port forwarding and its
 // renewals, and the indexers' fetch. Nothing runs and nothing leaves the machine.
@@ -67,7 +67,7 @@ function builtin(
   return { ...t, wg, answers, boundCalls, forwarded, nat, step, rows }
 }
 
-describe('highsea connects', () => {
+describe('the built-in VPN', () => {
   test('connects, waits for a handshake, checks, then hands torrents the tunnel’s address', async () => {
     const b = builtin()
     await b.vpn.save({ mode: 'builtin', provider: 'proton', config: wgConfig() })
@@ -98,7 +98,7 @@ describe('highsea connects', () => {
         'ipv6',
         'info',
         'IPv4 only',
-        'highsea connects carries IPv4 for now, so torrents use IPv4 only.',
+        'The built-in VPN carries IPv4 for now, so torrents use IPv4 only.',
       ],
     ])
     expect(b.vpn.issues()).toEqual([])
@@ -256,7 +256,7 @@ describe('highsea connects', () => {
 
     const mac = testVpn({
       runner: async (cmd) => {
-        throw new CommandFailed(cmd.op, 'platform', 'highsea connects runs on Linux.')
+        throw new CommandFailed(cmd.op, 'platform', 'The built-in VPN runs on Linux.')
       },
     })
     await mac.vpn.save({ mode: 'builtin', provider: 'proton', config: wgConfig() })
@@ -266,7 +266,7 @@ describe('highsea connects', () => {
       state: 'failed',
       needsCapability: false,
       message:
-        'highsea connects runs on Linux, as highsea’s Docker image does. Use a VPN container or an interface on this machine here.',
+        'The built-in VPN runs on Linux, as highsea’s Docker image does. Use a VPN container or an interface on this machine here.',
     })
     await mac.vpn.stop()
 
@@ -296,7 +296,7 @@ describe('highsea connects', () => {
       hostNetwork: true,
       needsCapability: false,
       message:
-        'On host networking, the tunnel’s interface and routes would land in the host’s network beside everything else, so highsea won’t start it. Put the lines from Compose for highsea connects in place of network_mode: host, then recreate the container.',
+        'On host networking, the tunnel’s interface and routes would land in the host’s network beside everything else, so highsea won’t start it. Put the lines from Compose for the built-in VPN in place of network_mode: host, then recreate the container.',
     })
     // not one `ip` or `wg` command ran: nothing reached the host's network
     expect(wg.lines()).toEqual([])
@@ -451,14 +451,14 @@ describe('highsea connects', () => {
     await t.vpn.stop()
   })
 
-  test('saving refuses a configuration highsea connects can’t build', async () => {
+  test('saving refuses a configuration the built-in VPN can’t build', async () => {
     const { vpn } = testVpn()
     const v6only = `[Interface]\nPrivateKey = ${KEY_A}\nAddress = fd00::2/128\n[Peer]\nPublicKey = ${KEY_B}\nAllowedIPs = ::/0\nEndpoint = 185.159.157.4:51820\n`
     await expect(
       vpn.save({ mode: 'builtin', provider: 'other', config: v6only }),
     ).rejects.toMatchObject({
       message:
-        'highsea connects needs an IPv4 Address in the WireGuard configuration’s [Interface] section.',
+        'The built-in VPN needs an IPv4 Address in the WireGuard configuration’s [Interface] section.',
     })
     const noEndpoint = `[Interface]\nPrivateKey = ${KEY_A}\nAddress = 10.2.0.2/32\n[Peer]\nPublicKey = ${KEY_B}\nAllowedIPs = 0.0.0.0/0\n`
     await expect(
@@ -468,7 +468,7 @@ describe('highsea connects', () => {
         'A [Peer] in that WireGuard configuration has no Endpoint, so highsea can’t reach it.',
     })
     await expect(
-      vpn.save({ mode: 'builtin', provider: 'nordvpn', config: wgConfig() }),
+      vpn.save({ mode: 'builtin', provider: 'novpn', config: wgConfig() }),
     ).rejects.toMatchObject({
       message: 'Choose a provider.',
     })

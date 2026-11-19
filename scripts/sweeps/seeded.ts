@@ -70,6 +70,8 @@ export async function boot(port: number, { production = false, lan = false } = {
       // quiet, unless a run reads the log's lines (start-times.ts)
       HIGHSEA_LOG_LEVEL: process.env.SWEEP_LOG_LEVEL ?? 'warn',
       HIGHSEA_TMDB_REPLAY: '1',
+      // fanart.tv on, as in a release image, answered by the replay's fixtures (not a real key)
+      HIGHSEA_FANART_KEY: 'sweepfanartkey01',
       // the engine opens no socket: grabs join the queue, nothing downloads, nothing reaches the network
       HIGHSEA_TORRENT_OFFLINE: '1',
       // no graphics chip, whatever this machine has; HIGHSEA_HARDWARE_NONE=0 looks for the real one

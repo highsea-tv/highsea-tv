@@ -238,6 +238,23 @@ export const images = sqliteTable(
   ],
 )
 
+/**
+ * What fanart.tv has for a title (HT-74, ADR 0070): its answer as it sent it, by what it keys the
+ * title on: a film's TMDB id (`movie`), and later a show's TheTVDB id (`show`) and an artist's
+ * MusicBrainz id (`artist`), so the id is text. `data` is null when fanart.tv has nothing for it
+ * (a 404), so it isn't asked again until that's old. A failure writes nothing.
+ */
+export const fanartImages = sqliteTable(
+  'fanart_images',
+  {
+    subject: text('subject', { enum: ['movie', 'show', 'artist'] }).notNull(),
+    externalId: text('external_id').notNull(),
+    data: text('data', { mode: 'json' }),
+    fetchedAt: integer('fetched_at').notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.subject, t.externalId] })],
+)
+
 /** What can own chosen artwork: movies and collections now; shows, seasons and episodes later. */
 export const ARTWORK_OWNERS = ['movie', 'collection', 'show', 'season', 'episode'] as const
 export const ARTWORK_KINDS = ['poster', 'backdrop', 'logo'] as const
@@ -255,8 +272,12 @@ export const artwork = sqliteTable(
     ownerType: text('owner_type', { enum: ARTWORK_OWNERS }).notNull(),
     ownerId: integer('owner_id').notNull(),
     kind: text('kind', { enum: ARTWORK_KINDS }).notNull(),
-    source: text('source', { enum: ['tmdb', 'upload'] }).notNull(),
-    /** TMDB's `file_path`, or an upload's own name (`/hs-….png`), with its leading slash. */
+    /** fanart.tv's since HT-74 (ADR 0070). */
+    source: text('source', { enum: ['tmdb', 'fanart', 'upload'] }).notNull(),
+    /**
+     * TMDB's `file_path`, fanart.tv's file as highsea names it (`/ftv_….png`), or an upload's own
+     * name (`/hs_….png`), with its leading slash.
+     */
     file: text('file').notNull(),
     /** ISO 639-1 of the image's text, as TMDB has it; null for none, and for uploads. */
     language: text('language'),

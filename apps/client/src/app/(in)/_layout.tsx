@@ -84,6 +84,7 @@ import {
   useHereAnnouncements,
 } from '../../shell/announcements.tsx'
 import { PointerShortcuts } from '../../shell/shortcuts.tsx'
+import { TvFocusScope } from '../../tv-focus.tsx'
 
 const { space } = tokens
 
@@ -212,6 +213,10 @@ function ShellBody() {
         animation: input === 'touch' ? undefined : 'fade',
         contentStyle: { backgroundColor: theme.colors.bg },
       }}
+      // on the TV, each screen keeps where focus was in it and lands it there (../../tv-focus.tsx)
+      screenLayout={
+        input === 'tv' ? ({ children }) => <TvFocusScope>{children}</TvFocusScope> : undefined
+      }
     />
   )
   // the phone has no Alerts: its owner's announcements are Home's card

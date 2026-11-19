@@ -31,6 +31,8 @@ export type MetricsSettings = { enabled: boolean }
 /** General › Metadata (checkpoint 4): the key itself never comes back, only its last four. */
 export type MetadataSettings = {
   key: { set: boolean; last4: string | null; builtIn: boolean }
+  /** fanart.tv (HT-74): the owner's personal key, and whether the image carries highsea's. */
+  fanart: { set: boolean; last4: string | null; project: boolean }
   /** TMDB's language, `en-GB`. */
   language: string
   /** ISO 3166-1, for certifications, release dates and Discover. */
@@ -317,6 +319,8 @@ export const defaultSettings = (
       key: empty
         ? { set: false, last4: null, builtIn: true }
         : { set: true, last4: '3f9a', builtIn: true },
+      // the image carries highsea's fanart.tv project key, as a release will once it's registered
+      fanart: { set: false, last4: null, project: true },
       language: 'en-GB',
       region: 'PT',
     },

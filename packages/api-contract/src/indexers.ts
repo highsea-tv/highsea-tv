@@ -276,6 +276,20 @@ export const ReleaseSearch = z
     searched: z.number().int(),
     /** The indexers that didn't answer, with why. */
     failed: z.array(z.object({ indexerId: z.string(), indexer: z.string(), message: z.string() })),
+    /**
+     * What each indexer answered with that isn't in `releases`, by why: `other-movie` (another
+     * film, by id or by title and year) or `duplicate` (listed twice). `found` is all it answered
+     * with. Releases the profile or the blocklist rejects are in `releases`, rejected.
+     */
+    leftOut: z.array(
+      z.object({
+        indexerId: z.string(),
+        indexer: z.string(),
+        reason: z.enum(['other-movie', 'duplicate']),
+        count: z.number().int(),
+        found: z.number().int(),
+      }),
+    ),
   })
   .openapi('ReleaseSearch')
 

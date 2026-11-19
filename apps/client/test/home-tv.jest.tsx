@@ -169,13 +169,19 @@ describe('Home on the TV', () => {
 
   test('Go to the film leaves Home without moving focus on it', async () => {
     const r = await home()
+    const label = String(continuing()[0]?.props.accessibilityLabel)
     await fireEvent(continuing()[0] as never, 'longPress')
     await flush()
     jest.mocked(focusOn).mockClear()
     await fireEvent.press(screen.getByRole('button', { name: 'Go to the film' }))
     await flush()
     expect(r.getPathname()).toMatch(/^\/movies\//)
-    expect(focusOn).not.toHaveBeenCalled()
+    // the film's page lands focus on its own stop (src/tv-focus.tsx); Home's card isn't asked for
+    const asked = jest
+      .mocked(focusOn)
+      .mock.calls.map(([to]) => (to as { props?: { accessibilityLabel?: string } } | null)?.props)
+    expect(asked.map((p) => p?.accessibilityLabel)).toContain('Resume')
+    expect(asked.map((p) => p?.accessibilityLabel)).not.toContain(label)
   })
 
   test('Remove from Continue watching takes the card off the row', async () => {

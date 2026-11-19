@@ -3,9 +3,12 @@
 // and collections are addressed by their TMDB ids. The replaying `fetch` for tests and the dev
 // server has its own entry point (`@highsea-tv/metadata/replay`).
 import type { MetadataDeps } from './context.ts'
-import { defineMetadataJobs, queueFacts, scheduleMetadataJobs } from './jobs.ts'
+import { defineMetadataJobs, queueCatchUp, queueFacts, scheduleMetadataJobs } from './jobs.ts'
 import { createMetadataCore, JOB_TYPES } from './service.ts'
 import type { CacheKind } from './types.ts'
+
+/** Stops `setFanartKey` after its checks, before it stores anything. */
+const CHECKED = Symbol('checked')
 
 export function createMetadata(deps: MetadataDeps) {
   const core = createMetadataCore(deps)
@@ -14,7 +17,10 @@ export function createMetadata(deps: MetadataDeps) {
 
   return {
     settings: {
-      /** `{ key: { set, last4, builtIn }, language, region }`. The key is never returned. */
+      /**
+       * `{ key: { set, last4, builtIn }, fanart: { set, last4, project }, language, region }`. The
+       * keys are never returned.
+       */
       get: () => settings.view(),
       /** Validates the key with TMDB (`GET /3/authentication`), then stores it sealed. */
       async setKey(credential: string) {
@@ -31,6 +37,28 @@ export function createMetadata(deps: MetadataDeps) {
           await api.authentication(c)
         }),
       clearKey: () => settings.clearKey(),
+      /**
+       * The owner's personal fanart.tv key (HT-74): checked with one request, stored sealed, then the
+       * library's films without a logo are looked up a few minutes on.
+       */
+      async setFanartKey(key: string, { checked = false } = {}) {
+        const view = await settings.setFanartKey(key, (k) =>
+          checked ? Promise.resolve() : core.fanart.check(k),
+        )
+        queueCatchUp(deps.jobs, core, deps.clock.now())
+        return view
+      },
+      /** The same check, storing nothing, so a save can check every key before storing any. */
+      checkFanartKey: (key: string) =>
+        settings
+          .setFanartKey(key, async (k) => {
+            await core.fanart.check(k)
+            throw CHECKED
+          })
+          .catch((e) => {
+            if (e !== CHECKED) throw e
+          }),
+      clearFanartKey: () => settings.clearFanartKey(),
       /** A new region queues `metadata.facts`, since certifications follow it (checkpoint 8d). */
       update(patch: { language?: string; region?: string | null }) {
         const view = settings.update(patch)
@@ -65,13 +93,16 @@ export function createMetadata(deps: MetadataDeps) {
     jobs: {
       types: JOB_TYPES,
       /**
-       * Daily changes, sweep and purge, and `metadata.facts` when the stored facts follow another
-       * region or are from before 8d. The runtime calls it once at boot.
+       * Daily changes, sweep and purge; `metadata.facts` when the stored facts follow another
+       * region or are from before 8d; and `metadata.catch-up` when the library's films are missing
+       * anything (HT-74). The runtime calls it once at boot.
        */
       schedule(now: number) {
         scheduleMetadataJobs(deps.jobs, now)
         queueFacts(deps.jobs, deps.db, settings.region())
+        queueCatchUp(deps.jobs, core, now)
       },
+      runCatchUp: core.runCatchUp,
       runChanges: core.runChanges,
       runSweep: core.runSweep,
       runPurge: core.runPurge,
@@ -96,6 +127,8 @@ export {
 export * from './attribution.ts'
 export type { MetadataDeps } from './context.ts'
 export { METADATA_TOPIC } from './context.ts'
+export { FANART_KEY_REJECTED, FANART_UNAVAILABLE } from './fanart/client.ts'
+export { FANART_PREFIX, isFanartFile } from './fanart/source.ts'
 export * from './image-url.ts'
 export type { CachedImage } from './images.ts'
 export { TMDB_IMAGE_BASE } from './images.ts'
@@ -105,9 +138,11 @@ export * from './recording.ts'
 export {
   type ArtworkKindView,
   CACHE_LIMIT_MS,
+  CATCH_UP_DELAY_MS,
   CHANGES_STATE_KEY,
   CHANGES_WINDOW_MS,
   FULL_REFRESH_MS,
+  GONE_RETRY_MS,
   JOB_TYPES,
 } from './service.ts'
 export {

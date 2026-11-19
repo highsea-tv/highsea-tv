@@ -1,0 +1,31 @@
+# SPDX-License-Identifier: CC0-1.0
+# Written for highsea from NordVPN's own support pages and its own open-source clients; nothing was
+# copied. NordVPN offers no WireGuard file to download, so the steps build one: the access token
+# (its support page), the NordLynx key the token unlocks and a server from its public API (libtelio's
+# README), and the tunnel's address and port its Linux client uses (nordvpn-linux's nordlynx.go).
+id: nordvpn
+version: 1.0.0
+minEngineVersion: 1.0.0
+name: NordVPN
+connect: config
+steps:
+  - Sign in to Nord Account, open NordVPN › Advanced settings › Get access token, enter the code Nord emails you, and generate a token. Copy it now; Nord shows it once.
+  - "Get your NordLynx key with that token: curl -u token:YOUR_TOKEN https://api.nordvpn.com/v1/users/services/credentials and copy nordlynx_private_key."
+  - Open https://api.nordvpn.com/v1/servers/recommendations?filters[servers_technologies][identifier]=wireguard_udp&limit=1 and note the hostname, and the public_key under wireguard_udp.
+  - "Write a file: [Interface] PrivateKey = your key, Address = 10.5.0.2/32, DNS = 103.86.96.100, 103.86.99.100; [Peer] PublicKey = the server’s key, AllowedIPs = 0.0.0.0/0, Endpoint = the hostname:51820."
+  - Upload it here, or paste it.
+links:
+  - label: NordVPN’s access token
+    url: https://support.nordvpn.com/hc/en-us/articles/45535038276753-How-to-generate-a-NordVPN-login-token-to-connect-to-a-VPN-server-on-a-router
+  - label: NordVPN’s DNS servers
+    url: https://support.nordvpn.com/hc/en-us/articles/19587726859793-What-are-NordVPN-DNS-server-addresses
+portForwarding:
+  # only with the Dedicated Server add-on; standard servers and Dedicated IP don't forward ports
+  method: none
+ipv6: false
+sources:
+  - https://support.nordvpn.com/hc/en-us/articles/45535038276753-How-to-generate-a-NordVPN-login-token-to-connect-to-a-VPN-server-on-a-router
+  - https://support.nordvpn.com/hc/en-us/articles/19483392309649-Does-NordVPN-offer-port-forwarding
+  - https://support.nordvpn.com/hc/en-us/articles/19587726859793-What-are-NordVPN-DNS-server-addresses
+  - https://github.com/NordSecurity/libtelio/blob/main/README.md
+  - https://github.com/NordSecurity/nordvpn-linux/blob/main/daemon/vpn/nordlynx/nordlynx.go

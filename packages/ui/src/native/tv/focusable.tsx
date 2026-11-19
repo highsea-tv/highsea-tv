@@ -13,7 +13,10 @@ import {
   createContext,
   type ReactNode,
   type Ref,
+  useCallback,
   useContext,
+  useEffect,
+  useRef,
   useState,
 } from 'react'
 import {
@@ -72,6 +75,21 @@ export function focusShadow(text: string, u: number, scale = 1) {
  * stops apart by these ids, which iOS and tvOS expose as accessibility identifiers.
  */
 export const StopScope = createContext('')
+
+/**
+ * A screen's memory of focus, which the app gives each of its screens (apps/client's
+ * TvFocusScope): every stop in the screen tells it as it takes focus and loses it, as it appears
+ * `preferred`, and as it goes. tvOS's focus engine keeps no memory of a React screen left under the
+ * next one, so the screen keeps its own. Outside one, a stop tells nothing.
+ */
+export type FocusMemory = {
+  focused: (stop: ViewHandle) => void
+  blurred: (stop: ViewHandle) => void
+  preferred: (stop: ViewHandle) => void
+  gone: (stop: ViewHandle) => void
+}
+
+export const FocusMemoryContext = createContext<FocusMemory | null>(null)
 
 export type FocusableProps = {
   onPress?: () => void
@@ -134,7 +152,27 @@ export function Focusable({
   const scale = useSharedValue(1)
   const to = typeof lift === 'number' ? lift : LIFT[lift]
   const animated = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }), [scale])
-  const stop = useStop(ref, { preferred, disabled })
+  // the stop's own handle beside the one it's given, for the screen's memory
+  const memory = useContext(FocusMemoryContext)
+  const self = useRef<ViewHandle | null>(null)
+  const own = useCallback(
+    (value: ViewHandle | null) => {
+      self.current = value
+      if (typeof ref === 'function') ref(value)
+      else if (ref) (ref as { current: ViewHandle | null }).current = value
+    },
+    [ref],
+  )
+  useEffect(() => {
+    const v = self.current
+    return () => {
+      if (v) memory?.gone(v)
+    }
+  }, [memory])
+  useEffect(() => {
+    if (preferred && !disabled && self.current) memory?.preferred(self.current)
+  }, [memory, preferred, disabled])
+  const stop = useStop(own, { preferred, disabled })
   return (
     <AnimatedPressable
       {...stop.props}
@@ -150,11 +188,13 @@ export function Focusable({
       onFocus={() => {
         setFocused(true)
         if (!reduced) scale.value = withSpring(to, tokens.springs.base)
+        if (self.current) memory?.focused(self.current)
         onFocus?.()
       }}
       onBlur={() => {
         setFocused(false)
         scale.value = withSpring(1, tokens.springs.base)
+        if (self.current) memory?.blurred(self.current)
         onBlur?.()
       }}
       style={[

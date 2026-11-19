@@ -65,6 +65,12 @@ export const configSchema = z.object({
    * owner's own key in Settings wins. A build from a checkout reads it from its environment.
    */
   tmdbKey: z.string().min(1).optional(),
+  /**
+   * highsea's fanart.tv project key (`HIGHSEA_FANART_KEY`, or `_FILE`), built in the same way
+   * (HT-74, ADR 0070). Optional: without it, and without the owner's personal key in Settings,
+   * fanart.tv isn't asked.
+   */
+  fanartKey: z.string().min(1).optional(),
 })
 
 export type Config = z.infer<typeof configSchema>
@@ -102,6 +108,7 @@ export function loadConfig(env: Record<string, string | undefined> = process.env
     traktClientSecret:
       env.HIGHSEA_TRAKT_CLIENT_SECRET?.trim() || keyFile(env.HIGHSEA_TRAKT_CLIENT_SECRET_FILE),
     tmdbKey: env.HIGHSEA_TMDB_READ_TOKEN?.trim() || keyFile(env.HIGHSEA_TMDB_READ_TOKEN_FILE),
+    fanartKey: env.HIGHSEA_FANART_KEY?.trim() || keyFile(env.HIGHSEA_FANART_KEY_FILE),
   })
   if (!parsed.success) {
     const problems = parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`)

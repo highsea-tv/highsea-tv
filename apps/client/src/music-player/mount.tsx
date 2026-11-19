@@ -10,7 +10,7 @@
 import { useMusicQueue, useServes } from '@highsea-tv/client/data'
 import { useCurrent } from '@highsea-tv/native/servers'
 import { useFormFactor } from '@highsea-tv/ui'
-import { useRemote } from '@highsea-tv/ui/tv'
+import { focusedPlay, useRemote } from '@highsea-tv/ui/tv'
 import { usePathname } from 'expo-router'
 import { useCallback, useEffect, useRef } from 'react'
 import { useFrameState } from '../frame-channel.ts'
@@ -73,18 +73,26 @@ export function MusicPlayerMount() {
     )
   }, [serves, music])
 
-  return tv && serves ? <RemoteKeys /> : null
+  return tv ? <RemoteKeys serves={serves} /> : null
 }
 
-/** Play/Pause on the remote plays and pauses the music, but not over a film. */
-function RemoteKeys() {
+/**
+ * Play/Pause on the remote, but not over a film (the player has its own): music playing pauses
+ * (player.md › The music player); otherwise the focused card's title plays, without opening its
+ * page (design-language/platforms/tv.md › the remote, tiles.tsx's focusedPlay); otherwise music
+ * queued goes on. Music playing comes first so the key that started it stops it wherever focus is.
+ */
+function RemoteKeys({ serves }: { serves: boolean }) {
   const pathname = usePathname()
   const onEvent = useCallback(
     (e: { eventType: string }) => {
       if (e.eventType !== 'playPause' || pathname.startsWith('/play/')) return
-      if (musicPlayer.get().queue.length > 0) musicPlayer.toggle()
+      const music = serves ? musicPlayer.get() : null
+      if (music?.playing) musicPlayer.toggle()
+      else if (focusedPlay.current) focusedPlay.current()
+      else if (music && music.queue.length > 0) musicPlayer.toggle()
     },
-    [pathname],
+    [pathname, serves],
   )
   useRemote(onEvent)
   return null

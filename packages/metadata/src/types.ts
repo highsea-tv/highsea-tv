@@ -162,6 +162,11 @@ export type DiscoverList = (typeof DISCOVER_LISTS)[number]
 export type MetadataSettingsView = {
   /** `set` is the owner's own key; `builtIn`, highsea's, used when the owner has none. */
   key: { set: boolean; last4: string | null; builtIn: boolean }
+  /**
+   * fanart.tv (HT-74): `set` is the owner's personal key; `project`, highsea's own from the image.
+   * fanart.tv is used when either is there.
+   */
+  fanart: { set: boolean; last4: string | null; project: boolean }
   /** TMDB's language for metadata (`en-US`). */
   language: string
   /** ISO 3166-1 alpha-2: certifications, release dates and Discover's lists. */

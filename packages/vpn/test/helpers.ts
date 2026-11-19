@@ -115,6 +115,8 @@ export function testVpn(overrides: Partial<VpnDeps> = {}) {
     peersIn: () => 3,
     providers: seedProviders,
     runner: refusingRunner,
+    // Test's DNS line; nothing is looked up for real
+    resolve: async () => ['198.51.100.1'],
     ...overrides,
   })
   return { vpn, clock, timers, events, bindings, db, last: () => bindings.at(-1) }

@@ -10,7 +10,7 @@ import {
   type ServerEvent,
   silentLogger,
 } from '@highsea-tv/core'
-import { migrate, openDatabase, schema } from '@highsea-tv/db'
+import { migrate, migrations, openDatabase, type RawDatabase, schema } from '@highsea-tv/db'
 import { createJobQueue } from '@highsea-tv/jobs'
 import type { MetadataDeps } from '../src/context.ts'
 import { createMetadata } from '../src/index.ts'
@@ -26,8 +26,18 @@ export async function setup({
   builtInKey,
   onRequest,
   resizeImage,
+  fanartKey,
+  before,
 }: {
   key?: boolean
+  /** highsea's fanart.tv project key, as the image would carry it (HT-74). */
+  fanartKey?: string
+  /**
+   * A database from an earlier release: migrated up to and including `before.tag`, then `fill`
+   * writes its rows in that release's shape, then the rest of the migrations run, as an update's
+   * boot does.
+   */
+  before?: { tag: string; fill: (raw: RawDatabase) => void }
   /** highsea's own key, as the image carries it. */
   builtInKey?: string
   onRequest?: ReplayOptions['onRequest']
@@ -35,6 +45,12 @@ export async function setup({
   resizeImage?: MetadataDeps['resizeImage']
 } = {}) {
   const { db, raw } = openDatabase(':memory:')
+  if (before) {
+    const upTo = migrations.findIndex((m) => m.tag === before.tag)
+    if (upTo < 0) throw new Error(`No migration ${before.tag}`)
+    migrate(raw, { all: migrations.slice(0, upTo + 1) })
+    before.fill(raw)
+  }
   migrate(raw)
   const clock = createFakeClock()
   const events = createEventBus({ now: clock.now })
@@ -54,6 +70,7 @@ export async function setup({
     fetch,
     imagesDir,
     builtInKey,
+    fanartKey,
     resizeImage,
     sleep: async (ms) => {
       waits.push(ms)
@@ -97,6 +114,7 @@ export async function setup({
 
   return {
     db,
+    raw,
     clock,
     events,
     seen,

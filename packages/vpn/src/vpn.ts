@@ -3,7 +3,7 @@
 // Whatever the mode, this hands the torrent engine one binding through `onBinding`: an address and
 // resolvers while torrents may leave, or null while they mustn't. Three modes:
 //
-// - highsea connects (6b): highsea brings up a WireGuard tunnel itself (tunnel.ts), from a
+// - the built-in VPN (6b): highsea brings up a WireGuard tunnel itself (tunnel.ts), from a
 //   configuration file or PIA's API, and binds torrents to the tunnel's address, which the kernel
 //   routes through the tunnel or nowhere. The tunnel is up once a handshake is seen (`wg show
 //   latest-handshakes`, every 5 seconds); no handshake for 3 minutes is down (vpn.md › Checks), and
@@ -36,9 +36,13 @@ import {
 import type { Db } from '@highsea-tv/db'
 import { type Runner, spawnRunner } from './commands.ts'
 import { type ComposeInput, composeFor } from './compose.ts'
-import { checkCopy, failures, systemCopy, wireGuardFailures } from './copy.ts'
+import { checkCopy, failures, labels, systemCopy, testCopy, wireGuardFailures } from './copy.ts'
 import { askEcho, askEchoFields, type Echo } from './echo.ts'
-import { type BoundFetchOptions, boundFetch as defaultBoundFetch } from './fetch.ts'
+import {
+  type BoundFetchOptions,
+  boundFetch as defaultBoundFetch,
+  resolveFrom as defaultResolve,
+} from './fetch.ts'
 import { createGluetun, GluetunError } from './gluetun.ts'
 import { forwardWithNatPmp, type Mapping, type NatPmpOptions } from './natpmp.ts'
 import {
@@ -63,11 +67,13 @@ import { buildStatus, initialRuntime, leaking, type VpnRuntime } from './status.
 import { createTunnel, TunnelError, type TunnelSpec, tunnelAddresses } from './tunnel.ts'
 import type {
   VpnBinding,
+  VpnCheck,
   VpnInterface,
   VpnProvider,
   VpnSettings,
   VpnSettingsInput,
   VpnStatus,
+  VpnTestResult,
 } from './types.ts'
 import { parseWireGuard, WireGuardError } from './wireguard.ts'
 
@@ -76,7 +82,7 @@ export const VPN_TIMINGS = {
   interfaceMs: 2_000,
   /** How often gluetun's control server is asked for the tunnel's state. */
   containerMs: 5_000,
-  /** How often highsea connects reads the tunnel's latest handshake. */
+  /** How often the built-in VPN reads the tunnel's latest handshake. */
   handshakeMs: 5_000,
   /** No handshake for this long is down (vpn.md › Checks: "No handshake for 3 minutes"). */
   handshakeTimeoutMs: 3 * 60_000,
@@ -90,6 +96,9 @@ export const VPN_TIMINGS = {
   forwardRetryMs: 60_000,
   /** PIA's forwarded port is asked for again this long before it expires. */
   piaRenewBeforeMs: 24 * 60 * 60_000,
+  /** Test waits this long for the tunnel's first handshake, looking every second. */
+  testHandshakeMs: 15_000,
+  testPollMs: 1_000,
 }
 
 export type Timers = {
@@ -121,16 +130,22 @@ export type VpnDeps = {
   fetch: Fetch
   /** A fetch leaving from an address: the bound half of the exit check, and indexers (V6). */
   boundFetch?: (localAddress: string, options?: BoundFetchOptions) => Fetch
+  /** A name looked up from an address through given resolvers: Test's DNS line. */
+  resolve?: (
+    localAddress: string,
+    servers: readonly string[],
+    hostname: string,
+  ) => Promise<string[]>
   interfaces?: () => NodeJS.Dict<os.NetworkInterfaceInfo[]>
   /**
    * Whether highsea's container is on host networking, as `@highsea-tv/runtime`'s
-   * `detectContainerNetwork` finds it (setup reads the same). highsea connects won't start there.
+   * `detectContainerNetwork` finds it (setup reads the same). The built-in VPN won't start there.
    * False when absent.
    */
   hostNetwork?: () => boolean
   /** The catalog's `vpn-providers` entries (`@highsea-tv/catalog`'s provider reader). */
   providers?: () => readonly VpnProviderDefinition[]
-  /** Runs `ip` and `wg` for highsea connects; tests pass a fake that records each command. */
+  /** Runs `ip` and `wg` for the built-in VPN; tests pass a fake that records each command. */
   runner?: Runner
   /** PIA's API; tests pass one over a fake transport. */
   pia?: Pia
@@ -167,7 +182,7 @@ function addressesOf(infos: os.NetworkInterfaceInfo[] | undefined) {
 }
 
 /**
- * highsea connects carries IPv4 for now (judgement call in the 6b report): torrents bind to one
+ * The built-in VPN carries IPv4 for now (judgement call in the 6b report): torrents bind to one
  * IPv4 address, and an IPv6 address on the interface would fail where Docker turns IPv6 off.
  */
 function ipv4Only(spec: TunnelSpec): TunnelSpec {
@@ -181,7 +196,7 @@ function ipv4Only(spec: TunnelSpec): TunnelSpec {
   }
 }
 
-/** A running highsea connects tunnel. */
+/** The built-in VPN’s tunnel, while it runs. */
 type Session = {
   address: string
   dns: string[]
@@ -199,6 +214,7 @@ export function createVpn(deps: VpnDeps) {
   const timers = deps.timers ?? systemTimers
   const readInterfaces = deps.interfaces ?? (() => os.networkInterfaces())
   const bound = deps.boundFetch ?? defaultBoundFetch
+  const resolveName = deps.resolve ?? defaultResolve
   const providerList = deps.providers ?? (() => [])
   const tunnel = createTunnel(deps.runner ?? spawnRunner())
   const pia = deps.pia ?? createPia()
@@ -220,13 +236,15 @@ export function createVpn(deps: VpnDeps) {
   let polling = false
   let checking = false
   let lastForwarded: number | null | undefined
-  /** highsea connects' tunnel, while it's up. */
+  /** The built-in VPN's tunnel, while it's up. */
   let session: Session | null = null
   /** Whether highsea may have left an interface behind, to take down. */
   let tunnelTouched = false
   // when the state last changed, for System's "since"
   let phaseSince = deps.clock.now()
   const inFlight = new Set<Promise<unknown>>()
+  /** Settings › VPN's Test while it runs; connecting waits for it, so the two never share hswg0. */
+  let testing: Promise<unknown> | null = null
 
   const track = <T>(p: Promise<T>) => {
     inFlight.add(p)
@@ -298,7 +316,7 @@ export function createVpn(deps: VpnDeps) {
     }
   }
 
-  // reconnecting, in the container mode and highsea connects
+  // reconnecting, in the container mode and the built-in VPN
 
   function scheduleReconnect() {
     if (retry !== null) return
@@ -389,7 +407,7 @@ export function createVpn(deps: VpnDeps) {
     track(runChecks()).catch(() => {})
   }
 
-  // highsea connects
+  // The built-in VPN
 
   function failBuiltin(message: string, retryLater = false) {
     update({ phase: 'failed', failure: message, exit: null, exitResult: null })
@@ -443,6 +461,10 @@ export function createVpn(deps: VpnDeps) {
   }
 
   async function connectBuiltin(g: number) {
+    if (testing) {
+      await testing.catch(() => {})
+      if (g !== generation) return
+    }
     const s = stored
     const provider = currentProvider(s)
     if (!provider) return failBuiltin(failures.provider)
@@ -696,6 +718,249 @@ export function createVpn(deps: VpnDeps) {
     }
   }
 
+  // Settings › VPN's Test (HT-82): the settings on the page, tried without saving them. It reads
+  // what gluetun and an interface already have; the built-in VPN brings its tunnel up only when
+  // none is running, and takes it down again after. Torrents never get this tunnel's binding.
+
+  const line = (
+    id: VpnCheck['id'],
+    result: VpnCheck['result'],
+    [title, detail]: readonly [string, string?] | readonly string[],
+  ): VpnCheck =>
+    detail
+      ? { id, label: labels[id], result, title: title as string, detail }
+      : { id, label: labels[id], result, title: title as string }
+
+  const notChecked = (ids: VpnCheck['id'][]) =>
+    ids.map((id) => line(id, 'info', [testCopy.notChecked]))
+
+  const hostOf = (url: string) => {
+    try {
+      return new URL(url).hostname
+    } catch {
+      return url
+    }
+  }
+
+  /** The reason the tunnel couldn't come up, in the status's copy. */
+  function upFailure(e: unknown): string {
+    const f = e instanceof TunnelError ? e.failure : { kind: 'other' as const }
+    if (f.kind === 'capability') return failures.needsCapability
+    if (f.kind === 'platform') return failures.linuxOnly
+    if (f.kind === 'no-device') return failures.noDevice
+    if (f.kind === 'not-installed') return failures.notInstalled
+    return failures.tunnelFailed((e as Error).message)
+  }
+
+  /** Waits up to 15 seconds for the new tunnel's first handshake. */
+  async function firstHandshake(): Promise<boolean> {
+    const until = deps.clock.now() + VPN_TIMINGS.testHandshakeMs
+    for (;;) {
+      const shakes = await tunnel.handshakes().catch(() => new Map<string, number>())
+      if (Math.max(0, ...shakes.values()) > 0) return true
+      if (deps.clock.now() >= until) return false
+      await new Promise<void>((r) => timers.setTimeout(r, VPN_TIMINGS.testPollMs))
+    }
+  }
+
+  /** The exit through `through` beside the one seen without it, and the provider's own say. */
+  async function testExit(
+    through: Fetch,
+    s: StoredVpnSettings,
+    provider: VpnProviderDefinition | undefined,
+    sameIsWarning: string | null,
+  ): Promise<VpnCheck> {
+    const own = provider?.check
+    const [inside, outside] = await Promise.allSettled([
+      askEchoFields(through, own?.url ?? s.echoUrl),
+      askEcho(deps.fetch, s.echoUrl),
+    ])
+    if (inside.status === 'rejected') return line('exit', 'warn', testCopy.exitUnknown)
+    const { ip, country, fields } = inside.value
+    if (own && provider && fields[own.field] === false)
+      return line('exit', 'fail', [checkCopy.exitNotProvider(provider.name, ip)[0]])
+    if (outside.status === 'rejected') return line('exit', 'warn', testCopy.exitOwnUnknown(ip))
+    if (outside.value.ip === ip)
+      return sameIsWarning
+        ? line('exit', 'warn', checkCopy.exitSame(sameIsWarning))
+        : line('exit', 'fail', testCopy.exitOwn(ip))
+    return line('exit', 'pass', testCopy.exitPass(ip, country))
+  }
+
+  async function testNames(s: StoredVpnSettings, address: string, dns: string[]) {
+    if (!dns.length) return line('names', 'fail', testCopy.namesNoDns)
+    try {
+      await resolveName(address, dns, hostOf(s.echoUrl))
+      return line('names', 'pass', testCopy.namesPass(dns))
+    } catch (e) {
+      log.warn('Test: names didn’t resolve through the tunnel', { error: (e as Error).message })
+      return line('names', 'fail', testCopy.namesFailed(dns))
+    }
+  }
+
+  /** Port forwarding, asked for once on a new tunnel; on the live one, what it already has. */
+  async function testForward(
+    s: StoredVpnSettings,
+    provider: VpnProviderDefinition,
+    address: string,
+    piaSession: Session['pia'],
+    live: boolean,
+  ): Promise<VpnCheck> {
+    const pf = provider.portForwarding
+    if (!s.useForwardedPort) return line('portForwarding', 'info', testCopy.notForwarding)
+    if (pf.method === 'none')
+      return line('portForwarding', 'warn', testCopy.doesntForward(provider.name))
+    if (pf.method === 'static')
+      return s.staticPort
+        ? line('portForwarding', 'info', testCopy.staticPort(s.staticPort))
+        : line('portForwarding', 'warn', testCopy.noStaticPort)
+    if (live)
+      return rt.forwardedPort
+        ? line('portForwarding', 'pass', testCopy.forwarded(rt.forwardedPort))
+        : line(
+            'portForwarding',
+            'warn',
+            testCopy.forwardFailed(provider.name, 'It hasn’t given one yet.'),
+          )
+    try {
+      if (pf.method === 'natpmp') {
+        const m = await natPmp(
+          { gateway: pf.gateway, localAddress: address },
+          pf.lifetimeSeconds,
+          null,
+        )
+        return line('portForwarding', 'pass', testCopy.forwarded(m.externalPort))
+      }
+      if (!piaSession) throw new Error('no PIA session')
+      const f = await pia.signature(piaSession.server, piaSession.token, address)
+      await pia.bind(piaSession.server, f, address)
+      return line('portForwarding', 'pass', testCopy.forwarded(f.port))
+    } catch (e) {
+      log.warn('Test: port forwarding failed', { error: (e as Error).message })
+      return line(
+        'portForwarding',
+        'warn',
+        testCopy.forwardFailed(provider.name, 'It didn’t answer the request for a port.'),
+      )
+    }
+  }
+
+  const LATER: VpnCheck['id'][] = ['exit', 'names', 'portForwarding']
+
+  async function testBuiltin(s: StoredVpnSettings): Promise<VpnCheck[]> {
+    const provider = currentProvider(s)
+    if (!provider) return [line('tunnel', 'fail', [failures.provider]), ...notChecked(LATER)]
+    const sess = session
+    if (sess) {
+      // the live tunnel, with the same settings: checked as it is, nothing torn down
+      const [exit, names, forward] = await Promise.all([
+        testExit(bound(sess.address, { dns: sess.dns }), s, provider, null),
+        testNames(s, sess.address, sess.dns),
+        testForward(s, provider, sess.address, sess.pia, true),
+      ])
+      return [line('tunnel', 'pass', testCopy.tunnelLive(provider.name)), exit, names, forward]
+    }
+    const failed = (message: string) => [line('tunnel', 'fail', [message]), ...notChecked(LATER)]
+    if (deps.hostNetwork?.()) return failed(failures.hostNetwork)
+    let prepared: Awaited<ReturnType<typeof prepare>>
+    try {
+      prepared = await prepare(s, provider)
+    } catch (e) {
+      if (e instanceof PiaError && e.kind === 'refused') return failed(failures.piaRefused)
+      if (e instanceof WireGuardError) return failed(e.message)
+      return failed(checkCopy.providerUnreachable(provider.name)[0])
+    }
+    const spec = ipv4Only(prepared.spec)
+    const address = tunnelAddresses(spec).ipv4
+    if (!address) return failed(failures.noAddress)
+    if (!spec.peers.length) return failed(wireGuardFailures.noPeer)
+    if (spec.peers.some((p) => !p.endpoint)) return failed(failures.noEndpoint)
+    tunnelTouched = true
+    try {
+      try {
+        await tunnel.up(spec)
+      } catch (e) {
+        log.warn('Test: couldn’t bring the tunnel up', { error: (e as Error).message })
+        return failed(upFailure(e))
+      }
+      if (!(await firstHandshake())) return failed(testCopy.noHandshake(provider.name).join(' '))
+      const [exit, names, forward] = await Promise.all([
+        testExit(bound(address, { dns: prepared.dns }), s, provider, null),
+        testNames(s, address, prepared.dns),
+        testForward(s, provider, address, prepared.pia, false),
+      ])
+      return [line('tunnel', 'pass', testCopy.tunnelUp(provider.name)), exit, names, forward]
+    } finally {
+      // connecting waits for the test, so no session can have started on this interface
+      if (!session) {
+        tunnelTouched = false
+        await tunnel.teardown().catch((e: Error) => {
+          log.warn('Test: couldn’t take the tunnel down', { error: e.message })
+        })
+      }
+    }
+  }
+
+  async function testContainer(s: StoredVpnSettings): Promise<VpnCheck[]> {
+    const gl = gluetun(s)
+    let state: string
+    try {
+      state = await gl.status()
+    } catch (e) {
+      const message =
+        e instanceof GluetunError && e.kind === 'refused'
+          ? failures.keyRefused(s.containerUrl)
+          : failures.unreachable(s.containerUrl)
+      return [line('tunnel', 'fail', [message]), ...notChecked(LATER)]
+    }
+    if (state !== 'running')
+      return [line('tunnel', 'fail', testCopy.containerNotRunning(state)), ...notChecked(LATER)]
+    const [ip, port] = await Promise.allSettled([
+      gl.publicIp(),
+      s.useForwardedPort ? gl.forwardedPort() : Promise.resolve(null),
+    ])
+    const exit =
+      ip.status === 'fulfilled' && ip.value.ip
+        ? line('exit', 'pass', testCopy.exitContainer(ip.value.ip, ip.value.country))
+        : line('exit', 'warn', testCopy.exitUnknown)
+    const forward = !s.useForwardedPort
+      ? line('portForwarding', 'info', testCopy.notForwarding)
+      : port.status === 'fulfilled' && port.value
+        ? line('portForwarding', 'pass', testCopy.forwarded(port.value))
+        : line(
+            'portForwarding',
+            'warn',
+            testCopy.forwardFailed('gluetun', 'It reports no forwarded port.'),
+          )
+    return [
+      line('tunnel', 'pass', [testCopy.containerUp]),
+      exit,
+      line('names', 'pass', testCopy.namesContainer),
+      forward,
+    ]
+  }
+
+  async function testInterface(s: StoredVpnSettings): Promise<VpnCheck[]> {
+    const address = addressesOf(readInterfaces()[s.interface]).ipv4
+    if (!address)
+      return [line('tunnel', 'fail', testCopy.interfaceMissing(s.interface)), ...notChecked(LATER)]
+    return [
+      line('tunnel', 'pass', testCopy.interfaceUp(s.interface, address)),
+      await testExit(bound(address), s, undefined, s.interface),
+      line('names', 'info', testCopy.namesSystem),
+      line('portForwarding', 'info', testCopy.listening(deps.listeningPort())),
+    ]
+  }
+
+  /** Whether a save would change what the built-in VPN's tunnel is built from. */
+  const changesTunnel = (input: VpnSettingsInput) =>
+    (input.mode !== undefined && input.mode !== stored.mode) ||
+    (input.provider !== undefined && input.provider !== stored.provider) ||
+    (input.config !== undefined && input.config !== '') ||
+    (input.piaPassword !== undefined && input.piaPassword !== '') ||
+    (input.piaUsername !== undefined && input.piaUsername.trim() !== stored.piaUsername) ||
+    (input.piaRegion !== undefined && input.piaRegion !== stored.piaRegion)
+
   // the modes
 
   function apply() {
@@ -757,7 +1022,7 @@ export function createVpn(deps: VpnDeps) {
       stored = readStored(deps.db)
       apply()
     },
-    /** Stops, and takes highsea connects' tunnel down. */
+    /** Stops, and takes the built-in VPN's tunnel down. */
     async stop() {
       started = false
       generation++
@@ -767,7 +1032,7 @@ export function createVpn(deps: VpnDeps) {
     status,
     /**
      * System's health checks (docs/product/vpn.md › Elsewhere): the VPN down or failed, a check
-     * that fails, and port forwarding failing in highsea connects (a warning).
+     * that fails, and port forwarding failing in the built-in VPN (a warning).
      */
     issues(): { id: string; level: 'warning' | 'error'; message: string; since: number }[] {
       const s = status()
@@ -849,6 +1114,36 @@ export function createVpn(deps: VpnDeps) {
       if (started) apply()
       else emit()
       return toPublic(stored)
+    },
+    /**
+     * Test (HT-82): tries the settings on the page without saving them, and says for the tunnel,
+     * the exit, names and port forwarding whether each works. The built-in VPN refuses while it's
+     * connecting, and while connected with other settings than these; with the same ones it checks
+     * the live tunnel without touching it.
+     */
+    async test(input: VpnSettingsInput): Promise<VpnTestResult> {
+      if (testing) throw new AppError('conflict', testCopy.busy)
+      const next = mergeSettings(stored, input, deps.sealer, providerList())
+      if (next.mode === 'off') throw new AppError('invalid', testCopy.modeOff, { field: 'mode' })
+      if (next.mode === 'builtin' && stored.mode === 'builtin' && started) {
+        if (session && rt.phase === 'connected') {
+          if (changesTunnel(input)) throw new AppError('conflict', testCopy.liveDiffers)
+        } else if (session || rt.phase === 'connecting')
+          throw new AppError('conflict', testCopy.connecting)
+      }
+      const run =
+        next.mode === 'builtin'
+          ? testBuiltin(next)
+          : next.mode === 'container'
+            ? testContainer(next)
+            : testInterface(next)
+      testing = run
+      try {
+        const checks = await track(run)
+        return { ok: !checks.some((c) => c.result === 'fail'), checks }
+      } finally {
+        testing = null
+      }
     },
     /** Check now: the checks when connected, else another look at the tunnel. */
     async check(): Promise<VpnStatus> {

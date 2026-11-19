@@ -122,6 +122,7 @@ let state: {
   sources: string[]
   metadata: {
     key: { set: boolean; last4: string | null; builtIn: boolean }
+    fanart: { set: boolean; last4: string | null; project: boolean }
     language: string
     region: string
   }
@@ -149,6 +150,8 @@ let state: {
 }
 
 const GOOD_KEY = 'eyJhbGciOiJIUzI1NiJ9.good-token-3f9a'
+/** Not a real key: the fake server takes this one and refuses any other. */
+const GOOD_FANART_KEY = 'personalfanartkeye7d1'
 
 async function api(url: string, init: RequestInit = {}): Promise<Response> {
   const u = new URL(url, 'http://localhost')
@@ -174,12 +177,22 @@ async function api(url: string, init: RequestInit = {}): Promise<Response> {
     case 'PUT /api/v1/settings/metadata':
       if (body.key && body.key !== GOOD_KEY)
         return failure('invalid', 'Invalid API key.', 400, { reason: 'tmdb-key-rejected' })
+      if (body.fanartKey && body.fanartKey !== GOOD_FANART_KEY)
+        return failure('invalid', 'fanart.tv didn’t accept that key.', 400, {
+          reason: 'fanart-key-rejected',
+        })
       state.metadata = {
         ...state.metadata,
         ...(body.language ? { language: body.language } : {}),
         ...(body.region ? { region: body.region } : {}),
         ...(body.key ? { key: { set: true, last4: body.key.slice(-4), builtIn: false } } : {}),
+        ...(body.fanartKey
+          ? { fanart: { set: true, last4: body.fanartKey.slice(-4), project: true } }
+          : {}),
       }
+      return json(state.metadata)
+    case 'DELETE /api/v1/settings/metadata/fanart':
+      state.metadata = { ...state.metadata, fanart: { set: false, last4: null, project: true } }
       return json(state.metadata)
     case 'DELETE /api/v1/settings/metadata':
       state.metadata = { ...state.metadata, key: { set: false, last4: null, builtIn: false } }
@@ -347,6 +360,7 @@ beforeEach(() => {
     sources: ['system', 'movies'],
     metadata: {
       key: { set: true, last4: 'ab12', builtIn: false },
+      fanart: { set: false, last4: null, project: true },
       language: 'en-GB',
       region: 'GB',
     },
@@ -468,6 +482,51 @@ describe('Settings › General › Metadata', () => {
     expect(requested('DELETE', '/api/v1/settings/metadata')).toHaveLength(1)
     expect(page.getByText('Not set')).toBeTruthy()
     expect(page.getByLabelText('New TMDB key')).toBeTruthy()
+  })
+
+  test('fanart.tv: highsea’s key until a personal one is added, checked on Save, and removed', async () => {
+    const { user, page } = await open(<General />)
+    const group = page.getByRole('region', { name: 'Metadata' })
+    expect(within(group).getByText('highsea’s key')).toBeTruthy()
+    expect(within(group).getByText(/Add your personal key to see new images sooner/)).toBeTruthy()
+    expect(
+      within(group).getByRole('link', { name: 'Open fanart.tv’s API page' }).getAttribute('href'),
+    ).toBe('https://fanart.tv/get-an-api-key/')
+
+    await user.type(within(group).getByLabelText('Personal fanart.tv key'), 'wrongwrongwrong')
+    await user.click(page.getByRole('button', { name: 'Save' }))
+    await settle()
+    expect(
+      page.getByText(
+        'fanart.tv didn’t accept that key. Copy it again from your fanart.tv account.',
+      ),
+    ).toBeTruthy()
+    expect(state.metadata.fanart.set).toBe(false)
+
+    await user.clear(within(group).getByLabelText('Personal fanart.tv key'))
+    await user.type(within(group).getByLabelText('Personal fanart.tv key'), GOOD_FANART_KEY)
+    await user.click(page.getByRole('button', { name: 'Save' }))
+    await settle()
+    expect(requested('PUT', '/api/v1/settings/metadata').at(-1)?.body).toEqual({
+      language: 'en-GB',
+      region: 'GB',
+      fanartKey: GOOD_FANART_KEY,
+    })
+    expect(page.getByText(maskedKey('e7d1'))).toBeTruthy()
+
+    const removes = within(page.getByRole('region', { name: 'Metadata' })).getAllByRole('button', {
+      name: 'Remove',
+    })
+    await user.click(removes.at(-1) as HTMLElement)
+    await settle()
+    shown()
+    const dialog = page.getByRole('dialog')
+    expect(within(dialog).getByText('highsea goes back to its own fanart.tv key.')).toBeTruthy()
+    await user.click(within(dialog).getByRole('button', { name: 'Remove key' }))
+    await settle()
+    expect(requested('DELETE', '/api/v1/settings/metadata/fanart')).toHaveLength(1)
+    expect(requested('DELETE', '/api/v1/settings/metadata')).toHaveLength(0)
+    expect(page.getByText('highsea’s key')).toBeTruthy()
   })
 
   test('admins see the settings but can’t change them', async () => {

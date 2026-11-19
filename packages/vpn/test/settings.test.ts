@@ -124,7 +124,7 @@ describe('Settings › VPN', () => {
       field: 'interface',
     })
     expect((await refusal(vpn.save({ staticPort: 0 }))).field).toBe('staticPort')
-    expect((await refusal(vpn.save({ provider: 'nordvpn' }))).field).toBe('provider')
+    expect((await refusal(vpn.save({ provider: 'novpn' }))).field).toBe('provider')
     expect(vpn.settings()).toMatchObject({ mode: 'off', provider: DEFAULT_VPN_SETTINGS.provider })
   })
 

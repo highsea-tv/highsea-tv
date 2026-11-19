@@ -111,12 +111,31 @@ export type ReleaseView = {
   reasons: DecisionReason[]
 }
 
+/**
+ * Why a release an indexer answered with isn't in a search's list: it's for another movie (by id,
+ * or by title and year), or the indexer listed it twice.
+ */
+export type LeftOutReason = 'other-movie' | 'duplicate'
+
 export type SearchResult = {
   releases: ReleaseView[]
   /** How many indexers were asked. */
   searched: number
   /** The indexers that didn't answer, with why. */
   failed: { indexerId: string; indexer: string; message: string }[]
+  /**
+   * What each indexer answered with that isn't listed, by why (HT-85): a search never drops a
+   * release without saying so. Releases rejected by the profile or the blocklist are listed, as
+   * rejected, and aren't here.
+   */
+  leftOut: {
+    indexerId: string
+    indexer: string
+    reason: LeftOutReason
+    count: number
+    /** How many releases the indexer answered with in all. */
+    found: number
+  }[]
 }
 
 /** SQLite's limit on bound variables is 32766 (https://sqlite.org/limits.html); 500 a statement is safe. */
@@ -212,6 +231,7 @@ export function createSearch<R extends IndexerRow>(deps: {
   isFailing: (id: string) => boolean
 }) {
   const { db, clock } = deps
+  const log = deps.logger
 
   function judge(
     input: SearchInput,
@@ -334,27 +354,69 @@ export function createSearch<R extends IndexerRow>(deps: {
       )
       const now = clock.now()
       const failed: SearchResult['failed'] = []
+      const leftOut: SearchResult['leftOut'] = []
       const judged: Judged[] = []
+      // what each indexer did, for the log line below
+      const asked: Record<string, unknown>[] = []
       settled.forEach((s, i) => {
         const c = candidates[i] as Candidate<R>
         if (s.status === 'rejected') {
-          failed.push({
-            indexerId: c.row.id,
-            indexer: c.row.name,
-            message: (s.reason as Error).message,
-          })
+          const message = (s.reason as Error).message
+          failed.push({ indexerId: c.row.id, indexer: c.row.name, message })
+          asked.push({ indexer: c.row.name, failed: message })
           return
         }
         const seen = new Set<string>()
+        const dropped: Record<LeftOutReason, number> = { 'other-movie': 0, duplicate: 0 }
+        let matched = 0
         for (const r of s.value.releases) {
-          if (seen.has(r.guid)) continue
+          if (seen.has(r.guid)) {
+            dropped.duplicate++
+            continue
+          }
           seen.add(r.guid)
           const j = judge(input, c, r, now)
-          if (j) judged.push(j)
+          if (j) {
+            judged.push(j)
+            matched++
+          } else dropped['other-movie']++
         }
+        const found = s.value.releases.length
+        for (const reason of ['other-movie', 'duplicate'] as const)
+          if (dropped[reason] > 0)
+            leftOut.push({
+              indexerId: c.row.id,
+              indexer: c.row.name,
+              reason,
+              count: dropped[reason],
+              found,
+            })
+        asked.push({
+          indexer: c.row.name,
+          by: s.value.by,
+          found,
+          matched,
+          otherMovie: dropped['other-movie'],
+          duplicate: dropped.duplicate,
+        })
       })
       keep(input, judged, now)
-      return { releases: judged.map((j) => j.view), searched: candidates.length, failed }
+      // a search leaves a trace (HT-85): an indexer whose whole answer was for other movies may
+      // have ignored the query, as the Internet Archive's scrape API sometimes does
+      log.info('searched for releases', {
+        tmdbId: input.tmdbId,
+        title: input.title,
+        year: input.year,
+        indexers: asked,
+        releases: judged.length,
+        approved: judged.filter((j) => j.view.approved).length,
+      })
+      return {
+        releases: judged.map((j) => j.view),
+        searched: candidates.length,
+        failed,
+        leftOut,
+      }
     },
 
     /**

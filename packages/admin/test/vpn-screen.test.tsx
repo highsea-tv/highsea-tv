@@ -2,7 +2,7 @@
 // Settings › VPN (checkpoint 6a), rendered against a fake of the API: the status with its checks,
 // Check now and Reconnect; the four modes, with built-in shown but not yet pickable; the container
 // mode's address check, its write-only key and the server's refusal under the field it names; the
-// interfaces and the compose block from the server; and highsea connects' compose lines, opened
+// interfaces and the compose block from the server; and the built-in VPN's compose lines, opened
 // when the tunnel can't run for want of NET_ADMIN or on host networking. The shell and Next's router are stood in for.
 import './dom.ts'
 import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test'
@@ -156,6 +156,47 @@ async function api(url: string, init: RequestInit = {}): Promise<Response> {
         { name: 'eth0', ipv4: '192.168.1.20', ipv6: null },
         { name: 'wg0', ipv4: '10.2.0.15', ipv6: null },
       ])
+    case 'POST /api/v1/settings/vpn/test':
+      if (body.config === 'busy')
+        return failure('conflict', 'The built-in VPN is connected with the saved settings.', 409)
+      return json(
+        body.provider === 'mullvad'
+          ? {
+              ok: true,
+              checks: [
+                {
+                  id: 'tunnel',
+                  label: 'Tunnel',
+                  result: 'pass',
+                  title: 'The tunnel came up with Mullvad',
+                },
+                {
+                  id: 'portForwarding',
+                  label: 'Port forwarding',
+                  result: 'warn',
+                  title: 'Mullvad doesn’t forward ports',
+                  detail: 'Seeding reaches fewer peers.',
+                },
+              ],
+            }
+          : {
+              ok: false,
+              checks: [
+                {
+                  id: 'tunnel',
+                  label: 'Tunnel',
+                  result: 'fail',
+                  title: 'Proton VPN didn’t answer',
+                },
+                {
+                  id: 'exit',
+                  label: 'Exit address',
+                  result: 'info',
+                  title: 'Not checked: the tunnel didn’t come up.',
+                },
+              ],
+            },
+      )
     case 'POST /api/v1/vpn/compose':
       return json({ yaml: `services:\n  gluetun:\n    # for ${body.provider}` })
   }
@@ -193,13 +234,13 @@ const requested = (method: string, path: string) =>
 // ---------------------------------------------------------------- tests
 
 describe('Settings › VPN', () => {
-  test('off: the warning, and highsea connects can be picked', async () => {
+  test('off: the warning, and the built-in VPN can be picked', async () => {
     const { page } = await open()
     const status = page.getByRole('status')
     expect(within(status).getByText('No VPN')).toBeTruthy()
     expect(page.queryByRole('button', { name: 'Check now' })).toBeNull()
     // each card is the radio (a Press with the radio role), so its state is aria-checked
-    const builtin = page.getByRole('radio', { name: /highsea connects/ })
+    const builtin = page.getByRole('radio', { name: /Built-in VPN/ })
     expect(builtin.getAttribute('aria-disabled')).toBeNull()
     expect(page.queryByText(/Arrives in a later update/)).toBeNull()
     expect(page.getByRole('radio', { name: /^Off/ }).getAttribute('aria-checked')).toBe('true')
@@ -207,9 +248,9 @@ describe('Settings › VPN', () => {
     expect(page.queryByRole('region', { name: 'Behaviour' })).toBeNull()
   })
 
-  test('highsea connects: the provider’s steps, and a pasted configuration saved with it', async () => {
+  test('the built-in VPN: the provider’s steps, and a pasted configuration saved with it', async () => {
     const { user, page } = await open()
-    await user.click(page.getByRole('radio', { name: /highsea connects/ }))
+    await user.click(page.getByRole('radio', { name: /Built-in VPN/ }))
     await settle()
     expect(page.getByText('Sign in to Proton.')).toBeTruthy()
     await user.click(page.getByRole('button', { name: 'Paste instead' }))
@@ -297,7 +338,7 @@ describe('Settings › VPN', () => {
     expect(page.getByText('Send indexer searches through the VPN too')).toBeTruthy()
   })
 
-  test('without NET_ADMIN, highsea connects’ compose lines open', async () => {
+  test('without NET_ADMIN, the built-in VPN’s compose lines open', async () => {
     state.settings = settings({ mode: 'builtin', configName: 'nl.conf' })
     state.status = {
       ...off,
@@ -310,7 +351,7 @@ describe('Settings › VPN', () => {
     }
     const { page } = await open()
     expect(page.getByText('highsea can’t run the tunnel yet')).toBeTruthy()
-    expect(page.getByText(/Compose for highsea connects, under Connection/)).toBeTruthy()
+    expect(page.getByText(/Compose for the built-in VPN, under Connection/)).toBeTruthy()
     const lines = page.getByRole('figure', { name: 'Compose lines' })
     expect(within(lines).getByText(/cap_add: \[NET_ADMIN\]/)).toBeTruthy()
     expect(within(lines).getByText(/"7368:7368\/udp"/)).toBeTruthy()
@@ -334,7 +375,7 @@ describe('Settings › VPN', () => {
     const status = within(page.getByRole('status'))
     expect(status.getByText('highsea is on host networking')).toBeTruthy()
     expect(status.getByText(/would land in the host’s network/)).toBeTruthy()
-    expect(page.getByRole('button', { name: /Compose for highsea connects/ })).toBeTruthy()
+    expect(page.getByRole('button', { name: /Compose for the built-in VPN/ })).toBeTruthy()
     expect(page.getByRole('figure', { name: 'Compose lines' })).toBeTruthy()
     expect((page.getByRole('button', { name: 'Reconnect' }) as HTMLButtonElement).disabled).toBe(
       true,
@@ -358,13 +399,54 @@ describe('Settings › VPN', () => {
     expect(status.queryByText('highsea is on host networking')).toBeNull()
   })
 
-  test('connected through highsea connects, the lines stay folded until opened', async () => {
+  test('connected through the built-in VPN, the lines stay folded until opened', async () => {
     state.settings = settings({ mode: 'builtin', configName: 'nl.conf' })
     state.status = { ...connected, mode: 'builtin', provider: 'Proton VPN', hostNetwork: false }
     const { user, page } = await open()
     expect(page.queryByRole('figure', { name: 'Compose lines' })).toBeNull()
-    await user.click(page.getByRole('button', { name: /Compose for highsea connects/ }))
+    await user.click(page.getByRole('button', { name: /Compose for the built-in VPN/ }))
     await settle()
     expect(page.getByRole('figure', { name: 'Compose lines' })).toBeTruthy()
+  })
+
+  test('Test: tries the page’s settings without saving, and shows each line', async () => {
+    const { user, page } = await open()
+    // nothing to test while it's off
+    expect(page.queryByRole('button', { name: 'Test' })).toBeNull()
+    await user.click(page.getByRole('radio', { name: /Built-in VPN/ }))
+    await settle()
+    await user.click(page.getByRole('button', { name: 'Paste instead' }))
+    await user.type(page.getByLabelText('Paste the configuration'), 'a config')
+    await user.click(page.getByRole('button', { name: 'Test' }))
+    await settle()
+    expect(requested('PUT', '/api/v1/settings/vpn')).toEqual([])
+    expect(requested('POST', '/api/v1/settings/vpn/test').at(-1)?.body).toMatchObject({
+      mode: 'builtin',
+      provider: 'proton',
+      config: 'a config',
+    })
+    expect(
+      page.getByText('These settings don’t work yet. The line marked below says why.'),
+    ).toBeTruthy()
+    const results = page.getByRole('list', { name: 'Test results' })
+    expect(within(results).getByText('Proton VPN didn’t answer')).toBeTruthy()
+    // a change to the draft clears the result
+    await user.type(page.getByLabelText('Paste the configuration'), ' more')
+    await settle()
+    expect(page.queryByRole('list', { name: 'Test results' })).toBeNull()
+  })
+
+  test('Test: a warning still works, and a refusal reads in place of the result', async () => {
+    state.settings = settings({ mode: 'builtin', provider: 'mullvad', configName: 'wg.conf' })
+    const { user, page } = await open()
+    await user.click(page.getByRole('button', { name: 'Test' }))
+    await settle()
+    expect(page.getByText('These settings work. A line below has a warning.')).toBeTruthy()
+    expect(page.getByText('Mullvad doesn’t forward ports')).toBeTruthy()
+    await user.click(page.getByRole('button', { name: 'Paste instead' }))
+    await user.type(page.getByLabelText('Paste the configuration'), 'busy')
+    await user.click(page.getByRole('button', { name: 'Test' }))
+    await settle()
+    expect(page.getByText('The built-in VPN is connected with the saved settings.')).toBeTruthy()
   })
 })

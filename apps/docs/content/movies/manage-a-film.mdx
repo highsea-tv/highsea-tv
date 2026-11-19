@@ -51,11 +51,13 @@ A film can have more than one version, such as 1080p beside 4K HDR, each with it
 
 ## Change a film's artwork
 
-The poster, backdrop and logo come from TMDB, and highsea picks them for you. To use others, open the More menu and choose **Change artwork**. The dialog has a tab for each: **Poster**, **Backdrop** and **Logo**.
+The poster, backdrop and logo come from TMDB, and highsea picks them for you, with a logo TMDB doesn't have from fanart.tv when it's on. To use others, open the More menu and choose **Change artwork**. The dialog has a tab for each: **Poster**, **Backdrop** and **Logo**.
 
-![The Artwork dialog on the Poster tab: the poster shown now with Upload, then TMDB's other posters, each with its language and size, the current one marked](/images/admin/movies/film-artwork.png)
+![The Artwork dialog on the Poster tab: the poster shown now with Upload, then TMDB's other posters, each with its language and size, the current one marked, and fanart.tv's heading below them](/images/admin/movies/film-artwork.png)
 
 Each tab shows the image every app shows now, and who chose it and when. Below it, **From TMDB** lists TMDB's other images of that kind, the best voted first, with each one's language (**No text** for an image without words) and size in pixels. The one in use is marked **Current**. Choose another to use it.
+
+When fanart.tv is on ([Metadata](/settings/general/metadata/#the-fanarttv-key)), **From fanart.tv** follows with its images of that kind for the film, the most liked first. A tab where fanart.tv has none doesn't show the heading.
 
 **Upload** takes a file of your own. highsea checks the file itself, not its name:
 
@@ -69,7 +71,7 @@ The apps fill a poster's or backdrop's frame and crop what falls outside it, so 
 
 Your choice stays through **Refresh metadata** and through matching the film again. **Reset** goes back to highsea's own choice. Every change is in the admin's audit log, and every app shows the new image the next time it draws the film.
 
-A logo is the film's title as artwork. TMDB has logos for most films; highsea picks one in your metadata language, then English, then any.
+A logo is the film's title as artwork. TMDB has logos for most films; highsea picks one in your metadata language, then English, then any. For a film TMDB has no logo for, highsea takes fanart.tv's in the same order, the most liked in each language, a few minutes after it refreshes the film's details.
 
 ## Refresh a film's details
 

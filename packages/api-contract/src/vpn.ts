@@ -50,6 +50,13 @@ export const VpnCheck = z
   })
   .openapi('VpnCheck')
 
+export const VpnTestResult = z
+  .object({
+    ok: z.boolean().openapi({ description: 'No line failed; a warning still passes' }),
+    checks: z.array(VpnCheck),
+  })
+  .openapi('VpnTestResult')
+
 export const VpnStatus = z
   .object({
     mode: z.enum(VPN_MODES),
@@ -60,9 +67,9 @@ export const VpnStatus = z
     /** Failed for want of NET_ADMIN: the page shows the compose lines to add. */
     needsCapability: z.boolean(),
     /**
-     * highsea's container is on host networking, where highsea connects' interface and rule would
+     * highsea's container is on host networking, where the built-in VPN's interface and rule would
      * land in the host's network (ADR 0042's 2026-11-07 section): in that mode the page says so
-     * and opens Compose for highsea connects. Every server knows its answer, so it's always
+     * and opens Compose for the built-in VPN. Every server knows its answer, so it's always
      * there: false outside a container, where there's no compose file to change, and on a bridge.
      */
     hostNetwork: z.boolean(),
@@ -180,12 +187,27 @@ export const vpn = {
       ...errors('invalid', 'unauthorized', 'forbidden'),
     },
   }),
+  test: createRoute({
+    method: 'post',
+    path: `${API_PREFIX}/settings/vpn/test`,
+    tags: ['Settings'],
+    summary: 'Try these VPN settings without saving them',
+    description:
+      'One line each for the tunnel, the exit address, names and port forwarding. The built-in VPN brings its tunnel up for the test and takes it down after; torrents never use it. With the built-in VPN connected, the same settings are checked in place, and other ones are refused with 409. 400 with `details.field` for what a save would refuse.',
+    ...access('owner'),
+    request: { ...body(VpnSettingsInput) },
+    responses: {
+      200: json(VpnTestResult, 'How it went'),
+      ...errors('invalid', 'unauthorized', 'forbidden', 'conflict'),
+    },
+  }),
 } as const
 
 export type VpnSettings = z.infer<typeof VpnSettings>
 export type VpnSettingsInput = z.infer<typeof VpnSettingsInput>
 export type VpnCheck = z.infer<typeof VpnCheck>
 export type VpnStatus = z.infer<typeof VpnStatus>
+export type VpnTestResult = z.infer<typeof VpnTestResult>
 export type VpnProvider = z.infer<typeof VpnProvider>
 export type VpnInterface = z.infer<typeof VpnInterface>
 export type VpnComposeInput = z.infer<typeof VpnComposeInput>

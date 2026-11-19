@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The leak test: highsea connects' real tunnel and routing, on a real kernel, against a second
+// The leak test: the built-in VPN's real tunnel and routing, on a real kernel, against a second
 // WireGuard peer in its own network namespace (ip-netns(8); WireGuard's own netns walkthrough,
 // https://www.wireguard.com/netns/). It proves the kill switch rather than describing it:
 //

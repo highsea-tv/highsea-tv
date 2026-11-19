@@ -64,7 +64,7 @@ FROM node:26.11.1-trixie-slim AS runtime
 RUN apt-get update \
   && apt-get install -y --no-install-recommends ffmpeg unar tini gosu ca-certificates \
   && rm -rf /var/lib/apt/lists/*
-# highsea connects (ADR 0042): `ip` (iproute2) and `wg` (wireguard-tools) run as separate programs,
+# The built-in VPN (ADR 0042): `ip` (iproute2) and `wg` (wireguard-tools) run as separate programs,
 # and wireguard-go stands in where the kernel has no WireGuard. setpriv (util-linux, already in the
 # image) keeps CAP_NET_ADMIN for the PUID user. Their sources: docker/NOTICE.
 # avahi-publish (avahi-utils) publishes highsea through the host's avahi when the container is
@@ -118,6 +118,12 @@ RUN --mount=type=secret,id=tmdb,required=false \
   if [ -s /run/secrets/tmdb ]; then \
     install -D -m 0444 /run/secrets/tmdb /usr/share/highsea/tmdb-read-token; \
   fi
+# highsea's fanart.tv project key, the same way (`--secret id=fanart,env=HIGHSEA_FANART_KEY`; HT-74,
+# ADR 0070). Optional: without it, fanart.tv is asked only with an owner's personal key.
+RUN --mount=type=secret,id=fanart,required=false \
+  if [ -s /run/secrets/fanart ]; then \
+    install -D -m 0444 /run/secrets/fanart /usr/share/highsea/fanart-key; \
+  fi
 ENV NODE_ENV=production \
   NEXT_TELEMETRY_DISABLED=1 \
   HIGHSEA_CONFIG_DIR=/config \
@@ -126,6 +132,7 @@ ENV NODE_ENV=production \
   HIGHSEA_TRAKT_CLIENT_ID_FILE=/usr/share/highsea/trakt-client-id \
   HIGHSEA_TRAKT_CLIENT_SECRET_FILE=/usr/share/highsea/trakt-client-secret \
   HIGHSEA_TMDB_READ_TOKEN_FILE=/usr/share/highsea/tmdb-read-token \
+  HIGHSEA_FANART_KEY_FILE=/usr/share/highsea/fanart-key \
   PORT=3000 \
   NVIDIA_VISIBLE_DEVICES=all \
   NVIDIA_DRIVER_CAPABILITIES=compute,video,utility

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// Fakes for highsea connects, so its tests run nothing and reach nothing:
+// Fakes for the built-in VPN, so its tests run nothing and reach nothing:
 // - a runner that records each `ip` and `wg` command and keeps just enough kernel state to answer
 //   (the rule, the unreachable route, the interface, the handshake);
 // - PIA's API, answering in the shapes pia-foss/manual-connections reads;

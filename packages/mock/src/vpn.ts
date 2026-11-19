@@ -91,6 +91,18 @@ export const vpnProviders: VpnProvider[] = [
     portForwarding: 'none',
     ipv6: true,
   },
+  {
+    id: 'nordvpn',
+    name: 'NordVPN',
+    connect: 'config',
+    steps: [
+      'Generate an access token in Nord Account › NordVPN › Advanced settings.',
+      'Use it to get your NordLynx key and a server, and write a WireGuard file from them.',
+      'Upload it here, or paste it.',
+    ],
+    portForwarding: 'none',
+    ipv6: false,
+  },
   ...(['IVPN', 'Windscribe', 'Surfshark'] as const).map(
     (name): VpnProvider => ({
       id: name.toLowerCase(),
@@ -140,7 +152,7 @@ export type VpnRuntime = {
   capability: boolean
   /**
    * Whether highsea's container is on host networking: the empty server is compose.yaml as the
-   * installer writes it, the populated one has highsea connects' lines (one-compose-file.md, B).
+   * installer writes it, the populated one has the built-in VPN's lines (one-compose-file.md, B).
    */
   hostNetwork: boolean
   phase: 'connected' | 'connecting' | 'down' | 'failed'
@@ -171,7 +183,7 @@ export type VpnStatus = {
   message: string | null
   /** Failed for want of NET_ADMIN: the page shows the compose lines to add. */
   needsCapability: boolean
-  /** On host networking, where highsea connects can't keep the tunnel in its own network. */
+  /** On host networking, where the built-in VPN can't keep the tunnel in its own network. */
   hostNetwork: boolean
   exitIp: string | null
   country: string | null
@@ -233,14 +245,14 @@ export function vpnStatus(
     checkedAt: s.mode === 'off' ? null : new Date(rt.checkedAt).toISOString(),
   }
   if (s.mode === 'off') return base
-  // the network first: highsea connects' lines change both, and the network is what's unsafe
+  // the network first: the built-in VPN's lines change both, and the network is what's unsafe
   if (s.mode === 'builtin' && rt.hostNetwork)
     return {
       ...base,
       state: 'failed',
       needsCapability: !rt.capability,
       message:
-        'On host networking, the tunnel’s interface and routes would land in the host’s network beside everything else, so highsea won’t start it. Put the lines from Compose for highsea connects in place of network_mode: host, then recreate the container.',
+        'On host networking, the tunnel’s interface and routes would land in the host’s network beside everything else, so highsea won’t start it. Put the lines from Compose for the built-in VPN in place of network_mode: host, then recreate the container.',
     }
   if (s.mode === 'builtin' && !rt.capability)
     return {
@@ -334,7 +346,7 @@ export function vpnStatus(
           'killSwitch',
           'warn',
           `Bound to ${s.interface}`,
-          'Your system’s routing decides the path; a VPN container or highsea connects guarantees it.',
+          'Your system’s routing decides the path; a VPN container or the built-in VPN guarantees it.',
         )
       : s.mode === 'container'
         ? check(

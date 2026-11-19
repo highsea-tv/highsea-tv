@@ -8,7 +8,7 @@
 // hooks and SaveConfig to the interface. Keys are base64 of 32 bytes ("base64 encoding of 32
 // bytes", wg(8) › CONFIGURATION FILE FORMAT). Key names match without regard to case, as
 // wireguard-tools' config.c compares them with strcasecmp. highsea never runs the hooks: it reads
-// the file and sets the interface itself (the plan's "highsea connects", 6b).
+// the file and sets the interface itself (the plan's "highsea connects", 6b; the built-in VPN since 2026-11-18).
 import { isIP } from 'node:net'
 import { wireGuardFailures as fail } from './copy.ts'
 

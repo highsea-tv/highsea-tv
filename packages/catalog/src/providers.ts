@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The catalog's `vpn-providers` kind (ADR 0042, docs/plans/phase-3-checkpoint-6.md › Providers):
-// the providers Settings › VPN › highsea connects offers, in `@highsea-tv/schemas/vpn`'s format,
+// the providers Settings › VPN › the built-in VPN offers, in `@highsea-tv/schemas/vpn`'s format,
 // signed and verified exactly as the indexers are (ADR 0034). It's a small reader beside the
 // indexer service rather than a part of it: the entries are a short list read whole, so they're
 // kept in memory and in `/config/catalog/vpn-providers/`, not in the definitions table.
@@ -10,7 +10,7 @@
 //   keys only, and cached once installed;
 // - the seed snapshot shipped in the server, `seed/vpn-providers/{channel}/`. It's verified with
 //   the release keys and the development key: it ships inside the build, as trusted as the code,
-//   and highsea connects must work before publishing begins (judgement call in the 6b report).
+//   and the built-in VPN must work before publishing begins (judgement call in the 6b report).
 // A failure keeps what was there; nothing unsigned or tampered is loaded.
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
