@@ -17,6 +17,7 @@ export {
   type IndexerStats,
 } from './health.ts'
 export { type FailureKind, IndexerError, joinUrl, redact } from './http.ts'
+export { createRateLimiter, type RateLimiter, type RateRule } from './rate-limit.ts'
 export type { IndexerRelease } from './release.ts'
 export {
   DEFAULT_MINIMUM_SEEDERS,

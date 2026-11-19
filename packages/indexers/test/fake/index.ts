@@ -8,8 +8,10 @@
 //   /newznab/api       the same for Usenet
 //   /json/api/search   a JSON API with a passkey
 //   /html/login        a sign-in form; /html/browse needs its cookie
+//   /public/search     a public site's search page: no sign-in, magnets in rows, two pages
 //   /rss/feed/{key}    a feed with the key in its address
 //   archive.org/services/search/v1/scrape, or /archive/services/search/v1/scrape
+//   archive.org/download/{identifier}/{identifier}_archive.torrent, an item's torrent
 //   /dl/{id}.torrent, /json/download/{id}?passkey=, /html/download.php?id= (needs the cookie)
 //                      a release's .torrent: a small made-up one unless a test serves its own,
 //                      or a redirect to a magnet
@@ -116,6 +118,32 @@ function relative(minutes: number): string {
   if (minutes < 60) return `${minutes} minutes ago`
   if (minutes < 60 * 24) return `${Math.round(minutes / 60)} hours ago`
   return `${Math.round(minutes / (60 * 24))} days ago`
+}
+
+/** A public site's page of results, with a link to the next page. */
+function publicPage(items: FakeRelease[], page: number, q: string): string {
+  const rows = items
+    .map(
+      (r) => `<tr>
+  <td class="title"><a class="name" href="/public/torrent/${r.id}/${encodeURIComponent(r.name)}">${xmlEscape(r.name)}</a>
+    <a href="magnet:?xt=urn:btih:${r.id.toString(16).padStart(40, '0')}&amp;dn=${encodeURIComponent(r.name)}">Magnet</a></td>
+  <td class="size">${(r.size / 1024 ** 3).toFixed(1)}&nbsp;GiB</td>
+  <td class="se">${r.seeders}</td><td class="le">${r.leechers}</td>
+  <td class="age">${relative(r.ageMinutes)}</td>
+</tr>`,
+    )
+    .join('\n')
+  const next =
+    page < 2
+      ? `<a class="next" href="/public/search?q=${encodeURIComponent(q)}&amp;page=${page + 1}">Next</a>`
+      : ''
+  return `<!doctype html><html><body>
+<table class="list"><thead><tr><th>Name</th><th>Size</th><th>SE</th><th>LE</th><th>Age</th></tr></thead>
+<tbody>
+${rows}
+</tbody></table>
+<nav class="pages">${next}</nav>
+</body></html>`
 }
 
 const HTML_CATEGORY: Record<number, string> = { 2030: '3', 2040: '4', 2045: '5', 5040: '9' }
@@ -322,6 +350,15 @@ export function createFakeIndexer(options: { origin?: string } = {}): FakeIndexe
       return html(htmlPage(empty ? [] : find({ q }, published), rule?.kind === 'layout'))
     }
 
+    if (path === '/public/search') {
+      const page = Number(p.get('page') ?? 1)
+      const found = empty ? [] : find({ q: p.get('q') }, published)
+      // half the results on each of two pages, as a site that pages its results shows them
+      const half = Math.ceil(found.length / 2)
+      const items = page === 1 ? found.slice(0, half) : found.slice(half)
+      return html(publicPage(items, page, p.get('q') ?? ''))
+    }
+
     const feed = /^\/rss\/feed\/(.+)$/.exec(path)
     if (feed) {
       if (feed[1] !== FAKE_CREDENTIALS.rssPasskey) return html('Not found', 404)
@@ -361,6 +398,13 @@ export function createFakeIndexer(options: { origin?: string } = {}): FakeIndexe
       )
       return json({ items: empty ? [] : items, count: items.length, total: items.length })
     }
+
+    // an item's torrent, as the Archive names it: {identifier}_archive.torrent
+    const archived = /^\/archive\/download\/([^/]+)\/\1_archive\.torrent$/.exec(path)
+    if (archived)
+      return new Response(new Uint8Array(madeUpTorrent(archived[1] as string)), {
+        headers: { 'content-type': 'application/x-bittorrent' },
+      })
 
     const dl = /^\/dl\/(\d+)\.torrent$/.exec(path)
     if (dl) return torrentFor(Number(dl[1]))

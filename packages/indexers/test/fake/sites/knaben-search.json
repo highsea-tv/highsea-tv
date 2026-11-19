@@ -1,0 +1,40 @@
+{
+  "hits": [
+    {
+      "bytes": 143151596,
+      "category": "Movies / HD",
+      "categoryId": [3001000, 3000000],
+      "date": "2024-06-15T08:48:29+00:00",
+      "details": "https://yts.gg/movies/sintel-2010",
+      "grabs": 197,
+      "hash": "A779FA758F2229586EEBC2E5960EB32FE5659596",
+      "id": "91dc135f18e6001e30111601e25991df769332d3",
+      "link": "https://knaben.org/live/dl/yts/?path=abc&file=Sintel",
+      "magnetUrl": "magnet:?xt=urn:btih:A779FA758F2229586EEBC2E5960EB32FE5659596&dn=Sintel+(2010)+720p+BRRip+x264+-YTS",
+      "peers": 4,
+      "seeders": 23,
+      "title": "Sintel (2010) 720p BRRip x264 -YTS",
+      "tracker": "YTS",
+      "trackerId": "yts"
+    },
+    {
+      "bytes": 583689809,
+      "category": "Movies / HD",
+      "categoryId": [3001000, 3000000],
+      "date": "2025-07-22T18:50:24+00:00",
+      "details": null,
+      "grabs": 12,
+      "hash": null,
+      "id": "3333333333333333333333333333333333333333",
+      "link": "https://knaben.org/live/dl/other/?path=def",
+      "magnetUrl": null,
+      "peers": 3,
+      "seeders": 22,
+      "title": "Sintel.2010.1080p.WEB.H264-CLASSiCALHD",
+      "tracker": "Other",
+      "trackerId": "other"
+    }
+  ],
+  "max_score": 19.29,
+  "total": { "relation": "eq", "value": 2 }
+}

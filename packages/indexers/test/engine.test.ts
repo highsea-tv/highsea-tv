@@ -15,6 +15,7 @@ import {
   fakeHtml,
   fakeJson,
   fakeNewznab,
+  fakePublicHtml,
   MOVIES,
 } from './fake/index.ts'
 import { catalogDefinition } from './helpers.ts'
@@ -267,6 +268,47 @@ describe('HTML', () => {
     const { ctx, fake } = context(fakeHtml(FAKE_ORIGIN), settings)
     fake.misbehave({ kind: 'layout' }, '/html/browse')
     expect((await runSearch(ctx, sintel)).releases).toEqual([])
+  })
+})
+
+describe('a public HTML site', () => {
+  test('reads magnets, GiB sizes and dates in words without signing in', async () => {
+    const { ctx, fake } = context(fakePublicHtml(FAKE_ORIGIN), {})
+    const result = await runSearch(ctx, { keywords: 'Sintel' })
+    expect(fake.logins).toBe(0)
+    expect(result.releases.length).toBeGreaterThan(0)
+    expect(result.releases[0]).toMatchObject({
+      title: 'Sintel.2010.1080p.BluRay.x264-GRP',
+      details: `${FAKE_ORIGIN}/public/torrent/101/Sintel.2010.1080p.BluRay.x264-GRP`,
+      download: null,
+      size: 8 * 1024 ** 3,
+      seeders: 120,
+      categories: [2000],
+      published: new Date(FAKE_NOW - 30 * 24 * 60 * 60_000).toISOString(),
+    })
+    expect(result.releases[0]?.magnet).toStartWith('magnet:?xt=urn:btih:')
+  })
+
+  test('reads the first page only: the next page is a gap the engine doesn’t fill yet', async () => {
+    const { ctx, fake } = context(fakePublicHtml(FAKE_ORIGIN), {})
+    const all = (await runSearch(ctx, { keywords: '' })).releases.length
+    expect(fake.requests.map((r) => r.url.searchParams.get('page'))).toEqual([null])
+    expect(all).toBeGreaterThan(0)
+    expect(all).toBeLessThan(6)
+  })
+
+  test('a Cloudflare challenge page is named as one', async () => {
+    const { ctx } = context(fakePublicHtml(FAKE_ORIGIN), {})
+    ctx.fetch = async () =>
+      new Response('<!doctype html><title>Just a moment...</title>', {
+        status: 403,
+        headers: { 'content-type': 'text/html', 'cf-mitigated': 'challenge' },
+      })
+    const err = (await runSearch(ctx, { keywords: '' }).catch((e) => e)) as IndexerError
+    expect(err.kind).toBe('unavailable')
+    expect(err.message).toBe(
+      'The site showed a Cloudflare challenge page (HTTP 403), which highsea can’t pass.',
+    )
   })
 })
 

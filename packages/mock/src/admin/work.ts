@@ -61,7 +61,7 @@ export function workAnswers(kit: AdminKit): Answers {
     // a private tracker's torrent is one from a private indexer
     private: s.indexers.some((i) => i.name === t.indexer && i.privacy === 'private'),
     files: t.files.map((f) => ({ ...f })),
-    trackers: t.trackers.map((x) => ({ ...x })),
+    trackers: t.trackers.map((x) => ({ kind: 'tracker' as const, ...x })),
     // the mock keeps no minimum seeding time: none, as Settings › Download client's default has
     seedingRule: { ratio: t.seedingRule.ratio, minutes: t.seedingRule.minutes, minMinutes: null },
   })
@@ -83,6 +83,8 @@ export function workAnswers(kit: AdminKit): Answers {
       downRate: t.downRate,
       upRate: t.upRate,
       eta: t.eta,
+      peers: { ...t.peers },
+      seeds: { ...t.seeds },
       ratio: t.ratio,
       state: t.state,
       stateReason: t.stateReason,

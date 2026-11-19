@@ -8,7 +8,7 @@ import { join } from 'node:path'
 import { schema } from '@highsea-tv/db'
 import { MOVIES } from '@highsea-tv/indexers/fake'
 import { makeTorrent } from '@highsea-tv/torrent/testing'
-import { REPLACE_MS, STALL_MS } from '../src/index.ts'
+import { REPLACE_MS, STALL_MS, STALLED_VIEW_MS } from '../src/index.ts'
 import { ITEM, setup, sintelSearch, until, VERSION } from './helpers.ts'
 
 type T = Awaited<ReturnType<typeof setup>>
@@ -215,11 +215,14 @@ describe('protection and replacement', () => {
     t.clock.advance(STALL_MS)
     await check()
     await check()
-    expect(t.downloads.queue()[0]).toMatchObject({
-      state: 'stalled',
-      eta: null,
-      stateReason: 'No seeds for 2 hours. highsea will search for another release at 3 hours.',
-    })
+    expect(t.downloads.queue()[0]).toMatchObject({ state: 'stalled', eta: null })
+    // the engine keeps real time and the test's clock jumps, so it's a moment short of 2 hours
+    expect(t.downloads.queue()[0]?.stateReason).toMatch(
+      /^No peers or data for (119 minutes|2 hours)\./,
+    )
+    expect(t.downloads.queue()[0]?.stateReason).toEndWith(
+      ' highsea will search for another release at 3 hours.',
+    )
     t.clock.advance(REPLACE_MS - STALL_MS)
     await check()
     await check()
@@ -229,6 +232,63 @@ describe('protection and replacement', () => {
     expect(queue).toHaveLength(1)
     expect(queue[0]?.release).not.toBe('Sintel.2010.1080p.BluRay.x264-GRP')
   })
+
+  test('stalled after 30 minutes with no peers and no data, and downloading again when data comes', async () => {
+    const t = await start()
+    const files = [{ path: 'Sintel.mkv', data: data(400_000) }]
+    const seeded = await t.seed(101, files, 'Sintel.mkv')
+    // the only seeder is away when the grab starts
+    const seederId = seeded.seeder.engine.list()[0]?.id ?? ''
+    seeded.seeder.engine.pause(seederId)
+    await t.indexers.search(sintelSearch())
+    await t.downloads.grab({
+      itemId: ITEM,
+      versionId: VERSION,
+      indexerId: t.indexer.id,
+      guid: BEST,
+    })
+    await until(() => t.engine.list()[0]?.state === 'downloading', 5_000, 'the torrent to start')
+    await until(
+      () => t.engine.list()[0]?.trackers[0]?.status === 'working',
+      5_000,
+      'the tracker’s answer',
+    )
+    const id = t.engine.list()[0]?.id ?? ''
+    const check = async () => {
+      t.jobs.enqueue('downloads.stall', {})
+      await t.drain()
+    }
+
+    t.clock.advance(STALLED_VIEW_MS - 60_000)
+    await check()
+    expect(t.downloads.queue()[0]?.state).toBe('downloading')
+    t.seen.splice(0)
+    // a little over: the engine keeps real time, the test's clock jumps
+    t.clock.advance(65_000)
+    await check()
+    const item = t.downloads.queue()[0]
+    expect(item).toMatchObject({
+      state: 'stalled',
+      eta: null,
+      peers: { connected: 0 },
+      seeds: { connected: 0 },
+    })
+    expect(item?.stateReason).toBe(
+      'No peers or data for 30 minutes. The trackers answer but know no one sharing it, and it has no web seeds. If nothing comes, highsea searches for another release at 3 hours.',
+    )
+    expect(t.downloads.torrent(id)).toMatchObject({ state: 'stalled' })
+    expect(t.downloads.torrent(id).trackers[0]).toMatchObject({ kind: 'tracker' })
+    // the change is pushed, so Downloads and Activity redraw without a reload
+    expect(t.seen.some((e) => e.topic === 'torrents.updated')).toBe(true)
+
+    // the seeder comes back: data flows and the torrent is downloading again by itself
+    seeded.seeder.engine.resume(seederId)
+    await until(
+      () => ['downloading', 'importing'].includes(t.downloads.queue()[0]?.state ?? ''),
+      20_000,
+      'data to flow',
+    )
+  }, 40_000)
 
   test('Find another blocklists and grabs again from a new search when the cache is spent', async () => {
     const t = await start()

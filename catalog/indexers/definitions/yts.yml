@@ -1,0 +1,69 @@
+# SPDX-License-Identifier: CC0-1.0
+# Written for highsea from YTS's own API documentation (https://yts.pw/api); no definition was copied.
+id: yts
+version: 1.0.0
+minEngineVersion: 1.1.0
+name: YTS
+description: Films in small encodes at 720p, 1080p and 2160p, from YTS's public API. It finds a film by its IMDb id when highsea knows it.
+kind: json
+privacy: public
+language: en
+links: [https://yts.pw/]
+# "Base URL (v2): https://movies-api.accel.li/api/v2/" (https://yts.pw/api)
+baseUrl: https://movies-api.accel.li
+logo: yts.svg
+# YTS lists only films; each torrent's quality stands for its category.
+categories:
+  - { id: 480p, standard: 2030, name: 480p }
+  - { id: 720p, standard: 2040, name: 720p }
+  - { id: 1080p, standard: 2040, name: 1080p }
+  - { id: 1080p.x265, standard: 2040, name: 1080p x265 }
+  - { id: 2160p, standard: 2045, name: 2160p }
+  - { id: 3D, standard: 2060, name: 3D }
+search:
+  request:
+    path: /api/v2/list_movies.json
+    query:
+      # "query_term: Used for movie search, matching on: Movie Title/IMDb Code"; no term lists the
+      # newest films, sorted by date_added by default
+      query_term: '{{ if .Query.IMDBID }}{{ .Query.IMDBID }}{{ else }}{{ .Query.Keywords }}{{ end }}'
+      limit: '50'
+  # films, each with a torrent per quality; "data" has no "movies" when nothing matched
+  rows: { path: data.movies, each: torrents, optional: true }
+  fields:
+    _title: { path: title_english, optional: true }
+    _original: { path: title }
+    _year: { path: year }
+    _quality: { path: torrents.quality, filters: [{ filter: replace, pattern: '\.x26[45]$' }] }
+    _type: { path: torrents.type, optional: true, filters: [{ filter: map, values: { web: WEBRip, bluray: BluRay } }] }
+    _codec: { path: torrents.video_codec, optional: true }
+    _bits: { path: torrents.bit_depth, optional: true, filters: [{ filter: map, values: { '8': '', '10': 10bit } }] }
+    _channels: { path: torrents.audio_channels, optional: true }
+    _repack: { path: torrents.is_repack, optional: true, filters: [{ filter: map, values: { '0': '', '1': REPACK } }] }
+    # a name the parser reads as the release it is: "Sintel 2010 720p BluRay x264 2.0-YTS"
+    title:
+      text: >-
+        {{ if .Result._title }}{{ .Result._title }}{{ else }}{{ .Result._original }}{{ end }}
+        {{ .Result._year }} {{ .Result._quality }}{{ if .Result._type }} {{ .Result._type }}{{ end }}{{ if .Result._codec }} {{ .Result._codec }}{{ end }}{{ if .Result._bits }} {{ .Result._bits }}{{ end }}{{ if .Result._channels }} {{ .Result._channels }}{{ end }}{{ if .Result._repack }} REPACK{{ end }}-YTS
+    infohash: { path: torrents.hash }
+    guid: { text: 'yts:{{ .Result.infohash }}' }
+    # "To get Magnet URLs you need to construct this yourself", with trackers from the ones the
+    # same page recommends
+    magnet:
+      text: >-
+        magnet:?xt=urn:btih:{{ .Result.infohash }}&dn={{ .Result._original | urlencode }}&tr=udp%3A%2F%2Ftracker.opentrackr.org%3A1337%2Fannounce&tr=udp%3A%2F%2Ftracker.torrent.eu.org%3A451%2Fannounce&tr=udp%3A%2F%2Fopen.stealth.si%3A80%2Fannounce&tr=udp%3A%2F%2Fopen.demonii.com%3A1337%2Fannounce
+    details: { path: url, optional: true }
+    imdbId: { path: imdb_code, optional: true }
+    category: { path: torrents.quality, optional: true }
+    size: { path: torrents.size_bytes, optional: true, filters: [{ filter: number }] }
+    seeders: { path: torrents.seeds, optional: true }
+    leechers: { path: torrents.peers, optional: true }
+    published: { path: torrents.date_uploaded_unix, optional: true, filters: [{ filter: date, format: unix }] }
+  supports: [q, imdbid]
+# The page asks to "keep request rates reasonable" and names no number.
+rateLimit: { requests: 20, seconds: 60, minGapMs: 1000 }
+test: { keywords: '' }
+source:
+  author: highsea
+  documentation: https://yts.pw/api
+license: CC0-1.0

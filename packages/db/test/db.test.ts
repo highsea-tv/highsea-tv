@@ -293,7 +293,8 @@ describe('0018_profiles', () => {
       '0018_profiles',
       '0019_artwork',
       '0020_shows',
-      '0021_unmatched_files',
+      '0021_web_seeds',
+      '0022_unmatched_files',
     ])
     expect(result.backup).not.toBeNull()
     const once = state(first)
@@ -392,7 +393,7 @@ describe('0020_shows', () => {
   test('leaves every film, version, file and watch position as it was', () => {
     const raw = withFilms(':memory:')
     const was = films(raw)
-    expect(migrate(raw).applied).toEqual(['0020_shows', '0021_unmatched_files'])
+    expect(migrate(raw).applied).toEqual(['0020_shows', '0021_web_seeds', '0022_unmatched_files'])
     expect(films(raw)).toEqual(was)
     expect(raw.all('SELECT count(*) AS n FROM media_items')).toEqual([{ n: 300 }])
     // the new columns are empty on films
@@ -476,12 +477,12 @@ describe('0020_shows', () => {
     raw.close()
   })
 
-  describe('0021_unmatched_files', () => {
-    /** Films, and a show from #77 with a season and two episodes, every migration up to 0020. */
+  describe('0022_unmatched_files', () => {
+    /** Films, and a show from #77 with a season and two episodes, every migration up to 0021. */
     function withShow() {
       const raw = withFilms(
         ':memory:',
-        migrations.filter((m) => m.tag < '0021'),
+        migrations.filter((m) => m.tag < '0022'),
       )
       const insert = (
         id: string,
@@ -532,7 +533,7 @@ describe('0020_shows', () => {
     test('adds the table and leaves the films and the show’s rows as they were', () => {
       const raw = withShow()
       const was = all(raw)
-      expect(migrate(raw).applied).toEqual(['0021_unmatched_files'])
+      expect(migrate(raw).applied).toEqual(['0022_unmatched_files'])
       expect(all(raw)).toEqual(was)
       expect(raw.all('SELECT count(*) AS n FROM unmatched_files')).toEqual([{ n: 0 }])
       expect(raw.all('PRAGMA foreign_key_check')).toEqual([])

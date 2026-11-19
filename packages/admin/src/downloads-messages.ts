@@ -138,6 +138,7 @@ export const downloads = defineMessages({
   'tracker.not-contacted': 'Not contacted yet',
   'tracker.error': 'Not responding',
   'tracker.peers': '{count, plural, one {# peer} other {# peers}}',
+  'tracker.webSeed': 'Web seed',
   noTrackers: 'No trackers. Peers come from the DHT and other peers.',
 
   'seeding.rule':

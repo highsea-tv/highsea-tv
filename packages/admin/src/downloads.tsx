@@ -890,7 +890,7 @@ function Trackers({ torrent: x }: { torrent: Torrent }) {
             <Badge tone={trackerTone(tr.status)}>{t(`tracker.${tr.status}`)}</Badge>
           </View>
           <Text variant="caption" color="text-3">
-            {`${t('tracker.peers', { count: tr.peers })}${tr.message ? ` · ${tr.message}` : ''}`}
+            {`${tr.kind === 'web-seed' ? t('tracker.webSeed') : t('tracker.peers', { count: tr.peers })}${tr.message ? ` · ${tr.message}` : ''}`}
           </Text>
         </View>
       ))}

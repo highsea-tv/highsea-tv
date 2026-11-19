@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "e7c6d4df-3017-4b9a-87f6-3f1920def3a4",
+  "id": "f8126db6-61fc-48f5-8ee7-a69c23ae5b3b",
   "prevId": "ef657660-4f2f-4fc5-bb78-2bc9357f3b91",
   "tables": {
     "account_links": {
@@ -4982,103 +4982,6 @@
       "uniqueConstraints": {},
       "checkConstraints": {}
     },
-    "unmatched_files": {
-      "name": "unmatched_files",
-      "columns": {
-        "path": {
-          "name": "path",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "kind": {
-          "name": "kind",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "root_folder": {
-          "name": "root_folder",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "item_id": {
-          "name": "item_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "reason": {
-          "name": "reason",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "message": {
-          "name": "message",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "size": {
-          "name": "size",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": 0
-        },
-        "found_at": {
-          "name": "found_at",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        }
-      },
-      "indexes": {
-        "unmatched_files_root": {
-          "name": "unmatched_files_root",
-          "columns": [
-            "root_folder",
-            "kind"
-          ],
-          "isUnique": false
-        },
-        "unmatched_files_item": {
-          "name": "unmatched_files_item",
-          "columns": [
-            "item_id"
-          ],
-          "isUnique": false
-        }
-      },
-      "foreignKeys": {
-        "unmatched_files_item_id_media_items_id_fk": {
-          "name": "unmatched_files_item_id_media_items_id_fk",
-          "tableFrom": "unmatched_files",
-          "tableTo": "media_items",
-          "columnsFrom": [
-            "item_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "checkConstraints": {}
-    },
     "versions": {
       "name": "versions",
       "columns": {
@@ -7389,6 +7292,14 @@
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
+        },
+        "web_seeds": {
+          "name": "web_seeds",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'[]'"
         },
         "magnet": {
           "name": "magnet",

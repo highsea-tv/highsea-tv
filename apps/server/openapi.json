@@ -11328,6 +11328,36 @@
               "null"
             ]
           },
+          "peers": {
+            "type": "object",
+            "properties": {
+              "connected": {
+                "type": "integer"
+              },
+              "total": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "connected",
+              "total"
+            ]
+          },
+          "seeds": {
+            "type": "object",
+            "properties": {
+              "connected": {
+                "type": "integer"
+              },
+              "total": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "connected",
+              "total"
+            ]
+          },
           "ratio": {
             "type": "number"
           },
@@ -11366,6 +11396,8 @@
           "downRate",
           "upRate",
           "eta",
+          "peers",
+          "seeds",
           "ratio",
           "state",
           "stateReason"
@@ -11761,6 +11793,14 @@
         "properties": {
           "url": {
             "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "tracker",
+              "web-seed"
+            ],
+            "default": "tracker"
           },
           "status": {
             "type": "string",

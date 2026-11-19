@@ -121,7 +121,7 @@ B's second task. It gets the shows already on disk into the library, in place, a
 - **History.** Each filed file writes one `imported` history entry with `inPlace`, so notifications leave it out, as they do a film the scan finds.
 - **Sidecar subtitles** aren't read yet: films' import hooks take a film's file, and episodes' subtitles are B's fourth task. The hook is in `ShowFileOptions`, and the runtime wires none for now.
 
-**Nothing is guessed.** A file that can't be placed is kept in a new table, `unmatched_files` (migration `0021_unmatched_files`, only additions), keyed by path, with its reason and a message the admin can show. A table rather than a settings row, so B's fourth task can list and resolve the files by root folder and by show. The reasons:
+**Nothing is guessed.** A file that can't be placed is kept in a new table, `unmatched_files` (migration `0022_unmatched_files`, only additions), keyed by path, with its reason and a message the admin can show. A table rather than a settings row, so B's fourth task can list and resolve the files by root folder and by show. The reasons:
 
 - **a file in a show:**
   - `no-episode-number`: a name with no `SxxEyy`, a season pack, or anime's absolute numbers;

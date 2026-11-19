@@ -1,6 +1,6 @@
 # Where the fixtures come from
 
-The parser's corpus is 7,842 release names (7,373 movies, 469 episodes) from four MIT-licensed sources plus names written for highsea. Each case gives the name, what highsea expects from it in highsea's own vocabulary (`ParsedRelease` in `src/types.ts`), and where the case came from. `test/corpus.test.ts` checks every case.
+The parser's corpus is 7,854 release names (7,385 movies, 469 episodes) from four MIT-licensed sources plus names written for highsea. Each case gives the name, what highsea expects from it in highsea's own vocabulary (`ParsedRelease` in `src/types.ts`), and where the case came from. `test/corpus.test.ts` checks every case.
 
 | File | Cases | Movies | Episodes | Pending | Source |
 | --- | ---: | ---: | ---: | ---: | --- |
@@ -8,7 +8,7 @@ The parser's corpus is 7,842 release names (7,373 movies, 469 episodes) from fou
 | `parse-torrent-title.json` | 438 | 329 | 109 | 30 | TheBeastLT/parse-torrent-title |
 | `parse-torrent-name.json` | 386 | 221 | 165 | 4 | platelminto/parse-torrent-name |
 | `oleoo-1.json` … `oleoo-4.json` | 6,208 | 6,151 | 57 | 84 | thcolin/oleoo |
-| `highsea.json` | 377 | 377 | 0 | 0 | written for highsea |
+| `highsea.json` | 389 | 389 | 0 | 0 | written for highsea |
 
 `oleoo` is split into four files of about 1,550 cases each, to stay under Biome's 1 MiB file limit.
 
@@ -83,6 +83,7 @@ The repositories were cloned into a scratch directory outside the repo and treat
 `highsea.json` holds names written for this package:
 - 30 titles crossed with 30 tag sets, scene-dotted and spaced. The titles include ones that are or contain years and numbers: 1917, 2012, Blade Runner 2049, Wonder Woman 1984, Se7en, Apollo 13.
 - Editions, revisions (PROPER, REPACK2, REAL, RERiP, v2), languages and MULTi, hardcoded subs, Radarr's id tokens (`{imdb-tt…}`, `{tmdb-…}`, `[tmdbid-…]`), groups (including D-Z0N3 and Fight-BB) and year-titles.
+- The names the YTS indexer definition composes from its API's fields, and shapes seen in the public indexers' answers (Knaben, BitSearch, Torrents-CSV): a site's name before the title, a bracketed group after the tags, a site in brackets.
 
 Each expectation follows from how the name was built and the documented meaning of its tags, not from the parser's output.
 

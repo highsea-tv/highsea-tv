@@ -778,6 +778,8 @@ export type TorrentFile = {
 
 export type Tracker = {
   url: string
+  /** A web seed (BEP 19) is listed with the trackers; a tracker when left out. */
+  kind?: 'tracker' | 'web-seed'
   status: 'working' | 'updating' | 'error'
   peers: number
   message: string | null
@@ -833,6 +835,8 @@ export type QueueItem = {
   downRate: number
   upRate: number
   eta: number | null
+  peers: { connected: number; total: number }
+  seeds: { connected: number; total: number }
   ratio: number
   state: TorrentState
   stateReason: string | null

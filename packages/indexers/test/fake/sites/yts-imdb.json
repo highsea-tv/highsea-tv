@@ -1,0 +1,57 @@
+{
+  "status": "ok",
+  "status_message": "Query was successful",
+  "data": {
+    "movie_count": 1,
+    "limit": 50,
+    "page_number": 1,
+    "movies": [
+      {
+        "id": 62245,
+        "url": "https://yts.pw/movies/sintel-2010",
+        "imdb_code": "tt1727587",
+        "title": "Sintel",
+        "title_english": "Sintel",
+        "title_long": "Sintel (2010)",
+        "year": 2010,
+        "torrents": [
+          {
+            "url": "https://yts.pw/torrent/download/A779FA758F2229586EEBC2E5960EB32FE5659596",
+            "hash": "A779FA758F2229586EEBC2E5960EB32FE5659596",
+            "quality": "720p",
+            "type": "bluray",
+            "is_repack": "0",
+            "video_codec": "x264",
+            "bit_depth": "8",
+            "audio_channels": "2.0",
+            "seeds": 36,
+            "peers": 39,
+            "size": "136.52 MB",
+            "size_bytes": 143151596,
+            "date_uploaded": "2024-06-15 09:48:29",
+            "date_uploaded_unix": 1718441309
+          },
+          {
+            "url": "https://yts.pw/torrent/download/1111111111111111111111111111111111111111",
+            "hash": "1111111111111111111111111111111111111111",
+            "quality": "2160p",
+            "type": "web",
+            "is_repack": "1",
+            "video_codec": "x265",
+            "bit_depth": "10",
+            "audio_channels": "5.1",
+            "seeds": 12,
+            "peers": 3,
+            "size": "1.2 GB",
+            "size_bytes": 1288490188,
+            "date_uploaded": "2024-06-16 10:00:00",
+            "date_uploaded_unix": 1718528400
+          }
+        ],
+        "date_uploaded": "2024-06-15 09:48:29",
+        "date_uploaded_unix": 1718441309
+      }
+    ]
+  },
+  "@meta": { "api_version": 2, "execution_time": "0 ms" }
+}
