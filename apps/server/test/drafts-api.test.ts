@@ -15,19 +15,18 @@ afterEach(cleanup)
 const concrete = (path: string) => path.replace(/\{\w+\}/g, 'x1')
 
 describe('drafted routes', () => {
-  // `musicLibrary` is the admin's music, drafted with HT-68 (Phase 5's part D); of `series`, the
-  // admin's shows, only the episode search is left (part C1)
-  test('are the music, music library and playlists groups, and series’ search, and nothing else', () => {
+  // `musicLibrary` is the admin's music, drafted with HT-68 (Phase 5's part D); `series`, the
+  // admin's shows, is served whole since part C1 served its episode search
+  test('are the music, music library and playlists groups, and nothing else', () => {
     const groups = new Set(
       Object.entries(routes).flatMap(([group, rs]) =>
         Object.values(rs).some((r) => isDraft(r)) ? [group] : [],
       ),
     )
-    expect([...groups].sort()).toEqual(['music', 'musicLibrary', 'playlists', 'series'])
+    expect([...groups].sort()).toEqual(['music', 'musicLibrary', 'playlists'])
     for (const g of ['music', 'musicLibrary', 'playlists'] as const)
       for (const r of Object.values(routes[g])) expect(isDraft(r), `${g} ${r.path}`).toBe(true)
-    const series = Object.entries(routes.series).filter(([, r]) => isDraft(r))
-    expect(series.map(([k]) => k)).toEqual(['search'])
+    expect(Object.values(routes.series).some((r) => isDraft(r))).toBe(false)
     expect(Object.values(routes.shows).some((r) => isDraft(r))).toBe(false)
   })
 
