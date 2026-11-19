@@ -469,6 +469,9 @@ export type PlayingItem =
       poster: string
       artist: string
       album: string
+      /** Their ids in the admin's music (HT-68), so Now playing links the album. */
+      artistId: string
+      albumId: string
     }
 
 /** A session as the admin shows it: who and what, by name. */

@@ -33,6 +33,8 @@ import { Login } from '@highsea-tv/admin/login.tsx'
 import { MediaManagement } from '@highsea-tv/admin/media-management.tsx'
 import { Migration } from '@highsea-tv/admin/migration.tsx'
 import { MovieDetail, type MovieTab } from '@highsea-tv/admin/movie-detail.tsx'
+import { AlbumDetail, ArtistDetail } from '@highsea-tv/admin/music-detail.tsx'
+import { MusicLibrary } from '@highsea-tv/admin/music-library.tsx'
 import { NavigationProvider } from '@highsea-tv/admin/navigation.tsx'
 import { Network } from '@highsea-tv/admin/network.tsx'
 import { AdminNotFound } from '@highsea-tv/admin/not-found.tsx'
@@ -261,6 +263,18 @@ export function SharedAdmin() {
         </Route>
         <Route path="/shows/:id">{(p) => <ShowDetail id={p.id} />}</Route>
         <Route path="/shows/:id/files">{(p) => <ShowDetail id={p.id} tab="files" />}</Route>
+        <Route path="/music">
+          <MusicLibrary />
+        </Route>
+        <Route path="/music/albums">
+          <MusicLibrary tab="albums" />
+        </Route>
+        <Route path="/music/unmatched">
+          <MusicLibrary tab="unmatched" />
+        </Route>
+        <Route path="/music/artists/:id">{(p) => <ArtistDetail id={p.id} />}</Route>
+        <Route path="/music/albums/:id">{(p) => <AlbumDetail id={p.id} />}</Route>
+        <Route path="/music/albums/:id/files">{(p) => <AlbumDetail id={p.id} tab="files" />}</Route>
         <Route path="/people/:id">{(p) => <PersonPage id={p.id} />}</Route>
         <Route path="/collections">
           <Collections />

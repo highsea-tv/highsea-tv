@@ -41,12 +41,15 @@ export function LibraryPosters<T>({
   keyOf,
   label,
   render,
+  square = false,
   ref,
 }: {
   items: readonly T[]
   keyOf: (item: T) => string
   label: string
   render: (item: T, index: number) => ReactNode
+  /** Music's square covers and round photos (HT-68), for the rows' estimate: films' are 2:3. */
+  square?: boolean
   ref?: Ref<VirtualGridHandle>
 }) {
   const [width, setWidth] = useState<number | null>(null)
@@ -66,7 +69,7 @@ export function LibraryPosters<T>({
         label={label}
         columns={columns}
         gap={POSTER_GAP}
-        estimate={Math.round(cell * 1.5 + CAPTION)}
+        estimate={Math.round(cell * (square ? 1 : 1.5) + CAPTION)}
       />
     </View>
   )

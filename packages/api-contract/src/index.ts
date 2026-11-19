@@ -20,6 +20,7 @@ export * from './lists.ts'
 export * from './metadata.ts'
 export * from './movies.ts'
 export * from './music.ts'
+export * from './music-library.ts'
 export * from './operations.ts'
 export * from './personalization.ts'
 export * from './playback.ts'
@@ -63,6 +64,7 @@ import { importLists } from './lists.ts'
 import { metadata } from './metadata.ts'
 import { movies, rootFolders } from './movies.ts'
 import { music, playlists } from './music.ts'
+import { musicLibrary } from './music-library.ts'
 import { operationsSettings } from './operations.ts'
 import { appearance, dashboard, home, preferences } from './personalization.ts'
 import { playback } from './playback.ts'
@@ -135,4 +137,6 @@ export const routes = {
   // drafted with D3 (one-client-platform-d.md, answer 5): the admin's shows, as `shows` above
   // with Shows' settings (series-settings.ts): episode naming, episode sizes, profiles' use
   series: { ...series, ...seriesSettings },
+  // drafted with HT-68 (Phase 5's part D, answer 12): the admin's music, as `series` above
+  musicLibrary,
 } as const
