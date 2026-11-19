@@ -181,9 +181,10 @@ const yearsOf = (years: number[]) => {
 const like = (hay: string | null | undefined, query: string) =>
   !!hay && hay.toLowerCase().includes(query.toLowerCase())
 
-export const art = (a: { poster: string; backdrop: string }) => ({
+export const art = (a: { poster: string; backdrop: string; logo?: string }) => ({
   poster: a.poster || null,
   backdrop: a.backdrop || null,
+  logo: a.logo || null,
 })
 
 /** A title the household can watch: some version has a file (the server's HAS_FILE). */
@@ -585,6 +586,7 @@ export function filmsOf({ srv, api, userId }: FilmsCtx) {
       art: {
         poster: c.artwork ?? (first.art.poster || null),
         backdrop: first.art.backdrop || null,
+        logo: null,
       },
       count: ms.length,
       years: yearsOf(ms.map((m) => m.year)),

@@ -50,6 +50,8 @@ export function createMetadata(deps: MetadataDeps) {
     collection: core.collection,
     person: core.person,
     images: { get: core.images.get },
+    /** Artwork an admin chose (HT-66): the picker's view, choosing, uploading and Reset. */
+    artwork: core.artwork,
     /** Queues `metadata.refresh` for a movie (or a person or collection); returns the job's id. */
     refresh: (tmdbId: number, kind: CacheKind = 'movie') => core.enqueueRefresh(kind, tmdbId),
     /** The same refresh, now, for callers that wait on it (tests, the job). */
@@ -73,15 +75,28 @@ export function createMetadata(deps: MetadataDeps) {
 
 export type Metadata = ReturnType<typeof createMetadata>
 
+export {
+  ARTWORK_KINDS,
+  ARTWORK_KINDS_OF,
+  ARTWORK_MAX_BYTES,
+  ARTWORK_OWNERS,
+  ARTWORK_RULES,
+  type ArtworkChoice,
+  type ArtworkKind,
+  type ArtworkOption,
+  type ArtworkOwner,
+  checkArtwork,
+} from './artwork.ts'
 export * from './attribution.ts'
 export type { MetadataDeps } from './context.ts'
 export { METADATA_TOPIC } from './context.ts'
 export * from './image-url.ts'
 export type { CachedImage } from './images.ts'
 export { TMDB_IMAGE_BASE } from './images.ts'
-export { GENRES } from './map.ts'
+export { type ArtPick, collectionArt, GENRES } from './map.ts'
 export * from './recording.ts'
 export {
+  type ArtworkKindView,
   CACHE_LIMIT_MS,
   CHANGES_STATE_KEY,
   CHANGES_WINDOW_MS,

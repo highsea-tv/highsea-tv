@@ -8,6 +8,7 @@
 
 import { sql } from 'drizzle-orm'
 import {
+  blob,
   index,
   integer,
   primaryKey,
@@ -179,6 +180,43 @@ export const images = sqliteTable(
   (t) => [
     primaryKey({ columns: [t.path, t.size] }),
     index('images_owner').on(t.ownerType, t.ownerId),
+  ],
+)
+
+/** What can own chosen artwork: movies and collections now; shows, seasons and episodes later. */
+export const ARTWORK_OWNERS = ['movie', 'collection', 'show', 'season', 'episode'] as const
+export const ARTWORK_KINDS = ['poster', 'backdrop', 'logo'] as const
+
+/**
+ * Artwork an admin chose for a title (HT-66, ADR 0030's 2026-11-18 section): one row per owner and
+ * kind, in place of highsea's automatic choice until it's reset. A refresh never touches it. The
+ * owner is addressed as images are, by its type and TMDB id (a season or an episode has its own).
+ * An upload keeps its original here, so a backup holds it; its sizes are made from it into the
+ * images folder when first asked for, as TMDB's are fetched.
+ */
+export const artwork = sqliteTable(
+  'artwork',
+  {
+    ownerType: text('owner_type', { enum: ARTWORK_OWNERS }).notNull(),
+    ownerId: integer('owner_id').notNull(),
+    kind: text('kind', { enum: ARTWORK_KINDS }).notNull(),
+    source: text('source', { enum: ['tmdb', 'upload'] }).notNull(),
+    /** TMDB's `file_path`, or an upload's own name (`/hs-….png`), with its leading slash. */
+    file: text('file').notNull(),
+    /** ISO 639-1 of the image's text, as TMDB has it; null for none, and for uploads. */
+    language: text('language'),
+    width: integer('width'),
+    height: integer('height'),
+    /** An upload's original bytes; null for TMDB's. */
+    data: blob('data', { mode: 'buffer' }),
+    contentType: text('content_type'),
+    /** Who chose it; null once their account is removed. */
+    chosenBy: text('chosen_by').references(() => users.id, { onDelete: 'set null' }),
+    chosenAt: integer('chosen_at').notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.ownerType, t.ownerId, t.kind] }),
+    index('artwork_file').on(t.file),
   ],
 )
 

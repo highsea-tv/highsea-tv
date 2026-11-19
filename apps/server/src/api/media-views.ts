@@ -13,9 +13,14 @@ import type * as Md from '@highsea-tv/metadata'
 /** A `YYYY-MM-DD` day as the contract's date-time, at midnight UTC. */
 const dayTime = (day: string | null) => (day ? `${day}T00:00:00.000Z` : null)
 
-const art = (a: { poster: string | null; backdrop: string | null }): Api.Art => ({
+const art = (a: {
+  poster: string | null
+  backdrop: string | null
+  logo?: string | null
+}): Api.Art => ({
   poster: a.poster,
   backdrop: a.backdrop,
+  logo: a.logo ?? null,
 })
 
 /** Which of a list's TMDB ids are in the library. */

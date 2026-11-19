@@ -24,8 +24,9 @@ const INVALID_KEY = {
 
 /**
  * 2×3 pixels, a colour fading to its dark at the foot, after the prototype's art (dusk teal,
- * violet, mauve, moss, ember, slate): each image gets one by its path, so cards side by side differ
- * and a page compared with its prototype reads as artwork, not one grey.
+ * violet, mauve, moss, ember, slate): each image gets one by its file name, so cards side by side
+ * differ, one image is the same at every size (the artwork picker's current one and its tile), and
+ * a page compared with its prototype reads as artwork, not one grey.
  */
 const PLACEHOLDER = {
   png: [
@@ -48,8 +49,9 @@ const PLACEHOLDER = {
 
 /** The same placeholder for the same path, every run. */
 function placeholderFor(path: string, png: boolean) {
+  const file = path.slice(path.lastIndexOf('/'))
   let h = 0
-  for (const c of path) h = (h * 31 + c.charCodeAt(0)) >>> 0
+  for (const c of file) h = (h * 31 + c.charCodeAt(0)) >>> 0
   const set = png ? PLACEHOLDER.png : PLACEHOLDER.jpeg
   return Buffer.from(set[h % set.length] as string, 'base64')
 }

@@ -79,7 +79,7 @@ export type TmdbCollection = {
   id: number
   name: string
   overview: string
-  art: { poster: string | null; backdrop: string | null }
+  art: { poster: string | null; backdrop: string | null; logo: string | null }
   tmdbIds: number[]
   years: number[]
 }
@@ -487,7 +487,7 @@ export function createCollections(deps: {
       id: row.id,
       name: row.name,
       overview: row.summary,
-      art: { poster: row.artwork ?? first.art.poster, backdrop: first.art.backdrop },
+      art: { poster: row.artwork ?? first.art.poster, backdrop: first.art.backdrop, logo: null },
       count: items.length,
       years: yearsOf(items.flatMap((m) => (m.year === null ? [] : [m.year]))),
       smart: {

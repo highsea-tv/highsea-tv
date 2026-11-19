@@ -1,0 +1,139 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "https://api.themoviedb.org/3/movie/19/images",
+    "credential": "valid"
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json;charset=utf-8"
+    },
+    "body": {
+      "id": 19,
+      "backdrops": [
+        {
+          "aspect_ratio": 1.778,
+          "height": 2160,
+          "iso_639_1": null,
+          "file_path": "/eeMoFKxjjiCi6iep2GEZtSAMYIr.jpg",
+          "vote_average": 5.6,
+          "vote_count": 8,
+          "width": 3840
+        },
+        {
+          "aspect_ratio": 1.778,
+          "height": 1080,
+          "iso_639_1": null,
+          "file_path": "/hsM19Backdrop2.jpg",
+          "vote_average": 5.3,
+          "vote_count": 2,
+          "width": 1920
+        },
+        {
+          "aspect_ratio": 1.778,
+          "height": 1080,
+          "iso_639_1": "en",
+          "file_path": "/hsM19Backdrop3.jpg",
+          "vote_average": 5.2,
+          "vote_count": 1,
+          "width": 1920
+        },
+        {
+          "aspect_ratio": 1.778,
+          "height": 720,
+          "iso_639_1": "de",
+          "file_path": "/hsM19Backdrop4.jpg",
+          "vote_average": 0,
+          "vote_count": 0,
+          "width": 1280
+        }
+      ],
+      "posters": [
+        {
+          "aspect_ratio": 0.667,
+          "height": 3000,
+          "iso_639_1": "en",
+          "file_path": "/kr9wXRN23zLuWJIelahas1mtnYj.jpg",
+          "vote_average": 5.5,
+          "vote_count": 6,
+          "width": 2000
+        },
+        {
+          "aspect_ratio": 0.667,
+          "height": 1500,
+          "iso_639_1": "en",
+          "file_path": "/hsM19Poster2.jpg",
+          "vote_average": 5.3,
+          "vote_count": 4,
+          "width": 1000
+        },
+        {
+          "aspect_ratio": 0.667,
+          "height": 1500,
+          "iso_639_1": "de",
+          "file_path": "/hsM19Poster3.jpg",
+          "vote_average": 5.2,
+          "vote_count": 2,
+          "width": 1000
+        },
+        {
+          "aspect_ratio": 0.667,
+          "height": 1170,
+          "iso_639_1": "fr",
+          "file_path": "/hsM19Poster4.jpg",
+          "vote_average": 5.1,
+          "vote_count": 1,
+          "width": 780
+        },
+        {
+          "aspect_ratio": 0.667,
+          "height": 1500,
+          "iso_639_1": null,
+          "file_path": "/hsM19Poster5.jpg",
+          "vote_average": 0,
+          "vote_count": 0,
+          "width": 1000
+        }
+      ],
+      "logos": [
+        {
+          "aspect_ratio": 3.2,
+          "height": 500,
+          "iso_639_1": "en",
+          "file_path": "/hsMetropolisLogoEn.png",
+          "vote_average": 5.4,
+          "vote_count": 3,
+          "width": 1600
+        },
+        {
+          "aspect_ratio": 4,
+          "height": 300,
+          "iso_639_1": "en",
+          "file_path": "/hsM19Logo2.png",
+          "vote_average": 5.2,
+          "vote_count": 1,
+          "width": 1200
+        },
+        {
+          "aspect_ratio": 4,
+          "height": 300,
+          "iso_639_1": "en",
+          "file_path": "/hsM19Logo3.svg",
+          "vote_average": 5.3,
+          "vote_count": 2,
+          "width": 1200
+        },
+        {
+          "aspect_ratio": 2.5,
+          "height": 400,
+          "iso_639_1": "de",
+          "file_path": "/hsM19Logo4.png",
+          "vote_average": 0,
+          "vote_count": 0,
+          "width": 1000
+        }
+      ]
+    }
+  }
+}

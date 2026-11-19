@@ -289,7 +289,7 @@ describe('0018_profiles', () => {
     const file = join(dir, 'highsea.db')
     const first = older(file)
     const result = migrate(first, { backupDir: join(dir, 'backups') })
-    expect(result.applied).toEqual(['0018_profiles'])
+    expect(result.applied).toEqual(['0018_profiles', '0019_artwork'])
     expect(result.backup).not.toBeNull()
     const once = state(first)
     first.close()

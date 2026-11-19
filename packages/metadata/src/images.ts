@@ -8,6 +8,7 @@ import { join, resolve, sep } from 'node:path'
 import { AppError, newId } from '@highsea-tv/core'
 import { schema } from '@highsea-tv/db'
 import { and, eq } from 'drizzle-orm'
+import { type Artwork, UPLOAD_PREFIX } from './artwork.ts'
 import type { MetadataDeps } from './context.ts'
 import { contentTypeOf, type ImageRef, parseImageRef } from './image-url.ts'
 import type { TmdbClient } from './tmdb/client.ts'
@@ -28,9 +29,10 @@ export type CachedImage = {
 }
 
 export function createImages(
-  deps: Pick<MetadataDeps, 'db' | 'clock' | 'logger' | 'imagesDir'>,
+  deps: Pick<MetadataDeps, 'db' | 'clock' | 'logger' | 'imagesDir' | 'resizeImage'>,
   client: TmdbClient,
   baseUrl: () => string,
+  artwork?: Pick<Artwork, 'uploaded'>,
 ) {
   const { db, clock, imagesDir } = deps
   const root = resolve(imagesDir)
@@ -44,8 +46,37 @@ export function createImages(
 
   const notFound = () => new AppError('not-found', 'There’s no image at that address.')
 
+  /**
+   * An uploaded image at a size (HT-66): made from the original in the database, no larger than
+   * it, as TMDB's sizes are a width (`w342`) or a height (`h632`). Without a resizer (no ffmpeg),
+   * the original serves at every size.
+   */
+  async function rendition(
+    ref: ImageRef,
+    original: { data: Uint8Array; contentType: string },
+  ): Promise<Uint8Array> {
+    const n = Number(ref.size.slice(1))
+    if (!deps.resizeImage) return original.data
+    try {
+      return await deps.resizeImage(original.data, {
+        [ref.size.startsWith('h') ? 'height' : 'width']: n,
+        type: original.contentType === 'image/png' ? 'image/png' : 'image/jpeg',
+      })
+    } catch (e) {
+      deps.logger.warn('couldn’t resize uploaded artwork; serving the original', {
+        file: ref.file,
+        error: (e as Error).message,
+      })
+      return original.data
+    }
+  }
+
   async function fetchAndStore(ref: ImageRef): Promise<CachedImage> {
     const path = fileFor(ref.size, ref.file)
+    const original = artwork?.uploaded(ref.file)
+    if (original) return store(ref, path, await rendition(ref, original))
+    // an upload's name is highsea's own: once replaced or reset, TMDB has nothing by it
+    if (ref.file.startsWith(`/${UPLOAD_PREFIX}_`)) throw notFound()
     const res = await client.image(`${baseUrl()}${ref.size}${ref.file}`)
     if (res.status === 404) throw notFound()
     if (!res.ok)
@@ -56,6 +87,10 @@ export function createImages(
     if (!/^image\/(jpeg|png|webp)$/.test(type)) throw notFound()
     const bytes = new Uint8Array(await res.arrayBuffer())
     if (bytes.length === 0 || bytes.length > MAX_BYTES) throw notFound()
+    return store(ref, path, bytes)
+  }
+
+  function store(ref: ImageRef, path: string, bytes: Uint8Array): CachedImage {
     mkdirSync(join(root, ref.size), { recursive: true })
     // written beside, then renamed: a reader never sees half a file
     const temp = `${path}.${newId('tmp')}`
@@ -114,6 +149,22 @@ export function createImages(
         inFlight.set(key, pending)
       }
       return pending
+    },
+
+    /** Removes every size of one file (an upload replaced or reset). */
+    removeFile(file: string) {
+      const rows = db
+        .select({ path: images.path, size: images.size })
+        .from(images)
+        .where(eq(images.path, file))
+        .all()
+      for (const r of rows) {
+        db.delete(images)
+          .where(and(eq(images.path, r.path), eq(images.size, r.size)))
+          .run()
+        rmSync(fileFor(r.size, r.path), { force: true })
+      }
+      return rows.length
     },
 
     /** Removes image rows and their files. */

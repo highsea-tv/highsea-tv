@@ -105,7 +105,7 @@ describe('contract', () => {
     )
   })
 
-  const art = { poster: '/api/v1/images/movie/603/poster/w342/a.jpg', backdrop: null }
+  const art = { poster: '/api/v1/images/movie/603/poster/w342/a.jpg', backdrop: null, logo: null }
   const discover = {
     id: 603,
     title: 'The Matrix',

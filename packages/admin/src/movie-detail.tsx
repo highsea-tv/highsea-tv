@@ -94,6 +94,8 @@ import {
 import { type ComponentRef, type ReactNode, useCallback, useEffect, useRef, useState } from 'react'
 import { View } from 'react-native'
 import { AddMovieDialog } from './add-dialog.tsx'
+import { ArtworkDialog } from './artwork-dialog.tsx'
+import { artwork as artworkMessages } from './artwork-messages.ts'
 import { torrentTone } from './downloads-status.ts'
 import { useSearchable } from './indexer-state.ts'
 import { library } from './library-messages.ts'
@@ -384,6 +386,8 @@ function LibraryMovie({
   const [adding, setAdding] = useState<DiscoverMovie[]>([])
   const [monitoring, setMonitoring] = useState<boolean | null>(null)
   const [menu, setMenu] = useState(false)
+  const [changingArt, setChangingArt] = useState(false)
+  const ta = useT(artworkMessages)
   const more = useRef<ComponentRef<typeof View>>(null)
 
   const update = useAction((c, body: MovieUpdate) => c.movies.update({ params: { id }, body }))
@@ -465,6 +469,7 @@ function LibraryMovie({
         anchor={more}
         items={[
           { label: t('edit'), icon: 'edit', onSelect: () => setEditing(true) },
+          { label: ta('open'), icon: 'grid', onSelect: () => setChangingArt(true) },
           {
             label: t('refresh'),
             icon: 'refresh',
@@ -480,6 +485,13 @@ function LibraryMovie({
           },
           { label: t('remove'), icon: 'delete', onSelect: () => setRemoving(true) },
         ]}
+      />
+      <ArtworkDialog
+        owner="movie"
+        id={id}
+        title={m.title}
+        open={changingArt}
+        onOpenChange={setChangingArt}
       />
     </View>
   ) : undefined
