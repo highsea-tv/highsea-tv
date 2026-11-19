@@ -15,7 +15,7 @@
 // so the button is left out there: https://developer.mozilla.org/en-US/docs/Web/API/Picture-in-Picture_API),
 // full screen the Fullscreen API on the page, and the keyboard's and headphones' media keys the
 // Media Session API (https://developer.mozilla.org/en-US/docs/Web/API/Media_Session_API).
-import { type Cue, SEEK_S } from '@highsea-tv/client/player'
+import { type Cue, pictureShown, SEEK_S } from '@highsea-tv/client/player'
 import { useWebHost } from '@highsea-tv/native/web-host'
 import { scrimOf, useTheme } from '@highsea-tv/ui'
 import { type ReactNode, type RefObject, useEffect, useRef, useState } from 'react'
@@ -190,7 +190,8 @@ export const usePicture: typeof nativePicture = (p, o) => {
           width: '100%',
           height: '100%',
           objectFit: 'contain',
-          opacity: o.dim ? 0.35 : 1,
+          // nothing under a stream's message, its text track's line included (HT-64)
+          opacity: !pictureShown(p.state) ? 0 : o.dim ? 0.35 : 1,
         }}
       />
     </>

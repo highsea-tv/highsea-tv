@@ -7,6 +7,7 @@
 // leaving the app while playing, and AirPlay is iOS's own picker
 // (https://docs.expo.dev/versions/latest/sdk/video/#videoviewprops); the docs list neither for
 // tvOS, where the view only shows the film.
+import { pictureShown } from '@highsea-tv/client/player'
 import type { Playback } from '@highsea-tv/native/playback'
 import { player as playerSizes } from '@highsea-tv/tokens'
 import { tokens } from '@highsea-tv/ui'
@@ -54,7 +55,9 @@ export function usePicture(
   useEventListener(player, 'mutedChange', ({ muted }) => setSound((s) => ({ ...s, muted })))
   useEventListener(player, 'playbackRateChange', ({ playbackRate }) => setRate(playbackRate))
   const tv = Platform.isTV
-  const picture = tv ? (
+  // nothing under a stream's message: a failed item's picture is AVPlayer's own placeholder
+  const shown = pictureShown(p.state)
+  const picture = !shown ? null : tv ? (
     // AVPlayerViewController's view takes focus on tvOS even without its controls, and would
     // catch Left and Right from the scrubber and OK after them. The focus engine skips views that
     // don't take user interaction (Apple's "Supporting focus within your app"). pointerEvents none
@@ -62,7 +65,13 @@ export function usePicture(
     // (patches/expo-video@58.0.11.patch) turns it off there and makes the controller a child view
     // controller (ADR 0059, 2026-11-15); collapsable keeps the wrapper from being flattened away
     <View pointerEvents="none" collapsable={false} style={{ position: 'absolute', inset: 0 }}>
-      <VideoView player={player} nativeControls={false} contentFit="contain" style={{ flex: 1 }} />
+      <VideoView
+        player={player}
+        nativeControls={false}
+        contentFit="contain"
+        onFirstFrameRender={p.firstFrame}
+        style={{ flex: 1 }}
+      />
     </View>
   ) : (
     <VideoView
@@ -77,6 +86,8 @@ export function usePicture(
       startsPictureInPictureAutomatically
       onPictureInPictureStart={() => setPip(true)}
       onPictureInPictureStop={() => setPip(false)}
+      // the first frame drawn: a start that plays without one has failed (HT-64)
+      onFirstFrameRender={p.firstFrame}
       style={{ position: 'absolute', inset: 0, opacity: o.dim ? 0.35 : 1 }}
     />
   )
