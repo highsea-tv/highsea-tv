@@ -1624,6 +1624,8 @@ export type ClientVersion = {
   label: string
   /** "4K · HDR10 · HEVC · 18.2 GB". */
   detail: string
+  /** What the file is, for a badge: "4K HDR", "1080p" (the label is the owner's name for it). */
+  quality: string | null
   audio: ClientTrack[]
   subtitles: ClientTrack[]
 }

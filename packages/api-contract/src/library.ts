@@ -114,6 +114,12 @@ export const ClientVersion = z
     label: z.string().openapi({ example: '4K HDR' }),
     /** "4K · HDR10 · HEVC · 18.2 GB" once it has a file; null until then. */
     detail: z.string().nullable(),
+    /**
+     * What its file is, for the player's badge and the tags by a film's title: "4K HDR", "1080p".
+     * The label is the owner's name for the version (often its quality profile's, "Ultra HD"),
+     * which needn't match the file. Null until it has a file, or when the probe can't tell.
+     */
+    quality: z.string().nullable().openapi({ example: '4K HDR' }),
     playable: z.boolean(),
     /** Its sound tracks, in the file's order. */
     audio: z.array(ClientAudio),

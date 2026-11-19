@@ -7,6 +7,14 @@ While highsea is at 0.x, any release may change how something works. When one do
 
 ## [Unreleased]
 
+## [0.4.5] - 2026-11-19
+
+### Changed
+
+- HT-64 The iPhone fails to start a resumed direct-stream film most of the time ([#72](https://github.com/highsea-tv/highsea-tv/pull/72))
+- HT-66 Admins can change a title's artwork: poster, banner and logo ([#71](https://github.com/highsea-tv/highsea-tv/pull/71))
+- HT-65 Collection pages and the home hero get the movie page's hero treatment ([#73](https://github.com/highsea-tv/highsea-tv/pull/73))
+
 ## [0.4.4] - 2026-11-18
 
 ### Changed
@@ -169,7 +177,9 @@ While highsea is at 0.x, any release may change how something works. When one do
 
 
 
-[unreleased]: https://github.com/highsea-tv/highsea-tv/compare/v0.4.4...HEAD
+
+[unreleased]: https://github.com/highsea-tv/highsea-tv/compare/v0.4.5...HEAD
+[0.4.5]: https://github.com/highsea-tv/highsea-tv/compare/v0.4.4...v0.4.5
 [0.4.4]: https://github.com/highsea-tv/highsea-tv/compare/v0.4.3...v0.4.4
 [0.4.3]: https://github.com/highsea-tv/highsea-tv/compare/v0.4.2...v0.4.3
 [0.4.2]: https://github.com/highsea-tv/highsea-tv/compare/v0.4.1...v0.4.2

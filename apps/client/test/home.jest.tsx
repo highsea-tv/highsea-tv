@@ -102,8 +102,12 @@ const orderOf = (names: string[]) => {
     }
     const node = n as { props?: Record<string, unknown>; children?: unknown[] } | null
     const label = node?.props?.accessibilityLabel ?? node?.props?.['aria-label']
-    if (typeof label === 'string' && names.includes(label) && !seen.includes(label))
-      seen.push(label)
+    // the phone's hero is read as its section's title and where it is ("…, title 1 of 3")
+    const name =
+      typeof label === 'string'
+        ? names.find((x) => label === x || label.startsWith(`${x}, `))
+        : null
+    if (name && !seen.includes(name)) seen.push(name)
     for (const c of node?.children ?? []) walk(c)
   }
   walk(screen.root)
@@ -177,6 +181,12 @@ describe('Home on the phone', () => {
     expect(screen.getAllByRole('button', { name: 'More info' }).length).toBeGreaterThan(0)
     expect(screen.getByText('Continue watching')).toBeTruthy()
     expect(screen.getAllByText('Recently added').length).toBeGreaterThan(0)
+  })
+
+  test('the hero has no dots; its label says which title of how many', async () => {
+    await home()
+    expect(screen.getByLabelText(/^Featured on Harbor, title 1 of \d+$/)).toBeTruthy()
+    expect(screen.queryByLabelText(/^Featured title \d+ of/)).toBeNull()
   })
 
   test('the owner’s card is dismissed for good', async () => {
@@ -330,6 +340,29 @@ describe('Home with a pointer', () => {
       within(screen.getByLabelText('Featured on Harbor')).getByRole('header', {
         name: 'Spring',
       }),
+    ).toBeTruthy()
+  })
+
+  test('the hero’s arrows have no dots between them, and Left and Right page it', async () => {
+    pointer()
+    await home()
+    const hero = screen.getByLabelText('Featured on Harbor')
+    expect(within(hero).getByRole('button', { name: 'Previous featured title' })).toBeTruthy()
+    expect(within(hero).queryByRole('button', { name: /^Show / })).toBeNull()
+    const key = (key: string) =>
+      fireEvent(screen.getByLabelText('Featured on Harbor'), 'keyDown', {
+        nativeEvent: { key },
+        preventDefault: () => {},
+      })
+    await key('ArrowRight')
+    await flush()
+    expect(
+      within(screen.getByLabelText('Featured on Harbor')).getByRole('header', { name: 'Spring' }),
+    ).toBeTruthy()
+    await key('ArrowLeft')
+    await flush()
+    expect(
+      within(screen.getByLabelText('Featured on Harbor')).getByRole('header', { name: 'Sintel' }),
     ).toBeTruthy()
   })
 })

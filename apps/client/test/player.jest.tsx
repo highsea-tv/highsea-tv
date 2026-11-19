@@ -13,7 +13,7 @@ import { act, cleanup, fireEvent, render, screen, within } from '@testing-librar
 import { router } from 'expo-router'
 import { navigationRef } from 'expo-router/build/global-state/navigationRef'
 import type { FakeVideo } from './mock.ts'
-import { flush, fresh, sent, server, signedIn } from './mock.ts'
+import { flush, fresh, rewrite, sent, server, signedIn } from './mock.ts'
 
 jest.mock('../src/form-factor', () => ({
   formFactorOverride: () => (globalThis as { __formFactor?: string }).__formFactor ?? 'touch',
@@ -409,6 +409,32 @@ describe('the player with a pointer', () => {
     await fireEvent.press(screen.getByRole('button', { name: 'Close' }))
     await flush()
     expect(screen.queryByText('Speed')).toBeNull()
+  })
+
+  test('the badge says what plays, not the version’s name (“Ultra HD”, its profile’s)', async () => {
+    // the client's own sign-in, to rename the version as the owner does in the admin
+    let auth = ''
+    rewrite((_url, init) => {
+      auth ||= new Headers(init.headers).get('authorization') ?? ''
+      return undefined
+    })
+    await signedIn('theo')
+    const admin = (path: string, init: RequestInit = {}) =>
+      server()(`/api/v1${path}`, {
+        ...init,
+        headers: { authorization: auth, 'content-type': 'application/json' },
+      }).then((r) => r.json())
+    const film = await admin(`/items/movie/${FILM}`)
+    const version = film.versions[0]
+    await admin(`/movies/${FILM}/versions/${version.id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ label: 'Ultra HD' }),
+    })
+    await act(() => router.navigate(`/play/${FILM}` as never))
+    await flush(2000)
+    expect(version.quality).toBeTruthy()
+    expect(screen.getByText(version.quality)).toBeTruthy()
+    expect(screen.queryByText('Ultra HD')).toBeNull()
   })
 })
 

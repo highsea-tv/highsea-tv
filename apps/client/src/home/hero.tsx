@@ -6,10 +6,12 @@
 //   at the featured card's 4:5 under the status bar, faded into the page; the header (the server
 //   switcher and the avatar) over the art's top on a fade of the page's colour, so it and the
 //   status bar read on any art, scrolling away with the page as it did; under the art the kicker,
-//   the title's logo, Play or Resume and More info, then a dot for each title;
+//   the title's logo, Play or Resume and More info; no dots (the owner's call of 2026-11-19), the
+//   scroller's label saying which title of how many;
 // - a pointer: PointerHero, the art filling the first screen under the clear top bar, the words
 //   low on the left (the logo, the meta line, the tagline, Play or Resume and More info) and the
-//   Pager at the foot's end;
+//   Pager's arrows alone at the foot's end (no dots: the owner's call of 2026-11-19, a server's
+//   fifty titles ran them across half the screen), Left and Right paging from inside the hero;
 // - the TV: TvHero, the art across the first screen behind the head, the words low on the left,
 //   Play or Resume (where focus starts, and where Back returns) and More info.
 // Further down Home, or with none, the featured section stays the card it was (./featured.tsx).
@@ -33,14 +35,16 @@ import {
 } from '@highsea-tv/ui'
 import { FocusGuide, type ViewHandle } from '@highsea-tv/ui/tv'
 import { type ReactNode, type Ref, useState } from 'react'
-import { ScrollView, useWindowDimensions, View } from 'react-native'
+import { ScrollView, useWindowDimensions, View, type ViewProps } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { HERO_WORDS, PointerHero, TvHero } from '../detail/hero.tsx'
 import { useFilmsText } from '../films.ts'
 import { openTitle, playTitle } from './go.ts'
 import { homeMessages } from './messages.ts'
 
-const { space, radius } = tokens
+const { space } = tokens
+
+type KeyDown = Parameters<NonNullable<ViewProps['onKeyDown']>>[0]
 
 /** Touch's hero frame: the featured card's 4:5, taller than a title page's 16:9. */
 const TOUCH_FRAME = 4 / 5
@@ -74,7 +78,10 @@ export function TouchHomeHero({
         horizontal
         pagingEnabled
         showsHorizontalScrollIndicator={false}
-        accessibilityLabel={title}
+        // no dots under the titles (the owner's call of 2026-11-19), so the label says where it is
+        accessibilityLabel={
+          items.length > 1 ? t('page', { section: title, n: at + 1, count: items.length }) : title
+        }
         scrollEventThrottle={16}
         onScroll={(e) => setAt(Math.round(e.nativeEvent.contentOffset.x / Math.max(1, width)))}
       >
@@ -82,30 +89,6 @@ export function TouchHomeHero({
           <TouchPage key={m.id} item={m} index={i} width={width} />
         ))}
       </ScrollView>
-      {items.length > 1 ? (
-        <View
-          accessible
-          accessibilityLabel={t('page', { n: at + 1, count: items.length })}
-          style={{
-            flexDirection: 'row',
-            justifyContent: 'center',
-            gap: space['1.5'],
-            paddingTop: space['4'],
-          }}
-        >
-          {items.map((m, i) => (
-            <View
-              key={m.id}
-              style={{
-                width: space['1.5'],
-                height: space['1.5'],
-                borderRadius: radius.pill,
-                backgroundColor: theme.colors[i === at ? 'text' : 'text-3'],
-              }}
-            />
-          ))}
-        </View>
-      ) : null}
       {/* the header over the art's top, on the page's colour faded out, under the status bar */}
       <View
         style={{
@@ -196,10 +179,22 @@ export function PointerHomeHero({
   const item = items[at]
   if (!item) return null
   const tagline = item.tagline ?? item.synopsis
+  const count = items.length
+  // Left and Right page the hero while the keyboard's focus is in it (Play, More info, the
+  // arrows); the key's event bubbles to the region from whichever has the focus
+  const step = (e: KeyDown) => {
+    const k = e.nativeEvent
+    if (count < 2 || k.altKey || k.ctrlKey || k.metaKey || k.shiftKey) return
+    const by = k.key === 'ArrowRight' ? 1 : k.key === 'ArrowLeft' ? -1 : 0
+    if (!by) return
+    e.preventDefault()
+    setAt((at + by + count) % count)
+  }
   return (
-    <View accessibilityRole="region" accessibilityLabel={title}>
+    <View accessibilityRole="region" accessibilityLabel={title} onKeyDown={step}>
+      {/* one hero for every title, not one each: paging keeps the keyboard's focus where it was
+          (Play, More info or an arrow); TitleLogo keys its own state by its source */}
       <PointerHero
-        key={item.id}
         source={media(films.card(item, { wide: true }).src)}
         hero={hero}
         end={
@@ -209,7 +204,7 @@ export function PointerHomeHero({
             onChange={setAt}
             previousLabel={t('previous')}
             nextLabel={t('next')}
-            pageLabel={(i) => t('show', { title: items[i]?.title ?? '' })}
+            dots={false}
           />
         }
       >

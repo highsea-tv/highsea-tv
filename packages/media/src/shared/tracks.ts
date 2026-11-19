@@ -69,6 +69,18 @@ const CODECS: Record<string, string> = {
 /** A picture codec's name as people know it: `hevc` is HEVC, `h264` H.264. */
 export const codecName = (codec: string) => CODECS[codec] ?? codec.toUpperCase()
 
+/**
+ * What a file is, short, for a badge: "4K HDR", "1080p", "4K" (the resolution, then HDR for any
+ * high dynamic range); null when the probe doesn't know its resolution.
+ */
+export function versionQuality(info: MediaInfo | null): string | null {
+  const v = info?.video ?? null
+  const lines = resolutionOf(v)
+  if (!lines) return null
+  const name = lines === 2160 ? '4K' : `${lines}p`
+  return v && HDR[v.hdr] ? `${name} HDR` : name
+}
+
 /** "4K · HDR10 · HEVC · 18.2 GB"; the parts the probe doesn't know are left out. */
 export function versionDetail(info: MediaInfo | null, size: number): string {
   const v = info?.video ?? null

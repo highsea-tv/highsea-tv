@@ -6,7 +6,7 @@ Mobile clients run on iOS and Android. The phone is one of `apps/client`'s form 
 
 This layout is locked in [direction.md](../../brand/direction.md#layouts). From top to bottom:
 
-When the featured section is Home's first section (the owner's change of 2026-11-18), it leads Home as a title's hero instead of a carousel: its art full bleed at 4:5 under the status bar and the header, which sit on a fade of `bg` so they read on any art, faded into the page at its foot; under the art the kicker, the title's logo (its name when there's none), **Play** or **Resume** and **More info** side by side; a swipe goes to the section's next title, a screen wide, with a dot for each under them. The announcement card follows it. Otherwise:
+When the featured section is Home's first section (the owner's change of 2026-11-18), it leads Home as a title's hero instead of a carousel: its art full bleed at 4:5 under the status bar and the header, which sit on a fade of `bg` so they read on any art, faded into the page at its foot; under the art the kicker, the title's logo (its name when there's none), **Play** or **Resume** and **More info** side by side; a swipe goes to the section's next title, a screen wide, with no dots under them (the owner's change of 2026-11-19); a screen reader hears which title of how many. The announcement card follows it. Otherwise:
 
 1. **Header:**
    - on the left, the server switcher: the server's mark and name, with a chevron that opens the multi-server switcher;

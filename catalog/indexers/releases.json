@@ -1,5 +1,16 @@
 [
   {
+    "version": "0.4.5",
+    "channel": "stable",
+    "date": "2026-11-19",
+    "notes": [
+      "HT-64 The iPhone fails to start a resumed direct-stream film most of the time (#72)",
+      "HT-66 Admins can change a title's artwork: poster, banner and logo (#71)",
+      "HT-65 Collection pages and the home hero get the movie page's hero treatment (#73)"
+    ],
+    "url": "https://github.com/highsea-tv/highsea-tv/releases/tag/v0.4.5"
+  },
+  {
     "version": "0.4.4",
     "channel": "stable",
     "date": "2026-11-18",

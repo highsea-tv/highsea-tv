@@ -228,7 +228,8 @@ export function PointerPlayer({
               </Text>
             ) : null}
           </View>
-          {v ? <QualityTag overlay>{v.label}</QualityTag> : null}
+          {/* what's playing, from its file; the version's label is the owner's name for it */}
+          {v?.quality ? <QualityTag overlay>{v.quality}</QualityTag> : null}
         </View>
 
         {!state.playing && !m.waiting && !m.message ? (

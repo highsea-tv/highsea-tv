@@ -137,9 +137,13 @@ export function picksOf<
 export const versionLabel = (v: Pick<Version, 'label' | 'detail'>) =>
   v.detail ? `${v.label} · ${v.detail.split(' · ').slice(-1)[0]}` : v.label
 
-/** The qualities a film plays in, each once ("4K", "1080p"), for the tags by its title. */
-export const qualitiesOf = (versions: Pick<Version, 'label' | 'playable'>[]) => [
-  ...new Set(versions.filter((v) => v.playable).map((v) => v.label)),
+/**
+ * The qualities a film plays in, each once ("4K HDR", "1080p"), for the tags by its title: what
+ * its files are, not the versions' names (a version named for its profile, "Ultra HD", can hold a
+ * 1080p file).
+ */
+export const qualitiesOf = (versions: { quality: string | null; playable: boolean }[]) => [
+  ...new Set(versions.flatMap((v) => (v.playable && v.quality ? [v.quality] : []))),
 ]
 
 // ---------------------------------------------------------------- a person
