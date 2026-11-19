@@ -196,7 +196,20 @@ async function artwork(page: Page, where: string, kind: string, refused: string[
 
 console.log(`The end-to-end run, against ${IMAGE}`)
 docker([...COMPOSE, 'down', '--volumes', '--remove-orphans'], true)
-docker([...COMPOSE, 'up', '--detach', '--wait', '--wait-timeout', '300'])
+try {
+  docker([...COMPOSE, 'up', '--detach', '--wait', '--wait-timeout', '300'])
+} catch (error) {
+  // `up --wait` says only that a service failed, not why: print what each one wrote, and keep it
+  // with the artifacts, before the stack comes down
+  const logs = docker([...COMPOSE, 'logs', '--no-color', '--tail', '200'], true)
+  console.log(`A service didn’t start. Its logs:\n${logs}`)
+  if (ARTIFACTS) {
+    mkdirSync(ARTIFACTS, { recursive: true })
+    writeFileSync(join(ARTIFACTS, 'logs.txt'), logs)
+  }
+  if (process.env.E2E_KEEP !== '1') docker([...COMPOSE, 'down', '--volumes'], true)
+  throw error
+}
 
 let failed: unknown
 try {

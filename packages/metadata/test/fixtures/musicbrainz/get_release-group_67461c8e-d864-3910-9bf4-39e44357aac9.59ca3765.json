@@ -1,0 +1,35 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "https://coverartarchive.org/release-group/67461c8e-d864-3910-9bf4-39e44357aac9",
+    "credential": "valid"
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json"
+    },
+    "body": {
+      "images": [
+        {
+          "approved": true,
+          "back": false,
+          "comment": "",
+          "edit": 74237692,
+          "front": true,
+          "id": 27625936663,
+          "image": "http://coverartarchive.org/release/83dc04ba-bb5a-41f6-8dd9-b06855cf84cd/27625936663.jpg",
+          "thumbnails": {
+            "250": "http://coverartarchive.org/release/83dc04ba-bb5a-41f6-8dd9-b06855cf84cd/27625936663-250.jpg",
+            "500": "http://coverartarchive.org/release/83dc04ba-bb5a-41f6-8dd9-b06855cf84cd/27625936663-500.jpg",
+            "1200": "http://coverartarchive.org/release/83dc04ba-bb5a-41f6-8dd9-b06855cf84cd/27625936663-1200.jpg",
+            "large": "http://coverartarchive.org/release/83dc04ba-bb5a-41f6-8dd9-b06855cf84cd/27625936663-500.jpg",
+            "small": "http://coverartarchive.org/release/83dc04ba-bb5a-41f6-8dd9-b06855cf84cd/27625936663-250.jpg"
+          },
+          "types": ["Front", "Track"]
+        }
+      ],
+      "release": "https://musicbrainz.org/release/83dc04ba-bb5a-41f6-8dd9-b06855cf84cd"
+    }
+  }
+}

@@ -1,9 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // @highsea-tv/metadata: TMDB, the metadata cache, images and refresh (ADR 0029, 0030). Titles, people
-// and collections are addressed by their TMDB ids. The replaying `fetch` for tests and the dev
-// server has its own entry point (`@highsea-tv/metadata/replay`).
+// and collections are addressed by their TMDB ids; music by its MusicBrainz ids (ADR 0065). The
+// replaying `fetch` for tests and the dev server has its own entry point
+// (`@highsea-tv/metadata/replay`).
 import type { MetadataDeps } from './context.ts'
 import { defineMetadataJobs, queueCatchUp, queueFacts, scheduleMetadataJobs } from './jobs.ts'
+import { createMusicBrainzClient } from './musicbrainz/client.ts'
+import { createMusicBrainzSource } from './musicbrainz/source.ts'
 import { createMetadataCore, JOB_TYPES } from './service.ts'
 import type { CacheKind } from './types.ts'
 
@@ -14,6 +17,18 @@ export function createMetadata(deps: MetadataDeps) {
   const core = createMetadataCore(deps)
   defineMetadataJobs(deps.jobs, core, deps.db, () => deps.clock.now())
   const { settings, api } = core
+  const music = createMusicBrainzSource({
+    db: deps.db,
+    clock: deps.clock,
+    logger: deps.logger,
+    client: createMusicBrainzClient({
+      fetch: deps.fetch,
+      clock: deps.clock,
+      logger: deps.logger,
+      version: deps.version ?? '0.0.0',
+      sleep: deps.sleep,
+    }),
+  })
 
   return {
     settings: {
@@ -77,6 +92,11 @@ export function createMetadata(deps: MetadataDeps) {
     /** A show with its seasons and episodes (ADR 0064); `cachedShow` without asking TMDB. */
     show: core.show,
     cachedShow: core.cachedShow,
+    /**
+     * MusicBrainz and the Cover Art Archive (ADR 0065), cached, one request a second: an artist, a
+     * release group, a release and a release group's front cover, each by its MusicBrainz id.
+     */
+    music,
     recommendations: core.recommendations,
     collection: core.collection,
     person: core.person,
@@ -134,6 +154,22 @@ export type { CachedImage } from './images.ts'
 export { TMDB_IMAGE_BASE } from './images.ts'
 export { type ArtPick, collectionArt, GENRES } from './map.ts'
 export { TV_GENRES } from './map-shows.ts'
+export {
+  COVER_ART_API,
+  MBID,
+  MUSICBRAINZ_API,
+  MUSICBRAINZ_UNAVAILABLE,
+  musicBrainzUserAgent,
+} from './musicbrainz/client.ts'
+export {
+  albumKindOf,
+  MUSICBRAINZ_FRESH_MS,
+  type MusicAlbumKind,
+  type MusicBrainzArtist,
+  type MusicBrainzRelease,
+  type MusicBrainzReleaseGroup,
+  type MusicBrainzSource,
+} from './musicbrainz/source.ts'
 export * from './recording.ts'
 export {
   type ArtworkKindView,

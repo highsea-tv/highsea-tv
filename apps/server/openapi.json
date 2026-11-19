@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "highsea",
-    "version": "0.4.7",
+    "version": "0.4.8",
     "description": "The highsea server API. Every admin capability is here, with admin scope.",
     "license": {
       "name": "AGPL-3.0-only"
@@ -2109,6 +2109,9 @@
           },
           "installed": {
             "type": "integer"
+          },
+          "check": {
+            "$ref": "#/components/schemas/DefinitionCheck"
           }
         },
         "required": [
@@ -2204,6 +2207,55 @@
           "required",
           "secret",
           "help"
+        ]
+      },
+      "DefinitionCheck": {
+        "type": "object",
+        "properties": {
+          "verified": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date",
+            "example": "1999-03-30"
+          },
+          "channel": {
+            "type": "string",
+            "enum": [
+              "stable",
+              "beta"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "working",
+              "broken",
+              "retired"
+            ]
+          },
+          "since": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date",
+            "example": "1999-03-30"
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "verified",
+          "channel",
+          "status",
+          "since",
+          "note"
         ]
       },
       "Language": {
@@ -28646,7 +28698,7 @@
           "Root folders"
         ],
         "summary": "Scan a root folder now",
-        "description": "Queues the library scan of the folder: new folders it matches surely are added where they are, and the rest wait in Library import. For when watching can’t see changes, as on a network share. 409 (`not-yet`) for a shows or music folder, which the server reads from a later release.",
+        "description": "Queues the library scan of the folder: new folders it matches surely are added where they are, and the rest wait in Library import. For when watching can’t see changes, as on a network share. A music folder is read where it is and grouped by its tags.",
         "x-highsea-access": "staff",
         "security": [
           {
@@ -28692,16 +28744,6 @@
           },
           "404": {
             "description": "not-found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "conflict",
             "content": {
               "application/json": {
                 "schema": {

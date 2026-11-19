@@ -297,6 +297,7 @@ describe('0018_profiles', () => {
       '0022_unmatched_files',
       '0023_fanart',
       '0024_show_dismissals',
+      '0025_music',
     ])
     expect(result.backup).not.toBeNull()
     const once = state(first)
@@ -401,6 +402,7 @@ describe('0020_shows', () => {
       '0022_unmatched_files',
       '0023_fanart',
       '0024_show_dismissals',
+      '0025_music',
     ])
     expect(films(raw)).toEqual(was)
     expect(raw.all('SELECT count(*) AS n FROM media_items')).toEqual([{ n: 300 }])
@@ -548,6 +550,7 @@ describe('0020_shows', () => {
         '0022_unmatched_files',
         '0023_fanart',
         '0024_show_dismissals',
+        '0025_music',
       ])
       expect(all(raw)).toEqual(was)
       expect(raw.all('SELECT count(*) AS n FROM unmatched_files')).toEqual([{ n: 0 }])
@@ -602,9 +605,48 @@ describe('0020_shows', () => {
       test('adds the table and leaves the films, the show and its unmatched files as they were', () => {
         const { raw } = withUnmatched()
         const was = everything(raw)
-        expect(migrate(raw).applied).toEqual(['0024_show_dismissals'])
+        expect(migrate(raw).applied).toEqual(['0024_show_dismissals', '0025_music'])
         expect(everything(raw)).toEqual(was)
         expect(raw.all('SELECT count(*) AS n FROM show_dismissals')).toEqual([{ n: 0 }])
+        expect(raw.all('PRAGMA foreign_key_check')).toEqual([])
+        expect(raw.all('PRAGMA integrity_check')).toEqual([{ integrity_check: 'ok' }])
+        expect(migrate(raw).applied).toEqual([])
+        raw.close()
+      })
+
+      // Phase 5 D, ADR 0065: music in its own tables, added beside the films and shows
+      test('0025_music only adds its tables, and leaves the films, the show and its files as they were', () => {
+        const { raw } = withUnmatched()
+        migrate(raw, { all: migrations.filter((m) => m.tag < '0025') })
+        const was = everything(raw)
+        const tables = () =>
+          (
+            raw.all("SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name") as {
+              name: string
+            }[]
+          ).map((t) => t.name)
+        const before = tables()
+        expect(migrate(raw).applied).toEqual(['0025_music'])
+        expect(everything(raw)).toEqual(was)
+        expect(tables().filter((t) => !before.includes(t))).toEqual([
+          'music_albums',
+          'music_artists',
+          'music_tracks',
+          'music_unmatched',
+          'musicbrainz_cache',
+        ])
+        // an album goes with its artist, and a track with its album
+        raw.run(
+          "INSERT INTO music_artists (id, name, sort_name, name_key, root_folder, source, added_at, updated_at) VALUES ('ar_1', 'Blur', 'blur', 'blur', '/music', 'tags', 1, 1)",
+        )
+        raw.run(
+          "INSERT INTO music_albums (id, artist_id, title, sort_title, path, root_folder, source, added_at, updated_at) VALUES ('al_1', 'ar_1', 'Parklife', 'parklife', '/music/Blur/Parklife', '/music', 'tags', 1, 1)",
+        )
+        raw.run(
+          "INSERT INTO music_tracks (id, album_id, number, title, path, size, mtime, format, codec, added_at, updated_at) VALUES ('tr_1', 'al_1', 1, 'Girls & Boys', '/music/Blur/Parklife/01.flac', 1, 1, 'FLAC', 'flac', 1, 1)",
+        )
+        raw.run("DELETE FROM music_artists WHERE id = 'ar_1'")
+        expect(raw.all('SELECT count(*) AS n FROM music_tracks')).toEqual([{ n: 0 }])
         expect(raw.all('PRAGMA foreign_key_check')).toEqual([])
         expect(raw.all('PRAGMA integrity_check')).toEqual([{ integrity_check: 'ok' }])
         expect(migrate(raw).applied).toEqual([])
@@ -646,7 +688,7 @@ describe('0023_fanart', () => {
   test('adds fanart.tv’s cache, keyed by subject and id, and the fanart artwork source', () => {
     const { raw } = openDatabase(':memory:')
     migrate(raw, { all: migrations.filter((m) => m.tag < '0023') })
-    expect(migrate(raw).applied).toEqual(['0023_fanart', '0024_show_dismissals'])
+    expect(migrate(raw).applied).toEqual(['0023_fanart', '0024_show_dismissals', '0025_music'])
     raw.run(
       "INSERT INTO fanart_images (subject, external_id, data, fetched_at) VALUES ('movie', '550', NULL, 1)",
     )

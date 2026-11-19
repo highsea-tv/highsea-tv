@@ -1,5 +1,17 @@
 [
   {
+    "version": "0.4.8",
+    "channel": "stable",
+    "date": "2026-11-19",
+    "notes": [
+      "HT-91 A folder picker on every folder field in the admin (#94)",
+      "Indexer catalog upkeep: stages, the weekly check, the catalog-only publish (#95)",
+      "Make the built-in VPN work out of the box on every install (#99)",
+      "HT-93 Music on the server: the model, tags, MusicBrainz, import (D, 1) (#97)"
+    ],
+    "url": "https://github.com/highsea-tv/highsea-tv/releases/tag/v0.4.8"
+  },
+  {
     "version": "0.4.7",
     "channel": "stable",
     "date": "2026-11-19",

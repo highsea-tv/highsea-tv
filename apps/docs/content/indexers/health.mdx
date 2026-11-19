@@ -11,6 +11,8 @@ description: How highsea watches each indexer, rests one that's failing so searc
     packages/indexers/src/service.ts and search.ts.
   - The badges, Retry now and the catalog-update reasons: packages/admin/src/indexers.tsx and
     indexers-messages.ts.
+  - Report a problem and what its form is filled in with: packages/admin/src/report-problem.ts and
+    .github/ISSUE_TEMPLATE/indexer-broken.yml.
 */}
 
 Written for highsea 0.1.0.
@@ -27,3 +29,11 @@ highsea watches each indexer and stops asking one that's having trouble, so a br
 One success makes an indexer healthy again at once. **Retry now**, shown while an indexer is backing off, ends the rest and puts it back in rotation.
 
 An indexer can also need your attention after a catalog update: "Needs a setting its new definition asks for", or "Its definition is gone from the catalog". highsea skips it until it's fixed; open **Edit** to fill in the new setting.
+
+## Report a problem
+
+If an indexer from highsea's catalog keeps failing, finds nothing, or finds releases that can't be grabbed, you can tell the people who keep the catalog. Open the indexer's **More** menu and choose **Report a problem**. Your browser opens a new issue on highsea's GitHub, with the form already filled in with the indexer's catalog name, its definition's version, the catalog's version and channel, and highsea's version.
+
+Nothing is sent until you read the form and submit it yourself, with your own GitHub account. highsea doesn't send anything on its own. The form doesn't include the name you gave the indexer, its settings or address, your server's address, or what you searched for. Add what happened in your own words, and leave out any key or passkey.
+
+Indexers from `/config/definitions` (marked **Local**) don't have **Report a problem**: their definitions aren't part of highsea's catalog.

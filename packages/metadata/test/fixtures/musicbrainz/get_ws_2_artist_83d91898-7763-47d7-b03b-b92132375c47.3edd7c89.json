@@ -1,0 +1,135 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "https://musicbrainz.org/ws/2/artist/83d91898-7763-47d7-b03b-b92132375c47?fmt=json&inc=genres",
+    "credential": "valid"
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json"
+    },
+    "body": {
+      "end-area": null,
+      "ipis": [],
+      "area": {
+        "id": "9d5dd675-3cf4-4296-9e39-67865ebee758",
+        "type-id": null,
+        "type": null,
+        "iso-3166-2-codes": ["GB-ENG"],
+        "sort-name": "England",
+        "disambiguation": "",
+        "name": "England"
+      },
+      "id": "83d91898-7763-47d7-b03b-b92132375c47",
+      "genres": [
+        {
+          "disambiguation": "",
+          "name": "acid rock",
+          "id": "ef063b60-3206-466c-a7d8-7d317fcdf9fc",
+          "count": 2
+        },
+        {
+          "id": "b7ef058e-6d83-4ca4-8123-9724bff4648b",
+          "disambiguation": "",
+          "name": "art rock",
+          "count": 23
+        },
+        {
+          "count": 3,
+          "disambiguation": "",
+          "name": "blues rock",
+          "id": "58e325d5-54fd-4e98-b39a-3aa6bc319273"
+        },
+        {
+          "id": "93244085-20e5-4f16-9067-1d19143b3810",
+          "name": "classic rock",
+          "disambiguation": "",
+          "count": 5
+        },
+        {
+          "name": "experimental rock",
+          "disambiguation": "",
+          "id": "65c97e89-b42b-45c2-a70e-0eca1b8f0ff7",
+          "count": 2
+        },
+        {
+          "id": "8d275a8d-154a-4bcb-8b5a-f56306ad4bcb",
+          "disambiguation": "",
+          "name": "progressive",
+          "count": 10
+        },
+        {
+          "name": "progressive rock",
+          "disambiguation": "",
+          "id": "ae9b8279-3959-48d8-8a88-741a7f6d4a48",
+          "count": 59
+        },
+        {
+          "disambiguation": "",
+          "name": "psychedelic",
+          "id": "d698ece0-6fed-4262-b446-42c98b73b65a",
+          "count": 5
+        },
+        {
+          "id": "2aeb5340-c474-4677-b9a6-35ddac9b6a58",
+          "disambiguation": "",
+          "name": "psychedelic pop",
+          "count": 2
+        },
+        {
+          "count": 47,
+          "id": "146ef761-5ad9-48b4-b0b3-483104f7da48",
+          "disambiguation": "",
+          "name": "psychedelic rock"
+        },
+        {
+          "count": 30,
+          "disambiguation": "",
+          "name": "rock",
+          "id": "0e3fc579-2d24-4f20-9dae-736e1ec78798"
+        },
+        {
+          "disambiguation": "",
+          "name": "rock opera",
+          "id": "baaf713d-1e4e-459e-a058-60d89ce1f9df",
+          "count": 6
+        },
+        {
+          "count": 15,
+          "disambiguation": "",
+          "name": "space rock",
+          "id": "532dcf83-5641-446d-b007-51292b401650"
+        },
+        {
+          "id": "f729e6f8-30dc-4b81-9ff4-f4e7de82225d",
+          "name": "symphonic rock",
+          "disambiguation": "",
+          "count": 1
+        }
+      ],
+      "sort-name": "Pink Floyd",
+      "isnis": ["0000000109397559"],
+      "gender": null,
+      "name": "Pink Floyd",
+      "life-span": {
+        "ended": true,
+        "begin": "1965",
+        "end": "2014"
+      },
+      "type": "Group",
+      "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b",
+      "country": "GB",
+      "disambiguation": "",
+      "begin-area": {
+        "type": null,
+        "id": "f03d09b3-39dc-4083-afd6-159e3f0d462f",
+        "type-id": null,
+        "sort-name": "London",
+        "name": "London",
+        "disambiguation": "Greater London"
+      },
+      "gender-id": null
+    }
+  }
+}

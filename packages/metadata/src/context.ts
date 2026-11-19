@@ -34,6 +34,8 @@ export type MetadataDeps = {
     bytes: Uint8Array,
     to: { width?: number; height?: number; type: 'image/png' | 'image/jpeg' },
   ) => Promise<Uint8Array>
+  /** highsea's version, for MusicBrainz's User-Agent (`highsea/<version> ( https://highsea.tv )`). */
+  version?: string
   /** Waits between retries; tests pass one that moves a fake clock. */
   sleep?: (ms: number) => Promise<void>
 }

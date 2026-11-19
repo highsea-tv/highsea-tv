@@ -7,6 +7,15 @@ While highsea is at 0.x, any release may change how something works. When one do
 
 ## [Unreleased]
 
+## [0.4.8] - 2026-11-19
+
+### Changed
+
+- HT-91 A folder picker on every folder field in the admin ([#94](https://github.com/highsea-tv/highsea-tv/pull/94))
+- Indexer catalog upkeep: stages, the weekly check, the catalog-only publish ([#95](https://github.com/highsea-tv/highsea-tv/pull/95))
+- Make the built-in VPN work out of the box on every install ([#99](https://github.com/highsea-tv/highsea-tv/pull/99))
+- HT-93 Music on the server: the model, tags, MusicBrainz, import (D, 1) ([#97](https://github.com/highsea-tv/highsea-tv/pull/97))
+
 ## [0.4.7] - 2026-11-19
 
 ### Changed
@@ -211,7 +220,9 @@ While highsea is at 0.x, any release may change how something works. When one do
 
 
 
-[unreleased]: https://github.com/highsea-tv/highsea-tv/compare/v0.4.7...HEAD
+
+[unreleased]: https://github.com/highsea-tv/highsea-tv/compare/v0.4.8...HEAD
+[0.4.8]: https://github.com/highsea-tv/highsea-tv/compare/v0.4.7...v0.4.8
 [0.4.7]: https://github.com/highsea-tv/highsea-tv/compare/v0.4.6...v0.4.7
 [0.4.6]: https://github.com/highsea-tv/highsea-tv/compare/v0.4.5...v0.4.6
 [0.4.5]: https://github.com/highsea-tv/highsea-tv/compare/v0.4.4...v0.4.5
