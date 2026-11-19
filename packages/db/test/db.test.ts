@@ -404,7 +404,13 @@ describe('0020_shows', () => {
   test('a show, a season and an episode sit beside the films, and go with the show', () => {
     const raw = withFilms(':memory:')
     migrate(raw)
-    const row = (id: string, type: string, tmdbId: number, parent: string | null, extra: object) => ({
+    const row = (
+      id: string,
+      type: string,
+      tmdbId: number,
+      parent: string | null,
+      extra: object,
+    ) => ({
       id,
       type,
       tmdbId,
