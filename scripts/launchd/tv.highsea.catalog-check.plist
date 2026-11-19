@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-License-Identifier: AGPL-3.0-only -->
+<!--
+  The catalog's weekly check on the owner's Mac (docs/plans/indexer-catalog-upkeep.md, part B).
+  `bun run catalog:check schedule` fills in the paths and installs it as a per-user agent in
+  ~/Library/LaunchAgents; `bun run catalog:check unschedule` removes it. Never install it by hand
+  with these placeholders.
+
+  From Apple's documentation:
+  - A per-user agent lives in ~/Library/LaunchAgents and runs as that user (launchd.plist(5)).
+  - StartCalendarInterval runs it at a time of the week, like crontab(5); Weekday 1 is Monday.
+    "Unlike cron which skips job invocations when the computer is asleep, launchd will start the
+    job the next time the computer wakes up. If multiple intervals transpire before the computer
+    is woken, those events will be coalesced into one event upon wake from sleep." (launchd.plist(5);
+    Scheduling Timed Jobs, https://developer.apple.com/library/archive/documentation/MacOSX/Conceptual/BPSystemStartup/Chapters/ScheduledJobs.html)
+  - launchd gives a job no shell profile, so the PATH (for gh and git) is set here, and the
+    program is the absolute path of bun (Creating Launch Daemons and Agents,
+    https://developer.apple.com/library/archive/documentation/MacOSX/Conceptual/BPSystemStartup/Chapters/CreatingLaunchdJobs.html).
+  - `launchctl bootstrap gui/<uid>` loads it and `launchctl bootout` unloads it; launchctl(1)
+    recommends them over the older load and unload.
+
+  The third program argument, the github switch, keeps the "Catalog check" issue up to date with
+  the owner's own gh; take it out of ProgramArguments to keep the run on this Mac only.
+-->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>tv.highsea.catalog-check</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>__BUN__</string>
+    <string>scripts/catalog-check.ts</string>
+    <string>--github</string>
+  </array>
+  <key>WorkingDirectory</key>
+  <string>__REPO__</string>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key>
+    <string>__PATH__</string>
+  </dict>
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Weekday</key>
+    <integer>1</integer>
+    <key>Hour</key>
+    <integer>9</integer>
+    <key>Minute</key>
+    <integer>0</integer>
+  </dict>
+  <key>ProcessType</key>
+  <string>Background</string>
+  <key>StandardOutPath</key>
+  <string>__LOG__</string>
+  <key>StandardErrorPath</key>
+  <string>__LOG__</string>
+</dict>
+</plist>
