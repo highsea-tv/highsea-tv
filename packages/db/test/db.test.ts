@@ -299,6 +299,7 @@ describe('0018_profiles', () => {
       '0024_show_dismissals',
       '0025_music',
       '0026_unmatched_dismissed',
+      '0027_episode_grabs',
     ])
     expect(result.backup).not.toBeNull()
     const once = state(first)
@@ -405,6 +406,7 @@ describe('0020_shows', () => {
       '0024_show_dismissals',
       '0025_music',
       '0026_unmatched_dismissed',
+      '0027_episode_grabs',
     ])
     expect(films(raw)).toEqual(was)
     expect(raw.all('SELECT count(*) AS n FROM media_items')).toEqual([{ n: 300 }])
@@ -554,6 +556,7 @@ describe('0020_shows', () => {
         '0024_show_dismissals',
         '0025_music',
         '0026_unmatched_dismissed',
+        '0027_episode_grabs',
       ])
       expect(all(raw)).toEqual(was)
       expect(raw.all('SELECT count(*) AS n FROM unmatched_files')).toEqual([{ n: 0 }])
@@ -616,7 +619,7 @@ describe('0020_shows', () => {
         expect(raw.all('SELECT count(*) AS n FROM show_dismissals')).toEqual([{ n: 0 }])
         expect(raw.all('PRAGMA foreign_key_check')).toEqual([])
         expect(raw.all('PRAGMA integrity_check')).toEqual([{ integrity_check: 'ok' }])
-        expect(migrate(raw).applied).toEqual(['0026_unmatched_dismissed'])
+        expect(migrate(raw).applied).toEqual(['0026_unmatched_dismissed', '0027_episode_grabs'])
         expect(migrate(raw).applied).toEqual([])
         raw.close()
       })
@@ -667,7 +670,9 @@ describe('0020_shows', () => {
         const { raw } = withUnmatched()
         migrate(raw, { all: migrations.filter((m) => m.tag < '0026') })
         const was = everything(raw)
-        expect(migrate(raw).applied).toEqual(['0026_unmatched_dismissed'])
+        expect(migrate(raw, { all: migrations.filter((m) => m.tag < '0027') }).applied).toEqual([
+          '0026_unmatched_dismissed',
+        ])
         const now = everything(raw)
         expect(now.unmatched).toEqual(
           (was.unmatched as Record<string, unknown>[]).map((r) => ({ ...r, dismissed_at: null })),
@@ -698,6 +703,48 @@ describe('0020_shows', () => {
         expect(
           raw.all("SELECT id, language_profile_id FROM media_items WHERE type = 'movie'"),
         ).toEqual(films)
+        raw.close()
+      })
+
+      // HT-103 (Phase 5 C1): a show's grabs and its search results
+      test('0027_episode_grabs adds the show releases and a null episode_ids, and changes nothing else', () => {
+        const { raw } = withUnmatched()
+        migrate(raw, { all: migrations.filter((m) => m.tag < '0027') })
+        raw.run(
+          "INSERT INTO downloads (id, item_id, info_hash, release_title, size, release, state, progress_at, grabbed_at, updated_at) VALUES ('dl_film', 'itm_1', 'abc', 'Film.2001.1080p', 1, '{}', 'completed', 1, 1, 1)",
+        )
+        const was = {
+          ...everything(raw),
+          downloads: raw.all('SELECT * FROM downloads ORDER BY id'),
+        }
+        expect(migrate(raw).applied).toEqual(['0027_episode_grabs'])
+        const downloads = raw.all('SELECT * FROM downloads ORDER BY id') as Record<
+          string,
+          unknown
+        >[]
+        expect(downloads).toEqual(
+          (was.downloads as Record<string, unknown>[]).map((d) => ({ ...d, episode_ids: null })),
+        )
+        expect({ ...everything(raw), downloads: was.downloads }).toEqual(was)
+        expect(raw.all('SELECT count(*) AS n FROM show_releases')).toEqual([{ n: 0 }])
+        // a show's grab names its episodes; its search results go with their indexer
+        raw.run(
+          "INSERT INTO downloads (id, item_id, episode_ids, info_hash, release_title, size, release, state, progress_at, grabbed_at, updated_at) VALUES ('dl_show', 'itm_show', '[\"itm_e1\",\"itm_e2\"]', 'def', 'Chernobyl.S01.1080p', 1, '{}', 'downloading', 1, 1, 1)",
+        )
+        expect(raw.all("SELECT episode_ids FROM downloads WHERE id = 'dl_show'")).toEqual([
+          { episode_ids: '["itm_e1","itm_e2"]' },
+        ])
+        raw.run(
+          "INSERT INTO indexers (id, definition_id, definition_version, name, enabled, priority, settings, added_at, updated_at) VALUES ('idx_1', 'generic-torznab', '1', 'Fake', 1, 25, '{}', 1, 1)",
+        )
+        raw.run(
+          "INSERT INTO show_releases (show_tmdb_id, scope, indexer_id, guid, data, download, fetched_at, expires_at) VALUES (87108, 's1', 'idx_1', 'g1', '{}', '{}', 1, 2)",
+        )
+        raw.run("DELETE FROM indexers WHERE id = 'idx_1'")
+        expect(raw.all('SELECT count(*) AS n FROM show_releases')).toEqual([{ n: 0 }])
+        expect(raw.all('PRAGMA foreign_key_check')).toEqual([])
+        expect(raw.all('PRAGMA integrity_check')).toEqual([{ integrity_check: 'ok' }])
+        expect(migrate(raw).applied).toEqual([])
         raw.close()
       })
 

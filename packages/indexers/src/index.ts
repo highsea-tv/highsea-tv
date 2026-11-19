@@ -2,12 +2,28 @@
 export * from './context.ts'
 export {
   baseUrlOf,
+  episodeTag,
   type RunResult,
   runSearch,
   type SearchQuery,
   type SettingValue,
 } from './engine.ts'
-export { type Caps, readCaps, readItems } from './feed.ts'
+export {
+  ASSUMED_EPISODE_MINUTES,
+  chooseReleases,
+  type EpisodeFacts,
+  type EpisodeLeftOutReason,
+  type EpisodeReleaseView,
+  type EpisodeScope,
+  type EpisodeSearchResult,
+  episodeReasons,
+  episodesOf,
+  matchesShow,
+  runtimeOf,
+  type ShowSearchInput,
+  scopeKey,
+} from './episode-search.ts'
+export { type Caps, readCaps, readItems, tvCategoryIds } from './feed.ts'
 export { type Fetched, fetchRelease, MAX_TORRENT_BYTES } from './grab.ts'
 export {
   BACKOFF_STEPS_MS,

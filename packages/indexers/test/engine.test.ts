@@ -17,6 +17,7 @@ import {
   fakeNewznab,
   fakePublicHtml,
   MOVIES,
+  SHOWS,
 } from './fake/index.ts'
 import { catalogDefinition } from './helpers.ts'
 
@@ -95,6 +96,7 @@ describe('Torznab', () => {
       published: new Date(FAKE_NOW - 30 * 24 * 60 * 60_000).toISOString(),
       imdbId: 'tt1727587',
       tmdbId: 45745,
+      tvdbId: null,
       categories: [2040, 2000],
       downloadVolumeFactor: 0,
       uploadVolumeFactor: 1,
@@ -160,6 +162,110 @@ describe('Torznab', () => {
       params: ['q'],
     })
     expect(() => readCaps('<rss />')).toThrow('no <caps>')
+  })
+})
+
+// Phase 5 C1: what each kind of indexer is asked for a show's season or episode
+describe('a show’s search', () => {
+  const show = (tv: SearchQuery['tv']): SearchQuery => ({
+    title: SHOWS.chernobyl.title,
+    year: SHOWS.chernobyl.year,
+    imdbId: SHOWS.chernobyl.imdbId,
+    tmdbId: SHOWS.chernobyl.tmdbId,
+    tv,
+  })
+  const sent = (fake: ReturnType<typeof createFakeIndexer>) =>
+    Object.fromEntries(fake.requests.at(-1)?.url.searchParams ?? [])
+
+  test('Torznab with tv-search: t=tvsearch by TVDB id, season and ep, in the TV categories', async () => {
+    const { ctx, fake } = torznab()
+    const result = await runSearch(
+      ctx,
+      show({ season: 1, episode: 2, tvdbId: SHOWS.chernobyl.tvdbId }),
+    )
+    expect(result.by).toBe('tvdbid')
+    expect(result.caps?.tv.params).toEqual(['q', 'season', 'ep', 'tvdbid'])
+    expect(sent(fake)).toEqual({
+      t: 'tvsearch',
+      cat: '5000,5040',
+      tvdbid: '360893',
+      season: '1',
+      ep: '2',
+      apikey: FAKE_CREDENTIALS.torznabKey,
+    })
+    expect(result.releases.map((r) => r.title)).toEqual([
+      'Chernobyl.S01E02E03.1080p.WEB-DL.DDP5.1.H.264-GRP',
+    ])
+    expect(result.releases[0]?.tvdbId).toBe(360893)
+  })
+
+  test('a season asks for the season alone, and finds its episodes and its pack', async () => {
+    const { ctx, fake } = torznab()
+    const result = await runSearch(ctx, show({ season: 1, tvdbId: SHOWS.chernobyl.tvdbId }))
+    expect(sent(fake)).toMatchObject({ t: 'tvsearch', tvdbid: '360893', season: '1' })
+    expect(sent(fake).ep).toBeUndefined()
+    expect(result.releases.map((r) => r.title)).toContain('Chernobyl.S01.1080p.BluRay.x264-GRP')
+    expect(result.releases).toHaveLength(4)
+  })
+
+  test('without a TVDB id the title goes with season and ep', async () => {
+    const { ctx, fake } = torznab()
+    const result = await runSearch(ctx, show({ season: 1, episode: 1 }))
+    expect(result.by).toBe('title')
+    expect(sent(fake)).toMatchObject({ t: 'tvsearch', q: 'Chernobyl', season: '1', ep: '1' })
+    expect(sent(fake).year).toBeUndefined()
+  })
+
+  test('an indexer without tv-search is sent the title with S01E02, or S01 for a season', async () => {
+    const { ctx, fake } = torznab()
+    ctx.caps = {
+      ...readCaps(
+        '<caps><searching><search available="yes" supportedParams="q" /></searching><categories><category id="5000" name="TV" /></categories></caps>',
+      ),
+    }
+    await runSearch(ctx, show({ season: 1, episode: 2, tvdbId: SHOWS.chernobyl.tvdbId }))
+    expect(sent(fake)).toMatchObject({ t: 'search', cat: '5000', q: 'Chernobyl S01E02' })
+    await runSearch(ctx, show({ season: 1 }))
+    expect(sent(fake)).toMatchObject({ t: 'search', q: 'Chernobyl S01' })
+  })
+
+  test('a site definition without season and ep: its keywords and its TV categories', async () => {
+    const { ctx, fake } = context(fakeJson(FAKE_ORIGIN), { passkey: FAKE_CREDENTIALS.jsonPasskey })
+    const result = await runSearch(ctx, show({ season: 1, episode: 1 }))
+    expect(sent(fake)).toMatchObject({ q: 'Chernobyl S01E01', cat: '20' })
+    expect(sent(fake).imdb).toBeUndefined()
+    expect(result.releases.map((r) => r.title)).toEqual([
+      'Chernobyl.S01E01.1080p.WEB-DL.DDP5.1.H.264-GRP',
+    ])
+  })
+
+  test('a site definition that takes season and ep gets them apart from the title', async () => {
+    const def = fakeJson(FAKE_ORIGIN)
+    if (def.kind !== 'json') throw new Error('json')
+    const withSeason = {
+      ...def,
+      search: {
+        ...def.search,
+        request: {
+          ...def.search.request,
+          query: {
+            ...def.search.request.query,
+            season: '{{ .Query.Season }}',
+            ep: '{{ .Query.Episode }}',
+          },
+        },
+        supports: ['q', 'season', 'ep'] as typeof def.search.supports,
+      },
+    }
+    const { ctx, fake } = context(withSeason, { passkey: FAKE_CREDENTIALS.jsonPasskey })
+    await runSearch(ctx, show({ season: 1, episode: 4 }))
+    expect(sent(fake)).toMatchObject({ q: 'Chernobyl', season: '1', ep: '4' })
+  })
+
+  test('a film’s search never sees a show’s releases', async () => {
+    const { ctx } = torznab()
+    const result = await runSearch(ctx, { keywords: 'Chernobyl' })
+    expect(result.releases).toEqual([])
   })
 })
 

@@ -22,6 +22,8 @@ export type IndexerRelease = {
   published: string | null
   imdbId: string | null
   tmdbId: number | null
+  /** TheTVDB's id for a show's release, where the feed gives it (Torznab's `tvdbid`). */
+  tvdbId: number | null
   /** Standard categories (2000, 2040…). */
   categories: number[]
   /** 0 is freeleech, 0.5 halfleech (Torznab's `downloadvolumefactor`). */
@@ -58,6 +60,7 @@ export function toRelease(
   if (leechers === null && peers !== null && seeders !== null)
     leechers = Math.max(0, peers - seeders)
   const tmdb = int(fields.tmdbId)
+  const tvdb = int(fields.tvdbId)
   return {
     title,
     guid: fields.guid?.trim() || download || magnet || (infohash as string),
@@ -73,6 +76,7 @@ export function toRelease(
     published: parseDate(fields.published, 'text', now),
     imdbId: normalizeImdbId(fields.imdbId),
     tmdbId: tmdb && tmdb > 0 ? tmdb : null,
+    tvdbId: tvdb && tvdb > 0 ? tvdb : null,
     categories,
     downloadVolumeFactor: parseNumber(fields.downloadVolumeFactor),
     uploadVolumeFactor: parseNumber(fields.uploadVolumeFactor),

@@ -110,5 +110,9 @@ export const migrations: Migration[] = [
   {
     "tag": "0026_unmatched_dismissed",
     "sql": "ALTER TABLE `unmatched_files` ADD `dismissed_at` integer;--> statement-breakpoint\n-- HT-92: shows imported before their subtitles were served take their root folder's profile, as\n-- an import does now; a show's seasons and episodes hold it with the show\nUPDATE `media_items` SET `language_profile_id` = (\n\tSELECT `root_folders`.`language_profile_id` FROM `root_folders`\n\tWHERE `root_folders`.`path` = `media_items`.`root_folder`\n) WHERE `type` IN ('show', 'season', 'episode') AND `language_profile_id` IS NULL;"
+  },
+  {
+    "tag": "0027_episode_grabs",
+    "sql": "-- HT-103 (Phase 5 C1): a show's interactive search results, apart from the films', and the episodes\n-- a show's download brings. Both only add: films' downloads keep a null episode_ids.\nCREATE TABLE `show_releases` (\n\t`show_tmdb_id` integer NOT NULL,\n\t`scope` text NOT NULL,\n\t`indexer_id` text NOT NULL,\n\t`guid` text NOT NULL,\n\t`data` text NOT NULL,\n\t`download` text NOT NULL,\n\t`fetched_at` integer NOT NULL,\n\t`expires_at` integer NOT NULL,\n\tPRIMARY KEY(`show_tmdb_id`, `scope`, `indexer_id`, `guid`),\n\tFOREIGN KEY (`indexer_id`) REFERENCES `indexers`(`id`) ON UPDATE no action ON DELETE cascade\n);\n--> statement-breakpoint\nCREATE INDEX `show_releases_expires` ON `show_releases` (`expires_at`);--> statement-breakpoint\nALTER TABLE `downloads` ADD `episode_ids` text;\n"
   }
 ]

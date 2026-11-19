@@ -159,8 +159,12 @@ export const RELEASE_FIELDS = [
 ] as const
 export type ReleaseField = (typeof RELEASE_FIELDS)[number]
 
-/** Query inputs a json, html or rss definition says its site understands. */
-export const SEARCH_INPUTS = ['q', 'imdbid', 'tmdbid', 'year'] as const
+/**
+ * Query inputs a json, html or rss definition says its site understands. `season` and `ep` are a
+ * show's (Phase 5 C1), as Torznab's tv-search names them; a site without them is sent the title
+ * with `S01E02` or `S01` in its keywords.
+ */
+export const SEARCH_INPUTS = ['q', 'imdbid', 'tmdbid', 'year', 'season', 'ep'] as const
 
 const categoryMapSchema = z
   .object({
