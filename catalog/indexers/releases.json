@@ -1,5 +1,18 @@
 [
   {
+    "version": "0.4.9",
+    "channel": "stable",
+    "date": "2026-11-19",
+    "notes": [
+      "Let wireguard-go open a TUN device on Synology, and say why it can't (#103)",
+      "HT-95 Indexers in the admin: Report a problem, and the catalog's upkeep prototyped (#96)",
+      "HT-92 Shows on the server: episode subtitles, unmatched files, the rest of B (#100)",
+      "HT-99 Indexers: Checked working on and stages, from the server (#102)",
+      "HT-96 Shuffle a show's episodes and a collection's films (#98)"
+    ],
+    "url": "https://github.com/highsea-tv/highsea-tv/releases/tag/v0.4.9"
+  },
+  {
     "version": "0.4.8",
     "channel": "stable",
     "date": "2026-11-19",

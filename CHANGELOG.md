@@ -7,6 +7,19 @@ While highsea is at 0.x, any release may change how something works. When one do
 
 ## [Unreleased]
 
+## [0.4.9] - 2026-11-19
+
+### Added
+
+- Let wireguard-go open a TUN device on Synology, and say why it can't ([#103](https://github.com/highsea-tv/highsea-tv/pull/103))
+
+### Changed
+
+- HT-95 Indexers in the admin: Report a problem, and the catalog's upkeep prototyped ([#96](https://github.com/highsea-tv/highsea-tv/pull/96))
+- HT-92 Shows on the server: episode subtitles, unmatched files, the rest of B ([#100](https://github.com/highsea-tv/highsea-tv/pull/100))
+- HT-99 Indexers: Checked working on and stages, from the server ([#102](https://github.com/highsea-tv/highsea-tv/pull/102))
+- HT-96 Shuffle a show's episodes and a collection's films ([#98](https://github.com/highsea-tv/highsea-tv/pull/98))
+
 ## [0.4.8] - 2026-11-19
 
 ### Changed
@@ -221,7 +234,9 @@ While highsea is at 0.x, any release may change how something works. When one do
 
 
 
-[unreleased]: https://github.com/highsea-tv/highsea-tv/compare/v0.4.8...HEAD
+
+[unreleased]: https://github.com/highsea-tv/highsea-tv/compare/v0.4.9...HEAD
+[0.4.9]: https://github.com/highsea-tv/highsea-tv/compare/v0.4.8...v0.4.9
 [0.4.8]: https://github.com/highsea-tv/highsea-tv/compare/v0.4.7...v0.4.8
 [0.4.7]: https://github.com/highsea-tv/highsea-tv/compare/v0.4.6...v0.4.7
 [0.4.6]: https://github.com/highsea-tv/highsea-tv/compare/v0.4.5...v0.4.6
