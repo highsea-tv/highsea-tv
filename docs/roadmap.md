@@ -238,7 +238,8 @@ The step-by-step plan, with checkpoints, is [`docs/plans/phase-3-server.md`](pla
   - private indexers: a form generated from the definition, with inline help and test-on-save;
   - a setup-wizard starter pack;
   - health, backoff and stats per indexer.
-- **Licensing**: checked at Phase 3 checkpoint 5 (2026-10-20): Prowlarr's definitions repository has no licence, so they can't be copied, and Jackett's are GPL-2.0, which AGPL-3.0 can't take. highsea writes its own definitions in its own format, from each site's documentation, under CC0-1.0 (contributions may be MIT), and every definition records its source and licence ([ADR 0033](adr/0033-indexer-definitions.md)). The generic Torznab definition lets an owner use an existing Prowlarr or Jackett as one indexer.
+- **Licensing**: checked at Phase 3 checkpoint 5 (2026-10-20): Prowlarr's definitions repository has no licence, so they can't be copied, and Jackett's are GPL-2.0, which AGPL-3.0 can't take. highsea writes its own definitions in its own format, from each site's documentation, under CC0-1.0 (contributions may be MIT), and every definition records its source and licence ([ADR 0033](adr/0033-indexer-definitions.md)). The generic Torznab definition takes any Torznab feed. *(Corrected 2026-11-19: this once said it lets an owner use an existing Prowlarr or Jackett; see the next item.)*
+- **Private trackers (the owner, 2026-11-19):** highsea replaces Prowlarr and Jackett and doesn't integrate with them. A private tracker comes as a native definition, with sign-in support in the engine, written from the tracker's own API documentation and verified by a member with an account, as a later part ([indexer-catalog-upkeep.md](plans/indexer-catalog-upkeep.md), part G). The generic Torznab definition is only for a feed a tracker or site serves itself.
 
 ### Built-in torrent engine (`@highsea-tv/torrent`)
 - **Our code**:
