@@ -49,7 +49,8 @@ describe('shuffled', () => {
     const runs = 30_000
     for (let i = 0; i < runs; i++)
       shuffled([0, 1, 2], random).forEach((x, at) => {
-        ;(counts[x] as number[])[at]++
+        const row = counts[x] as number[]
+        row[at] = (row[at] ?? 0) + 1
       })
     for (const row of counts)
       for (const n of row) expect(Math.abs(n / runs - 1 / 3)).toBeLessThan(0.02)
@@ -152,7 +153,8 @@ describe('the shuffle on the device', () => {
     startShuffle('movie', [1, 2, 3], seeded(4))
     const ids = currentShuffle()?.ids as number[]
     const one = shuffleFor('movie', ids[0] as number, true)
-    handOn(one!)
+    if (!one) throw new Error('the first item isn’t in the shuffle')
+    handOn(one)
     releaseShuffle(one)
     const two = shuffleFor('movie', ids[1] as number, true)
     expect(two?.at).toBe(1)

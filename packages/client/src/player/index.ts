@@ -347,7 +347,7 @@ export function shuffleUpNext<Id, Still extends string | null>(
     still: Still
     episode?: { code: string; title: string } | null
   } | null,
-): UpNext<never, Id, Still> | null {
+): Exclude<UpNext<never, Id, Still, 'shuffle'>, { kind: 'choices' }> | null {
   if (!item) return null
   return {
     kind: 'shuffle',
