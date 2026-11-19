@@ -17,13 +17,19 @@ import type { RootFolder } from '@highsea-tv/api-contract'
 import { AppError, newId } from '@highsea-tv/core'
 import { readSetting, schema } from '@highsea-tv/db'
 import type { LibraryKind, MediaType } from '@highsea-tv/db/schema'
-import { asc, eq, sql } from 'drizzle-orm'
+import { and, asc, eq, isNull, sql } from 'drizzle-orm'
 import { invalid, type MediaDeps } from './context.ts'
 
 const { rootFolders, mediaItems, languageProfiles } = schema
 
 /** How a refusal names each type: one, then many. A new media type adds its nouns here. */
-const NOUNS: Record<MediaType, [string, string]> = { movie: ['movie', 'movies'] }
+const NOUNS: Record<MediaType, [string, string]> = {
+  movie: ['movie', 'movies'],
+  show: ['show', 'shows'],
+  // never counted: a folder's titles are its top-level rows (ADR 0064)
+  season: ['season', 'seasons'],
+  episode: ['episode', 'episodes'],
+}
 
 /**
  * The folders the library scan couldn't match surely, by root folder: they wait for Library
@@ -139,7 +145,8 @@ export function createRootFolders({ db, clock }: MediaDeps) {
     for (const { type, n } of db
       .select({ type: mediaItems.type, n: sql<number>`count(*)` })
       .from(mediaItems)
-      .where(eq(mediaItems.rootFolder, path))
+      // titles only: a show's seasons and episodes share its root folder
+      .where(and(eq(mediaItems.rootFolder, path), isNull(mediaItems.parentId)))
       .groupBy(mediaItems.type)
       .all())
       counts[type] = n
@@ -154,7 +161,7 @@ export function createRootFolders({ db, clock }: MediaDeps) {
       db
         .select({ path: mediaItems.path })
         .from(mediaItems)
-        .where(eq(mediaItems.rootFolder, path))
+        .where(and(eq(mediaItems.rootFolder, path), isNull(mediaItems.parentId)))
         .all()
         .map((r) => r.path),
     )
