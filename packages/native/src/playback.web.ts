@@ -41,6 +41,7 @@ import {
   TRANSCODE_LIMIT,
   type UsePlayback,
   useChoices,
+  useEndOnFailure,
   useReportTimer,
   useSessionStart,
   useStarts,
@@ -163,6 +164,17 @@ export const usePlayback: Engine<WebPlayer> = (id, fromStart, type = 'movie') =>
   // the start's key (`useStarts`)
   const started = useRef<string | null>(null)
 
+  /** Lets go of the picture: hls.js and the video's source. */
+  const clearPicture = () => {
+    hls.current?.destroy()
+    hls.current = null
+    const v = video.current
+    if (v) {
+      v.removeAttribute('src')
+      v.load()
+    }
+    playingStream.current = false
+  }
   const { session, profile, live, generation, begin, stopped } = useSessionStart({
     client,
     id,
@@ -175,17 +187,7 @@ export const usePlayback: Engine<WebPlayer> = (id, fromStart, type = 'movie') =>
       await reportDevice(client, base)
       return base
     },
-    /** Lets go of the picture: hls.js and the video's source. */
-    clearPicture: () => {
-      hls.current?.destroy()
-      hls.current = null
-      const v = video.current
-      if (v) {
-        v.removeAttribute('src')
-        v.load()
-      }
-      playingStream.current = false
-    },
+    clearPicture,
     attach: async (s, current) => {
       const v = video.current
       if (!s.url || !v) return
@@ -259,6 +261,8 @@ export const usePlayback: Engine<WebPlayer> = (id, fromStart, type = 'movie') =>
       v.play().catch(() => {})
     },
   })
+  // a stream that failed ends its session at once (HT-64)
+  useEndOnFailure(client, state.phase, live, clearPicture)
   const c = useChoices(id, session, type)
   // the chosen subtitle's cues, in segments around where it's playing, from the address the page
   // loads the stream from
@@ -396,6 +400,7 @@ export const usePlayback: Engine<WebPlayer> = (id, fromStart, type = 'movie') =>
     setAudio: c.setAudio,
     setSubtitle: c.setSubtitle,
     nudge: c.nudge,
+    firstFrame: () => {},
   }
 }
 

@@ -19,6 +19,7 @@ import {
   isSubtitlePlaylist,
   leavePlayer,
   mergeCues,
+  NO_PICTURE_SECONDS,
   NUDGE_LIMIT_MS,
   nextChange,
   nextUpIn,
@@ -26,9 +27,11 @@ import {
   type PlayerEvent,
   type PlayerState,
   parseCues,
+  pictureShown,
   playerFailure,
   playerReducer,
   playNext,
+  playsWithoutPicture,
   REPORT_MS,
   reportDue,
   streamState,
@@ -210,6 +213,36 @@ describe('reporting the position', () => {
     s = playerReducer(playerReducer(s, { type: 'time', position: 40 }), { type: 'pause' })
     expect(reportDue(s, REPORT_MS * 3)).toBe(false)
     expect(reportDue(run({ type: 'start', at: 0 }), REPORT_MS)).toBe(false)
+  })
+})
+
+describe('a start without a picture (HT-64)', () => {
+  const at = (position: number, o: { framed?: boolean; external?: boolean } = {}) =>
+    playsWithoutPicture({
+      from: 63,
+      position,
+      framed: o.framed ?? false,
+      external: o.external ?? false,
+    })
+
+  test('fails once it has played its seconds with no frame drawn', () => {
+    expect(at(63 + NO_PICTURE_SECONDS - 0.25)).toBe(false)
+    expect(at(63 + NO_PICTURE_SECONDS)).toBe(true)
+  })
+
+  test('not once a frame was drawn, on another screen, or before it plays', () => {
+    expect(at(90, { framed: true })).toBe(false)
+    expect(at(90, { external: true })).toBe(false)
+    expect(playsWithoutPicture({ from: null, position: 90, framed: false, external: false })).toBe(
+      false,
+    )
+  })
+
+  test('the picture and its line go under a stream’s message', () => {
+    expect(pictureShown({ phase: 'ready' })).toBe(true)
+    expect(pictureShown({ phase: 'starting' })).toBe(true)
+    expect(pictureShown({ phase: 'failed' })).toBe(false)
+    expect(pictureShown({ phase: 'stopped' })).toBe(false)
   })
 })
 

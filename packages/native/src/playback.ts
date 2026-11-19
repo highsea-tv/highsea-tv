@@ -16,7 +16,13 @@
 // `metadata`, the poster as a file the app loaded itself (./now-playing.ts); AirPlay
 // from `allowsExternalPlayback`, all three on the phone only: the docs list none of them for tvOS
 // (https://docs.expo.dev/versions/latest/sdk/video/#videoplayer).
-import { clampSeek, initialPlayer, playerReducer } from '@highsea-tv/client/player'
+import {
+  clampSeek,
+  initialPlayer,
+  NO_PICTURE,
+  playerReducer,
+  playsWithoutPicture,
+} from '@highsea-tv/client/player'
 import { useClient } from '@highsea-tv/sdk/react'
 import { useEventListener } from 'expo'
 import { useVideoPlayer, type VideoPlayer } from 'expo-video'
@@ -29,6 +35,7 @@ import {
   TRANSCODE_LIMIT,
   type UsePlayback,
   useChoices,
+  useEndOnFailure,
   useReportTimer,
   useSessionStart,
   useStarts,
@@ -70,6 +77,10 @@ export const usePlayback: UsePlayback<VideoPlayer> = (id, fromStart, type = 'mov
   stateRef.current = state
   // the start's key (`useStarts`)
   const started = useRef<string | null>(null)
+  // whether the view has drawn a frame of this source, and where in the film it began playing:
+  // a start that plays on without a frame failed (`playsWithoutPicture`, HT-64)
+  const framed = useRef(false)
+  const playedFrom = useRef<number | null>(null)
   const mediaRef = useRef(media)
   mediaRef.current = media
   // Now Playing's title and line, and its poster as a cached file's URL (./now-playing.ts),
@@ -85,6 +96,15 @@ export const usePlayback: UsePlayback<VideoPlayer> = (id, fromStart, type = 'mov
     p.allowsExternalPlayback = true
   })
 
+  /** Lets go of the picture: the player's source. */
+  const clearPicture = () => {
+    player.pause()
+    clear(player)
+    playingStream.current = false
+    pendingStart.current = null
+    framed.current = false
+    playedFrom.current = null
+  }
   const { session, profile, live, generation, begin, stopped } = useSessionStart({
     client,
     id,
@@ -92,13 +112,7 @@ export const usePlayback: UsePlayback<VideoPlayer> = (id, fromStart, type = 'mov
     dispatch,
     started,
     profile: () => playbackProfile,
-    /** Lets go of the picture: the player's source. */
-    clearPicture: () => {
-      player.pause()
-      clear(player)
-      playingStream.current = false
-      pendingStart.current = null
-    },
+    clearPicture,
     attach: async (s, current) => {
       const src = s.url ? mediaRef.current(s.url) : undefined
       if (!src) return
@@ -117,6 +131,8 @@ export const usePlayback: UsePlayback<VideoPlayer> = (id, fromStart, type = 'mov
       if (current()) player.play()
     },
   })
+  // a stream that failed ends its session at once (HT-64)
+  useEndOnFailure(client, state.phase, live, clearPicture)
   const c = useChoices(id, session, type)
   const { subtitle, subtitlePath } = c
   const burnt = c.burnt
@@ -224,6 +240,14 @@ export const usePlayback: UsePlayback<VideoPlayer> = (id, fromStart, type = 'mov
     if (!playingStream.current) return
     position.current = currentTime
     dispatch({ type: 'time', position: currentTime })
+    if (playedFrom.current === null && player.playing) playedFrom.current = currentTime
+    const without = playsWithoutPicture({
+      from: playedFrom.current,
+      position: currentTime,
+      framed: framed.current,
+      external: player.isExternalPlaybackActive,
+    })
+    if (without && live.current) dispatch({ type: 'error', message: NO_PICTURE })
   })
   useEventListener(player, 'playToEnd', () => {
     dispatch({ type: 'ended' })
@@ -253,6 +277,8 @@ export const usePlayback: UsePlayback<VideoPlayer> = (id, fromStart, type = 'mov
   const seekTo = useCallback(
     (to: number) => {
       const at = clampSeek(stateRef.current, to)
+      // a seek before the first frame counts its seconds without one again from where it lands
+      if (!framed.current) playedFrom.current = null
       player.currentTime = at
       position.current = at
       dispatch({ type: 'seek', position: at })
@@ -287,6 +313,10 @@ export const usePlayback: UsePlayback<VideoPlayer> = (id, fromStart, type = 'mov
     },
     seekTo,
     seekBy: (by: number) => seekTo(position.current + by),
+    // the view drew this source's first frame (VideoView's onFirstFrameRender)
+    firstFrame: () => {
+      framed.current = true
+    },
     retry,
     setVersion: c.setVersion,
     setAudio: c.setAudio,

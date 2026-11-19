@@ -200,6 +200,7 @@ export function createOperations(deps: OperationsDeps) {
     clock,
     keep: CLIENT_REPORTS_KEPT,
     kept: announceLogs,
+    playbackLog: deps.logger.child('playback'),
   })
 
   // ------------------------------------------------------------ updates
