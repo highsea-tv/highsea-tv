@@ -4,7 +4,6 @@ import {
   ROUND_ACTION_ROOM,
   Skeleton,
   SkeletonText,
-  TitleBackdrop,
   tokens,
   useControl,
   useFormFactor,
@@ -17,8 +16,9 @@ import { View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useChromeOverlay } from '../kit.tsx'
 import { OverlayBack } from './back.tsx'
+import { PointerHero, TouchHero, TvHero, useHero, usePointerHero } from './hero.tsx'
 import { FILM_TV, PERSON_TV, PHONE_PERSON } from './layout.ts'
-import { useHero, useRowWidths } from './parts.tsx'
+import { useRowWidths } from './parts.tsx'
 
 const { space, radius } = tokens
 const tv = tokens.tv
@@ -49,13 +49,11 @@ export function FilmSkeleton() {
 
 function TouchFilmSkeleton() {
   const theme = useTheme()
-  const gutter = usePageGutter()
   const m = useControl()
   return (
     <View aria-busy style={{ flex: 1, gap: space['5'], backgroundColor: theme.colors.bg }}>
       <OverlayBack />
-      <TitleBackdrop source={undefined} />
-      <View style={{ marginTop: -space['16'], paddingHorizontal: gutter, gap: space['3'] }}>
+      <TouchHero source={undefined}>
         <Skeleton height={space['12']} width="60%" />
         <Skeleton height={space['3'] + space['0.5']} width={space['12'] * 4} />
         <Skeleton height={space['12']} radius={radius.md} />
@@ -69,7 +67,7 @@ function TouchFilmSkeleton() {
             </View>
           ))}
         </View>
-      </View>
+      </TouchHero>
     </View>
   )
 }
@@ -77,11 +75,8 @@ function TouchFilmSkeleton() {
 function PointerFilmSkeleton() {
   const measure = usePageMeasure()
   const theme = useTheme()
-  const gutter = usePageGutter()
   const m = useControl()
-  const hero = useHero()
-  // the hero lies under the top bar as the loaded page's does, so the bar doesn't move as it loads
-  const chrome = useChromeOverlay(hero.overlay)
+  const { hero } = usePointerHero()
   return (
     <View
       aria-busy
@@ -92,33 +87,20 @@ function PointerFilmSkeleton() {
         backgroundColor: theme.colors.bg,
       }}
     >
-      <View style={{ minHeight: hero.minHeight, justifyContent: 'flex-end', overflow: 'hidden' }}>
-        <TitleBackdrop source={undefined} />
-        <View
-          style={{
-            width: '100%',
-            maxWidth: measure,
-            alignSelf: 'center',
-            gap: space['4'],
-            paddingTop: chrome.pad + space['8'],
-            paddingBottom: space['10'],
-            paddingHorizontal: gutter,
-          }}
-        >
-          <View style={{ maxWidth: space['16'] * 10, gap: space['3'] }}>
-            <Skeleton height={space['12']} width="80%" />
-            <Skeleton height={space['4']} width={space['16'] * 4 + space['8']} />
-            <SkeletonText lines={3} />
-            <Skeleton height={space['3']} width={space['16'] * 3 + space['4']} />
-          </View>
-          <View style={{ flexDirection: 'row', gap: m.gap }}>
-            <Skeleton height={m.height} width={space['16'] * 2} radius={m.radius} />
-            {[0, 1, 2].map((i) => (
-              <Skeleton key={i} width={m.height} height={m.height} radius={m.radius} />
-            ))}
-          </View>
+      <PointerHero source={undefined} hero={hero}>
+        <View style={{ maxWidth: space['16'] * 10, gap: space['3'] }}>
+          <Skeleton height={space['12']} width="80%" />
+          <Skeleton height={space['4']} width={space['16'] * 4 + space['8']} />
+          <SkeletonText lines={3} />
+          <Skeleton height={space['3']} width={space['16'] * 3 + space['4']} />
         </View>
-      </View>
+        <View style={{ flexDirection: 'row', gap: m.gap }}>
+          <Skeleton height={m.height} width={space['16'] * 2} radius={m.radius} />
+          {[0, 1, 2].map((i) => (
+            <Skeleton key={i} width={m.height} height={m.height} radius={m.radius} />
+          ))}
+        </View>
+      </PointerHero>
       <View style={{ width: '100%', maxWidth: measure, alignSelf: 'center' }}>
         <StillsSkeleton count={5} />
       </View>
@@ -141,17 +123,7 @@ function TvFilmSkeleton() {
     <View aria-busy style={{ flex: 1, overflow: 'hidden' }}>
       {/* as the page: the art behind, the words under the head, the row a row's gap below */}
       <View>
-        <TitleBackdrop source={undefined} />
-        <View
-          style={{
-            height: (s.top + s.words) * u,
-            paddingTop: s.top * u,
-            maxWidth: '50%',
-            justifyContent: 'flex-end',
-            gap: tv.poster.gap * u,
-            paddingHorizontal: tv.safe.x * u,
-          }}
-        >
+        <TvHero source={undefined}>
           <Skeleton height={s.title} width={s.titleWidth * u} radius={tv.radius.button * u} />
           <Skeleton height={s.line} width={s.metaWidth * u} />
           <SkeletonText lines={3} />
@@ -173,7 +145,7 @@ function TvFilmSkeleton() {
               <Skeleton key={i} height={c.height / u} width={c.height} radius={radius.pill} />
             ))}
           </View>
-        </View>
+        </TvHero>
       </View>
       <View style={{ paddingTop: TV_ROW_GAP * u }}>
         <FilmRowSkeleton />

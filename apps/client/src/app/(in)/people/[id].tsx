@@ -49,6 +49,7 @@ import { type Ref, useCallback, useMemo, useState } from 'react'
 import { StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { OverlayBack } from '../../../detail/back.tsx'
+import { useHero } from '../../../detail/hero.tsx'
 import { PERSON_ART, PERSON_TV, PHONE_PERSON } from '../../../detail/layout.ts'
 import { personMessages } from '../../../detail/messages.ts'
 import {
@@ -56,7 +57,6 @@ import {
   idOf,
   isMissing,
   Middle,
-  useHero,
   useRowWidths,
   useTexts,
 } from '../../../detail/parts.tsx'
