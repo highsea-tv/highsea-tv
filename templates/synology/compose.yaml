@@ -15,6 +15,11 @@ services:
   highsea:
     image: ghcr.io/highsea-tv/highsea:latest
     container_name: highsea
+    # the built-in VPN makes its WireGuard interface and routes inside this container's own network
+    # (ADR 0042). DSM's kernel has no WireGuard, so highsea uses wireguard-go on the TUN device,
+    # which it makes itself; DSM loads the tun module only when something asks for it (the VPN
+    # guide's troubleshooting page says how)
+    cap_add: [NET_ADMIN]
     # highsea runs as whoever owns /data, and takes the time zone from your browser at setup.
     # To choose instead:
     # environment:

@@ -90,7 +90,7 @@ describe('Test in Settings › VPN', () => {
     expect(t.nat).toEqual([{ gateway: '10.2.0.1', localAddress: '10.2.0.2' }])
     // taken down again, nothing saved, and torrents never had the test tunnel
     expect(t.wg.kernel.link).toBe(false)
-    expect(t.vpn.settings().mode).toBe('off')
+    expect(t.vpn.settings()).toMatchObject({ mode: 'builtin', configName: null })
     expect(t.bindings.every((b) => b === null || b.address === null)).toBe(true)
   })
 
@@ -209,7 +209,7 @@ describe('Test in Settings › VPN', () => {
         ['portForwarding', 'pass', '41822 is forwarded'],
       ])
       expect(gluetun.requests.some((q) => q.method === 'PUT')).toBe(false)
-      expect(t.vpn.settings().mode).toBe('off')
+      expect(t.vpn.settings()).toMatchObject({ mode: 'builtin', configName: null })
       const refused = await t.vpn.test({
         mode: 'container',
         containerUrl: gluetun.url,

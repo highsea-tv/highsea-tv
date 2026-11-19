@@ -10,6 +10,9 @@ description: Run highsea with Docker Compose on Linux, macOS or Windows.
   - Installing Docker Engine on Linux: https://docs.docker.com/engine/install/
   - Docker Desktop: https://docs.docker.com/desktop/
   - Host networking, and where Docker Desktop supports it: https://docs.docker.com/engine/network/drivers/host/
+  - Published ports: https://docs.docker.com/engine/network/port-publishing/
+  - Off host networking for the built-in VPN, with discovery kept through the host's avahi: ADR
+    0042's and ADR 0020's sections of 2026-11-19. avahi: https://wiki.archlinux.org/title/Avahi
   - The Linux file is compose.yaml at the repository's root, drawn in whole with Fumadocs MDX's
     include (https://www.fumadocs.dev/docs/mdx/include), so this page can't drift from it. The
     macOS and Windows file is written only here (ADR 0020, ADR 0057).
@@ -57,7 +60,14 @@ Make a folder for highsea and save this as `compose.yaml` inside it.
 <Tabs items={['Linux', 'macOS and Windows']}>
 <Tab value="Linux">
 
-Host networking lets highsea's apps find the server on your network by themselves, and lets the torrent engine take incoming connections. Where the machine runs avahi, as most desktop Linux does, the `/run/dbus` line lets highsea announce itself through it rather than alongside it.
+highsea gets its own network with published ports, so the [built-in VPN](/settings/vpn/connects/) can run its tunnel for highsea alone, with no changes to this file. Apps on your network still find the server by themselves:
+
+- **The iPhone and Apple TV apps** look for it by Bonjour. highsea announces itself through the machine's own avahi, over the `/run/dbus` line, since Bonjour's multicast doesn't leave a container's network. Most desktop Linux runs avahi already. On a server that doesn't, install it: `sudo apt install avahi-daemon` on Debian and Ubuntu, `avahi` on Fedora, openSUSE and Arch. [The installer](/install/script/) does this for you.
+- **The desktop app** also sends a broadcast to UDP port 7368, which reaches highsea through the published port.
+
+Incoming torrent peers reach port 6881 through the published port too. Forward it on your router for them, since your router can't open a port for a container's own network by itself.
+
+If you'd written your compose file with `network_mode: host` before, it keeps working as it is. [The built-in VPN](/settings/vpn/connects/#what-it-needs) gives you the lines to change when you turn it on.
 
 This is highsea's `compose.yaml` as it is in the repository, comments and all.
 
@@ -146,7 +156,7 @@ Open `http://<your server's address>:3000` in a browser, or `http://localhost:30
    - **Indexers** are the public ones in highsea's catalog, which need no account.
    - **Subtitles** are in your browser's languages, the first preferred.
    - **Time zone** is your browser's. It's used for schedules, history and notifications, and replaces the container's `TZ` if you set one.
-   - **Address on your network** is where apps on your network find highsea. With host networking, as the Linux compose file has, highsea fills in this computer's address. In a bridge network, as on Docker Desktop, it can't see it, so it uses the address you opened setup at. To set it yourself, add `HIGHSEA_PUBLISHED_URL: http://192.168.1.20:3000` under `environment`, with your server's address.
+   - **Address on your network** is where apps on your network find highsea. With host networking, highsea fills in this computer's address. In its own network, as the compose file above and Docker Desktop have, it can't see it, so it uses the address you opened setup at: check it's this computer's address on your network. To set it yourself, add `HIGHSEA_PUBLISHED_URL: http://192.168.1.20:3000` under `environment`, with your server's address.
    - **Away from home** is **Only at home**, which opens nothing to the internet. **Forward a port on my router** asks your router to forward the port, with UPnP or NAT-PMP. If the router doesn't answer, **System › Health** says so and how to forward it yourself.
    - **Video conversion** shows the graphics chip highsea found and checked, or this computer's processor.
 
@@ -166,4 +176,5 @@ docker compose logs -f  # follow its log
 
 - **The page doesn't load.** Check `docker compose ps`. If the container keeps restarting, `docker compose logs` says why.
 - **highsea can't write to a folder.** highsea's user doesn't own it. `docker compose logs highsea` says which user highsea chose in its first line. Either change the folder's owner on the host, such as `sudo chown -R 1000:1000 /srv/data` with your own numbers from `id`, or set `PUID` and `PGID` to the user who owns it.
-- **Port 3000 is taken.** On Linux with host networking, another program is using it. With published ports, change the left-hand side only, such as `"3080:3000"`, and open port 3080 instead.
+- **Port 3000 is taken.** Another program is using it. Change the left-hand side of the port only, such as `"3080:3000"`, and open port 3080 instead.
+- **The iPhone app doesn't find the server.** Check that avahi runs on the machine (`systemctl status avahi-daemon`) and that the `/run/dbus` line is there, then restart highsea. You can always type the server's address in the app.

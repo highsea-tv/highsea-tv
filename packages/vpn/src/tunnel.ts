@@ -155,8 +155,10 @@ export function createTunnel(runner: Runner) {
       await run(runner, ops.linkAddUserspace())
       return 'userspace'
     } catch (e) {
-      // wireguard-go fails without /dev/net/tun; without NET_ADMIN the kernel's refusal came first
-      if (e instanceof CommandFailed && e.kind !== 'permission' && e.kind !== 'platform')
+      // Here the kernel answered "Unknown device type", so highsea has NET_ADMIN (without it the
+      // kernel refuses first, with "Operation not permitted"). wireguard-go failing now is the TUN
+      // device: missing, or one highsea can't open ("Permission denied"), ADR 0042, 2026-11-19
+      if (e instanceof CommandFailed && e.kind !== 'platform' && e.kind !== 'not-installed')
         throw new TunnelError({ kind: 'no-device' }, e.message)
       throw asTunnelError(e)
     }

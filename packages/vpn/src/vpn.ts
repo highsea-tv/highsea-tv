@@ -36,7 +36,16 @@ import {
 import type { Db } from '@highsea-tv/db'
 import { type Runner, spawnRunner } from './commands.ts'
 import { type ComposeInput, composeFor } from './compose.ts'
-import { checkCopy, failures, labels, systemCopy, testCopy, wireGuardFailures } from './copy.ts'
+import {
+  checkCopy,
+  failures,
+  labels,
+  needsCapabilityFor,
+  noDeviceFor,
+  systemCopy,
+  testCopy,
+  wireGuardFailures,
+} from './copy.ts'
 import { askEcho, askEchoFields, type Echo } from './echo.ts'
 import {
   type BoundFetchOptions,
@@ -61,6 +70,7 @@ import {
   readStored,
   type StoredVpnSettings,
   toPublic,
+  workingMode,
   writeStored,
 } from './settings.ts'
 import { buildStatus, initialRuntime, leaking, type VpnRuntime } from './status.ts'
@@ -69,6 +79,7 @@ import { createTunnel, TunnelError, type TunnelSpec, tunnelAddresses } from './t
 import type {
   VpnBinding,
   VpnCheck,
+  VpnInstall,
   VpnInterface,
   VpnProvider,
   VpnSettings,
@@ -144,6 +155,11 @@ export type VpnDeps = {
    * False when absent.
    */
   hostNetwork?: () => boolean
+  /**
+   * The store that installed highsea, from `HIGHSEA_INSTALL` (ADR 0042, 2026-11-19): what the
+   * capability's and the device's failures tell the owner to do. Null when absent.
+   */
+  install?: () => VpnInstall | null
   /** The catalog's `vpn-providers` entries (`@highsea-tv/catalog`'s provider reader). */
   providers?: () => readonly VpnProviderDefinition[]
   /** Runs `ip` and `wg` for the built-in VPN; tests pass a fake that records each command. */
@@ -224,6 +240,7 @@ export function createVpn(deps: VpnDeps) {
   const tokenApi = deps.tokenApi ?? createTokenApi(deps.fetch)
   const natPmp = deps.natPmp ?? forwardWithNatPmp
   const log = deps.logger.child('vpn')
+  const install = () => deps.install?.() ?? null
 
   let stored: StoredVpnSettings = readStored(deps.db)
   let rt: VpnRuntime = initialRuntime()
@@ -264,7 +281,7 @@ export function createVpn(deps: VpnDeps) {
   }
 
   function desired(): VpnBinding | null {
-    if (stored.mode === 'off') return { address: null, dns: [] }
+    if (workingMode(stored) === 'off') return { address: null, dns: [] }
     if (rt.phase !== 'connected') return null
     if (stored.mode === 'container') return { address: null, dns: [] }
     if (stored.mode === 'interface' && rt.address)
@@ -525,9 +542,9 @@ export function createVpn(deps: VpnDeps) {
       const f =
         e instanceof TunnelError ? e.failure : { kind: 'other' as const, message: String(e) }
       log.warn('Couldn’t bring the tunnel up', { error: (e as Error).message })
-      if (f.kind === 'capability') return failBuiltin(failures.needsCapability)
+      if (f.kind === 'capability') return failBuiltin(needsCapabilityFor(install()))
       if (f.kind === 'platform') return failBuiltin(failures.linuxOnly)
-      if (f.kind === 'no-device') return failBuiltin(failures.noDevice)
+      if (f.kind === 'no-device') return failBuiltin(noDeviceFor(install()))
       if (f.kind === 'not-installed') return failBuiltin(failures.notInstalled)
       return failBuiltin(failures.tunnelFailed((e as Error).message), true)
     }
@@ -773,9 +790,9 @@ export function createVpn(deps: VpnDeps) {
   /** The reason the tunnel couldn't come up, in the status's copy. */
   function upFailure(e: unknown): string {
     const f = e instanceof TunnelError ? e.failure : { kind: 'other' as const }
-    if (f.kind === 'capability') return failures.needsCapability
+    if (f.kind === 'capability') return needsCapabilityFor(install())
     if (f.kind === 'platform') return failures.linuxOnly
-    if (f.kind === 'no-device') return failures.noDevice
+    if (f.kind === 'no-device') return noDeviceFor(install())
     if (f.kind === 'not-installed') return failures.notInstalled
     return failures.tunnelFailed((e as Error).message)
   }
@@ -1002,7 +1019,7 @@ export function createVpn(deps: VpnDeps) {
     rt = initialRuntime()
     // the old tunnel goes before anything new starts
     const closing = closeTunnel()
-    if (stored.mode === 'off') update({ phase: 'off' })
+    if (workingMode(stored) === 'off') update({ phase: 'off' })
     else if (stored.mode === 'builtin') {
       update({ phase: 'connecting' })
       track(closing.then(() => (g === generation ? connectBuiltin(g) : undefined))).catch(() => {})
@@ -1027,6 +1044,7 @@ export function createVpn(deps: VpnDeps) {
       deps.peersIn?.() ?? 0,
       deps.clock.now(),
       deps.hostNetwork?.() ?? false,
+      install(),
     )
   }
 
@@ -1038,7 +1056,7 @@ export function createVpn(deps: VpnDeps) {
    */
   const indexerFetch: Fetch = (input, init) => {
     const s = stored
-    if (!s.indexersThroughVpn || s.mode === 'off' || s.mode === 'container')
+    if (!s.indexersThroughVpn || workingMode(s) === 'off' || s.mode === 'container')
       return deps.fetch(input, init)
     const b = binding
     if (!b?.address) return Promise.reject(new Error(systemCopy.indexersWaiting))
@@ -1101,6 +1119,13 @@ export function createVpn(deps: VpnDeps) {
     indexerFetch,
     settings(): VpnSettings {
       return toPublic(stored)
+    },
+    /**
+     * Whether torrents use the machine's own connection: No VPN, or the built-in VPN before it's
+     * set up. The router's port mapping is for this case only.
+     */
+    direct(): boolean {
+      return workingMode(stored) === 'off'
     },
     /** The providers, in the API's shape. */
     providers(): VpnProvider[] {
@@ -1208,7 +1233,7 @@ export function createVpn(deps: VpnDeps) {
       } else if (stored.mode === 'interface') {
         update({ phase: 'connecting', address: null })
         pollInterface()
-      } else if (stored.mode === 'builtin') {
+      } else if (stored.mode === 'builtin' && workingMode(stored) === 'builtin') {
         if (retry !== null) timers.clearTimeout(retry)
         retry = null
         attempts = 0

@@ -25,9 +25,13 @@ export type StoredVpnSettings = Omit<
   containerKeySealed: string | null
 }
 
-/** The prototype's `defaultVpnSettings('empty')`: off until the owner picks a mode. */
+/**
+ * The prototype's `defaultVpnSettings('empty')`: the built-in VPN, the owner's default (ADR 0042,
+ * 2026-11-19), not set up until they give it their provider's file, token or password
+ * (`notSetUp`).
+ */
 export const DEFAULT_VPN_SETTINGS: StoredVpnSettings = {
-  mode: 'off',
+  mode: 'builtin',
   provider: 'proton',
   configName: null,
   configSealed: null,
@@ -43,6 +47,26 @@ export const DEFAULT_VPN_SETTINGS: StoredVpnSettings = {
   useForwardedPort: true,
   indexersThroughVpn: false,
   echoUrl: DEFAULT_ECHO_URL,
+}
+
+/**
+ * The built-in VPN with nothing to connect with yet: no WireGuard file, access token or PIA
+ * password. It doesn't connect or fail, and torrents use the connection they had before a VPN was
+ * set up, as the status says, so an install that never opened Settings › VPN keeps downloading
+ * after an update makes the built-in VPN the default (ADR 0042, 2026-11-19).
+ */
+export function notSetUp(s: StoredVpnSettings): boolean {
+  return (
+    s.mode === 'builtin' &&
+    s.configSealed === null &&
+    s.tokenSealed === null &&
+    s.piaPasswordSealed === null
+  )
+}
+
+/** The mode the tunnel works to: off while the built-in VPN isn't set up. */
+export function workingMode(s: StoredVpnSettings): VpnMode {
+  return notSetUp(s) ? 'off' : s.mode
 }
 
 const MODES: VpnMode[] = ['builtin', 'container', 'interface', 'off']

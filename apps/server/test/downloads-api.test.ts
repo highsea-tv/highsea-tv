@@ -261,10 +261,11 @@ describe('settings', () => {
     expect(saved.utp).toBe(false)
 
     const status = await adminApi.vpn.status()
-    expect(status).toMatchObject({ mode: 'off', state: 'off' })
+    // the built-in VPN is the default, not connected until a provider is saved (ADR 0042, 2026-11-19)
+    expect(status).toMatchObject({ mode: 'builtin', state: 'off', provider: null, install: null })
     expect((await ownerApi.vpn.providers()).length).toBeGreaterThan(0)
     const vpn = await ownerApi.vpn.settings()
-    expect(vpn.mode).toBe('off')
+    expect(vpn.mode).toBe('builtin')
     // Test with nothing to test, and with an interface that isn't there: nothing is saved
     expect(await failure(ownerApi.vpn.test({ body: { mode: 'off' } }))).toMatchObject({
       code: 'invalid',
@@ -274,7 +275,7 @@ describe('settings', () => {
     })
     expect(missing.ok).toBe(false)
     expect(missing.checks[0]).toMatchObject({ id: 'tunnel', result: 'fail' })
-    expect((await ownerApi.vpn.settings()).mode).toBe('off')
+    expect((await ownerApi.vpn.settings()).mode).toBe('builtin')
   })
 })
 

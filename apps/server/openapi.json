@@ -12732,6 +12732,20 @@
           "hostNetwork": {
             "type": "boolean"
           },
+          "install": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "synology",
+              "truenas",
+              "umbrel",
+              "casaos",
+              "unraid",
+              null
+            ]
+          },
           "exitIp": {
             "type": [
               "string",
@@ -12772,6 +12786,7 @@
           "message",
           "needsCapability",
           "hostNetwork",
+          "install",
           "exitIp",
           "country",
           "forwardedPort",

@@ -33,6 +33,7 @@ The installer:
 
 - checks that Docker and Compose are there and answering, and asks for your password through `sudo` when it needs to;
 - looks for graphics: Intel and AMD at `/dev/dri`, and NVIDIA through NVIDIA's container toolkit;
+- makes sure avahi runs, so the iPhone and Apple TV apps find highsea by Bonjour: where it doesn't, it installs `avahi-daemon` from your distribution's packages (apt, dnf, zypper, apk or pacman) and starts it, without asking anything an unattended run would wait on. If it can't, the install still finishes and says so: the apps then need the server's address, under **Add a server**;
 - writes `compose.yaml` to `/opt/highsea`, with highsea's settings in `/opt/highsea/config` and your films in `/opt/highsea/data`;
 - makes the data folder yours, so highsea runs as you;
 - starts highsea, waits until it's ready and prints the address to open.
@@ -54,6 +55,9 @@ curl -fsSL https://get.highsea.tv | sh -s -- --data /srv/data
 | `--version X.Y.Z` | A version to stay on, instead of the newest stable release. |
 | `--no-start` | Writes `compose.yaml` and stops there, so you can read or change it first. |
 | `--print-compose` | Prints the compose file it would write, and does nothing else. |
+| `--no-avahi` | Doesn't install avahi where it isn't running. The apps then need the server's address typed in, except the desktop app, which also finds it by its broadcast. |
+
+highsea runs in its own network with published ports (3000, 6881 and 7368), so the [built-in VPN](/settings/vpn/connects/) works with no changes to the file. An install from before keeps its host networking until you change it: Settings › VPN gives you the lines.
 
 ## Check the installer first
 

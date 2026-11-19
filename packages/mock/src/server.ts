@@ -1046,6 +1046,17 @@ export function createApi(srv: MockServer, ctx: Ctx) {
   const layoutKey = (scope: string) => `layout:${srv.kind}:${scope}`
   const currentVpn = () =>
     vpnStatus(state.settings.vpn, state.vpn, srv.clock.now(), state.settings.downloadClient.port)
+  /**
+   * A torrent as the server shows it: while the VPN holds every torrent (the kill switch, any state
+   * but connected or off), one that's downloading or queued is waiting for it (HT-90).
+   */
+  const shown = (t: Torrent): Torrent => {
+    const v = currentVpn()
+    const held = v.state !== 'off' && v.state !== 'connected'
+    return held && (t.state === 'downloading' || t.state === 'queued')
+      ? { ...t, stateReason: 'Waiting for the VPN.' }
+      : t
+  }
   const currentPlayback = () =>
     playbackStatus(state.settings.playback, state.playback, srv.clock.now())
   const who = (userId: string) => {
@@ -1206,7 +1217,7 @@ export function createApi(srv: MockServer, ctx: Ctx) {
       seeds: { ...t.seeds },
       ratio: t.ratio,
       state: t.state,
-      stateReason: t.stateReason,
+      stateReason: shown(t).stateReason,
     }
   }
 
@@ -2548,13 +2559,13 @@ export function createApi(srv: MockServer, ctx: Ctx) {
     downloads: {
       list: () => {
         requireStaff()
-        return state.torrents
+        return state.torrents.map(shown)
       },
       get: (id: string) => {
         requireStaff()
         const t = state.torrents.find((x) => x.id === id)
         if (!t) throw new ApiError(404, 'not-found', 'Torrent not found.')
-        return t
+        return shown(t)
       },
       add: (input: AddTorrentInput) => {
         requireStaff()

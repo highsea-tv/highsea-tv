@@ -261,6 +261,12 @@ The order is films, then shows, then music: films are already built and only nee
   - **Admin:** the server draws Shows, a show's page and its Files, and Discover's Shows; Media management scans a shows folder and opens Library import for it; Library import takes shows' folders without Rename; Users can give someone Shows (it was Movies or everything).
   - **Real-server check:** the sweep's seed imports Chernobyl from generated episodes with a recap left unmatched; the admin's Shows pages and the web client's shows, show page, Home and episode player, axe and keyboard clean in every theme. It found and fixed: Shows couldn't be given to a user, and the web show page's episodes weren't list items.
   - **Next (B's fourth task):** episodes' subtitles, resolving unmatched files, notifications' and mail's posters for episodes, and the guides.
+- **2026-11-19, A1, the built-in VPN ready on every install, and the default (HT-90), waiting for the owner's review:** the owner's NordVPN on the DS1520+ (DSM 7, Linux 4.4, no WireGuard in the kernel) failed with "RTNETLINK answers: Operation not permitted": the package's container had no NET_ADMIN, and as the package user it would have had none even with it. Built ([ADR 0042's section of 2026-11-19](../adr/0042-vpn-connections.md)):
+  - every template highsea writes carries the capability and the TUN device's way in; the image starts a non-root user with CAP_NET_ADMIN through a capped setpriv; an update to the Synology package recreates the container with them;
+  - the failures say how each store fixes it (`HIGHSEA_INSTALL`), and tell no capability from no TUN device, with DSM's Task Scheduler task for `tun.ko`;
+  - downloads held by the VPN read "Waiting for the VPN." in Downloads, the Queue widget and the film's page, never count as stalled, and carry on by themselves;
+  - on the owner's decision of 2026-11-19, the built-in VPN is the default mode (unconnected, and torrents direct, until a provider is saved), and the root `compose.yaml` and the installer leave host networking. On the owner's requirement that LAN discovery stays intact, the installer installs and starts avahi where it's missing, without a prompt, and says plainly when it can't ([ADR 0020's section of 2026-11-19](../adr/0020-discovery-port.md)).
+  - To check on the NAS after the release: the capability inside the container, `/dev/net/tun`, Test's four checks with NordVPN, a held download resuming, and the iPhone still finding the server (the pull request's checklist).
 
 ## Running highsea on the NAS (A1)
 

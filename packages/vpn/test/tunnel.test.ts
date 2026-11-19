@@ -209,6 +209,17 @@ describe('The tunnel', () => {
     expect(e.failure).toEqual({ kind: 'no-device' })
   })
 
+  test('a TUN device highsea can’t open is the device, not the capability', async () => {
+    // the kernel's "Unknown device type" means NET_ADMIN was there; a 0600 /dev/net/tun isn't it
+    const wg = createFakeWireGuard()
+    wg.fail(/^ip link add/, 'Error: Unknown device type.')
+    wg.fail(/^wireguard-go/, 'ERROR: Failed to create TUN device: permission denied')
+    const e = await createTunnel(wg.runner)
+      .up(spec())
+      .catch((x) => x)
+    expect(e.failure).toEqual({ kind: 'no-device' })
+  })
+
   test('a failure halfway takes everything down again', async () => {
     const wg = createFakeWireGuard()
     wg.fail(/rule add/, 'RTNETLINK answers: Invalid argument')

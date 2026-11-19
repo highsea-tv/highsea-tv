@@ -67,6 +67,12 @@ const STALL_CHECK_EVERY_MS = 5 * 60 * 1000
  * Only the view changes: the replacement above still counts from STALL_MS.
  */
 export const STALLED_VIEW_MS = 30 * 60 * 1000
+
+/**
+ * A torrent's reason while the VPN holds every torrent: the kill switch took the engine's network
+ * away (ADR 0042), and it comes back by itself when the tunnel does (HT-90).
+ */
+export const WAITING_FOR_VPN = 'Waiting for the VPN.'
 /** The Network widget's sparkline: the last 10 minutes, a sample a second. */
 const SPEED_SAMPLES = 600
 
@@ -641,6 +647,9 @@ export function createDownloads(deps: DownloadsDeps) {
     if (d?.state === 'import-blocked') return { state: 'import-blocked', reason: d.stateReason }
     if (d?.state === 'failed') return { state: 'error', reason: d.stateReason }
     if (!snap) return { state: 'completed', reason: null }
+    // the VPN holds every torrent: nothing is stalled, it's waiting for the tunnel
+    if ((snap.state === 'downloading' || snap.state === 'queued') && !engine.status().up)
+      return { state: snap.state, reason: WAITING_FOR_VPN }
     const idle = idleFor(d, snap)
     if (idle !== null) return { state: 'stalled', reason: stalledReason(d, snap, idle) }
     if (d && stalled(d, snap))
@@ -803,10 +812,12 @@ export function createDownloads(deps: DownloadsDeps) {
 
   async function checkStalls() {
     const now = clock.now()
+    // while the VPN holds the network, nothing can stall: the clock waits with the torrents
+    const up = engine.status().up
     const waiting = new Set(
       engine
         .list()
-        .filter((t) => idleFor(byTorrent(t.id), t, now) !== null)
+        .filter((t) => up && idleFor(byTorrent(t.id), t, now) !== null)
         .map((t) => t.id),
     )
     const changed = [...waiting, ...shownStalled].filter(
@@ -826,7 +837,7 @@ export function createDownloads(deps: DownloadsDeps) {
       const snap = snapshot(d.torrentId)
       if (!snap) continue
       // a torrent that isn't trying (queued, paused, checking, or the network down) isn't stalling
-      const trying = snap.state === 'downloading'
+      const trying = snap.state === 'downloading' && up
       const progressed = (snap.lastDataAt ?? 0) > d.progressAt || snap.seeds.connected > 0
       if (!trying || progressed) {
         update(d.id, { progressAt: trying ? Math.max(snap.lastDataAt ?? 0, now) : now })
@@ -884,6 +895,23 @@ export function createDownloads(deps: DownloadsDeps) {
           { dedupeKey: `settle:${e.id}` },
         )
         return
+      case 'network': {
+        // the VPN let go or took back the network: each download's reason changes, and the stall
+        // clock starts again from now, so an outage never counts as no seeds
+        if (e.up)
+          db.update(downloads)
+            .set({ progressAt: clock.now() })
+            .where(eq(downloads.state, 'downloading'))
+            .run()
+        const mine = db
+          .select({ id: downloads.id })
+          .from(downloads)
+          .where(inArray(downloads.state, [...ACTIVE]))
+          .all()
+          .map((r) => r.id)
+        if (mine.length) announce({ queue: mine })
+        return
+      }
       default:
         return
     }
