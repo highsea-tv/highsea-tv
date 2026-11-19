@@ -47,7 +47,7 @@ function fakeLibrary() {
     addedAt: new Date(0).toISOString(),
     status: 'available',
     playable: false,
-    art: { poster: `/p/${id}`, backdrop: `/b/${id}` },
+    art: { poster: `/p/${id}`, backdrop: `/b/${id}`, logo: null },
     progress: null,
     position: 0,
     watched: false,

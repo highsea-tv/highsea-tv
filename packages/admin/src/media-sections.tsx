@@ -54,8 +54,8 @@ import { useNow } from './time.ts'
 /** What every title has, in or out of the library. */
 export type TitleBase = Pick<
   DiscoverMovie,
-  'title' | 'year' | 'runtimeMinutes' | 'genres' | 'rating' | 'synopsis' | 'art'
->
+  'title' | 'year' | 'runtimeMinutes' | 'genres' | 'rating' | 'synopsis'
+> & { art: Pick<DiscoverMovie['art'], 'poster' | 'backdrop'> }
 
 export type MetadataQuery = Query<MovieMetadata>
 

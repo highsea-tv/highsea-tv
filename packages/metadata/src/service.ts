@@ -5,10 +5,20 @@
 import { AppError } from '@highsea-tv/core'
 import { readSetting, schema, writeSetting } from '@highsea-tv/db'
 import { and, asc, eq, inArray, isNotNull, isNull, lt, notInArray } from 'drizzle-orm'
+import {
+  ARTWORK_KINDS_OF,
+  type ArtworkChoice,
+  type ArtworkKind,
+  type ArtworkOption,
+  type ArtworkOwner,
+  createArtwork,
+  optionsOf,
+} from './artwork.ts'
 import { createCache } from './cache.ts'
 import { METADATA_TOPIC, type MetadataDeps } from './context.ts'
 import { createImages, TMDB_IMAGE_BASE } from './images.ts'
 import {
+  automaticLogo,
   recommendationsOf,
   toCollection,
   toDiscoverMovie,
@@ -69,6 +79,17 @@ export const CERTIFICATIONS_KEY = 'metadata.certifications'
 export type Certification = { certification: string; order: number }
 type StoredCertifications = { regions: Record<string, Certification[]>; fetchedAt: number }
 
+/** A kind of a title's art in the picker (HT-66). */
+export type ArtworkKindView = {
+  kind: ArtworkKind
+  /** The file shown now: the chosen one, else the automatic one. */
+  current: string | null
+  /** highsea's own pick, which Reset goes back to. */
+  automatic: string | null
+  choice: ArtworkChoice | null
+  options: ArtworkOption[]
+}
+
 const utcDate = (ms: number) => new Date(ms).toISOString().slice(0, 10)
 
 export function createMetadataCore(deps: MetadataDeps) {
@@ -81,7 +102,9 @@ export function createMetadataCore(deps: MetadataDeps) {
 
   const imageBase = () =>
     readSetting(db, CONFIGURATION_KEY, { imageBase: TMDB_IMAGE_BASE, fetchedAt: 0 }).imageBase
-  const images = createImages(deps, client, imageBase)
+  const artwork = createArtwork(deps)
+  const pick = artwork.pick
+  const images = createImages(deps, client, imageBase, artwork)
 
   function requireKey(): Credential {
     const credential = settings.credential()
@@ -214,6 +237,8 @@ export function createMetadataCore(deps: MetadataDeps) {
       region: settings.region(),
       fetchedAt: row.fetchedAt,
       goneAt: row.goneAt,
+      language: row.language,
+      pick,
     })
   }
 
@@ -225,6 +250,8 @@ export function createMetadataCore(deps: MetadataDeps) {
           region: settings.region(),
           fetchedAt: row.fetchedAt,
           goneAt: row.goneAt,
+          language: row.language,
+          pick,
         })
       : null
   }
@@ -235,13 +262,13 @@ export function createMetadataCore(deps: MetadataDeps) {
     if (!row) return []
     const data = row.data as TmdbMovie
     if ((data.recommendations?.results.length ?? 0) > 0 || data.similar)
-      return recommendationsOf(data)
+      return recommendationsOf(data, pick)
     const credential = settings.credential()
     if (!credential || row.goneAt !== null) return []
     try {
       const similar = await api.similar(credential, id, settings.language())
       cache.putSimilar(id, similar)
-      return recommendationsOf({ ...data, similar })
+      return recommendationsOf({ ...data, similar }, pick)
     } catch (e) {
       logger.warn('couldn’t read similar movies', { id, error: (e as Error).message })
       return []
@@ -251,13 +278,17 @@ export function createMetadataCore(deps: MetadataDeps) {
   async function collection(id: number): Promise<Collection> {
     const row = await load('collection', id)
     if (!row) throw new AppError('not-found', notFoundMessage.collection)
-    return toCollection(row.data as TmdbCollection)
+    return toCollection(row.data as TmdbCollection, pick)
   }
 
   async function person(id: number): Promise<Person> {
     const row = await load('person', id)
     if (!row) throw new AppError('not-found', notFoundMessage.person)
-    return toPerson(row.data as TmdbPerson, { fetchedAt: row.fetchedAt, goneAt: row.goneAt })
+    return toPerson(row.data as TmdbPerson, {
+      fetchedAt: row.fetchedAt,
+      goneAt: row.goneAt,
+      pick,
+    })
   }
 
   const page = (n: number | undefined) => Math.min(Math.max(Math.trunc(n ?? 1) || 1, 1), 500)
@@ -269,7 +300,7 @@ export function createMetadataCore(deps: MetadataDeps) {
       if (!q) return { page: 1, totalPages: 0, totalResults: 0, results: [] }
       const credential = requireKey()
       const result = await api.search(credential, q, page(pageNumber), settings.language())
-      return toPage(result, toDiscoverMovie)
+      return toPage(result, (m) => toDiscoverMovie(m, pick))
     },
     /** The movie an IMDb id belongs to, through TMDB's Find by ID; null when TMDB has none. */
     async findByImdb(imdbId: string): Promise<DiscoverMovie | null> {
@@ -277,7 +308,7 @@ export function createMetadataCore(deps: MetadataDeps) {
       const credential = requireKey()
       const result = await api.findImdb(credential, imdbId, settings.language())
       const first = result.movie_results?.[0]
-      return first ? toDiscoverMovie(first) : null
+      return first ? toDiscoverMovie(first, pick) : null
     },
     /**
      * Trending (this week), Popular, Now playing or Upcoming, for the server's region; Top rated
@@ -295,7 +326,7 @@ export function createMetadataCore(deps: MetadataDeps) {
         settings.language(),
         settings.region(),
       )
-      return toPage(result, toDiscoverMovie)
+      return toPage(result, (m) => toDiscoverMovie(m, pick))
     },
     /**
      * A public TMDB list's movies, a page at a time (import lists, checkpoint 8a). TV shows on a
@@ -310,9 +341,121 @@ export function createMetadataCore(deps: MetadataDeps) {
         totalResults: result.total_results,
         results: result.items
           .filter((i) => (i.media_type ?? 'movie') === 'movie')
-          .map(toDiscoverMovie),
+          .map((m) => toDiscoverMovie(m, pick)),
       }
     },
+  }
+
+  // ------------------------------------------------------------ chosen artwork (HT-66)
+
+  /** What highsea picks by itself for each kind, from the cached title: TMDB's own, the logo by rule. */
+  async function automaticArt(owner: ArtworkOwner, id: number) {
+    if (owner === 'movie') {
+      const row = await load('movie', id)
+      if (!row) throw new AppError('not-found', notFoundMessage.movie)
+      const data = row.data as TmdbMovie
+      return {
+        poster: data.poster_path ?? null,
+        backdrop: data.backdrop_path ?? null,
+        logo: automaticLogo(data.images?.logos, row.language),
+      } satisfies Record<ArtworkKind, string | null>
+    }
+    const row = await load('collection', id)
+    if (!row) throw new AppError('not-found', notFoundMessage.collection)
+    const data = row.data as TmdbCollection
+    return {
+      poster: data.poster_path ?? null,
+      backdrop: data.backdrop_path ?? null,
+      logo: null,
+    } satisfies Record<ArtworkKind, string | null>
+  }
+
+  /** Every image TMDB has for the title, in every language; refused without a key or TMDB. */
+  async function tmdbImages(owner: ArtworkOwner, id: number) {
+    const credential = requireKey()
+    return owner === 'movie'
+      ? api.movieImages(credential, id)
+      : api.collectionImages(credential, id)
+  }
+
+  const artworkApi = {
+    pick,
+    /**
+     * Each kind's current, automatic and chosen file, and TMDB's alternatives. When TMDB can't be
+     * asked (no key, unreachable), the options are empty and `optionsError` says why: choosing
+     * still works for uploads and Reset.
+     */
+    async view(owner: ArtworkOwner, id: number) {
+      const automatic = await automaticArt(owner, id)
+      const chosen = new Map(artwork.choices(owner, id).map((c) => [c.kind, c]))
+      let images: Awaited<ReturnType<typeof tmdbImages>> | null = null
+      let optionsError: AppError | null = null
+      try {
+        images = await tmdbImages(owner, id)
+      } catch (e) {
+        if (!(e instanceof AppError)) throw e
+        optionsError = e
+      }
+      const kinds: ArtworkKindView[] = ARTWORK_KINDS_OF[owner].map((kind) => {
+        const choice = chosen.get(kind) ?? null
+        return {
+          kind,
+          current: choice?.file ?? automatic[kind],
+          automatic: automatic[kind],
+          choice,
+          options: images ? optionsOf(images, kind) : [],
+        }
+      })
+      return { kinds, optionsError }
+    },
+    /** Chooses one of TMDB's images for the title; it must be among the title's own. */
+    async choose(
+      owner: ArtworkOwner,
+      id: number,
+      kind: ArtworkKind,
+      file: string,
+      by: string | null,
+    ) {
+      checkKind(owner, kind)
+      await automaticArt(owner, id)
+      const option = optionsOf(await tmdbImages(owner, id), kind).find((o) => o.file === file)
+      if (!option)
+        throw new AppError('invalid', 'TMDB has no such image for this title.', {
+          reason: 'not-an-option',
+        })
+      const replaced = artwork.chooseTmdb(owner, id, kind, option, by)
+      if (replaced) images.removeFile(replaced)
+      announce(owner, id)
+      return option.file
+    },
+    /** Keeps an uploaded image as the title's art. */
+    async upload(
+      owner: ArtworkOwner,
+      id: number,
+      kind: ArtworkKind,
+      bytes: Uint8Array,
+      by: string | null,
+    ) {
+      checkKind(owner, kind)
+      await automaticArt(owner, id)
+      const { file, replaced } = artwork.upload(owner, id, kind, bytes, by)
+      if (replaced) images.removeFile(replaced)
+      announce(owner, id)
+      return file
+    },
+    /** Back to highsea's automatic choice; false when nothing was chosen. */
+    reset(owner: ArtworkOwner, id: number, kind: ArtworkKind) {
+      checkKind(owner, kind)
+      const { removed, upload } = artwork.reset(owner, id, kind)
+      if (upload) images.removeFile(upload)
+      if (removed) announce(owner, id)
+      return removed
+    },
+  }
+
+  function checkKind(owner: ArtworkOwner, kind: ArtworkKind) {
+    if (!ARTWORK_KINDS_OF[owner].includes(kind))
+      throw new AppError('invalid', 'That title has no artwork of that kind.', { reason: 'kind' })
   }
 
   // ------------------------------------------------------------ refresh
@@ -551,6 +694,7 @@ export function createMetadataCore(deps: MetadataDeps) {
     person,
     discover,
     images,
+    artwork: artworkApi,
     refreshNow,
     enqueueRefresh,
     runChanges,

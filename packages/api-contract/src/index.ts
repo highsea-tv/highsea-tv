@@ -4,6 +4,7 @@
 // OpenAPI document is generated from them. The prototype's draft types
 // (packages/mock/src/types.ts) move here a route group at a time.
 export * from './accounts.ts'
+export * from './artwork.ts'
 export * from './collections.ts'
 export * from './common.ts'
 export * from './connections.ts'
@@ -39,6 +40,7 @@ export * from './wanted.ts'
 export * from './widgets.ts'
 
 import { apiKeys, audit, auth, devices, links, me, users } from './accounts.ts'
+import { artwork } from './artwork.ts'
 import { collections, libraryCollections } from './collections.ts'
 import { connections, pushSubscriptions } from './connections.ts'
 import { announcements, clientHome, curation } from './curation.ts'
@@ -99,6 +101,7 @@ export const routes = {
   appearance,
   movies: { ...movies, ...releaseRoutes, ...movieDownloadRoutes },
   metadata,
+  artwork,
   quality,
   rootFolders,
   library: { ...library, ...libraryCollections },

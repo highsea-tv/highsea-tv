@@ -62,6 +62,17 @@ export default {
       crop: (p) => p.getByRole('dialog'),
     },
     {
+      name: 'film-artwork',
+      path: '/movies/45745',
+      act: async (p) => {
+        await more(p)
+        await p.getByRole('menuitem', { name: 'Change artwork' }).click()
+        await p.getByRole('dialog', { name: 'Artwork' }).getByRole('radio').first().waitFor()
+        await blurDialog(p)
+      },
+      crop: (p) => p.getByRole('dialog'),
+    },
+    {
       name: 'film-remove',
       path: '/movies/45745',
       act: async (p) => {

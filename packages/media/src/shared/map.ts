@@ -20,10 +20,18 @@ export const isoOf = (ms: number) => new Date(ms).toISOString()
 export const isoTime = (d: string | null) =>
   d === null ? null : d.length === 10 ? `${d}T00:00:00.000Z` : d
 
-export const artOf = (art: { poster: string | null; backdrop: string | null }) => ({
+export const artOf = (art: {
+  poster: string | null
+  backdrop: string | null
+  logo?: string | null
+}) => ({
   poster: art.poster,
   backdrop: art.backdrop,
+  logo: art.logo ?? null,
 })
+
+/** No art: a title the cache doesn't have yet. */
+export const NO_ART = { poster: null, backdrop: null, logo: null }
 
 /**
  * A credit's id. TMDB's `credit_id` when the metadata carries it; otherwise one made from its place

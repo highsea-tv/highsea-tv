@@ -1,0 +1,45 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// Change artwork (HT-66): a film's or a collection's poster, backdrop and logo, from TMDB's others
+// or uploaded, and Reset. In the brand's voice (docs/brand/brief.md § 6).
+import { defineMessages } from '@highsea-tv/i18n'
+
+export const artwork = defineMessages({
+  open: 'Change artwork',
+  title: 'Artwork',
+  description:
+    'Choose the poster, backdrop and logo every app shows for {title}. A choice stays through every refresh until you reset it.',
+  kinds: 'Kind of artwork',
+  'kind.poster': 'Poster',
+  'kind.backdrop': 'Backdrop',
+  'kind.logo': 'Logo',
+  shown: 'Shown now',
+  none: 'None yet',
+  'state.automatic': 'Automatic: highsea’s pick from TMDB',
+  'state.automaticNone': 'Automatic: TMDB has none',
+  'state.tmdb': 'Chosen from TMDB by {name} · {when}',
+  'state.upload': 'Uploaded by {name} · {when}',
+  'state.someone': 'someone',
+  upload: 'Upload',
+  reset: 'Reset',
+  'reset.hint': 'Go back to highsea’s automatic choice',
+  'rules.poster': 'PNG or JPEG, up to 10 MB, at least 500 px wide and close to 2:3.',
+  'rules.backdrop': 'PNG or JPEG, up to 10 MB, at least 1280 px wide and close to 16:9.',
+  'rules.logo': 'A PNG with a transparent background, up to 10 MB and at least 300 px wide.',
+  fromTmdb: 'From TMDB',
+  'fromTmdb.count': '{count} images',
+  'fromTmdb.none': 'TMDB has no other images of this kind.',
+  'fromTmdb.collectionLogo': 'TMDB keeps no logos for collections. Upload one of your own.',
+  'tmdb.unavailable': 'TMDB’s images can’t be listed right now',
+  'tmdb.unavailableBody': 'Uploading and Reset still work. ({reason})',
+  'option.label': '{kind}, {language}, {width} × {height}',
+  'option.noLanguage': 'No text',
+  current: 'Current',
+  'chosen.toast': '{kind} changed',
+  'chosen.body': 'Every app shows the new one.',
+  'reset.toast': '{kind} reset',
+  'reset.body': 'highsea’s automatic choice is back.',
+  failed: 'Couldn’t change the artwork',
+  'load.failed': 'Couldn’t load the artwork',
+  retry: 'Try again',
+  done: 'Done',
+})

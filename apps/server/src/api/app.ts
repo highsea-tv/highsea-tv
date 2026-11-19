@@ -7,6 +7,7 @@ import type { Runtime } from '@highsea-tv/runtime'
 import { OpenAPIHono } from '@hono/zod-openapi'
 import { Scalar } from '@scalar/hono-api-reference'
 import { registerAccounts } from './accounts.ts'
+import { registerArtwork } from './artwork.ts'
 import { registerCollections } from './collections.ts'
 import { registerConnections } from './connections.ts'
 import { registerCuration } from './curation.ts'
@@ -101,6 +102,7 @@ export function createApi(runtime: Runtime) {
   registerProfiles(app)
   // Discover's static path and the movie pages' metadata come before `/movies/{id}`
   registerMetadata(app)
+  registerArtwork(app)
   registerMovies(app)
   registerQuality(app)
   registerLibrary(app)

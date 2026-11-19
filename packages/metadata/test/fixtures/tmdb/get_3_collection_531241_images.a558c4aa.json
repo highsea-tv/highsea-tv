@@ -1,0 +1,101 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "https://api.themoviedb.org/3/collection/531241/images",
+    "credential": "valid"
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json;charset=utf-8"
+    },
+    "body": {
+      "id": 531241,
+      "backdrops": [
+        {
+          "aspect_ratio": 1.778,
+          "height": 2160,
+          "iso_639_1": null,
+          "file_path": "/AvnqpRwlEaYNVL6wzC4RN94EdSd.jpg",
+          "vote_average": 5.6,
+          "vote_count": 8,
+          "width": 3840
+        },
+        {
+          "aspect_ratio": 1.778,
+          "height": 1080,
+          "iso_639_1": null,
+          "file_path": "/hsC531241Backdrop2.jpg",
+          "vote_average": 5.3,
+          "vote_count": 2,
+          "width": 1920
+        },
+        {
+          "aspect_ratio": 1.778,
+          "height": 1080,
+          "iso_639_1": "en",
+          "file_path": "/hsC531241Backdrop3.jpg",
+          "vote_average": 5.2,
+          "vote_count": 1,
+          "width": 1920
+        },
+        {
+          "aspect_ratio": 1.778,
+          "height": 720,
+          "iso_639_1": "de",
+          "file_path": "/hsC531241Backdrop4.jpg",
+          "vote_average": 0,
+          "vote_count": 0,
+          "width": 1280
+        }
+      ],
+      "posters": [
+        {
+          "aspect_ratio": 0.667,
+          "height": 3000,
+          "iso_639_1": "en",
+          "file_path": "/yeba3Y820OjApZO9aJevDsNeMEd.jpg",
+          "vote_average": 5.5,
+          "vote_count": 6,
+          "width": 2000
+        },
+        {
+          "aspect_ratio": 0.667,
+          "height": 1500,
+          "iso_639_1": "en",
+          "file_path": "/hsC531241Poster2.jpg",
+          "vote_average": 5.3,
+          "vote_count": 4,
+          "width": 1000
+        },
+        {
+          "aspect_ratio": 0.667,
+          "height": 1500,
+          "iso_639_1": "de",
+          "file_path": "/hsC531241Poster3.jpg",
+          "vote_average": 5.2,
+          "vote_count": 2,
+          "width": 1000
+        },
+        {
+          "aspect_ratio": 0.667,
+          "height": 1170,
+          "iso_639_1": "fr",
+          "file_path": "/hsC531241Poster4.jpg",
+          "vote_average": 5.1,
+          "vote_count": 1,
+          "width": 780
+        },
+        {
+          "aspect_ratio": 0.667,
+          "height": 1500,
+          "iso_639_1": null,
+          "file_path": "/hsC531241Poster5.jpg",
+          "vote_average": 0,
+          "vote_count": 0,
+          "width": 1000
+        }
+      ]
+    }
+  }
+}

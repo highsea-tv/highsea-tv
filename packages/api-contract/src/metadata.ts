@@ -76,7 +76,7 @@ export const Department = z.enum(DEPARTMENTS).openapi('Department')
  * movie, a person, a collection), so it's purged with it. `size` is one of TMDB's size names
  * (`w342`, `w1280`, `h632`); a client may swap it for another the server serves for that kind.
  */
-const ImageUrl = z
+export const ImageUrl = z
   .string()
   .openapi({ example: '/api/v1/images/movie/603/poster/w342/f89U3ADr1oiB1s9GkdPOEpXUk5H.jpg' })
 
@@ -86,6 +86,12 @@ export const Art = z
     poster: ImageUrl.nullable(),
     /** 16:9. Null when TMDB has none. */
     backdrop: ImageUrl.nullable(),
+    /**
+     * The title's logo: its name drawn, on a transparent background, any shape (HT-66). TMDB's in
+     * the metadata language (else English, else none), or one an admin chose; null when there's
+     * neither, and in lists, which carry no logos unless one was chosen.
+     */
+    logo: ImageUrl.nullable(),
   })
   .openapi('Art')
 

@@ -265,7 +265,11 @@ export function kindsOf(ctx: FilmsCtx) {
     addedAt: isoOf(x.addedAt),
     status: 'available',
     playable: true,
-    art: { poster: x.art.poster || null, backdrop: x.art.still || x.art.backdrop || null },
+    art: {
+      poster: x.art.poster || null,
+      backdrop: x.art.still || x.art.backdrop || null,
+      logo: x.art.logo || null,
+    },
     progress: x.progress,
     position: x.position,
     watched: x.watched,

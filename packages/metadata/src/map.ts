@@ -4,6 +4,7 @@
 import { DEFAULT_SIZES, imageUrl } from './image-url.ts'
 import type {
   TmdbCollection,
+  TmdbImage,
   TmdbMovie,
   TmdbMovieItem,
   TmdbPage,
@@ -60,15 +61,56 @@ const yearOf = (d: string | null) => (d ? Number(d.slice(0, 4)) : null)
 export const departmentOf = (d: string | null | undefined): Department =>
   DEPARTMENTS.find((x) => x === d) ?? 'Crew'
 
-function art(id: number, poster?: string | null, backdrop?: string | null) {
+/**
+ * The file an admin chose for a title's art (HT-66), or undefined for highsea's automatic one:
+ * every mapping asks it, so a chosen image shows wherever the title does.
+ */
+export type ArtPick = (
+  owner: 'movie' | 'collection',
+  id: number,
+  kind: 'poster' | 'backdrop' | 'logo',
+) => string | undefined
+export const noPick: ArtPick = () => undefined
+
+/** TMDB's file names highsea can serve: raster, never SVG (image-url.ts). */
+const RASTER = /\.(jpg|jpeg|png|webp)$/
+
+/**
+ * The automatic logo: from the images appended to the movie (in the metadata language, English and
+ * none), a raster one in the metadata language first, then English, then any; the best voted
+ * within each, then the most votes, as TMDB's own image pages order them.
+ */
+export function automaticLogo(logos: TmdbImage[] | undefined, language: string): string | null {
+  const lang = language.split('-')[0]?.toLowerCase()
+  const rank = (i: TmdbImage) => (i.iso_639_1 === lang ? 0 : i.iso_639_1 === 'en' ? 1 : 2)
+  const best = (logos ?? [])
+    .filter((l) => RASTER.test(l.file_path))
+    .sort(
+      (a, b) =>
+        rank(a) - rank(b) ||
+        (b.vote_average ?? 0) - (a.vote_average ?? 0) ||
+        (b.vote_count ?? 0) - (a.vote_count ?? 0),
+    )[0]
+  return best?.file_path ?? null
+}
+
+function art(
+  id: number,
+  files: { poster?: string | null; backdrop?: string | null; logo?: string | null },
+  pick: ArtPick,
+) {
+  const poster = pick('movie', id, 'poster') ?? files.poster
+  const backdrop = pick('movie', id, 'backdrop') ?? files.backdrop
+  const logo = pick('movie', id, 'logo') ?? files.logo
   return {
     poster: imageUrl('movie', id, 'poster', DEFAULT_SIZES.poster, poster),
     backdrop: imageUrl('movie', id, 'backdrop', DEFAULT_SIZES.backdrop, backdrop),
     still: imageUrl('movie', id, 'backdrop', DEFAULT_SIZES.still, backdrop),
+    logo: imageUrl('movie', id, 'logo', DEFAULT_SIZES.logo, logo),
   }
 }
 
-export function toDiscoverMovie(item: TmdbMovieItem): DiscoverMovie {
+export function toDiscoverMovie(item: TmdbMovieItem, pick: ArtPick = noPick): DiscoverMovie {
   const releaseDate = date(item.release_date)
   return {
     id: item.id,
@@ -81,7 +123,8 @@ export function toDiscoverMovie(item: TmdbMovieItem): DiscoverMovie {
     synopsis: item.overview ?? '',
     rating: item.vote_average ?? 0,
     voteCount: item.vote_count ?? 0,
-    art: art(item.id, item.poster_path, item.backdrop_path),
+    // lists carry no logos: one shows only when an admin chose it
+    art: art(item.id, { poster: item.poster_path, backdrop: item.backdrop_path }, pick),
   }
 }
 
@@ -132,10 +175,32 @@ const photo = (personId: number, path: string | null | undefined) =>
 
 export function toMovieMetadata(
   movie: TmdbMovie,
-  { region, fetchedAt, goneAt }: { region: string; fetchedAt: number; goneAt: number | null },
+  {
+    region,
+    fetchedAt,
+    goneAt,
+    language = 'en-US',
+    pick = noPick,
+  }: {
+    region: string
+    fetchedAt: number
+    goneAt: number | null
+    /** The metadata language, for the automatic logo. */
+    language?: string
+    pick?: ArtPick
+  },
 ): MovieMetadata {
   const releaseDate = date(movie.release_date)
-  const still = imageUrl('movie', movie.id, 'backdrop', DEFAULT_SIZES.still, movie.backdrop_path)
+  const movieArt = art(
+    movie.id,
+    {
+      poster: movie.poster_path,
+      backdrop: movie.backdrop_path,
+      logo: automaticLogo(movie.images?.logos, language),
+    },
+    pick,
+  )
+  const still = movieArt.still
   const cast: Credit[] = [...(movie.credits?.cast ?? [])]
     .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
     .map((c) => ({
@@ -183,7 +248,7 @@ export function toMovieMetadata(
     synopsis: movie.overview ?? '',
     rating: movie.vote_average ?? 0,
     voteCount: movie.vote_count ?? 0,
-    art: art(movie.id, movie.poster_path, movie.backdrop_path),
+    art: movieArt,
     originalLanguage: movie.original_language,
     tagline: text(movie.tagline),
     status: movie.status ?? 'Released',
@@ -206,9 +271,11 @@ export function toMovieMetadata(
 }
 
 /** TMDB's recommendations, or its "similar" list when there are none (owner's decision 6). */
-export function recommendationsOf(movie: TmdbMovie): DiscoverMovie[] {
+export function recommendationsOf(movie: TmdbMovie, pick: ArtPick = noPick): DiscoverMovie[] {
   const recommended = movie.recommendations?.results ?? []
-  return (recommended.length ? recommended : (movie.similar?.results ?? [])).map(toDiscoverMovie)
+  return (recommended.length ? recommended : (movie.similar?.results ?? [])).map((m) =>
+    toDiscoverMovie(m, pick),
+  )
 }
 
 const byRelease = (a: DiscoverMovie, b: DiscoverMovie) =>
@@ -220,16 +287,47 @@ const byRelease = (a: DiscoverMovie, b: DiscoverMovie) =>
         ? 1
         : 0
 
-export function toCollection(c: TmdbCollection): Collection {
+export function toCollection(c: TmdbCollection, pick: ArtPick = noPick): Collection {
   return {
     id: c.id,
     name: c.name,
     overview: c.overview ?? '',
-    art: {
-      poster: imageUrl('collection', c.id, 'poster', DEFAULT_SIZES.poster, c.poster_path),
-      backdrop: imageUrl('collection', c.id, 'backdrop', DEFAULT_SIZES.backdrop, c.backdrop_path),
-    },
-    parts: c.parts.map(toDiscoverMovie).sort(byRelease),
+    art: collectionArt(c.id, { poster: c.poster_path, backdrop: c.backdrop_path }, pick),
+    parts: c.parts.map((m) => toDiscoverMovie(m, pick)).sort(byRelease),
+  }
+}
+
+/**
+ * A collection's art, from its own row or from a part's `belongs_to_collection`, with an admin's
+ * choice in place of TMDB's. TMDB keeps no logos for collections, so one shows only when chosen.
+ */
+export function collectionArt(
+  id: number,
+  files: { poster?: string | null; backdrop?: string | null },
+  pick: ArtPick = noPick,
+) {
+  return {
+    poster: imageUrl(
+      'collection',
+      id,
+      'poster',
+      DEFAULT_SIZES.poster,
+      pick('collection', id, 'poster') ?? files.poster,
+    ),
+    backdrop: imageUrl(
+      'collection',
+      id,
+      'backdrop',
+      DEFAULT_SIZES.backdrop,
+      pick('collection', id, 'backdrop') ?? files.backdrop,
+    ),
+    logo: imageUrl(
+      'collection',
+      id,
+      'logo',
+      DEFAULT_SIZES.logo,
+      pick('collection', id, 'logo') ?? null,
+    ),
   }
 }
 
@@ -239,7 +337,11 @@ export function toCollection(c: TmdbCollection): Collection {
  */
 export function toPerson(
   p: TmdbPerson,
-  { fetchedAt, goneAt }: { fetchedAt: number; goneAt: number | null },
+  {
+    fetchedAt,
+    goneAt,
+    pick = noPick,
+  }: { fetchedAt: number; goneAt: number | null; pick?: ArtPick },
 ): Person {
   const rows = new Map<string, PersonCredit>()
   for (const c of p.movie_credits?.cast ?? []) {
@@ -249,7 +351,8 @@ export function toPerson(
     if (existing) {
       if (character && !existing.role.split(' / ').includes(character))
         existing.role = existing.role ? `${existing.role} / ${character}` : character
-    } else rows.set(key, { ...toDiscoverMovie(c), role: character ?? '', department: 'Acting' })
+    } else
+      rows.set(key, { ...toDiscoverMovie(c, pick), role: character ?? '', department: 'Acting' })
   }
   for (const c of p.movie_credits?.crew ?? []) {
     const department = departmentOf(c.department)
@@ -258,7 +361,7 @@ export function toPerson(
     if (existing) {
       if (c.job && !existing.role.split(', ').includes(c.job))
         existing.role = existing.role ? `${existing.role}, ${c.job}` : c.job
-    } else rows.set(key, { ...toDiscoverMovie(c), role: c.job ?? '', department })
+    } else rows.set(key, { ...toDiscoverMovie(c, pick), role: c.job ?? '', department })
   }
   const credits = [...rows.values()].sort((a, b) =>
     a.releaseDate && b.releaseDate

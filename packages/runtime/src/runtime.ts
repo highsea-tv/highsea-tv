@@ -123,6 +123,7 @@ import { createCurationLibrary } from './curation-library.ts'
 import { scheduleFileFacts } from './file-facts.ts'
 import { createHardware, type Host } from './hardware.ts'
 import { homeRows } from './home-rows.ts'
+import { ffmpegResizer } from './image-resize.ts'
 import { createListLibrary } from './list-library.ts'
 import { createLogFiles } from './logs.ts'
 import { createMailBrand } from './mail-brand.ts'
@@ -665,6 +666,8 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
     fetch: options.fetch ?? globalThis.fetch,
     imagesDir: join(workDir(config), 'images'),
     builtInKey: config.tmdbKey,
+    // uploaded artwork's sizes (HT-66); a failure serves the original
+    resizeImage: ffmpegResizer(ffmpegBinary()),
   })
   metadata.jobs.schedule(clock.now())
 
@@ -1230,6 +1233,7 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
       clock,
       movies,
       certifications: () => metadata.certifications()?.map((c) => c.certification) ?? null,
+      artPick: metadata.artwork.pick,
     }),
     changed: () => curation.refresh(),
   })
