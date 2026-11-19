@@ -364,6 +364,7 @@ describe('appearance', () => {
       'curation',
       'playback',
       'profiles',
+      'shows',
     ])
   })
 })

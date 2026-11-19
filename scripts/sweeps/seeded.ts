@@ -174,7 +174,8 @@ export async function seed(
   const joined = await api<{ link: string; user: { id: string } }>(
     'POST',
     '/users/invites',
-    { displayName: 'Theo', email: null, role: 'user', libraries: ['movies'] },
+    // Movies and Shows, not Music: a user given some of the libraries (Phase 5 B for Shows)
+    { displayName: 'Theo', email: null, role: 'user', libraries: ['movies', 'shows'] },
     token,
   )
   const accept = (link: string, password: string) =>
@@ -417,6 +418,27 @@ export async function seed(
     release('Sintel.2010.1080p.BluRay.x264-GRP', late, speaking),
     release('Nosferatu.1922.1080p.BluRay.x264-GRP'),
   ])
+
+  // shows (Phase 5 B): Chernobyl's folder in the shows' root, its first two episodes from the
+  // clip and a recap the names can't place, taken in by Library import where they are, so Shows'
+  // pages, the unmatched list and the apps' episodes have something to show
+  const season = join(dataDir, 'tv', 'Chernobyl (2019)', 'Season 01')
+  mkdirSync(season, { recursive: true })
+  for (const e of ['01', '02']) copyFileSync(feature, join(season, `Chernobyl.S01E${e}.mkv`))
+  copyFileSync(feature, join(season, 'Chernobyl Recap.mkv'))
+  await api('POST', '/import/library/scan', { root: join(dataDir, 'tv') }, token)
+  await api(
+    'POST',
+    '/import/library',
+    { items: [{ folder: join(dataDir, 'tv', 'Chernobyl (2019)'), tmdbId: 87108 }] },
+    token,
+  )
+  for (let i = 0; ; i++) {
+    const job = await api<{ state: string }>('GET', '/import/library', undefined, token)
+    if (job.state === 'done') break
+    if (job.state === 'failed' || i > 120) throw new Error(`Chernobyl’s import: ${job.state}`)
+    await Bun.sleep(250)
+  }
   // Sintel has what its profile asks for (the release's English and the clip's forced stream);
   // Nosferatu lacks regular English, so its import searched the fakes
   for (let i = 0; i < 50; i++) {

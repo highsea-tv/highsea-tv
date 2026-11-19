@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The client API (client-library.md, client-detail.md, client-search.md): what the household's apps
-// read, with each person's watch state. Thin handlers over @highsea-tv/media/movies. Search adds TMDB's
-// titles only for people who may add them (Manage the library), as the contract says. Someone who
-// can't see the movie library gets an empty list and a 404 for its titles (checkpoint 4.1a).
+// read, with each person's watch state. Thin handlers over @highsea-tv/media/movies, and /shows for
+// an episode and Search's shows and episodes (Phase 5 B). Search adds TMDB's titles only for people
+// who may add them (Manage the library), as the contract says. Someone who can't see the movie
+// library gets an empty list and a 404 for its titles (checkpoint 4.1a); someone who can't see the
+// shows, a 404 for an episode and no shows in Search.
 import { routes } from '@highsea-tv/api-contract'
 import type { OpenAPIHono } from '@hono/zod-openapi'
 import type { Context } from 'hono'
-import { NotServed } from './drafts.ts'
 import { type Env, me } from './guard.ts'
 import { viewer } from './playback.ts'
 
@@ -24,19 +25,22 @@ export function registerLibrary(app: OpenAPIHono<Env>) {
 
   app.openapi(routes.library.item, async (c) => {
     const { type, id } = c.req.valid('param')
-    // an episode's address answers 501 before it gets here (drafts.ts)
-    if (type !== 'movie') throw new NotServed()
+    if (type === 'episode')
+      return c.json(c.get('runtime').shows.client.item(id, viewer(c, type).profileId), 200)
     return c.json(await client(c).item(type, id, viewer(c).profileId), 200)
   })
 
   app.openapi(routes.library.search, async (c) => {
     const p = me(c)
-    const results = await client(c).search(c.req.valid('query').query, {
+    const { query } = c.req.valid('query')
+    const films = await client(c).search(query, {
       profileId: p.profileId,
       // the discover section offers requests (ADR 0032); until the request flow exists, nobody
       // can make one, so it's left out for everyone
       mayRequest: false,
     })
-    return c.json(results, 200)
+    const { libraries } = p.user
+    if (libraries !== 'all' && !libraries.includes('shows')) return c.json(films, 200)
+    return c.json(c.get('runtime').shows.client.search.merge(films, query, p.profileId), 200)
   })
 }

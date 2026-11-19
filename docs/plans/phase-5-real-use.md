@@ -254,6 +254,14 @@ The order is films, then shows, then music: films are already built and only nee
   - **The contract:** `AddSeriesInput` needs only the TMDB id, profile, root folder and choices; the Series routes' id is the show's TMDB id.
   - **Next (B's third task):** the routes served and their reads; then subtitles, playback and watch state, and the admin's resolve for unmatched files.
 
+- **2026-11-19, B, shows served: routes, playback and watch state (HT-83):** the third of B's four tasks, waiting for the owner's review.
+  - **Routes:** the drafted `shows` (the apps) and `series` (the admin, a show by its TMDB id as a string) served through `@highsea-tv/media/shows`, with Shows' settings (naming, sizes, the profiles' use), all but `series.search`, left a draft for C1. New: `series.unmatched`, the files and show folders the import and the scan kept, listing only. A shows root folder's Scan and Library import (preview and run, never renamed) are served, and its "waiting" counts its unmatched show folders.
+  - **Playback and watch state:** an episode plays through the films' play decision, sessions and stream token (direct play, direct stream, transcode), with Next episode; each profile keeps its place per episode, season and show (`watch.updated`), and a show taken off Continue watching stays off until it's played again (migration `0024_show_dismissals`, additions only, tested over films' and #77's and #79's rows).
+  - **Home and Search:** Continue watching takes episodes beside films; Next up, New episodes and Recently added shows join Home when there are episodes with files; Search finds shows and episodes, ranked with films.
+  - **Admin:** the server draws Shows, a show's page and its Files, and Discover's Shows; Media management scans a shows folder and opens Library import for it; Library import takes shows' folders without Rename; Users can give someone Shows (it was Movies or everything).
+  - **Real-server check:** the sweep's seed imports Chernobyl from generated episodes with a recap left unmatched; the admin's Shows pages and the web client's shows, show page, Home and episode player, axe and keyboard clean in every theme. It found and fixed: Shows couldn't be given to a user, and the web show page's episodes weren't list items.
+  - **Next (B's fourth task):** episodes' subtitles, resolving unmatched files, notifications' and mail's posters for episodes, and the guides.
+
 ## Running highsea on the NAS (A1)
 
 - **2026-11-19, A1, fanart.tv as a second artwork source, and the refetch after an update (HT-74):** what 0.4.5's findings left open, and the owner's choice of fanart.tv as TMDB's fallback (2026-11-18).

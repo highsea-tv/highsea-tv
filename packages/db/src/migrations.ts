@@ -98,5 +98,9 @@ export const migrations: Migration[] = [
   {
     "tag": "0023_fanart",
     "sql": "CREATE TABLE `fanart_images` (\n\t`subject` text NOT NULL,\n\t`external_id` text NOT NULL,\n\t`data` text,\n\t`fetched_at` integer NOT NULL,\n\tPRIMARY KEY(`subject`, `external_id`)\n);\n"
+  },
+  {
+    "tag": "0024_show_dismissals",
+    "sql": "CREATE TABLE `show_dismissals` (\n\t`user_id` text NOT NULL,\n\t`profile_id` text NOT NULL,\n\t`item_id` text NOT NULL,\n\t`dismissed_at` integer NOT NULL,\n\tPRIMARY KEY(`profile_id`, `item_id`),\n\tFOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE cascade,\n\tFOREIGN KEY (`profile_id`) REFERENCES `profiles`(`id`) ON UPDATE no action ON DELETE cascade,\n\tFOREIGN KEY (`item_id`) REFERENCES `media_items`(`id`) ON UPDATE no action ON DELETE cascade\n);\n"
   }
 ]

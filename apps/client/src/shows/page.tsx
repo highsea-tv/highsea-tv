@@ -346,6 +346,7 @@ function Episodes({ p, refresh }: { p: Page; refresh: () => void }) {
           {episodes.map((e) => (
             <View
               key={e.id}
+              role="listitem"
               style={two ? { flexBasis: '45%', flexGrow: 1, minWidth: 0 } : undefined}
             >
               <Episode e={e} p={p} refresh={refresh} />

@@ -73,8 +73,17 @@ async function api(url: string, init: RequestInit = {}): Promise<Response> {
     case 'GET /api/v1/users':
       return json([
         owner,
-        person({ id: 'usr_sam', username: 'sam', displayName: 'Sam', role: 'user', profiles: 3 }),
+        person({
+          id: 'usr_sam',
+          username: 'sam',
+          displayName: 'Sam',
+          role: 'user',
+          profiles: 3,
+          libraries: ['movies', 'shows'],
+        }),
       ])
+    case 'GET /api/v1/system/info/public':
+      return json({ sources: ['system', 'movies', 'shows'] })
     case 'GET /api/v1/devices':
     case 'GET /api/v1/api-keys':
       return json([])
@@ -156,5 +165,21 @@ describe('A13 people', () => {
     expect(page.getByText('@sam · 3 profiles')).toBeTruthy()
     expect(page.getByText('@ines')).toBeTruthy()
     expect(page.queryByText(/@ines · /)).toBeNull()
+  })
+
+  // Phase 5 B: Shows is a library a user can be given once the server serves shows
+  test('a user’s chosen libraries, Shows among them', async () => {
+    const page = await open()
+    expect(page.getByText('Movies, Shows')).toBeTruthy()
+    const user = userEvent.setup()
+    await user.click(page.getByRole('button', { name: 'Invite someone' }))
+    shown()
+    const dialog = within(page.getByRole('dialog'))
+    await user.click(dialog.getByRole('radio', { name: 'Choose' }))
+    expect(dialog.getByRole('checkbox', { name: 'Movies' })).toBeTruthy()
+    expect(dialog.getByRole('checkbox', { name: 'Shows' })).toBeTruthy()
+    expect(
+      dialog.getByText('Music and books join this list when the server has them.'),
+    ).toBeTruthy()
   })
 })

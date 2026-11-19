@@ -124,7 +124,7 @@ describe('quality sizes', () => {
   })
 })
 
-describe('shows’ settings (drafted)', () => {
+describe('shows’ settings', () => {
   test('episode naming and sizes save; each profile’s use counts movies and shows', async () => {
     const c = await setup()
     const naming = await c.series.naming()

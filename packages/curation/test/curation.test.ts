@@ -3,7 +3,12 @@
 // per person and app, reach, the home screen's order, the personal events, the preview that
 // saves nothing, and the schedule job run twice.
 import { describe, expect, test } from 'bun:test'
-import type { AnnouncementInput, ClientItem, FeaturedSectionInput } from '@highsea-tv/api-contract'
+import {
+  type AnnouncementInput,
+  type ClientItem,
+  type FeaturedSectionInput,
+  isFilmRow,
+} from '@highsea-tv/api-contract'
 import {
   AppError,
   createEventBus,
@@ -305,7 +310,7 @@ describe('featured sections', () => {
       section(clock, { source: { kind: 'manual', itemIds: [40, 20, 10] } }),
     )
     expect(s.source).toEqual({ kind: 'manual', itemIds: [40, 20, 10] })
-    const home = curation.home('ruth', 'web')
+    const home = curation.home('ruth', 'web').filter(isFilmRow)
     expect(home.map((h) => h.id)).toEqual([s.id])
     expect(home[0]?.items.map((m) => m.id)).toEqual([20, 10])
     expect(home[0]?.suffix).toBe('by Ines')
@@ -364,7 +369,7 @@ describe('featured sections', () => {
       { id: 'recent', title: null, items: [fake.item(10)] },
       { id: 'genre:35', title: 'Comedy', items: [] },
     )
-    const home = curation.home('ruth', 'web')
+    const home = curation.home('ruth', 'web').filter(isFilmRow)
     expect(home.map((h) => [h.id, h.layout])).toEqual([
       [hero.id, 'hero'],
       ['continue', 'continue'],

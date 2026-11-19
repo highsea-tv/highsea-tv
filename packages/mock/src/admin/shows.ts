@@ -3,10 +3,11 @@
 // contract (`series`, api-contract's series.ts) and answered here from the mock's shows as the
 // admin keeps them (show-admin.ts): the library, a show with its seasons and episodes, Edit and
 // the bulk bar, monitoring a season or an episode, Search, Remove, Discover's shows and Add a show.
-// The real server answers every one 501 until it has shows.
+// The real server serves them since Phase 5 B, all but Search (part C1).
 //
 // What the mock doesn't keep, and what stands in for it here:
 // - Remove's `deleteFiles`: the mock keeps no files, so the show only leaves the library;
+// - the unmatched list: with no files, nothing is unmatched, so it's empty;
 // - the times: `addedAt` is moved to the wall clock, as every answer gives them, and each air
 //   date by the same whole days, so "next airing" stays as far away as the mock has it.
 import type { Series, SeriesDetail, SeriesEpisode, SeriesSeason } from '@highsea-tv/api-contract'
@@ -46,6 +47,7 @@ export function showsAnswers(kit: AdminKit): Answers {
     series: {
       discover: ({ query }, ctx) => ctx.api.shows.discover(query?.query ?? ''),
       rootFolders: (_, ctx) => ctx.api.shows.rootFolders(),
+      unmatched: () => [],
       list: (_, ctx) => ctx.api.shows.list().map(showOf),
       add: ({ body }, ctx) => changed(detailOf(ctx.api.shows.add(body))),
       get: ({ params }, ctx) => detailOf(ctx.api.shows.get(params.id)),

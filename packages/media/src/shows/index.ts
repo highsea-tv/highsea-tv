@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // @highsea-tv/media/shows: the shows library (ADR 0036, 0064). A show added from TMDB with its
 // seasons and episodes and kept in step with TMDB's refreshes; the files on disk matched to
-// episodes; the shows already on disk imported where they are; and the library scan. The routes,
-// playback and watch state are part B's later tasks.
+// episodes; the shows already on disk imported where they are; the library scan; the apps' reads
+// with each profile's place, an episode's playback, and the admin's series and settings.
 //
 //   const shows = createShows({ db, clock, logger, events, jobs, metadata }, media)
 //   shows.jobs.schedule(now)               once at boot: the 12-hourly scan
@@ -14,22 +14,34 @@
 //   await shows.libraryScan.scan({ folder? }) → ShowScanResult   shows.libraryScan.queue(folder?)
 //   await shows.files.assign(tmdbId, path, episodes)   a file matched by hand
 //   shows.unmatched(root?)                 what the import and scan couldn't place, with why
+//   shows.client.list(profileId) / show(tmdbId, profileId) / item(episodeTmdbId, profileId) / home …
+//   shows.playback.source / position / played / … by the episode's TMDB id, as films' playback
+//   shows.admin.list() / get(id) / update / remove / monitorSeason / monitorEpisode / discover
+//   shows.settings.naming() / sizes() / profileUsage(ids)
 //   shows.close()                          stops listening for metadata.updated
 import { AppError } from '@highsea-tv/core'
 import { z } from 'zod'
 import { SCAN_EVERY_MS } from '../movies/scan.ts'
 import type { Media } from '../shared/index.ts'
+import { createShowAdmin } from './admin.ts'
+import { createShowClient } from './client.ts'
 import type { ShowsDeps } from './context.ts'
 import { createShowFiles } from './files.ts'
 import { createShowLibrary } from './library.ts'
 import { createShowLibraryImport } from './library-import.ts'
+import { createShowPlayback } from './playback.ts'
 import { createShowScan, SHOW_SCAN_JOB } from './scan.ts'
+import { createShowSettings } from './settings.ts'
 
 export function createShows(deps: ShowsDeps, media: Media) {
   const library = createShowLibrary(deps, media)
   const files = createShowFiles(deps, { media })
   const libraryImport = createShowLibraryImport(deps, { media, library, files })
   const libraryScan = createShowScan(deps, { media, files, addNew: libraryImport.addNew })
+  const client = createShowClient(deps)
+  const playback = createShowPlayback(deps, { client })
+  const admin = createShowAdmin(deps, { media, get: library.get })
+  const settings = createShowSettings(deps)
   deps.jobs.define({
     type: SHOW_SCAN_JOB,
     payload: z.object({ folder: z.string().optional() }),
@@ -67,6 +79,13 @@ export function createShows(deps: ShowsDeps, media: Media) {
   return {
     add: library.add,
     get: library.get,
+    /** The household's apps: shows, a show's page, an episode as a title, Home's rows, Search. */
+    client,
+    /** An episode's side of playback, the films' interface by the episode's TMDB id. */
+    playback,
+    /** The admin's series (ADR 0064: a show's id is its TMDB id as a string). */
+    admin,
+    settings,
     refresh: library.refresh,
     sync: library.sync,
     /** A Shows root folder's shows already on disk, added where they are (B). */
@@ -95,6 +114,8 @@ export function createShows(deps: ShowsDeps, media: Media) {
 }
 
 export type Shows = ReturnType<typeof createShows>
+export { adminCode, type ShowAdmin, showIdOf } from './admin.ts'
+export { episodeCode, type ShowClient } from './client.ts'
 export type { ShowFileOptions, ShowsDeps } from './context.ts'
 export {
   type EpisodeMatch,
@@ -113,4 +134,6 @@ export {
   type ShowImportItem,
   type ShowImportState,
 } from './library-import.ts'
+export type { ShowPlayback } from './playback.ts'
 export { SHOW_SCAN_JOB, type ShowScanResult } from './scan.ts'
+export { defaultEpisodeNaming, type ShowSettings } from './settings.ts'

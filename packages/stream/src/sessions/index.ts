@@ -24,6 +24,8 @@ export type SessionInput = {
   deviceId: string | null
   /** The library item, and its TMDB id for the API and events. */
   itemId: string
+  /** A film, or an episode (Phase 5 B); its TMDB id is the type's. Left out, a film. */
+  type?: 'movie' | 'episode'
   tmdbId: number
   title: string
   versionId: string

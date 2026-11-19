@@ -42,6 +42,7 @@ import { type ReactNode, useState } from 'react'
 import { View } from 'react-native'
 import { clientIcon } from './delivery.ts'
 import { Loadable } from './loadable.tsx'
+import { useServes } from './serves.tsx'
 import { AreaPage } from './settings.tsx'
 import { Muted, RowMenu } from './table-parts.tsx'
 import { useRelative } from './time.ts'
@@ -337,7 +338,11 @@ function People() {
                     </TableCell>
                     <TableCell>
                       <Muted>
-                        {u.libraries === 'all' ? t('people.allLibraries') : t('people.movies')}
+                        {u.libraries === 'all'
+                          ? t('people.allLibraries')
+                          : KINDS.filter((k) => u.libraries.includes(k))
+                              .map((k) => t(`people.${k}`))
+                              .join(', ')}
                       </Muted>
                     </TableCell>
                     <TableCell>
@@ -507,6 +512,9 @@ function FieldGroup({
   )
 }
 
+/** The libraries a user can be given one by one, in the sidebar's order. */
+const KINDS = ['movies', 'shows'] as const
+
 function LibrariesField({
   value,
   onChange,
@@ -516,6 +524,9 @@ function LibrariesField({
 }) {
   const t = useT(messages)
   const theme = useTheme()
+  // Shows only once the server serves them (serves.tsx)
+  const shows = useServes('shows')
+  const kinds = KINDS.filter((k) => k !== 'shows' || shows)
   return (
     <FieldGroup legend={t('edit.libraries')} gap={s['2']}>
       <SegmentedControl
@@ -539,15 +550,16 @@ function LibrariesField({
             backgroundColor: theme.colors.s2,
           }}
         >
-          <Checkbox
-            label={t('people.movies')}
-            checked={value.includes('movies')}
-            onCheckedChange={(c) =>
-              onChange(c ? [...value, 'movies'] : value.filter((x) => x !== 'movies'))
-            }
-          />
+          {kinds.map((k) => (
+            <Checkbox
+              key={k}
+              label={t(`people.${k}`)}
+              checked={value.includes(k)}
+              onCheckedChange={(c) => onChange(c ? [...value, k] : value.filter((x) => x !== k))}
+            />
+          ))}
           <Text variant="caption" color="text-3">
-            {t('edit.more')}
+            {t(shows ? 'edit.moreLater' : 'edit.more')}
           </Text>
         </View>
       )}

@@ -18,6 +18,7 @@ import type {
   Audience,
   ClientAnnouncement,
   ClientItem,
+  ClientShow,
   ClientType,
   CurationPreview,
   CurationPreviewInput,
@@ -26,10 +27,12 @@ import type {
   FeaturedSectionInput,
   FeaturedSource,
   HomeItem,
+  HomeRow,
   HomeSection,
   RuleOptions,
   SectionSummary,
 } from '@highsea-tv/api-contract'
+import { isFilmRow } from '@highsea-tv/api-contract'
 import { AppError, type Clock, type EventBus, type Logger, newId } from '@highsea-tv/core'
 import { type Db, schema } from '@highsea-tv/db'
 import type { JobQueue } from '@highsea-tv/jobs'
@@ -61,8 +64,23 @@ export const SECTION_MAX = 50
 /** Posters in the admin list's strip. */
 const SAMPLE = 6
 
-/** A built-in row of the home screen (ADR 0028): Continue watching, Recently added, a genre. */
-export type BuiltInRow = { id: string; title: string | null; items: ClientItem[] }
+/**
+ * A built-in row of the home screen (ADR 0028): Continue watching, Recently added, a genre; with
+ * shows (Phase 5 B), Next up and New episodes (`episodes`, episodes as titles) and Recently added
+ * shows (`shows`). Continue watching and Next up follow the hero; the rest the featured rows.
+ */
+export type BuiltInRow =
+  | {
+      id: string
+      title: string | null
+      /** Left out: `continue` for Continue watching, else a row of titles. */
+      layout?: 'episodes'
+      items: ClientItem[]
+    }
+  | { id: string; title: string | null; layout: 'shows'; items: ClientShow[] }
+
+/** The built-in rows that sit right after the hero. */
+const WATCHING = ['continue', 'next-up']
 
 /** What curation needs from the library; the runtime adapts `movies` to it. */
 export type CurationLibrary = {
@@ -280,7 +298,7 @@ export function createCuration(deps: {
     all: Section[],
     now: number,
     profileId: string,
-  ): HomeSection[] {
+  ): HomeRow[] {
     let hero = false
     const featured = visibleSections(all, v, client, now).flatMap((s): HomeSection[] => {
       const items = homeItems(
@@ -297,25 +315,28 @@ export function createCuration(deps: {
       .builtIn(profileId)
       .filter((r) => r.items.length > 0)
       .map(
-        (r): HomeSection => ({
-          id: r.id,
-          title: r.title,
-          suffix: null,
-          layout: r.id === 'continue' ? 'continue' : 'row',
-          items: r.items.map((m) => ({ ...m, tagline: null })),
-        }),
+        (r): HomeRow =>
+          r.layout === 'shows'
+            ? { id: r.id, title: r.title, suffix: null, layout: 'shows', items: r.items }
+            : {
+                id: r.id,
+                title: r.title,
+                suffix: null,
+                layout: r.layout ?? (r.id === 'continue' ? 'continue' : 'row'),
+                items: r.items.map((m) => ({ ...m, tagline: null })),
+              },
       )
     // the first hero in the order fills the top, wherever it sits among the rows
     const top = featured.find((s) => s.layout === 'hero') ?? null
-    const rows = [
-      ...builtIn.filter((r) => r.id === 'continue'),
+    const rows: HomeRow[] = [
+      ...builtIn.filter((r) => WATCHING.includes(r.id)),
       ...featured.filter((s) => s !== top),
-      ...builtIn.filter((r) => r.id !== 'continue'),
+      ...builtIn.filter((r) => !WATCHING.includes(r.id)),
     ]
     // the person's own order and hidden rows (client-settings.md › Home screen); the hero stays
     const own = deps.arrangement({ userId: v.id, profileId })
     const shown = rows.filter((r) => !own.hidden.includes(r.id))
-    const pos = (r: HomeSection, i: number) => {
+    const pos = (r: HomeRow, i: number) => {
       const j = own.order.indexOf(r.id)
       return j < 0 ? own.order.length + i : j
     }
@@ -786,7 +807,7 @@ export function createCuration(deps: {
     // ---------------------------------------------------------- the apps
 
     /** Home for the account on one kind of app, as the profile watching (its own by default). */
-    home(userId: string, client: ClientType, profileId = userId): HomeSection[] {
+    home(userId: string, client: ClientType, profileId = userId): HomeRow[] {
       return homeFor(viewer(userId), client, allSections(), clock.now(), profileId)
     },
 
@@ -865,7 +886,7 @@ export function createCuration(deps: {
           updatedAt: now,
         }
         return {
-          sections: homeFor(v, input.client, allSections(), now, v.id),
+          sections: homeFor(v, input.client, allSections(), now, v.id).filter(isFilmRow),
           announcements: announcementsFor(v, input.client, [draft], new Set()),
           reaches: reaches(a.audience, v, input.client),
         }
@@ -885,7 +906,13 @@ export function createCuration(deps: {
       if (s.source.kind === 'rule' && !rulePick(s.source))
         draft.source = { kind: 'manual', itemIds: [] }
       return {
-        sections: homeFor(v, input.client, [...saved.filter((x) => x.id !== id), draft], now, v.id),
+        sections: homeFor(
+          v,
+          input.client,
+          [...saved.filter((x) => x.id !== id), draft],
+          now,
+          v.id,
+        ).filter(isFilmRow),
         announcements: [],
         reaches: reaches(s.audience, v, input.client),
       }

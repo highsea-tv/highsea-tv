@@ -41,6 +41,7 @@ import { unref } from '@highsea-tv/core/timers'
 import { type Db, schema } from '@highsea-tv/db'
 import type { Movies } from '@highsea-tv/media/movies'
 import { type MediaInfo, trackIndex } from '@highsea-tv/media/shared'
+import type { Shows } from '@highsea-tv/media/shows'
 import { PRIVATE_RANGES, parseTrustedProxies } from '@highsea-tv/network'
 import { capOf, type Preferences } from '@highsea-tv/personalization/keys'
 import {
@@ -108,10 +109,20 @@ export type Viewer = {
   libraries: 'all' | string[]
 }
 
-const seesMovies = (libraries: 'all' | string[]) =>
-  libraries === 'all' || libraries.includes('movies')
+/** What's played: a film, or an episode (Phase 5 B), each by its own TMDB id. */
+export type TitleType = 'movie' | 'episode'
 
-const notHere = () => new AppError('not-found', 'That movie isn’t in the library.')
+/** The library a title's in, as a person's `libraries` names it. */
+const LIBRARY: Record<TitleType, string> = { movie: 'movies', episode: 'shows' }
+
+const sees = (libraries: 'all' | string[], type: TitleType = 'movie') =>
+  libraries === 'all' || libraries.includes(LIBRARY[type])
+
+const notHere = (type: TitleType = 'movie') =>
+  new AppError(
+    'not-found',
+    type === 'episode' ? 'That episode isn’t in the library.' : 'That movie isn’t in the library.',
+  )
 const noSession = () => new AppError('not-found', 'That play session has ended.')
 const NO_HARDWARE: Hardware = { accel: null, toneMapping: false, cpuToneMap: false }
 
@@ -121,6 +132,8 @@ export function createPlayback(deps: {
   events: EventBus
   logger: Logger
   movies: Movies
+  /** Episodes (Phase 5 B): played through the films' path, by the episode's TMDB id. */
+  shows?: Pick<Shows, 'playback' | 'client'>
   /** The person's libraries now, or null when they're gone. */
   librariesOf(userId: string): 'all' | string[] | null
   /** Whether the device is still signed in. */
@@ -144,6 +157,33 @@ export function createPlayback(deps: {
 }) {
   const { db, clock, events, movies, transcodes } = deps
   const log = deps.logger.child('playback')
+
+  /** A title's side of playback: the films', or the shows' for an episode. */
+  const sideOf = (type: TitleType = 'movie') => {
+    if (type === 'movie') return movies.playback
+    if (!deps.shows) throw notHere(type)
+    return deps.shows.playback
+  }
+  /**
+   * Where the profile stopped in the title, for a play that doesn't say where to start, and what
+   * Now playing calls it: an episode by its show and place ("Slow Horses · S1, E2 · Failure's
+   * Contagious").
+   */
+  const titleOf = (type: TitleType, tmdbId: number, profileId: string, fallback: string) => {
+    if (type === 'movie')
+      return {
+        resume: movies.client.byIds([tmdbId], profileId)[0]?.position ?? 0,
+        title: fallback,
+      }
+    const item = deps.shows?.client.episodeItems([tmdbId], profileId)[0]
+    return {
+      resume: item?.position ?? 0,
+      title: item?.show ? `${item.show.title} · ${item.show.code} · ${item.title}` : fallback,
+    }
+  }
+  /** A session's place saved, through its title's side. */
+  const save = (s: PlaySession, position: number) =>
+    sideOf(s.type).position(s, s.tmdbId, position, s.duration)
   /** Whether a film with this HDR is tone mapped here, as the runner will (`toneMapOn`). */
   const toneMaps = (hdr: string) => {
     const hw = deps.hardware?.() ?? NO_HARDWARE
@@ -190,7 +230,7 @@ export function createPlayback(deps: {
         userId,
         (s) =>
           !!libraries &&
-          seesMovies(libraries) &&
+          sees(libraries, s.type) &&
           (s.deviceId === null || deps.deviceExists(s.deviceId)),
       )
     }
@@ -378,20 +418,21 @@ export function createPlayback(deps: {
     viewer: Viewer,
     tmdbId: number,
     request: PlayRequest,
-    { address, locale }: { address: string; locale?: string },
+    { address, locale, type = 'movie' }: { address: string; locale?: string; type?: TitleType },
   ): ApiSession {
-    if (!seesMovies(viewer.libraries)) throw notHere()
+    if (!sees(viewer.libraries, type)) throw notHere(type)
     const asked = clock.now()
-    const src = movies.playback.source(tmdbId, viewer, request.versionId)
+    const side = sideOf(type)
+    const src = side.source(tmdbId, viewer, request.versionId)
     const info = src.file.info
     if (!info)
       throw new AppError('conflict', 'That file hasn’t been read yet. Try again in a minute.', {
         reason: 'no-probe',
       })
-    const prefs = movies.playback.prefs(viewer, tmdbId)
+    const prefs = side.prefs(viewer, tmdbId)
     const mine = deps.preferences?.(viewer.userId, viewer.deviceId) ?? null
     // the person's languages stand back once they've picked anything for the title
-    const own = movies.playback.hasPrefs(viewer, tmdbId)
+    const own = side.hasPrefs(viewer, tmdbId)
     // a pick is the version's only when it names this file's track
     const audioId = request.audioId !== undefined ? request.audioId : prefs.audioId
     let audio = audioId ? trackIndex(src.file.id, audioId) : null
@@ -436,15 +477,16 @@ export function createPlayback(deps: {
       throw new AppError('conflict', 'That file’s length isn’t known, so it can’t be streamed.', {
         reason: 'no-duration',
       })
-    const resume = movies.client.byIds([tmdbId], viewer.profileId)[0]?.position ?? 0
+    const { resume, title } = titleOf(type, tmdbId, viewer.profileId, src.item.title)
     const start = request.start ?? resume
     const session = sessions.start({
       userId: viewer.userId,
       profileId: viewer.profileId,
       deviceId: viewer.deviceId,
       itemId: src.item.id,
+      type,
       tmdbId,
-      title: src.item.title,
+      title,
       versionId: src.versionId,
       file: { id: src.file.id, path: src.file.path, size: src.file.size },
       decision,
@@ -498,6 +540,7 @@ export function createPlayback(deps: {
     served.set(session.id, { startedAt: asked, playlistAt: null })
     log.info('play session started', {
       session: session.id,
+      type,
       tmdbId,
       method: decision.method,
       profile: profile.id,
@@ -520,10 +563,8 @@ export function createPlayback(deps: {
     const s = sessions.get(id, userId)
     if (!s) throw ended(userId, id)
     const was = s.paused
-    const { save } = sessions.heard(s, report)
-    const watched = save
-      ? movies.playback.position(s, s.tmdbId, report.position, s.duration).watched
-      : false
+    const { save: saveNow } = sessions.heard(s, report)
+    const watched = saveNow ? save(s, report.position).watched : false
     if (watched) s.finished = true
     deps.hooks?.heard(s.paused, was)
     return { watched, expiresAt: new Date(s.expiresAt).toISOString() }
@@ -533,8 +574,7 @@ export function createPlayback(deps: {
   function stop(userId: string, id: string) {
     const s = sessions.get(id, userId)
     if (!s) throw ended(userId, id)
-    if (s.heardAt > s.startedAt && s.savedAt < s.heardAt)
-      movies.playback.position(s, s.tmdbId, s.position, s.duration)
+    if (s.heardAt > s.startedAt && s.savedAt < s.heardAt) save(s, s.position)
     sessions.end(id)
   }
 
@@ -557,8 +597,7 @@ export function createPlayback(deps: {
     const s = sessions.list().find((x) => x.id === id)
     if (!s) throw new AppError('not-found', 'That stream has already ended.')
     notices.set(id, { userId: s.userId, by: by.name, message: message || null, at: clock.now() })
-    if (s.heardAt > s.startedAt && s.savedAt < s.heardAt)
-      movies.playback.position(s, s.tmdbId, s.position, s.duration)
+    if (s.heardAt > s.startedAt && s.savedAt < s.heardAt) save(s, s.position)
     sessions.end(id, 'staff')
     events.emit({ topic: SESSIONS_TOPICS.stopped, ids: [id], to: [s.userId] })
     log.info('play session stopped from Now playing', { session: id })
@@ -572,7 +611,7 @@ export function createPlayback(deps: {
     const s = sessions.verify(token)
     if (!s) return null
     const libraries = deps.librariesOf(s.userId)
-    if (!libraries || !seesMovies(libraries) || (s.deviceId && !deps.deviceExists(s.deviceId))) {
+    if (!libraries || !sees(libraries, s.type) || (s.deviceId && !deps.deviceExists(s.deviceId))) {
       sessions.end(s.id, 'revoked')
       return null
     }
@@ -753,9 +792,10 @@ export function createPlayback(deps: {
     viewer: Viewer,
     tmdbId: number,
     versionId?: string,
+    type: TitleType = 'movie',
   ): { versionId: string; manifest: TrickplayManifest | null; fileId: string } {
-    if (!seesMovies(viewer.libraries)) throw notHere()
-    const src = movies.playback.source(tmdbId, viewer, versionId)
+    if (!sees(viewer.libraries, type)) throw notHere(type)
+    const src = sideOf(type).source(tmdbId, viewer, versionId)
     return {
       versionId: src.versionId,
       fileId: src.file.id,
@@ -764,8 +804,14 @@ export function createPlayback(deps: {
   }
 
   /** A sheet of a version's previews: its path, or a 404 when there's no such sheet. */
-  function trickplaySheet(viewer: Viewer, tmdbId: number, n: number, versionId?: string): string {
-    const { fileId, manifest } = trickplay(viewer, tmdbId, versionId)
+  function trickplaySheet(
+    viewer: Viewer,
+    tmdbId: number,
+    n: number,
+    versionId?: string,
+    type: TitleType = 'movie',
+  ): string {
+    const { fileId, manifest } = trickplay(viewer, tmdbId, versionId, type)
     if (!manifest || n >= manifest.sheets)
       throw new AppError('not-found', 'Those previews aren’t made yet.')
     return deps.trickplay.sheet(fileId, n)

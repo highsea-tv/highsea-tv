@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The admin's shows routes through the mock transport (one-client-platform-d.md › D3, answer 5):
-// drafted in the contract (`series`), answered from the mock's shows in the contract's shapes, and
+// drafted in the contract (`series`) and served since Phase 5 B, answered from the mock's shows in the contract's shapes, and
 // refused as the server would refuse them.
 import { describe, expect, test } from 'bun:test'
 import { isDraft, routes } from '@highsea-tv/api-contract'
@@ -35,8 +35,10 @@ const shaped = (route: { responses: Record<number, unknown> }, value: unknown) =
 }
 
 describe('the admin’s shows', () => {
-  test('every route is a draft', () => {
-    for (const r of Object.values(routes.series)) expect(isDraft(r)).toBe(true)
+  // served since Phase 5 B (HT-83), but the episode search, part C1's
+  test('every route is served but the episode search', () => {
+    const drafts = Object.entries(routes.series).filter(([, r]) => isDraft(r))
+    expect(drafts.map(([k]) => k)).toEqual(['search'])
   })
 
   test('lists the library and opens a show with its seasons', async () => {

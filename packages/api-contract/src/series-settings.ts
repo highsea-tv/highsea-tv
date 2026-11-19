@@ -6,13 +6,12 @@
 //   (https://wiki.servarr.com/sonarr/settings#episode-naming);
 // - Settings › Quality's sizes per minute of an episode, as Sonarr's quality definitions;
 // - how many movies and shows use each quality profile, for Settings › Profiles and formats.
-// Each is a draft (`draft()` in common.ts): the prototypes' mock answers it, the real server
-// answers 501 until it has shows, and the admin draws these parts only when public info's
-// `sources` lists `shows`. They join the `series` group (index.ts), so the SDK has them as
+// Served since Phase 5 B; the admin draws these parts when public info's `sources` lists
+// `shows`. They join the `series` group (index.ts), so the SDK has them as
 // `series.naming()` and the rest. Their paths sit beside the films' (`/settings/qualitySizes`)
 // rather than under `/series/{id}`, which would match them.
 import { createRoute, z } from '@hono/zod-openapi'
-import { API_PREFIX, access, body, draft, errors, json, notServed } from './common.ts'
+import { API_PREFIX, access, body, errors, json } from './common.ts'
 import { QualitySize } from './quality.ts'
 
 /**
@@ -53,7 +52,7 @@ export const ProfileUsage = z
   .openapi('ProfileUsage')
 export type ProfileUsage = z.infer<typeof ProfileUsage>
 
-const staff = { ...access('staff'), ...draft() }
+const staff = access('staff')
 const refused = errors('unauthorized', 'forbidden')
 
 export const seriesSettings = {
@@ -61,65 +60,59 @@ export const seriesSettings = {
     method: 'get',
     path: `${API_PREFIX}/settings/episodeNaming`,
     tags: ['Series'],
-    summary: 'Episode naming (draft)',
-    description: 'Sonarr’s formats and tokens. Drafted: the server answers 501 until it has shows.',
+    summary: 'Episode naming',
+    description: 'Sonarr’s formats and tokens.',
     ...staff,
-    responses: { 200: json(EpisodeNaming, 'Episode naming'), ...refused, ...notServed },
+    responses: { 200: json(EpisodeNaming, 'Episode naming'), ...refused },
   }),
   saveNaming: createRoute({
     method: 'put',
     path: `${API_PREFIX}/settings/episodeNaming`,
     tags: ['Series'],
-    summary: 'Save episode naming (draft)',
-    description:
-      'The details’ `reason` names the field a format is refused for. Drafted: the server answers 501.',
+    summary: 'Save episode naming',
+    description: 'The details’ `reason` names the field a format is refused for.',
     ...staff,
     request: { ...body(EpisodeNaming) },
     responses: {
       200: json(EpisodeNaming, 'Saved'),
       ...errors('invalid', 'unauthorized', 'forbidden'),
-      ...notServed,
     },
   }),
   qualitySizes: createRoute({
     method: 'get',
     path: `${API_PREFIX}/settings/episodeSizes`,
     tags: ['Series'],
-    summary: 'Sizes per minute of an episode (draft)',
-    description: 'MiB per minute, as the films’ sizes. Drafted: the server answers 501.',
+    summary: 'Sizes per minute of an episode',
+    description: 'MiB per minute, as the films’ sizes.',
     ...staff,
     responses: {
       200: json(z.array(QualitySize), 'The sizes, lowest quality first'),
       ...refused,
-      ...notServed,
     },
   }),
   saveQualitySizes: createRoute({
     method: 'put',
     path: `${API_PREFIX}/settings/episodeSizes`,
     tags: ['Series'],
-    summary: 'Save the sizes per minute of an episode (draft)',
-    description:
-      'Every quality once, checked as the films’ sizes. Drafted: the server answers 501.',
+    summary: 'Save the sizes per minute of an episode',
+    description: 'Every quality once, checked as the films’ sizes.',
     ...staff,
     request: { ...body(z.array(QualitySize)) },
     responses: {
       200: json(z.array(QualitySize), 'Saved, lowest quality first'),
       ...errors('invalid', 'unauthorized', 'forbidden'),
-      ...notServed,
     },
   }),
   profileUsage: createRoute({
     method: 'get',
     path: `${API_PREFIX}/quality/profileUsage`,
     tags: ['Series'],
-    summary: 'How many movies and shows use each quality profile (draft)',
-    description: 'Drafted: the server answers 501 until it has shows.',
+    summary: 'How many movies and shows use each quality profile',
+    description: '',
     ...staff,
     responses: {
       200: json(z.array(ProfileUsage), 'Each profile’s use'),
       ...refused,
-      ...notServed,
     },
   }),
 }

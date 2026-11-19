@@ -5,7 +5,7 @@ import { defineMessages } from '@highsea-tv/i18n'
 
 export const libraryImport = defineMessages({
   title: 'Library import',
-  description: 'Add the movies already in a root folder, where they are.',
+  description: 'Add the movies or shows already in a root folder, where they are.',
   back: 'Back to Activity',
   filesMode: 'Manual import',
   libraryMode: 'Library import',
@@ -14,6 +14,8 @@ export const libraryImport = defineMessages({
   // {tmdb} and {imdb} are the literal id tags, passed in so the braces aren't read as arguments
   rootHint:
     'Each folder inside it is read as one movie, by its name: Title (Year), or with a {tmdb} or {imdb} id.',
+  rootHintShows:
+    'Each folder inside it is read as one show, from its tvshow.nfo or its name. Its episodes are matched by their names.',
   chooseRoot: 'Choose a root folder',
   noRoots: 'Add a root folder in Settings › Media management first.',
   lookInside: 'Look inside',
@@ -29,9 +31,11 @@ export const libraryImport = defineMessages({
   parts: 'One film in {count} parts',
   profile: 'Quality profile',
   run: 'Import {count, plural, one {# movie} other {# movies}}',
+  runShows: 'Import {count, plural, one {# show} other {# shows}}',
   'col.import': 'Import',
   'col.folder': 'Folder',
   'col.movie': 'Movie',
+  'col.show': 'Show',
   'col.quality': 'Quality',
   'col.size': 'Size',
   importOf: 'Import {folder}',

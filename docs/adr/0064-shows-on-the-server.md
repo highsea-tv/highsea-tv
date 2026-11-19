@@ -171,3 +171,19 @@ A root folder that can't be read is skipped whole. A new folder under the root g
 **The Series routes' id is the show's TMDB id as a string**, as films' routes use `TmdbIdParam` and `ClientShow.id` is already TMDB's. A season is its number under the show (`/seasons/{season}`), and an episode (`/episodes/{episodeId}`) is its own TMDB id, as its row is addressed (this ADR's decision). The mock keeps its slugs, because the contract types `:id` as a string either way. The routes stay drafts until B's third task.
 
 **`AddSeriesInput`** needs only what the server reads: `title` and `year` are optional (the server takes TMDB's), and `languageProfileId` is optional and nullable, with no language profile written as `null`, left out, or the empty string. The admin's Add a show dialog still sends title and year, and the mock reads them first.
+
+## 2026-11-19: the routes served, episodes played as films are, and each profile's place (HT-83)
+
+**The routes** are thin handlers over `@highsea-tv/media/shows`, in films' shape: the apps' `shows` (a list, a show, marking a season or the show) and the admin's `series` (the show by its TMDB id as a string), with Shows' settings. `series.search` stays a draft until C1 searches for episodes. Someone who can't see the Shows library gets an empty list and a 404 for a show or an episode, as films' routes answer. An episode uses films' item routes (`/items/episode/{id}`): its page, play, progress, prefs, next and trickplay, each checked against the Shows library.
+
+**An episode plays through films' path:** the same play decision, sessions and stream token, so direct play, direct stream and transcode come with no new code. Next episode is the next one with a file, in its season and then the next season's first; a special's next is the following special. The place is kept per profile and per episode; a season's and a show's are read from their episodes, and marking a season or the show writes each episode, specials left out of a whole show's mark. Past 90% counts as watched, films' rule; in a multi-episode file, past 90% of the whole file marks the episode playing.
+
+**Taking a show off Continue watching** is a row in `show_dismissals` (migration `0024_show_dismissals`, additions only), dropped when any of its episodes is played again, and gone with the show. Continue watching and Next up both read it.
+
+**Home and Search:** Continue watching takes episodes beside films, the latest played first. Next up, New episodes and Recently added shows are rows of their own, only when an episode has a file, so a server without shows looks as before. Search ranks shows and episodes among films' kinds by the best name's match, Discover last.
+
+**A shows root folder is never renamed.** Library import takes a shows folder in place with films' job and status; a run asking to rename one is refused (`rename-shows`), and the admin leaves Rename out. The library never writes, moves or deletes in a show's folder in this part.
+
+**The unmatched list** (`series.unmatched`) lists what the import and the scan kept, with its reason and its show, for the admin to read; resolving one by hand is the next task's. A shows root folder's "waiting" counts its unmatched show folders.
+
+**Shows is a library a user can be given** (`LIBRARIES` in `@highsea-tv/auth`), beside Movies; music and books join when the server has them.

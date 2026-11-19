@@ -53,7 +53,6 @@ export const media = defineMessages({
   'folders.none.movies': 'No Movies folders yet. Add the folder your movies live in.',
   'folders.none.shows': 'No Shows folders yet. Add the folder your shows live in.',
   'folders.none.music': 'No Music folders yet. Add the folder your music lives in.',
-  'folders.later.shows': 'highsea keeps these folders and reads them once it has shows.',
   'folders.later.music': 'highsea keeps these folders and reads them once it has music.',
   'folders.free': '{free} free of {total}',
   'folders.unreadable': 'Can’t be read now',
@@ -76,6 +75,7 @@ export const media = defineMessages({
   'folders.scanLabel': 'Scan {path} now',
   'folders.scanning': 'Scanning {path}',
   'folders.scanningBody': 'New movies are added as they’re found.',
+  'folders.scanningShows': 'New shows and episodes are added as they’re found.',
   'folders.scanningMusic':
     'New albums are added as they’re found, and changed tags are read again.',
   'folders.artists': '{count, plural, =0 {No artists} one {# artist} other {# artists}}',
@@ -117,6 +117,7 @@ export const media = defineMessages({
   'add.submit': 'Add folder',
   'add.added': '{path} added',
   'add.addedScanning': 'Movies already in it are added as they’re found.',
+  'add.addedScanningShows': 'Shows already in it are added as they’re found.',
   'add.addedReadOnly':
     'Movies already in it are added as they’re found. highsea only reads the folder.',
   'add.missing': 'Enter the folder’s path.',
