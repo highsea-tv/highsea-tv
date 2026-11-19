@@ -1,0 +1,42 @@
+{
+  "status": "ok",
+  "status_message": "Query was successful",
+  "data": {
+    "movie_count": 2,
+    "limit": 50,
+    "page_number": 1,
+    "movies": [
+      {
+        "url": "https://yts.pw/movies/tears-of-steel-2012",
+        "imdb_code": "tt2285752",
+        "title": "Tears of Steel",
+        "title_english": "",
+        "year": 2012,
+        "torrents": [
+          {
+            "hash": "2222222222222222222222222222222222222222",
+            "quality": "1080p.x265",
+            "type": "web",
+            "is_repack": "0",
+            "video_codec": "x265",
+            "bit_depth": "8",
+            "audio_channels": "2.0",
+            "seeds": 5,
+            "peers": 1,
+            "size_bytes": 734003200,
+            "date_uploaded_unix": 1795028467
+          }
+        ]
+      },
+      {
+        "url": "https://yts.pw/movies/big-buck-bunny-2008",
+        "imdb_code": "tt1254207",
+        "title": "Big Buck Bunny",
+        "title_english": "Big Buck Bunny",
+        "year": 2008,
+        "torrents": []
+      }
+    ]
+  },
+  "@meta": { "api_version": 2, "execution_time": "0 ms" }
+}

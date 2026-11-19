@@ -244,6 +244,7 @@ The order is films, then shows, then music: films are already built and only nee
   - **Stalled:** at 0% with 0 peers, since the download client had no web seed support. HT-76 (#83) fixes it.
   - **A second Movies root folder,** `/data/media/movies-highsea`, writable, was added on the owner's word. The folder had to be made first, because highsea adds only a folder that exists.
 - **2026-11-19, A1, HT-69's simulator run of 0.4.5:** resume 21 of 21 on both simulators. On the Apple TV, focus lands on Search where a hero leads the page (HT-80).
+- **2026-11-19, four public film indexers in the catalog, waiting for the owner's review (HT-77):** YTS, Knaben, BitSearch and Torrents-CSV, written from each site's API documentation (catalog 2026.11.19.2, engine 1.1.0: rows inside rows, a results list that may be missing, `latest: false` for sites RSS can't ask). YTS's names are composed from its fields for the parser, and it's searched by IMDb id. BitSearch's 200 requests a day are kept for searches; a used-up limit fails at once instead of waiting. Each answered live through the engine (Sintel) on 2026-11-19.
 
 ## Running highsea on the NAS (A1)
 

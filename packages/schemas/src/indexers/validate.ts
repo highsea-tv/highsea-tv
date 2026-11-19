@@ -111,6 +111,13 @@ function check(def: Definition): ValidationIssue[] {
     }
   })
 
+  if (!def.latest && !def.test.keywords.trim()) {
+    issue(
+      'test.keywords',
+      'A site that can’t list its newest releases needs keywords to test with.',
+    )
+  }
+
   if (def.starter && def.privacy !== 'public') {
     issue('starter', 'Only public indexers can be in the starter pack.')
   }

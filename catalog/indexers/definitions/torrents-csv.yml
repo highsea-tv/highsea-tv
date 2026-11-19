@@ -1,0 +1,44 @@
+# SPDX-License-Identifier: CC0-1.0
+# Written for highsea from Torrents-CSV's own API documentation (its home page and its server's
+# README, https://codeberg.org/heretic/torrents-csv-server); no definition was copied.
+id: torrents-csv
+version: 1.0.0
+minEngineVersion: 1.1.0
+name: Torrents-CSV
+description: An open, collaborative list of seeded torrents, from Torrents-CSV's public API. It has no categories and can't list its newest releases, so RSS passes it by.
+kind: json
+privacy: public
+language: en
+links: [https://torrents-csv.com/]
+logo: torrents-csv.svg
+# The API has no categories; search keeps uncategorized results, and matches them by title.
+categories:
+  - { id: all, standard: 2000, name: Everything }
+search:
+  request:
+    # "API: https://torrents-csv.com/service/search?q=[QUERY]&size=[NUMBER_OF_RESULTS]&after=[AFTER]"
+    path: /service/search
+    query:
+      q: '{{ .Query.Keywords }}'
+      size: '100'
+  rows: { path: torrents }
+  fields:
+    title: { path: name }
+    infohash: { path: infohash }
+    guid: { text: 'torrents-csv:{{ .Result.infohash }}' }
+    # the API gives only the info hash; the magnet is built from it, with no trackers (DHT)
+    magnet: { text: 'magnet:?xt=urn:btih:{{ .Result.infohash }}&dn={{ .Result.title | urlencode }}' }
+    size: { path: size_bytes, optional: true }
+    seeders: { path: seeders, optional: true }
+    leechers: { path: leechers, optional: true }
+    grabs: { path: completed, optional: true }
+    published: { path: created_unix, optional: true, filters: [{ filter: date, format: unix }] }
+  supports: [q]
+# An empty query is a bad request. The service is one person's and names no limit.
+latest: false
+rateLimit: { requests: 10, seconds: 60, minGapMs: 2000 }
+test: { keywords: Sintel }
+source:
+  author: highsea
+  documentation: https://codeberg.org/heretic/torrents-csv-server
+license: CC0-1.0

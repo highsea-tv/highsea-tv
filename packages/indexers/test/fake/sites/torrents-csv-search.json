@@ -1,0 +1,16 @@
+{
+  "torrents": [
+    {
+      "infohash": "a779fa758f2229586eebc2e5960eb32fe5659596",
+      "name": "Sintel (2010) [720p] [BluRay] [YTS.MX]",
+      "size_bytes": 143156284,
+      "created_unix": 1718860200,
+      "seeders": 25,
+      "leechers": 16,
+      "completed": 705,
+      "scraped_date": 1792919911,
+      "id": 88518
+    }
+  ],
+  "next": 88518
+}
