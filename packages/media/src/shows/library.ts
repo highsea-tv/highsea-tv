@@ -27,7 +27,7 @@ export const seasonFolder = (n: number) =>
   n === 0 ? 'Specials' : `Season ${String(n).padStart(2, '0')}`
 
 /** An episode's file came or is coming: the refresh leaves its status to importing. */
-const keepStatus = (s: LibraryStatus) => s === 'available' || s === 'downloading'
+export const keepStatus = (s: LibraryStatus) => s === 'available' || s === 'downloading'
 
 /**
  * What the add's `monitor` choice monitors, as Sonarr's options do (Servarr wiki, Sonarr Library ›
@@ -50,10 +50,10 @@ export function monitorsEpisode(monitor: ShowMonitor, e: EpisodeMetadata, today:
   }
 }
 
-const aired = (e: { aired: string | null }, today: string) => !!e.aired && e.aired <= today
+export const aired = (e: { aired: string | null }, today: string) => !!e.aired && e.aired <= today
 
 /** An episode waits for its air date; a season or show for none. */
-const statusOf = (released: boolean, monitored: boolean): LibraryStatus =>
+export const statusOf = (released: boolean, monitored: boolean): LibraryStatus =>
   !released ? 'not-released' : monitored ? 'wanted' : 'unmonitored'
 
 export function createShowLibrary(ctx: ShowsDeps, media: Media) {
@@ -312,9 +312,14 @@ export function createShowLibrary(ctx: ShowsDeps, media: Media) {
   /**
    * Adds a show by TMDB id with every season and episode TMDB lists, fetching its metadata if the
    * server doesn't have it. Adding a show that's already here returns it unchanged. `search` is
-   * accepted and not yet acted on: searching for episodes is part B's third task.
+   * accepted and not yet acted on: searching for episodes is part C1's. `path` is the show's folder
+   * when it's already on disk (the existing-library import adds a show where it is), else
+   * `Title (Year)` under the root folder.
    */
-  async function add(input: AddSeriesInput): Promise<{ show: ShowTree; created: boolean }> {
+  async function add(
+    input: AddSeriesInput,
+    options: { path?: string } = {},
+  ): Promise<{ show: ShowTree; created: boolean }> {
     const existing = showRow(input.tmdbId)
     if (existing) return { show: tree(existing), created: false }
     const rootFolder = requireFolder(input.rootFolder)
@@ -342,7 +347,7 @@ export function createShowLibrary(ctx: ShowsDeps, media: Media) {
           qualityProfileId: input.qualityProfileId,
           languageProfileId,
           rootFolder,
-          path: titlePath(rootFolder, meta.title, meta.year),
+          path: options.path ?? titlePath(rootFolder, meta.title, meta.year),
           addedAt: now,
           updatedAt: now,
         })
@@ -420,7 +425,7 @@ export function createShowLibrary(ctx: ShowsDeps, media: Media) {
       return metadata.refresh(tmdbId, 'show')
     },
     sync,
-    internal: { onMetadataUpdated },
+    internal: { onMetadataUpdated, showRow, tree },
   }
 }
 

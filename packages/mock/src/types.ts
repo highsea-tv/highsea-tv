@@ -351,10 +351,12 @@ export type DiscoverShow = {
 
 export type AddShowInput = {
   tmdbId: number
-  title: string
-  year: number
+  /** What the dialog shows; the server reads TMDB's own (ADR 0064's 2026-11-18 section). */
+  title?: string
+  year?: number
   qualityProfileId: string
-  languageProfileId: string
+  /** None is null, left out, or the empty string. */
+  languageProfileId?: string | null
   rootFolder: string
   monitor: ShowMonitor
   seasonFolders: boolean

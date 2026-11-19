@@ -289,7 +289,12 @@ describe('0018_profiles', () => {
     const file = join(dir, 'highsea.db')
     const first = older(file)
     const result = migrate(first, { backupDir: join(dir, 'backups') })
-    expect(result.applied).toEqual(['0018_profiles', '0019_artwork', '0020_shows'])
+    expect(result.applied).toEqual([
+      '0018_profiles',
+      '0019_artwork',
+      '0020_shows',
+      '0021_unmatched_files',
+    ])
     expect(result.backup).not.toBeNull()
     const once = state(first)
     first.close()
@@ -326,9 +331,9 @@ describe('0020_shows', () => {
    * A server as the owner's NAS is before shows: films with versions, files, watch positions,
    * history and chosen artwork, every migration up to 0019_artwork applied.
    */
-  function withFilms(file: string) {
+  function withFilms(file: string, upTo = before) {
     const { raw } = openDatabase(file)
-    migrate(raw, { all: before })
+    migrate(raw, { all: upTo })
     raw.exec('PRAGMA foreign_keys = OFF')
     raw.run(
       "INSERT INTO users (id, username, display_name, role, webauthn_id, created_at, updated_at) VALUES ('usr_ines', 'ines', 'Ines', 'owner', 'w-1', 5, 5)",
@@ -387,7 +392,7 @@ describe('0020_shows', () => {
   test('leaves every film, version, file and watch position as it was', () => {
     const raw = withFilms(':memory:')
     const was = films(raw)
-    expect(migrate(raw).applied).toEqual(['0020_shows'])
+    expect(migrate(raw).applied).toEqual(['0020_shows', '0021_unmatched_files'])
     expect(films(raw)).toEqual(was)
     expect(raw.all('SELECT count(*) AS n FROM media_items')).toEqual([{ n: 300 }])
     // the new columns are empty on films
@@ -469,6 +474,88 @@ describe('0020_shows', () => {
     raw.run("DELETE FROM media_items WHERE id = 'itm_show'")
     expect(raw.all('SELECT item_id FROM show_details')).toEqual([])
     raw.close()
+  })
+
+  describe('0021_unmatched_files', () => {
+    /** Films, and a show from #77 with a season and two episodes, every migration up to 0020. */
+    function withShow() {
+      const raw = withFilms(
+        ':memory:',
+        migrations.filter((m) => m.tag < '0021'),
+      )
+      const insert = (
+        id: string,
+        type: string,
+        tmdbId: number,
+        parent: string | null,
+        season: number | null,
+        episode: number | null,
+      ) =>
+        raw.run(
+          "INSERT INTO media_items (id, type, tmdb_id, parent_id, show_id, season_number, episode_number, title, sort_title, status, monitored, minimum_availability, quality_profile_id, root_folder, path, added_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'wanted', 1, 'released', 'qp', '/media/shows', '/media/shows/Chernobyl (2019)', 1, 1)",
+          id,
+          type,
+          tmdbId,
+          parent,
+          parent ? 'itm_show' : null,
+          season,
+          episode,
+          id,
+          id,
+        )
+      insert('itm_show', 'show', 87108, null, null, null)
+      insert('itm_s1', 'season', 116924, 'itm_show', 1, null)
+      insert('itm_e1', 'episode', 1, 'itm_s1', 1, 1)
+      insert('itm_e2', 'episode', 2, 'itm_s1', 1, 2)
+      raw.run("INSERT INTO show_details (item_id, tvdb_id) VALUES ('itm_show', 360893)")
+      for (const e of ['itm_e1', 'itm_e2'])
+        raw.run(
+          "INSERT INTO versions (id, item_id, label, quality_profile_id, position, created_at) VALUES (?, ?, 'Default', 'qp', 0, 1)",
+          `ver_${e}`,
+          e,
+        )
+      // one file holding both episodes, under the first (ADR 0064)
+      raw.run(
+        "INSERT INTO media_files (id, item_id, version_id, path, size, quality, added_at) VALUES ('fil_e12', 'itm_e1', 'ver_itm_e1', '/media/shows/Chernobyl (2019)/Season 01/Chernobyl.S01E01E02.mkv', 1000, 'WEBDL-1080p', 1)",
+      )
+      raw.run("UPDATE versions SET file_id = 'fil_e12' WHERE item_id IN ('itm_e1', 'itm_e2')")
+      return raw
+    }
+    const all = (raw: ReturnType<typeof withShow>) => ({
+      items: raw.all('SELECT * FROM media_items ORDER BY id'),
+      versions: raw.all('SELECT * FROM versions ORDER BY id'),
+      files: raw.all('SELECT * FROM media_files ORDER BY id'),
+      details: raw.all('SELECT * FROM show_details'),
+      positions: raw.all('SELECT * FROM watch_positions'),
+    })
+
+    test('adds the table and leaves the films and the show’s rows as they were', () => {
+      const raw = withShow()
+      const was = all(raw)
+      expect(migrate(raw).applied).toEqual(['0021_unmatched_files'])
+      expect(all(raw)).toEqual(was)
+      expect(raw.all('SELECT count(*) AS n FROM unmatched_files')).toEqual([{ n: 0 }])
+      expect(raw.all('PRAGMA foreign_key_check')).toEqual([])
+      expect(raw.all('PRAGMA integrity_check')).toEqual([{ integrity_check: 'ok' }])
+      expect(migrate(raw).applied).toEqual([])
+      raw.close()
+    })
+
+    test('a file kept unmatched goes with its show; a folder has none', () => {
+      const raw = withShow()
+      migrate(raw)
+      raw.run(
+        "INSERT INTO unmatched_files (path, kind, root_folder, item_id, reason, message, size, found_at) VALUES ('/media/shows/Chernobyl (2019)/Recap.mkv', 'episode-file', '/media/shows', 'itm_show', 'no-episode-number', 'No number.', 10, 1)",
+      )
+      raw.run(
+        "INSERT INTO unmatched_files (path, kind, root_folder, item_id, reason, message, found_at) VALUES ('/media/shows/Chernobyl', 'show-folder', '/media/shows', NULL, 'ambiguous', 'Two shows.', 1)",
+      )
+      raw.run("DELETE FROM media_items WHERE id = 'itm_show'")
+      expect(raw.all('SELECT path FROM unmatched_files')).toEqual([
+        { path: '/media/shows/Chernobyl' },
+      ])
+      raw.close()
+    })
   })
 
   test('a cached season goes with its show', () => {

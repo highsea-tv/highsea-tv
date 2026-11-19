@@ -1815,8 +1815,7 @@
             "type": "integer"
           },
           "title": {
-            "type": "string",
-            "minLength": 1
+            "type": "string"
           },
           "year": {
             "type": "integer"
@@ -1825,7 +1824,10 @@
             "type": "string"
           },
           "languageProfileId": {
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "rootFolder": {
             "type": "string",
@@ -1850,10 +1852,7 @@
         },
         "required": [
           "tmdbId",
-          "title",
-          "year",
           "qualityProfileId",
-          "languageProfileId",
           "rootFolder",
           "monitor",
           "seasonFolders",

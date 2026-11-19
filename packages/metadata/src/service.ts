@@ -376,6 +376,16 @@ export function createMetadataCore(deps: MetadataDeps) {
       const first = result.movie_results?.[0]
       return first ? toDiscoverMovie(first, pick) : null
     },
+    /**
+     * The TMDB show an IMDb id belongs to, through the same Find by ID (`tv_results`); null when
+     * TMDB has none. A `tvshow.nfo` or an `{imdb-tt…}` folder name gives a show's (ADR 0064).
+     */
+    async findShowByImdb(imdbId: string): Promise<number | null> {
+      if (!/^tt\d{1,10}$/.test(imdbId)) return null
+      const credential = requireKey()
+      const result = await api.findImdb(credential, imdbId, settings.language())
+      return result.tv_results?.[0]?.id ?? null
+    },
     /** TMDB's TV search, paged, as `search` is for films. Writes nothing. */
     async searchShows(query: string, pageNumber?: number): Promise<Page<DiscoverShow>> {
       const q = query.trim()

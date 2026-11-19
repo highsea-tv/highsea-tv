@@ -97,3 +97,77 @@ Daily and absolute numbering return null and wait for their phase. The cases are
 - A show's metadata is one request plus one per season, about a dozen for a long show. That is in line with Sonarr's own refresh, and the changes job keeps later refreshes to the shows TMDB changed.
 - Episodes' TMDB ids are their addresses. If TMDB merges two episodes, the second insert finds the first's id taken and is skipped, leaving the row where it was. Sonarr has the same case with TheTVDB.
 - Left for part B's next tasks: matching files to episodes and the existing-library import (`tvshow.nfo`, then the folder's name through the parser and `findByTvdb`), the scan, the routes and their reads, subtitles, playback and watch state. Monitoring and searching are C1's.
+
+## 2026-11-18: files matched to episodes, the existing-library import and the scan (HT-73)
+
+B's second task. It gets the shows already on disk into the library, in place, and keeps them in step with the disk.
+
+**Files matched to episodes** (`shows/files.ts`).
+
+- **Matching.** A video in a show's folder is read by its name with `parseEpisode`. The name's season wins over its folder's, because Sonarr's disk scan parses the file's name. The season and episode numbers are then matched to the show's episode rows.
+- **Probing and judging.** The file is probed and judged as a film's is, through `shared/inspect.ts`, taken out of the films' import for both kinds:
+  - the skip before the probe (extras, macOS resource files);
+  - the probe, and the no-video check;
+  - DetectSample's minimum runtime;
+  - the quality from the name and the probe.
+- **What differs from films:**
+  - The minimum runtime comes from the episode's runtime, else the show's.
+  - Specials get no sample check, as in Sonarr's [DetectSample](https://github.com/Sonarr/Sonarr/blob/v4.0.15.2941/src/NzbDrone.Core/MediaFiles/EpisodeImport/DetectSample.cs) ("Special, skipping sample check").
+  - Nothing is renamed or moved: a show's files are always in place, so a root folder highsea only reads (ADR 0063) is safe.
+  - Custom formats aren't scored yet; that is C1's work with monitoring.
+- **Filing.** A matched file is filed as this ADR decided: one `media_files` row under its first episode, every episode's version pointing at it, and those episodes `available`.
+- **Removing.** A removed file clears every episode it held, and those episodes go back to `wanted`, `unmonitored` or `not-released` by their air date. It writes a `deleted` history entry.
+- **Taking one episode.** An episode taken from a multi-episode file (`assign`, the admin's resolve in B's fourth task) leaves the file its other episodes. The file moves to its first remaining episode, and a file no episode holds loses its row.
+- **History.** Each filed file writes one `imported` history entry with `inPlace`, so notifications leave it out, as they do a film the scan finds.
+- **Sidecar subtitles** aren't read yet: films' import hooks take a film's file, and episodes' subtitles are B's fourth task. The hook is in `ShowFileOptions`, and the runtime wires none for now.
+
+**Nothing is guessed.** A file that can't be placed is kept in a new table, `unmatched_files` (migration `0021_unmatched_files`, only additions), keyed by path, with its reason and a message the admin can show. A table rather than a settings row, so B's fourth task can list and resolve the files by root folder and by show. The reasons:
+
+- **a file in a show:**
+  - `no-episode-number`: a name with no `SxxEyy`, a season pack, or anime's absolute numbers;
+  - `unknown-season`;
+  - `unknown-episode`;
+  - `episode-has-file`: a second copy, kept rather than swapped in, since upgrades are C1's;
+  - `unreadable`: the probe failed;
+- **a show folder:**
+  - `no-match`;
+  - `ambiguous`;
+  - `second-copy`: the show is already in the library at another folder;
+  - `unreachable`: TMDB couldn't be asked, and the next scan tries again.
+
+Anime's absolute numbers parse to nothing and wait here. Their mapping goes in `episodeMatch` and `assign` without changing the table.
+
+**The existing-library import** (`shows/library-import.ts`) has films' shape:
+
+- `scan(root)` previews, writing nothing;
+- `run(items)` adds the confirmed folders in the `shows.libraryImport` job, which resumes after the last folder it finished;
+- the job's progress is one settings row (`showsLibraryImport`), announced on `import.updated`;
+- `addNew` serves the library scan.
+
+A folder is identified, most certain first:
+
+1. **Its `tvshow.nfo`**, read as Kodi and Jellyfin read it ([Kodi wiki, NFO files/TV shows](https://kodi.wiki/view/NFO_files/TV_shows)): `<uniqueid type="tvdb|tmdb|imdb">`, then the provider tags, then Kodi's older `<id>`. Sonarr's [XbmcMetadata](https://github.com/Sonarr/Sonarr/blob/v4.0.15.2941/src/NzbDrone.Core/Extras/Metadata/Consumers/Xbmc/XbmcMetadata.cs) fills `<id>` with TheTVDB's id. TMDB's id is used directly, while TheTVDB's and IMDb's go through TMDB's [Find by ID](https://developer.themoviedb.org/reference/find-by-id). IMDb's is the new `discover.findShowByImdb`.
+2. **The ids in its name** (`parseShowFolder`): `[tvdb-…]` through `findByTvdb`, and TMDB's id directly.
+3. **TMDB's [TV search](https://developer.themoviedb.org/reference/search-tv)** for its title. The match is sure only when exactly one result has the same title or original title (folded, a leading article dropped) and the same year when the name gives one; a year off by one is allowed, since a first air date differs by region. Several are `ambiguous`; none is `no-match`.
+
+A sure match is added with `shows.add(…, { path: folder })`, which keeps the folder where it is. The added show takes:
+
+- the first quality profile and no language profile, as films' import does;
+- monitoring All;
+- no search, since monitoring and searching are C1's;
+- season folders when the folder has a `Season NN` or `Specials` folder or no videos at its top.
+
+Its files are then matched.
+
+**The scan** (`shows/scan.ts`): the `shows.scan` job runs every 12 hours like films' scan, and for one folder when watching sees a change there. Watching now covers Shows root folders, each change sent to its root folder's kind. Setup also queues it for the Shows folder. In each show:
+
+- files gone (checked with `lstat`) are removed;
+- changed ones, by size or time, are probed again;
+- new ones are matched;
+- unmatched files are tried again, since TMDB may list their episode now, and counted once.
+
+A root folder that can't be read is skipped whole. A new folder under the root goes to `addNew`. A folder already kept unmatched isn't searched again by the periodic scan, only after a change seen in it. Everything is safe to repeat, which is tested: the import run twice changes no row, and a scan after it finds nothing.
+
+**The Series routes' id is the show's TMDB id as a string**, as films' routes use `TmdbIdParam` and `ClientShow.id` is already TMDB's. A season is its number under the show (`/seasons/{season}`), and an episode (`/episodes/{episodeId}`) is its own TMDB id, as its row is addressed (this ADR's decision). The mock keeps its slugs, because the contract types `:id` as a string either way. The routes stay drafts until B's third task.
+
+**`AddSeriesInput`** needs only what the server reads: `title` and `year` are optional (the server takes TMDB's), and `languageProfileId` is optional and nullable, with no language profile written as `null`, left out, or the empty string. The admin's Add a show dialog still sends title and year, and the mock reads them first.

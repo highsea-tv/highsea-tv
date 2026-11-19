@@ -237,6 +237,13 @@ The order is films, then shows, then music: films are already built and only nee
   - **`@highsea-tv/media/shows`:** add a show with Sonarr's monitor choices, and rows kept in step with every refresh, safe to repeat.
   - **Next (B's second task):** matching files to episodes, the existing-library import and the scan.
 
+- **2026-11-18, B, the shows on disk into the library (HT-73):** the second of B's four tasks, on the server only, with no routes or client change ([ADR 0064's section](../adr/0064-shows-on-the-server.md#2026-11-18-files-matched-to-episodes-the-existing-library-import-and-the-scan-ht-73)).
+  - **Files matched to episodes:** by the name's season and episode numbers, probed and judged with the films' code (moved to `shared/inspect.ts`), one row per file with every episode it holds pointing at it. A file that can't be placed waits in `unmatched_files` (migration `0021_unmatched_files`) with its reason, never guessed.
+  - **The existing-library import:** `tvshow.nfo`, then the folder name's ids, then TMDB's search when exactly one show fits; added in place with films' job, progress and repeat rule.
+  - **The scan:** every 12 hours, after watching sees a change in a Shows folder, and at setup; files added, removed and changed, and new show folders.
+  - **The contract:** `AddSeriesInput` needs only the TMDB id, profile, root folder and choices; the Series routes' id is the show's TMDB id.
+  - **Next (B's third task):** the routes served and their reads; then subtitles, playback and watch state, and the admin's resolve for unmatched files.
+
 ## Running highsea on the NAS (A1)
 
 - **Where:** the DS1520+ (Intel Celeron J4125, VAAPI checked in 4.3b), through the Synology package from Package Center with `packages.highsea.tv` as its source, the way an owner installs it (install-simplicity.md's part D). This Mac stays the development machine; [answer 2](#the-owners-answers) has the alternatives.

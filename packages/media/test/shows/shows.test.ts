@@ -63,7 +63,7 @@ async function setup() {
   const media = createMedia({ db, clock, logger: silentLogger })
   media.seed()
   const folder = media.rootFolders.add({ path: library, kind: 'shows' })
-  const shows = createShows({ db, clock, events, logger: silentLogger, metadata }, media)
+  const shows = createShows({ db, clock, events, jobs, logger: silentLogger, metadata }, media)
   cleanups.push(() => {
     shows.close()
     rmSync(dir, { recursive: true, force: true })
