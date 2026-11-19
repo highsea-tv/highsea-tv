@@ -19,6 +19,20 @@ export type FakeKernel = {
   peerKey: string
 }
 
+/** The box wireguard-go prints to stderr on every start on Linux (its main.go, `warning()`). */
+export const WIREGUARD_GO_BOX = [
+  '┌──────────────────────────────────────────────────────┐',
+  '│                                                      │',
+  '│   Running wireguard-go is not required because this  │',
+  '│   kernel has first class support for WireGuard. For  │',
+  '│   information on installing the kernel module,       │',
+  '│   please visit:                                      │',
+  '│         https://www.wireguard.com/install/           │',
+  '│                                                      │',
+  '└──────────────────────────────────────────────────────┘',
+  '',
+].join('\n')
+
 /** `ip` and `wg`, faked. `fail` makes the next command matching a pattern fail with stderr. */
 export function createFakeWireGuard(initial: Partial<FakeKernel> = {}) {
   const kernel: FakeKernel = {
@@ -31,7 +45,7 @@ export function createFakeWireGuard(initial: Partial<FakeKernel> = {}) {
   }
   let ruleFrom = ''
   const commands: Command[] = []
-  const failures: { match: RegExp; stderr: string; times: number }[] = []
+  const failures: { match: RegExp; stderr: string; stdout?: string; times: number }[] = []
   const ok = (stdout = ''): RunResult => ({ code: 0, stdout, stderr: '' })
   const line = (c: Command) => `${c.program} ${c.args.join(' ')}`
 
@@ -41,7 +55,7 @@ export function createFakeWireGuard(initial: Partial<FakeKernel> = {}) {
     const f = failures.find((x) => x.match.test(text) && x.times > 0)
     if (f) {
       f.times--
-      return { code: 1, stdout: '', stderr: f.stderr }
+      return { code: 1, stdout: f.stdout ?? '', stderr: f.stderr }
     }
     const a = c.args
     if (c.program === 'wireguard-go') {
@@ -109,6 +123,19 @@ export function createFakeWireGuard(initial: Partial<FakeKernel> = {}) {
     /** The next `times` commands matching `match` fail with `stderr`. */
     fail(match: RegExp, stderr: string, times = 1) {
       failures.push({ match, stderr, times })
+    },
+    /**
+     * The next `wireguard-go` fails as the real one does (main.go, device/logger.go): its box on
+     * stderr, and the error on stdout behind its logger's prefix, as captured from wireguard-go
+     * 0.0.20231211 (Debian trixie's, the image's) run as a non-root user (HT-98).
+     */
+    failWireguardGo(error: string) {
+      failures.push({
+        match: /^wireguard-go /,
+        stderr: WIREGUARD_GO_BOX,
+        stdout: `ERROR: (hswg0) 2026/11/19 18:22:07 ${error}\n`,
+        times: 1,
+      })
     },
   }
 }

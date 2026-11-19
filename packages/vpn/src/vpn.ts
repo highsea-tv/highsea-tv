@@ -41,9 +41,9 @@ import {
   failures,
   labels,
   needsCapabilityFor,
-  noDeviceFor,
   systemCopy,
   testCopy,
+  tunDeviceFor,
   wireGuardFailures,
 } from './copy.ts'
 import { askEcho, askEchoFields, type Echo } from './echo.ts'
@@ -544,7 +544,8 @@ export function createVpn(deps: VpnDeps) {
       log.warn('Couldn’t bring the tunnel up', { error: (e as Error).message })
       if (f.kind === 'capability') return failBuiltin(needsCapabilityFor(install()))
       if (f.kind === 'platform') return failBuiltin(failures.linuxOnly)
-      if (f.kind === 'no-device') return failBuiltin(noDeviceFor(install()))
+      if (f.kind === 'no-device' || f.kind === 'no-module' || f.kind === 'device-denied')
+        return failBuiltin(tunDeviceFor(f.kind, install()))
       if (f.kind === 'not-installed') return failBuiltin(failures.notInstalled)
       return failBuiltin(failures.tunnelFailed((e as Error).message), true)
     }
@@ -792,7 +793,8 @@ export function createVpn(deps: VpnDeps) {
     const f = e instanceof TunnelError ? e.failure : { kind: 'other' as const }
     if (f.kind === 'capability') return needsCapabilityFor(install())
     if (f.kind === 'platform') return failures.linuxOnly
-    if (f.kind === 'no-device') return noDeviceFor(install())
+    if (f.kind === 'no-device' || f.kind === 'no-module' || f.kind === 'device-denied')
+      return tunDeviceFor(f.kind, install())
     if (f.kind === 'not-installed') return failures.notInstalled
     return failures.tunnelFailed((e as Error).message)
   }

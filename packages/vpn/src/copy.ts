@@ -21,8 +21,13 @@ export const failures = {
   // Not in the prototype: what the built-in VPN can meet that the prototype didn't play (6b).
   linuxOnly:
     'The built-in VPN runs on Linux, as highsea’s Docker image does. Use a VPN container or an interface on this machine here.',
+  // The TUN device, told apart by what wireguard-go says (tunnel.ts, wireguardGoFailure; HT-98)
   noDevice:
-    'highsea couldn’t create the WireGuard interface: the kernel has no WireGuard, and wireguard-go can’t open /dev/net/tun. Load the host’s tun module (modprobe tun), or add the /dev/net/tun device to highsea’s service in your compose file, then restart.',
+    'highsea couldn’t create the WireGuard interface: the kernel has no WireGuard, and there’s no /dev/net/tun for wireguard-go. Add the /dev/net/tun device to highsea’s service in your compose file, then recreate the container.',
+  noTunModule:
+    'highsea couldn’t create the WireGuard interface: the kernel has no WireGuard, and the host hasn’t loaded the tun module wireguard-go needs. Load it on the host (modprobe tun), then restart highsea.',
+  deviceDenied:
+    'highsea couldn’t create the WireGuard interface: the kernel has no WireGuard, and wireguard-go isn’t allowed to open /dev/net/tun. In highsea’s service in your compose file, put device_cgroup_rules: ["c 10:200 rwm"] in place of the /dev/net/tun device, then recreate the container: highsea makes a TUN device of its own.',
   notInstalled:
     'highsea couldn’t find the ip and wg programs. They come with highsea’s Docker image.',
   tunnelFailed: (reason: string) => `highsea couldn’t set up the tunnel: ${reason}`,
@@ -59,7 +64,19 @@ export const installFailures = {
     unraid:
       'highsea needs the NET_ADMIN capability to run the tunnel. In Unraid’s Docker tab, edit highsea, add --cap-add=NET_ADMIN to Extra Parameters, then apply.',
   },
+  // The package makes highsea a TUN device of its own (ADR 0042, 2026-11-19, HT-98), so one it
+  // lacks or can't open is an older package's, which an update replaces.
   noDevice: {
+    synology:
+      'highsea couldn’t create the WireGuard interface: DSM’s kernel has no WireGuard, and highsea has no TUN device for wireguard-go yet. Update highsea in Package Center: the update gives it a TUN device of its own.',
+  },
+  deviceDenied: {
+    synology:
+      'highsea couldn’t create the WireGuard interface: DSM’s kernel has no WireGuard, and highsea isn’t allowed to open DSM’s TUN device. Update highsea in Package Center: the update gives it a TUN device of its own.',
+  },
+  // Loading a kernel module takes root, which DSM 7 gives no package that Synology hasn't signed,
+  // so this is the one step left to the owner (ADR 0042, 2026-11-19, HT-98)
+  noTunModule: {
     synology:
       'highsea couldn’t create the WireGuard interface: DSM’s kernel has no WireGuard, and DSM hasn’t loaded the tun module wireguard-go needs. In Control Panel › Task Scheduler, create a triggered task for root at boot-up that runs insmod /lib/modules/tun.ko, run it once, then stop and start highsea in Package Center.',
   },
@@ -333,9 +350,14 @@ export function needsCapabilityFor(install: VpnInstall | null): string {
   return install ? installFailures.needsCapability[install] : failures.needsCapability
 }
 
-/** What the missing TUN device says on this install. */
-export function noDeviceFor(install: VpnInstall | null): string {
-  return (install === 'synology' ? installFailures.noDevice.synology : null) ?? failures.noDevice
+/** What a TUN device that's missing, unloaded or closed to highsea says on this install. */
+export function tunDeviceFor(
+  kind: 'no-device' | 'no-module' | 'device-denied',
+  install: VpnInstall | null,
+): string {
+  const key =
+    kind === 'no-device' ? 'noDevice' : kind === 'no-module' ? 'noTunModule' : 'deviceDenied'
+  return (install === 'synology' ? installFailures[key].synology : null) ?? failures[key]
 }
 
 const INSTALLS: readonly VpnInstall[] = ['synology', 'truenas', 'umbrel', 'casaos', 'unraid']

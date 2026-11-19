@@ -30,11 +30,15 @@ services:
       # the graphics chip's folder, or an empty one on a model without it (Synology's Docker
       # won't start a container whose bind mount is missing)
       - ${HIGHSEA_DRI}:/dev/dri
-      # the host's /dev/net, for the TUN device wireguard-go needs, since DSM's kernel has no
-      # WireGuard: a folder rather than the device, so a module loaded later shows up here too. An
-      # empty folder where DSM hasn't loaded tun, as for the graphics above; Settings › VPN says so
-      - ${HIGHSEA_TUN}:/dev/net
       - /run/dbus:/run/dbus:ro
+    # a /dev/net of the container's own for the TUN device wireguard-go needs, since DSM's kernel has
+    # no WireGuard: the entrypoint makes the device in it as the package's user, mode 0666, since
+    # DSM's own /dev/net/tun is root's, 0600 (HT-98). Writable by that user, and `dev`, since
+    # Docker mounts a tmpfs nodev unless told otherwise
+    # (https://docs.docker.com/reference/compose-file/services/#tmpfs,
+    # https://docs.docker.com/engine/storage/tmpfs/; mount(8), tmpfs's mode)
+    tmpfs:
+      - /dev/net:dev,mode=1777
     # the render node's group (videodriver on DSM), so ffmpeg can open it (ADR 0056)
     group_add:
       - "${HIGHSEA_RENDER_GID}"
@@ -44,6 +48,9 @@ services:
       - "6881:6881/udp"
       - "7368:7368/udp"
     device_cgroup_rules:
+      # the TUN device (10:200, the kernel's Documentation/admin-guide/devices.txt): made (m) and
+      # opened (rw) in the container (https://docs.kernel.org/admin-guide/cgroup-v1/devices.html)
+      - "c 10:200 rwm"
       - "c 226:128 rw"
       - "c 226:129 rw"
       - "c 226:130 rw"

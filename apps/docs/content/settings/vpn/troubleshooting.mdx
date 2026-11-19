@@ -24,9 +24,17 @@ The built-in VPN won't start the tunnel while highsea's container shares the hos
 
 highsea's container is missing the NET_ADMIN capability. If you installed highsea from Package Center, TrueNAS's Apps or the Umbrel App Store, update it there: the update recreates the container with the capability. On CasaOS, add NET_ADMIN under **Capabilities** in highsea's settings; on Unraid, add `--cap-add=NET_ADMIN` to **Extra Parameters**. Otherwise copy the lines from **Compose for the built-in VPN**, which add `cap_add: [NET_ADMIN]`, into highsea's service and recreate the container. See [What it needs](/settings/vpn/connects/#what-it-needs).
 
-## The kernel has no WireGuard, and /dev/net/tun isn't there
+## The kernel has no WireGuard, and there's no /dev/net/tun
 
-Common on older NAS kernels, which have no WireGuard of their own, so highsea runs wireguard-go, which needs the TUN device. Load the host's tun module (`modprobe tun`), add `devices: [/dev/net/tun:/dev/net/tun]` to highsea's service, and recreate the container. On a Synology NAS, the package already hands highsea DSM's `/dev/net`, and DSM loads the module only when asked: see [The built-in VPN](/install/synology/#the-built-in-vpn) for the boot-up task.
+Common on older NAS kernels, which have no WireGuard of their own, so highsea runs wireguard-go, which needs the TUN device. Add `devices: [/dev/net/tun:/dev/net/tun]` to highsea's service and recreate the container. If you installed highsea from Package Center, update it there: the update gives highsea a TUN device of its own.
+
+## wireguard-go isn't allowed to open /dev/net/tun
+
+The device is there, but highsea's user can't open it: the host's `/dev/net/tun` is often root's alone. In highsea's service, put `device_cgroup_rules: ["c 10:200 rwm"]` in place of the `/dev/net/tun` device and recreate the container: highsea then makes a TUN device of its own that it can open. If you installed highsea from Package Center, update it there instead.
+
+## The host hasn't loaded the tun module
+
+The device is there, but nothing answers behind it until the host loads its tun module. Load it on the host (`modprobe tun`) and restart highsea. On a Synology NAS, a package can't load it, so DSM needs a task that does: see [The built-in VPN](/install/synology/#the-built-in-vpn).
 
 ## Downloads say Waiting for the VPN
 

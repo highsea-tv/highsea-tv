@@ -40,6 +40,11 @@
 //   bun scripts/image.ts user <image>
 //     Fails unless the entrypoint runs highsea as the user ADR 0057 says: /data's owner, or the first
 //     thing in it not owned by root, or 1000:1000, with PUID and PGID winning when they're set.
+//   bun scripts/image.ts tun <image>
+//     Fails unless wireguard-go can make its interface when the entrypoint has run, both as the
+//     Synology package runs the container (its own user from the start, only NET_ADMIN, a tmpfs
+//     /dev/net, the device cgroup's 10:200) and as root with PUID (the other stores), with the
+//     interface's name or wireguard-go's own words for each (ADR 0042, 2026-11-19, HT-98).
 //   bun scripts/image.ts attestations <OCI layout folder>
 //     Reads an image exported with `type=oci` and fails unless it has the OCI labels GitHub reads
 //     and both attestations: BuildKit's provenance and the SBOM. They're stored as an attestation
@@ -475,6 +480,57 @@ function user(image: string) {
   }
 }
 
+/** How each install runs the container, for the TUN device (ADR 0042, 2026-11-19, HT-98). */
+const TUN_RUNS: { name: string; args: string[] }[] = [
+  {
+    // templates/synology/spk/package/compose/compose.yaml, with Container Manager's `user:`
+    name: 'the Synology package: its own user, a tmpfs /dev/net',
+    args: ['--user', '201309:201309', '--tmpfs', '/dev/net:dev,mode=1777'],
+  },
+  {
+    name: 'root with PUID, as the other stores run it',
+    args: ['-e', 'PUID=1234', '-e', 'PGID=5678'],
+  },
+]
+
+function tun(image: string) {
+  const wrong: string[] = []
+  for (const { name, args } of TUN_RUNS) {
+    // the real entrypoint, then wireguard-go in node's place, with the capability node would have
+    const script =
+      'wireguard-go hswg0 >/tmp/wg.out 2>/tmp/wg.err && ip -o link show hswg0 | cut -d: -f2 || ' +
+      '{ echo "failed: $(grep -v \'[┌│└]\' /tmp/wg.out /tmp/wg.err)"; exit 1; }'
+    const run = spawnSync(
+      'docker',
+      [
+        'run',
+        '--rm',
+        '--cap-add',
+        'NET_ADMIN',
+        '--device-cgroup-rule',
+        'c 10:200 rwm',
+        '--tmpfs',
+        '/data',
+        ...args,
+        '--entrypoint',
+        '/usr/local/bin/highsea-entrypoint',
+        image,
+        'sh',
+        '-c',
+        script,
+      ],
+      { encoding: 'utf8' },
+    )
+    const got = run.stdout.trim()
+    console.log(`${name}: ${got || run.stderr.trim()}`)
+    if (run.status !== 0 || got !== 'hswg0') wrong.push(`${name}: ${got || run.stderr.trim()}`)
+  }
+  if (wrong.length) {
+    console.error(`wireguard-go couldn't make its interface:\n- ${wrong.join('\n- ')}`)
+    process.exit(1)
+  }
+}
+
 type Descriptor = {
   mediaType: string
   digest: string
@@ -600,11 +656,12 @@ if (import.meta.main) {
   else if (command === 'size' && a) size(a)
   else if (command === 'hardware' && a) hardware(a)
   else if (command === 'user' && a) user(a)
+  else if (command === 'tun' && a) tun(a)
   else if (command === 'attestations' && a) attestations(attestationProblems(a))
   else if (command === 'published' && a) attestations(publishedProblems(a))
   else {
     console.error(
-      `Usage: bun ${self} production <from> <to>\n       bun ${self} size <image>\n       bun ${self} hardware <image>\n       bun ${self} user <image>\n       bun ${self} attestations <OCI layout folder>\n       bun ${self} published <name@digest>`,
+      `Usage: bun ${self} production <from> <to>\n       bun ${self} size <image>\n       bun ${self} hardware <image>\n       bun ${self} user <image>\n       bun ${self} tun <image>\n       bun ${self} attestations <OCI layout folder>\n       bun ${self} published <name@digest>`,
     )
     process.exit(1)
   }

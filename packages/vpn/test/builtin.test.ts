@@ -272,7 +272,9 @@ describe('the built-in VPN', () => {
 
     const noTun = builtin()
     noTun.wg.fail(/^ip link add/, 'Error: Unknown device type.')
-    noTun.wg.fail(/^wireguard-go/, 'ERROR: Failed to create TUN device: no such file or directory')
+    noTun.wg.failWireguardGo(
+      'Failed to create TUN device: CreateTUN("hswg0") failed; /dev/net/tun does not exist',
+    )
     await noTun.vpn.save({ mode: 'builtin', provider: 'proton', config: wgConfig() })
     noTun.vpn.start()
     await noTun.vpn.settled()
@@ -287,7 +289,7 @@ describe('the built-in VPN', () => {
     const run = async (install: 'synology' | 'unraid' | null, kernel: string, go?: string) => {
       const wg = createFakeWireGuard()
       wg.fail(/^ip link add/, kernel)
-      if (go) wg.fail(/^wireguard-go/, go)
+      if (go) wg.failWireguardGo(go)
       const t = testVpn({ runner: wg.runner, install: () => install })
       await t.vpn.save({ mode: 'builtin', provider: 'proton', config: wgConfig() })
       t.vpn.start()
@@ -309,13 +311,33 @@ describe('the built-in VPN', () => {
     )
     expect(await run(null, noCap)).toMatchObject({ needsCapability: true, install: null })
     // the capability is there (the kernel knew to say "Unknown device type"); the device isn't
-    const noTun = await run(
-      'synology',
-      'Error: Unknown device type.',
-      'ERROR: Failed to create TUN device: no such file or directory',
+    // the TUN device, told apart by what wireguard-go says (HT-98)
+    const unknown = 'Error: Unknown device type.'
+    const denied = await run('synology', unknown, 'Failed to create TUN device: permission denied')
+    expect(denied).toMatchObject({ state: 'failed', needsCapability: false, install: 'synology' })
+    expect(denied.message).toBe(
+      'highsea couldn’t create the WireGuard interface: DSM’s kernel has no WireGuard, and highsea isn’t allowed to open DSM’s TUN device. Update highsea in Package Center: the update gives it a TUN device of its own.',
     )
-    expect(noTun.needsCapability).toBe(false)
-    expect(noTun.message).toContain('insmod /lib/modules/tun.ko')
+    // only an unloaded module asks for the Task Scheduler: a package can't load it (DSM 7 runs
+    // packages not signed by Synology without root)
+    const noModule = await run('synology', unknown, 'Failed to create TUN device: no such device')
+    expect(noModule.message).toContain('insmod /lib/modules/tun.ko')
+    const missing = await run(
+      'synology',
+      unknown,
+      'Failed to create TUN device: CreateTUN("hswg0") failed; /dev/net/tun does not exist',
+    )
+    expect(missing.message).toContain('Update highsea in Package Center')
+    expect(missing.message).not.toContain('Task Scheduler')
+    // a hand-written compose file gets the lines to change
+    expect(
+      (await run(null, unknown, 'Failed to create TUN device: permission denied')).message,
+    ).toContain('device_cgroup_rules: ["c 10:200 rwm"]')
+    // anything else in wireguard-go's own words, never its box
+    const other = await run('synology', unknown, 'UAPI listen error: permission denied')
+    expect(other.message).toBe(
+      'highsea couldn’t set up the tunnel: start wireguard-go failed: UAPI listen error: permission denied',
+    )
   })
 
   test('the default, not set up yet, doesn’t connect, and torrents keep their own connection', async () => {

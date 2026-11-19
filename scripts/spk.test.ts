@@ -158,7 +158,7 @@ describe('spk', () => {
     expect(compose).toContain('image: ghcr.io/highsea-tv/highsea:0.2.0\n')
     expect(compose).not.toContain('@VERSION@')
     expect(statSync(join(payload, 'compose/no-graphics')).isDirectory()).toBe(true)
-    expect(statSync(join(payload, 'compose/no-tun')).isDirectory()).toBe(true)
+    expect(existsSync(join(payload, 'compose/no-tun'))).toBe(false)
     // ready for the built-in VPN with no edits (ADR 0042, 2026-11-19)
     const service = (
       Bun.YAML.parse(compose) as {
@@ -166,6 +166,8 @@ describe('spk', () => {
           highsea: {
             cap_add: string[]
             volumes: string[]
+            tmpfs: string[]
+            device_cgroup_rules: string[]
             environment: Record<string, string>
             network_mode?: string
           }
@@ -173,8 +175,11 @@ describe('spk', () => {
       }
     ).services.highsea
     expect(service.cap_add).toEqual(['NET_ADMIN'])
-    // biome-ignore lint/suspicious/noTemplateCurlyInString: Compose's own variable, not a template
-    expect(service.volumes).toContain('${HIGHSEA_TUN}:/dev/net')
+    // a /dev/net of the container's own, where the entrypoint makes a TUN device the package's
+    // user can open, never DSM's root-only one (HT-98)
+    expect(service.volumes.some((v) => v.endsWith(':/dev/net'))).toBe(false)
+    expect(service.tmpfs).toEqual(['/dev/net:dev,mode=1777'])
+    expect(service.device_cgroup_rules).toContain('c 10:200 rwm')
     expect(service.environment.HIGHSEA_INSTALL).toBe('synology')
     expect(service.network_mode).toBeUndefined()
   })
@@ -372,12 +377,8 @@ describe('preinst', () => {
     expect(r.env).toContain("HIGHSEA_DATA='/var/packages/highsea/shares/films and tv'\n")
     expect(r.env).toMatch(/^HIGHSEA_RENDER_GID=\d+$/m)
     expect(r.env).toMatch(/^HIGHSEA_HOSTNAME=.+$/m)
-    // the host's /dev/net when DSM has made it, else the package's empty folder
-    expect(r.env).toContain(
-      existsSync('/dev/net')
-        ? 'HIGHSEA_TUN=/dev/net\n'
-        : 'HIGHSEA_TUN=/var/packages/highsea/target/compose/no-tun\n',
-    )
+    // the TUN device is the container's own now, so nothing points at the host's /dev/net (HT-98)
+    expect(r.env).not.toContain('HIGHSEA_TUN')
   })
 
   test('keeps the folder chosen at install when upgrading', () => {
