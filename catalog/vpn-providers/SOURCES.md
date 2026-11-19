@@ -1,6 +1,6 @@
 # Sources
 
-Every entry is written for highsea from the provider's own documentation, checked on 2026-10-20. Each entry lists them in `sources`; nothing is copied from another project. The entries are CC0-1.0.
+Every entry is written for highsea from the provider's own documentation, checked on 2026-10-20 (NordVPN on 2026-11-18). Each entry lists them in `sources`; nothing is copied from another project. The entries are CC0-1.0.
 
 | Entry | How highsea connects | Port forwarding | Written from |
 | --- | --- | --- | --- |
@@ -11,6 +11,7 @@ Every entry is written for highsea from the provider's own documentation, checke
 | `ivpn` | A WireGuard file from the Client Area's generator (accounts like i-XXXX-XXXX-XXXX) | None: removed on 2023-09-30 | [IVPN: configuration files](https://www.ivpn.net/knowledgebase/general/do-you-offer-openvpn-wireguard-config-files/), [IVPN: gradual removal of port forwarding](https://www.ivpn.net/blog/gradual-removal-of-port-forwarding) |
 | `windscribe` | A WireGuard file from My Account › Config Generator (paid accounts) | An ephemeral port with Matching Port, for 7 days, typed in | [Windscribe: WireGuard configs](https://windscribe.com/knowledge-base/articles/where-do-i-access-my-wireguard-configs), [Windscribe: port forwarding](https://windscribe.com/knowledge-base/articles/do-you-support-port-forwarding), [Windscribe: ephemeral port forwarding](https://windscribe.com/knowledge-base/articles/what-is-ephemeral-port-forwarding-and-how-to-use-it) |
 | `surfshark` | A WireGuard file from VPN › Manual setup | None | [Surfshark: manual WireGuard on Linux](https://support.surfshark.com/hc/en-us/articles/19262406140306), [Surfshark: what is VPN port forwarding](https://surfshark.com/blog/vpn-port-forwarding) ("Surfshark VPN does not support port forwarding") |
+| `nordvpn` | A WireGuard file written by hand: NordVPN offers none to download. The private key comes from its API with an access token, the server and its key from its public server list; the address `10.5.0.2/32` and port 51820 are its Linux client's | None: only with the Dedicated Server add-on, which standard servers and Dedicated IP don't have | [NordVPN: access token](https://support.nordvpn.com/hc/en-us/articles/45535038276753), [NordVPN: does NordVPN offer port forwarding](https://support.nordvpn.com/hc/en-us/articles/19483392309649), [NordVPN: DNS server addresses](https://support.nordvpn.com/hc/en-us/articles/19587726859793), NordVPN's own open-source clients for the API and tunnel facts (GPL-3.0; facts only, no code): [libtelio's README](https://github.com/NordSecurity/libtelio/blob/main/README.md) (`/v1/users/services/credentials` with `token:<token>`, `/v1/servers/recommendations`), [nordvpn-linux › nordlynx.go](https://github.com/NordSecurity/nordvpn-linux/blob/main/daemon/vpn/nordlynx/nordlynx.go) (`10.5.0.2`, port 51820) |
 | `other` | Any WireGuard configuration file | A port typed in, if the provider gives one | [wg-quick(8)](https://git.zx2c4.com/wireguard-tools/about/src/man/wg-quick.8) |
 
 ## Adding a provider

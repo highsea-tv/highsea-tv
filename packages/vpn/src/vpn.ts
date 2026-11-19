@@ -3,7 +3,7 @@
 // Whatever the mode, this hands the torrent engine one binding through `onBinding`: an address and
 // resolvers while torrents may leave, or null while they mustn't. Three modes:
 //
-// - highsea connects (6b): highsea brings up a WireGuard tunnel itself (tunnel.ts), from a
+// - the built-in VPN (6b): highsea brings up a WireGuard tunnel itself (tunnel.ts), from a
 //   configuration file or PIA's API, and binds torrents to the tunnel's address, which the kernel
 //   routes through the tunnel or nowhere. The tunnel is up once a handshake is seen (`wg show
 //   latest-handshakes`, every 5 seconds); no handshake for 3 minutes is down (vpn.md › Checks), and
@@ -76,7 +76,7 @@ export const VPN_TIMINGS = {
   interfaceMs: 2_000,
   /** How often gluetun's control server is asked for the tunnel's state. */
   containerMs: 5_000,
-  /** How often highsea connects reads the tunnel's latest handshake. */
+  /** How often the built-in VPN reads the tunnel's latest handshake. */
   handshakeMs: 5_000,
   /** No handshake for this long is down (vpn.md › Checks: "No handshake for 3 minutes"). */
   handshakeTimeoutMs: 3 * 60_000,
@@ -124,13 +124,13 @@ export type VpnDeps = {
   interfaces?: () => NodeJS.Dict<os.NetworkInterfaceInfo[]>
   /**
    * Whether highsea's container is on host networking, as `@highsea-tv/runtime`'s
-   * `detectContainerNetwork` finds it (setup reads the same). highsea connects won't start there.
+   * `detectContainerNetwork` finds it (setup reads the same). the built-in VPN won't start there.
    * False when absent.
    */
   hostNetwork?: () => boolean
   /** The catalog's `vpn-providers` entries (`@highsea-tv/catalog`'s provider reader). */
   providers?: () => readonly VpnProviderDefinition[]
-  /** Runs `ip` and `wg` for highsea connects; tests pass a fake that records each command. */
+  /** Runs `ip` and `wg` for the built-in VPN; tests pass a fake that records each command. */
   runner?: Runner
   /** PIA's API; tests pass one over a fake transport. */
   pia?: Pia
@@ -167,7 +167,7 @@ function addressesOf(infos: os.NetworkInterfaceInfo[] | undefined) {
 }
 
 /**
- * highsea connects carries IPv4 for now (judgement call in the 6b report): torrents bind to one
+ * The built-in VPN carries IPv4 for now (judgement call in the 6b report): torrents bind to one
  * IPv4 address, and an IPv6 address on the interface would fail where Docker turns IPv6 off.
  */
 function ipv4Only(spec: TunnelSpec): TunnelSpec {
@@ -181,7 +181,7 @@ function ipv4Only(spec: TunnelSpec): TunnelSpec {
   }
 }
 
-/** A running highsea connects tunnel. */
+/** A running the built-in VPN tunnel. */
 type Session = {
   address: string
   dns: string[]
@@ -220,7 +220,7 @@ export function createVpn(deps: VpnDeps) {
   let polling = false
   let checking = false
   let lastForwarded: number | null | undefined
-  /** highsea connects' tunnel, while it's up. */
+  /** The built-in VPN's tunnel, while it's up. */
   let session: Session | null = null
   /** Whether highsea may have left an interface behind, to take down. */
   let tunnelTouched = false
@@ -298,7 +298,7 @@ export function createVpn(deps: VpnDeps) {
     }
   }
 
-  // reconnecting, in the container mode and highsea connects
+  // reconnecting, in the container mode and the built-in VPN
 
   function scheduleReconnect() {
     if (retry !== null) return
@@ -389,7 +389,7 @@ export function createVpn(deps: VpnDeps) {
     track(runChecks()).catch(() => {})
   }
 
-  // highsea connects
+  // The built-in VPN
 
   function failBuiltin(message: string, retryLater = false) {
     update({ phase: 'failed', failure: message, exit: null, exitResult: null })
@@ -757,7 +757,7 @@ export function createVpn(deps: VpnDeps) {
       stored = readStored(deps.db)
       apply()
     },
-    /** Stops, and takes highsea connects' tunnel down. */
+    /** Stops, and takes the built-in VPN's tunnel down. */
     async stop() {
       started = false
       generation++
@@ -767,7 +767,7 @@ export function createVpn(deps: VpnDeps) {
     status,
     /**
      * System's health checks (docs/product/vpn.md › Elsewhere): the VPN down or failed, a check
-     * that fails, and port forwarding failing in highsea connects (a warning).
+     * that fails, and port forwarding failing in the built-in VPN (a warning).
      */
     issues(): { id: string; level: 'warning' | 'error'; message: string; since: number }[] {
       const s = status()

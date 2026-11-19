@@ -60,9 +60,9 @@ export const VpnStatus = z
     /** Failed for want of NET_ADMIN: the page shows the compose lines to add. */
     needsCapability: z.boolean(),
     /**
-     * highsea's container is on host networking, where highsea connects' interface and rule would
+     * highsea's container is on host networking, where the built-in VPN's interface and rule would
      * land in the host's network (ADR 0042's 2026-11-07 section): in that mode the page says so
-     * and opens Compose for highsea connects. Every server knows its answer, so it's always
+     * and opens Compose for the built-in VPN. Every server knows its answer, so it's always
      * there: false outside a container, where there's no compose file to change, and on a bridge.
      */
     hostNetwork: z.boolean(),

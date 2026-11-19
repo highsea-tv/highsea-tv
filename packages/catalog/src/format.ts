@@ -13,7 +13,7 @@ export const CATALOG_FORMAT = 1
 export const CHANNELS = ['stable', 'beta'] as const
 export type Channel = (typeof CHANNELS)[number]
 /**
- * Indexers, and since checkpoint 6b the VPN providers highsea connects to (ADR 0042); presets and
+ * Indexers, and since checkpoint 6b the VPN providers the built-in VPN to (ADR 0042); presets and
  * sound packs can ride the same format later (owner's answer 8).
  */
 export const CATALOG_KINDS = ['indexers', 'vpn-providers'] as const

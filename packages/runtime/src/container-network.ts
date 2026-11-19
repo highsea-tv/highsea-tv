@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Which network highsea's container is on, read once from what the container can see: setup's
-// address (ADR 0020's 4.3c section) and Settings › VPN's highsea connects (ADR 0042's
+// address (ADR 0020's 4.3c section) and Settings › VPN's the built-in VPN (ADR 0042's
 // 2026-11-07 section) both ask here, so they give the same answer.
 import { existsSync } from 'node:fs'
 import { type NetworkInterfaceInfo, networkInterfaces } from 'node:os'

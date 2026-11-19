@@ -9,7 +9,7 @@
 // highsea's `network_mode` line. The same text the approved prototype shows, so the page reads it
 // from the API.
 //
-// Compose for highsea connects (proposed, one-compose-file.md part B): the lines highsea's own
+// Compose for the built-in VPN (proposed, one-compose-file.md part B): the lines highsea's own
 // service needs to run the tunnel. `cap_add: [NET_ADMIN]` lets the container make its interface and
 // routes (https://docs.docker.com/reference/compose-file/services/#cap_add, and
 // https://docs.docker.com/engine/containers/run/#runtime-privilege-and-linux-capabilities); the
@@ -79,6 +79,12 @@ export const gluetunProviders: Record<string, GluetunProvider> = {
     env: ['VPN_TYPE: wireguard', 'WIREGUARD_PRIVATE_KEY: <…>', 'WIREGUARD_ADDRESSES: <…>'],
     forwards: false,
   },
+  // https://github.com/qdm12/gluetun-wiki/blob/main/setup/providers/nordvpn.md
+  nordvpn: {
+    name: 'nordvpn',
+    env: ['VPN_TYPE: wireguard', 'WIREGUARD_PRIVATE_KEY: <your nordlynx_private_key>'],
+    forwards: false,
+  },
 }
 export type ComposeInput =
   | {
@@ -92,7 +98,7 @@ export type ComposeInput =
        */
       apiKey?: string
     }
-  /** Compose for highsea connects: highsea's own service, which needs no provider. */
+  /** Compose for the built-in VPN: highsea's own service, which needs no provider. */
   | { mode: 'builtin' }
 
 /** Characters an API key can hold here without breaking the YAML's single-quoted JSON. */

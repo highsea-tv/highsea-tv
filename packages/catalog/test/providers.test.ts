@@ -83,6 +83,7 @@ describe('The VPN providers', () => {
       'airvpn',
       'ivpn',
       'mullvad',
+      'nordvpn',
       'other',
       'pia',
       'proton',
@@ -98,6 +99,7 @@ describe('The VPN providers', () => {
     })
     expect(byId.pia).toMatchObject({ connect: 'pia', portForwarding: { method: 'pia' } })
     expect(byId.mullvad?.portForwarding.method).toBe('none')
+    expect(byId.nordvpn).toMatchObject({ connect: 'config', portForwarding: { method: 'none' }, ipv6: false })
     expect(byId.airvpn?.portForwarding.method).toBe('static')
     for (const p of r.providers()) expect(p.sources.length).toBeGreaterThan(0)
   })
@@ -118,7 +120,7 @@ describe('The VPN providers', () => {
       trusted: [release.trusted],
     })
     r.start()
-    expect(r.version()).toBe('2026.10.21')
+    expect(r.version()).toBe('2026.11.18')
     expect(await r.check()).toBe('installed')
     expect(r.providers().map((p) => p.id)).toEqual(['newvpn'])
     expect(await r.check()).toBe('unchanged')
@@ -132,7 +134,7 @@ describe('The VPN providers', () => {
     const stranger = reader({ hostDir, mainUrl: 'https://catalog.test' })
     stranger.start()
     await expect(stranger.check()).rejects.toThrow()
-    expect(stranger.version()).toBe('2026.10.21')
+    expect(stranger.version()).toBe('2026.11.18')
   })
 
   test('“Ask first” holds an update back', async () => {
@@ -153,7 +155,7 @@ describe('The VPN providers', () => {
     })
     r.start()
     expect(await r.check()).toBe('waiting')
-    expect(r.version()).toBe('2026.10.21')
+    expect(r.version()).toBe('2026.11.18')
   })
 
   test('an indexer catalog can’t pass for VPN providers', () => {

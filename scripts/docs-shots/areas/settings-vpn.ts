@@ -5,13 +5,13 @@ import type { Page } from 'playwright-core'
 import type { Area } from '../shot.ts'
 
 const mode = (name: RegExp) => (p: Page) => p.getByRole('radio', { name }).click()
-// highsea connects' fields wait for the provider list; the shot waits for them
+// The built-in VPN' fields wait for the provider list; the shot waits for them
 const connects = async (p: Page) => {
-  await mode(/highsea connects/)(p)
+  await mode(/Built-in VPN/)(p)
   await p.getByText('WireGuard configuration', { exact: true }).first().waitFor()
 }
 const provider = (name: string) => async (p: Page) => {
-  await mode(/highsea connects/)(p)
+  await mode(/Built-in VPN/)(p)
   await p.getByRole('button', { name: 'Provider', exact: true }).click()
   await p.getByRole('menuitemradio', { name, exact: true }).click()
 }
@@ -33,7 +33,7 @@ export default {
       path: '/settings/vpn',
       act: async (p) => {
         await connects(p)
-        await p.getByText('Compose for highsea connects').click()
+        await p.getByText('Compose for the built-in VPN').click()
         await p.getByText('cap_add: [NET_ADMIN]').first().waitFor()
       },
       crop: connection,
@@ -74,7 +74,7 @@ export default {
     {
       name: 'behaviour',
       path: '/settings/vpn',
-      act: mode(/highsea connects/),
+      act: mode(/Built-in VPN/),
       crop: (p) => p.getByRole('region', { name: 'Behaviour' }),
       height: 1400,
     },

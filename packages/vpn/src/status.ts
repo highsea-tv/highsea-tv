@@ -14,20 +14,20 @@ export type VpnRuntime = {
   failure: string | null
   /** The tunnel row while it's down: what this mode can see. */
   down: readonly [string, string] | null
-  /** The interface's addresses in the interface mode; the tunnel's in highsea connects. */
+  /** The interface's addresses in the interface mode; the tunnel's in the built-in VPN. */
   address: string | null
   ipv6: string | null
   exit: { ip: string; country: string | null } | null
-  /** `own` and `not-provider` are leaks in highsea connects: torrents stop. */
+  /** `own` and `not-provider` are leaks in the built-in VPN: torrents stop. */
   exitResult: 'pass' | 'unknown' | 'own-unknown' | 'same' | 'own' | 'not-provider' | null
   forwardedPort: number | null
   checkedAt: number | null
-  /** highsea connects: the latest handshake, in milliseconds since the epoch. */
+  /** The built-in VPN: the latest handshake, in milliseconds since the epoch. */
   handshakeAt: number | null
-  /** highsea connects: whether names go through the tunnel (a DNS line), and the kill switch. */
+  /** The built-in VPN: whether names go through the tunnel (a DNS line), and the kill switch. */
   names: boolean | null
   killSwitch: boolean | null
-  /** highsea connects: the provider didn't forward a port the last time highsea asked. */
+  /** The built-in VPN: the provider didn't forward a port the last time highsea asked. */
   forwardFailed: boolean
 }
 
@@ -47,7 +47,7 @@ export const initialRuntime = (): VpnRuntime => ({
   forwardFailed: false,
 })
 
-/** Whether a check found a leak, which takes the binding away in highsea connects. */
+/** Whether a check found a leak, which takes the binding away in the built-in VPN. */
 export const leaking = (rt: VpnRuntime) =>
   rt.names === false ||
   rt.killSwitch === false ||
@@ -162,7 +162,7 @@ export function buildStatus(
   }
 }
 
-/** highsea connects' rows (vpn.md › Checks), where a leak fails and stops torrents. */
+/** The built-in VPN's rows (vpn.md › Checks), where a leak fails and stops torrents. */
 function builtinChecks(
   s: StoredVpnSettings,
   rt: VpnRuntime,

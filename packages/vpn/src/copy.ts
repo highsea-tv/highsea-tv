@@ -15,17 +15,17 @@ export const failures = {
   needsCapability:
     'highsea needs the NET_ADMIN capability to run the tunnel. Add it to highsea’s service in your compose file, then restart.',
   hostNetwork:
-    'On host networking, the tunnel’s interface and routes would land in the host’s network beside everything else, so highsea won’t start it. Put the lines from Compose for highsea connects in place of network_mode: host, then recreate the container.',
-  // Not in the prototype: what highsea connects can meet that the prototype didn't play (6b).
+    'On host networking, the tunnel’s interface and routes would land in the host’s network beside everything else, so highsea won’t start it. Put the lines from Compose for the built-in VPN in place of network_mode: host, then recreate the container.',
+  // Not in the prototype: what the built-in VPN can meet that the prototype didn't play (6b).
   linuxOnly:
-    'highsea connects runs on Linux, as highsea’s Docker image does. Use a VPN container or an interface on this machine here.',
+    'The built-in VPN runs on Linux, as highsea’s Docker image does. Use a VPN container or an interface on this machine here.',
   noDevice:
     'highsea couldn’t create the WireGuard interface: the kernel has no WireGuard, and /dev/net/tun isn’t there for wireguard-go. Add the /dev/net/tun device to highsea’s service in your compose file, then restart.',
   notInstalled:
     'highsea couldn’t find the ip and wg programs. They come with highsea’s Docker image.',
   tunnelFailed: (reason: string) => `highsea couldn’t set up the tunnel: ${reason}`,
   noAddress:
-    'highsea connects needs an IPv4 Address in the WireGuard configuration’s [Interface] section.',
+    'The built-in VPN needs an IPv4 Address in the WireGuard configuration’s [Interface] section.',
   noEndpoint:
     'A [Peer] in that WireGuard configuration has no Endpoint, so highsea can’t reach it.',
   piaRegion: (region: string) => `PIA has no WireGuard server in ${region}. Pick another region.`,
@@ -63,7 +63,7 @@ export const checkCopy = {
   waiting: 'Waiting for the tunnel.',
   checkedLater: 'Checked again once the tunnel is back.',
   stopped: ['Torrents are stopped', 'Nothing leaks onto your own connection.'],
-  // The prototype's down row is highsea connects' ("No handshake for 3 minutes"); these two say
+  // The prototype's down row is the built-in VPN's ("No handshake for 3 minutes"); these two say
   // what the other modes can actually see. Not in the prototype.
   containerDown: [
     'gluetun reports the tunnel stopped',
@@ -108,7 +108,7 @@ export const checkCopy = {
   killSwitchInterface: (iface: string) =>
     [
       `Bound to ${iface}`,
-      'Your system’s routing decides the path; a VPN container or highsea connects guarantees it.',
+      'Your system’s routing decides the path; a VPN container or the built-in VPN guarantees it.',
     ] as const,
   listening: (port: number) =>
     [
@@ -120,7 +120,7 @@ export const checkCopy = {
   notForwarding: ['Not using a forwarded port', 'Downloads still work; fewer peers can reach you.'],
   doesntForward: (name: string) =>
     [`${name} doesn’t forward ports`, 'Downloads still work; fewer peers can reach you.'] as const,
-  // highsea connects' rows, from vpn.md's table; the ones marked weren't in the prototype
+  // The built-in VPN' rows, from vpn.md's table; the ones marked weren't in the prototype
   builtinTunnel: (provider: string, seconds: number) =>
     [`Connected to ${provider}`, `Last handshake ${seconds} seconds ago.`] as const,
   noHandshake: [
@@ -151,10 +151,10 @@ export const checkCopy = {
       `${provider} didn’t forward a port`,
       'Downloads still work; fewer peers can reach you. Trying again in a minute.',
     ] as const,
-  // Not in the prototype: highsea connects routes IPv4 only for now (6b, judgement call).
+  // Not in the prototype: the built-in VPN routes IPv4 only for now (6b, judgement call).
   ipv4OnlyBuiltin: [
     'IPv4 only',
-    'highsea connects carries IPv4 for now, so torrents use IPv4 only.',
+    'The built-in VPN carries IPv4 for now, so torrents use IPv4 only.',
   ],
   ipv6: 'IPv6 goes through the tunnel too',
   ipv4Only: ['IPv4 only', 'The tunnel has no IPv6 address, so torrents use IPv4 only.'],

@@ -64,7 +64,7 @@ FROM node:26.11.1-trixie-slim AS runtime
 RUN apt-get update \
   && apt-get install -y --no-install-recommends ffmpeg unar tini gosu ca-certificates \
   && rm -rf /var/lib/apt/lists/*
-# highsea connects (ADR 0042): `ip` (iproute2) and `wg` (wireguard-tools) run as separate programs,
+# The built-in VPN (ADR 0042): `ip` (iproute2) and `wg` (wireguard-tools) run as separate programs,
 # and wireguard-go stands in where the kernel has no WireGuard. setpriv (util-linux, already in the
 # image) keeps CAP_NET_ADMIN for the PUID user. Their sources: docker/NOTICE.
 # avahi-publish (avahi-utils) publishes highsea through the host's avahi when the container is

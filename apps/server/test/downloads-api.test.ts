@@ -266,7 +266,7 @@ describe('settings', () => {
 })
 
 describe('the VPN on host networking', () => {
-  test('the status says which network highsea is on, and highsea connects won’t start on the host’s', async () => {
+  test('the status says which network highsea is on, and the built-in VPN won’t start on the host’s', async () => {
     const off = await bootRuntime()
     const { token } = await withOwner(off)
     expect(await clientFor(createApi(off), { token }).vpn.status()).toMatchObject({

@@ -1095,7 +1095,7 @@ export function createApi(srv: MockServer, ctx: Ctx) {
     }
   }
   /**
-   * New VPN settings: write-only secrets are taken in and dropped, then highsea connects again,
+   * New VPN settings: write-only secrets are taken in and dropped, then the built-in VPN again,
    * or fails with the step's copy.
    */
   const saveVpn = (value: VpnSettings): VpnSettings => {

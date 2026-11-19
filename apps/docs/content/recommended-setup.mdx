@@ -10,7 +10,7 @@ description: What to set up after installing highsea, and the choices that suit 
   - gluetun's control server: https://github.com/qdm12/gluetun-wiki/blob/main/setup/advanced/control-server.md
   - WireGuard: https://www.wireguard.com/
   - In highsea: the admin's Settings areas (packages/admin/src), with Settings › VPN's
-    Compose for your provider (packages/vpn/src/compose.ts), and highsea connects' lines in
+    Compose for your provider (packages/vpn/src/compose.ts), and the built-in VPN's lines in
     settings/vpn/connects.mdx.
 */}
 
@@ -49,7 +49,7 @@ On the **Subtitles** page, add a provider: OpenSubtitles.com, Subdl or SubSource
 
 **Settings › VPN** has four modes:
 
-- **highsea connects** (recommended): highsea runs its own WireGuard tunnel to your provider. Only torrents use it, and they can't leave outside it. It needs Linux and one extra permission in highsea's service, with published ports in place of host networking, as [highsea connects](/settings/vpn/connects/#what-it-needs) shows:
+- **The built-in VPN** (recommended): highsea runs its own WireGuard tunnel to your provider. Only torrents use it, and they can't leave outside it. It needs Linux and one extra permission in highsea's service, with published ports in place of host networking, as [the built-in VPN](/settings/vpn/connects/#what-it-needs) shows:
 
   ```yaml
   cap_add: [NET_ADMIN]

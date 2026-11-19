@@ -126,7 +126,7 @@ const MODES = ['builtin', 'container', 'interface', 'off'] as const
 const CONTAINER_URL = /^https?:\/\/[^\s/]+/
 
 /**
- * Compose for highsea connects: the lines highsea's own service needs for the tunnel, from the
+ * Compose for the built-in VPN: the lines highsea's own service needs for the tunnel, from the
  * one writer the guide uses too (`@highsea-tv/vpn/compose`; proposed in one-compose-file.md's B).
  */
 const CONNECTS_LINES = composeFor({ mode: 'builtin' })
@@ -262,7 +262,7 @@ const stateLine = (
       return {
         icon: 'error',
         tone: 'danger',
-        // only highsea connects minds host networking; an interface on the host usually needs it
+        // only the built-in VPN minds host networking; an interface on the host usually needs it
         title:
           v.mode === 'builtin' && v.hostNetwork
             ? t('state.hostNetwork')
@@ -773,7 +773,7 @@ function BuiltIn({ v, set, linesNeeded }: { v: Draft; set: Set; linesNeeded: boo
   )
 }
 
-/** Compose for highsea connects, open by itself when highsea needs the lines (vpn.md, proposed). */
+/** Compose for the built-in VPN, open by itself when highsea needs the lines (vpn.md, proposed). */
 function ConnectsCompose({ linesNeeded }: { linesNeeded: boolean }) {
   const t = useT(messages)
   const [open, setOpen] = useState(linesNeeded)

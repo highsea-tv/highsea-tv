@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The one place highsea runs `ip`, `wg` and `wireguard-go` (docs/plans/phase-3-checkpoint-6.md ›
-// highsea connects, judgement call 18). Each operation is a function from typed values to a
+// The built-in VPN, judgement call 18). Each operation is a function from typed values to a
 // program and its arguments; every value is checked before a command is built, and a value that
 // doesn't fit is refused with `CommandRefused` before anything runs. Programs run as separate
 // processes with an argument array, never through a shell (Node: child_process.spawn with
@@ -286,7 +286,7 @@ export const ops = {
 // ---------------------------------------------------------------- running
 
 /**
- * Spawns each command without a shell. Only on Linux: anywhere else highsea connects isn't
+ * Spawns each command without a shell. Only on Linux: anywhere else the built-in VPN isn't
  * available, and nothing is run (so a Mac's Homebrew `ip` is never touched).
  */
 /**
@@ -305,7 +305,7 @@ export function spawnRunner(timeoutMs = 15_000): Runner {
   return (cmd) =>
     new Promise((resolve, reject) => {
       if (process.platform !== 'linux')
-        return reject(new CommandFailed(cmd.op, 'platform', 'highsea connects runs on Linux.'))
+        return reject(new CommandFailed(cmd.op, 'platform', 'The built-in VPN runs on Linux.'))
       const key = cmd.stdin === undefined ? null : keyFile(cmd.stdin)
       const args = key ? cmd.args.map((a) => (a === '/dev/stdin' ? key.path : a)) : cmd.args
       // a clean environment: only PATH, and the C locale so stderr is the English we match on.
