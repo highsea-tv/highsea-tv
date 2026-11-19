@@ -11,8 +11,13 @@
 //   lies over the film without its background (`overlay`).
 // - Back and Forward at the start of the top bar (prototype-gaps stage 4): the webview has none of
 //   a browser's, so the app keeps its own trail, with the platform's keys and the mouse's buttons.
-// Tauri moves the window from any element marked `data-tauri-drag-region`
+// Tauri moves the window from an element marked `data-tauri-drag-region`
 // (https://v2.tauri.app/learn/window-customization/), which react-native-web writes from `dataSet`.
+// A bare mark moves it only when the press lands on that very element, and the top bar's row and
+// its children cover all of it, so nothing moved (HT-107). `deep` moves it from anywhere inside
+// but a clickable element: a button, link, tab or field, or anything with a tab stop or an
+// interactive role, which `Press` always has (tauri 2.12's window/scripts/drag.js,
+// `isDragRegion`). A double click zooms, on mouseup on a Mac as the system does.
 import { useT } from '@highsea-tv/i18n/react'
 import { Button, Mark, Press, Text, tokens, usePageMeasure, useTheme } from '@highsea-tv/ui'
 import { router, useGlobalSearchParams, usePathname } from 'expo-router'
@@ -37,7 +42,7 @@ const WINDOWS_CLOSE = { fill: '#c42b1c', glyph: '#ffffff' }
 const TRAFFIC_LIGHTS = ['#ff5f57', '#febc2e', '#28c840'] as const
 
 /** react-native-web's `dataSet`, which React Native's types don't list. */
-const DRAG = { dataSet: { tauriDragRegion: '' } } as object
+const DRAG = { dataSet: { tauriDragRegion: 'deep' } } as object
 /** Marks the prototypes' stand-ins for macOS's buttons (`data-window-buttons="mac"`). */
 const MAC_BUTTONS = { dataSet: { windowButtons: 'mac' } } as object
 
