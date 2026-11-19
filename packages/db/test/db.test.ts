@@ -299,6 +299,7 @@ describe('0018_profiles', () => {
       '0024_show_dismissals',
       '0025_music',
       '0026_unmatched_dismissed',
+      '0027_job_subjects',
     ])
     expect(result.backup).not.toBeNull()
     const once = state(first)
@@ -405,6 +406,7 @@ describe('0020_shows', () => {
       '0024_show_dismissals',
       '0025_music',
       '0026_unmatched_dismissed',
+      '0027_job_subjects',
     ])
     expect(films(raw)).toEqual(was)
     expect(raw.all('SELECT count(*) AS n FROM media_items')).toEqual([{ n: 300 }])
@@ -554,6 +556,7 @@ describe('0020_shows', () => {
         '0024_show_dismissals',
         '0025_music',
         '0026_unmatched_dismissed',
+        '0027_job_subjects',
       ])
       expect(all(raw)).toEqual(was)
       expect(raw.all('SELECT count(*) AS n FROM unmatched_files')).toEqual([{ n: 0 }])
@@ -616,7 +619,7 @@ describe('0020_shows', () => {
         expect(raw.all('SELECT count(*) AS n FROM show_dismissals')).toEqual([{ n: 0 }])
         expect(raw.all('PRAGMA foreign_key_check')).toEqual([])
         expect(raw.all('PRAGMA integrity_check')).toEqual([{ integrity_check: 'ok' }])
-        expect(migrate(raw).applied).toEqual(['0026_unmatched_dismissed'])
+        expect(migrate(raw).applied).toEqual(['0026_unmatched_dismissed', '0027_job_subjects'])
         expect(migrate(raw).applied).toEqual([])
         raw.close()
       })
@@ -667,7 +670,7 @@ describe('0020_shows', () => {
         const { raw } = withUnmatched()
         migrate(raw, { all: migrations.filter((m) => m.tag < '0026') })
         const was = everything(raw)
-        expect(migrate(raw).applied).toEqual(['0026_unmatched_dismissed'])
+        expect(migrate(raw).applied).toEqual(['0026_unmatched_dismissed', '0027_job_subjects'])
         const now = everything(raw)
         expect(now.unmatched).toEqual(
           (was.unmatched as Record<string, unknown>[]).map((r) => ({ ...r, dismissed_at: null })),
@@ -753,6 +756,32 @@ describe('0023_fanart', () => {
       "INSERT INTO fanart_images (subject, external_id, data, fetched_at) VALUES ('show', '550', '{}', 2)",
     )
     expect(raw.all('SELECT count(*) AS n FROM fanart_images')[0]?.n).toBe(2)
+    raw.close()
+  })
+})
+
+// HT-106: what a job works on, so the admin can mark the item while it runs
+describe('0027_job_subjects', () => {
+  test('adds subject and subject_of, null on the jobs there, and keeps them as they were', () => {
+    const { raw } = openDatabase(':memory:')
+    migrate(raw, { all: migrations.filter((m) => m.tag < '0027') })
+    raw.run(
+      `INSERT INTO jobs (id, type, payload, status, max_attempts, run_at, created_at)
+       VALUES ('job_1', 'metadata.refresh', '{"kind":"movie","id":603}', 'queued', 3, 1, 1)`,
+    )
+    const was = raw.all('SELECT * FROM jobs') as Record<string, unknown>[]
+    expect(migrate(raw).applied).toEqual(['0027_job_subjects'])
+    expect(raw.all('SELECT * FROM jobs')).toEqual(
+      was.map((j) => ({ ...j, subject: null, subject_of: null })),
+    )
+    raw.run(
+      `INSERT INTO jobs (id, type, payload, status, max_attempts, run_at, created_at, subject, subject_of)
+       VALUES ('job_2', 'subtitles.search', '{}', 'running', 2, 1, 1, 'episode:62085', 'show:1396')`,
+    )
+    expect(
+      raw.all("SELECT id FROM jobs WHERE subject_of = 'show:1396' AND status = 'running'"),
+    ).toEqual([{ id: 'job_2' }])
+    expect(raw.all('PRAGMA integrity_check')).toEqual([{ integrity_check: 'ok' }])
     raw.close()
   })
 })

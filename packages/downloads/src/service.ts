@@ -24,7 +24,7 @@ import {
   type Indexers,
   type ReleaseView,
 } from '@highsea-tv/indexers'
-import type { JobQueue } from '@highsea-tv/jobs'
+import { itemSubject, type JobQueue } from '@highsea-tv/jobs'
 import type {
   EngineEvent,
   EngineState,
@@ -1006,6 +1006,14 @@ export function createDownloads(deps: DownloadsDeps) {
       deps.jobs.define({
         type: DOWNLOADS_IMPORT_JOB,
         payload: z.object({ downloadId: z.string(), force: z.boolean() }),
+        subject: ({ downloadId }) => {
+          const d = db
+            .select({ itemId: downloads.itemId })
+            .from(downloads)
+            .where(eq(downloads.id, downloadId))
+            .get()
+          return d ? itemSubject(db, d.itemId) : null
+        },
         attempts: 3,
         timeoutMs: 60 * 60 * 1000,
         run: ({ downloadId, force }) => runImport(downloadId, force),

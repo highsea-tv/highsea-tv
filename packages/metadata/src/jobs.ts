@@ -53,6 +53,10 @@ export function defineMetadataJobs(
   jobs.define({
     type: JOB_TYPES.refresh,
     payload: RefreshPayload,
+    // a film's or a show's page and row are marked while it runs (HT-106); a person or a TMDB
+    // collection has no item of its own in the admin's library
+    subject: ({ kind, id }) =>
+      kind === 'movie' || kind === 'show' ? { kind, id: String(id) } : null,
     concurrency: 2,
     attempts: 3,
     timeoutMs: 60_000,
@@ -80,6 +84,8 @@ export function defineMetadataJobs(
   jobs.define({
     type: JOB_TYPES.fanart,
     payload: FanartPayload,
+    // an artist's fanart.tv id is MusicBrainz's, not the admin's address for them
+    subject: ({ subject, id }) => (subject === 'artist' ? null : { kind: subject, id: String(id) }),
     // one at a time: fanart.tv is asked only for what highsea needs, at a gentle pace (its terms)
     concurrency: 1,
     attempts: 1,

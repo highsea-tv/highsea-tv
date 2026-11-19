@@ -110,5 +110,9 @@ export const migrations: Migration[] = [
   {
     "tag": "0026_unmatched_dismissed",
     "sql": "ALTER TABLE `unmatched_files` ADD `dismissed_at` integer;--> statement-breakpoint\n-- HT-92: shows imported before their subtitles were served take their root folder's profile, as\n-- an import does now; a show's seasons and episodes hold it with the show\nUPDATE `media_items` SET `language_profile_id` = (\n\tSELECT `root_folders`.`language_profile_id` FROM `root_folders`\n\tWHERE `root_folders`.`path` = `media_items`.`root_folder`\n) WHERE `type` IN ('show', 'season', 'episode') AND `language_profile_id` IS NULL;"
+  },
+  {
+    "tag": "0027_job_subjects",
+    "sql": "ALTER TABLE `jobs` ADD `subject` text;--> statement-breakpoint\nALTER TABLE `jobs` ADD `subject_of` text;--> statement-breakpoint\nCREATE INDEX `jobs_subject_of` ON `jobs` (`subject_of`,`status`);"
   }
 ]

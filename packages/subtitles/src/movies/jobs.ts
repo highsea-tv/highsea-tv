@@ -3,6 +3,7 @@
 // asks only for what's still wanted when it runs, a download finds the row it wrote, and a refresh
 // rewrites rows from the current state.
 import { schema } from '@highsea-tv/db'
+import { fileSubject, itemSubject, trackSubject } from '@highsea-tv/jobs'
 import { and, eq, isNull, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import type { Settings } from '../shared/settings.ts'
@@ -86,6 +87,7 @@ export function createJobs(
     jobs.define({
       type: JOBS.refresh,
       payload: z.object({ itemId: z.string().nullable() }),
+      subject: ({ itemId }) => (itemId ? itemSubject(db, itemId) : null),
       attempts: 3,
       async run({ itemId }, ctx) {
         if (itemId) wanted.refresh(itemId)
@@ -95,6 +97,7 @@ export function createJobs(
     jobs.define({
       type: JOBS.search,
       payload: z.object({ fileId: z.string() }),
+      subject: ({ fileId }) => fileSubject(db, fileId),
       attempts: 2,
       timeoutMs: 5 * 60_000,
       async run({ fileId }, ctx) {
@@ -110,6 +113,7 @@ export function createJobs(
         chosen: z.boolean(),
         replaces: z.string().nullable(),
       }) as unknown as z.ZodType<DownloadPayload>,
+      subject: ({ fileId }) => fileSubject(db, fileId),
       attempts: 3,
       timeoutMs: 5 * 60_000,
       run: async (p, ctx) => {
@@ -122,6 +126,7 @@ export function createJobs(
     jobs.define({
       type: JOBS.sync,
       payload: z.object({ trackId: z.string(), requestedAt: z.number() }),
+      subject: ({ trackId }) => trackSubject(db, trackId),
       concurrency: 1,
       attempts: SYNC_ATTEMPTS,
       timeoutMs: SYNC_TIMEOUT_MS,
@@ -136,6 +141,7 @@ export function createJobs(
     jobs.define({
       type: JOBS.resync,
       payload: z.object({ fileId: z.string() }),
+      subject: ({ fileId }) => fileSubject(db, fileId),
       attempts: 3,
       async run({ fileId }) {
         for (const request of sync.replaced(fileId)) queueSync(request)
