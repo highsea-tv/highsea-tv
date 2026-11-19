@@ -7,13 +7,15 @@ import type { Fetch } from '@highsea-tv/core'
 import {
   type Definition,
   isMovieCategory,
+  isTvCategory,
   MOVIE_CATEGORIES,
   parentCategory,
   type RequestTemplate,
   renderTemplate,
   type TemplateInputs,
+  TV_CATEGORIES,
 } from '@highsea-tv/schemas/indexers'
-import { type Caps, movieCategoryIds, readCaps, readItems } from './feed.ts'
+import { type Caps, movieCategoryIds, readCaps, readItems, tvCategoryIds } from './feed.ts'
 import { type Answer, checkStatus, IndexerError, joinUrl, send } from './http.ts'
 import type { IndexerRelease } from './release.ts'
 import { loadHtml, scrapeHtml, scrapeJson } from './scrape.ts'
@@ -35,13 +37,18 @@ export type RunContext = {
   beforeRequest: () => Promise<void>
 }
 
-/** What a search is for. A test sends only `keywords`. */
+/** What a search is for. A test sends only `keywords`; a show's search sends `tv`. */
 export type SearchQuery = {
   keywords?: string
   title?: string
   year?: number | null
   imdbId?: string | null
   tmdbId?: number | null
+  /**
+   * A show's season, or one episode in it (Phase 5 C1). `imdbId` and `tmdbId` are then the show's,
+   * and `year` isn't sent: a show's releases don't carry it.
+   */
+  tv?: { season: number; episode?: number | null; tvdbId?: number | null }
 }
 
 export type RunResult = {
@@ -109,12 +116,60 @@ function tiers(query: SearchQuery, supports: readonly string[]): Tier[] {
   return out
 }
 
-const keepMovies = (releases: IndexerRelease[]) => {
+const pad = (n: number) => String(n).padStart(2, '0')
+
+/** `S01E02`, or `S01` for a season: how Sonarr's own releases and naming number them. */
+export function episodeTag(tv: { season: number; episode?: number | null }): string {
+  return tv.episode != null ? `S${pad(tv.season)}E${pad(tv.episode)}` : `S${pad(tv.season)}`
+}
+
+/**
+ * Queries in the order a show's search tries them (Torznab's tv-search, torznab.github.io
+ * spec-1.3-draft): the show's strongest id the indexer takes, with `season` and `ep`; then the
+ * title with `season` and `ep`; and where the indexer doesn't take `season`, the title with
+ * `S01E02` (or `S01`) in the keywords, as a release names it. An id without a season would bring
+ * every episode, so ids go only with `season`.
+ */
+function tvTiers(
+  query: SearchQuery & { tv: NonNullable<SearchQuery['tv']> },
+  supports: readonly string[],
+): Tier[] {
+  const { tv } = query
+  const seasonParams = supports.includes('season')
+  const numbered: Record<string, string> = { season: String(tv.season) }
+  if (tv.episode != null) {
+    // without `ep` the season comes whole and the decision picks the episode out of it
+    if (supports.includes('ep')) numbered.ep = String(tv.episode)
+  }
+  const out: Tier[] = []
+  if (seasonParams) {
+    if (tv.tvdbId && supports.includes('tvdbid'))
+      out.push({ by: 'tvdbid', query: { tvdbid: String(tv.tvdbId), ...numbered } })
+    else if (query.tmdbId && supports.includes('tmdbid'))
+      out.push({ by: 'tmdbid', query: { tmdbid: String(query.tmdbId), ...numbered } })
+    else if (query.imdbId && supports.includes('imdbid'))
+      out.push({ by: 'imdbid', query: { imdbid: query.imdbId, ...numbered } })
+  }
+  if (query.title) {
+    // `ep` without a season isn't asked: the episode then goes in the keywords
+    const whole = seasonParams && (tv.episode == null || numbered.ep !== undefined)
+    out.push(
+      whole
+        ? { by: 'title', query: { q: query.title, ...numbered } }
+        : { by: 'title', query: { q: `${query.title} ${episodeTag(tv)}` } },
+    )
+  }
+  return out
+}
+
+/** Drops repeats, and what the categories say is neither the kind searched nor unknown. */
+const keepKind = (releases: IndexerRelease[], tv: boolean) => {
   const seen = new Set<string>()
+  const wanted = tv ? isTvCategory : isMovieCategory
   return releases.filter((r) => {
     if (seen.has(r.guid)) return false
     seen.add(r.guid)
-    return r.categories.length === 0 || r.categories.some(isMovieCategory)
+    return r.categories.length === 0 || r.categories.some(wanted)
   })
 }
 
@@ -149,18 +204,25 @@ async function feedSearch(
   }
 
   const caps = ctx.caps ?? readCaps((await get({ t: 'caps' })).body)
-  const movie = caps.movie.available && query.keywords === undefined
-  const supports = movie ? caps.movie.params : caps.search.params
-  const cats = movieCategoryIds(caps)
-  const cat = (cats.length ? cats : [MOVIE_CATEGORIES[0]]).join(',')
+  const tv = query.tv && query.keywords === undefined ? query.tv : null
+  // a show's search uses tv-search where the caps list it, else the plain search with its keywords
+  const special = tv
+    ? caps.tv?.available === true
+    : caps.movie.available && query.keywords === undefined
+  const mode = special ? (tv ? caps.tv : caps.movie) : caps.search
+  const supports = mode.params.length ? mode.params : ['q']
+  const cats = tv ? tvCategoryIds(caps) : movieCategoryIds(caps)
+  const cat = (cats.length ? cats : [tv ? TV_CATEGORIES[0] : MOVIE_CATEGORIES[0]]).join(',')
+  const t = special ? (tv ? 'tvsearch' : 'movie') : 'search'
   let by = 'none'
   let releases: IndexerRelease[] = []
-  for (const tier of tiers(query, supports.length ? supports : ['q'])) {
-    const params: Record<string, string> = { t: movie ? 'movie' : 'search', cat, ...tier.query }
+  const list = tv ? tvTiers({ ...query, tv }, supports) : tiers(query, supports)
+  for (const tier of list) {
+    const params: Record<string, string> = { t, cat, ...tier.query }
     // Newznab takes the IMDb id without its "tt" (e.g. 0058935); Torznab follows Newznab
     if (params.imdbid) params.imdbid = params.imdbid.replace(/^tt/i, '')
     if (query.keywords === '') delete params.q
-    releases = keepMovies(readItems((await get(params)).body, { now: ctx.now() }))
+    releases = keepKind(readItems((await get(params)).body, { now: ctx.now() }), tv !== null)
     by = tier.by
     if (releases.length) break
   }
@@ -242,7 +304,8 @@ async function siteSearch(
   const config = ctx.settings
   const base = baseUrlOf(def, config)
   const mapper = categoryMapper(def)
-  const categories = mapper.siteIds(MOVIE_CATEGORIES).join(',')
+  const tv = query.tv && query.keywords === undefined ? query.tv : null
+  const categories = mapper.siteIds(tv ? TV_CATEGORIES : MOVIE_CATEGORIES).join(',')
   let session = def.login.method === 'form' ? ctx.session : null
   let signedIn = false
   let ms = 0
@@ -293,17 +356,24 @@ async function siteSearch(
 
   let by = 'none'
   let releases: IndexerRelease[] = []
-  for (const tier of tiers(query, def.search.supports)) {
+  const list = tv
+    ? tvTiers({ ...query, tv }, def.search.supports)
+    : tiers(query, def.search.supports)
+  for (const tier of list) {
     const q = tier.query
     const inputs: TemplateInputs = {
       Config: config,
       Query: {
         Keywords: q.q ?? '',
         Title: query.title ?? '',
-        Year: q.year ?? (query.year && tier.by !== 'keywords' ? String(query.year) : ''),
+        Year: tv
+          ? ''
+          : (q.year ?? (query.year && tier.by !== 'keywords' ? String(query.year) : '')),
         IMDBID: q.imdbid ?? '',
         IMDBIDShort: q.imdbid?.replace(/^tt/i, '') ?? '',
         TMDBID: q.tmdbid ?? '',
+        Season: q.season ?? '',
+        Episode: q.ep ?? '',
         Categories: categories,
       },
     }
@@ -319,7 +389,7 @@ async function siteSearch(
       if (sessionExpired(answer))
         throw new IndexerError('auth', 'The site didn’t keep highsea signed in.')
     }
-    releases = keepMovies(read(answer))
+    releases = keepKind(read(answer), tv !== null)
     by = tier.by
     if (releases.length) break
   }

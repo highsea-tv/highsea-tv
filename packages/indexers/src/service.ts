@@ -28,6 +28,12 @@ import {
   type SearchQuery,
   signInTo,
 } from './engine.ts'
+import {
+  createEpisodeSearch,
+  type EpisodeReleaseView,
+  type EpisodeScope,
+  type ShowSearchInput,
+} from './episode-search.ts'
 import type { Caps } from './feed.ts'
 import { type Fetched, fetchRelease } from './grab.ts'
 import {
@@ -139,8 +145,8 @@ export type CatalogEntry = {
 export type TestResult = { ok: boolean; message: string; latencyMs: number }
 
 /** A grabbed release, fetched: what the download client is handed. */
-export type GrabbedRelease = {
-  release: ReleaseView
+export type GrabbedRelease<V extends ReleaseView = ReleaseView> = {
+  release: V
   source: Fetched
   /** The indexer's seeding rules; null where it uses the global default. */
   seeding: { ratio: number | null; minutes: number | null; minMinutes: number | null }
@@ -398,7 +404,7 @@ export function createIndexers(deps: IndexersDeps) {
     return changed
   }
 
-  const search = createSearch({
+  const searchDeps = {
     db,
     clock,
     logger,
@@ -416,10 +422,98 @@ export function createIndexers(deps: IndexersDeps) {
       }
       return out
     },
-    run: (r, def, query) =>
+    run: (r: Row, def: Definition, query: SearchQuery) =>
       run(r.id, def, r.settings as StoredSettings, query, { id: r.id, session: openSession(r.id) }),
-    isFailing: (id) => healthOf(health.get(id), true, clock.now()) === 'failing',
-  })
+    isFailing: (id: string) => healthOf(health.get(id), true, clock.now()) === 'failing',
+  }
+  const search = createSearch(searchDeps)
+  const episodeSearch = createEpisodeSearch(searchDeps)
+
+  type Link = { download: string | null; magnet: string | null; infohash: string | null }
+
+  /**
+   * Fetches a cached release by its indexer: its `.torrent` through the indexer's rate limit and
+   * sign-in, or its magnet. A grab counts in the indexer's stats; a failure counts against its
+   * health as a search's does.
+   */
+  async function fetchGrab<V extends ReleaseView>(
+    indexerId: string,
+    release: V,
+    link: Link,
+  ): Promise<GrabbedRelease<V>> {
+    const r = required(indexerId)
+    const loaded = definitionOf(r)
+    if (!loaded) throw new AppError('conflict', `${r.name}’s definition is gone from the catalog.`)
+    const def = loaded.definition
+    const seeding = {
+      ratio: r.seedRatio,
+      minutes: r.seedMinutes,
+      minMinutes: r.minSeedMinutes,
+    }
+    const done = (source: Fetched): GrabbedRelease<V> => {
+      health.grab(r.id, clock.now())
+      emit([r.id], false)
+      return { release, source, seeding }
+    }
+    if (!link.download) {
+      const magnet =
+        link.magnet ?? (link.infohash ? `magnet:?xt=urn:btih:${link.infohash.toLowerCase()}` : null)
+      if (!magnet) throw new AppError('conflict', 'That release has nothing to download.')
+      return done({ magnet })
+    }
+    const stored = r.settings as StoredSettings
+    const opened = openSettings(def, stored, sealer)
+    const secrets = secretsOf(def, opened)
+    const runCtx = {
+      definition: def,
+      settings: opened,
+      session: openSession(r.id),
+      caps: null,
+      fetch: deps.fetch,
+      timeoutMs,
+      now: clock.now,
+      beforeRequest: () => limiter.acquire(r.id, def.rateLimit),
+    }
+    const before = health.get(r.id)
+    const attempt = (cookie: string | null) =>
+      fetchRelease(
+        {
+          fetch: deps.fetch,
+          timeoutMs,
+          now: clock.now,
+          beforeRequest: runCtx.beforeRequest,
+          origin: new URL(baseUrlOf(def, opened)).origin,
+          cookie,
+        },
+        link.download as string,
+      )
+    try {
+      let source: Fetched
+      if (def.login.method === 'form') {
+        let session = runCtx.session ?? (await signInTo(runCtx))
+        try {
+          source = await attempt(session)
+        } catch (e) {
+          // a session that ran out sends the sign-in page: sign in once more and try again
+          if (!(e instanceof IndexerError && e.kind === 'auth')) throw e
+          session = await signInTo(runCtx)
+          source = await attempt(session)
+        }
+        if (session !== runCtx.session) health.saveSession(r.id, clock.now(), sealer.seal(session))
+      } else source = await attempt(cookieOf(runCtx))
+      return done(source)
+    } catch (e) {
+      const err = e instanceof IndexerError ? e : new IndexerError('parse', (e as Error).message)
+      const message = redact(err.message, secrets)
+      health.failure(r.id, clock.now(), err.kind, message, err.retryAfterMs)
+      emit(
+        [r.id],
+        healthOf(before, true, clock.now()) !== healthOf(health.get(r.id), true, clock.now()),
+      )
+      logger.warn('a grab failed', { indexer: r.id, kind: err.kind, error: message })
+      throw new AppError('unavailable', `${r.name} couldn’t send the release: ${message}`)
+    }
+  }
 
   function openSession(id: string): string | null {
     const s = health.get(id)?.session
@@ -446,6 +540,7 @@ export function createIndexers(deps: IndexersDeps) {
         async run() {
           health.prune(clock.now())
           search.prune()
+          episodeSearch.prune()
         },
       })
     },
@@ -672,89 +767,31 @@ export function createIndexers(deps: IndexersDeps) {
           'not-found',
           'That release is no longer in the search results. Search again.',
         )
-      const r = required(input.indexerId)
-      const loaded = definitionOf(r)
-      if (!loaded)
-        throw new AppError('conflict', `${r.name}’s definition is gone from the catalog.`)
-      const def = loaded.definition
       const { rank: _rank, ...release } = cached.data as ReleaseView & { rank: number }
-      const link = cached.download as {
-        download: string | null
-        magnet: string | null
-        infohash: string | null
-      }
-      const seeding = {
-        ratio: r.seedRatio,
-        minutes: r.seedMinutes,
-        minMinutes: r.minSeedMinutes,
-      }
-      const done = (source: Fetched): GrabbedRelease => {
-        health.grab(r.id, clock.now())
-        emit([r.id], false)
-        return { release, source, seeding }
-      }
-      if (!link.download) {
-        const magnet =
-          link.magnet ??
-          (link.infohash ? `magnet:?xt=urn:btih:${link.infohash.toLowerCase()}` : null)
-        if (!magnet) throw new AppError('conflict', 'That release has nothing to download.')
-        return done({ magnet })
-      }
-      const stored = r.settings as StoredSettings
-      const opened = openSettings(def, stored, sealer)
-      const secrets = secretsOf(def, opened)
-      const runCtx = {
-        definition: def,
-        settings: opened,
-        session: openSession(r.id),
-        caps: null,
-        fetch: deps.fetch,
-        timeoutMs,
-        now: clock.now,
-        beforeRequest: () => limiter.acquire(r.id, def.rateLimit),
-      }
-      const before = health.get(r.id)
-      const attempt = (cookie: string | null) =>
-        fetchRelease(
-          {
-            fetch: deps.fetch,
-            timeoutMs,
-            now: clock.now,
-            beforeRequest: runCtx.beforeRequest,
-            origin: new URL(baseUrlOf(def, opened)).origin,
-            cookie,
-          },
-          link.download as string,
-        )
-      try {
-        let source: Fetched
-        if (def.login.method === 'form') {
-          let session = runCtx.session ?? (await signInTo(runCtx))
-          try {
-            source = await attempt(session)
-          } catch (e) {
-            // a session that ran out sends the sign-in page: sign in once more and try again
-            if (!(e instanceof IndexerError && e.kind === 'auth')) throw e
-            session = await signInTo(runCtx)
-            source = await attempt(session)
-          }
-          if (session !== runCtx.session)
-            health.saveSession(r.id, clock.now(), sealer.seal(session))
-        } else source = await attempt(cookieOf(runCtx))
-        return done(source)
-      } catch (e) {
-        const err = e instanceof IndexerError ? e : new IndexerError('parse', (e as Error).message)
-        const message = redact(err.message, secrets)
-        health.failure(r.id, clock.now(), err.kind, message, err.retryAfterMs)
-        emit(
-          [r.id],
-          healthOf(before, true, clock.now()) !== healthOf(health.get(r.id), true, clock.now()),
-        )
-        logger.warn('a grab failed', { indexer: r.id, kind: err.kind, error: message })
-        throw new AppError('unavailable', `${r.name} couldn’t send the release: ${message}`)
-      }
+      return fetchGrab(input.indexerId, release, cached.download as Link)
     },
 
+    /** Searches every usable indexer for a show's season or episode, and judges each release. */
+    searchEpisodes: (input: ShowSearchInput) => episodeSearch.search(input),
+
+    /** The last search's releases for a show's season or episode, while they're fresh. */
+    episodeReleases: (tmdbId: number, scope: EpisodeScope) => episodeSearch.cached(tmdbId, scope),
+
+    /** Fetches a show's release from the last search of its scope, as `grab` does a film's. */
+    async grabEpisodes(input: {
+      tmdbId: number
+      scope: EpisodeScope
+      indexerId: string
+      guid: string
+    }): Promise<GrabbedRelease<EpisodeReleaseView>> {
+      const cached = episodeSearch.find(input.tmdbId, input.scope, input.indexerId, input.guid)
+      if (!cached)
+        throw new AppError(
+          'not-found',
+          'That release is no longer in the search results. Search again.',
+        )
+      return fetchGrab(input.indexerId, cached.release, cached.download)
+    },
     /** Seeding rules for an indexer: null fields use the global default. */
     setSeeding(
       id: string,

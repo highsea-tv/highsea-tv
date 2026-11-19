@@ -4,7 +4,7 @@
 // `<error code description>` (Torznab 1.3: https://torznab.github.io/spec-1.3-draft/torznab/Specification-v1.3.html;
 // Newznab: https://newznab.readthedocs.io/en/latest/misc/api/). A plain RSS feed is the same items
 // without the attributes.
-import { isMovieCategory } from '@highsea-tv/schemas/indexers'
+import { isMovieCategory, isTvCategory } from '@highsea-tv/schemas/indexers'
 import { XMLParser, XMLValidator } from 'fast-xml-parser'
 import { IndexerError } from './http.ts'
 import { type IndexerRelease, toRelease } from './release.ts'
@@ -68,6 +68,8 @@ export type SearchMode = { available: boolean; params: string[] }
 export type Caps = {
   search: SearchMode
   movie: SearchMode
+  /** `tv-search` (`t=tvsearch`): a show's season and episode, where the indexer lists it. */
+  tv: SearchMode
   /** Every category the indexer lists, subcategories with their parent. */
   categories: { id: number; name: string; parent: number | null }[]
   limits: { max: number | null; default: number | null }
@@ -111,6 +113,7 @@ export function readCaps(text: string): Caps {
   return {
     search,
     movie: mode(searching['movie-search']),
+    tv: mode(searching['tv-search']),
     categories,
     limits: { max: num(attr(caps.limits, 'max')), default: num(attr(caps.limits, 'default')) },
   }
@@ -119,6 +122,11 @@ export function readCaps(text: string): Caps {
 /** The standard movie categories a caps document lists, for `cat=`. */
 export function movieCategoryIds(caps: Caps): number[] {
   return caps.categories.filter((c) => isMovieCategory(c.id)).map((c) => c.id)
+}
+
+/** The standard TV categories a caps document lists, for a show's `cat=` (Phase 5 C1). */
+export function tvCategoryIds(caps: Caps): number[] {
+  return caps.categories.filter((c) => isTvCategory(c.id)).map((c) => c.id)
 }
 
 /** Extended attributes by lower-case name, each a list (Torznab: names may repeat). */
@@ -193,6 +201,7 @@ export function readItems(text: string, options: FeedOptions): IndexerRelease[] 
         published: textOf(item.pubDate) ?? one('usenetdate'),
         imdbId: one('imdb') ?? one('imdbid'),
         tmdbId: one('tmdbid') ?? one('tmdb'),
+        tvdbId: one('tvdbid'),
         downloadVolumeFactor: one('downloadvolumefactor'),
         uploadVolumeFactor: one('uploadvolumefactor'),
         minimumRatio: one('minimumratio'),

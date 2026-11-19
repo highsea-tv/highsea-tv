@@ -312,6 +312,17 @@ The order is films, then shows, then music: films are already built and only nee
   - **Numbers:** a season of three 3-minute clips is looked at in 410 ms in the image; the clips' marks land within 1 s. On the NAS a 45-minute episode has 15 minutes of sound decoded; the first pass over 8,000 episodes isn't timed yet.
   - **Left:** a real season on the NAS timed, Recap and Preview segments, films' credits.
 
+- **2026-11-19, B signed off; C starts:** the owner signed off part B (released as 0.4.9) and said to start C, so C1 no longer waits for shows to move from Sonarr.
+
+- **2026-11-19, C1's first task, monitor, search, grab and import episodes (HT-103):** built and waiting for the owner's review (ADR 0064's and 0039's sections of that day).
+  - **Monitoring:** a show, a season and an episode monitored as B made them (all, future, missing, first season, none); Add a show into an empty managed root folder, with **Start searching** now honoured; on a root folder highsea only reads, the admin hides the monitoring switches and Search and the server refuses a search (`read-only`).
+  - **Searching:** `t=tvsearch` with `season` and `ep` (and the TheTVDB id) where an indexer's caps list them, otherwise `Show S01E02` or `Show S01` in the TV categories; the catalog definitions' own season and episode inputs; each result numbered as one episode, several, or a season pack.
+  - **Deciding:** the show's profile with the episode sizes for every episode a release brings; a pack or a multi-episode release only when every episode in it is monitored and has no file (Sonarr's documented rule without upgrades), a pack only when every episode in it has aired (Sonarr doesn't ask that); the show's blocklist per release.
+  - **Grabbing:** the films' download path into the new built-in `shows` category, the VPN's rules unchanged; a second grab for an episode on its way is refused. Search runs a season at a time, then single episodes for what's left, at most 25 a run.
+  - **Importing:** season folders and Shows' episode naming, a multi-episode file as one file, a season pack's files each to its episode, hardlinks; a file for another episode or with no number is left in the download and Activity says so.
+  - **The admin:** **Releases** beside each season's and episode's Search opens the interactive release list (the film's Search tab's table, now shared, each release named with its episodes); Activity's queue, history and blocklist, Downloads and the dashboard name the show and episodes and link to the show.
+  - **Left for the next task:** RSS and the backlog sweep for episodes, Wanted, the calendar and its feed, episode notifications, the TV and anime indexers (F2), the Sonarr importer, and upgrades of an episode that has a file.
+
 ## Running highsea on the NAS (A1)
 
 - **2026-11-19, A1, fanart.tv as a second artwork source, and the refetch after an update (HT-74):** what 0.4.5's findings left open, and the owner's choice of fanart.tv as TMDB's fallback (2026-11-18).
@@ -397,7 +408,7 @@ What the owner does in each part's stretch of real use, so findings come from th
 
 ### Monitoring and downloading, as Sonarr does (C1)
 
-Built only when the owner decides to move shows from Sonarr to highsea ([answer 3](#the-owners-answers)); until then C1 waits and C2 goes first.
+No longer waiting: on 2026-11-19 the owner signed off part B (released as 0.4.9) and said to start C, so C1 is built now ([progress](#progress)). It was to be built only when the owner moved shows from Sonarr to highsea ([answer 3](#the-owners-answers)).
 
 - **Monitoring** a show, a season or an episode, with Add a show's options as drawn (all, future, missing, the first season, none).
 - **Searching and grabbing:** release search by season and episode on the indexers (ADR 0035), season packs against single episodes, the decision engine with episode sizes per quality (`series-settings.ts`'s `episodeSizes`), RSS and the backlog sweep (ADR 0045) taught episodes.
@@ -449,7 +460,7 @@ Built only when the owner decides to move shows from Sonarr to highsea ([answer 
   - **0066, client error reports** (A2): what the clients send, only to their own server, and where the owner sees it.
   - **0067, intro and credits markers** (C2): chapters, then chromaprint across a season, and the owner's corrections.
   - **0068, profiles** (A2b): profiles under an account, watch state per profile, the profile watching now kept per device on the session, PINs hashed and rested.
-- **Dated sections:** 0012 (shows and music in the item model, B and D), 0036 (the `shows` and `music` subpaths), 0039 (reading NFOs, A1; episodes and tracks imported, B and D), 0041 (the Sonarr importer, C1), 0045 (automation for episodes, C1), 0023 (the profile on a session and device token, A2b), 0027 (Home per profile, A2b), 0047 (client reports beside crash reports, A2), 0049 (watch rules per profile, A2b), 0050 (releases at each part, A1; TestFlight uploads, A2), 0051 and 0052 (audio, D), 0054 (per profile, A2b; episodes, B), 0057 (the package's read-only media, A1; the shared folder from a list, asked again on an update, and nothing assumed inside it, HT-31), 0063 (the package's read-only mount removed, HT-31), 0059 (TestFlight, A2) and 0061 (the drafts served, A2b, B and D).
+- **Dated sections:** 0012 (shows and music in the item model, B and D), 0036 (the `shows` and `music` subpaths), 0039 (reading NFOs, A1; episodes and tracks imported, B and D; a show's download imported, C1, HT-103), 0064 (searching, judging and grabbing episodes, C1, HT-103), 0041 (the Sonarr importer, C1), 0045 (automation for episodes, C1), 0023 (the profile on a session and device token, A2b), 0027 (Home per profile, A2b), 0047 (client reports beside crash reports, A2), 0049 (watch rules per profile, A2b), 0050 (releases at each part, A1; TestFlight uploads, A2), 0051 and 0052 (audio, D), 0054 (per profile, A2b; episodes, B), 0057 (the package's read-only media, A1; the shared folder from a list, asked again on an update, and nothing assumed inside it, HT-31), 0063 (the package's read-only mount removed, HT-31), 0059 (TestFlight, A2) and 0061 (the drafts served, A2b, B and D).
 
 ## Risks
 

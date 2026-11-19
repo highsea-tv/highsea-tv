@@ -302,6 +302,7 @@ describe('0018_profiles', () => {
       '0027_job_subjects',
       '0028_music_plays',
       '0029_episode_markers',
+      '0030_episode_grabs',
     ])
     expect(result.backup).not.toBeNull()
     const once = state(first)
@@ -411,6 +412,7 @@ describe('0020_shows', () => {
       '0027_job_subjects',
       '0028_music_plays',
       '0029_episode_markers',
+      '0030_episode_grabs',
     ])
     expect(films(raw)).toEqual(was)
     expect(raw.all('SELECT count(*) AS n FROM media_items')).toEqual([{ n: 300 }])
@@ -563,6 +565,7 @@ describe('0020_shows', () => {
         '0027_job_subjects',
         '0028_music_plays',
         '0029_episode_markers',
+        '0030_episode_grabs',
       ])
       expect(all(raw)).toEqual(was)
       expect(raw.all('SELECT count(*) AS n FROM unmatched_files')).toEqual([{ n: 0 }])
@@ -630,6 +633,7 @@ describe('0020_shows', () => {
           '0027_job_subjects',
           '0028_music_plays',
           '0029_episode_markers',
+          '0030_episode_grabs',
         ])
         expect(migrate(raw).applied).toEqual([])
         raw.close()
@@ -744,7 +748,11 @@ describe('0020_shows', () => {
             }[]
           ).map((t) => t.name)
         const before = tables()
-        expect(migrate(raw).applied).toEqual(['0028_music_plays', '0029_episode_markers'])
+        expect(migrate(raw).applied).toEqual([
+          '0028_music_plays',
+          '0029_episode_markers',
+          '0030_episode_grabs',
+        ])
         expect({ ...everything(raw), ...music() }).toEqual(was)
         expect(raw.all('SELECT * FROM music_artists')).toEqual(
           artists.map((a) => ({ ...a, photo_url: null })),
@@ -756,6 +764,7 @@ describe('0020_shows', () => {
           'music_playlists',
           'music_plays',
           'music_recent',
+          'show_releases',
         ])
         // a play keeps its words when its track goes; a playlist's entry goes with its track
         raw.run(
@@ -791,7 +800,7 @@ describe('0020_shows', () => {
         )
         const music = () => ({ artists: raw.all('SELECT * FROM music_artists') })
         const was = { ...everything(raw), ...music() }
-        expect(migrate(raw).applied).toEqual(['0029_episode_markers'])
+        expect(migrate(raw).applied).toEqual(['0029_episode_markers', '0030_episode_grabs'])
         expect({ ...everything(raw), ...music() }).toEqual(was)
         // a file's markers, the owner's beside the found, go with the file
         raw.run(
@@ -802,6 +811,48 @@ describe('0020_shows', () => {
         )
         raw.run("DELETE FROM media_files WHERE id = 'fil_e12'")
         expect(raw.all('SELECT count(*) AS n FROM episode_markers')).toEqual([{ n: 0 }])
+        expect(raw.all('PRAGMA foreign_key_check')).toEqual([])
+        expect(raw.all('PRAGMA integrity_check')).toEqual([{ integrity_check: 'ok' }])
+        expect(migrate(raw).applied).toEqual([])
+        raw.close()
+      })
+
+      // HT-103 (Phase 5 C1): a show's grabs and its search results
+      test('0030_episode_grabs adds the show releases and a null episode_ids, and changes nothing else', () => {
+        const { raw } = withUnmatched()
+        migrate(raw, { all: migrations.filter((m) => m.tag < '0030') })
+        raw.run(
+          "INSERT INTO downloads (id, item_id, info_hash, release_title, size, release, state, progress_at, grabbed_at, updated_at) VALUES ('dl_film', 'itm_1', 'abc', 'Film.2001.1080p', 1, '{}', 'completed', 1, 1, 1)",
+        )
+        const was = {
+          ...everything(raw),
+          downloads: raw.all('SELECT * FROM downloads ORDER BY id'),
+        }
+        expect(migrate(raw).applied).toEqual(['0030_episode_grabs'])
+        const downloads = raw.all('SELECT * FROM downloads ORDER BY id') as Record<
+          string,
+          unknown
+        >[]
+        expect(downloads).toEqual(
+          (was.downloads as Record<string, unknown>[]).map((d) => ({ ...d, episode_ids: null })),
+        )
+        expect({ ...everything(raw), downloads: was.downloads }).toEqual(was)
+        expect(raw.all('SELECT count(*) AS n FROM show_releases')).toEqual([{ n: 0 }])
+        // a show's grab names its episodes; its search results go with their indexer
+        raw.run(
+          "INSERT INTO downloads (id, item_id, episode_ids, info_hash, release_title, size, release, state, progress_at, grabbed_at, updated_at) VALUES ('dl_show', 'itm_show', '[\"itm_e1\",\"itm_e2\"]', 'def', 'Chernobyl.S01.1080p', 1, '{}', 'downloading', 1, 1, 1)",
+        )
+        expect(raw.all("SELECT episode_ids FROM downloads WHERE id = 'dl_show'")).toEqual([
+          { episode_ids: '["itm_e1","itm_e2"]' },
+        ])
+        raw.run(
+          "INSERT INTO indexers (id, definition_id, definition_version, name, enabled, priority, settings, added_at, updated_at) VALUES ('idx_1', 'generic-torznab', '1', 'Fake', 1, 25, '{}', 1, 1)",
+        )
+        raw.run(
+          "INSERT INTO show_releases (show_tmdb_id, scope, indexer_id, guid, data, download, fetched_at, expires_at) VALUES (87108, 's1', 'idx_1', 'g1', '{}', '{}', 1, 2)",
+        )
+        raw.run("DELETE FROM indexers WHERE id = 'idx_1'")
+        expect(raw.all('SELECT count(*) AS n FROM show_releases')).toEqual([{ n: 0 }])
         expect(raw.all('PRAGMA foreign_key_check')).toEqual([])
         expect(raw.all('PRAGMA integrity_check')).toEqual([{ integrity_check: 'ok' }])
         expect(migrate(raw).applied).toEqual([])

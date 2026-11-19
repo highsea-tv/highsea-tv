@@ -44,7 +44,7 @@ import { View } from 'react-native'
 import { activity as messages } from './activity-messages.ts'
 import { type QueueFilter, queueFilters, torrentTone } from './downloads-status.ts'
 import { Loadable } from './loadable.tsx'
-import { moviePath } from './media-links.ts'
+import { titleOf, titlePath } from './media-links.ts'
 import { AdminPage } from './shell.tsx'
 import { Muted, NoneShown, RowMenu, ToolbarFigure } from './table-parts.tsx'
 import { useTabAddress } from './tabs.ts'
@@ -198,7 +198,8 @@ function Queue() {
                     {shown.map((q) => {
                       const tone = torrentTone[q.state]
                       const issue = queueFilters.issues(q.state)
-                      const title = `${q.title}${q.year ? ` (${q.year})` : ''}`
+                      const title = titleOf(q)
+                      const href = titlePath(q)
                       const more: MenuOption[] = [
                         ...(q.state === 'import-blocked'
                           ? [
@@ -227,13 +228,7 @@ function Queue() {
                         <TableRow key={q.id}>
                           <TableCell tall truncate>
                             <TitleCell
-                              title={
-                                q.movieId ? (
-                                  <TitleLink href={moviePath(q.movieId)}>{title}</TitleLink>
-                                ) : (
-                                  title
-                                )
-                              }
+                              title={href ? <TitleLink href={href}>{title}</TitleLink> : title}
                               detail={q.release}
                             />
                           </TableCell>
@@ -439,7 +434,7 @@ function HistoryTable({ events, showTitle }: { events: HistoryEvent[]; showTitle
             </TableCell>
             {showTitle && (
               <TableCell>
-                <TitleLink href={moviePath(e.movieId)}>{e.title}</TitleLink>
+                <TitleLink href={titlePath(e) ?? ''}>{titleOf({ ...e, year: null })}</TitleLink>
               </TableCell>
             )}
             <TableCell tall={Boolean(e.message && e.sourceTitle)} truncate>
@@ -467,10 +462,12 @@ function Blocklist() {
   const list = useQuery('blocklist', loadBlocklist, ['history.updated'])
   const remove = useAction((c, id: string) => c.blocklist.remove({ params: { id } }))
   const release = (b: BlocklistEntry) =>
-    b.movieId === null || b.title === null ? (
+    b.title === null || titlePath(b) === null ? (
       b.sourceTitle
     ) : (
-      <TitleLink href={moviePath(b.movieId)}>{b.title}</TitleLink>
+      <TitleLink href={titlePath(b) ?? ''}>
+        {titleOf({ ...b, title: b.title, year: null })}
+      </TitleLink>
     )
   return (
     <Loadable query={list} what={t('blocklist.what')}>
@@ -494,10 +491,10 @@ function Blocklist() {
               <TableBody>
                 {xs.map((b) => (
                   <TableRow key={b.id}>
-                    <TableCell tall={b.movieId !== null} truncate>
+                    <TableCell tall={titlePath(b) !== null} truncate>
                       <TitleCell
                         title={release(b)}
-                        detail={b.movieId === null ? undefined : b.sourceTitle}
+                        detail={titlePath(b) === null ? undefined : b.sourceTitle}
                       />
                     </TableCell>
                     <TableCell>

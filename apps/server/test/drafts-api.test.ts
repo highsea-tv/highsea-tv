@@ -2,8 +2,8 @@
 // The drafted routes (one-client-platform-b.md › B3): in the contract and the OpenAPI document,
 // marked as drafts, and this server answers each 501 in the usual error body, after the guard.
 // Profiles were drafted with music and playlists and are served since Phase 5's A2b (ADR 0068),
-// shows since Phase 5 B, all but a show's episode search (`series.search`, part C1's), and music and
-// playlists since D's HT-101.
+// shows since Phase 5 B, music and playlists since D's HT-101, and a show's episode search
+// (`series.search`) since C1's HT-103: none is left.
 import { afterEach, describe, expect, test } from 'bun:test'
 import { CLIENT_SOURCES, DRAFT_KEY, isDraft, routes } from '@highsea-tv/api-contract'
 import { createApi } from '../src/api/app.ts'
@@ -15,17 +15,15 @@ afterEach(cleanup)
 const concrete = (path: string) => path.replace(/\{\w+\}/g, 'x1')
 
 describe('drafted routes', () => {
-  // of `series`, the admin's shows, only the episode search is left (part C1)
-  test('are series’ search, and nothing else', () => {
+  // `series`' episode search was the last, served with part C1 (HT-103)
+  test('are none', () => {
     const groups = new Set(
       Object.entries(routes).flatMap(([group, rs]) =>
         Object.values(rs).some((r) => isDraft(r)) ? [group] : [],
       ),
     )
-    expect([...groups].sort()).toEqual(['series'])
-    const series = Object.entries(routes.series).filter(([, r]) => isDraft(r))
-    expect(series.map(([k]) => k)).toEqual(['search'])
-    for (const g of ['shows', 'music', 'musicLibrary', 'playlists'] as const)
+    expect([...groups]).toEqual([])
+    for (const g of ['series', 'shows', 'music', 'musicLibrary', 'playlists'] as const)
       expect(
         Object.values(routes[g]).some((r) => isDraft(r)),
         g,

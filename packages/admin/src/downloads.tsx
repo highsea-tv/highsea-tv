@@ -62,7 +62,7 @@ import { downloadSource, useDownloadSource } from './download-source.ts'
 import { downloads as messages } from './downloads-messages.ts'
 import { torrentTone } from './downloads-status.ts'
 import { Loadable } from './loadable.tsx'
-import { moviePath } from './media-links.ts'
+import { moviePath, titlePath } from './media-links.ts'
 import { useRouter } from './navigation.tsx'
 import { pickFile, useFileDrop } from './pick-file.ts'
 import { AdminPage } from './shell.tsx'
@@ -666,6 +666,18 @@ function TorrentSheet({
                 onPress={() => x.movieId !== null && router.push(moviePath(x.movieId))}
               >
                 {t('openMovie')}
+              </Button>
+            )}
+            {x.show !== null && (
+              <Button
+                size="sm"
+                icon="tv"
+                onPress={() => {
+                  const href = titlePath(x)
+                  if (href) router.push(href)
+                }}
+              >
+                {t('openShow')}
               </Button>
             )}
             <Button size="sm" variant="danger" icon="delete" onPress={() => setRemoving(true)}>

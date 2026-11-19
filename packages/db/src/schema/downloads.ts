@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// Downloads (checkpoint 6): each grab of a release for a movie's version, and the blocklist search
-// and grab skip. A download points at its torrent while there is one; the torrent goes when it has
-// seeded, the download stays as the record of what was grabbed.
+// Downloads (checkpoint 6): each grab of a release for a movie's version or a show's episodes
+// (Phase 5 C1), and the blocklist search and grab skip; a show's entries are on the show. A
+// download points at its torrent while there is one; the torrent goes when it has seeded, the
+// download stays as the record of what was grabbed.
 import { sql } from 'drizzle-orm'
 import { index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 import { indexers } from './indexers.ts'
@@ -25,6 +26,11 @@ export const downloads = sqliteTable(
       .notNull()
       .references(() => mediaItems.id, { onDelete: 'cascade' }),
     versionId: text('version_id').references(() => versions.id, { onDelete: 'set null' }),
+    /**
+     * A show's grab (Phase 5 C1): `item_id` is the show, and this the episode item ids the release
+     * brings (one, several for a multi-episode release, a season's for a pack). Null for a film.
+     */
+    episodeIds: text('episode_ids', { mode: 'json' }).$type<string[]>(),
     indexerId: text('indexer_id').references(() => indexers.id, { onDelete: 'set null' }),
     /** The indexer's name when grabbed, for history after the indexer goes. */
     indexerName: text('indexer_name'),

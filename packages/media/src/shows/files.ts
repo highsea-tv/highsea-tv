@@ -505,7 +505,10 @@ export function createShowFiles(ctx: ShowsDeps, deps: { media: Media }) {
     }
   }
 
-  /** The history entry (once per file), the import hook and the announcement. */
+  /**
+   * The history entry (once per file), the import hook and the announcement. A file found where it
+   * is was filed in place; a download's (Phase 5 C1) came from `download`, with its release's name.
+   */
   async function afterFiling(
     show: ItemRow,
     first: ItemRow,
@@ -513,25 +516,37 @@ export function createShowFiles(ctx: ShowsDeps, deps: { media: Media }) {
     found: FoundFile,
     quality: string,
     message: string,
+    download?: {
+      sourceTitle: string
+      indexer: string | null
+      downloadId: string | null
+      transfer: string
+      /** The release's folder, for the files that came with the video; null for a lone file. */
+      sourceFolder: string | null
+    },
   ) {
     const key = `${found.path}|${found.size}`
     if (!media.history.has(first.id, 'imported', 'key', key))
       media.history.write({
         itemId: first.id,
         type: 'imported',
-        sourceTitle: basename(found.path),
+        sourceTitle: download?.sourceTitle ?? basename(found.path),
         quality,
+        indexer: download?.indexer ?? null,
         message,
+        downloadId: download?.downloadId ?? null,
         // in place: the notifications leave it out, as they do a film the scan found
-        data: { key, fileId, path: found.path, size: found.size, inPlace: true },
+        data: download
+          ? { key, fileId, path: found.path, size: found.size, transfer: download.transfer }
+          : { key, fileId, path: found.path, size: found.size, inPlace: true },
       })
     try {
       await options.hooks?.afterImport?.({
         fileId,
         itemId: first.id,
         path: found.path,
-        sourceFolder: dirname(found.path),
-        inPlace: true,
+        sourceFolder: download ? download.sourceFolder : dirname(found.path),
+        inPlace: !download,
       })
     } catch (e) {
       log.warn('the import hook failed', { path: found.path, error: (e as Error).message })
@@ -698,7 +713,19 @@ export function createShowFiles(ctx: ShowsDeps, deps: { media: Media }) {
     return { fileId: done.fileId }
   }
 
-  return { fileOne, reconcile, assign, remove, unmatched, episodesOf }
+  return {
+    fileOne,
+    reconcile,
+    assign,
+    remove,
+    unmatched,
+    episodesOf,
+    /** For the episode import (import.ts): it records and announces as the scan does. */
+    record,
+    afterFiling,
+    minimumSeconds,
+    probe,
+  }
 }
 
 export type ShowFiles = ReturnType<typeof createShowFiles>

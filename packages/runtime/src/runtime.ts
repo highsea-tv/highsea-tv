@@ -113,7 +113,7 @@ import {
 } from '@highsea-tv/subtitles/sync'
 import { createTorrentEngine, HASH_WORKER, type TorrentEngine } from '@highsea-tv/torrent'
 import { CommandFailed, createVpn, installFrom, type Vpn, type VpnInstall } from '@highsea-tv/vpn'
-import { and, eq } from 'drizzle-orm'
+import { and, eq, inArray } from 'drizzle-orm'
 import { createAhead } from './ahead.ts'
 import { type Automation, createAutomation } from './automation.ts'
 import {
@@ -169,6 +169,7 @@ import {
   saveSetup,
   setupDefaults,
 } from './setup.ts'
+import { createShowSearchJobs, type ShowSearchJobs } from './show-search.ts'
 import {
   createResourceMonitor,
   type Disk,
@@ -338,6 +339,8 @@ export type Runtime = {
   indexers: Indexers
   /** RSS, the backlog sweep and each movie's search (checkpoint 8a, ADR 0045). */
   automation: Automation
+  /** A show's Search and interactive search (Phase 5 C1). */
+  showSearch: ShowSearchJobs
   /** Import lists (checkpoint 8a): TMDB, Trakt and generic lists adding movies. */
   lists: Lists
   /** Curation (checkpoint 8c): announcements, featured sections and the apps' home. */
@@ -772,13 +775,27 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
       .where(and(eq(mediaItems.type, 'movie'), eq(mediaItems.tmdbId, tmdbId)))
       .get()
   /** A library row's movie, as downloads names it. */
-  const movieOf = (itemId: string) => {
+  /** The film or show (Phase 5 C1) a download's item is, for its TMDB id and the queue's title. */
+  const titleOf = (itemId: string, type: 'movie' | 'show') => {
     const row = db
       .select({ tmdbId: mediaItems.tmdbId, title: mediaItems.title, year: mediaItems.year })
       .from(mediaItems)
-      .where(eq(mediaItems.id, itemId))
+      .where(and(eq(mediaItems.id, itemId), eq(mediaItems.type, type)))
       .get()
     return row?.tmdbId != null ? { tmdbId: row.tmdbId, title: row.title, year: row.year } : null
+  }
+  const movieOf = (itemId: string) => titleOf(itemId, 'movie')
+  /** A show's episode items' season and numbers, in order: the queue's `S01E02–E03`. */
+  const episodeNumbers = (ids: readonly string[]) => {
+    if (!ids.length) return null
+    const rows = db
+      .select({ season: mediaItems.seasonNumber, episode: mediaItems.episodeNumber })
+      .from(mediaItems)
+      .where(inArray(mediaItems.id, [...ids]))
+      .all()
+      .sort((a, b) => (a.season ?? 0) - (b.season ?? 0) || (a.episode ?? 0) - (b.episode ?? 0))
+    if (!rows.length) return null
+    return { season: rows[0]?.season ?? 0, episodes: rows.map((r) => r.episode ?? 0) }
   }
 
   // what every media type shares: profiles, formats, sizes and root folders
@@ -908,6 +925,10 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
       files: {
         probe: options.importing?.probe,
         sampleSeconds: options.importing?.sampleSeconds,
+        // a show's download is imported from these, as a film's (Phase 5 C1)
+        downloadDirs: () => [folders().downloads, ...downloads.categoryFolders()],
+        fs: options.importing?.fs,
+        extract: options.importing?.extract,
         hooks: options.importing?.hooks ?? {
           afterImport: async (file) => {
             await trickplay.afterImport()
@@ -1178,12 +1199,33 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
       const input = movie ? automation.inputFor(movie.tmdbId, versionId) : null
       return input ? (await indexers.search(input)).releases : []
     },
+    show: (itemId) => titleOf(itemId, 'show'),
+    episodeNumbers,
+    async searchEpisodes(itemId, scope) {
+      const show = titleOf(itemId, 'show')
+      const input = show ? showSearch.inputFor(show.tmdbId, scope) : null
+      return input ? (await indexers.searchEpisodes(input.search)).releases : []
+    },
     downloadsFolder: () => folders().downloads,
     history: (entry) => {
       media.history.write(entry)
     },
     failed: (failure) => notify?.onFailed(failure),
     async importer(input) {
+      if (input.episodeIds) {
+        const shown = await shows.importDownload({
+          showItemId: input.itemId,
+          episodeIds: input.episodeIds,
+          folder: input.path,
+          releaseTitle: input.releaseTitle,
+          quality: input.quality,
+          indexer: input.indexer,
+          downloadId: input.downloadId,
+          grabbedAnyway: input.grabbedAnyway,
+        })
+        if (shown.status === 'imported') return { ok: true, transfer: shown.transfer }
+        return { ok: false, reason: shown.reason, ...(shown.replace ? { replace: true } : {}) }
+      }
       const result = await movies.importDownload({
         itemId: input.itemId,
         versionId: input.versionId,
@@ -1216,6 +1258,7 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
     now: () => clock.now(),
   })
   automation.schedule(clock.now())
+  const showSearch = createShowSearchJobs({ jobs, logger, shows, indexers, downloads })
   // import lists (checkpoint 8a): through the fetch seam, Trakt's account sealed in a setting
   const listFetch = options.lists?.fetch ?? outside
   const listLibrary = createListLibrary({
@@ -1537,6 +1580,7 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
     catalog,
     indexers,
     automation,
+    showSearch,
     lists,
     curation,
     collections,

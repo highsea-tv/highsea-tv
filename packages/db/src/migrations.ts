@@ -122,5 +122,9 @@ export const migrations: Migration[] = [
   {
     "tag": "0029_episode_markers",
     "sql": "CREATE TABLE `episode_markers` (\n\t`file_id` text PRIMARY KEY NOT NULL,\n\t`size` integer NOT NULL,\n\t`intro_start` real,\n\t`intro_end` real,\n\t`intro_source` text,\n\t`credits` real,\n\t`credits_source` text,\n\t`error` text,\n\t`checked_at` integer NOT NULL,\n\tFOREIGN KEY (`file_id`) REFERENCES `media_files`(`id`) ON UPDATE no action ON DELETE cascade\n);\n"
+  },
+  {
+    "tag": "0030_episode_grabs",
+    "sql": "-- HT-103 (Phase 5 C1): a show's interactive search results, apart from the films', and the episodes\n-- a show's download brings. Both only add: films' downloads keep a null episode_ids.\nCREATE TABLE `show_releases` (\n\t`show_tmdb_id` integer NOT NULL,\n\t`scope` text NOT NULL,\n\t`indexer_id` text NOT NULL,\n\t`guid` text NOT NULL,\n\t`data` text NOT NULL,\n\t`download` text NOT NULL,\n\t`fetched_at` integer NOT NULL,\n\t`expires_at` integer NOT NULL,\n\tPRIMARY KEY(`show_tmdb_id`, `scope`, `indexer_id`, `guid`),\n\tFOREIGN KEY (`indexer_id`) REFERENCES `indexers`(`id`) ON UPDATE no action ON DELETE cascade\n);\n--> statement-breakpoint\nCREATE INDEX `show_releases_expires` ON `show_releases` (`expires_at`);--> statement-breakpoint\nALTER TABLE `downloads` ADD `episode_ids` text;"
   }
 ]

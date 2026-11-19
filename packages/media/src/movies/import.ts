@@ -198,7 +198,7 @@ export type StoredFileInfo = {
 }
 
 /** The specifications that apply to a file at import: the quality and upgrades (Radarr's import specs). */
-const IMPORT_SPECS = withSpecification(
+export const IMPORT_SPECS = withSpecification(
   defaultSpecifications.filter((s) =>
     ['quality', 'upgradeAllowed', 'cutoff', 'upgrade'].includes(s.id),
   ),
@@ -212,9 +212,12 @@ const IMPORT_SPECS = withSpecification(
  * against the one it would replace, not against the profile's allowed qualities, and its manual
  * import imports a file the person picked with no rejections at all (ManualImportService).
  */
-const FORCED_IMPORT_SPECS = IMPORT_SPECS.filter((s) => s.id !== 'quality')
+export const FORCED_IMPORT_SPECS = IMPORT_SPECS.filter((s) => s.id !== 'quality')
 
-function parsedQuality(quality: QualityName, release: ParsedRelease): ParsedRelease['quality'] {
+export function parsedQuality(
+  quality: QualityName,
+  release: ParsedRelease,
+): ParsedRelease['quality'] {
   const def = qualityDefinition(quality)
   return {
     source: def.source,

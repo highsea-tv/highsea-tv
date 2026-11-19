@@ -316,6 +316,8 @@ export type AdminShow = {
   languageProfileId: string
   rootFolder: string
   path: string
+  /** highsea only reads its root folder (ADR 0063): no monitoring or Search. */
+  readOnly: boolean
   /** Files go in "Season 01" folders. */
   seasonFolders: boolean
   addedAt: ISODate

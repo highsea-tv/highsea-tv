@@ -168,6 +168,7 @@ describe('the qBittorrent importer', () => {
     // the categories came across, a subcategory's slash made a dash
     expect(s.downloads.categories().map((c) => c.name)).toEqual([
       'movies',
+      'shows',
       'manual',
       'linux-isos',
       'radarr',

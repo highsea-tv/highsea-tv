@@ -35,6 +35,15 @@ export const qualityMessages = defineMessages({
   'indexer.blocked': '{indexer} is failing, so its releases can’t be taken',
   // The queue and history
   blocklisted: 'On this movie’s blocklist',
+  // A show's episodes (Phase 5 C1): what a release brings, against what's wanted
+  'episodes.blocklisted': 'On this show’s blocklist',
+  'episodes.pack':
+    'Season pack: all {count, plural, one {# episode} other {# episodes}} of season {season}',
+  'episodes.several': 'Brings {episodes}',
+  'episodes.notMonitored': 'Not monitored: {episodes}',
+  'episodes.hasFile': 'Already has a file: {episodes}',
+  'episodes.notAired': 'Not aired yet: {episodes}',
+  'episodes.unknown': 'TMDB doesn’t list {episodes}',
   // Condition summaries, for Settings › Profiles and formats
   'condition.title': 'Title matches {value}',
   'condition.edition': 'Edition matches {value}',
