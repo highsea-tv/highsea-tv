@@ -320,6 +320,7 @@ Built only when the owner decides to move shows from Sonarr to highsea ([answer 
 
 - **Monitoring** a show, a season or an episode, with Add a show's options as drawn (all, future, missing, the first season, none).
 - **Searching and grabbing:** release search by season and episode on the indexers (ADR 0035), season packs against single episodes, the decision engine with episode sizes per quality (`series-settings.ts`'s `episodeSizes`), RSS and the backlog sweep (ADR 0045) taught episodes.
+- **TV and anime indexers** (EZTV, AnimeTosho, Nyaa, SubsPlease, showRSS) come in with C1, as part F2 of [indexer-catalog-upkeep.md](indexer-catalog-upkeep.md), which also has how the catalog is kept fresh between parts (scoped on 2026-11-19, HT-78, waiting for the owner's answers).
 - **Importing** episodes from downloads through the pipeline (ADR 0039), episode naming (`episodeNaming`), season folders, multi-episode files.
 - **Wanted, the calendar and its feed** for episodes; notifications for episodes and seasons (Grabbed, Imported, Upgraded), as stage 6 drew.
 - **A Sonarr importer** beside the Radarr one (`@highsea-tv/importers/sonarr`, Sonarr's API v3, path mappings as ADR 0041 has them), so the owner's shows move with their monitoring and profiles.
