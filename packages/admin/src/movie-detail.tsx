@@ -96,8 +96,10 @@ import { View } from 'react-native'
 import { AddMovieDialog } from './add-dialog.tsx'
 import { ArtworkDialog } from './artwork-dialog.tsx'
 import { artwork as artworkMessages } from './artwork-messages.ts'
+import { useDownloadSource } from './download-source.ts'
 import { torrentTone } from './downloads-status.ts'
 import { useSearchable } from './indexer-state.ts'
+import { ItemWorkMark, useItemWork } from './item-work.tsx'
 import { library } from './library-messages.ts'
 import { Loadable } from './loadable.tsx'
 import { movieStatus } from './media-links.ts'
@@ -292,11 +294,14 @@ function MetadataMovie({
           {t('addMovie')}
         </Button>
       }
-    >
-      <View style={{ gap: s['6'] }}>
+      backdrop={m.art.backdrop}
+      hero={
         <MediaSummary item={m} meta={m} badges={<Badge tone="neutral">{tm('notInLibrary')}</Badge>}>
           <ReleaseLine date={m.releaseDate} />
         </MediaSummary>
+      }
+    >
+      <View style={{ gap: s['6'] }}>
         <PageTabs
           label={tm('sections')}
           tab={tab}
@@ -422,12 +427,16 @@ function LibraryMovie({
   }
 
   const title = m?.title ?? meta.data?.title ?? t('movie')
+  // HT-106: what the server is doing to the film, by its actions; each action is off while its job runs
+  const work = useItemWork('movie', id, m?.title)
   const actions = m ? (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: s['2'] }}>
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: s['2'], flexShrink: 1 }}>
+      <ItemWorkMark jobs={work.jobs} look="page" item={work.item} />
       {searchable.canSearch ? (
         <Button
           icon="search"
           loading={search.pending}
+          disabled={work.busy('movies.search')}
           onPress={() =>
             search.run().then(
               () =>
@@ -473,6 +482,7 @@ function LibraryMovie({
           {
             label: t('refresh'),
             icon: 'refresh',
+            disabled: work.busy('metadata.refresh'),
             onSelect: () =>
               refresh.run().then(
                 () =>
@@ -497,7 +507,21 @@ function LibraryMovie({
   ) : undefined
 
   return (
-    <AdminPage title={title} actions={actions}>
+    <AdminPage
+      title={title}
+      actions={actions}
+      backdrop={m ? (meta.data?.art.backdrop ?? m.art.backdrop) : undefined}
+      hero={
+        m ? (
+          <LibrarySummary
+            movie={m}
+            meta={meta}
+            monitored={monitoring ?? m.monitored}
+            onMonitor={onMonitor}
+          />
+        ) : undefined
+      }
+    >
       {movie.status === 'error' && !missing ? (
         <EmptyState
           tone="error"
@@ -530,8 +554,6 @@ function LibraryMovie({
             options={options.data}
             tab={tab}
             onTab={setTab}
-            monitored={monitoring ?? m.monitored}
-            onMonitor={onMonitor}
             onAdd={setAdding}
             onChange={keep}
           />
@@ -591,14 +613,64 @@ function LibraryMovie({
   )
 }
 
+/** A library film's words in its page's hero: its status, versions, path and Monitored. */
+function LibrarySummary({
+  movie: m,
+  meta,
+  monitored,
+  onMonitor,
+}: {
+  movie: Movie
+  meta: MetadataQuery
+  monitored: boolean
+  onMonitor: (on: boolean) => void
+}) {
+  const t = useT(messages)
+  const tl = useT(library)
+  const st = movieStatus[m.status]
+  return (
+    <MediaSummary
+      item={m}
+      meta={meta.data}
+      badges={
+        <>
+          <Badge tone={st.tone}>{tl(st.label)}</Badge>
+          {m.versions.map((v) => (
+            <QualityTag key={v.id} overlay={false}>
+              {v.label}
+            </QualityTag>
+          ))}
+        </>
+      }
+    >
+      <View
+        style={{
+          flexDirection: 'row',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          columnGap: s['6'],
+          rowGap: s['2'],
+        }}
+      >
+        <View style={{ flexShrink: 1, minWidth: 0 }}>
+          <Text variant="caption" color="text-3" mono style={{ wordBreak: 'break-all' } as object}>
+            {m.path}
+          </Text>
+        </View>
+        <View>
+          <Switch label={t('monitored')} checked={monitored} onCheckedChange={onMonitor} />
+        </View>
+      </View>
+    </MediaSummary>
+  )
+}
+
 function LibraryBody({
   movie: m,
   meta,
   options,
   tab,
   onTab,
-  monitored,
-  onMonitor,
   onAdd,
   onChange,
 }: {
@@ -607,89 +679,45 @@ function LibraryBody({
   options: Options | undefined
   tab: Tab
   onTab: (tab: Tab) => void
-  monitored: boolean
-  onMonitor: (on: boolean) => void
   onAdd: (movies: DiscoverMovie[]) => void
   onChange: (movie: Movie) => void
 }) {
   const t = useT(messages)
   const tm = useT(media)
-  const tl = useT(library)
-  const st = movieStatus[m.status]
   return (
-    <>
-      <MediaSummary
-        item={m}
-        meta={meta.data}
-        badges={
-          <>
-            <Badge tone={st.tone}>{tl(st.label)}</Badge>
-            {m.versions.map((v) => (
-              <QualityTag key={v.id} overlay={false}>
-                {v.label}
-              </QualityTag>
-            ))}
-          </>
-        }
-      >
-        <View
-          style={{
-            flexDirection: 'row',
-            flexWrap: 'wrap',
-            alignItems: 'center',
-            columnGap: s['6'],
-            rowGap: s['2'],
-          }}
-        >
-          <View style={{ flexShrink: 1, minWidth: 0 }}>
-            <Text
-              variant="caption"
-              color="text-3"
-              mono
-              style={{ wordBreak: 'break-all' } as object}
-            >
-              {m.path}
-            </Text>
-          </View>
-          <View>
-            <Switch label={t('monitored')} checked={monitored} onCheckedChange={onMonitor} />
-          </View>
-        </View>
-      </MediaSummary>
-      <PageTabs
-        label={tm('sections')}
-        tab={tab}
-        onTab={onTab}
-        options={[
-          { value: 'overview', label: tm('tab.overview') },
-          { value: 'cast', label: tm('tab.cast') },
-          { value: 'files', label: t('tab.files') },
-          { value: 'history', label: t('tab.history') },
-          { value: 'search', label: t('tab.search') },
-          { value: 'subtitles', label: t('tab.subtitles') },
-        ]}
-      >
-        {tab === 'overview' ? (
-          <MediaOverview
-            meta={meta}
-            onAllCast={() => onTab('cast')}
-            onAdd={onAdd}
-            main={<InTheQueue movie={m} />}
-            aside={<InTheLibrary movie={m} options={options} onChange={onChange} />}
-          />
-        ) : tab === 'cast' ? (
-          <CastAndCrew meta={meta} />
-        ) : tab === 'files' ? (
-          <Files movie={m} />
-        ) : tab === 'history' ? (
-          <History id={m.id} />
-        ) : tab === 'search' ? (
-          <SearchTab id={m.id} />
-        ) : (
-          <Subtitles movie={m} />
-        )}
-      </PageTabs>
-    </>
+    <PageTabs
+      label={tm('sections')}
+      tab={tab}
+      onTab={onTab}
+      options={[
+        { value: 'overview', label: tm('tab.overview') },
+        { value: 'cast', label: tm('tab.cast') },
+        { value: 'files', label: t('tab.files') },
+        { value: 'history', label: t('tab.history') },
+        { value: 'search', label: t('tab.search') },
+        { value: 'subtitles', label: t('tab.subtitles') },
+      ]}
+    >
+      {tab === 'overview' ? (
+        <MediaOverview
+          meta={meta}
+          onAllCast={() => onTab('cast')}
+          onAdd={onAdd}
+          main={<InTheQueue movie={m} />}
+          aside={<InTheLibrary movie={m} options={options} onChange={onChange} />}
+        />
+      ) : tab === 'cast' ? (
+        <CastAndCrew meta={meta} />
+      ) : tab === 'files' ? (
+        <Files movie={m} />
+      ) : tab === 'history' ? (
+        <History id={m.id} />
+      ) : tab === 'search' ? (
+        <SearchTab id={m.id} />
+      ) : (
+        <Subtitles movie={m} />
+      )}
+    </PageTabs>
   )
 }
 
@@ -704,6 +732,7 @@ function InTheQueue({ movie: m }: { movie: Movie }) {
   const ts = useT(torrentState)
   const theme = useTheme()
   const locale = useLocale()
+  const source = useDownloadSource()
   const queue = useQuery('queue', (c) => c.queue.list(), QUEUE_TOPICS)
   const live = queue.data?.filter((q) => q.movieId === m.id) ?? []
   if (!live.length) return null
@@ -745,6 +774,8 @@ function InTheQueue({ movie: m }: { movie: Movie }) {
           <Text size={FIGURE.size} leading={FIGURE.leading} mono color="text-3">
             {percent(q.progress)}
             {q.downRate ? ` · ${rate(q.downRate)}` : ''}
+            {/* where it comes from: peers, web seeds or both (HT-100) */}
+            {q.state === 'downloading' && source(q) ? ` · ${source(q)}` : ''}
             {q.eta ? ` · ${t('queue.left', { duration: duration(q.eta, locale) })}` : ''}
             {q.stateReason ? ` · ${q.stateReason}` : ''}
           </Text>

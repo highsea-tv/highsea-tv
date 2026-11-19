@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The rows a person can arrange on the client home (checkpoint 4 › The dashboard and home): Continue
 // watching (empty until playback writes positions in Phase 4), Next up (with shows), Recently added,
-// New episodes and Recently added shows (with shows), and one row for each genre in the library,
+// New episodes and Recently added shows (with shows), Recently played (with music), and one row for each genre in the library,
 // most titles first. Continue watching and Recently added have no title, so each app names them
 // from its own catalog; a genre row carries TMDB's genre name in the metadata language, and its id keeps
 // TMDB's genre id, which doesn't change with the language.
@@ -29,6 +29,8 @@ export function homeRows(db: Db): HomeRow[] {
     SELECT EXISTS (SELECT 1 FROM media_items e JOIN versions v ON v.item_id = e.id
       WHERE e.type = 'episode' AND v.file_id IS NOT NULL) AS n`)
   const showRows = (shows?.n ?? 0) > 0
+  // music's row (HT-101), once there's a song to play
+  const [music] = db.all<{ n: number }>(sql`SELECT EXISTS (SELECT 1 FROM music_tracks) AS n`)
   return [
     { id: 'continue', title: null },
     ...(showRows ? [{ id: 'next-up', title: 'Next up' }] : []),
@@ -39,6 +41,7 @@ export function homeRows(db: Db): HomeRow[] {
           { id: 'recent-shows', title: 'Recently added shows' },
         ]
       : []),
+    ...((music?.n ?? 0) > 0 ? [{ id: 'recent-music', title: 'Recently played' }] : []),
     ...genres.map((g) => ({ id: `genre:${g.genreId}`, title: g.name })),
   ]
 }

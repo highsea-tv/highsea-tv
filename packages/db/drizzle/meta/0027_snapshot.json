@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "2e06178d-9fe9-4b2e-b079-188a142761fd",
+  "id": "bab21816-a075-403c-9b3d-c2220d55fb05",
   "prevId": "855dcd49-0405-4181-8271-81c88828e534",
   "tables": {
     "account_links": {
@@ -2795,6 +2795,20 @@
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
+        },
+        "subject": {
+          "name": "subject",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "subject_of": {
+          "name": "subject_of",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
         }
       },
       "indexes": {
@@ -2803,6 +2817,14 @@
           "columns": [
             "status",
             "run_at"
+          ],
+          "isUnique": false
+        },
+        "jobs_subject_of": {
+          "name": "jobs_subject_of",
+          "columns": [
+            "subject_of",
+            "status"
           ],
           "isUnique": false
         },
@@ -6712,93 +6734,6 @@
           "tableTo": "devices",
           "columnsFrom": [
             "device_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "checkConstraints": {}
-    },
-    "episode_markers": {
-      "name": "episode_markers",
-      "columns": {
-        "file_id": {
-          "name": "file_id",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "size": {
-          "name": "size",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "intro_start": {
-          "name": "intro_start",
-          "type": "real",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "intro_end": {
-          "name": "intro_end",
-          "type": "real",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "intro_source": {
-          "name": "intro_source",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "credits": {
-          "name": "credits",
-          "type": "real",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "credits_source": {
-          "name": "credits_source",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "error": {
-          "name": "error",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "checked_at": {
-          "name": "checked_at",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "episode_markers_file_id_media_files_id_fk": {
-          "name": "episode_markers_file_id_media_files_id_fk",
-          "tableFrom": "episode_markers",
-          "tableTo": "media_files",
-          "columnsFrom": [
-            "file_id"
           ],
           "columnsTo": [
             "id"

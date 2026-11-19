@@ -7,6 +7,13 @@ While highsea is at 0.x, any release may change how something works. When one do
 
 ## [Unreleased]
 
+## [0.4.10] - 2026-11-19
+
+### Changed
+
+- HT-100 Downloads: show where the data comes from, peers or web seeds ([#104](https://github.com/highsea-tv/highsea-tv/pull/104))
+- HT-107 Let the desktop app's styles load and its top bar drag the window ([#105](https://github.com/highsea-tv/highsea-tv/pull/105))
+
 ## [0.4.9] - 2026-11-19
 
 ### Added
@@ -235,7 +242,9 @@ While highsea is at 0.x, any release may change how something works. When one do
 
 
 
-[unreleased]: https://github.com/highsea-tv/highsea-tv/compare/v0.4.9...HEAD
+
+[unreleased]: https://github.com/highsea-tv/highsea-tv/compare/v0.4.10...HEAD
+[0.4.10]: https://github.com/highsea-tv/highsea-tv/compare/v0.4.9...v0.4.10
 [0.4.9]: https://github.com/highsea-tv/highsea-tv/compare/v0.4.8...v0.4.9
 [0.4.8]: https://github.com/highsea-tv/highsea-tv/compare/v0.4.7...v0.4.8
 [0.4.7]: https://github.com/highsea-tv/highsea-tv/compare/v0.4.6...v0.4.7

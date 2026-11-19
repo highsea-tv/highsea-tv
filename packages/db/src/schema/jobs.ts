@@ -21,9 +21,17 @@ export const jobs = sqliteTable(
     finishedAt: integer('finished_at'),
     error: text('error'),
     createdAt: integer('created_at').notNull(),
+    /**
+     * The library item it works on (HT-106), as `kind:id` ("movie:603", "episode:62085"), or null
+     * for work across the library. `subject_of` is the item its page and its library row stand for:
+     * an episode's or a season's show, or the subject itself.
+     */
+    subject: text('subject'),
+    subjectOf: text('subject_of'),
   },
   (t) => [
     index('jobs_due').on(t.status, t.runAt),
+    index('jobs_subject_of').on(t.subjectOf, t.status),
     index('jobs_dedupe').on(t.type, t.dedupeKey),
     index('jobs_finished').on(t.finishedAt),
   ],

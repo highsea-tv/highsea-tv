@@ -86,6 +86,9 @@ export const fakeReader: TagReader = async (path) => {
   } satisfies TrackRead
 }
 
+/** A PNG's signature and a little more: enough for `sniffImage`. */
+export const PNG = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 0])
+
 export async function setup({ real = false }: { real?: boolean } = {}) {
   const { db, raw } = openDatabase(':memory:')
   migrate(raw)
@@ -128,6 +131,9 @@ export async function setup({ real = false }: { real?: boolean } = {}) {
       jobs,
       logger: silentLogger,
       metadata,
+      imagesDir: join(dir, 'music-images'),
+      // a file's picture, copied out as ffmpeg would: the fake writes a PNG
+      extractCover: async (_track, out) => writeFileSync(out, PNG),
       ...(real ? {} : { readTags: reader }),
     },
     media,
@@ -180,6 +186,7 @@ export async function setup({ real = false }: { real?: boolean } = {}) {
     root,
     dir,
     media,
+    metadata,
     music,
     put,
     drain,
@@ -187,3 +194,45 @@ export async function setup({ real = false }: { real?: boolean } = {}) {
     reads,
   }
 }
+
+/** Someone with one profile, for plays, playlists and Recently played. */
+export function person(t: Awaited<ReturnType<typeof setup>>, id = 'u1') {
+  const now = t.clock.now()
+  t.db
+    .insert(schema.users)
+    .values({
+      id,
+      username: id,
+      displayName: `Person ${id}`,
+      role: 'owner',
+      webauthnId: `w-${id}`,
+      createdAt: now,
+      updatedAt: now,
+    })
+    .run()
+  t.db
+    .insert(schema.profiles)
+    .values({
+      id: `p-${id}`,
+      userId: id,
+      name: 'Main',
+      tone: 'accent',
+      createdAt: now,
+      updatedAt: now,
+    })
+    .run()
+  return { userId: id, profileId: `p-${id}`, deviceId: null }
+}
+
+/** Parklife's first tracks, tagged as a ripper would. */
+export const parklife = (n: number, title: string, extra: object = {}) => ({
+  title,
+  artist: 'Blur',
+  albumArtist: 'Blur',
+  album: 'Parklife',
+  track: n,
+  date: '1994-04-25',
+  year: 1994,
+  genres: ['Britpop'],
+  ...extra,
+})

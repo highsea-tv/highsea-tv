@@ -8,6 +8,7 @@ import { curationAnswers } from './curation.ts'
 import { dashboardAnswers } from './dashboard.ts'
 import { flowsAnswers } from './flows.ts'
 import { integrationsAnswers } from './integrations.ts'
+import { itemWorkKit } from './item-work.ts'
 import type { AdminKit, Answers } from './kit.ts'
 import { moviesAnswers } from './movies.ts'
 import { musicAnswers } from './music.ts'
@@ -21,9 +22,12 @@ import { workAnswers } from './work.ts'
 
 export type { AdminKit } from './kit.ts'
 
-export function adminAnswers(kit: AdminKit): Answers {
+export function adminAnswers(base: AdminKit): Answers {
+  const work = itemWorkKit(base)
+  const kit: AdminKit = { ...base, work: work.kit }
   const out: Record<string, Record<string, unknown>> = {}
   for (const area of [
+    work.answers,
     dashboardAnswers(kit),
     moviesAnswers(kit),
     artworkAnswers(kit),

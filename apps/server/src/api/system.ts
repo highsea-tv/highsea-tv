@@ -1,13 +1,29 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // System, setup and network settings over HTTP.
-import { routes } from '@highsea-tv/api-contract'
+import { type ItemJob, type ItemWork, routes } from '@highsea-tv/api-contract'
 import { AppError, iso } from '@highsea-tv/core'
+import { type ItemJob as QueuedJob, subjectKey } from '@highsea-tv/jobs'
 import { checkHardlinks, listFolders, localAddresses, setupDefaults } from '@highsea-tv/runtime'
 import type { OpenAPIHono } from '@hono/zod-openapi'
 import type { Context } from 'hono'
 import { setSession } from './accounts.ts'
 import { type Env, me } from './guard.ts'
 import { sessionView } from './views.ts'
+
+/** A job on a library item, as the contract gives it (HT-106). */
+function itemJobView(j: QueuedJob, now: number): ItemJob {
+  return {
+    id: j.id,
+    type: j.type,
+    state: j.status,
+    subject: j.subject,
+    since: iso(j.since),
+    retryAt: j.status === 'queued' && j.runAt > now && j.error ? iso(j.runAt) : null,
+    progress: j.progress === null ? null : Math.round(j.progress * 100),
+    finishedAt: j.finishedAt === null ? null : iso(j.finishedAt),
+    error: j.error,
+  }
+}
 
 /** Setup's routes answer only until setup is complete (setup.md). */
 export function setupOpen(c: Context<Env>) {
@@ -40,6 +56,34 @@ export function registerSystem(app: OpenAPIHono<Env>) {
               : ('queued' as const),
         nextRun: j.status === 'queued' ? iso(j.runAt) : null,
       })),
+      200,
+    )
+  })
+
+  // HT-106: what's in hand on each library item, for its page and its card or row
+  app.openapi(routes.system.work, (c) => {
+    const now = rt(c).clock.now()
+    const items = new Map<string, ItemWork>()
+    for (const j of rt(c).jobs.atWork()) {
+      const key = subjectKey(j.of)
+      const item = items.get(key) ?? { kind: j.of.kind, id: j.of.id, jobs: [] }
+      item.jobs.push(itemJobView(j, now))
+      items.set(key, item)
+    }
+    return c.json([...items.values()], 200)
+  })
+
+  app.openapi(routes.system.itemWork, (c) => {
+    const { kind, id } = c.req.valid('param')
+    const now = rt(c).clock.now()
+    const work = rt(c).jobs.workOf({ kind, id })
+    return c.json(
+      {
+        kind,
+        id,
+        active: work.active.map((j) => itemJobView(j, now)),
+        finished: work.finished.map((j) => itemJobView(j, now)),
+      },
       200,
     )
   })

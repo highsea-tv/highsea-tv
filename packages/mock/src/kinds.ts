@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Shows, episodes and music as the SDK's transport answers them (one-client-platform-b.md › B3):
-// the contract's drafted `shows`, `music` and `playlists` routes, an episode on the films' own
+// the contract's `shows`, `music` and `playlists` routes, an episode on the films' own
 // routes (`/items/episode/{id}`), and the shows' and music's rows on Home and kinds in Search, in
 // the contract's shapes, made from the mock server's own (its `library.shows`, `show`, `music`,
-// `queue` and the rest). The real server answers all of these 501 until it has shows and music
-// (apps/server/src/api/drafts.ts), and lists neither in public info's `sources`.
+// `queue` and the rest). The real server serves shows since Phase 5 B and music since D's HT-101,
+// and lists both in public info's `sources`.
 //
 // The contract addresses shows and episodes by TMDB's numbers, as films are (ADR 0014), where the
 // mock has slugs (`the-lantern-keepers`, `the-lantern-keepers-s2e5`): each is numbered from its

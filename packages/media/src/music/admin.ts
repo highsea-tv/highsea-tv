@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The admin's music, in the contract's shapes (`@highsea-tv/api-contract`'s music-library.ts): the
 // artists, an artist with their albums, the albums, an album with its discs and tracks, what the
-// scan set aside, and each Music folder's figures. Reads only, with the owner's Ignore; the routes
-// that serve them are the next task's (ADR 0065).
+// scan set aside, and each Music folder's figures. Reads only, with the owner's Ignore; Match,
+// Refresh and naming are manage.ts's (ADR 0065).
 //
 // Covers and pictures are addresses on highsea's image route (`albumCover`, `artistPhoto`), served
-// from the file found in the folder, the track's own picture, or the Cover Art Archive's, in that
-// order. Serving them is the next task's; the addresses are fixed here.
+// by images.ts from the file found in the folder, the track's own picture, or the Cover Art
+// Archive's (fanart.tv's for an artist), in that order.
 import type {
   LibraryAlbum,
   LibraryAlbumDetail,
@@ -30,9 +30,9 @@ type AlbumDetail = z.infer<typeof LibraryAlbumDetail>
 type Artist = z.infer<typeof LibraryArtist>
 type ArtistDetail = z.infer<typeof LibraryArtistDetail>
 
-/** Where an album's cover is served (the next task's route). */
+/** Where an album's cover is served (`music.image`). */
 export const albumCover = (id: string) => `/api/v1/images/music/album/${id}`
-/** Where an artist's picture is served (the next task's route). */
+/** Where an artist's picture is served (`music.image`). */
 export const artistPhoto = (id: string) => `/api/v1/images/music/artist/${id}`
 
 const iso = (ms: number) => new Date(ms).toISOString()
@@ -163,7 +163,7 @@ export function createMusicAdmin(ctx: MusicDeps, deps: { media: Media }) {
       id: a.id,
       name: a.name,
       sortName: a.sortName,
-      photo: a.photoFile ? artistPhoto(a.id) : null,
+      photo: a.photoFile || a.photoUrl ? artistPhoto(a.id) : null,
       genres: a.genres,
       albums: albums.length,
       tracks: tracks.length,

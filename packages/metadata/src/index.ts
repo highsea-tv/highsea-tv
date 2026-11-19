@@ -5,6 +5,7 @@
 // (`@highsea-tv/metadata/replay`).
 import type { MetadataDeps } from './context.ts'
 import { defineMetadataJobs, queueCatchUp, queueFacts, scheduleMetadataJobs } from './jobs.ts'
+import { createArtistArt } from './musicbrainz/artist-art.ts'
 import { createMusicBrainzClient } from './musicbrainz/client.ts'
 import { createMusicBrainzSource } from './musicbrainz/source.ts'
 import { createMetadataCore, JOB_TYPES } from './service.ts'
@@ -17,7 +18,7 @@ export function createMetadata(deps: MetadataDeps) {
   const core = createMetadataCore(deps)
   defineMetadataJobs(deps.jobs, core, deps.db, () => deps.clock.now())
   const { settings, api } = core
-  const music = createMusicBrainzSource({
+  const musicBrainz = createMusicBrainzSource({
     db: deps.db,
     clock: deps.clock,
     logger: deps.logger,
@@ -29,6 +30,7 @@ export function createMetadata(deps: MetadataDeps) {
       sleep: deps.sleep,
     }),
   })
+  const music = { ...musicBrainz, ...createArtistArt({ fanart: core.fanart }) }
 
   return {
     settings: {
@@ -94,7 +96,8 @@ export function createMetadata(deps: MetadataDeps) {
     cachedShow: core.cachedShow,
     /**
      * MusicBrainz and the Cover Art Archive (ADR 0065), cached, one request a second: an artist, a
-     * release group, a release and a release group's front cover, each by its MusicBrainz id.
+     * release group, a release and a release group's front cover, each by its MusicBrainz id; and
+     * an artist's picture from fanart.tv by the same id (ADR 0070), with each picture's bytes.
      */
     music,
     recommendations: core.recommendations,

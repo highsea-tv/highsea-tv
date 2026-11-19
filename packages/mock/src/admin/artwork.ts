@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The artwork routes (HT-66), answered from the mock: a library film's or a TMDB collection's
-// poster, backdrop and logo, choosing another, uploading one and Reset, with the server's checks
+// The artwork routes (HT-66), answered from the mock: a library film's, a library show's (HT-105)
+// or a TMDB collection's poster, backdrop and logo, choosing another, uploading one and Reset, with the server's checks
 // in its words (packages/metadata's artwork.ts) before the writes.
 //
 // What stands in for TMDB's images: the title's own art, then three more of each kind drawn the
 // fixtures' way from the title's name, so the picker has a grid to choose from. A film has two of
 // fanart.tv's too (HT-74) while fanart.tv is on (a project or personal key in the mock's settings). An upload is kept
 // as a data URL, and a film's choice is written to its art, so every page and app shows it. A
-// collection's is kept beside the mock and laid over its art where `metadata.collection` answers.
+// collection's and a show's are kept beside the mock and laid over their art where
+// `metadata.collection` and the admin's `series` routes answer.
 import type { ArtworkKind, ArtworkKindView, ArtworkView } from '@highsea-tv/api-contract'
 import { backdropArt, logoArt, posterArt } from '@highsea-tv/fixtures'
 import { createT, defineMessages } from '@highsea-tv/i18n'
@@ -23,11 +24,13 @@ const t = createT(
     notAnOption: 'TMDB has no such image for this title.',
     notAFanartOption: 'fanart.tv has no such image for this title.',
     notInLibrary: 'That movie isn’t in the library.',
+    showNotInLibrary: 'That show isn’t in the library.',
     tmdbCollection: 'TMDB has no collection with that id.',
   }),
 )
 
 const KINDS: ArtworkKind[] = ['poster', 'backdrop', 'logo']
+type Owner = 'movie' | 'collection' | 'show'
 
 /** A choice, as the server's `artwork` row keeps it. */
 type Choice = {
@@ -73,6 +76,22 @@ export function chosenCollectionArt<A extends { poster: string | null; backdrop:
   }
 }
 
+/** A library show's art with the choices laid over it, for the admin's `series` routes. */
+export function chosenShowArt<A extends { poster: string; backdrop: string; logo?: string | null }>(
+  kit: AdminKit,
+  id: number,
+  art: A,
+): A {
+  const { choices } = memoryOf(kit)
+  const url = (kind: ArtworkKind) => choices.get(`show:${id}:${kind}`)?.url
+  return {
+    ...art,
+    poster: url('poster') ?? art.poster,
+    backdrop: url('backdrop') ?? art.backdrop,
+    logo: url('logo') ?? art.logo ?? null,
+  }
+}
+
 type Option = {
   source: 'tmdb' | 'fanart'
   file: string
@@ -114,7 +133,7 @@ const FANART_SIZES: Record<ArtworkKind, [number, number]> = {
   logo: [800, 310],
 }
 
-/** Two of fanart.tv's for a film, the most liked first, named the server's way (`/ftv_…`). */
+/** Two of fanart.tv's for a film or a show, the most liked first, named the server's way (`/ftv_…`). */
 function fanartOptionsOf(slug: string, name: string, kind: ArtworkKind): Option[] {
   const draw = kind === 'poster' ? posterArt : kind === 'backdrop' ? backdropArt : logoArt
   const [width, height] = FANART_SIZES[kind]
@@ -140,7 +159,7 @@ export function artworkAnswers(kit: AdminKit): Answers {
   const key = (owner: string, id: number, kind: ArtworkKind) => `${owner}:${id}:${kind}`
 
   /** The title's images: its name, a slug for the files, and each kind's automatic one. */
-  function titleOf(ctx: Ctx, owner: 'movie' | 'collection', id: number) {
+  function titleOf(ctx: Ctx, owner: Owner, id: number) {
     if (owner === 'movie') {
       const m = ctx.srv.state.items.find((x) => x.type === 'movie' && x.tmdbId === id)
       if (!m) throw refuse('not-found', t('notInLibrary'))
@@ -150,6 +169,20 @@ export function artworkAnswers(kit: AdminKit): Answers {
         slug: `m${id}`,
         item: m,
         automatic: { poster: before.poster, backdrop: before.backdrop, logo: before.logo ?? null },
+      }
+    }
+    if (owner === 'show') {
+      const s = ctx.api.shows.list().find((x) => x.tmdbId === id)
+      if (!s) throw refuse('not-found', t('showNotInLibrary'))
+      return {
+        name: s.title,
+        slug: `s${id}`,
+        item: null,
+        automatic: {
+          poster: s.art.poster || null,
+          backdrop: s.art.backdrop || null,
+          logo: s.art.logo ?? null,
+        },
       }
     }
     const ref = collectionRefs().find((c) => tmdbNumber(c.id) === id)
@@ -169,7 +202,7 @@ export function artworkAnswers(kit: AdminKit): Answers {
   }
 
   /** Writes a film's choices to its art, so every page and app draws them. */
-  function apply(ctx: Ctx, owner: 'movie' | 'collection', id: number) {
+  function apply(ctx: Ctx, owner: Owner, id: number) {
     const title = titleOf(ctx, owner, id)
     if (title.item) {
       const m = title.item
@@ -184,9 +217,11 @@ export function artworkAnswers(kit: AdminKit): Answers {
       }
     }
     kit.emit('metadata.updated')
+    // a show's page follows the shows' topic
+    if (owner === 'show') kit.emit('shows.updated')
   }
 
-  function view(ctx: Ctx, owner: 'movie' | 'collection', id: number): ArtworkView {
+  function view(ctx: Ctx, owner: Owner, id: number): ArtworkView {
     const title = titleOf(ctx, owner, id)
     const users = ctx.srv.state.users
     const kinds = KINDS.map((kind): ArtworkKindView => {
@@ -197,7 +232,7 @@ export function artworkAnswers(kit: AdminKit): Answers {
         ...(owner === 'collection' && kind === 'logo'
           ? []
           : optionsOf(title.slug, title.name, kind, automatic)),
-        ...(owner === 'movie' && fanartOn(ctx)
+        ...(owner !== 'collection' && fanartOn(ctx)
           ? fanartOptionsOf(title.slug, title.name, kind)
           : []),
       ]
@@ -236,7 +271,7 @@ export function artworkAnswers(kit: AdminKit): Answers {
         const title = titleOf(ctx, owner, id)
         const fanart = body.file.startsWith('/ftv_')
         const option = fanart
-          ? owner === 'movie' && fanartOn(ctx)
+          ? owner !== 'collection' && fanartOn(ctx)
             ? fanartOptionsOf(title.slug, title.name, kind).find((o) => o.file === body.file)
             : undefined
           : owner === 'collection' && kind === 'logo'

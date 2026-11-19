@@ -606,6 +606,14 @@ jobs:
         # Tauri runs the client's desktop export first (tauri.conf.json's beforeBuildCommand)
         env:
           EXPO_NO_TELEMETRY: 1
+      # before anything is gathered: a page that doesn't come alive stops the release (HT-107,
+      # desktop.yml's step of the same name)
+      - name: The page comes alive under Tauri's policy
+        if: runner.os == 'macOS'
+        timeout-minutes: 10
+        run: |
+          bunx playwright-core install webkit
+          bun scripts/sweeps/desktop.ts
       - name: Gather them
         run: |
           mkdir -p "$RUNNER_TEMP/desktop"

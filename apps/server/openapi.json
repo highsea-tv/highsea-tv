@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "highsea",
-    "version": "0.4.9",
+    "version": "0.4.10",
     "description": "The highsea server API. Every admin capability is here, with admin scope.",
     "license": {
       "name": "AGPL-3.0-only"
@@ -220,694 +220,6 @@
           "url"
         ]
       },
-      "ClientMusic": {
-        "type": "object",
-        "properties": {
-          "artists": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ClientArtist"
-            }
-          },
-          "albums": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ClientAlbum"
-            }
-          }
-        },
-        "required": [
-          "artists",
-          "albums"
-        ]
-      },
-      "ClientArtist": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
-          },
-          "sortName": {
-            "type": "string"
-          },
-          "photo": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "albums": {
-            "type": "integer"
-          },
-          "genres": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "addedAt": {
-            "type": "string",
-            "format": "date-time",
-            "example": "2026-10-17T20:15:00.000Z"
-          }
-        },
-        "required": [
-          "id",
-          "name",
-          "sortName",
-          "photo",
-          "albums",
-          "genres",
-          "addedAt"
-        ]
-      },
-      "ClientAlbum": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "title": {
-            "type": "string"
-          },
-          "sortTitle": {
-            "type": "string"
-          },
-          "artist": {
-            "type": "object",
-            "properties": {
-              "id": {
-                "type": "string"
-              },
-              "name": {
-                "type": "string"
-              }
-            },
-            "required": [
-              "id",
-              "name"
-            ]
-          },
-          "year": {
-            "type": "integer"
-          },
-          "cover": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "genres": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "tracks": {
-            "type": "integer"
-          },
-          "kind": {
-            "type": "string",
-            "enum": [
-              "album",
-              "ep",
-              "single",
-              "soundtrack",
-              "compilation"
-            ]
-          },
-          "addedAt": {
-            "type": "string",
-            "format": "date-time",
-            "example": "2026-10-17T20:15:00.000Z"
-          }
-        },
-        "required": [
-          "id",
-          "title",
-          "sortTitle",
-          "artist",
-          "year",
-          "cover",
-          "genres",
-          "tracks",
-          "kind",
-          "addedAt"
-        ]
-      },
-      "ClientLibrarySong": {
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/ClientSong"
-          },
-          {
-            "type": "object",
-            "properties": {
-              "album": {
-                "$ref": "#/components/schemas/ClientAlbum"
-              },
-              "plays": {
-                "type": "integer",
-                "minimum": 0
-              }
-            },
-            "required": [
-              "album",
-              "plays"
-            ]
-          }
-        ]
-      },
-      "ClientSong": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "number": {
-            "type": "integer",
-            "minimum": 1
-          },
-          "title": {
-            "type": "string"
-          },
-          "duration": {
-            "type": "number",
-            "minimum": 0
-          }
-        },
-        "required": [
-          "id",
-          "number",
-          "title",
-          "duration"
-        ]
-      },
-      "ClientAlbumDetail": {
-        "type": "object",
-        "properties": {
-          "album": {
-            "$ref": "#/components/schemas/ClientAlbum"
-          },
-          "songs": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ClientSong"
-            }
-          },
-          "duration": {
-            "type": "number",
-            "minimum": 0
-          },
-          "released": {
-            "type": "string",
-            "format": "date",
-            "example": "1999-03-30"
-          },
-          "label": {
-            "type": "string"
-          },
-          "about": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "film": {
-            "$ref": "#/components/schemas/ClientItem"
-          },
-          "more": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ClientAlbum"
-            }
-          }
-        },
-        "required": [
-          "album",
-          "songs",
-          "duration",
-          "released",
-          "label",
-          "about",
-          "film",
-          "more"
-        ]
-      },
-      "ClientItem": {
-        "type": [
-          "object",
-          "null"
-        ],
-        "properties": {
-          "id": {
-            "type": "integer",
-            "example": 603
-          },
-          "type": {
-            "type": "string",
-            "enum": [
-              "movie",
-              "episode"
-            ]
-          },
-          "title": {
-            "type": "string"
-          },
-          "year": {
-            "type": [
-              "integer",
-              "null"
-            ]
-          },
-          "runtimeMinutes": {
-            "type": [
-              "integer",
-              "null"
-            ]
-          },
-          "genres": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "synopsis": {
-            "type": "string"
-          },
-          "rating": {
-            "type": "number",
-            "minimum": 0,
-            "maximum": 5,
-            "description": "Out of 5: TMDB’s vote_average (0–10) halved, to one decimal"
-          },
-          "voteCount": {
-            "type": "integer"
-          },
-          "releaseDate": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "format": "date",
-            "example": "1999-03-30"
-          },
-          "addedAt": {
-            "type": "string",
-            "format": "date-time",
-            "example": "2026-10-17T20:15:00.000Z"
-          },
-          "status": {
-            "$ref": "#/components/schemas/MovieStatus"
-          },
-          "playable": {
-            "type": "boolean"
-          },
-          "art": {
-            "$ref": "#/components/schemas/Art"
-          },
-          "progress": {
-            "type": [
-              "number",
-              "null"
-            ],
-            "minimum": 0,
-            "maximum": 1
-          },
-          "position": {
-            "type": "number",
-            "minimum": 0
-          },
-          "watched": {
-            "type": "boolean"
-          },
-          "show": {
-            "type": "object",
-            "properties": {
-              "id": {
-                "type": "integer"
-              },
-              "title": {
-                "type": "string"
-              },
-              "code": {
-                "type": "string"
-              },
-              "episode": {
-                "type": "string"
-              }
-            },
-            "required": [
-              "id",
-              "title",
-              "code",
-              "episode"
-            ]
-          },
-          "series": {
-            "type": "object",
-            "properties": {
-              "seasons": {
-                "type": "integer"
-              },
-              "endYear": {
-                "type": [
-                  "integer",
-                  "null"
-                ]
-              },
-              "play": {
-                "type": "integer"
-              }
-            },
-            "required": [
-              "seasons",
-              "endYear",
-              "play"
-            ]
-          }
-        },
-        "required": [
-          "id",
-          "type",
-          "title",
-          "year",
-          "runtimeMinutes",
-          "genres",
-          "synopsis",
-          "rating",
-          "voteCount",
-          "releaseDate",
-          "addedAt",
-          "status",
-          "playable",
-          "art",
-          "progress",
-          "position",
-          "watched"
-        ]
-      },
-      "MovieStatus": {
-        "type": "string",
-        "enum": [
-          "available",
-          "wanted",
-          "downloading",
-          "not-released",
-          "unmonitored"
-        ]
-      },
-      "Art": {
-        "type": "object",
-        "properties": {
-          "poster": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "example": "/api/v1/images/movie/603/poster/w342/f89U3ADr1oiB1s9GkdPOEpXUk5H.jpg"
-          },
-          "backdrop": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "example": "/api/v1/images/movie/603/poster/w342/f89U3ADr1oiB1s9GkdPOEpXUk5H.jpg"
-          },
-          "logo": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "example": "/api/v1/images/movie/603/poster/w342/f89U3ADr1oiB1s9GkdPOEpXUk5H.jpg"
-          }
-        },
-        "required": [
-          "poster",
-          "backdrop",
-          "logo"
-        ]
-      },
-      "ClientArtistDetail": {
-        "type": "object",
-        "properties": {
-          "artist": {
-            "$ref": "#/components/schemas/ClientArtist"
-          },
-          "bio": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "backdrop": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "songs": {
-            "type": "integer"
-          },
-          "person": {
-            "type": [
-              "integer",
-              "null"
-            ]
-          },
-          "sections": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "kind": {
-                  "type": "string",
-                  "enum": [
-                    "albums",
-                    "singles",
-                    "soundtracks",
-                    "compilations"
-                  ]
-                },
-                "albums": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/ClientAlbum"
-                  }
-                }
-              },
-              "required": [
-                "kind",
-                "albums"
-              ]
-            }
-          },
-          "similar": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ClientArtist"
-            }
-          }
-        },
-        "required": [
-          "artist",
-          "bio",
-          "backdrop",
-          "songs",
-          "person",
-          "sections",
-          "similar"
-        ]
-      },
-      "QueuedSong": {
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/ClientSong"
-          },
-          {
-            "type": "object",
-            "properties": {
-              "album": {
-                "$ref": "#/components/schemas/ClientAlbum"
-              },
-              "loudness": {
-                "type": "array",
-                "items": {
-                  "type": "number",
-                  "minimum": 0,
-                  "maximum": 1
-                }
-              }
-            },
-            "required": [
-              "album",
-              "loudness"
-            ]
-          }
-        ]
-      },
-      "QueueRequest": {
-        "type": "object",
-        "properties": {
-          "source": {
-            "$ref": "#/components/schemas/MusicSource"
-          },
-          "shuffle": {
-            "type": "boolean",
-            "default": false
-          }
-        },
-        "required": [
-          "source"
-        ]
-      },
-      "MusicSource": {
-        "anyOf": [
-          {
-            "type": "object",
-            "properties": {
-              "album": {
-                "type": "string"
-              }
-            },
-            "required": [
-              "album"
-            ]
-          },
-          {
-            "type": "object",
-            "properties": {
-              "artist": {
-                "type": "string"
-              }
-            },
-            "required": [
-              "artist"
-            ]
-          },
-          {
-            "type": "object",
-            "properties": {
-              "playlist": {
-                "type": "string"
-              }
-            },
-            "required": [
-              "playlist"
-            ]
-          },
-          {
-            "type": "object",
-            "properties": {
-              "songs": {
-                "type": "array",
-                "items": {
-                  "type": "string"
-                },
-                "minItems": 1,
-                "maxItems": 500
-              }
-            },
-            "required": [
-              "songs"
-            ]
-          }
-        ]
-      },
-      "ClientPlaylist": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
-          },
-          "songs": {
-            "type": "integer"
-          },
-          "duration": {
-            "type": "number",
-            "minimum": 0
-          },
-          "covers": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "updatedAt": {
-            "type": "string",
-            "format": "date-time",
-            "example": "2026-10-17T20:15:00.000Z"
-          }
-        },
-        "required": [
-          "id",
-          "name",
-          "songs",
-          "duration",
-          "covers",
-          "updatedAt"
-        ]
-      },
-      "ClientPlaylistDetail": {
-        "type": "object",
-        "properties": {
-          "playlist": {
-            "$ref": "#/components/schemas/ClientPlaylist"
-          },
-          "songs": {
-            "type": "array",
-            "items": {
-              "allOf": [
-                {
-                  "$ref": "#/components/schemas/ClientLibrarySong"
-                },
-                {
-                  "type": "object",
-                  "properties": {
-                    "entry": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "entry"
-                  ]
-                }
-              ]
-            }
-          }
-        },
-        "required": [
-          "playlist",
-          "songs"
-        ]
-      },
-      "NewPlaylist": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 100
-          },
-          "songs": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "maxItems": 500,
-            "default": []
-          }
-        },
-        "required": [
-          "name"
-        ]
-      },
       "SeriesSearch": {
         "type": "object",
         "properties": {
@@ -919,552 +231,6 @@
             "type": "string"
           }
         }
-      },
-      "MusicFolder": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "artists": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "albums": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "tracks": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "size": {
-            "type": "number",
-            "minimum": 0
-          },
-          "unmatched": {
-            "type": "integer",
-            "minimum": 0
-          }
-        },
-        "required": [
-          "id",
-          "artists",
-          "albums",
-          "tracks",
-          "size",
-          "unmatched"
-        ]
-      },
-      "UnmatchedMusic": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "path": {
-            "type": "string"
-          },
-          "files": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "size": {
-            "type": "number",
-            "minimum": 0
-          },
-          "reason": {
-            "type": "string",
-            "enum": [
-              "no-tags",
-              "no-album",
-              "many-albums",
-              "unreadable"
-            ]
-          },
-          "guess": {
-            "type": "object",
-            "properties": {
-              "artist": {
-                "type": [
-                  "string",
-                  "null"
-                ]
-              },
-              "album": {
-                "type": [
-                  "string",
-                  "null"
-                ]
-              },
-              "year": {
-                "type": [
-                  "integer",
-                  "null"
-                ]
-              }
-            },
-            "required": [
-              "artist",
-              "album",
-              "year"
-            ]
-          },
-          "foundAt": {
-            "type": "string",
-            "format": "date-time",
-            "example": "2026-10-17T20:15:00.000Z"
-          }
-        },
-        "required": [
-          "id",
-          "path",
-          "files",
-          "size",
-          "reason",
-          "guess",
-          "foundAt"
-        ]
-      },
-      "MusicMatch": {
-        "type": "object",
-        "properties": {
-          "artist": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 200
-          },
-          "album": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 200
-          },
-          "year": {
-            "type": [
-              "integer",
-              "null"
-            ],
-            "minimum": 1000,
-            "maximum": 9999
-          }
-        },
-        "required": [
-          "artist",
-          "album",
-          "year"
-        ]
-      },
-      "LibraryArtist": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
-          },
-          "sortName": {
-            "type": "string"
-          },
-          "photo": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "genres": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "albums": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "tracks": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "size": {
-            "type": "number",
-            "minimum": 0
-          },
-          "path": {
-            "type": "string"
-          },
-          "source": {
-            "type": "string",
-            "enum": [
-              "musicbrainz",
-              "tags"
-            ]
-          },
-          "musicBrainzId": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "addedAt": {
-            "type": "string",
-            "format": "date-time",
-            "example": "2026-10-17T20:15:00.000Z"
-          }
-        },
-        "required": [
-          "id",
-          "name",
-          "sortName",
-          "photo",
-          "genres",
-          "albums",
-          "tracks",
-          "size",
-          "path",
-          "source",
-          "musicBrainzId",
-          "addedAt"
-        ]
-      },
-      "LibraryArtistDetail": {
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/LibraryArtist"
-          },
-          {
-            "type": "object",
-            "properties": {
-              "bio": {
-                "type": [
-                  "string",
-                  "null"
-                ]
-              },
-              "albumList": {
-                "type": "array",
-                "items": {
-                  "$ref": "#/components/schemas/LibraryAlbum"
-                }
-              },
-              "videos": {
-                "type": "integer",
-                "minimum": 0
-              }
-            },
-            "required": [
-              "bio",
-              "albumList",
-              "videos"
-            ]
-          }
-        ]
-      },
-      "LibraryAlbum": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "title": {
-            "type": "string"
-          },
-          "sortTitle": {
-            "type": "string"
-          },
-          "artist": {
-            "type": "object",
-            "properties": {
-              "id": {
-                "type": "string"
-              },
-              "name": {
-                "type": "string"
-              }
-            },
-            "required": [
-              "id",
-              "name"
-            ]
-          },
-          "year": {
-            "type": [
-              "integer",
-              "null"
-            ]
-          },
-          "kind": {
-            "type": "string",
-            "enum": [
-              "album",
-              "ep",
-              "single",
-              "soundtrack",
-              "compilation"
-            ]
-          },
-          "cover": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "genres": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "tracks": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "discs": {
-            "type": "integer",
-            "minimum": 1
-          },
-          "duration": {
-            "type": "number",
-            "minimum": 0
-          },
-          "size": {
-            "type": "number",
-            "minimum": 0
-          },
-          "formats": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "path": {
-            "type": "string"
-          },
-          "source": {
-            "type": "string",
-            "enum": [
-              "musicbrainz",
-              "tags"
-            ]
-          },
-          "musicBrainzId": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "addedAt": {
-            "type": "string",
-            "format": "date-time",
-            "example": "2026-10-17T20:15:00.000Z"
-          }
-        },
-        "required": [
-          "id",
-          "title",
-          "sortTitle",
-          "artist",
-          "year",
-          "kind",
-          "cover",
-          "genres",
-          "tracks",
-          "discs",
-          "duration",
-          "size",
-          "formats",
-          "path",
-          "source",
-          "musicBrainzId",
-          "addedAt"
-        ]
-      },
-      "LibraryAlbumDetail": {
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/LibraryAlbum"
-          },
-          {
-            "type": "object",
-            "properties": {
-              "released": {
-                "type": [
-                  "string",
-                  "null"
-                ],
-                "format": "date",
-                "example": "1999-03-30"
-              },
-              "label": {
-                "type": [
-                  "string",
-                  "null"
-                ]
-              },
-              "discList": {
-                "type": "array",
-                "items": {
-                  "$ref": "#/components/schemas/LibraryDisc"
-                }
-              },
-              "extras": {
-                "type": "object",
-                "properties": {
-                  "coverFile": {
-                    "type": [
-                      "string",
-                      "null"
-                    ]
-                  },
-                  "nfo": {
-                    "type": "boolean"
-                  }
-                },
-                "required": [
-                  "coverFile",
-                  "nfo"
-                ]
-              }
-            },
-            "required": [
-              "released",
-              "label",
-              "discList",
-              "extras"
-            ]
-          }
-        ]
-      },
-      "LibraryDisc": {
-        "type": "object",
-        "properties": {
-          "number": {
-            "type": "integer",
-            "minimum": 1
-          },
-          "folder": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "tracks": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/LibraryTrack"
-            }
-          }
-        },
-        "required": [
-          "number",
-          "folder",
-          "tracks"
-        ]
-      },
-      "LibraryTrack": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "disc": {
-            "type": "integer",
-            "minimum": 1
-          },
-          "number": {
-            "type": "integer",
-            "minimum": 1
-          },
-          "title": {
-            "type": "string"
-          },
-          "artist": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "duration": {
-            "type": "number",
-            "minimum": 0
-          },
-          "file": {
-            "$ref": "#/components/schemas/TrackFile"
-          }
-        },
-        "required": [
-          "id",
-          "disc",
-          "number",
-          "title",
-          "artist",
-          "duration",
-          "file"
-        ]
-      },
-      "TrackFile": {
-        "type": "object",
-        "properties": {
-          "path": {
-            "type": "string"
-          },
-          "format": {
-            "type": "string"
-          },
-          "bitrate": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "sampleRate": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "bitDepth": {
-            "type": [
-              "integer",
-              "null"
-            ]
-          },
-          "size": {
-            "type": "number",
-            "minimum": 0
-          },
-          "lyrics": {
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "path",
-          "format",
-          "bitrate",
-          "sampleRate",
-          "bitDepth",
-          "size",
-          "lyrics"
-        ]
-      },
-      "TrackNaming": {
-        "type": "object",
-        "properties": {
-          "rename": {
-            "type": "boolean"
-          },
-          "standardFormat": {
-            "type": "string"
-          },
-          "multiDiscFormat": {
-            "type": "string"
-          },
-          "artistFolderFormat": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "rename",
-          "standardFormat",
-          "multiDiscFormat",
-          "artistFolderFormat"
-        ]
       },
       "Server": {
         "type": "object",
@@ -1734,6 +500,149 @@
           "name",
           "state",
           "nextRun"
+        ]
+      },
+      "ItemWork": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/WorkSubject"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "jobs": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ItemJob"
+                }
+              }
+            },
+            "required": [
+              "jobs"
+            ]
+          }
+        ]
+      },
+      "ItemJob": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "running",
+              "succeeded",
+              "failed",
+              "cancelled"
+            ]
+          },
+          "subject": {
+            "$ref": "#/components/schemas/WorkSubject"
+          },
+          "since": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-10-17T20:15:00.000Z"
+          },
+          "retryAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "example": "2026-10-17T20:15:00.000Z"
+          },
+          "progress": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 100
+          },
+          "finishedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "example": "2026-10-17T20:15:00.000Z"
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "state",
+          "subject",
+          "since",
+          "retryAt",
+          "progress",
+          "finishedAt",
+          "error"
+        ]
+      },
+      "WorkSubject": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "movie",
+              "show",
+              "season",
+              "episode",
+              "collection",
+              "artist",
+              "album"
+            ]
+          },
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "id"
+        ]
+      },
+      "ItemWorkDetail": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/WorkSubject"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "active": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ItemJob"
+                }
+              },
+              "finished": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ItemJob"
+                }
+              }
+            },
+            "required": [
+              "active",
+              "finished"
+            ]
+          }
         ]
       },
       "Task": {
@@ -5696,6 +4605,37 @@
           "inLibrary"
         ]
       },
+      "Art": {
+        "type": "object",
+        "properties": {
+          "poster": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "example": "/api/v1/images/movie/603/poster/w342/f89U3ADr1oiB1s9GkdPOEpXUk5H.jpg"
+          },
+          "backdrop": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "example": "/api/v1/images/movie/603/poster/w342/f89U3ADr1oiB1s9GkdPOEpXUk5H.jpg"
+          },
+          "logo": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "example": "/api/v1/images/movie/603/poster/w342/f89U3ADr1oiB1s9GkdPOEpXUk5H.jpg"
+          }
+        },
+        "required": [
+          "poster",
+          "backdrop",
+          "logo"
+        ]
+      },
       "MovieMetadata": {
         "allOf": [
           {
@@ -6221,7 +5161,8 @@
         "type": "string",
         "enum": [
           "movie",
-          "collection"
+          "collection",
+          "show"
         ]
       },
       "ArtworkKindView": {
@@ -6618,6 +5559,16 @@
           "versions",
           "gone",
           "tags"
+        ]
+      },
+      "MovieStatus": {
+        "type": "string",
+        "enum": [
+          "available",
+          "wanted",
+          "downloading",
+          "not-released",
+          "unmonitored"
         ]
       },
       "MovieVersion": {
@@ -7813,6 +6764,12 @@
               },
               "backdrop": {
                 "type": "string"
+              },
+              "logo": {
+                "type": [
+                  "string",
+                  "null"
+                ]
               }
             },
             "required": [
@@ -8233,6 +7190,1278 @@
             "minimum": 0
           }
         }
+      },
+      "MusicFolder": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "artists": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "albums": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "tracks": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "size": {
+            "type": "number",
+            "minimum": 0
+          },
+          "unmatched": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "id",
+          "artists",
+          "albums",
+          "tracks",
+          "size",
+          "unmatched"
+        ]
+      },
+      "UnmatchedMusic": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "files": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "size": {
+            "type": "number",
+            "minimum": 0
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "no-tags",
+              "no-album",
+              "many-albums",
+              "unreadable"
+            ]
+          },
+          "guess": {
+            "type": "object",
+            "properties": {
+              "artist": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "album": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "year": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "artist",
+              "album",
+              "year"
+            ]
+          },
+          "foundAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-10-17T20:15:00.000Z"
+          }
+        },
+        "required": [
+          "id",
+          "path",
+          "files",
+          "size",
+          "reason",
+          "guess",
+          "foundAt"
+        ]
+      },
+      "MusicMatch": {
+        "type": "object",
+        "properties": {
+          "artist": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "album": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "year": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1000,
+            "maximum": 9999
+          }
+        },
+        "required": [
+          "artist",
+          "album",
+          "year"
+        ]
+      },
+      "LibraryArtist": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "sortName": {
+            "type": "string"
+          },
+          "photo": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "genres": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "albums": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "tracks": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "size": {
+            "type": "number",
+            "minimum": 0
+          },
+          "path": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "musicbrainz",
+              "tags"
+            ]
+          },
+          "musicBrainzId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "addedAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-10-17T20:15:00.000Z"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "sortName",
+          "photo",
+          "genres",
+          "albums",
+          "tracks",
+          "size",
+          "path",
+          "source",
+          "musicBrainzId",
+          "addedAt"
+        ]
+      },
+      "LibraryArtistDetail": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/LibraryArtist"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "bio": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "albumList": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/LibraryAlbum"
+                }
+              },
+              "videos": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "bio",
+              "albumList",
+              "videos"
+            ]
+          }
+        ]
+      },
+      "LibraryAlbum": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "sortTitle": {
+            "type": "string"
+          },
+          "artist": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "name"
+            ]
+          },
+          "year": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "album",
+              "ep",
+              "single",
+              "soundtrack",
+              "compilation"
+            ]
+          },
+          "cover": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "genres": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "tracks": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "discs": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "duration": {
+            "type": "number",
+            "minimum": 0
+          },
+          "size": {
+            "type": "number",
+            "minimum": 0
+          },
+          "formats": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "path": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "musicbrainz",
+              "tags"
+            ]
+          },
+          "musicBrainzId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "addedAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-10-17T20:15:00.000Z"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "sortTitle",
+          "artist",
+          "year",
+          "kind",
+          "cover",
+          "genres",
+          "tracks",
+          "discs",
+          "duration",
+          "size",
+          "formats",
+          "path",
+          "source",
+          "musicBrainzId",
+          "addedAt"
+        ]
+      },
+      "LibraryAlbumDetail": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/LibraryAlbum"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "released": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date",
+                "example": "1999-03-30"
+              },
+              "label": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "discList": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/LibraryDisc"
+                }
+              },
+              "extras": {
+                "type": "object",
+                "properties": {
+                  "coverFile": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "nfo": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "coverFile",
+                  "nfo"
+                ]
+              }
+            },
+            "required": [
+              "released",
+              "label",
+              "discList",
+              "extras"
+            ]
+          }
+        ]
+      },
+      "LibraryDisc": {
+        "type": "object",
+        "properties": {
+          "number": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "folder": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "tracks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LibraryTrack"
+            }
+          }
+        },
+        "required": [
+          "number",
+          "folder",
+          "tracks"
+        ]
+      },
+      "LibraryTrack": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "disc": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "number": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "title": {
+            "type": "string"
+          },
+          "artist": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "duration": {
+            "type": "number",
+            "minimum": 0
+          },
+          "file": {
+            "$ref": "#/components/schemas/TrackFile"
+          }
+        },
+        "required": [
+          "id",
+          "disc",
+          "number",
+          "title",
+          "artist",
+          "duration",
+          "file"
+        ]
+      },
+      "TrackFile": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "format": {
+            "type": "string"
+          },
+          "bitrate": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "sampleRate": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "bitDepth": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "size": {
+            "type": "number",
+            "minimum": 0
+          },
+          "lyrics": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "path",
+          "format",
+          "bitrate",
+          "sampleRate",
+          "bitDepth",
+          "size",
+          "lyrics"
+        ]
+      },
+      "TrackNaming": {
+        "type": "object",
+        "properties": {
+          "rename": {
+            "type": "boolean"
+          },
+          "standardFormat": {
+            "type": "string"
+          },
+          "multiDiscFormat": {
+            "type": "string"
+          },
+          "artistFolderFormat": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "rename",
+          "standardFormat",
+          "multiDiscFormat",
+          "artistFolderFormat"
+        ]
+      },
+      "ClientMusic": {
+        "type": "object",
+        "properties": {
+          "artists": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClientArtist"
+            }
+          },
+          "albums": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClientAlbum"
+            }
+          }
+        },
+        "required": [
+          "artists",
+          "albums"
+        ]
+      },
+      "ClientArtist": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "sortName": {
+            "type": "string"
+          },
+          "photo": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "albums": {
+            "type": "integer"
+          },
+          "genres": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "addedAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-10-17T20:15:00.000Z"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "sortName",
+          "photo",
+          "albums",
+          "genres",
+          "addedAt"
+        ]
+      },
+      "ClientAlbum": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "sortTitle": {
+            "type": "string"
+          },
+          "artist": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "name"
+            ]
+          },
+          "year": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "cover": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "genres": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "tracks": {
+            "type": "integer"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "album",
+              "ep",
+              "single",
+              "soundtrack",
+              "compilation"
+            ]
+          },
+          "addedAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-10-17T20:15:00.000Z"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "sortTitle",
+          "artist",
+          "year",
+          "cover",
+          "genres",
+          "tracks",
+          "kind",
+          "addedAt"
+        ]
+      },
+      "ClientLibrarySong": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ClientSong"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "album": {
+                "$ref": "#/components/schemas/ClientAlbum"
+              },
+              "plays": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "album",
+              "plays"
+            ]
+          }
+        ]
+      },
+      "ClientSong": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "number": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "title": {
+            "type": "string"
+          },
+          "duration": {
+            "type": "number",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "id",
+          "number",
+          "title",
+          "duration"
+        ]
+      },
+      "ClientAlbumDetail": {
+        "type": "object",
+        "properties": {
+          "album": {
+            "$ref": "#/components/schemas/ClientAlbum"
+          },
+          "songs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClientSong"
+            }
+          },
+          "duration": {
+            "type": "number",
+            "minimum": 0
+          },
+          "released": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date",
+            "example": "1999-03-30"
+          },
+          "label": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "about": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "film": {
+            "$ref": "#/components/schemas/ClientItem"
+          },
+          "more": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClientAlbum"
+            }
+          }
+        },
+        "required": [
+          "album",
+          "songs",
+          "duration",
+          "released",
+          "label",
+          "about",
+          "film",
+          "more"
+        ]
+      },
+      "ClientItem": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 603
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "movie",
+              "episode"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "year": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "runtimeMinutes": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "genres": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "synopsis": {
+            "type": "string"
+          },
+          "rating": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 5,
+            "description": "Out of 5: TMDB’s vote_average (0–10) halved, to one decimal"
+          },
+          "voteCount": {
+            "type": "integer"
+          },
+          "releaseDate": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date",
+            "example": "1999-03-30"
+          },
+          "addedAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-10-17T20:15:00.000Z"
+          },
+          "status": {
+            "$ref": "#/components/schemas/MovieStatus"
+          },
+          "playable": {
+            "type": "boolean"
+          },
+          "art": {
+            "$ref": "#/components/schemas/Art"
+          },
+          "progress": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 1
+          },
+          "position": {
+            "type": "number",
+            "minimum": 0
+          },
+          "watched": {
+            "type": "boolean"
+          },
+          "show": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "integer"
+              },
+              "title": {
+                "type": "string"
+              },
+              "code": {
+                "type": "string"
+              },
+              "episode": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "title",
+              "code",
+              "episode"
+            ]
+          },
+          "series": {
+            "type": "object",
+            "properties": {
+              "seasons": {
+                "type": "integer"
+              },
+              "endYear": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "play": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "seasons",
+              "endYear",
+              "play"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "title",
+          "year",
+          "runtimeMinutes",
+          "genres",
+          "synopsis",
+          "rating",
+          "voteCount",
+          "releaseDate",
+          "addedAt",
+          "status",
+          "playable",
+          "art",
+          "progress",
+          "position",
+          "watched"
+        ]
+      },
+      "ClientArtistDetail": {
+        "type": "object",
+        "properties": {
+          "artist": {
+            "$ref": "#/components/schemas/ClientArtist"
+          },
+          "bio": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "backdrop": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "songs": {
+            "type": "integer"
+          },
+          "person": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "sections": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "albums",
+                    "singles",
+                    "soundtracks",
+                    "compilations"
+                  ]
+                },
+                "albums": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ClientAlbum"
+                  }
+                }
+              },
+              "required": [
+                "kind",
+                "albums"
+              ]
+            }
+          },
+          "similar": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClientArtist"
+            }
+          }
+        },
+        "required": [
+          "artist",
+          "bio",
+          "backdrop",
+          "songs",
+          "person",
+          "sections",
+          "similar"
+        ]
+      },
+      "QueuedSong": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ClientSong"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "album": {
+                "$ref": "#/components/schemas/ClientAlbum"
+              },
+              "loudness": {
+                "type": "array",
+                "items": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1
+                }
+              }
+            },
+            "required": [
+              "album",
+              "loudness"
+            ]
+          }
+        ]
+      },
+      "QueueRequest": {
+        "type": "object",
+        "properties": {
+          "source": {
+            "$ref": "#/components/schemas/MusicSource"
+          },
+          "shuffle": {
+            "type": "boolean",
+            "default": false
+          }
+        },
+        "required": [
+          "source"
+        ]
+      },
+      "MusicSource": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "album": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "album"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "artist": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "artist"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "playlist": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "playlist"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "songs": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "minItems": 1,
+                "maxItems": 500
+              }
+            },
+            "required": [
+              "songs"
+            ]
+          }
+        ]
+      },
+      "MusicPlay": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          },
+          "method": {
+            "type": "string",
+            "enum": [
+              "direct-play",
+              "transcode"
+            ]
+          },
+          "contentType": {
+            "type": "string"
+          },
+          "reasons": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "duration": {
+            "type": "number",
+            "minimum": 0
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-10-17T20:15:00.000Z"
+          }
+        },
+        "required": [
+          "id",
+          "url",
+          "method",
+          "contentType",
+          "reasons",
+          "duration",
+          "expiresAt"
+        ]
+      },
+      "MusicPlayRequest": {
+        "type": "object",
+        "properties": {
+          "profile": {
+            "type": "string",
+            "maxLength": 64
+          }
+        }
+      },
+      "MusicPlayReport": {
+        "type": "object",
+        "properties": {
+          "position": {
+            "type": "number",
+            "minimum": 0
+          },
+          "paused": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "position",
+          "paused"
+        ]
+      },
+      "ClientPlaylist": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "songs": {
+            "type": "integer"
+          },
+          "duration": {
+            "type": "number",
+            "minimum": 0
+          },
+          "covers": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-10-17T20:15:00.000Z"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "songs",
+          "duration",
+          "covers",
+          "updatedAt"
+        ]
+      },
+      "ClientPlaylistDetail": {
+        "type": "object",
+        "properties": {
+          "playlist": {
+            "$ref": "#/components/schemas/ClientPlaylist"
+          },
+          "songs": {
+            "type": "array",
+            "items": {
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/ClientLibrarySong"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "entry": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "entry"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        "required": [
+          "playlist",
+          "songs"
+        ]
+      },
+      "NewPlaylist": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "songs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 500,
+            "default": []
+          }
+        },
+        "required": [
+          "name"
+        ]
       },
       "QualityProfile": {
         "type": "object",
@@ -11722,6 +11951,9 @@
               "total"
             ]
           },
+          "webSeeds": {
+            "$ref": "#/components/schemas/WebSeedSource"
+          },
           "ratio": {
             "type": "number"
           },
@@ -11762,9 +11994,36 @@
           "eta",
           "peers",
           "seeds",
+          "webSeeds",
           "ratio",
           "state",
           "stateReason"
+        ]
+      },
+      "WebSeedSource": {
+        "type": "object",
+        "properties": {
+          "connected": {
+            "type": "integer"
+          },
+          "total": {
+            "type": "integer"
+          },
+          "hosts": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "downRate": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "connected",
+          "total",
+          "hosts",
+          "downRate"
         ]
       },
       "SearchAlternativeInput": {
@@ -12023,6 +12282,9 @@
               "total"
             ]
           },
+          "webSeeds": {
+            "$ref": "#/components/schemas/WebSeedSource"
+          },
           "ratio": {
             "type": "number"
           },
@@ -12110,6 +12372,7 @@
           "eta",
           "peers",
           "seeds",
+          "webSeeds",
           "ratio",
           "state",
           "stateReason",
@@ -12183,6 +12446,10 @@
               "string",
               "null"
             ]
+          },
+          "downRate": {
+            "type": "number",
+            "default": 0
           }
         },
         "required": [
@@ -17383,1027 +17650,6 @@
         }
       }
     },
-    "/api/v1/music": {
-      "get": {
-        "tags": [
-          "Music"
-        ],
-        "summary": "Every artist and album you can play (draft)",
-        "description": "Empty on a server without music. Drafted: the server answers 501 until it has music.",
-        "x-highsea-access": "user",
-        "security": [
-          {
-            "session": []
-          },
-          {
-            "bearer": []
-          }
-        ],
-        "x-highsea-draft": true,
-        "responses": {
-          "200": {
-            "description": "The music",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ClientMusic"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "501": {
-            "description": "Drafted: the server doesn’t serve this yet",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/music/songs": {
-      "get": {
-        "tags": [
-          "Music"
-        ],
-        "summary": "Every song here, for Music’s Songs (draft)",
-        "description": "Sorted and filtered by the apps. Drafted: the server answers 501 until it has music.",
-        "x-highsea-access": "user",
-        "security": [
-          {
-            "session": []
-          },
-          {
-            "bearer": []
-          }
-        ],
-        "x-highsea-draft": true,
-        "responses": {
-          "200": {
-            "description": "The songs",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/ClientLibrarySong"
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "501": {
-            "description": "Drafted: the server doesn’t serve this yet",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/music/albums/{id}": {
-      "get": {
-        "tags": [
-          "Music"
-        ],
-        "summary": "An album with its songs (draft)",
-        "description": "404 when it isn’t here. Drafted: the server answers 501 until it has music.",
-        "x-highsea-access": "user",
-        "security": [
-          {
-            "session": []
-          },
-          {
-            "bearer": []
-          }
-        ],
-        "x-highsea-draft": true,
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "id",
-            "in": "path"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "The album",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ClientAlbumDetail"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "not-found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "501": {
-            "description": "Drafted: the server doesn’t serve this yet",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/music/artists/{id}": {
-      "get": {
-        "tags": [
-          "Music"
-        ],
-        "summary": "An artist with their albums by kind (draft)",
-        "description": "404 when they aren’t here. Drafted: the server answers 501 until it has music.",
-        "x-highsea-access": "user",
-        "security": [
-          {
-            "session": []
-          },
-          {
-            "bearer": []
-          }
-        ],
-        "x-highsea-draft": true,
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "id",
-            "in": "path"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "The artist",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ClientArtistDetail"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "not-found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "501": {
-            "description": "Drafted: the server doesn’t serve this yet",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/music/queue": {
-      "post": {
-        "tags": [
-          "Music"
-        ],
-        "summary": "The songs to play for an album, an artist, a playlist or songs (draft)",
-        "description": "An album's in order, an artist's newest album first, shuffled when asked; each with its loudness for the scrubber. An album or an artist played goes on Home's Recently played. 404 when there's nothing to play. Drafted: the server answers 501 until it has music.",
-        "x-highsea-access": "user",
-        "security": [
-          {
-            "session": []
-          },
-          {
-            "bearer": []
-          }
-        ],
-        "x-highsea-draft": true,
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/QueueRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "The queue",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/QueuedSong"
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "invalid",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "not-found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "501": {
-            "description": "Drafted: the server doesn’t serve this yet",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/music/tracks": {
-      "get": {
-        "tags": [
-          "Music"
-        ],
-        "summary": "Songs for the queue by id, for Play next and Add to queue (draft)",
-        "description": "Unlike the queue, these aren’t recorded as played; ids not here are left out. Drafted: the server answers 501 until it has music.",
-        "x-highsea-access": "user",
-        "security": [
-          {
-            "session": []
-          },
-          {
-            "bearer": []
-          }
-        ],
-        "x-highsea-draft": true,
-        "parameters": [
-          {
-            "schema": {
-              "type": "string",
-              "maxLength": 4000,
-              "description": "Song ids, comma-separated"
-            },
-            "required": true,
-            "description": "Song ids, comma-separated",
-            "name": "ids",
-            "in": "query"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "The songs",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/QueuedSong"
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "invalid",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "501": {
-            "description": "Drafted: the server doesn’t serve this yet",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/music/playlists": {
-      "get": {
-        "tags": [
-          "Music"
-        ],
-        "summary": "Your own playlists, the most recently changed first (draft)",
-        "description": "Drafted: the server answers 501 until it has music.",
-        "x-highsea-access": "user",
-        "security": [
-          {
-            "session": []
-          },
-          {
-            "bearer": []
-          }
-        ],
-        "x-highsea-draft": true,
-        "responses": {
-          "200": {
-            "description": "The playlists",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/ClientPlaylist"
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "501": {
-            "description": "Drafted: the server doesn’t serve this yet",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "Music"
-        ],
-        "summary": "Make a playlist, with songs in it or none (draft)",
-        "description": "Drafted: the server answers 501 until it has music.",
-        "x-highsea-access": "user",
-        "security": [
-          {
-            "session": []
-          },
-          {
-            "bearer": []
-          }
-        ],
-        "x-highsea-draft": true,
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/NewPlaylist"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "The playlist",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ClientPlaylist"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "invalid",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "501": {
-            "description": "Drafted: the server doesn’t serve this yet",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/music/playlists/{id}": {
-      "get": {
-        "tags": [
-          "Music"
-        ],
-        "summary": "A playlist and its songs (draft)",
-        "description": "404 when it isn't yours, or was deleted. Drafted: the server answers 501 until it has music.",
-        "x-highsea-access": "user",
-        "security": [
-          {
-            "session": []
-          },
-          {
-            "bearer": []
-          }
-        ],
-        "x-highsea-draft": true,
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "id",
-            "in": "path"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "The playlist",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ClientPlaylistDetail"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "not-found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "501": {
-            "description": "Drafted: the server doesn’t serve this yet",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      },
-      "patch": {
-        "tags": [
-          "Music"
-        ],
-        "summary": "Rename a playlist (draft)",
-        "description": "Drafted: the server answers 501 until it has music.",
-        "x-highsea-access": "user",
-        "security": [
-          {
-            "session": []
-          },
-          {
-            "bearer": []
-          }
-        ],
-        "x-highsea-draft": true,
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "id",
-            "in": "path"
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "name": {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 100
-                  }
-                },
-                "required": [
-                  "name"
-                ]
-              }
-            }
-          }
-        },
-        "responses": {
-          "204": {
-            "description": "Done"
-          },
-          "400": {
-            "description": "invalid",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "not-found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "501": {
-            "description": "Drafted: the server doesn’t serve this yet",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      },
-      "delete": {
-        "tags": [
-          "Music"
-        ],
-        "summary": "Delete a playlist (draft)",
-        "description": "Drafted: the server answers 501 until it has music.",
-        "x-highsea-access": "user",
-        "security": [
-          {
-            "session": []
-          },
-          {
-            "bearer": []
-          }
-        ],
-        "x-highsea-draft": true,
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "id",
-            "in": "path"
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Done"
-          },
-          "401": {
-            "description": "unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "not-found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "501": {
-            "description": "Drafted: the server doesn’t serve this yet",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/music/playlists/{id}/songs": {
-      "post": {
-        "tags": [
-          "Music"
-        ],
-        "summary": "Add songs at the end, in the order given (draft)",
-        "description": "Drafted: the server answers 501 until it has music.",
-        "x-highsea-access": "user",
-        "security": [
-          {
-            "session": []
-          },
-          {
-            "bearer": []
-          }
-        ],
-        "x-highsea-draft": true,
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "id",
-            "in": "path"
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "songs": {
-                    "type": "array",
-                    "items": {
-                      "type": "string"
-                    },
-                    "minItems": 1,
-                    "maxItems": 500
-                  }
-                },
-                "required": [
-                  "songs"
-                ]
-              }
-            }
-          }
-        },
-        "responses": {
-          "204": {
-            "description": "Done"
-          },
-          "400": {
-            "description": "invalid",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "not-found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "501": {
-            "description": "Drafted: the server doesn’t serve this yet",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/music/playlists/{id}/songs/{entry}": {
-      "delete": {
-        "tags": [
-          "Music"
-        ],
-        "summary": "Take one entry out of a playlist (draft)",
-        "description": "Drafted: the server answers 501 until it has music.",
-        "x-highsea-access": "user",
-        "security": [
-          {
-            "session": []
-          },
-          {
-            "bearer": []
-          }
-        ],
-        "x-highsea-draft": true,
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "id",
-            "in": "path"
-          },
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "entry",
-            "in": "path"
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Done"
-          },
-          "401": {
-            "description": "unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "not-found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "501": {
-            "description": "Drafted: the server doesn’t serve this yet",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/music/playlists/{id}/order": {
-      "put": {
-        "tags": [
-          "Music"
-        ],
-        "summary": "Put a playlist’s entries in a new order (draft)",
-        "description": "Entries left out are dropped. Drafted: the server answers 501 until it has music.",
-        "x-highsea-access": "user",
-        "security": [
-          {
-            "session": []
-          },
-          {
-            "bearer": []
-          }
-        ],
-        "x-highsea-draft": true,
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "id",
-            "in": "path"
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "entries": {
-                    "type": "array",
-                    "items": {
-                      "type": "string"
-                    },
-                    "maxItems": 5000
-                  }
-                },
-                "required": [
-                  "entries"
-                ]
-              }
-            }
-          }
-        },
-        "responses": {
-          "204": {
-            "description": "Done"
-          },
-          "400": {
-            "description": "invalid",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "not-found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "501": {
-            "description": "Drafted: the server doesn’t serve this yet",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/v1/series/{id}/search": {
       "post": {
         "tags": [
@@ -18493,878 +17739,6 @@
           },
           "404": {
             "description": "not-found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "501": {
-            "description": "Drafted: the server doesn’t serve this yet",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/music/folders": {
-      "get": {
-        "tags": [
-          "Music library"
-        ],
-        "summary": "Each Music folder’s artists, albums, tracks and size (draft)",
-        "description": "For Settings › Media management and the dashboard’s Storage. Drafted: the server answers 501 until it has music.",
-        "x-highsea-access": "staff",
-        "security": [
-          {
-            "session": []
-          },
-          {
-            "bearer": []
-          }
-        ],
-        "x-highsea-draft": true,
-        "responses": {
-          "200": {
-            "description": "The folders",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/MusicFolder"
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "forbidden",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "501": {
-            "description": "Drafted: the server doesn’t serve this yet",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/albums/unmatched": {
-      "get": {
-        "tags": [
-          "Music library"
-        ],
-        "summary": "The folders the scan couldn’t read as an album (draft)",
-        "description": "Drafted: the server answers 501 until it has music.",
-        "x-highsea-access": "staff",
-        "security": [
-          {
-            "session": []
-          },
-          {
-            "bearer": []
-          }
-        ],
-        "x-highsea-draft": true,
-        "responses": {
-          "200": {
-            "description": "The folders set aside",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/UnmatchedMusic"
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "forbidden",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "501": {
-            "description": "Drafted: the server doesn’t serve this yet",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/albums/unmatched/{id}": {
-      "post": {
-        "tags": [
-          "Music library"
-        ],
-        "summary": "Say what a set-aside folder is (draft)",
-        "description": "Its files join that album, made when it isn’t here; nothing on disk changes. Drafted: the server answers 501 until it has music.",
-        "x-highsea-access": "staff",
-        "security": [
-          {
-            "session": []
-          },
-          {
-            "bearer": []
-          }
-        ],
-        "x-highsea-draft": true,
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "id",
-            "in": "path"
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/MusicMatch"
-              }
-            }
-          }
-        },
-        "responses": {
-          "204": {
-            "description": "Done"
-          },
-          "400": {
-            "description": "invalid",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "forbidden",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "not-found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "501": {
-            "description": "Drafted: the server doesn’t serve this yet",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      },
-      "delete": {
-        "tags": [
-          "Music library"
-        ],
-        "summary": "Leave a set-aside folder out of the library (draft)",
-        "description": "Later scans pass it by; nothing on disk changes. Drafted: the server answers 501 until it has music.",
-        "x-highsea-access": "staff",
-        "security": [
-          {
-            "session": []
-          },
-          {
-            "bearer": []
-          }
-        ],
-        "x-highsea-draft": true,
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "id",
-            "in": "path"
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Done"
-          },
-          "401": {
-            "description": "unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "forbidden",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "not-found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "501": {
-            "description": "Drafted: the server doesn’t serve this yet",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/artists": {
-      "get": {
-        "tags": [
-          "Music library"
-        ],
-        "summary": "The artists in the library (draft)",
-        "description": "Drafted: the server answers 501 until it has music.",
-        "x-highsea-access": "staff",
-        "security": [
-          {
-            "session": []
-          },
-          {
-            "bearer": []
-          }
-        ],
-        "x-highsea-draft": true,
-        "responses": {
-          "200": {
-            "description": "The artists",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/LibraryArtist"
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "forbidden",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "501": {
-            "description": "Drafted: the server doesn’t serve this yet",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/artists/{id}": {
-      "get": {
-        "tags": [
-          "Music library"
-        ],
-        "summary": "An artist with their albums (draft)",
-        "description": "404 when they aren’t here. Drafted: the server answers 501 until it has music.",
-        "x-highsea-access": "staff",
-        "security": [
-          {
-            "session": []
-          },
-          {
-            "bearer": []
-          }
-        ],
-        "x-highsea-draft": true,
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "id",
-            "in": "path"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "The artist",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/LibraryArtistDetail"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "forbidden",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "not-found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "501": {
-            "description": "Drafted: the server doesn’t serve this yet",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/artists/{id}/refresh": {
-      "post": {
-        "tags": [
-          "Music library"
-        ],
-        "summary": "Read an artist’s tags again and refresh them from MusicBrainz (draft)",
-        "description": "Their albums too. MusicBrainz is asked only where an id is known, at its pace of one request a second. Drafted: the server answers 501 until it has music.",
-        "x-highsea-access": "staff",
-        "security": [
-          {
-            "session": []
-          },
-          {
-            "bearer": []
-          }
-        ],
-        "x-highsea-draft": true,
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "id",
-            "in": "path"
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Done"
-          },
-          "401": {
-            "description": "unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "forbidden",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "not-found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "501": {
-            "description": "Drafted: the server doesn’t serve this yet",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/albums": {
-      "get": {
-        "tags": [
-          "Music library"
-        ],
-        "summary": "The albums in the library (draft)",
-        "description": "Drafted: the server answers 501 until it has music.",
-        "x-highsea-access": "staff",
-        "security": [
-          {
-            "session": []
-          },
-          {
-            "bearer": []
-          }
-        ],
-        "x-highsea-draft": true,
-        "responses": {
-          "200": {
-            "description": "The albums",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/LibraryAlbum"
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "forbidden",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "501": {
-            "description": "Drafted: the server doesn’t serve this yet",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/albums/{id}": {
-      "get": {
-        "tags": [
-          "Music library"
-        ],
-        "summary": "An album with its discs, tracks and files (draft)",
-        "description": "404 when it isn’t here. Drafted: the server answers 501 until it has music.",
-        "x-highsea-access": "staff",
-        "security": [
-          {
-            "session": []
-          },
-          {
-            "bearer": []
-          }
-        ],
-        "x-highsea-draft": true,
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "id",
-            "in": "path"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "The album",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/LibraryAlbumDetail"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "forbidden",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "not-found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "501": {
-            "description": "Drafted: the server doesn’t serve this yet",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/albums/{id}/refresh": {
-      "post": {
-        "tags": [
-          "Music library"
-        ],
-        "summary": "Read an album’s tags again and refresh it from MusicBrainz (draft)",
-        "description": "The Cover Art Archive’s cover comes too, unless the folder has its own. Drafted: the server answers 501 until it has music.",
-        "x-highsea-access": "staff",
-        "security": [
-          {
-            "session": []
-          },
-          {
-            "bearer": []
-          }
-        ],
-        "x-highsea-draft": true,
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "id",
-            "in": "path"
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Done"
-          },
-          "401": {
-            "description": "unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "forbidden",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "not-found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "501": {
-            "description": "Drafted: the server doesn’t serve this yet",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/settings/trackNaming": {
-      "get": {
-        "tags": [
-          "Music library"
-        ],
-        "summary": "Music’s naming (draft)",
-        "description": "Lidarr’s formats and tokens. Drafted: the server answers 501 until it has music.",
-        "x-highsea-access": "staff",
-        "security": [
-          {
-            "session": []
-          },
-          {
-            "bearer": []
-          }
-        ],
-        "x-highsea-draft": true,
-        "responses": {
-          "200": {
-            "description": "Track naming",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TrackNaming"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "forbidden",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "501": {
-            "description": "Drafted: the server doesn’t serve this yet",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      },
-      "put": {
-        "tags": [
-          "Music library"
-        ],
-        "summary": "Save music’s naming (draft)",
-        "description": "The details’ `reason` names the field a format is refused for. Drafted: the server answers 501 until it has music.",
-        "x-highsea-access": "staff",
-        "security": [
-          {
-            "session": []
-          },
-          {
-            "bearer": []
-          }
-        ],
-        "x-highsea-draft": true,
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/TrackNaming"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Saved",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TrackNaming"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "invalid",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "forbidden",
             "content": {
               "application/json": {
                 "schema": {
@@ -19505,6 +17879,136 @@
           },
           "401": {
             "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/system/work": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "summary": "The library items with work in hand",
+        "description": "Every film, show, collection, artist and album a job is queued or running on, with its jobs, oldest first; a show carries its seasons’ and episodes’. One read for a library’s marks; refetch it on `jobs.updated`.",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The items with work in hand",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ItemWork"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/system/work/{kind}/{id}": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "summary": "One item’s work, and how what finished lately went",
+        "description": "What’s queued or running on the item or on what it holds, and what finished on it in the last ten minutes with its outcome and reason. An item with nothing in hand answers empty lists, not 404.",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "movie",
+                "show",
+                "season",
+                "episode",
+                "collection",
+                "artist",
+                "album"
+              ]
+            },
+            "required": true,
+            "name": "kind",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Its work",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItemWorkDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
             "content": {
               "application/json": {
                 "schema": {
@@ -30526,6 +29030,1910 @@
           },
           "403": {
             "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/music/folders": {
+      "get": {
+        "tags": [
+          "Music library"
+        ],
+        "summary": "Each Music folder’s artists, albums, tracks and size",
+        "description": "For Settings › Media management and the dashboard’s Storage.",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The folders",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MusicFolder"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/albums/unmatched": {
+      "get": {
+        "tags": [
+          "Music library"
+        ],
+        "summary": "The folders the scan couldn’t read as an album",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The folders set aside",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UnmatchedMusic"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/albums/unmatched/{id}": {
+      "post": {
+        "tags": [
+          "Music library"
+        ],
+        "summary": "Say what a set-aside folder is",
+        "description": "Its files join that album, made when it isn’t here; nothing on disk changes.",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MusicMatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Done"
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Music library"
+        ],
+        "summary": "Leave a set-aside folder out of the library",
+        "description": "Later scans pass it by; nothing on disk changes.",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Done"
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/artists": {
+      "get": {
+        "tags": [
+          "Music library"
+        ],
+        "summary": "The artists in the library",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The artists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LibraryArtist"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/artists/{id}": {
+      "get": {
+        "tags": [
+          "Music library"
+        ],
+        "summary": "An artist with their albums",
+        "description": "404 when they aren’t here.",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The artist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LibraryArtistDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/artists/{id}/refresh": {
+      "post": {
+        "tags": [
+          "Music library"
+        ],
+        "summary": "Read an artist’s tags again and refresh them from MusicBrainz",
+        "description": "Their albums too. MusicBrainz is asked only where an id is known, at its pace of one request a second.",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Done"
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/albums": {
+      "get": {
+        "tags": [
+          "Music library"
+        ],
+        "summary": "The albums in the library",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The albums",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LibraryAlbum"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/albums/{id}": {
+      "get": {
+        "tags": [
+          "Music library"
+        ],
+        "summary": "An album with its discs, tracks and files",
+        "description": "404 when it isn’t here.",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The album",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LibraryAlbumDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/albums/{id}/refresh": {
+      "post": {
+        "tags": [
+          "Music library"
+        ],
+        "summary": "Read an album’s tags again and refresh it from MusicBrainz",
+        "description": "The Cover Art Archive’s cover comes too, unless the folder has its own.",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Done"
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/settings/trackNaming": {
+      "get": {
+        "tags": [
+          "Music library"
+        ],
+        "summary": "Music’s naming",
+        "description": "Lidarr’s formats and tokens.",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Track naming",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrackNaming"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Music library"
+        ],
+        "summary": "Save music’s naming",
+        "description": "The details’ `reason` names the field a format is refused for.",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TrackNaming"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Saved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrackNaming"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/music": {
+      "get": {
+        "tags": [
+          "Music"
+        ],
+        "summary": "Every artist and album you can play",
+        "description": "Empty on a server without music.",
+        "x-highsea-access": "user",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The music",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientMusic"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/music/songs": {
+      "get": {
+        "tags": [
+          "Music"
+        ],
+        "summary": "Every song here, for Music’s Songs",
+        "description": "Sorted and filtered by the apps.",
+        "x-highsea-access": "user",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The songs",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ClientLibrarySong"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/music/albums/{id}": {
+      "get": {
+        "tags": [
+          "Music"
+        ],
+        "summary": "An album with its songs",
+        "description": "404 when it isn’t here.",
+        "x-highsea-access": "user",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The album",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientAlbumDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/music/artists/{id}": {
+      "get": {
+        "tags": [
+          "Music"
+        ],
+        "summary": "An artist with their albums by kind",
+        "description": "404 when they aren’t here.",
+        "x-highsea-access": "user",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The artist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientArtistDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/music/queue": {
+      "post": {
+        "tags": [
+          "Music"
+        ],
+        "summary": "The songs to play for an album, an artist, a playlist or songs",
+        "description": "An album's in order, an artist's newest album first, shuffled when asked; each with its loudness for the scrubber. An album or an artist played goes on Home's Recently played. 404 when there's nothing to play.",
+        "x-highsea-access": "user",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QueueRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The queue",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/QueuedSong"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/music/tracks": {
+      "get": {
+        "tags": [
+          "Music"
+        ],
+        "summary": "Songs for the queue by id, for Play next and Add to queue",
+        "description": "Unlike the queue, these aren’t recorded as played; ids not here are left out.",
+        "x-highsea-access": "user",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 4000,
+              "description": "Song ids, comma-separated"
+            },
+            "required": true,
+            "description": "Song ids, comma-separated",
+            "name": "ids",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The songs",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/QueuedSong"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/music/tracks/{id}/play": {
+      "post": {
+        "tags": [
+          "Music"
+        ],
+        "summary": "Play a song on this device",
+        "description": "Starts a play and answers the address the audio element loads: the file by byte ranges when the device plays its codec, else AAC made from it. The play shows on Now playing until it’s stopped or goes quiet. 404 when the song isn’t here; 409 when its file can’t be read.",
+        "x-highsea-access": "user",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MusicPlayRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The play",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MusicPlay"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/music/plays/{id}/progress": {
+      "post": {
+        "tags": [
+          "Music"
+        ],
+        "summary": "Say where a play is, every few seconds",
+        "description": "Keeps the address working and moves Now playing on. 404 once the play has ended, with who stopped it when someone did (`StoppedDetails`).",
+        "x-highsea-access": "user",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MusicPlayReport"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Done"
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/music/plays/{id}": {
+      "delete": {
+        "tags": [
+          "Music"
+        ],
+        "summary": "End a play",
+        "description": "At the end of the song, or on a skip or a stop: the play is kept for play counts and the history, and its address stops working.",
+        "x-highsea-access": "user",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Done"
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/images/music/{kind}/{id}": {
+      "get": {
+        "tags": [
+          "Music"
+        ],
+        "summary": "An album’s cover or an artist’s picture",
+        "description": "An album’s cover file in its folder, else the picture in its files, else the Cover Art Archive’s; an artist’s picture in their folder, else fanart.tv’s. Fetched once and kept; `Cache-Control: private, max-age=86400` with an ETag, since a cover can change at the same address. 404 when there’s none.",
+        "x-highsea-access": "user",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "album",
+                "artist"
+              ],
+              "example": "album"
+            },
+            "required": true,
+            "name": "kind",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "example": "al_x1"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The image",
+            "content": {
+              "image/jpeg": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "image/png": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "image/webp": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Not modified"
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/music/playlists": {
+      "get": {
+        "tags": [
+          "Music"
+        ],
+        "summary": "Your own playlists, the most recently changed first",
+        "x-highsea-access": "user",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The playlists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ClientPlaylist"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Music"
+        ],
+        "summary": "Make a playlist, with songs in it or none",
+        "x-highsea-access": "user",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewPlaylist"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The playlist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientPlaylist"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/music/playlists/{id}": {
+      "get": {
+        "tags": [
+          "Music"
+        ],
+        "summary": "A playlist and its songs",
+        "description": "404 when it isn't yours, or was deleted.",
+        "x-highsea-access": "user",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The playlist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientPlaylistDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Music"
+        ],
+        "summary": "Rename a playlist",
+        "x-highsea-access": "user",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  }
+                },
+                "required": [
+                  "name"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Done"
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Music"
+        ],
+        "summary": "Delete a playlist",
+        "x-highsea-access": "user",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Done"
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/music/playlists/{id}/songs": {
+      "post": {
+        "tags": [
+          "Music"
+        ],
+        "summary": "Add songs at the end, in the order given",
+        "x-highsea-access": "user",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "songs": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "minItems": 1,
+                    "maxItems": 500
+                  }
+                },
+                "required": [
+                  "songs"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Done"
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/music/playlists/{id}/songs/{entry}": {
+      "delete": {
+        "tags": [
+          "Music"
+        ],
+        "summary": "Take one entry out of a playlist",
+        "x-highsea-access": "user",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "entry",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Done"
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/music/playlists/{id}/order": {
+      "put": {
+        "tags": [
+          "Music"
+        ],
+        "summary": "Put a playlist’s entries in a new order",
+        "description": "Entries left out are dropped.",
+        "x-highsea-access": "user",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "entries": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "maxItems": 5000
+                  }
+                },
+                "required": [
+                  "entries"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Done"
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
             "content": {
               "application/json": {
                 "schema": {

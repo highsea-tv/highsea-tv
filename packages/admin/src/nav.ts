@@ -46,7 +46,7 @@ export const pageGroups: Page[][] = [
     page('discover', 'discover', '/discover'),
     page('movies', 'movie', '/movies'),
     page('shows', 'tv', '/shows', 'shows'),
-    // drafted with HT-68 (Phase 5's part D): shown while the server lists music among its sources
+    // served since HT-101 (Phase 5's part D): shown while the server lists music among its sources
     page('music', 'music', '/music', 'music'),
     page('collections', 'library', '/collections'),
     page('wanted', 'calendar', '/wanted'),

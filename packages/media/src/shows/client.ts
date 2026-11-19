@@ -715,7 +715,16 @@ export function createShowClient(ctx: ShowsDeps, deps: { markers: ShowMarkers })
    * The films' results with shows and episodes among them, every kind ranked by its best name's
    * score (`rankSections`' rule); ties keep the films' kinds first, then shows, then episodes.
    */
-  function mergeSearch(films: SearchResults, query: string, profileId: string): SearchResults {
+  /**
+   * The films' results with the shows' and episodes' ranked among them, and any other kinds given
+   * (music's artists, albums and songs, HT-101); `shows: false` for someone who can't see shows.
+   */
+  function mergeSearch(
+    films: SearchResults,
+    query: string,
+    profileId: string,
+    more: { shows?: boolean; sections?: SearchSection[] } = {},
+  ): SearchResults {
     const q = query.trim()
     if (!q) return films
     const nameOf = (x: SearchSection): string[] =>
@@ -724,8 +733,13 @@ export function createShowClient(ctx: ShowsDeps, deps: { markers: ShowMarkers })
         return r.title ?? r.name ?? ''
       })
     const added: SearchSection[] = [
-      { kind: 'shows', items: searchShows(q, profileId) },
-      { kind: 'episodes', items: searchEpisodes(q) },
+      ...(more.shows === false
+        ? []
+        : [
+            { kind: 'shows' as const, items: searchShows(q, profileId) },
+            { kind: 'episodes' as const, items: searchEpisodes(q) },
+          ]),
+      ...(more.sections ?? []),
     ]
     const discover = films.sections.filter((x) => x.kind === 'discover')
     const ranked = [...films.sections.filter((x) => x.kind !== 'discover'), ...added]

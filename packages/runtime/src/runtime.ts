@@ -67,7 +67,14 @@ import { createJobQueue, type JobQueue } from '@highsea-tv/jobs'
 import { createLists, type Lists } from '@highsea-tv/lists/service'
 import { createTrakt } from '@highsea-tv/lists/trakt'
 import { createMovies, type Movies } from '@highsea-tv/media/movies'
-import { createMusic, type Music } from '@highsea-tv/media/music'
+import {
+  createMusic,
+  createMusicPlayback,
+  ffmpegCoverExtractor,
+  ffmpegMusicTranscoder,
+  type Music,
+  type MusicPlayback,
+} from '@highsea-tv/media/music'
 import {
   checkPath,
   createLibraryWatch,
@@ -309,8 +316,10 @@ export type Runtime = {
   movies: Movies
   /** The shows (Phase 5 B): the apps' and the admin's, playback and the library's own scan. */
   shows: Shows
-  /** Music read from the Music root folders (Phase 5 D); not served yet. */
+  /** Music read from the Music root folders (Phase 5 D): the admin's, the apps', covers. */
   music: Music
+  /** Playing a song (HT-101): direct play or AAC, and the plays kept. */
+  musicPlayback: MusicPlayback
   /** Play sessions, the decision and `/stream` (checkpoint 4.1a). */
   playback: Playback
   /** Now playing (4.3a): the live sessions as the admin shows them, and 30 days of history. */
@@ -641,7 +650,7 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
       setupComplete: isSetupComplete(db),
       auth: auth.methods(origin),
       // profiles are served since A2b (ADR 0068), shows since Phase 5 B; music is still a draft
-      sources: [...SOURCES, 'profiles', 'shows'],
+      sources: [...SOURCES, 'profiles', 'shows', 'music'],
       attributions: ATTRIBUTIONS,
     }
   }
@@ -913,8 +922,21 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
   )
   shows.jobs.schedule(clock.now())
   // music (Phase 5 D, ADR 0065): the Music root folders read where they are, grouped by their tags,
-  // MusicBrainz where they carry an id. Read and kept here; served by the next part of D
-  const music = createMusic({ db, jobs, clock, events, logger, metadata }, media)
+  // MusicBrainz where they carry an id; covers and pictures kept in the data folder's
+  // `images/music` (HT-101)
+  const music = createMusic(
+    {
+      db,
+      jobs,
+      clock,
+      events,
+      logger,
+      metadata,
+      imagesDir: join(workDir(config), 'images', 'music'),
+      extractCover: ffmpegCoverExtractor(ffmpegBinary()),
+    },
+    media,
+  )
   music.jobs.schedule(clock.now())
   scheduleFileFacts({ db, jobs, clock })
   trickplay.start()
@@ -1009,6 +1031,11 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
     device: (deviceId) => auth.devices.find(deviceId),
     poster: (tmdbId, itemId) => posterOf(tmdbId, itemId),
     onStarted: (p) => notify?.playbackStarted(p),
+    music: {
+      sessions: () => musicPlayback.sessions(),
+      history: (userId) => musicPlayback.history(userId),
+      prune: () => musicPlayback.prune(),
+    },
   })
   nowPlaying.schedule(clock.now())
 
@@ -1038,6 +1065,34 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
     trickplay,
     hooks: nowPlaying.hooks,
   })
+
+  // songs (HT-101): played as they are or made AAC whole, in the data folder's `transcodes-music`,
+  // emptied on boot as the films' folder is; the device profiles are playback's
+  const userOf = (userId: string) => {
+    try {
+      return auth.users.get(userId)
+    } catch {
+      return null
+    }
+  }
+  const musicPlayback = createMusicPlayback(
+    { db, jobs, clock, events, logger, metadata },
+    {
+      dir: join(workDir(config), 'transcodes-music'),
+      transcode: ffmpegMusicTranscoder(ffmpegBinary()),
+      profileFor: (deviceId, named) => playback.profileFor(deviceId, named),
+      away: (address) => playback.away(address),
+      displayName: (userId) => userOf(userId)?.displayName ?? null,
+      profileName: (profileId) => auth.profiles.nameOf(profileId),
+      device: (deviceId) => auth.devices.find(deviceId),
+      allowed: (userId, deviceId) => {
+        const libraries = userOf(userId)?.libraries
+        const hears = libraries === 'all' || (libraries?.includes('music') ?? false)
+        return hears && (!deviceId || auth.devices.find(deviceId) !== null)
+      },
+    },
+  )
+  void musicPlayback.clean({ all: true })
 
   // watching only speeds the library scan up: a change asks for its title folder's scan
   const watch = createLibraryWatch({
@@ -1350,7 +1405,7 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
     events,
     jobs,
     logger,
-    library: createCurationLibrary({ db, clock, movies, shows }),
+    library: createCurationLibrary({ db, clock, movies, shows, music }),
     smart: collections,
     arrangement: (who) => personalization.home.layout(who),
   })
@@ -1472,6 +1527,7 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
     movies,
     shows,
     music,
+    musicPlayback,
     playback,
     nowPlaying,
     networkActivity,
@@ -1655,7 +1711,10 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
         database.raw
           .all(
             `SELECT i.root_folder AS root, coalesce(sum(f.size), 0) AS n FROM media_files f
-             JOIN media_items i ON i.id = f.item_id GROUP BY i.root_folder`,
+             JOIN media_items i ON i.id = f.item_id GROUP BY i.root_folder
+             UNION ALL
+             SELECT a.root_folder AS root, coalesce(sum(t.size), 0) AS n FROM music_tracks t
+             JOIN music_albums a ON a.id = t.album_id GROUP BY a.root_folder`,
           )
           .map((r) => [String(r.root), Number(r.n)]),
       )

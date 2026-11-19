@@ -18,7 +18,11 @@ export function registerSessions(app: OpenAPIHono<Env>) {
   app.openapi(routes.sessions.stop, (c) => {
     const p = me(c)
     const { id } = c.req.valid('param')
-    c.get('runtime').playback.stopFor(id, { name: p.user.displayName }, c.req.valid('json').message)
+    const by = { name: p.user.displayName }
+    const { message } = c.req.valid('json')
+    // a song's play (HT-101) is music's; anything else is a film's or an episode's
+    const runtime = c.get('runtime')
+    if (!runtime.musicPlayback.stopFor(id, by, message)) runtime.playback.stopFor(id, by, message)
     c.get('runtime').auth.ctx.audit({
       action: 'playback.stopped',
       actor: actor(p),

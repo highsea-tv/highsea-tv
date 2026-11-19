@@ -8,7 +8,7 @@
 // An album: its release (the tags' `MUSICBRAINZ_ALBUMID`) gives the label, the date and the release
 // group; the release group its kind, first release date and genres; the Cover Art Archive the
 // group's front cover, asked for only when the folder and the files have none. An artist: their
-// sort name and genres. The names and titles stay the tags', as the owner's files have them.
+// sort name and genres, and fanart.tv's picture for their id when their folder has none. The names and titles stay the tags', as the owner's files have them.
 import { schema } from '@highsea-tv/db'
 import { eq, isNotNull, or } from 'drizzle-orm'
 import { announce, type MusicDeps } from './context.ts'
@@ -34,8 +34,11 @@ export function createMusicMetadata(ctx: MusicDeps) {
   /** Looks every album and artist with an id up; stops early while MusicBrainz is resting. */
   async function refresh({
     force = false,
+    only,
   }: {
     force?: boolean
+    /** One artist's or album's Refresh: just those, rather than the whole library. */
+    only?: { albums: string[]; artists: string[] }
   } = {}): Promise<MusicMetadataResult> {
     const result: MusicMetadataResult = { albums: 0, artists: 0, stopped: false }
     const changed: string[] = []
@@ -44,6 +47,7 @@ export function createMusicMetadata(ctx: MusicDeps) {
       .from(musicAlbums)
       .where(or(isNotNull(musicAlbums.releaseId), isNotNull(musicAlbums.releaseGroupId)))
       .all()
+      .filter((a) => !only || only.albums.includes(a.id))
     for (const album of albums) {
       if (music.resting()) {
         result.stopped = true
@@ -92,26 +96,37 @@ export function createMusicMetadata(ctx: MusicDeps) {
 
     const artists = result.stopped
       ? []
-      : db.select().from(musicArtists).where(isNotNull(musicArtists.musicBrainzId)).all()
+      : db
+          .select()
+          .from(musicArtists)
+          .where(isNotNull(musicArtists.musicBrainzId))
+          .all()
+          .filter((a) => !only || only.artists.includes(a.id))
     for (const artist of artists) {
       if (music.resting()) {
         result.stopped = true
         break
       }
-      const found = await music.artist(artist.musicBrainzId as string, { force })
-      if (!found) continue
-      const sortName = found.sortName.trim()
+      const mbid = artist.musicBrainzId as string
+      const found = await music.artist(mbid, { force })
+      // fanart.tv's picture only for an artist whose folder has none (ADR 0070's section)
+      const photoUrl = artist.photoFile
+        ? artist.photoUrl
+        : ((await music.artistThumb(mbid, { force })) ?? artist.photoUrl)
+      const sortName = found?.sortName.trim()
         ? found.sortName.normalize('NFKD').replace(/\p{M}/gu, '').toLowerCase()
         : artist.sortName
-      const genres = found.genres.length ? found.genres : artist.genres
+      const genres = found?.genres.length ? found.genres : artist.genres
+      const source = found ? ('musicbrainz' as const) : artist.source
       if (
         sortName === artist.sortName &&
         sameList(genres, artist.genres) &&
-        artist.source === 'musicbrainz'
+        source === artist.source &&
+        photoUrl === artist.photoUrl
       )
         continue
       db.update(musicArtists)
-        .set({ sortName, genres, source: 'musicbrainz', updatedAt: clock.now() })
+        .set({ sortName, genres, source, photoUrl, updatedAt: clock.now() })
         .where(eq(musicArtists.id, artist.id))
         .run()
       changed.push(artist.id)

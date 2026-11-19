@@ -40,7 +40,7 @@ import { musicAdmin } from './music-admin.ts'
 import { waiting } from './pairing.ts'
 import { type AccelerationPath, finishCheck, playbackStatus } from './playback.ts'
 import { type ProfileTone, profilesOf } from './profiles.ts'
-import { GB, MB, type ServerState, seed } from './seed.ts'
+import { GB, MB, type ServerState, seed, WEB_SHARE, webSeedsOf } from './seed.ts'
 import {
   advanceSessions,
   type NowPlaying,
@@ -349,7 +349,14 @@ export function createServer(
       if (t.state === 'downloading') {
         const base = baseRate.get(t.id) ?? 6 * MB
         t.downRate = Math.round(base * (0.82 + random() * 0.36))
-        t.upRate = Math.round(t.downRate * 0.08)
+        const swarm = t.peers.connected + t.seeds.connected > 0
+        // a web seed takes nothing back: with no peers, nothing goes up (HT-100)
+        t.upRate = swarm ? Math.round(t.downRate * 0.08) : 0
+        if (t.webSeeds) {
+          t.webSeeds.downRate = swarm ? Math.round(t.downRate * WEB_SHARE) : t.downRate
+          for (const w of t.trackers)
+            if (w.kind === 'web-seed' && w.status === 'working') w.downRate = t.webSeeds.downRate
+        }
         t.downloaded = Math.min(t.size, t.downloaded + t.downRate * dt)
         t.uploaded += t.upRate * dt
         t.progress = t.downloaded / t.size
@@ -1211,6 +1218,7 @@ export function createApi(srv: MockServer, ctx: Ctx) {
       eta: t.eta,
       peers: { ...t.peers },
       seeds: { ...t.seeds },
+      webSeeds: webSeedsOf(t),
       ratio: t.ratio,
       state: t.state,
       stateReason: shown(t).stateReason,

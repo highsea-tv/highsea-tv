@@ -24,7 +24,7 @@ Alternatives weighed:
 
 ## Decision
 
-**Where they're kept.** `episode_markers` (`packages/db/src/schema/playback.ts`, migration `0027_episode_markers`), one row per episode file: the intro's start and end, where the credits start, each with its source (`chapters`, `audio` or `owner`), the file's size when it was looked at, any error, and when. A row goes with its file (`ON DELETE CASCADE`). A file whose size changed is looked at again; a mark the owner set stands whatever the size.
+**Where they're kept.** `episode_markers` (`packages/db/src/schema/playback.ts`, migration `0029_episode_markers`), one row per episode file: the intro's start and end, where the credits start, each with its source (`chapters`, `audio` or `owner`), the file's size when it was looked at, any error, and when. A row goes with its file (`ON DELETE CASCADE`). A file whose size changed is looked at again; a mark the owner set stands whatever the size.
 
 **Chapters first** (`@highsea-tv/stream/markers`, `chapterMarkers`). A chapter's name is read without its numbering or case ("01 - Intro" → "intro"). The intro is the first chapter named `intro`, `opening` (or opening credits, titles, theme, song), `title sequence`, `main title(s)` or `op`, that starts in the episode's first half and lasts at most five minutes. The credits start at the last chapter named `credits`, `end credits`, `ending credits`, `closing (credits)`, `end titles`, `ending (theme, song)`, `outro` or `ed`, that starts in the second half. These are the names releases and discs use, the anime ones (OP, ED) among them; a name merely containing "intro" ("Introduction to the case") isn't one, nor is a numbered "Chapter 3".
 

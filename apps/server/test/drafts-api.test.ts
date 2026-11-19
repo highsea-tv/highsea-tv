@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The drafted routes (one-client-platform-b.md › B3): music and playlists are in the contract and
-// the OpenAPI document, marked as drafts, and this server answers each 501 in the usual error body,
-// after the guard; public info doesn't list music, so the apps hide it. Profiles were drafted with
-// them and are served since Phase 5's A2b (ADR 0068), shows since Phase 5 B, all but a show's
-// episode search (`series.search`, part C1's).
+// The drafted routes (one-client-platform-b.md › B3): in the contract and the OpenAPI document,
+// marked as drafts, and this server answers each 501 in the usual error body, after the guard.
+// Profiles were drafted with music and playlists and are served since Phase 5's A2b (ADR 0068),
+// shows since Phase 5 B, all but a show's episode search (`series.search`, part C1's), and music and
+// playlists since D's HT-101.
 import { afterEach, describe, expect, test } from 'bun:test'
 import { CLIENT_SOURCES, DRAFT_KEY, isDraft, routes } from '@highsea-tv/api-contract'
 import { createApi } from '../src/api/app.ts'
@@ -15,20 +15,21 @@ afterEach(cleanup)
 const concrete = (path: string) => path.replace(/\{\w+\}/g, 'x1')
 
 describe('drafted routes', () => {
-  // `musicLibrary` is the admin's music, drafted with HT-68 (Phase 5's part D); of `series`, the
-  // admin's shows, only the episode search is left (part C1)
-  test('are the music, music library and playlists groups, and series’ search, and nothing else', () => {
+  // of `series`, the admin's shows, only the episode search is left (part C1)
+  test('are series’ search, and nothing else', () => {
     const groups = new Set(
       Object.entries(routes).flatMap(([group, rs]) =>
         Object.values(rs).some((r) => isDraft(r)) ? [group] : [],
       ),
     )
-    expect([...groups].sort()).toEqual(['music', 'musicLibrary', 'playlists', 'series'])
-    for (const g of ['music', 'musicLibrary', 'playlists'] as const)
-      for (const r of Object.values(routes[g])) expect(isDraft(r), `${g} ${r.path}`).toBe(true)
+    expect([...groups].sort()).toEqual(['series'])
     const series = Object.entries(routes.series).filter(([, r]) => isDraft(r))
     expect(series.map(([k]) => k)).toEqual(['search'])
-    expect(Object.values(routes.shows).some((r) => isDraft(r))).toBe(false)
+    for (const g of ['shows', 'music', 'musicLibrary', 'playlists'] as const)
+      expect(
+        Object.values(routes[g]).some((r) => isDraft(r)),
+        g,
+      ).toBe(false)
   })
 
   test('answer 501 with the error body, once past the guard', async () => {
@@ -70,7 +71,7 @@ describe('drafted routes', () => {
     expect((await get('/api/v1/items/movie/603')).status).toBe(404)
   })
 
-  test('are marked in the OpenAPI document, and public info lists profiles and shows of the apps’ sources', async () => {
+  test('are marked in the OpenAPI document, and public info lists profiles, shows and music of the apps’ sources', async () => {
     const runtime = await bootRuntime()
     const app = createApi(runtime)
     const doc = (await (await app.request('/api/v1/openapi.json')).json()) as {
@@ -86,6 +87,6 @@ describe('drafted routes', () => {
     }
     expect(
       info.sources.filter((s) => (CLIENT_SOURCES as readonly string[]).includes(s)).sort(),
-    ).toEqual(['profiles', 'shows'])
+    ).toEqual(['music', 'profiles', 'shows'])
   })
 })

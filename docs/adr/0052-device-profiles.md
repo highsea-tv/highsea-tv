@@ -82,3 +82,7 @@ AVPlayer has no way to ask, as `MediaSource.isTypeSupported()` does, so the phon
 ## 2026-10-29: the Apple TV app uses `tvos` (checkpoint 4.5b)
 
 The TV app asks for sessions with the `tvos` built-in profile, as the phone does with `ios`. It doesn't report either, for the same reason. Audio is chosen by a new session, so the server's decision picks the track on both, and nothing depends on expo-video's `audioTrack`, which its docs don't list for tvOS ([ADR 0059](0059-native-apps.md)).
+
+## 2026-11-19: the audio list decides a song (phase 5 D; HT-101)
+
+A song's decision reads the same profile a film's does, its `audio` list alone (codec by ffprobe's name, and channels), named by the app or found from the device as for films (`profileFor`). No new field was needed: the built-in profiles already say Safari and Apple's apps play ALAC and not Vorbis, and Chromium and Firefox Opus and Vorbis and not ALAC. The reasons a song isn't played directly use the films' words ("This device doesn’t play X audio.").

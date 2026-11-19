@@ -131,8 +131,6 @@ export const widgets = defineMessages({
   'activity.progress': 'Progress',
   'activity.down': '↓',
   'activity.up': '↑',
-  'activity.peers': 'Peers',
-  'activity.peersOf': '{seeds}/{peers} peers',
   'activity.eta': 'ETA',
   'activity.status': 'Status',
   'activity.queued': 'queued',

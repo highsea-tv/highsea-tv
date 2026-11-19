@@ -12,6 +12,7 @@ import type { Clock } from '@highsea-tv/core'
 import type { BuiltInRow, CurationLibrary, LibraryPick } from '@highsea-tv/curation/service'
 import { type Db, schema } from '@highsea-tv/db'
 import type { Movies } from '@highsea-tv/media/movies'
+import type { Music } from '@highsea-tv/media/music'
 import type { Shows } from '@highsea-tv/media/shows'
 import { and, eq, inArray, type SQL, sql } from 'drizzle-orm'
 import { homeRows } from './home-rows.ts'
@@ -58,6 +59,8 @@ export function createCurationLibrary(deps: {
   movies: Movies
   /** Shows' rows (Phase 5 B): their episodes on Continue watching, Next up, New episodes, Recently added shows. */
   shows?: Pick<Shows, 'client'>
+  /** Music's row (HT-101): Recently played, the albums and artists the profile last queued. */
+  music?: Pick<Music, 'client'>
 }): CurationLibrary {
   const { db, clock, movies } = deps
 
@@ -166,6 +169,9 @@ export function createCurationLibrary(deps: {
           items: shows.recent,
         })
       }
+      const played = deps.music?.client.recent(profileId) ?? []
+      if (played.length)
+        rows.push({ id: 'recent-music', title: 'Recently played', layout: 'music', items: played })
       for (const r of homeRows(db)) {
         if (r.id === 'recent')
           rows.push({

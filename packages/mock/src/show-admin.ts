@@ -239,7 +239,7 @@ export function showAdminApi(d: ShowAdminDeps) {
         path,
         seasonFolders: true,
         addedAt: show.addedAt,
-        art: { poster: show.art.poster, backdrop: show.art.backdrop },
+        art: { poster: show.art.poster, backdrop: show.art.backdrop, logo: show.art.logo ?? null },
         seasonList,
       }
     })

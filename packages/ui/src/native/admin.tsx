@@ -451,6 +451,9 @@ export function PageHeader({ title, description, search, actions, start }: PageH
 
 // ---------------------------------------------------------------- the status bar
 
+/** The status bar's height (28): the admin's toasts stand this far up, clear of it (HT-105). */
+export const STATUS_BAR_HEIGHT = s['6'] + s['1']
+
 /**
  * The admin's status bar (admin.md › Status and live data): one row 28 tall at the bottom, on
  * `s1` with a line above it, in mono 11 and text-3. Values change in place, without motion and
@@ -470,7 +473,7 @@ export function StatusBar({
       role="region"
       aria-label={label}
       style={{
-        height: s['6'] + s['1'],
+        height: STATUS_BAR_HEIGHT,
         flexShrink: 0,
         flexDirection: 'row',
         alignItems: 'center',

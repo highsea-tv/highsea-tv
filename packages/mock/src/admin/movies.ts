@@ -32,6 +32,7 @@ import {
   recommendations,
   collection as tmdbCollection,
 } from '../metadata.ts'
+import { webSeedsOf } from '../seed.ts'
 import type {
   MediaItem,
   ImportListSettings as MockListSettings,
@@ -140,6 +141,7 @@ export function moviesAnswers(kit: AdminKit): Answers {
     eta: x.eta,
     peers: { ...x.peers },
     seeds: { ...x.seeds },
+    webSeeds: webSeedsOf(x),
     ratio: x.ratio,
     state: x.state,
     stateReason: x.stateReason,
@@ -303,6 +305,7 @@ export function moviesAnswers(kit: AdminKit): Answers {
       // derived, so it's written at once
       refresh: ({ params }, ctx) => {
         inLibrary(ctx, params.id)
+        kit.work?.queue(ctx, 'metadata.refresh', { kind: 'movie', id: String(params.id) })
         kit.emit(MEDIA_TOPICS.metadata)
         return undefined
       },
@@ -331,8 +334,12 @@ export function moviesAnswers(kit: AdminKit): Answers {
           case 'search':
             requireIndexers(ctx)
             ctx.api.movies.bulkSearch(mockIds)
+            for (const id of ids)
+              kit.work?.queue(ctx, 'movies.search', { kind: 'movie', id: `${id}` })
             break
           case 'refresh':
+            for (const id of ids)
+              kit.work?.queue(ctx, 'metadata.refresh', { kind: 'movie', id: `${id}` })
             kit.emit(MEDIA_TOPICS.metadata)
             break
           case 'setTags':

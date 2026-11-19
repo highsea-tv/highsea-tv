@@ -34,8 +34,8 @@ const expected: Record<Access, Record<Caller, 200 | 401 | 403>> = {
 }
 
 /**
- * The client API and each person's own account: everything signed-in users may call, the drafted
- * shows, music, playlists and profiles among them (one-client-platform-b.md › B3).
+ * The client API and each person's own account: everything signed-in users may call, shows, music,
+ * playlists and profiles among them (one-client-platform-b.md › B3), with a song's play (HT-101).
  */
 const USER_ROUTES = [
   'announcements.active',
@@ -79,9 +79,13 @@ const USER_ROUTES = [
   'movies.upcoming',
   'music.album',
   'music.artist',
+  'music.image',
   'music.library',
+  'music.play',
+  'music.progress',
   'music.queue',
   'music.songs',
+  'music.stop',
   'music.tracks',
   'playback.dismiss',
   'playback.itemProgress',
