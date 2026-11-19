@@ -2,7 +2,7 @@
 # Written for highsea from Knaben's own API documentation (https://knaben.org/api/v2); no definition was copied.
 id: knaben
 version: 1.0.0
-minEngineVersion: 1.0.0
+minEngineVersion: 1.1.0
 name: Knaben
 description: A meta search over many public trackers, from Knaben's public API. Films only.
 kind: json
