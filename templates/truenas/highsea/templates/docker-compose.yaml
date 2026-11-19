@@ -5,8 +5,10 @@
 {% set perm_config = {"uid": values.run_as.user, "gid": values.run_as.group, "mode": "check"} %}
 
 {# highsea's entrypoint starts as root, joins the graphics' group and drops to PUID:PGID, as Plex's does #}
+{# NET_ADMIN for the built-in VPN's interface and routes, MKNOD for the TUN device the entrypoint makes (ADR 0042) #}
 {% do c1.set_user(0, 0) %}
-{% do c1.add_caps(["CHOWN", "DAC_OVERRIDE", "FOWNER", "SETGID", "SETUID", "KILL"]) %}
+{% do c1.add_caps(["CHOWN", "DAC_OVERRIDE", "FOWNER", "SETGID", "SETUID", "KILL", "NET_ADMIN", "MKNOD"]) %}
+{% do c1.environment.add_env("HIGHSEA_INSTALL", "truenas") %}
 {% do c1.healthcheck.set_test("node", {"port": values.consts.internal_web_port, "path": "/api/health"}) %}
 
 {% if values.highsea.public_url %}

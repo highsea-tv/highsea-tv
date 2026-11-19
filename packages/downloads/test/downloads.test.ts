@@ -8,8 +8,8 @@ import { join } from 'node:path'
 import { schema } from '@highsea-tv/db'
 import { MOVIES } from '@highsea-tv/indexers/fake'
 import { makeTorrent } from '@highsea-tv/torrent/testing'
-import { REPLACE_MS, STALL_MS, STALLED_VIEW_MS } from '../src/index.ts'
-import { ITEM, setup, sintelSearch, until, VERSION } from './helpers.ts'
+import { REPLACE_MS, STALL_MS, STALLED_VIEW_MS, WAITING_FOR_VPN } from '../src/index.ts'
+import { ITEM, LOOPBACK, setup, sintelSearch, until, VERSION } from './helpers.ts'
 
 type T = Awaited<ReturnType<typeof setup>>
 const open: T[] = []
@@ -254,6 +254,37 @@ describe('protection and replacement', () => {
     expect(queue).toHaveLength(1)
     expect(queue[0]?.release).not.toBe('Sintel.2010.1080p.BluRay.x264-GRP')
   })
+
+  test('held by the VPN, waits for it, never counts as stalled, and finishes when it’s back', async () => {
+    const t = await start()
+    const files = [{ path: 'Sintel.2010.1080p.BluRay.x264-GRP.mkv', data: data(600_000) }]
+    await t.seed(101, files, 'Sintel.2010.1080p.BluRay.x264-GRP.mkv')
+    await t.indexers.search(sintelSearch())
+    // the kill switch: the VPN took the engine's network away before the grab
+    await t.engine.setBinding(null)
+    await t.downloads.grab({
+      itemId: ITEM,
+      versionId: VERSION,
+      indexerId: t.indexer.id,
+      guid: BEST,
+    })
+    await until(() => t.engine.list().length === 1, 5_000, 'the torrent to be added')
+    expect(t.downloads.queue()[0]?.stateReason).toBe(WAITING_FOR_VPN)
+    expect(t.downloads.queueFor(ITEM)[0]?.stateReason).toBe(WAITING_FOR_VPN)
+    // three hours of outage: no stall, no replacement
+    t.clock.advance(REPLACE_MS)
+    t.jobs.enqueue('downloads.stall', {})
+    await t.drain()
+    expect(t.downloads.blocklist()).toEqual([])
+    expect(t.downloads.queue()[0]).toMatchObject({
+      release: 'Sintel.2010.1080p.BluRay.x264-GRP',
+      stateReason: WAITING_FOR_VPN,
+    })
+    // the tunnel is back: it resumes by itself and finishes
+    await t.engine.setBinding(LOOPBACK)
+    await until(() => t.downloads.queue()[0]?.state === 'importing', 20_000, 'the download')
+    expect(t.downloads.queue()[0]?.stateReason).toBeNull()
+  }, 30_000)
 
   test('stalled after 30 minutes with no peers and no data, and downloading again when data comes', async () => {
     const t = await start()

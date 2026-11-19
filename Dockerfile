@@ -72,6 +72,24 @@ RUN apt-get update \
 RUN apt-get update \
   && apt-get install -y --no-install-recommends wireguard-tools iproute2 wireguard-go avahi-utils \
   && rm -rf /var/lib/apt/lists/*
+# A container that starts as a non-root user (the Synology package's, whose `user:` Container Manager
+# adds) gets nothing from `cap_add` by itself: Docker raises no ambient capabilities
+# (https://github.com/moby/moby/issues/8460), and execve as a non-root user without file
+# capabilities keeps only the ambient set (capabilities(7), "Transformation of capabilities during
+# execve()"). So the image keeps a copy of setpriv with CAP_NET_ADMIN in its file permitted set and
+# no effective bit: run where the bounding set holds the capability, it may raise it in the
+# inheritable and ambient sets (capset(2); prctl(2), PR_CAP_AMBIENT_RAISE) before it runs node, as
+# the entrypoint's root path does with --reuid; run where it doesn't, it starts as plain setpriv
+# (without the effective bit, execve doesn't refuse it). setcap is libcap2-bin's (setcap(8)).
+# wireguard-go makes its control socket in /var/run/wireguard, which every user may write to
+# (sticky, as /tmp), since the container's user is chosen when it's created (ADR 0042, 2026-11-19).
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends libcap2-bin \
+  && install -d -m 0755 /usr/local/lib/highsea \
+  && cp /usr/bin/setpriv /usr/local/lib/highsea/setpriv-net-admin \
+  && setcap cap_net_admin+p /usr/local/lib/highsea/setpriv-net-admin \
+  && install -d -m 1777 /run/wireguard \
+  && rm -rf /var/lib/apt/lists/*
 # Hardware acceleration (ADR 0056), on amd64 only, where Intel and AMD graphics are: Intel's media
 # driver for VAAPI, oneVPL's runtime and dispatcher for Quick Sync (libmfx-gen1.2, libvpl2), Mesa's
 # VAAPI driver for AMD, and Mesa's Vulkan drivers so libplacebo tone maps on AMD and Intel GPUs. The

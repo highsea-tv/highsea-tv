@@ -5,6 +5,9 @@
 
 export type VpnMode = 'builtin' | 'container' | 'interface' | 'off'
 
+/** The store whose compose file or template installed highsea (`HIGHSEA_INSTALL`). */
+export type VpnInstall = 'synology' | 'truenas' | 'umbrel' | 'casaos' | 'unraid'
+
 /** The settings as the API returns them: secrets are only ever said to be set. */
 export type VpnSettings = {
   mode: VpnMode
@@ -91,6 +94,8 @@ export type VpnStatus = {
    * network; the other modes don't mind. False outside a container and on a bridge.
    */
   hostNetwork: boolean
+  /** The store that installed highsea, or null for a compose file the owner wrote. */
+  install: VpnInstall | null
   exitIp: string | null
   country: string | null
   forwardedPort: number | null

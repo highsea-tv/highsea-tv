@@ -479,34 +479,12 @@ jobs:
         with:
           name: release-files
           path: ${{ github.workspace }}
-      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      # the same steps as a catalog-only publish (catalog-release.yml, ADR 0069)
+      - uses: ./.github/actions/catalog
         with:
-          bun-version: 1.4.4
-      - run: bun install --frozen-lockfile
-      # signed first, then checked, as the image job does: the trust check reads the seed too, and
-      # the committed seed is signed with the development key until a release signs it. The seed
-      # written here isn't published; the catalog in dist/catalog is
-      - name: Build and sign both channels
-        run: bun scripts/catalog.ts build --seed
-        env:
-          HIGHSEA_CATALOG_KEY: ${{ secrets.HIGHSEA_CATALOG_KEY }}
-          HIGHSEA_CATALOG_KEY_ID: ${{ secrets.HIGHSEA_CATALOG_KEY_ID }}
-          HIGHSEA_CATALOG_SEED_RELEASE: '1'
-      # production servers trust release keys only (ADR 0034): a real release stops here without
-      # one; a dry run says so and signs with the development key
-      - name: Production servers will trust it
-        run: bun scripts/release.ts trust || { [ "$DRY_RUN" = true ] && echo "::warning::A real release would stop here."; }
-        env:
-          HIGHSEA_CATALOG_KEY_ID: ${{ secrets.HIGHSEA_CATALOG_KEY_ID }}
-          DRY_RUN: ${{ inputs.dry-run }}
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        with:
-          name: catalog
-          path: dist/catalog/
-      - if: ${{ !inputs.dry-run }}
-        uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3.0.1
-        with:
-          path: dist/catalog/
+          catalog-key: ${{ secrets.HIGHSEA_CATALOG_KEY }}
+          catalog-key-id: ${{ secrets.HIGHSEA_CATALOG_KEY_ID }}
+          dry-run: ${{ inputs.dry-run }}
 
   # DSM's versions have no place for a prerelease, so only a stable release gets a package
   # (https://help.synology.com/developer-guide/synology_package/INFO_necessary_fields.html)

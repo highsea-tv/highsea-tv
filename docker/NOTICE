@@ -10,6 +10,8 @@ Debian's own archive, with apt. highsea runs them as separate programs; it doesn
   iproute2         GPL-2.0        `ip`: the interface, address, routes and rule of the built-in VPN
   wireguard-go     MIT            WireGuard in user space, where the kernel has none
   avahi-utils      LGPL-2.1+      `avahi-publish`: publishes highsea through the host's avahi over D-Bus
+  libcap2-bin      BSD-3-Clause   `setcap`, run once as the image is built, so highsea's own user can make
+                   or GPL-2.0     the built-in VPN's interface without root, through a copy of setpriv
 
 On amd64 only, for hardware acceleration:
 

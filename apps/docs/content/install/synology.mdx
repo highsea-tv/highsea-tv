@@ -129,6 +129,17 @@ Setup finds `/data/media/movies` and `/data/downloads` inside the container, or 
 
 Apps on your network find highsea by its broadcast on port 7368 and by mDNS. If one doesn't, give it the NAS's address.
 
+## The built-in VPN
+
+The package is ready for the [built-in VPN](/settings/vpn/connects/): its container has the NET_ADMIN capability and DSM's `/dev/net`. DSM's kernel has no WireGuard, so highsea runs wireguard-go, which needs DSM's tun module. If **Settings › VPN** says DSM hasn't loaded it, load it at every start with a task:
+
+1. In **Control Panel › Task Scheduler**, choose **Create › Triggered Task › User-defined script**.
+2. Name it `tun`, set **User** to `root` and **Event** to **Boot-up**.
+3. Under **Task Settings**, enter `insmod /lib/modules/tun.ko` and choose **OK**.
+4. Select the task and choose **Run**, then stop and start highsea in **Package Center**.
+
+An install of an earlier package doesn't have the capability. Update highsea in Package Center: the update recreates its container with it, and **Settings › VPN** says so until then.
+
 ## Firewall
 
 If DSM's firewall is on, allow TCP 3000, TCP and UDP 6881, and UDP 7368 from your network, in **Control Panel › Security › Firewall**.

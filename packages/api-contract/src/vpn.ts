@@ -7,6 +7,11 @@ import { createRoute, z } from '@hono/zod-openapi'
 import { API_PREFIX, access, body, errors, IsoDate, json } from './common.ts'
 
 export const VPN_MODES = ['builtin', 'container', 'interface', 'off'] as const
+/**
+ * How highsea was installed, from the `HIGHSEA_INSTALL` its store's compose file or template sets
+ * (ADR 0042, 2026-11-19). Unset is a compose file the owner wrote, or no container at all.
+ */
+export const VPN_INSTALLS = ['synology', 'truenas', 'umbrel', 'casaos', 'unraid'] as const
 export const VPN_STATES = ['off', 'connecting', 'connected', 'down', 'failed'] as const
 
 export const VpnSettings = z
@@ -74,7 +79,7 @@ export const VpnStatus = z
     state: z.enum(VPN_STATES),
     /** The failing step's copy, when `state` is failed. */
     message: z.string().nullable(),
-    /** Failed for want of NET_ADMIN: the page shows the compose lines to add. */
+    /** Failed for want of NET_ADMIN: the page says how to add it (the compose lines, or the store's update). */
     needsCapability: z.boolean(),
     /**
      * highsea's container is on host networking, where the built-in VPN's interface and rule would
@@ -83,6 +88,12 @@ export const VpnStatus = z
      * there: false outside a container, where there's no compose file to change, and on a bridge.
      */
     hostNetwork: z.boolean(),
+    /**
+     * The store highsea came from, when one wrote its compose file: the page then says how that
+     * store fixes the capability or the device, and doesn't open compose lines nobody here writes.
+     * Null for a compose file the owner wrote, or no container.
+     */
+    install: z.enum(VPN_INSTALLS).nullable(),
     exitIp: z.string().nullable(),
     country: z.string().nullable(),
     forwardedPort: z.number().int().nullable(),

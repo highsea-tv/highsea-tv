@@ -99,6 +99,9 @@ highsea checks the connection when it connects, every 5 minutes, after a reconne
 - **Can't connect:** the reason, specific to the provider and the step ("PIA didn't accept that username and password.", "That file isn't a WireGuard configuration: it has no [Interface] section.", "Couldn't reach the VPN container's control server at {url}.").
 - **Missing capability:** "highsea needs the NET_ADMIN capability to run the tunnel. Add `cap_add: [NET_ADMIN]` to highsea's service in your compose file, then restart." with the lines to copy.
 - *Approved by the owner on 2026-11-07 (one-compose-file.md, part B):* **On host networking**, in highsea connects only: "highsea is on host networking", then "On host networking, the tunnel's interface and routes would land in the host's network beside everything else, so highsea won't start it. Put the lines from Compose for highsea connects in place of network_mode: host, then recreate the container." It comes before the missing capability, since the lines fix both and the network is what's unsafe ([ADR 0042](../adr/0042-vpn-connections.md)). The other modes don't mind host networking.
+- *Approved by the owner on 2026-11-19 (HT-90):* **Not connected yet**, the built-in VPN chosen (the default) with no provider saved: "Choose your provider under Connection and save. Until then, torrents use your own connection." Torrents go direct and the status is `off`; Downloads' VPN line reads "The built-in VPN isn't set up". No VPN's warning is unchanged.
+- *HT-90:* **Missing capability on a store install** (`VpnStatus.install` set from `HIGHSEA_INSTALL`): the store's own fix in place of the compose lines, such as "Update highsea in Package Center: the update recreates its container with it." The lines stay hidden for a store install. **No TUN device** on Synology names DSM's Task Scheduler task (`insmod /lib/modules/tun.ko`).
+- *HT-90:* **Waiting for the VPN.** A downloading or queued torrent while a VPN is set up and its tunnel isn't up shows this reason in Downloads, the Queue widget and the film's page, in place of its rate; it never counts toward Stalled, and carries on when the tunnel is back.
 
 ## Data
 
@@ -106,7 +109,7 @@ As built in 6a (`packages/api-contract/src/vpn.ts`):
 
 | Call | Route | Access | What |
 | --- | --- | --- | --- |
-| `vpn.status()` | `GET /api/v1/vpn/status` | staff, so A8 can show it | `VpnStatus`: `mode`, `provider`, `state` (`off`, `connecting`, `connected`, `down`, `failed`), `message` when failed, `needsCapability`, `hostNetwork` (part B, approved 2026-11-07: always there, false outside a container and on a bridge; highsea connects won't start when it's true), `exitIp`, `country`, `forwardedPort`, `checks` (each `id`, `label`, `result` of `pass`, `warn`, `fail`, `info` or `pending`, `title`, `detail`) and `checkedAt`. Live over `vpn.updated` |
+| `vpn.status()` | `GET /api/v1/vpn/status` | staff, so A8 can show it | `VpnStatus`: `mode`, `provider`, `state` (`off`, `connecting`, `connected`, `down`, `failed`), `message` when failed, `needsCapability`, `install` (HT-90: the store that wrote the compose file, from `HIGHSEA_INSTALL`, or null), `hostNetwork` (part B, approved 2026-11-07: always there, false outside a container and on a bridge; highsea connects won't start when it's true), `exitIp`, `country`, `forwardedPort`, `checks` (each `id`, `label`, `result` of `pass`, `warn`, `fail`, `info` or `pending`, `title`, `detail`) and `checkedAt`. Live over `vpn.updated` |
 | `vpn.check()` | `POST /api/v1/vpn/check` | owner | Run the checks now |
 | `vpn.reconnect()` | `POST /api/v1/vpn/reconnect` | owner | Restart the tunnel, or look at the interface again |
 | `vpn.providers()` | `GET /api/v1/vpn/providers` | owner | The providers with their steps, how they connect (`config` or `account`) and port forwarding (`natpmp`, `pia`, `static`, `none`). Built into the server in 6a; since 6b they're read from the signed catalog's `vpn-providers` kind, with PIA's regions |
@@ -128,6 +131,7 @@ As built in 6a (`packages/api-contract/src/vpn.ts`):
 
 - **Built in 6a on 2026-10-20** with the VPN container and interface modes; the changes real data forced are marked *As built* above and listed in the checkpoint report.
 - **Built in 6b on 2026-10-20:** highsea connects, the providers in the catalog, port forwarding and indexers through the VPN; its judgement calls are in [checkpoint 6 › Made while building 6b (highsea connects)](../plans/phase-3-checkpoint-6.md#made-while-building-6b-highsea-connects).
+- **The owner's decision of 2026-11-19 (HT-90):** the built-in VPN is the default across the board. The root compose file, the installer and every store template give highsea `cap_add: [NET_ADMIN]` and its own network, and the mode starts as Built-in VPN, unconnected until a provider is saved. On the owner's requirement the same day, LAN discovery stays intact: the installer sees to the host's avahi ([ADR 0020](../adr/0020-discovery-port.md) and [ADR 0042](../adr/0042-vpn-connections.md)'s sections of 2026-11-19).
 
 ## Open questions
 

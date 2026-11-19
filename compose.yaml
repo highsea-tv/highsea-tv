@@ -1,21 +1,30 @@
 # SPDX-License-Identifier: AGPL-3.0-only
-# highsea on one Linux machine, with host networking: the file the Docker guide shows and
-# get.highsea.tv's installer writes.
+# highsea on one machine: the file the Docker guide shows and get.highsea.tv's installer writes.
 #   docker compose up -d
 # Then open http://<this machine>:3000 and follow the setup.
 #
-# Host networking lets the apps find the server on your network by itself, through UDP 7368 and
-# mDNS (ADR 0020), and lets the torrent engine take incoming peers on 6881 (ADR 0037).
-# On a Mac or Windows, Docker Desktop publishes the ports instead, as the Docker guide shows:
-# https://docs.highsea.tv/install/docker/
-# For torrents through a VPN, Settings › VPN and its guide give the lines to add:
+# highsea has its own network with published ports, so the built-in VPN can make its WireGuard
+# interface and routes for highsea alone, never the host's (ADR 0042, 2026-11-19). The apps find
+# the server by its broadcast on 7368/udp and by mDNS through the host's avahi (ADR 0020), and the
+# torrent engine takes incoming peers on 6881 (ADR 0037): forward 6881 on your router for them, or
+# use a VPN that forwards a port. The guides: https://docs.highsea.tv/install/docker/ and
 # https://docs.highsea.tv/settings/vpn/
 services:
   highsea:
     # `latest` is the newest stable release; pin a version (0.1.0) to choose when you move
     image: ghcr.io/highsea-tv/highsea:latest
     container_name: highsea
-    network_mode: host
+    ports:
+      # the admin, the web app and the apps' address
+      - "3000:3000"
+      # the torrent engine's incoming peers, TCP and UDP
+      - "6881:6881/tcp"
+      - "6881:6881/udp"
+      # apps on your network find highsea by this broadcast
+      - "7368:7368/udp"
+    # the built-in VPN's WireGuard interface and routes, in highsea's own network. Where the kernel
+    # has no WireGuard, highsea uses wireguard-go on the TUN device, which it makes itself
+    cap_add: [NET_ADMIN]
     # highsea runs as whoever owns /data, and takes the time zone from your browser at setup.
     # To choose instead, or to give the address people use from outside:
     # environment:

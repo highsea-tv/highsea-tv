@@ -13,6 +13,7 @@ import {
   type VpnProviderDefinition,
   validateVpnProvider,
 } from '@highsea-tv/schemas/vpn'
+import type { z } from 'zod'
 import {
   type Bundle,
   CATALOG_FORMAT,
@@ -27,6 +28,14 @@ import {
 } from './format.ts'
 import { type BrokenFile, type LoadedFile, loadDefinitionFiles, loadEntryFiles } from './load.ts'
 import { sha256, signManifest } from './signing.ts'
+import {
+  bundleStatuses,
+  type StagesFile,
+  stagesFileSchema,
+  starterProblem,
+  type VerifiedFileData,
+  verifiedFileSchema,
+} from './stages.ts'
 
 /** How many versions' notes a manifest carries. */
 const CHANGES_KEPT = 10
@@ -109,6 +118,18 @@ function releasesOf(root: string): HighseaRelease[] | null {
   return parsed.data
 }
 
+/** A JSON file beside the definitions, checked with its schema; null when there's none. */
+function sideFile<T>(root: string, name: string, schema: z.ZodType<T>): T | null {
+  const file = join(root, name)
+  if (!existsSync(file)) return null
+  const parsed = schema.safeParse(JSON.parse(readFileSync(file, 'utf8')))
+  if (!parsed.success) {
+    const issue = parsed.error.issues[0]
+    throw new BuildError(`${name} doesn’t validate: ${issue?.path.join('.')}: ${issue?.message}`)
+  }
+  return parsed.data
+}
+
 /** What the build needs to know about a kind's entries. */
 type KindRules<T extends { id: string; minEngineVersion: string; logo?: string }> = {
   kind: CatalogKind
@@ -130,6 +151,27 @@ function buildKind<T extends { id: string; minEngineVersion: string; logo?: stri
   const logos = logosOf(join(sources.root, 'logos'))
   // highsea's releases ride the main catalog (8b): an optional `releases.json`, newest first
   const releases = rules.kind === 'indexers' ? releasesOf(sources.root) : null
+  // each definition's stage, status and last check ride the indexers' bundle (ADR 0069)
+  const verified: VerifiedFileData | null =
+    rules.kind === 'indexers' ? sideFile(sources.root, 'verified.json', verifiedFileSchema) : null
+  const stages: StagesFile | null =
+    rules.kind === 'indexers' ? sideFile(sources.root, 'stages.json', stagesFileSchema) : null
+  const betaIds = new Set(beta.loaded.map((f) => f.definition.id))
+  if (stages) {
+    const problems = [
+      ...stable.loaded.map((f) => ({ f, from: 'stable' as const })),
+      ...beta.loaded.map((f) => ({ f, from: 'beta' as const })),
+    ].flatMap(({ f, from }) => {
+      const d = f.definition as unknown as { id: string; starter?: boolean; privacy?: string }
+      const problem = starterProblem(
+        { id: d.id, starter: d.starter === true, privacy: d.privacy ?? '' },
+        from,
+        stages.starters,
+      )
+      return problem ? [{ file: f.file, message: problem }] : []
+    })
+    if (problems.length) throw new BuildError('Some definitions can’t be starters.', problems)
+  }
 
   return CHANNELS.map((channel) => {
     const byId = new Map(stable.loaded.map((f) => [f.definition.id, f]))
@@ -143,12 +185,28 @@ function buildKind<T extends { id: string; minEngineVersion: string; logo?: stri
     const usedLogos = Object.fromEntries(
       Object.entries(logos).filter(([name]) => chosen.some((f) => f.definition.logo === name)),
     )
+    const status =
+      rules.kind === 'indexers'
+        ? bundleStatuses({
+            channel,
+            chosen: chosen.map((f) => {
+              const d = f.definition as unknown as { id: string; name: string; version: string }
+              const from: Channel = channel === 'beta' && betaIds.has(d.id) ? 'beta' : 'stable'
+              return { id: d.id, name: d.name, version: d.version, from }
+            }),
+            verified,
+            stages,
+            today: (changes[0] as CatalogChange).date,
+          })
+        : {}
     const bundleData: Bundle = {
       format: CATALOG_FORMAT,
       kind: rules.kind,
       version,
       definitions: chosen.map((f) => f.raw),
       logos: usedLogos,
+      // the indexers' only: the VPN providers' bundles stay byte for byte what they were
+      ...(Object.keys(status).length ? { status } : {}),
     }
     const bundle = JSON.stringify(bundleData)
     const minEngineVersion = chosen

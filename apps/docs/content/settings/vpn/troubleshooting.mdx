@@ -22,11 +22,15 @@ The built-in VPN won't start the tunnel while highsea's container shares the hos
 
 ## highsea can't run the tunnel yet
 
-highsea's container is missing the NET_ADMIN capability. Copy the lines from **Compose for the built-in VPN**, which add `cap_add: [NET_ADMIN]`, into highsea's service and recreate the container. See [What it needs](/settings/vpn/connects/#what-it-needs).
+highsea's container is missing the NET_ADMIN capability. If you installed highsea from Package Center, TrueNAS's Apps or the Umbrel App Store, update it there: the update recreates the container with the capability. On CasaOS, add NET_ADMIN under **Capabilities** in highsea's settings; on Unraid, add `--cap-add=NET_ADMIN` to **Extra Parameters**. Otherwise copy the lines from **Compose for the built-in VPN**, which add `cap_add: [NET_ADMIN]`, into highsea's service and recreate the container. See [What it needs](/settings/vpn/connects/#what-it-needs).
 
 ## The kernel has no WireGuard, and /dev/net/tun isn't there
 
-Common on older NAS kernels. Add `devices: [/dev/net/tun:/dev/net/tun]` to highsea's service and recreate the container.
+Common on older NAS kernels, which have no WireGuard of their own, so highsea runs wireguard-go, which needs the TUN device. Load the host's tun module (`modprobe tun`), add `devices: [/dev/net/tun:/dev/net/tun]` to highsea's service, and recreate the container. On a Synology NAS, the package already hands highsea DSM's `/dev/net`, and DSM loads the module only when asked: see [The built-in VPN](/install/synology/#the-built-in-vpn) for the boot-up task.
+
+## Downloads say Waiting for the VPN
+
+While the built-in VPN is set up but its tunnel isn't up, torrents wait rather than use your own connection, and Downloads, the Queue widget and the film's page say **Waiting for the VPN.** They carry on by themselves when the tunnel comes back, and the wait never counts as a stalled download.
 
 ## The built-in VPN runs on Linux
 

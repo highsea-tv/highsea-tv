@@ -6,17 +6,28 @@
 //                                           dist/catalog/vpn-providers/ (ADR 0042); --seed also
 //                                           refreshes the server's seed
 //   bun scripts/catalog.ts keygen <id>      print a new ed25519 key pair for a release key
+//   bun scripts/catalog.ts publishable <url>
+//                                           whether a catalog-only publish may go to the catalog
+//                                           at <url> (catalog-release.yml, ADR 0069)
 //
 // The build signs with the key in HIGHSEA_CATALOG_KEY (a PEM) and HIGHSEA_CATALOG_KEY_ID, or the
-// development key when they're unset. Publishing isn't here: it stays off until the owner says so
-// (decision 5), and the workflow's publish step is disabled.
+// development key when they're unset. Publishing is release.yml's and catalog-release.yml's, from
+// the shared .github/actions/catalog.
 import { readFileSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
-import { generateSigningKey } from '@highsea-tv/catalog'
+import {
+  CHANNELS,
+  compareCatalogVersions,
+  envelopeSchema,
+  generateSigningKey,
+  type HighseaRelease,
+  manifestSchema,
+} from '@highsea-tv/catalog'
 import {
   BuildError,
   buildCatalog,
   buildVpnProviderCatalog,
+  parseChanges,
   writeCatalog,
 } from '@highsea-tv/catalog/build'
 
@@ -34,6 +45,44 @@ function signingKey() {
     privateKey: readFileSync(join(root, 'catalog/keys/development.pem'), 'utf8'),
     keyId: 'development',
   }
+}
+
+/**
+ * Why a catalog-only publish can't go out, or none. Servers fetch a bundle only when its version is
+ * newer than theirs (ADR 0050), so the catalog's CHANGES.md needs a heading newer than both
+ * channels' published versions; and a catalog-only publish never changes what servers are told of
+ * highsea's releases, so releases.json must be what's published (the plan's part A).
+ */
+export function publishProblems(
+  local: { version: string; releases: HighseaRelease[] },
+  live: Record<string, { version: string; releases: HighseaRelease[] } | null>,
+): string[] {
+  const problems: string[] = []
+  for (const [channel, m] of Object.entries(live)) {
+    if (!m) continue
+    if (compareCatalogVersions(local.version, m.version) <= 0)
+      problems.push(
+        `${channel} is already at ${m.version}; add a newer heading to catalog/indexers/CHANGES.md, like ${local.version.split('.').slice(0, 3).join('.')}.2 or today’s date, with what changed.`,
+      )
+  }
+  const published = live.stable?.releases ?? live.beta?.releases
+  if (published && JSON.stringify(published) !== JSON.stringify(local.releases))
+    problems.push(
+      'catalog/indexers/releases.json isn’t what’s published: a catalog-only publish would change the releases servers know of. Publish with a release instead.',
+    )
+  return problems
+}
+
+/** A channel's published manifest, unverified (servers verify it), or null when there's none. */
+async function liveManifest(url: string, channel: string) {
+  const response = await fetch(`${url}/${channel}/manifest.json`, {
+    signal: AbortSignal.timeout(30_000),
+  })
+  if (response.status === 404) return null
+  if (!response.ok) throw new Error(`${url}/${channel}/manifest.json answered ${response.status}.`)
+  const envelope = envelopeSchema.parse(await response.json())
+  const m = manifestSchema.parse(JSON.parse(envelope.manifest))
+  return { version: m.version, releases: m.releases ?? [] }
 }
 
 if (import.meta.main) {
@@ -77,8 +126,29 @@ if (import.meta.main) {
     console.log(`Key id: ${id}\n\nPublic key (for packages/catalog/src/keys.ts):\n${k.publicKey}\n`)
     console.log('Private key (a GitHub Actions secret and offline storage, never the repo):')
     console.log(k.privateKey)
+  } else if (command === 'publishable') {
+    const url = (args[0] ?? '').replace(/\/$/, '')
+    if (!/^https:\/\//.test(url)) {
+      console.error('Usage: bun scripts/catalog.ts publishable https://catalog.highsea.tv')
+      process.exit(1)
+    }
+    const dir = join(root, 'catalog/indexers')
+    const version = parseChanges(readFileSync(join(dir, 'CHANGES.md'), 'utf8'))[0]
+      ?.version as string
+    const releases = JSON.parse(
+      readFileSync(join(dir, 'releases.json'), 'utf8'),
+    ) as HighseaRelease[]
+    const live = Object.fromEntries(
+      await Promise.all(CHANNELS.map(async (c) => [c, await liveManifest(url, c)] as const)),
+    )
+    const problems = publishProblems({ version, releases }, live)
+    for (const p of problems) console.error(`::error::${p}`)
+    if (problems.length) process.exit(1)
+    console.log(
+      `${version} is newer than what ${url} serves (${CHANNELS.map((c) => `${c} ${live[c]?.version ?? 'none'}`).join(', ')}), and releases.json is what's published.`,
+    )
   } else {
-    console.error('Usage: bun scripts/catalog.ts build [--seed] | keygen <id>')
+    console.error('Usage: bun scripts/catalog.ts build [--seed] | keygen <id> | publishable <url>')
     process.exit(1)
   }
 }
