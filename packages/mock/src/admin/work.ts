@@ -15,7 +15,7 @@ import {
   type Torrent,
   type TorrentCategory,
 } from '@highsea-tv/api-contract'
-import type { ServerState } from '../seed.ts'
+import { type ServerState, webSeedsOf } from '../seed.ts'
 import type { Torrent as MockTorrent } from '../types.ts'
 import { type AdminKit, type Answers, type Ctx, refuse } from './kit.ts'
 import { importAnswers } from './work-imports.ts'
@@ -50,6 +50,7 @@ export function workAnswers(kit: AdminKit): Answers {
     eta: t.eta,
     peers: { ...t.peers },
     seeds: { ...t.seeds },
+    webSeeds: webSeedsOf(t),
     ratio: t.ratio,
     state: t.state,
     stateReason: t.stateReason,
@@ -61,7 +62,12 @@ export function workAnswers(kit: AdminKit): Answers {
     // a private tracker's torrent is one from a private indexer
     private: s.indexers.some((i) => i.name === t.indexer && i.privacy === 'private'),
     files: t.files.map((f) => ({ ...f })),
-    trackers: t.trackers.map((x) => ({ kind: 'tracker' as const, ...x })),
+    trackers: t.trackers.map((x) => ({
+      kind: 'tracker' as const,
+      ...x,
+      // a web seed sends only while its torrent downloads
+      downRate: t.state === 'downloading' ? (x.downRate ?? 0) : 0,
+    })),
     // the mock keeps no minimum seeding time: none, as Settings › Download client's default has
     seedingRule: { ratio: t.seedingRule.ratio, minutes: t.seedingRule.minutes, minMinutes: null },
   })
@@ -85,6 +91,7 @@ export function workAnswers(kit: AdminKit): Answers {
       eta: t.eta,
       peers: { ...t.peers },
       seeds: { ...t.seeds },
+      webSeeds: webSeedsOf(t),
       ratio: t.ratio,
       state: t.state,
       stateReason: t.stateReason,

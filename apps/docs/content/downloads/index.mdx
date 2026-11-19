@@ -6,8 +6,8 @@ description: Every torrent in highsea's built-in client, with the VPN it goes th
 {/* SPDX-License-Identifier: AGPL-3.0-only */}
 {/*
   Sources:
-  - The screen and its copy: packages/admin/src/downloads.tsx, downloads-messages.ts and
-    downloads-status.ts; the sidebar in packages/admin/src/nav.ts.
+  - The screen and its copy: packages/admin/src/downloads.tsx, downloads-messages.ts,
+    download-source.ts and downloads-status.ts; the sidebar in packages/admin/src/nav.ts.
   - The API: apps/server/src/api/downloads.ts and packages/api-contract/src/downloads.ts.
   - Behaviour: packages/downloads/src/service.ts (categories, remove, pause all and resume all,
     limits, states and reasons).
@@ -48,7 +48,11 @@ The list shows every torrent, and refreshes on its own. Each row has:
 - **Name**, and under it the category and the indexer it came from, or **Added by hand** for a torrent you added yourself or that came in through the watch folder;
 - **Size** and **Progress**;
 - **↓** and **↑**: the download and upload speed right now;
-- **Peers**: the seeds it's connected to, then the peers;
+- **Source**: where the data comes from right now:
+  - **Peers 9/18**: the seeds it's connected to, then the peers;
+  - **Web seed · archive.org**: a web server that holds the torrent's files, such as the Internet Archive's, sends it over the web instead. Web seeds aren't peers, so a torrent fed by one can download at full speed with no peers at all;
+  - **Peers 9/18 + archive.org**: both at once;
+  - **Waiting for peers**: downloading, but nothing is sending yet;
 - **Ratio**: uploaded against the torrent's size;
 - **Status**.
 
