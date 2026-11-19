@@ -128,6 +128,7 @@ describe('the film page', () => {
     id,
     label: id === 'v1' ? '4K' : '1080p',
     detail: playable ? 'HEVC · HDR10' : null,
+    quality: playable ? (id === 'v1' ? '4K HDR' : '1080p') : null,
     playable,
     audio: [
       { id: 'a0', default: false },
@@ -177,7 +178,10 @@ describe('the film page', () => {
   test('a version’s name, the qualities and the lead line', () => {
     expect(versionLabel(versions[1] as (typeof versions)[number])).toBe('4K · HDR10')
     expect(versionLabel({ label: '1080p', detail: null })).toBe('1080p')
-    expect(qualitiesOf([...versions, version('v3')])).toEqual(['4K', '1080p'])
+    expect(qualitiesOf([...versions, version('v3')])).toEqual(['4K HDR', '1080p'])
+    // what the files are, not the versions' names: "Ultra HD" holding a 1080p file is 1080p
+    const ultraHd = { label: 'Ultra HD', quality: '1080p', playable: true }
+    expect(qualitiesOf([ultraHd])).toEqual(['1080p'])
     expect(text.leadOf({ year: 2012, runtimeMinutes: 12 })).toBe('2012 · 12m')
   })
 

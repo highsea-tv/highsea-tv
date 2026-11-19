@@ -7,7 +7,15 @@ import { join } from 'node:path'
 import type { AppError } from '@highsea-tv/core'
 import { schema } from '@highsea-tv/db'
 import { eq } from 'drizzle-orm'
-import { fold, matchScore, safeName, sortTitleOf } from '../../src/shared/index.ts'
+import {
+  fold,
+  matchScore,
+  safeName,
+  sortTitleOf,
+  versionDetail,
+  versionQuality,
+} from '../../src/shared/index.ts'
+import type { MediaInfo, VideoInfo } from '../../src/shared/probe.ts'
 import { reason, SINTEL, setup } from '../movies/helpers.ts'
 
 let cleanups: (() => void)[] = []
@@ -288,5 +296,39 @@ describe('profiles, formats, sizes and language profiles', () => {
       preferred: null,
       max: null,
     })
+  })
+})
+
+describe('a version’s quality', () => {
+  const info = (width: number, height: number, hdr: string): MediaInfo => ({
+    duration: 7_500,
+    container: 'matroska,webm',
+    video: {
+      index: 0,
+      codec: hdr === 'none' ? 'h264' : 'hevc',
+      codecTag: null,
+      profile: null,
+      width,
+      height,
+      bitDepth: hdr === 'none' ? 8 : 10,
+      bitrate: 0,
+      colorPrimaries: null,
+      colorTransfer: null,
+      hdr: hdr as VideoInfo['hdr'],
+      dolbyVision: null,
+    } as VideoInfo,
+    audio: [],
+    subtitles: [],
+  })
+
+  test('says what the file is: Spirited Away’s 1080p H.264 is 1080p, never Ultra HD', () => {
+    // the badge the player showed came from the version's name ("Ultra HD", its profile's)
+    expect(versionQuality(info(1920, 1038, 'none'))).toBe('1080p')
+    expect(versionDetail(info(1920, 1038, 'none'), 10.6e9)).toBe('1080p · H.264 · 10.6 GB')
+    expect(versionQuality(info(3840, 2160, 'hdr10'))).toBe('4K HDR')
+    expect(versionQuality(info(3840, 1600, 'dv-hdr10'))).toBe('4K HDR')
+    expect(versionQuality(info(3840, 2160, 'none'))).toBe('4K')
+    expect(versionQuality(info(1280, 720, 'none'))).toBe('720p')
+    expect(versionQuality(null)).toBeNull()
   })
 })

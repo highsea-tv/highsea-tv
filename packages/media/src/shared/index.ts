@@ -197,7 +197,14 @@ export {
 } from './settings.ts'
 export { CHUNK, chunks, escapeLike } from './sql.ts'
 export { type TagMode, type Tags, tagsMatch } from './tags.ts'
-export { audioTracks, codecName, trackId, trackIndex, versionDetail } from './tracks.ts'
+export {
+  audioTracks,
+  codecName,
+  trackId,
+  trackIndex,
+  versionDetail,
+  versionQuality,
+} from './tracks.ts'
 export {
   nodeFs,
   type TransferFs,

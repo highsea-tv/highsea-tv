@@ -1493,6 +1493,7 @@ export function createApi(srv: MockServer, ctx: Ctx) {
           id: v.id,
           label: v.label,
           detail: `${res}${hdr} · ${(video?.type === 'video' ? video.codec : '').toUpperCase()} · ${(f.size / 1e9).toFixed(1)} GB`,
+          quality: res ? `${res}${hdr ? ' HDR' : ''}` : null,
           audio,
           // embedded first, then each language once
           subtitles: [...embedded, ...external].filter(
