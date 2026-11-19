@@ -284,6 +284,13 @@ export function registerDownloads(app: OpenAPIHono<Env>) {
     return c.json(saved, 200)
   })
 
+  // Test brings the built-in VPN's tunnel up for a moment, so it's audited like a reconnect
+  app.openapi(routes.vpn.test, async (c) => {
+    const result = await runtime(c).vpn.test(c.req.valid('json'))
+    audit(c, 'vpn.tested')
+    return c.json(result, 200)
+  })
+
   // ---------------------------------------------------------------- System
 
   app.openapi(routes.system.speeds, (c) => c.json(runtime(c).downloads.speeds(), 200))

@@ -5,7 +5,7 @@ import type { Page } from 'playwright-core'
 import type { Area } from '../shot.ts'
 
 const mode = (name: RegExp) => (p: Page) => p.getByRole('radio', { name }).click()
-// The built-in VPN' fields wait for the provider list; the shot waits for them
+// The built-in VPN’s fields wait for the provider list; the shot waits for them
 const connects = async (p: Page) => {
   await mode(/Built-in VPN/)(p)
   await p.getByText('WireGuard configuration', { exact: true }).first().waitFor()

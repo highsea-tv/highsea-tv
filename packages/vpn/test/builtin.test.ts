@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The built-in VPN' state machine on a fake clock, with a fake `ip` and `wg`, a fake PIA and a
+// The built-in VPN’s state machine on a fake clock, with a fake `ip` and `wg`, a fake PIA and a
 // fake NAT-PMP: connecting until the first handshake, the binding only once the checks pass, the
 // checks that stop torrents, the handshake lost and the reconnect, port forwarding and its
 // renewals, and the indexers' fetch. Nothing runs and nothing leaves the machine.

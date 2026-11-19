@@ -247,6 +247,9 @@ describe('settings', () => {
     const { adminApi, ownerApi } = await started()
     expect(await failure(adminApi.settings.downloadClient())).toMatchObject({ code: 'forbidden' })
     expect(await failure(adminApi.vpn.settings())).toMatchObject({ code: 'forbidden' })
+    expect(await failure(adminApi.vpn.test({ body: { mode: 'interface' } }))).toMatchObject({
+      code: 'forbidden',
+    })
 
     const client = await ownerApi.settings.downloadClient()
     expect(client.port).toBe(6881)
@@ -262,6 +265,16 @@ describe('settings', () => {
     expect((await ownerApi.vpn.providers()).length).toBeGreaterThan(0)
     const vpn = await ownerApi.vpn.settings()
     expect(vpn.mode).toBe('off')
+    // Test with nothing to test, and with an interface that isn't there: nothing is saved
+    expect(await failure(ownerApi.vpn.test({ body: { mode: 'off' } }))).toMatchObject({
+      code: 'invalid',
+    })
+    const missing = await ownerApi.vpn.test({
+      body: { mode: 'interface', interface: 'hswgtest9' },
+    })
+    expect(missing.ok).toBe(false)
+    expect(missing.checks[0]).toMatchObject({ id: 'tunnel', result: 'fail' })
+    expect((await ownerApi.vpn.settings()).mode).toBe('off')
   })
 })
 
@@ -279,6 +292,12 @@ describe('the VPN on host networking', () => {
     const owner = await withOwner(runtime)
     const api = clientFor(createApi(runtime), { token: owner.token })
     expect(await api.vpn.status()).toMatchObject({ state: 'off', hostNetwork: true })
+    // Test refuses before anything touches the network, and says why in the tunnel line
+    const tested = await api.vpn.test({
+      body: { mode: 'builtin', provider: 'proton', config: WG_CONFIG },
+    })
+    expect(tested.ok).toBe(false)
+    expect(tested.checks[0]?.title).toMatch(/^On host networking/)
     await api.vpn.save({ body: { mode: 'builtin', provider: 'proton', config: WG_CONFIG } })
     await runtime.vpn.settled()
     expect(await api.vpn.status()).toMatchObject({

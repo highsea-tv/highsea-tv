@@ -50,6 +50,14 @@ export const vpn = defineMessages({
   reconnect: 'Reconnect',
   reconnectError: 'Couldn’t reconnect',
   checkedAgo: 'Checked {ago}',
+  // HT-82: Test, in the other settings pages' pattern, for the settings on the page
+  test: 'Test',
+  'test.hint':
+    'Tries these settings without saving them. The built-in VPN brings its tunnel up for a moment; torrents don’t use it.',
+  'test.ok': 'These settings work.',
+  'test.okWarnings': 'These settings work. A line below has a warning.',
+  'test.failed': 'These settings don’t work yet. The line marked below says why.',
+  'test.results': 'Test results',
   // one-compose-file.md's part B, approved 2026-11-07: the status points to the mode's compose lines
   capabilityHelp: 'Compose for the built-in VPN, under Connection, has the lines to add.',
   composeLines: 'Compose lines',

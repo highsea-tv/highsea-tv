@@ -91,6 +91,18 @@ export const vpnProviders: VpnProvider[] = [
     portForwarding: 'none',
     ipv6: true,
   },
+  {
+    id: 'nordvpn',
+    name: 'NordVPN',
+    connect: 'config',
+    steps: [
+      'Generate an access token in Nord Account › NordVPN › Advanced settings.',
+      'Use it to get your NordLynx key and a server, and write a WireGuard file from them.',
+      'Upload it here, or paste it.',
+    ],
+    portForwarding: 'none',
+    ipv6: false,
+  },
   ...(['IVPN', 'Windscribe', 'Surfshark'] as const).map(
     (name): VpnProvider => ({
       id: name.toLowerCase(),

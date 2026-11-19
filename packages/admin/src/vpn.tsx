@@ -16,6 +16,7 @@ import type {
   VpnSettings,
   VpnSettingsInput,
   VpnStatus,
+  VpnTestResult,
 } from '@highsea-tv/api-contract'
 import type { T as Translate } from '@highsea-tv/i18n'
 import { useT } from '@highsea-tv/i18n/react'
@@ -49,6 +50,7 @@ import { Animated, Easing, ScrollView, View, type ViewStyle } from 'react-native
 import { Loadable } from './loadable.tsx'
 import { pickFile } from './pick-file.ts'
 import { AreaPage, Group, SaveBar } from './settings.tsx'
+import { Note, WRAP_ANYWHERE } from './settings-card.tsx'
 import { useRelative } from './time.ts'
 import { vpn as messages } from './vpn-messages.ts'
 
@@ -157,6 +159,20 @@ export function Vpn() {
   )
 }
 
+/** What a save or a test sends: the draft without the `*Set` flags, and secrets only when typed. */
+function bodyOf(draft: Draft): VpnSettingsInput {
+  const { piaPasswordSet, containerKeySet, config, piaPassword, containerKey, ...rest } = draft
+  return {
+    ...rest,
+    ...(config !== undefined ? { config } : {}),
+    ...(piaPassword ? { piaPassword } : {}),
+    ...(containerKey ? { containerKey } : {}),
+  }
+}
+
+/** Test's answer, or the refusal it met. */
+type Tested = VpnTestResult | { message: string }
+
 function Form({
   loaded,
   status,
@@ -169,24 +185,30 @@ function Form({
   const t = useT(messages)
   const [draft, setDraft] = useState<Draft>(loaded)
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [tested, setTested] = useState<Tested | null>(null)
   const save = useAction((c, body: VpnSettingsInput) => c.vpn.save({ body }))
+  const test = useAction((c, body: VpnSettingsInput) => c.vpn.test({ body }))
   const set: Set = (patch) => {
     setErrors({})
+    setTested(null)
     setDraft((d) => ({ ...d, ...patch }))
   }
   const dirty = JSON.stringify(draft) !== JSON.stringify(loaded)
 
+  const onTest = () => {
+    if (draft.mode === 'container' && !CONTAINER_URL.test(draft.containerUrl)) return
+    setTested(null)
+    test.run(bodyOf(draft)).then(setTested, (e: Error) => {
+      const field = fieldOf(e)
+      if (field) setErrors({ [field]: e.message })
+      setTested({ message: e.message })
+    })
+  }
+
   const submit = async () => {
     if (draft.mode === 'container' && !CONTAINER_URL.test(draft.containerUrl)) return
-    const { piaPasswordSet, containerKeySet, config, piaPassword, containerKey, ...rest } = draft
-    const body: VpnSettingsInput = {
-      ...rest,
-      ...(config !== undefined ? { config } : {}),
-      ...(piaPassword ? { piaPassword } : {}),
-      ...(containerKey ? { containerKey } : {}),
-    }
     try {
-      await save.run(body)
+      await save.run(bodyOf(draft))
     } catch (e) {
       const field = fieldOf(e)
       if (field) setErrors({ [field]: (e as Error).message })
@@ -199,7 +221,9 @@ function Form({
   return (
     <>
       {status && <StatusGroup status={status} />}
-      <ConnectionGroup v={draft} set={set} errors={errors} status={status} />
+      <ConnectionGroup v={draft} set={set} errors={errors} status={status}>
+        {draft.mode !== 'off' && <TestRow tested={tested} pending={test.pending} onTest={onTest} />}
+      </ConnectionGroup>
       {draft.mode !== 'off' && <BehaviourGroup v={draft} set={set} />}
       <SaveBar
         dirty={dirty}
@@ -282,10 +306,131 @@ const marks: Record<VpnCheck['result'], { icon: IconName; tone: ColorRole }> = {
   pending: { icon: 'clock', tone: 'text-3' },
 }
 
-function StatusGroup({ status: v }: { status: VpnStatus }) {
+/** The checks, one row each: the status's, and Test's. */
+function ChecksList({ checks, label }: { checks: VpnCheck[]; label: string }) {
   const t = useT(messages)
   const theme = useTheme()
   const regular = useRegularWindow()
+  return (
+    <View
+      role="list"
+      aria-label={label}
+      style={{
+        borderWidth: line.thin,
+        borderColor: theme.colors.line,
+        borderRadius: tokens.radius.md,
+        overflow: 'hidden',
+      }}
+    >
+      {checks.map((c, i) => {
+        const m = marks[c.result]
+        const detail = (
+          <Text
+            variant={regular ? undefined : 'caption'}
+            size={regular ? ui.size : undefined}
+            leading={regular ? ui.leading : undefined}
+            color="text-2"
+          >
+            <Text size={regular ? ui.size : undefined} color="text">
+              {c.title}
+            </Text>
+            {c.detail ? ` · ${c.detail}` : c.title.endsWith('.') ? '' : '.'}
+          </Text>
+        )
+        return (
+          <View
+            key={c.id}
+            role="listitem"
+            style={{
+              flexDirection: 'row',
+              gap: s['3'],
+              paddingHorizontal: s['3'],
+              paddingVertical: s['2'] + s['0.5'],
+              borderTopWidth: i ? line.thin : 0,
+              borderColor: theme.colors.line,
+            }}
+          >
+            <View style={{ paddingTop: s['0.5'] }}>
+              <Icon
+                name={m.icon}
+                size={tokens.icon.size.sm}
+                color={m.tone}
+                label={t(`mark.${c.result}`)}
+              />
+            </View>
+            {regular ? (
+              <>
+                <Text
+                  size={ui.size}
+                  leading={ui.leading}
+                  weight={500}
+                  style={{ width: admin.vpn.labelWidth, flexShrink: 0 }}
+                >
+                  {c.label}
+                </Text>
+                <View style={{ flex: 1, minWidth: 0 }}>{detail}</View>
+              </>
+            ) : (
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text size={ui.size} leading={ui.leading} weight={500}>
+                  {c.label}
+                </Text>
+                {detail}
+              </View>
+            )}
+          </View>
+        )
+      })}
+    </View>
+  )
+}
+
+/** Test (HT-82): the button, what it found in a line, and its checks. */
+function TestRow({
+  tested,
+  pending,
+  onTest,
+}: {
+  tested: Tested | null
+  pending: boolean
+  onTest: () => void
+}) {
+  const t = useT(messages)
+  const result = tested && 'checks' in tested ? tested : null
+  const summary = !tested
+    ? null
+    : !result
+      ? (tested as { message: string }).message
+      : !result.ok
+        ? t('test.failed')
+        : result.checks.some((c) => c.result === 'warn')
+          ? t('test.okWarnings')
+          : t('test.ok')
+  return (
+    <View style={{ gap: s['3'] }}>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: s['3'] }}>
+        <Button size="sm" icon="check" loading={pending} onPress={onTest}>
+          {t('test')}
+        </Button>
+        {summary ? (
+          <Note
+            role="status"
+            color={result?.ok ? 'text-2' : 'danger'}
+            style={result?.ok ? undefined : WRAP_ANYWHERE}
+          >
+            {summary}
+          </Note>
+        ) : (
+          <Note>{t('test.hint')}</Note>
+        )}
+      </View>
+      {result && <ChecksList checks={result.checks} label={t('test.results')} />}
+    </View>
+  )
+}
+
+function StatusGroup({ status: v }: { status: VpnStatus }) {
+  const t = useT(messages)
   const { now, relative } = useRelative()
   const check = useAction((c) => c.vpn.check())
   const reconnect = useAction((c) => c.vpn.reconnect())
@@ -313,78 +458,7 @@ function StatusGroup({ status: v }: { status: VpnStatus }) {
           {t('capabilityHelp')}
         </Text>
       )}
-      {v.checks.length > 0 && (
-        <View
-          role="list"
-          aria-label={t('checks')}
-          style={{
-            borderWidth: line.thin,
-            borderColor: theme.colors.line,
-            borderRadius: tokens.radius.md,
-            overflow: 'hidden',
-          }}
-        >
-          {v.checks.map((c, i) => {
-            const m = marks[c.result]
-            const detail = (
-              <Text
-                variant={regular ? undefined : 'caption'}
-                size={regular ? ui.size : undefined}
-                leading={regular ? ui.leading : undefined}
-                color="text-2"
-              >
-                <Text size={regular ? ui.size : undefined} color="text">
-                  {c.title}
-                </Text>
-                {c.detail ? ` · ${c.detail}` : c.title.endsWith('.') ? '' : '.'}
-              </Text>
-            )
-            return (
-              <View
-                key={c.id}
-                role="listitem"
-                style={{
-                  flexDirection: 'row',
-                  gap: s['3'],
-                  paddingHorizontal: s['3'],
-                  paddingVertical: s['2'] + s['0.5'],
-                  borderTopWidth: i ? line.thin : 0,
-                  borderColor: theme.colors.line,
-                }}
-              >
-                <View style={{ paddingTop: s['0.5'] }}>
-                  <Icon
-                    name={m.icon}
-                    size={tokens.icon.size.sm}
-                    color={m.tone}
-                    label={t(`mark.${c.result}`)}
-                  />
-                </View>
-                {regular ? (
-                  <>
-                    <Text
-                      size={ui.size}
-                      leading={ui.leading}
-                      weight={500}
-                      style={{ width: admin.vpn.labelWidth, flexShrink: 0 }}
-                    >
-                      {c.label}
-                    </Text>
-                    <View style={{ flex: 1, minWidth: 0 }}>{detail}</View>
-                  </>
-                ) : (
-                  <View style={{ flex: 1, minWidth: 0 }}>
-                    <Text size={ui.size} leading={ui.leading} weight={500}>
-                      {c.label}
-                    </Text>
-                    {detail}
-                  </View>
-                )}
-              </View>
-            )
-          })}
-        </View>
-      )}
+      {v.checks.length > 0 && <ChecksList checks={v.checks} label={t('checks')} />}
       {v.state !== 'off' && (
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: s['2'] }}>
           <Button
@@ -484,11 +558,14 @@ function ConnectionGroup({
   set,
   errors,
   status,
+  children,
 }: {
   v: Draft
   set: Set
   errors: Record<string, string>
   status: VpnStatus | undefined
+  /** Test, under the mode's fields. */
+  children?: ReactNode
 }) {
   const t = useT(messages)
   const theme = useTheme()
@@ -567,6 +644,7 @@ function ConnectionGroup({
       )}
       {v.mode === 'container' && <Container v={v} set={set} errors={errors} />}
       {v.mode === 'interface' && <InterfacePicker v={v} set={set} error={errors.interface} />}
+      {children}
     </Group>
   )
 }

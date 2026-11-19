@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The built-in VPN' mechanisms on their own: PIA's API against a fake PIA, NAT-PMP against a fake
+// The built-in VPN’s mechanisms on their own: PIA's API against a fake PIA, NAT-PMP against a fake
 // gateway on 127.0.0.1, the bound fetch against a local server, and WireGuard keys. No request
 // leaves the machine.
 import { afterEach, describe, expect, test } from 'bun:test'

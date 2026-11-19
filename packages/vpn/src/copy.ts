@@ -120,7 +120,7 @@ export const checkCopy = {
   notForwarding: ['Not using a forwarded port', 'Downloads still work; fewer peers can reach you.'],
   doesntForward: (name: string) =>
     [`${name} doesn’t forward ports`, 'Downloads still work; fewer peers can reach you.'] as const,
-  // The built-in VPN' rows, from vpn.md's table; the ones marked weren't in the prototype
+  // The built-in VPN’s rows, from vpn.md's table; the ones marked weren't in the prototype
   builtinTunnel: (provider: string, seconds: number) =>
     [`Connected to ${provider}`, `Last handshake ${seconds} seconds ago.`] as const,
   noHandshake: [
@@ -171,4 +171,110 @@ export const systemCopy = {
     'Indexer searches go through the VPN, and it’s down. They work again once it’s back.',
   forwarding: (provider: string) =>
     `VPN: ${provider} didn’t forward a port. Downloads still work; fewer peers can reach you.`,
+}
+
+/**
+ * Settings › VPN's Test (HT-82): one line for each thing it proves, with a plain reason when it
+ * doesn't. Not in the prototype: Test came after it, in the other settings pages' pattern.
+ */
+export const testCopy = {
+  tunnelUp: (provider: string) =>
+    [`The tunnel came up with ${provider}`, 'WireGuard shook hands with the server.'] as const,
+  tunnelLive: (provider: string) =>
+    [
+      `The tunnel to ${provider} is up`,
+      'highsea checked the connection it already has, without touching it.',
+    ] as const,
+  noHandshake: (provider: string) =>
+    [
+      `${provider} didn’t answer`,
+      'The tunnel was set up, but no handshake came back in 15 seconds. Check the file’s keys and Endpoint, and that the server still exists.',
+    ] as const,
+  containerUp: 'gluetun reports the tunnel running',
+  containerNotRunning: (state: string) =>
+    [`gluetun reports the tunnel ${state}`, 'Look at gluetun’s log for the reason.'] as const,
+  interfaceUp: (iface: string, address: string) =>
+    [`${iface} is up`, `Its address is ${address}.`] as const,
+  interfaceMissing: (iface: string) =>
+    [`${iface} has no IPv4 address`, 'Start the VPN that owns it, or choose another.'] as const,
+  notChecked: 'Not checked: the tunnel didn’t come up.',
+  exitPass: (ip: string, country: string | null) =>
+    [
+      country ? `Traffic leaves from ${ip} (${country})` : `Traffic leaves from ${ip}`,
+      'A different address from the one seen without the tunnel.',
+    ] as const,
+  exitOwn: (ip: string) =>
+    [
+      'The exit address is your own',
+      `Both answers came from ${ip}, so traffic isn’t going through the VPN.`,
+    ] as const,
+  exitUnknown: [
+    'Couldn’t check the exit address',
+    'The IP echo service didn’t answer through the tunnel.',
+  ],
+  exitOwnUnknown: (ip: string) =>
+    [
+      `Traffic leaves from ${ip}`,
+      'The IP echo service didn’t answer outside the tunnel, so highsea couldn’t compare.',
+    ] as const,
+  exitContainer: (ip: string, country: string | null) =>
+    [
+      country ? `gluetun’s exit is ${ip} (${country})` : `gluetun’s exit is ${ip}`,
+      'From inside the container, highsea can’t see your own address to compare.',
+    ] as const,
+  namesPass: (servers: readonly string[]) =>
+    [
+      'Names resolve through the tunnel',
+      `Asked ${servers.join(', ')} from the tunnel’s address.`,
+    ] as const,
+  namesNoDns: [
+    'The file has no DNS line',
+    'Names would be looked up outside the tunnel, so highsea would stop torrents. Add your provider’s DNS servers to [Interface].',
+  ],
+  namesFailed: (servers: readonly string[]) =>
+    [
+      'Names didn’t resolve through the tunnel',
+      `${servers.join(', ')} didn’t answer from the tunnel’s address.`,
+    ] as const,
+  namesContainer: [
+    'Names are looked up through the tunnel',
+    'Like everything else in the container.',
+  ],
+  namesSystem: [
+    'Names use your system’s resolver',
+    'The interface mode looks names up the way the rest of the machine does.',
+  ],
+  forwarded: (port: number) =>
+    [`${port} is forwarded`, 'Peers can reach you, which helps seeding.'] as const,
+  forwardFailed: (provider: string, reason: string) =>
+    [
+      `${provider} didn’t forward a port`,
+      `${reason} Downloads still work; fewer peers can reach you.`,
+    ] as const,
+  doesntForward: (provider: string) =>
+    [
+      `${provider} doesn’t forward ports`,
+      'Downloads work, but peers can’t connect in, so seeding reaches only peers that accept connections. Ratios on private trackers grow slowly.',
+    ] as const,
+  staticPort: (port: number) =>
+    [
+      `Port ${port} is set by hand`,
+      'highsea can’t ask your provider about it; it listens there and tells trackers.',
+    ] as const,
+  noStaticPort: [
+    'No forwarded port set',
+    'Enter the port your provider reserved for you, or leave it empty: downloads still work.',
+  ],
+  notForwarding: ['Not using a forwarded port', 'Turned off under Behaviour.'],
+  listening: (port: number) =>
+    [
+      `Torrents listen on port ${port}`,
+      'highsea can’t ask an interface’s VPN for a port; forward it yourself if your provider allows it.',
+    ] as const,
+  // refusals
+  modeOff: 'Choose a connection to test.',
+  busy: 'A test is already running.',
+  connecting: 'highsea is connecting with the saved settings. Test again in a moment.',
+  liveDiffers:
+    'The built-in VPN is connected with the saved settings. Save these instead: highsea checks them as it connects, and torrents stay stopped if a check fails.',
 }
