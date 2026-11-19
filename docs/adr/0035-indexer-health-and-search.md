@@ -38,3 +38,11 @@ Indexers fail in ordinary ways: they're slow, they rate-limit, their keys expire
 - Searches finish in at most about 30 seconds, whatever one indexer does.
 - Secrets can't leak through errors, logs or the API. A test checks each of those paths.
 - Backoff and failing follow Prowlarr's documented behaviour in spirit, but the schedule is highsea's own and is fixed in tests.
+
+## 2026-11-19: the catalog's word beside a server's health (HT-99)
+
+Part C of [the indexer catalog's upkeep](../plans/indexer-catalog-upkeep.md) ([ADR 0069](0069-keeping-the-indexer-catalog-fresh.md)):
+
+- **A definition the catalog marks broken keeps its backoff.** highsea searches it as before, under this schedule, so a site that recovers on its own is used again at once; the catalog's note ("Broken since {date}. {note}") is drawn under the indexer's own health in A9, so an owner can tell a known breakage from their own setup. Each server's health stays its own and is never sent anywhere.
+- **A retired definition** leaves the catalog, so its indexers are skipped as a gone definition's are; A9 keeps their rows with the catalog's Retired note in place of "definition gone".
+- **Report a problem** in A9's More menu opens a prefilled issue form the owner chooses to send, for every indexer from highsea's own catalog; it carries nothing from health (an error's text can hold an address).
