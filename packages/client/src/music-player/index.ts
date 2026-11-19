@@ -6,11 +6,14 @@
 // page, as Plex's, Emby's, Apple Music's and Spotify's players do, read with React's
 // useSyncExternalStore (react.dev/reference/react/useSyncExternalStore).
 //
-// There's no audio here: the position runs on a timer, as the prototype's did. An app with sound
-// drives the same store from its player's own clock instead (`clock: false`, then `setPosition`
-// and `ended`). React without the DOM.
+// With no audio (the mock, the prototype) the position runs on a timer, as the prototype's did. An
+// app with sound drives the same store from its player's own clock instead (`setClock(false)`,
+// then `setPosition` and `ended`): ./audio.ts does, against the server (HT-108). React without the
+// DOM.
 import { createT, defineMessages } from '@highsea-tv/i18n'
 import { useSyncExternalStore } from 'react'
+
+export * from './audio.ts'
 
 /** Previous restarts the song after this many seconds of it, as every music app's does. */
 export const RESTART_S = 3
@@ -83,7 +86,7 @@ export type MusicPlayerOptions = {
 export function createMusicPlayer<S extends PlayerSong = PlayerSong>(
   options: MusicPlayerOptions = {},
 ) {
-  const clock = options.clock ?? true
+  let clock = options.clock ?? true
   const tickMs = options.tickMs ?? TICK_MS
   const every = options.setInterval ?? ((fn, ms) => setInterval(fn, ms))
   const stopEvery = options.clearInterval ?? ((id) => clearInterval(id as never))
@@ -99,11 +102,15 @@ export function createMusicPlayer<S extends PlayerSong = PlayerSong>(
   function set(next: Partial<MusicPlayerState<S>>) {
     state = { ...state, ...next }
     for (const l of listeners) l()
-    if (!clock) return
-    // the clock runs only while a song plays
-    if (state.playing && state.queue.length > 0 && timer === undefined)
+    tick()
+  }
+
+  /** The clock runs only while a song plays, and only when no real player drives the store. */
+  function tick() {
+    const run = clock && state.playing && state.queue.length > 0
+    if (run && timer === undefined)
       timer = every(() => player.setPosition(state.position + tickMs / 1000), tickMs)
-    if ((!state.playing || state.queue.length === 0) && timer !== undefined) {
+    if (!run && timer !== undefined) {
       stopEvery(timer)
       timer = undefined
     }
@@ -137,6 +144,18 @@ export function createMusicPlayer<S extends PlayerSong = PlayerSong>(
       })
     },
     toggle: () => set({ playing: !state.playing }),
+    /** Plays or pauses, from the audio's own controls (the lock screen, a media key). */
+    setPlaying(playing: boolean) {
+      if (playing !== state.playing) set({ playing })
+    },
+    /**
+     * Whether the store's timer moves the position: on with no audio (the mock, the prototype),
+     * off while real audio drives it (`setPosition` and `ended` from its clock, ./audio.ts).
+     */
+    setClock(on: boolean) {
+      clock = on
+      tick()
+    },
     /** The position from the clock or a real player; past the song's end it ends. */
     setPosition(position: number) {
       const song = state.queue[state.index]

@@ -14,6 +14,7 @@
     "./intl": "./src/intl.ts",
     "./media": "./src/media.ts",
     "./nearby": "./src/nearby.ts",
+    "./now-playing": "./src/now-playing.ts",
     "./playback": {
       "react-native": "./src/playback-entry.ts",
       "default": "./src/playback.web.ts"
