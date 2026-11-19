@@ -97,6 +97,7 @@ bun run --cwd apps/client test              # its Jest tests (bun run test runs 
 bun run pin hono zod    # versions old enough to pin
 bun run licenses        # the license audit
 bun run catalog:build   # validate, bundle and sign the catalog (dev key unless HIGHSEA_CATALOG_KEY)
+bun run catalog:verify [id…]   # each public definition against its real site, by hand; writes catalog/indexers/verified.json (--dry: only the table)
 bun run record:tmdb     # in packages/metadata: refresh the TMDB recordings, with HIGHSEA_TMDB_READ_TOKEN from .env.local (never in CI)
 bun scripts/calibrate-sync.ts <library> --cache <dir>   # the sync's confidence on real films: reads them, never writes (never in CI)
 docker compose -f docker/compose.dev.yaml up --build   # the image from this checkout (compose.yaml runs the published one)

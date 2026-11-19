@@ -152,3 +152,40 @@ export function fakeHtml(origin: string): Definition {
     license: 'CC0-1.0',
   })
 }
+
+/**
+ * A public site's search page, the shape most public torrent sites have: no sign-in, a magnet in
+ * each row, sizes in GiB and dates in words. The engine reads its first page only.
+ */
+export function fakePublicHtml(origin: string): Definition {
+  return valid({
+    id: 'fake-public-html',
+    version: '1.0.0',
+    minEngineVersion: '1.0.0',
+    name: 'Fake public site',
+    description: 'The fake indexer’s public search page.',
+    kind: 'html',
+    privacy: 'public',
+    language: 'en',
+    links: [origin],
+    categories: [{ id: 'movies', standard: 2000 }],
+    search: {
+      request: { path: '/public/search', query: { q: '{{ .Query.Keywords }}' } },
+      rows: { selector: 'table.list tbody tr' },
+      fields: {
+        title: { selector: 'td.title a.name' },
+        details: { selector: 'td.title a.name', attribute: 'href' },
+        magnet: { selector: 'a[href^="magnet:"]', attribute: 'href' },
+        size: { selector: 'td.size', filters: [{ filter: 'size' }] },
+        seeders: { selector: 'td.se' },
+        leechers: { selector: 'td.le' },
+        published: { selector: 'td.age', filters: [{ filter: 'date', format: 'relative' }] },
+        category: { text: 'movies' },
+      },
+      supports: ['q'],
+    },
+    rateLimit: { requests: 10, seconds: 60, minGapMs: 1000 },
+    source,
+    license: 'CC0-1.0',
+  })
+}
