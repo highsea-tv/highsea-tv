@@ -19,9 +19,13 @@ import type { TileSource } from './tv/tiles.tsx'
 /** The TV's art's height: one 16:9 screen, in units. */
 export const BACKDROP_HEIGHT = tv.screenHeight
 
-export type TitleBackdropProps = { source: TileSource | undefined }
+export type TitleBackdropProps = {
+  source: TileSource | undefined
+  /** Touch's frame, width over height: 16:9 unless a hero asks for a taller one (Home's 4:5). */
+  aspect?: number
+}
 
-export function TitleBackdrop({ source }: TitleBackdropProps) {
+export function TitleBackdrop({ source, aspect = 16 / 9 }: TitleBackdropProps) {
   const theme = useTheme()
   const input = theme.formFactor.input
   const bg = theme.colors.bg
@@ -38,7 +42,7 @@ export function TitleBackdrop({ source }: TitleBackdropProps) {
     return (
       <View
         pointerEvents="none"
-        style={{ width: '100%', aspectRatio: 16 / 9, backgroundColor: theme.colors.s1 }}
+        style={{ width: '100%', aspectRatio: aspect, backgroundColor: theme.colors.s1 }}
       >
         {art}
         <View

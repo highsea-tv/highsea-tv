@@ -18,7 +18,7 @@ Designing in `u` makes every TV resolution render identically. The library's the
 
 ## Layout
 
-The home screen uses the **Hero + rows** layout, locked in [direction.md](../../brand/direction.md#layouts). Since the owner's change of 2026-10-30 its hero is the **featured card**: the featured section's first title as one large card under the head, then the rows ([client-home.md › TV](../../product/client-home.md#tv-locked)). The table gives the head and the card as built (`apps/client/src/home/tv.tsx`, `@highsea-tv/ui`'s `FeaturedCard` and `TvHead`).
+The home screen uses the **Hero + rows** layout, locked in [direction.md](../../brand/direction.md#layouts). Since the owner's change of 2026-11-18, when the featured section is Home's first section, its hero is a title's hero (`TvHero`, as a film's page has it): the section's first title's art across the first screen behind the head, the logo (its name when there's none), meta and tagline low on the left, then **Play** or **Resume**, which takes the focus, and **More info**; then the rows. Otherwise, as since the owner's change of 2026-10-30, it is the **featured card**: the featured section's first title as one large card under the head, then the rows ([client-home.md › TV](../../product/client-home.md#tv-locked)). The table gives the head and the card as built (`apps/client/src/home/tv.tsx`, `@highsea-tv/ui`'s `FeaturedCard` and `TvHead`).
 
 | Region | Position / size |
 | --- | --- |
@@ -119,7 +119,7 @@ When nothing qualifies and no guide applies, focus stays where it is. Sound and 
 - **Positioning:** the focused item is kept at a fixed fraction of the viewport (`keep`):
   - horizontal rows keep focus at 30% from the left;
   - the vertical row stack keeps the focused row at 32% from the top;
-  - on Home, the page moves as one (the library's `TvPage`): it rests at the top while focus is on the featured card, and on any row below it lifts so that row's title sits at the safe area's top. The head and the featured card scroll away with it; nothing stays pinned over the rows.
+  - on Home, the page moves as one (the library's `TvPage`): it rests at the top while focus is on the hero's actions or the featured card, and on any row below it lifts so that row's title sits at the safe area's top. The head and the hero or the featured card scroll away with it; nothing stays pinned over the rows.
 - **Clamping:** a track is clamped at its start and end, so it never scrolls past its content. Centered carousels are the exception, and the Hero + rows layout doesn't use them.
 - **Measurement:** positions are measured from item and track centers, so in-flight transforms and focus scaling don't cause drift.
 

@@ -12,7 +12,6 @@ import { filmsMessages } from '@highsea-tv/client/films'
 import { useT } from '@highsea-tv/i18n/react'
 import { useFormat } from '@highsea-tv/native/format'
 import { useMedia } from '@highsea-tv/native/media'
-import { web } from '@highsea-tv/tokens'
 import {
   Button,
   FEATURED_GAP,
@@ -21,6 +20,7 @@ import {
   Pager,
   Row,
   usePageGutter,
+  usePageMeasure,
   usePosterWidth,
 } from '@highsea-tv/ui'
 import { useEffect, useState } from 'react'
@@ -58,6 +58,7 @@ export function HomeCarousel({ items, label }: { items: HomeItem[]; label: strin
           title={m.title}
           kicker={films.kicker(m, at.index === 0, now)}
           poster={media(films.card(m).src)}
+          logo={media(m.art.logo)}
           width={width}
           onPress={() => openTitle(m)}
         />
@@ -75,6 +76,7 @@ export function HomeFeatured({
   /** The title the pager is on, for the bloom behind the card. */
   onShow?: (item: HomeItem) => void
 }) {
+  const measure = usePageMeasure()
   const t = useT(homeMessages)
   const f = useT(filmsMessages)
   const films = useFilmsText()
@@ -94,7 +96,7 @@ export function HomeFeatured({
       style={{
         paddingHorizontal: gutter,
         width: '100%',
-        maxWidth: web.maxWidth,
+        maxWidth: measure,
         alignSelf: 'center',
       }}
     >
@@ -104,6 +106,7 @@ export function HomeFeatured({
         meta={format.meta(item)}
         tagline={item.tagline ?? item.synopsis}
         backdrop={media(films.card(item, { wide: true }).src)}
+        logo={media(item.art.logo)}
         accessibilityLabel={t('featured')}
         onPress={() => openTitle(item)}
         actions={

@@ -20,9 +20,24 @@ Where the household starts: what the server's owner is featuring, where you left
 
 One screen, laid out by the form-factor rule in three compositions, since each prototype laid Home out its own way: a pointer's (Web and desktop below), touch's (Mobile) and the TV's. The sections come from the server in the owner's order: featured sections (hero, row, spotlight) with **Continue watching** right after the hero. Each person can reorder or hide the rows under the hero in Settings › Home screen ([client-settings.md](client-settings.md)); the order follows them to every device. The owner composes the sections and announcements in Curation ([curation.md](curation.md)).
 
+### The hero leading Home (HT-65, the owner, 2026-11-18)
+
+When the featured section is Home's first section with something in it (`leadHeroOf` in `@highsea-tv/client/films`), it's drawn as a film's page draws its hero (`detail/hero.tsx`, [client-detail.md](client-detail.md)) rather than as a card, on every app (`home/hero.tsx`):
+
+- **Full bleed,** at the top of Home: the art runs under the top bar (web and desktop), the status bar and Home's header (the phone) or the head (the TV), and fades into the page's colour at its foot.
+- **The top bar is clear** at the top and turns to glass once the page scrolls, as on a film's page (web and desktop). On the phone the header (the server switcher and the avatar) sits over the art's top on a fade of the page's colour, so it and the status bar read on any art, and scrolls away with the page. On the TV the head stays as it is, over the hero, and scrolls away with the page.
+- **Taller:** the first screen on a pointer and the TV, as a film's page; the featured card's 4:5 on the phone (a film's page is 16:9 there).
+- **The words where a film's page has them,** low on the left: the title's logo (its name when there's none), the meta line and the tagline (a pointer and the TV), **Play** or **Resume** and **More info**. On the phone the kicker ("New · 2010 · Fantasy") over the logo, and the two buttons side by side under it.
+- **Paging through the section's titles:** a pointer, the Pager at the foot's right (Previous, a dot for each title, Next; never by itself); the phone, a swipe from one title to the next, a screen wide each, with a dot for each title under them; the TV, the section's first title, as its card had it.
+- **The TV's focus:** Play takes the focus when Home appears, Back from a row returns to it, and a second Back leaves highsea. Down goes to the rows; Up from the first row comes back to Play.
+- **Read as** the section's title ("Featured on Harbor").
+- The owner's announcement card goes under the hero on the phone.
+
+Otherwise (the featured section further down, or none) Home is as it was: the featured card or carousel where it comes, as below. Today's server always puts the first hero section at Home's top (`homeFor`), so the hero leads Home whenever the owner has one with titles in it; the client's rule covers a server that doesn't.
+
 ### Web and desktop
 
-A **featured card** (the TV's hero brought to the desktop as a card, the owner, 2026-10-30; kept, with Play and paging added, by the owner's answer 9 at prototype-gaps stage 4, 2026-11-01; [ADR 0017](../adr/0017-web-home-full-bleed-hero.md)'s dated section):
+When the hero doesn't lead Home, a **featured card** (the TV's hero brought to the desktop as a card, the owner, 2026-10-30; kept, with Play and paging added, by the owner's answer 9 at prototype-gaps stage 4, 2026-11-01; [ADR 0017](../adr/0017-web-home-full-bleed-hero.md)'s dated section):
 
 - one large card inside the page's gutters, up to 1680px, `clamp(18rem, min(62svh, 42vw), 44rem)` tall with 20px corners, its backdrop under a dark gradient from the left and the bottom, and a bloom in its most vibrant colour behind the top bar and the card that fades once the card has mostly scrolled away;
 - low on the left: the title's logo (its name when there's none), meta (year, runtime, genre, quality tags), the tagline or two lines of synopsis, then **Play** or **Resume** (primary) and **More info**. A click anywhere else on the card opens the title too;
@@ -46,13 +61,13 @@ Home is for every kind, not just films, on every app:
 - Each is a row in Settings › Home screen, to move or hide.
 - On the phone: the stills are 62% wide, and posters and music 30%. On the TV: wide tiles, poster tiles and square or round tiles.
 
-### Mobile (locked)
+### Mobile (locked; the leading hero changed by the owner, 2026-11-18)
 
-Header (server switcher, avatar) · the announcement card · the featured carousel (78% wide 4:5 cards, the next peeking, kicker "New · 2010 · Fantasy" and the title; never auto-advancing) · Continue watching (62% wide stills) · poster rows (30% wide, three and a peek; spotlights become rows) · the tab bar (Home, Search, Library, Offline, You; translucent, the active tab in `accent-text`).
+When the hero doesn't lead Home: header (server switcher, avatar) · the announcement card · the featured carousel (78% wide 4:5 cards, the next peeking, kicker "New · 2010 · Fantasy" and the title; never auto-advancing) · Continue watching (62% wide stills) · poster rows (30% wide, three and a peek; spotlights become rows) · the tab bar (Home, Search, Library, Offline, You; translucent, the active tab in `accent-text`).
 
-### TV (locked)
+### TV (locked; the leading hero changed by the owner, 2026-11-18)
 
-Under the head (the server at the left; Search, Home, Collections and Movies centred, with Shows and Music where the server has them; Alerts and the account at the right): the **featured card**, the featured section's first title as one large card across the page, 1u above and below it, with its backdrop, title, meta and tagline or synopsis, and a bloom behind it while the page rests at its top. OK anywhere on the card opens the film; it has no Play or Details of its own (as the prototype has it, apps-catch-up.md's call 3). Then the rows in the server's order: Continue watching as wide cards 22u wide, which resume, then the owner's rows, each poster with its title and year under it (wide cards: the time left).
+When the hero doesn't lead Home, under the head (the server at the left; Search, Home, Collections and Movies centred, with Shows and Music where the server has them; Alerts and the account at the right): the **featured card**, the featured section's first title as one large card across the page, 1u above and below it, with its backdrop, title, meta and tagline or synopsis, and a bloom behind it while the page rests at its top. OK anywhere on the card opens the film; it has no Play or Details of its own (as the prototype has it, apps-catch-up.md's call 3). Then the rows in the server's order: Continue watching as wide cards 22u wide, which resume, then the owner's rows, each poster with its title and year under it (wide cards: the time left).
 
 - **The page follows focus.** It rests at its top while focus is on the featured card; Down to a row lifts the page so that row's title sits near the safe area's top, and the head scrolls away with the page, as the prototype's does. Up to the featured card brings the top back.
 - **Rows scroll sideways** by transform, keeping focus 30% in (tv.md#scrolling); a focused poster lifts without being clipped.
@@ -74,7 +89,7 @@ Audience rules apply per client type, so an owner can address the TVs only, or l
 
 ## States
 
-- **Loading:** each form factor draws Home as it will be (`home/skeleton.tsx`): a pointer, the featured card and a row of poster skeletons; touch, two carousel cards and a row; the TV, the featured card and a row of skeletons (B1 of the one client platform converged the TV onto the skeletons; it was a spinner).
+- **Loading:** each form factor draws Home as it will be (`home/skeleton.tsx`): a pointer, the featured card and a row of poster skeletons; touch, two carousel cards and a row; the TV, the featured card and a row of skeletons (B1 of the one client platform converged the TV onto the skeletons; it was a spinner). Until Home answers, the client can't know whether the hero leads it, so the skeletons stay the card's (HT-65).
 - **Empty:** "Nothing to watch yet" · When the server's owner adds films, shows or music, they show up here. (TV adds **Library**.)
 - **Error:** "Couldn't load the home screen" with the server's message and **Try again**.
 - **Live:** Continue watching follows playback; a new announcement arrives over SSE.
@@ -82,7 +97,7 @@ Audience rules apply per client type, so an owner can address the TVs only, or l
 
 ## Interactions
 
-- **Play** on the featured card (a pointer) plays what it shows; **Resume** when there's progress. On the phone a carousel card, and on the TV the featured card, opens the title.
+- **Play** on the hero or the featured card (a pointer) plays what it shows; **Resume** when there's progress; **More info** opens the title. On the phone a carousel card, and on the TV the featured card, opens the title.
 - **Continue watching**, Next up and New episodes open the player directly; everything else opens the item's page (C4).
 - **Continue watching's menu (stage 2):** **Go to the show** (at the episode, its season chosen) or **Go to the film**, **Mark as watched**, and **Remove from Continue watching**, which forgets the place without marking it watched; a toast says which. A show taken off comes back when an episode of it is played again.
   - **Web and desktop:** ⋯ over the card's art, shown on hover and focus, opening a menu.
@@ -90,7 +105,7 @@ Audience rules apply per client type, so an owner can address the TVs only, or l
   - **TV:** OK held for 0.6 s opens the menu over the page, as the Apple TV app's does; a short OK plays. Back closes it, and focus goes back to the card, or to the next one when the card has gone.
 - **Pointer:** hover lifts posters to 1.02 and shows Play over the art; rows scroll by wheel and trackpad, with paging arrows on hover.
 - **Keyboard (web):** Tab moves between regions; arrows move inside a row.
-- **D-pad (TV):** the platform's focus engine, and the spatial model in a browser ([tv.md](../design-language/platforms/tv.md#spatial-focus-model)); rows remember their last item; at the home root, Back returns focus to the featured card (or the first row's first item), and a second Back leaves highsea.
+- **D-pad (TV):** the platform's focus engine, and the spatial model in a browser ([tv.md](../design-language/platforms/tv.md#spatial-focus-model)); rows remember their last item; at the home root, Back returns focus to the hero's Play, the featured card when the hero doesn't lead Home (or the first row's first item), and a second Back leaves highsea.
 - **Touch (mobile):** rows and the carousel scroll natively with snapping; press feedback is a 0.97 scale.
 - **Pull to refresh (mobile; Phase 4's answer 9, prototyped at 4.0b):** from the top of Home, pulling down moves the page at half the finger's distance and shows a turning arrow with "Pull to refresh"; past 72 px it says "Let go to refresh", and letting go shows "Refreshing" with a spinner while Home asks the server again (the sections and announcements). Let go sooner and it settles back. Screen readers hear the status. In the prototype a mouse drag does the same.
 - **Sound:** TV only by default: `navigate`, `select`, `back`.
@@ -121,6 +136,7 @@ Audience rules apply per client type, so an owner can address the TVs only, or l
 ## Decisions
 
 - **A full-bleed hero on the web** ([ADR 0017](../adr/0017-web-home-full-bleed-hero.md)): two options were built at checkpoint 3, this one and a contained card with the other featured titles beside it. The owner chose the full-bleed hero, which carries the TV's hero to the desktop. On 2026-10-30 the owner brought the TV's card to the web in its place, and at prototype-gaps stage 4 (answer 9, 2026-11-01) kept it, with Play and paging added.
+- **The hero leads Home as a film's page's hero** (the owner, 2026-11-18, HT-65): full bleed, the bar clear until the page scrolls, taller, faded into the page, and only when it's Home's first section, so a Home the owner composed otherwise looks as it did. It reuses the film page's hero (`detail/hero.tsx`), so the two can't drift.
 - **Continue watching goes after the hero,** whatever the owner's order: it's the most personal row and the most used.
 - **The hero's titles were also the first TV row,** so every featured title could be reached and bound by focus, and **only that row bound the hero** (the owner's call at the checkpoint 3 review). Since the owner's change of 2026-10-30 the TV draws the featured section as one card instead, as the prototype does, and nothing rebinds it.
 - **Nothing is pinned on TV.** The head is the first thing in the page and scrolls away with it, so nothing passes over a poster; Up brings focus, and the page, back to it. (The navigation was pinned on its own pill at the checkpoint 3 review; the prototype's head, which the client draws, scrolls with the page.)

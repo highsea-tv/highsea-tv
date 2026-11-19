@@ -187,6 +187,13 @@ export const art = (a: { poster: string; backdrop: string; logo?: string }) => (
   logo: a.logo || null,
 })
 
+/** A collection's art from its first film's: the poster and backdrop, never the film's logo. */
+const collectionArt = (a: { poster: string; backdrop: string }) => ({
+  poster: a.poster || null,
+  backdrop: a.backdrop || null,
+  logo: null,
+})
+
 /** A title the household can watch: some version has a file (the server's HAS_FILE). */
 const playableOf = (m: MediaItem) => m.type === 'movie' && m.versions.some((v) => v.fileId)
 
@@ -633,7 +640,7 @@ export function filmsOf({ srv, api, userId }: FilmsCtx) {
       id: String(tmdbNumber(c.slug)),
       name: c.name,
       overview: c.overview,
-      art: art(first.art),
+      art: collectionArt(first.art),
       count: c.ms.length,
       years: yearsOf(c.ms.map((m) => m.year)),
       smart: null,
@@ -852,7 +859,7 @@ export function filmsOf({ srv, api, userId }: FilmsCtx) {
       id: tmdbNumber(c.slug),
       name: c.name,
       overview: c.overview,
-      art: art((c.ms[0] as MediaItem).art),
+      art: collectionArt((c.ms[0] as MediaItem).art),
       count: c.ms.length,
       years: yearsOf(c.ms.map((m) => m.year)),
     }))

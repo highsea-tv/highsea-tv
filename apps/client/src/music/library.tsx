@@ -45,7 +45,6 @@ import {
 } from '@highsea-tv/client/music'
 import { useT } from '@highsea-tv/i18n/react'
 import { useMedia } from '@highsea-tv/native/media'
-import { web } from '@highsea-tv/tokens'
 import {
   Button,
   Chip,
@@ -63,6 +62,7 @@ import {
   useControl,
   useFormFactor,
   usePageGutter,
+  usePageMeasure,
   useTheme,
 } from '@highsea-tv/ui'
 import {
@@ -719,6 +719,7 @@ function TouchPlaylistRow({ playlist: p }: { playlist: ClientPlaylist }) {
 // ---------------------------------------------------------------- a pointer
 
 export function PointerMusic({ view }: { view: Which }) {
+  const measure = usePageMeasure()
   const t = useT(messages)
   const text = useMusicText()
   const theme = useTheme()
@@ -734,7 +735,7 @@ export function PointerMusic({ view }: { view: Which }) {
   const box = useRef<ViewHandle>(null)
   const [gridTop, setGridTop] = useState(0)
   const [indexWidth, setIndexWidth] = useState(0)
-  const inset = Math.max(0, (frame.width - web.maxWidth) / 2) + gutter
+  const inset = Math.max(0, (frame.width - (measure ?? frame.width)) / 2) + gutter
   const stuck = space['6']
   const indexed = widthClass !== 'compact' && indexedBy(view, s, v)
   const lead = useSpringTo(indexed ? indexWidth + space['4'] : 0)

@@ -64,6 +64,18 @@ async function started() {
 
 const movie = { owner: 'movie' as const, id: SINTEL }
 
+describe('the automatic logo in lists (HT-65)', () => {
+  test('a library title carries it in the library’s list, as in its own view', async () => {
+    const { memberApi } = await started()
+    const own = (await memberApi.library.item({ params: { type: 'movie', id: SINTEL } })).item
+    const listed = (await memberApi.library.list({ query: { type: 'movie' } })).items.find(
+      (m) => m.id === own.id,
+    )
+    expect(own.art.logo).toMatch(/^\/api\/v1\/images\/movie\/45745\/logo\//)
+    expect(listed?.art.logo).toBe(own.art.logo)
+  })
+})
+
 describe('the artwork routes', () => {
   test('the view: each kind’s current image, TMDB’s others, the current one marked', async () => {
     const { adminApi } = await started()

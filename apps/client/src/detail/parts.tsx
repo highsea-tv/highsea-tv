@@ -51,27 +51,6 @@ const SHARE = formFactorLayouts['compact-touch'].itemShare
 export const filmPath = (id: number | string) => `/movies/${id}` as Href
 export const personPath = (id: number | string) => `/people/${id}` as Href
 
-/** A pointer's hero, never shorter than 32rem; and from 768 the share of the window's height
- * it fills, at most a 16:9 frame of its width (web/detail.tsx's heroHeight). */
-const HERO = {
-  min: space['16'] * 8,
-  share: 0.82,
-  frame: tokens.aspect.still[1] / tokens.aspect.still[0],
-}
-
-/**
- * A film's hero with a pointer, loaded or loading (web/detail.tsx's heroHeight): from 768 it
- * runs under the top bar (`overlay`, for useChromeOverlay) and fills the first screen less the next
- * row's title peeking under it, min(82svh, 56.25vw); below it the page starts under the bar.
- * Never under 32rem.
- */
-export function useHero() {
-  const window = useWindowDimensions()
-  const overlay = window.width >= REGULAR_WIDTH
-  const fill = Math.min(window.height * HERO.share, window.width * HERO.frame)
-  return { overlay, minHeight: overlay ? Math.max(HERO.min, fill) : HERO.min }
-}
-
 /** The id in the address as the API takes it, or null for one that can't be one. */
 export const idOf = (raw: string | string[] | undefined) => {
   const text = Array.isArray(raw) ? raw[0] : raw

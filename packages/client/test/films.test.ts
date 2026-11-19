@@ -8,6 +8,7 @@ import {
   heroOf,
   isNew,
   isShownKind,
+  leadHeroOf,
   lettersOf,
   NEW_FOR_MS,
   OFF,
@@ -36,6 +37,18 @@ describe('Home', () => {
   test('the hero is the first with something in it, and empty rows go', () => {
     expect(heroOf(rows)?.id).toBe('fs-hero')
     expect(rowsOf(rows).map((r) => r.id)).toEqual(['continue', 'genre:18'])
+  })
+
+  test('the hero leads Home only when it is the first section with something in it', () => {
+    const hero = { id: 'fs-hero', title: 'Featured', layout: 'hero', items: [1] }
+    const empty = { id: 'fs-empty', title: 'Featured', layout: 'hero', items: [] }
+    const row = { id: 'continue', title: null, layout: 'continue', items: [2] }
+    const bare = { id: 'recent', title: null, layout: 'row', items: [] }
+    expect(leadHeroOf([hero, row])?.id).toBe('fs-hero')
+    expect(leadHeroOf([bare, hero, row])?.id).toBe('fs-hero')
+    expect(leadHeroOf([row, hero])).toBeUndefined()
+    expect(leadHeroOf([empty, row, hero])).toBeUndefined()
+    expect(leadHeroOf([])).toBeUndefined()
   })
 
   test('built-in rows are named by the app', () => {

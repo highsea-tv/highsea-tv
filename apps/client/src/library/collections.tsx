@@ -11,7 +11,6 @@ import type { LibraryCollection } from '@highsea-tv/api-contract'
 import { useCollections } from '@highsea-tv/client/data'
 import { useT } from '@highsea-tv/i18n/react'
 import { useFormat } from '@highsea-tv/native/format'
-import { web } from '@highsea-tv/tokens'
 import {
   Button,
   Chip,
@@ -20,6 +19,7 @@ import {
   tokens,
   useControl,
   usePageGutter,
+  usePageMeasure,
   useTheme,
 } from '@highsea-tv/ui'
 import { Kept, TV_HEAD_HEIGHT, TvGrid, TvMessage, TvPage, type ViewHandle } from '@highsea-tv/ui/tv'
@@ -96,6 +96,7 @@ export function TouchCollections({
 }
 
 export function PointerCollections() {
+  const measure = usePageMeasure()
   const t = useT(messages)
   const f = useFormat()
   const theme = useTheme()
@@ -103,7 +104,7 @@ export function PointerCollections() {
   const list = useCollections(useDeviceClient())
   const [across, setAcross] = useState(0)
   // the content is centred at the web's greatest width
-  const inset = Math.max(0, (across - web.maxWidth) / 2) + gutter
+  const inset = Math.max(0, (across - (measure ?? across)) / 2) + gutter
   return (
     <View
       style={{ flex: 1, backgroundColor: theme.colors.bg }}

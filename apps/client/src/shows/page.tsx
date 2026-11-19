@@ -23,7 +23,7 @@ import { peopleOf } from '@highsea-tv/client/library'
 import { episodePlayPath, seasonOf } from '@highsea-tv/client/shows'
 import { useT } from '@highsea-tv/i18n/react'
 import { useMedia } from '@highsea-tv/native/media'
-import { REGULAR_WIDTH, web } from '@highsea-tv/tokens'
+import { REGULAR_WIDTH } from '@highsea-tv/tokens'
 import {
   Badge,
   Button,
@@ -41,11 +41,12 @@ import {
   ScrollView,
   Tabs,
   Text,
-  TitleBackdrop,
+  TitleLogo,
   tokens,
   useControl,
   useFormFactor,
   usePageGutter,
+  usePageMeasure,
   useTheme,
 } from '@highsea-tv/ui'
 import {
@@ -62,7 +63,7 @@ import { type Href, router, useLocalSearchParams } from 'expo-router'
 import { useCallback, useState } from 'react'
 import { ScrollView as Scroller, StyleSheet, useWindowDimensions, View } from 'react-native'
 import { OverlayBack } from '../detail/back.tsx'
-import { FILM_TV } from '../detail/layout.ts'
+import { PointerHero, TouchHero, TvHero, usePointerHero } from '../detail/hero.tsx'
 import { detailMessages } from '../detail/messages.ts'
 import {
   CreditLines,
@@ -71,7 +72,6 @@ import {
   MetaLine,
   Middle,
   personPath,
-  useHero,
   useRowWidths,
   useTexts,
 } from '../detail/parts.tsx'
@@ -434,19 +434,15 @@ function TouchShow(props: ShowProps) {
   const words = useT(detailMessages)
   const theme = useTheme()
   const media = useMedia()
-  const gutter = usePageGutter()
   const [trailer, setTrailer] = useState<Trailer | null>(null)
   const { s, next } = p
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.bg }}>
       <OverlayBack />
       <ScrollView contentContainerStyle={{ paddingBottom: space['6'], gap: space['5'] }}>
-        <TitleBackdrop source={media(s.art.backdrop)} />
-        <View style={{ marginTop: -space['16'], paddingHorizontal: gutter, gap: space['3'] }}>
-          {/* the title, where the prototype has its logo: no server has logos yet */}
-          <Text variant="largeTitle" accessibilityRole="header">
-            {s.title}
-          </Text>
+        <TouchHero source={media(s.art.backdrop)}>
+          {/* the title's logo, its name when there's none */}
+          <TitleLogo title={s.title} logo={media(s.art.logo)} variant="largeTitle" />
           <MetaLine
             lead={p.lead}
             certification={s.certification}
@@ -502,7 +498,7 @@ function TouchShow(props: ShowProps) {
               onPress={p.markShow}
             />
           </View>
-        </View>
+        </TouchHero>
         <Episodes p={p} refresh={refresh} />
         <Below p={p} d={d} />
       </ScrollView>
@@ -514,6 +510,7 @@ function TouchShow(props: ShowProps) {
 // ---------------------------------------------------------------- a pointer
 
 function PointerShow(props: ShowProps) {
+  const measure = usePageMeasure()
   const { d, refresh } = props
   const p = useShowPage(props)
   const t = p.t
@@ -521,12 +518,9 @@ function PointerShow(props: ShowProps) {
   const theme = useTheme()
   const c = useControl()
   const media = useMedia()
-  const gutter = usePageGutter()
-  const hero = useHero()
+  const { hero, chrome } = usePointerHero()
   const [trailer, setTrailer] = useState<Trailer | null>(null)
   const { s, next } = p
-  // from 768 the art runs under the top bar, which turns to glass as the page scrolls
-  const chrome = useChromeOverlay(hero.overlay)
   return (
     <ScrollView
       onScroll={chrome.onScroll}
@@ -534,81 +528,64 @@ function PointerShow(props: ShowProps) {
       style={{ flex: 1, backgroundColor: theme.colors.bg }}
       contentContainerStyle={{ paddingBottom: space['16'], gap: space['10'] }}
     >
-      <View style={{ minHeight: hero.minHeight, justifyContent: 'flex-end', overflow: 'hidden' }}>
-        <TitleBackdrop source={media(s.art.backdrop)} />
-        <View
-          style={{
-            width: '100%',
-            maxWidth: web.maxWidth,
-            alignSelf: 'center',
-            gap: space['4'],
-            paddingTop: chrome.pad + space['8'],
-            paddingBottom: space['10'],
-            paddingHorizontal: gutter,
-          }}
-        >
-          <View style={{ maxWidth: space['16'] * 10, gap: space['3'] }}>
-            {/* the title, where the prototype has its logo: no server has logos yet */}
-            <Text variant="display" accessibilityRole="header">
-              {s.title}
+      <PointerHero source={media(s.art.backdrop)} hero={hero}>
+        <View style={{ maxWidth: space['16'] * 10, gap: space['3'] }}>
+          {/* the title's logo, its name when there's none */}
+          <TitleLogo title={s.title} logo={media(s.art.logo)} variant="display" />
+          <MetaLine
+            lead={p.lead}
+            certification={s.certification}
+            genres={s.genres}
+            rating={s.rating}
+            watched={s.watched}
+          />
+          {s.synopsis ? (
+            <Text variant="body" numberOfLines={3}>
+              {s.synopsis}
             </Text>
-            <MetaLine
-              lead={p.lead}
-              certification={s.certification}
-              genres={s.genres}
-              rating={s.rating}
-              watched={s.watched}
-            />
-            {s.synopsis ? (
-              <Text variant="body" numberOfLines={3}>
-                {s.synopsis}
-              </Text>
+          ) : null}
+          <CreditLines cast={d.cast} makers={d.creators} madeBy={t('createdBy')} />
+        </View>
+        <View style={{ gap: space['2'] + space['0.5'] }}>
+          <NextLine p={p} />
+          <View
+            style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: c.gap }}
+          >
+            {next ? (
+              <View style={{ minWidth: space['16'] * 2 }}>
+                <Button
+                  variant="primary"
+                  icon="play"
+                  block
+                  accessibilityLabel={p.playNamed ?? undefined}
+                  onPress={p.play}
+                >
+                  {p.text.playLabel(next)}
+                </Button>
+              </View>
             ) : null}
-            <CreditLines cast={d.cast} makers={d.creators} madeBy={t('createdBy')} />
-          </View>
-          <View style={{ gap: space['2'] + space['0.5'] }}>
-            <NextLine p={p} />
-            <View
-              style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: c.gap }}
-            >
-              {next ? (
-                <View style={{ minWidth: space['16'] * 2 }}>
-                  <Button
-                    variant="primary"
-                    icon="play"
-                    block
-                    accessibilityLabel={p.playNamed ?? undefined}
-                    onPress={p.play}
-                  >
-                    {p.text.playLabel(next)}
-                  </Button>
-                </View>
-              ) : null}
-              {next?.kind === 'resume' ? (
-                <NamedAction icon="replay" label={words('playFromStart')} onPress={p.fromStart} />
-              ) : null}
-              {p.preview ? (
-                <NamedAction
-                  icon="trailer"
-                  label={words('trailer')}
-                  hasPopup="dialog"
-                  accessibilityState={{ expanded: trailer !== null }}
-                  onPress={() => setTrailer(p.preview ?? null)}
-                />
-              ) : null}
+            {next?.kind === 'resume' ? (
+              <NamedAction icon="replay" label={words('playFromStart')} onPress={p.fromStart} />
+            ) : null}
+            {p.preview ? (
               <NamedAction
-                icon="check"
-                label={s.watched ? t('unmarkShow') : t('markShow')}
-                pressed={s.watched}
-                onPress={p.markShow}
+                icon="trailer"
+                label={words('trailer')}
+                hasPopup="dialog"
+                accessibilityState={{ expanded: trailer !== null }}
+                onPress={() => setTrailer(p.preview ?? null)}
               />
-            </View>
+            ) : null}
+            <NamedAction
+              icon="check"
+              label={s.watched ? t('unmarkShow') : t('markShow')}
+              pressed={s.watched}
+              onPress={p.markShow}
+            />
           </View>
         </View>
-      </View>
-      <View
-        style={{ width: '100%', maxWidth: web.maxWidth, alignSelf: 'center', gap: space['10'] }}
-      >
+      </PointerHero>
+      <View style={{ width: '100%', maxWidth: measure, alignSelf: 'center', gap: space['10'] }}>
         <Episodes p={p} refresh={refresh} />
         <Below p={p} d={d} />
       </View>
@@ -653,21 +630,14 @@ function TvShow(props: ShowProps) {
         scrollEventThrottle={chrome.scrollEventThrottle}
       >
         <Kept rest>
-          <TitleBackdrop source={media(s.art.backdrop)} />
-          <View
-            style={{
-              height: (FILM_TV.top + FILM_TV.words) * u,
-              paddingTop: FILM_TV.top * u,
-              maxWidth: '50%',
-              justifyContent: 'flex-end',
-              gap: tv.poster.gap * u,
-              paddingHorizontal: tv.safe.x * u,
-            }}
-          >
-            {/* the title, where the prototype has its logo: no server has logos yet */}
-            <Text variant="heroTitle" numberOfLines={2} accessibilityRole="header">
-              {s.title}
-            </Text>
+          <TvHero source={media(s.art.backdrop)}>
+            {/* the title's logo, its name when there's none */}
+            <TitleLogo
+              title={s.title}
+              logo={media(s.art.logo)}
+              variant="heroTitle"
+              numberOfLines={2}
+            />
             <MetaLine
               lead={p.lead}
               certification={s.certification}
@@ -725,7 +695,7 @@ function TvShow(props: ShowProps) {
                 />
               </FocusGuide>
             </View>
-          </View>
+          </TvHero>
         </Kept>
         <View
           style={{

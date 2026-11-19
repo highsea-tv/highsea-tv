@@ -48,6 +48,7 @@ import {
   Press,
   RadioMark,
   ScrollView,
+  SegmentedControl,
   Select,
   SortableList,
   Switch,
@@ -55,6 +56,7 @@ import {
   tokens,
   useControl,
   useFormFactor,
+  usePageMeasure,
   useTheme,
 } from '@highsea-tv/ui'
 import { Focusable, focusOn, TV_HEAD_HEIGHT, type ViewHandle } from '@highsea-tv/ui/tv'
@@ -230,10 +232,17 @@ function PointerSettings({ chosen }: { chosen: SettingsSectionId }) {
   const m = useControl()
   const sections = useSections()
   const section = sections.find((s) => s.id === chosen) ?? sections[0]
+  const measure = usePageMeasure()
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: theme.colors.bg }}
-      contentContainerStyle={{ padding: space['8'], gap: space['6'] }}
+      contentContainerStyle={{
+        padding: space['8'],
+        gap: space['6'],
+        width: '100%',
+        maxWidth: measure,
+        alignSelf: 'center',
+      }}
     >
       <Text variant="heading" accessibilityRole="header">
         {t('settings')}
@@ -557,7 +566,8 @@ function Swatch({
 function ThemeSection() {
   const t = useT(settingsPageMessages)
   const s = useT(settingsMessages)
-  const tv = useFormFactor().input === 'tv'
+  const input = useFormFactor().input
+  const tv = input === 'tv'
   const prefs = useDevicePrefs()
   const appearance = useAppearance()
   const name = useServerName()
@@ -586,6 +596,7 @@ function ThemeSection() {
     })),
   ]
   const everywhere = p.everywhere !== null
+  const pointer = input === 'pointer'
   if (tv)
     return (
       <TvTheme
@@ -630,6 +641,22 @@ function ThemeSection() {
         disabled={prefs.pending}
         onCheckedChange={(on) => void prefs.setEverywhere(on).catch(failed)}
       />
+      {/* the page's width, only where there's a window to fill: the web and the desktop app */}
+      {pointer ? (
+        <Field label={t('layout')} hint={t('layoutHint')}>
+          <View style={{ flexDirection: 'row' }}>
+            <SegmentedControl
+              aria-label={t('layout')}
+              value={p.layout}
+              onValueChange={(layout) => void prefs.setLayout(layout).catch(failed)}
+              options={[
+                { value: 'full', label: t('layoutFull') },
+                { value: 'contained', label: t('layoutContained') },
+              ]}
+            />
+          </View>
+        </Field>
+      ) : null}
     </View>
   )
 }

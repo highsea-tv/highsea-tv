@@ -6,13 +6,15 @@ Mobile clients run on iOS and Android. The phone is one of `apps/client`'s form 
 
 This layout is locked in [direction.md](../../brand/direction.md#layouts). From top to bottom:
 
+When the featured section is Home's first section (the owner's change of 2026-11-18), it leads Home as a title's hero instead of a carousel: its art full bleed at 4:5 under the status bar and the header, which sit on a fade of `bg` so they read on any art, faded into the page at its foot; under the art the kicker, the title's logo (its name when there's none), **Play** or **Resume** and **More info** side by side; a swipe goes to the section's next title, a screen wide, with a dot for each under them. The announcement card follows it. Otherwise:
+
 1. **Header:**
    - on the left, the server switcher: the server's mark and name, with a chevron that opens the multi-server switcher;
    - on the right, the user's avatar, which leads to profile and settings.
 2. **Announcement card:** the owner's current announcement on `s1`, with a megaphone in an `accent-soft` circle. Dismissible unless the owner requires acknowledgement.
 3. **Featured carousel:**
    - large cards from the server's featured section, with the next card peeking in from the right;
-   - each card shows the title, plus a kicker line such as "New · 2023 · Comedy";
+   - each card shows the title's logo (its name when there's none), plus a kicker line such as "New · 2023 · Comedy";
    - the carousel never auto-advances (see [motion](../motion.md#choreography)).
 4. **Poster rows:** row titles (for example "Recently added", or a curated "Because you watched…"), then horizontally scrolling 2:3 posters.
 5. **Tab bar:**

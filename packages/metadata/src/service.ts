@@ -4,7 +4,7 @@
 // still read and anything new throws `no-tmdb-key`.
 import { AppError } from '@highsea-tv/core'
 import { readSetting, schema, writeSetting } from '@highsea-tv/db'
-import { and, asc, eq, inArray, isNotNull, isNull, lt, notInArray } from 'drizzle-orm'
+import { and, asc, eq, inArray, isNotNull, isNull, lt, notInArray, sql } from 'drizzle-orm'
 import {
   ARTWORK_KINDS_OF,
   type ArtworkChoice,
@@ -186,6 +186,13 @@ export function createMetadataCore(deps: MetadataDeps) {
     }
   }
 
+  /**
+   * Whether a cached movie came with `images` (asked for since HT-66), which its automatic logo is
+   * picked from. A movie cached before has no logo until TMDB is asked again: reading one fetches it
+   * again, and the sweep queues every such library movie at once.
+   */
+  const hasImages = (data: unknown) => (data as TmdbMovie).images !== undefined
+
   const rowOf = (kind: CacheKind, id: number) =>
     kind === 'movie' ? cache.movie(id) : kind === 'person' ? cache.person(id) : cache.collection(id)
 
@@ -205,6 +212,7 @@ export function createMetadataCore(deps: MetadataDeps) {
     const fresh =
       row &&
       row.language === settings.language() &&
+      (kind !== 'movie' || row.goneAt !== null || hasImages(row.data)) &&
       (row.goneAt !== null || clock.now() - row.fetchedAt < STALE_ON_READ_MS)
     if (row && fresh) return row
     const credential = settings.credential()
@@ -598,6 +606,24 @@ export function createMetadataCore(deps: MetadataDeps) {
       .all()
     let queued = 0
     for (const r of missing) {
+      enqueueRefresh('movie', r.id)
+      queued++
+    }
+    // library movies cached before `images` was asked for, all at once: their logos are missing
+    // until they're fetched again, and once they are they're never queued for it again. SQLite's
+    // json_type is NULL for a path that isn't there (https://sqlite.org/json1.html#jtype)
+    const imageless = db
+      .select({ id: movieMetadata.tmdbId })
+      .from(movieMetadata)
+      .where(
+        and(
+          inArray(movieMetadata.tmdbId, ref.library),
+          isNull(movieMetadata.goneAt),
+          sql`json_type(${movieMetadata.data}, '$.images') is null`,
+        ),
+      )
+      .all()
+    for (const r of imageless) {
       enqueueRefresh('movie', r.id)
       queued++
     }

@@ -84,6 +84,7 @@ export function HomeRow({ section }: { section: Section }) {
         art={(m) => ({
           poster: media(films.card(m).src),
           backdrop: media(films.card(m, { wide: true }).src),
+          logo: media(m.art.logo),
         })}
         meta={format.meta}
         loop

@@ -30,7 +30,7 @@
 //
 // The row knows nothing of servers, routes or sounds: the app hands it each film's artwork as
 // sources, what opening and playing a film do, and what a move sounds like, so any app draws one.
-import { art, filmRow, tvText, web } from '@highsea-tv/tokens'
+import { art, filmRow, tvText } from '@highsea-tv/tokens'
 import { type ReactNode, type Ref, useCallback, useEffect, useRef, useState } from 'react'
 import { StyleSheet, useWindowDimensions, View, type ViewStyle } from 'react-native'
 import Animated, {
@@ -50,12 +50,20 @@ import { Image } from './image.tsx'
 import { brighten, HOVER_BRIGHTNESS, useLift } from './lift.ts'
 import { Poster } from './poster.tsx'
 import { Press } from './press.tsx'
-import { pointerItemWidth, Row, RowSkeleton, usePageGutter, usePosterWidth } from './row.tsx'
+import {
+  pointerItemWidth,
+  Row,
+  RowSkeleton,
+  usePageGutter,
+  usePageMeasure,
+  usePosterWidth,
+} from './row.tsx'
 import { RowArrow } from './row-arrow.tsx'
 import { SectionHeading } from './section-heading.tsx'
 import { Skeleton, SkeletonText } from './skeleton.tsx'
 import { Text, textStyle } from './text.tsx'
 import { tokens, useMotionReduced, useTheme } from './theme.tsx'
+import { TitleLogo } from './title-logo.tsx'
 import { FocusGuide, useRemote } from './tv/engine'
 import { Focusable, StopScope, type ViewHandle } from './tv/focusable.tsx'
 import { TRACK_SPRING } from './tv/model.ts'
@@ -73,8 +81,6 @@ const mod = (a: number, n: number) => ((a % n) + n) % n
 
 /** A pointer's posters' gap, the prototype's 0.75rem. */
 const POINTER_GAP = tokens.space['3']
-/** The page's width, beyond which the row stops reaching for the window's edge (web.maxWidth). */
-const PAGE_WIDTH = web.maxWidth
 /** The fade across each inset, eased so it has no edge: an ease-in-out curve at five stops. */
 const EASE = [0, 0.06, 0.25, 0.6, 0.88, 1]
 
@@ -100,7 +106,12 @@ export type FilmRowProps<T extends RowFilm> = {
   suffix?: string | null
   items: readonly T[]
   /** The film's poster and backdrop as sources the images can load (a server's need its token). */
-  art: (item: T) => { poster: TileSource | undefined; backdrop: TileSource | undefined }
+  art: (item: T) => {
+    poster: TileSource | undefined
+    backdrop: TileSource | undefined
+    /** The open card's logo in place of its title; the title when there's none. */
+    logo?: TileSource | undefined
+  }
   /** The line beside the card's film's title: its year, length and genre. Not by touch. */
   meta: (item: T) => string
   /** The film's quality tags, after its line (4K, HDR). */
@@ -182,14 +193,22 @@ function placeOf(poster: number, gap: number) {
  * fill the page inside its gutters once the row is measured, the card's, the inset the arrows and
  * the fade take, and the fade's mask.
  */
-function pointerStrip(windowWidth: number, measured: number | null, gutter: number) {
+function pointerStrip(
+  windowWidth: number,
+  measured: number | null,
+  gutter: number,
+  measure: number | undefined,
+) {
   const gap = POINTER_GAP
   // a pointer's poster, near 10.5% of the window between 6.5rem and 12rem (the prototype's clamp)
   const target = pointerItemWidth(windowWidth)
   const room = (measured ?? windowWidth) - 2 * gutter
   const count = Math.max(1, Math.round((room - WIDE * target) / (target + gap)))
   const poster = measured ? (room - count * gap) / (WIDE + count) : target
-  const inset = Math.min(poster + gap, Math.max(0, (windowWidth - PAGE_WIDTH) / 2) + gutter)
+  const inset = Math.min(
+    poster + gap,
+    Math.max(0, (windowWidth - (measure ?? Number.POSITIVE_INFINITY)) / 2) + gutter,
+  )
   const ramp = (side: 'start' | 'end') =>
     EASE.map((a, i) => {
       const x = ((inset - gap) * i) / (EASE.length - 1)
@@ -369,6 +388,7 @@ function PointerForm<T extends RowFilm>({
 }: FilmRowProps<T>) {
   const reduced = useMotionReduced()
   const gutter = usePageGutter()
+  const measure = usePageMeasure()
   const window = useWindowDimensions()
   const [measured, setMeasured] = useState<number | null>(null)
   const [over, setOver] = useState(false)
@@ -378,7 +398,12 @@ function PointerForm<T extends RowFilm>({
   const { pos, can, move } = card
   const item = items[card.at]
   if (!item) return null
-  const { gap, poster, height, wide, inset, fade } = pointerStrip(window.width, measured, gutter)
+  const { gap, poster, height, wide, inset, fade } = pointerStrip(
+    window.width,
+    measured,
+    gutter,
+    measure,
+  )
   const { place, exit } = placeOf(poster, gap)
   const radius = tokens.radius.poster
   const line = meta(item)
@@ -478,7 +503,13 @@ function PointerForm<T extends RowFilm>({
   )
 }
 
-/** The card: its film's backdrop crossfading in as the film changes, and its title over a fade. */
+/**
+ * The open card's logo's largest box (the prototypes' tv/film-row.tsx max-h-[4cqw] max-w-[14cqw];
+ * web/film-row.tsx max-w-[70%] and 26% of the card's height).
+ */
+const LOGO = { width: 0.7, height: 0.26, tv: { width: 14, height: 4 } }
+
+/** The card: its film's backdrop crossfading in as the film changes, and its logo or title over a fade. */
 function Card<T extends RowFilm>({
   item,
   art,
@@ -501,8 +532,8 @@ function Card<T extends RowFilm>({
   // tracking-display)
   const title = textStyle(theme, 'title')
   const display = tokens.text.web.display
-  // the title where the prototypes have its logo, which no server has yet: the TV's at its 1.6,
-  // the web's in the title type, inset as the prototype's inset-x-4 bottom-3.5
+  // the title's logo (../title-logo.tsx), or its name: the TV's at its 1.6, the web's in the title
+  // type; inset as the prototype's inset-x-4 bottom-3.5
   const words = isTv
     ? {
         left: tv.space['6'] * u,
@@ -554,28 +585,39 @@ function Card<T extends RowFilm>({
           ]}
         />
         <View style={{ position: 'absolute', ...words }}>
-          {isTv ? (
-            <Text
-              size={filmRow.tv.title}
-              weight={600}
-              numberOfLines={2}
-              style={{ lineHeight: filmRow.tv.titleLeading * u }}
-            >
-              {item.title}
-            </Text>
-          ) : (
-            <Text
-              variant="title"
-              weight={600}
-              numberOfLines={2}
-              style={{
-                lineHeight: Math.round(display.leading * title.fontSize),
-                letterSpacing: display.tracking * title.fontSize,
-              }}
-            >
-              {item.title}
-            </Text>
-          )}
+          <TitleLogo
+            title={item.title}
+            logo={art(item).logo}
+            box={
+              isTv
+                ? { width: LOGO.tv.width * u, height: LOGO.tv.height * u }
+                : { width: width * LOGO.width, height: height * LOGO.height }
+            }
+            fallback={
+              isTv ? (
+                <Text
+                  size={filmRow.tv.title}
+                  weight={600}
+                  numberOfLines={2}
+                  style={{ lineHeight: filmRow.tv.titleLeading * u }}
+                >
+                  {item.title}
+                </Text>
+              ) : (
+                <Text
+                  variant="title"
+                  weight={600}
+                  numberOfLines={2}
+                  style={{
+                    lineHeight: Math.round(display.leading * title.fontSize),
+                    letterSpacing: display.tracking * title.fontSize,
+                  }}
+                >
+                  {item.title}
+                </Text>
+              )
+            }
+          />
         </View>
       </Animated.View>
     </View>
@@ -795,9 +837,15 @@ const TV_SKELETON = {
 
 function PointerRowSkeleton() {
   const gutter = usePageGutter()
+  const measure = usePageMeasure()
   const window = useWindowDimensions()
   const [measured, setMeasured] = useState<number | null>(null)
-  const { gap, poster, height, wide, inset, fade } = pointerStrip(window.width, measured, gutter)
+  const { gap, poster, height, wide, inset, fade } = pointerStrip(
+    window.width,
+    measured,
+    gutter,
+    measure,
+  )
   const { place } = placeOf(poster, gap)
   const radius = tokens.radius.poster
   const t = SKELETON_TITLE.pointer

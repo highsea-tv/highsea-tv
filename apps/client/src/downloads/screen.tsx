@@ -14,7 +14,6 @@
 // - the TV keeps none, so either address goes Home.
 import { downloadsMessages } from '@highsea-tv/client/downloads'
 import { useT } from '@highsea-tv/i18n/react'
-import { web } from '@highsea-tv/tokens'
 import {
   Button,
   EmptyState,
@@ -24,6 +23,7 @@ import {
   tokens,
   useFormFactor,
   usePageGutter,
+  usePageMeasure,
   useTheme,
 } from '@highsea-tv/ui'
 import { Redirect } from 'expo-router'
@@ -98,6 +98,7 @@ function PhoneOffline() {
 
 /** The desktop app's Downloads: the title, then the list with the folder they're kept in. */
 function ComputerDownloads() {
+  const measure = usePageMeasure()
   const t = useT(downloadsMessages)
   const theme = useTheme()
   const gutter = usePageGutter()
@@ -110,7 +111,7 @@ function ComputerDownloads() {
       style={{ flex: 1, backgroundColor: theme.colors.bg }}
       contentContainerStyle={{
         width: '100%',
-        maxWidth: web.maxWidth,
+        maxWidth: measure,
         alignSelf: 'center',
         // the prototype's pt-6 pb-16 gap-6
         paddingTop: space['6'],

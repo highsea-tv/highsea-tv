@@ -36,7 +36,7 @@ import {
 import { useLocale, useT } from '@highsea-tv/i18n/react'
 import { useFormat } from '@highsea-tv/native/format'
 import type { Query } from '@highsea-tv/sdk/react'
-import { springs, springToCss, web } from '@highsea-tv/tokens'
+import { springs, springToCss } from '@highsea-tv/tokens'
 import {
   Button,
   Chip,
@@ -54,6 +54,7 @@ import {
   useFormFactor,
   useMotionReduced,
   usePageGutter,
+  usePageMeasure,
   useTheme,
 } from '@highsea-tv/ui'
 import {
@@ -466,6 +467,7 @@ export const PointerMovies = () => <PointerGrid kind={MOVIES} />
 
 /** A kind's library page with a pointer: the web's and the desktop app's. */
 export function PointerGrid<T extends { id: number }>({ kind }: { kind: GridKind<T> }) {
+  const measure = usePageMeasure()
   const t = useT(messages)
   const text = kind.useWords()
   const theme = useTheme()
@@ -491,7 +493,7 @@ export function PointerGrid<T extends { id: number }>({ kind }: { kind: GridKind
   // grid until the page scrolls it up to the line under the top bar, where it stays. While the
   // library loads it's there with every letter dimmed; a compact width has none (the prototype's
   // `medium:block`)
-  const inset = Math.max(0, (frame.width - web.maxWidth) / 2) + gutter
+  const inset = Math.max(0, (frame.width - (measure ?? frame.width)) / 2) + gutter
   const stuck = space['6']
   const indexed =
     widthClass !== 'compact' && c.sort === 'title' && (library.status === 'loading' || c.titled)

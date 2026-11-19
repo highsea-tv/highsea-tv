@@ -20,7 +20,16 @@
 // Each form is a group named by its title (https://www.w3.org/TR/wai-aria-1.2/#group), not a list:
 // a list may hold only its items, and the row holds its heading and arrows too.
 import { formFactorLayouts, web } from '@highsea-tv/tokens'
-import { type ComponentRef, type ReactNode, type Ref, useEffect, useRef, useState } from 'react'
+import {
+  type ComponentRef,
+  createContext,
+  type ReactNode,
+  type Ref,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from 'react'
 import { ScrollView, useWindowDimensions, View } from 'react-native'
 import { moveInRow, roveRow } from './dom'
 import { RowArrow } from './row-arrow.tsx'
@@ -49,6 +58,26 @@ const PAGE_SHARE = 0.85
  * `px-4 medium:px-8 wide:px-16` on the one split: the phone's 16 in a compact window, then
  * `web.margin.wide`'s 64 from 768).
  */
+/**
+ * The page's measure with a pointer: the widest a page's column grows, or undefined when it fills
+ * the window inside its gutters. The client's Layout setting chooses (client-settings.md ›
+ * Appearance: Full width or Contained); outside a PageMeasure, the contained measure (web.maxWidth).
+ */
+const Measure = createContext<number | undefined>(web.maxWidth)
+
+/** Lays the pages inside it out full width (`full`) or held to the page's measure. */
+export function PageMeasure({ full, children }: { full: boolean; children: ReactNode }) {
+  return <Measure.Provider value={full ? undefined : web.maxWidth}>{children}</Measure.Provider>
+}
+
+/**
+ * The page column's `maxWidth` with a pointer: every page's column, hero, grid and row takes it, so
+ * the Layout setting moves them all. Undefined is full width; for arithmetic, `?? Infinity`.
+ */
+export function usePageMeasure(): number | undefined {
+  return useContext(Measure)
+}
+
 export function usePageGutter(): number {
   const { formFactor, u } = useTheme()
   if (formFactor.input === 'tv') return tokens.tv.safe.x * u

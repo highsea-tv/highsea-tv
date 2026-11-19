@@ -29,7 +29,7 @@ import { type destinationMessages, forgetMessages, shellMessages } from '@highse
 import { useT } from '@highsea-tv/i18n/react'
 import { useCurrent } from '@highsea-tv/native/servers'
 import { useMaybeSession, useReachableState } from '@highsea-tv/native/session'
-import { blur, web } from '@highsea-tv/tokens'
+import { blur } from '@highsea-tv/tokens'
 import {
   alpha,
   Button,
@@ -45,6 +45,7 @@ import {
   useControl,
   useFormFactor,
   usePageGutter,
+  usePageMeasure,
   useTheme,
 } from '@highsea-tv/ui'
 import { TvHead, TvHeadStop, TvMessage, type ViewHandle } from '@highsea-tv/ui/tv'
@@ -465,6 +466,7 @@ const pageMark = (here: boolean) =>
  * blur's opacity with the blur behind it where the web has one, else the solid fallback's.
  */
 function TopBar({ over = false, glass = false }: { over?: boolean; glass?: boolean }) {
+  const measure = usePageMeasure()
   const t = useT(shellMessages)
   const theme = useTheme()
   const m = useControl()
@@ -636,7 +638,7 @@ function TopBar({ over = false, glass = false }: { over?: boolean; glass?: boole
           columnGap: space['3'],
           rowGap: space['2'],
           width: '100%',
-          maxWidth: web.maxWidth,
+          maxWidth: measure,
           alignSelf: 'center',
           minHeight: TOP_BAR_HEIGHT,
           paddingHorizontal: gutter,

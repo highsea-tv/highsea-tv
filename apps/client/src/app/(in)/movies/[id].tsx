@@ -25,7 +25,6 @@ import { peopleOf, playPath } from '@highsea-tv/client/library'
 import { useT } from '@highsea-tv/i18n/react'
 import { useFormat } from '@highsea-tv/native/format'
 import { useMedia } from '@highsea-tv/native/media'
-import { web } from '@highsea-tv/tokens'
 import {
   Button,
   FactsCard,
@@ -39,11 +38,11 @@ import {
   ScrollView,
   Sheet,
   Text,
-  TitleBackdrop,
+  TitleLogo,
   tokens,
   useControl,
   useFormFactor,
-  usePageGutter,
+  usePageMeasure,
   useTheme,
 } from '@highsea-tv/ui'
 import {
@@ -60,7 +59,13 @@ import { type Href, router, useLocalSearchParams } from 'expo-router'
 import { useCallback, useRef, useState } from 'react'
 import { View } from 'react-native'
 import { OverlayBack } from '../../../detail/back.tsx'
-import { FILM_TV } from '../../../detail/layout.ts'
+import {
+  HERO_WORDS,
+  PointerHero,
+  TouchHero,
+  TvHero,
+  usePointerHero,
+} from '../../../detail/hero.tsx'
 import { detailMessages } from '../../../detail/messages.ts'
 import {
   Below,
@@ -72,7 +77,6 @@ import {
   Meta,
   personPath,
   useFilmCollection,
-  useHero,
   useTexts,
   useWatched,
 } from '../../../detail/parts.tsx'
@@ -114,7 +118,6 @@ function TouchFilm({ d, refresh }: FilmProps) {
   const theme = useTheme()
   const f = useFormat()
   const media = useMedia()
-  const gutter = usePageGutter()
   const w = useWatchWith(d)
   const watched = useWatched(d, refresh)
   const [tracks, setTracks] = useState(false)
@@ -127,12 +130,9 @@ function TouchFilm({ d, refresh }: FilmProps) {
     <View style={{ flex: 1, backgroundColor: theme.colors.bg }}>
       <OverlayBack />
       <ScrollView contentContainerStyle={{ paddingBottom: space['6'], gap: space['5'] }}>
-        <TitleBackdrop source={media(m.art.backdrop)} />
-        <View style={{ marginTop: -space['16'], paddingHorizontal: gutter, gap: space['3'] }}>
-          {/* the title, where the prototype has its logo: no server has logos yet */}
-          <Text variant="largeTitle" accessibilityRole="header">
-            {m.title}
-          </Text>
+        <TouchHero source={media(m.art.backdrop)}>
+          {/* the title's logo, its name when there's none */}
+          <TitleLogo title={m.title} logo={media(m.art.logo)} variant="largeTitle" />
           <Meta d={d} />
           {resuming ? (
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: space['3'] }}>
@@ -206,7 +206,7 @@ function TouchFilm({ d, refresh }: FilmProps) {
             />
           </View>
           {watched.error ? <Notice>{watched.error}</Notice> : <SaidNote />}
-        </View>
+        </TouchHero>
         <Below d={d} />
       </ScrollView>
       <Sheet open={tracks} onClose={() => setTracks(false)} title={t('tracks')}>
@@ -220,14 +220,14 @@ function TouchFilm({ d, refresh }: FilmProps) {
 // ---------------------------------------------------------------- a pointer
 
 function PointerFilm({ d, refresh }: FilmProps) {
+  const measure = usePageMeasure()
   const t = useT(detailMessages)
   const films = useT(filmsMessages)
   const theme = useTheme()
   const c = useControl()
   const f = useFormat()
   const media = useMedia()
-  const gutter = usePageGutter()
-  const hero = useHero()
+  const { hero, chrome } = usePointerHero()
   const w = useWatchWith(d)
   const watched = useWatched(d, refresh)
   const [tracks, setTracks] = useState(false)
@@ -237,9 +237,6 @@ function PointerFilm({ d, refresh }: FilmProps) {
   const m = d.item
   const resuming = m.progress !== null
   const line = picksLine(w, t)
-  // from medium the art runs under the top bar, which turns to glass as the page scrolls, as the
-  // prototype's
-  const chrome = useChromeOverlay(hero.overlay)
   return (
     <ScrollView
       onScroll={chrome.onScroll}
@@ -247,112 +244,96 @@ function PointerFilm({ d, refresh }: FilmProps) {
       style={{ flex: 1, backgroundColor: theme.colors.bg }}
       contentContainerStyle={{ paddingBottom: space['16'], gap: space['10'] }}
     >
-      <View style={{ minHeight: hero.minHeight, justifyContent: 'flex-end', overflow: 'hidden' }}>
-        <TitleBackdrop source={media(m.art.backdrop)} />
-        <View
-          style={{
-            width: '100%',
-            maxWidth: web.maxWidth,
-            alignSelf: 'center',
-            gap: space['4'],
-            // clear of the top bar, then the prototype's pt-28 less the bar's height
-            paddingTop: chrome.pad + space['8'],
-            paddingBottom: space['10'],
-            paddingHorizontal: gutter,
-          }}
-        >
-          <View style={{ maxWidth: space['16'] * 10, gap: space['3'] }}>
-            {/* the title, where the prototype has its logo: no server has logos yet */}
-            <Text variant="display" accessibilityRole="header">
-              {m.title}
+      <PointerHero source={media(m.art.backdrop)} hero={hero}>
+        <View style={{ maxWidth: HERO_WORDS, gap: space['3'] }}>
+          {/* the title's logo, its name when there's none */}
+          <TitleLogo title={m.title} logo={media(m.art.logo)} variant="display" />
+          <Meta d={d} />
+          {m.synopsis ? (
+            <Text variant="body" numberOfLines={3}>
+              {m.synopsis}
             </Text>
-            <Meta d={d} />
-            {m.synopsis ? (
-              <Text variant="body" numberOfLines={3}>
-                {m.synopsis}
-              </Text>
-            ) : null}
-            <Credits d={d} />
-            {line ? (
-              <Text variant="caption" color="text-3">
-                {line}
-              </Text>
-            ) : null}
-          </View>
-          <View style={{ gap: space['2'] + space['0.5'] }}>
-            {resuming ? (
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: space['3'] }}>
-                <View style={{ width: space['10'] * 4 }}>
-                  <ProgressBar value={(m.progress ?? 0) * 100} label={t('watched')} />
-                </View>
-                <Text variant="caption" color="text-2">
-                  {f.left(m) ?? ''}
-                </Text>
+          ) : null}
+          <Credits d={d} />
+          {line ? (
+            <Text variant="caption" color="text-3">
+              {line}
+            </Text>
+          ) : null}
+        </View>
+        <View style={{ gap: space['2'] + space['0.5'] }}>
+          {resuming ? (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: space['3'] }}>
+              <View style={{ width: space['10'] * 4 }}>
+                <ProgressBar value={(m.progress ?? 0) * 100} label={t('watched')} />
               </View>
-            ) : null}
-            <View
-              style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: c.gap }}
-            >
-              {w.version ? (
-                <View style={{ minWidth: space['16'] * 2 }}>
-                  <Button
-                    variant="primary"
-                    icon="play"
-                    block
-                    onPress={() => router.push(playPath(m.id) as Href)}
-                  >
-                    {resuming ? films('resume') : films('play')}
-                  </Button>
-                </View>
-              ) : (
-                <Text variant="body" color="text-3">
-                  {t('notPlayable')}
-                </Text>
-              )}
-              {w.version && resuming ? (
-                <NamedAction
-                  icon="replay"
-                  label={t('playFromStart')}
-                  onPress={() => router.push(playPath(m.id, true) as Href)}
-                />
-              ) : null}
-              {preview ? (
-                <NamedAction
-                  icon="trailer"
-                  label={t('trailer')}
-                  hasPopup="dialog"
-                  accessibilityState={{ expanded: trailer !== null }}
-                  onPress={() => setTrailer(preview)}
-                />
-              ) : null}
-              {w.version ? (
-                <NamedAction
-                  ref={tracksButton}
-                  icon="subtitles"
-                  label={t('tracks')}
-                  hasPopup="dialog"
-                  accessibilityState={{ expanded: tracks }}
-                  onPress={() => setTracks(true)}
-                />
-              ) : null}
+              <Text variant="caption" color="text-2">
+                {f.left(m) ?? ''}
+              </Text>
+            </View>
+          ) : null}
+          <View
+            style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: c.gap }}
+          >
+            {w.version ? (
+              <View style={{ minWidth: space['16'] * 2 }}>
+                <Button
+                  variant="primary"
+                  icon="play"
+                  block
+                  onPress={() => router.push(playPath(m.id) as Href)}
+                >
+                  {resuming ? films('resume') : films('play')}
+                </Button>
+              </View>
+            ) : (
+              <Text variant="body" color="text-3">
+                {t('notPlayable')}
+              </Text>
+            )}
+            {w.version && resuming ? (
               <NamedAction
-                icon="check"
-                label={watched.label}
-                pressed={watched.on}
-                onPress={() => void watched.toggle()}
+                icon="replay"
+                label={t('playFromStart')}
+                onPress={() => router.push(playPath(m.id, true) as Href)}
               />
-              <DownloadButton item={m} start={space['2']} />
-            </View>
-            <View style={{ maxWidth: space['16'] * 6 }}>
-              {watched.error ? <Notice>{watched.error}</Notice> : <SaidNote />}
-            </View>
+            ) : null}
+            {preview ? (
+              <NamedAction
+                icon="trailer"
+                label={t('trailer')}
+                hasPopup="dialog"
+                accessibilityState={{ expanded: trailer !== null }}
+                onPress={() => setTrailer(preview)}
+              />
+            ) : null}
+            {w.version ? (
+              <NamedAction
+                ref={tracksButton}
+                icon="subtitles"
+                label={t('tracks')}
+                hasPopup="dialog"
+                accessibilityState={{ expanded: tracks }}
+                onPress={() => setTracks(true)}
+              />
+            ) : null}
+            <NamedAction
+              icon="check"
+              label={watched.label}
+              pressed={watched.on}
+              onPress={() => void watched.toggle()}
+            />
+            <DownloadButton item={m} start={space['2']} />
+          </View>
+          <View style={{ maxWidth: space['16'] * 6 }}>
+            {watched.error ? <Notice>{watched.error}</Notice> : <SaidNote />}
           </View>
         </View>
-      </View>
+      </PointerHero>
       <View
         style={{
           width: '100%',
-          maxWidth: web.maxWidth,
+          maxWidth: measure,
           alignSelf: 'center',
           gap: space['10'],
         }}
@@ -471,25 +452,14 @@ function TvFilm({ d, refresh }: FilmProps) {
             More like this, a row's gap apart as the prototype's grid has them, so the next row's
             title peeks at the foot */}
         <Kept rest>
-          <TitleBackdrop source={media(m.art.backdrop)} />
-          <View
-            style={{
-              // under the head, which lies over the page (the prototype's TvHead in the grid's
-              // flow): the words' block is the first screen less the next row's title (40.5u).
-              // React Native's boxes are border-box, so the height holds the padding
-              // (https://reactnative.dev/docs/layout-props#boxsizing)
-              height: (FILM_TV.top + FILM_TV.words) * u,
-              paddingTop: FILM_TV.top * u,
-              maxWidth: '50%',
-              justifyContent: 'flex-end',
-              gap: tv.poster.gap * u,
-              paddingHorizontal: tv.safe.x * u,
-            }}
-          >
-            {/* the title, where the prototype has its logo: no server has logos yet */}
-            <Text variant="heroTitle" numberOfLines={2} accessibilityRole="header">
-              {m.title}
-            </Text>
+          <TvHero source={media(m.art.backdrop)}>
+            {/* the title's logo, its name when there's none */}
+            <TitleLogo
+              title={m.title}
+              logo={media(m.art.logo)}
+              variant="heroTitle"
+              numberOfLines={2}
+            />
             <Meta d={d} />
             {m.synopsis ? (
               <Text variant="synopsis" numberOfLines={3}>
@@ -553,7 +523,7 @@ function TvFilm({ d, refresh }: FilmProps) {
                 />
               </FocusGuide>
             </View>
-          </View>
+          </TvHero>
         </Kept>
         <View
           style={{
@@ -567,7 +537,11 @@ function TvFilm({ d, refresh }: FilmProps) {
               <FilmRow
                 title={t('moreLike')}
                 items={d.related}
-                art={(r) => ({ poster: media(r.art.poster), backdrop: media(r.art.backdrop) })}
+                art={(r) => ({
+                  poster: media(r.art.poster),
+                  backdrop: media(r.art.backdrop),
+                  logo: media(r.art.logo),
+                })}
                 meta={f.meta}
                 onFocus={() => inRow(rows.related)}
                 onOpen={(r) => router.push(filmPath(r.id))}

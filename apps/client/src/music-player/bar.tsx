@@ -10,7 +10,7 @@
 // it as the prototype's padding kept it.
 
 import { useT } from '@highsea-tv/i18n/react'
-import { adminText, blur, musicPlayer as sizes, web } from '@highsea-tv/tokens'
+import { adminText, blur, musicPlayer as sizes } from '@highsea-tv/tokens'
 import {
   alpha,
   Button,
@@ -22,6 +22,7 @@ import {
   tokens,
   useFormFactor,
   usePageGutter,
+  usePageMeasure,
   useTheme,
 } from '@highsea-tv/ui'
 import { useState } from 'react'
@@ -56,6 +57,7 @@ const BLUR =
     : null
 
 export function MusicBar() {
+  const measure = usePageMeasure()
   const t = useT(messages)
   const theme = useTheme()
   const p = useMusicPlayer()
@@ -205,7 +207,7 @@ export function MusicBar() {
             gap: space['4'],
             height: WIDE_HEIGHT,
             width: '100%',
-            maxWidth: web.maxWidth,
+            maxWidth: measure,
             alignSelf: 'center',
             paddingHorizontal: gutter,
           }}

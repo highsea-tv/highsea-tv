@@ -130,7 +130,9 @@ export function logoArt(title: string): string {
       track: 0.12,
       em: 0.72,
     },
-    { family: 'Georgia, Times New Roman, serif', weight: 700, upper: false, track: 0, em: 0.6 },
+    // Georgia's bold runs wider than 0.6em; iOS's SVG renderer ignores textLength, so a measure
+    // that's short there spills past the viewBox and the logo is cut off (HT-65)
+    { family: 'Georgia, Times New Roman, serif', weight: 700, upper: false, track: 0, em: 0.68 },
     {
       family: 'Avenir Next Condensed, Arial Narrow, sans-serif',
       weight: 800,

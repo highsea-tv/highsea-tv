@@ -219,6 +219,13 @@ The order is films, then shows, then music: films are already built and only nee
   - **Guides:** Change or remove a film gains Change a film's artwork, with the upload rules and a new screenshot; People and collections says a collection's page has it too.
   - **Sweeps:** the server sweep opens the dialog on Sintel and on the Blender collection (`movie:artwork`, `collection:artwork`).
 
+- **2026-11-18, collection pages and Home's hero get the title hero, with logos (HT-65):** by the owner's approval to change the locked layouts.
+  - **Collection pages** draw a film's page's hero (`detail/hero.tsx`) on every app: full bleed, the bar clear until the page scrolls, taller, the collection's own art, the words placed as a film's page places them.
+  - **Home's hero** does the same when the featured section is Home's first section (`leadHeroOf`); otherwise Home is as it was. Touch swipes through the section's titles at 4:5 under the status bar; a pointer pages with the Pager; the TV's Play takes the focus, and Back returns to it.
+  - **Title logos** where a title is the headline over its art: Home's hero, the featured card and carousel, a film row's open card, a film's, show's and collection's page (`TitleLogo` in `@highsea-tv/ui`, reading HT-66's `art.logo`; the mock's films have them). The name stays as the fallback and the logo's label. A real server gives TMDB's automatic logo wherever a library film shows (its page, Home's hero and rows, the library); TMDB's own lists (recommendations, a collection's parts, a person's credits) and collections carry one only when an admin chose it. Films cached before 0.4.5 had no `images` in their stored answer, so no logo for up to 30 days: such a row now counts as stale when read, and the daily metadata sweep queues every one at once, so a library scanned before needs nothing done (ADR 0030).
+  - **Layout** (Settings › Appearance, web and desktop): Full width (the default) or Contained, per device.
+  - The specs: client-home.md, collections.md, client-search.md, client-settings.md; the design language's mobile, TV, desktop-web and spacing-layout pages.
+
 ## Running highsea on the NAS (A1)
 
 - **Where:** the DS1520+ (Intel Celeron J4125, VAAPI checked in 4.3b), through the Synology package from Package Center with `packages.highsea.tv` as its source, the way an owner installs it (install-simplicity.md's part D). This Mac stays the development machine; [answer 2](#the-owners-answers) has the alternatives.

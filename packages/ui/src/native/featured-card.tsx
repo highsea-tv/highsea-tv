@@ -17,7 +17,7 @@
 // (https://reactnative.dev/docs/view-style-props#backgroundimage).
 // Bloom is the glow behind the card with a pointer and on the TV, in the art's colour
 // (client/bloom.tsx).
-import { featuredCard, REGULAR_WIDTH, tvText, web } from '@highsea-tv/tokens'
+import { featuredCard, REGULAR_WIDTH, tvText } from '@highsea-tv/tokens'
 import { type ReactNode, type Ref, useEffect } from 'react'
 import { StyleSheet, useWindowDimensions, View } from 'react-native'
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
@@ -27,10 +27,11 @@ import { Button } from './button.tsx'
 import { scrimOf } from './glass.ts'
 import { Image } from './image.tsx'
 import { Press } from './press.tsx'
-import { usePageGutter, usePosterWidth } from './row.tsx'
+import { usePageGutter, usePageMeasure, usePosterWidth } from './row.tsx'
 import { Skeleton, SkeletonText } from './skeleton.tsx'
 import { Text, textStyle } from './text.tsx'
 import { tokens, useMotionReduced, useTheme } from './theme.tsx'
+import { TitleLogo } from './title-logo.tsx'
 import { Focusable, type ViewHandle } from './tv/focusable.tsx'
 import type { TileSource } from './tv/tiles.tsx'
 
@@ -59,7 +60,7 @@ const SHADE = `linear-gradient(90deg, ${scrimOf(70)}, transparent 55%), linear-g
 /** The pointer's card at this window: its height, and where its words sit. */
 function usePointerCard() {
   const window = useWindowDimensions()
-  const measure = Math.min(window.width, web.maxWidth)
+  const measure = Math.min(window.width, usePageMeasure() ?? window.width)
   const h = POINTER_HEIGHT
   const height = Math.min(
     h.max,
@@ -84,6 +85,8 @@ export type FeaturedCardProps = {
   kicker?: string | null
   /** The wide art: the TV and a pointer. */
   backdrop?: TileSource
+  /** The title's logo, drawn in place of its name (./title-logo.tsx); the name when there's none. */
+  logo?: TileSource
   /** The poster: touch's 4:5 card. */
   poster?: TileSource
   /** A pointer: the buttons under the words (Play or Resume, More info). */
@@ -112,6 +115,7 @@ export function FeaturedCard(props: FeaturedCardProps) {
 
 function TouchFeatured({
   title,
+  logo,
   kicker,
   poster,
   onPress,
@@ -167,9 +171,7 @@ function TouchFeatured({
             {kicker}
           </Text>
         ) : null}
-        <Text variant="title" numberOfLines={2}>
-          {title}
-        </Text>
+        <TitleLogo title={title} logo={logo} scale="card" variant="title" numberOfLines={2} />
       </View>
     </Press>
   )
@@ -177,6 +179,7 @@ function TouchFeatured({
 
 function PointerFeatured({
   title,
+  logo,
   meta,
   tags,
   tagline,
@@ -240,9 +243,7 @@ function PointerFeatured({
         {/* a pager's new page is read by its title and meta only, never its tagline or buttons
             (https://www.w3.org/TR/wai-aria-1.2/#aria-live) */}
         <View accessibilityLiveRegion="polite" style={{ gap: space['3'] }}>
-          <Text variant="display" accessibilityRole="header" aria-level={2}>
-            {title}
-          </Text>
+          <TitleLogo title={title} logo={logo} scale="card" variant="display" aria-level={2} />
           {meta || tags?.length ? (
             // the prototype's flex-wrap items-center gap-2 line
             <View
@@ -289,6 +290,7 @@ function PointerFeatured({
 
 function TvFeatured({
   title,
+  logo,
   meta,
   tags,
   tagline,
@@ -339,10 +341,15 @@ function TvFeatured({
             gap: TV.gap * u,
           }}
         >
-          {/* the title, where the prototype has its logo: no server has logos yet */}
-          <Text variant="heroTitle" numberOfLines={2} accessibilityRole="header" aria-level={2}>
-            {title}
-          </Text>
+          {/* the title's logo, its name when there's none */}
+          <TitleLogo
+            title={title}
+            logo={logo}
+            scale="card"
+            variant="heroTitle"
+            numberOfLines={2}
+            aria-level={2}
+          />
           {meta || tags?.length ? (
             // the prototype's items-center gap-[1cqw] line
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: u }}>

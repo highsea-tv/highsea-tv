@@ -18,7 +18,6 @@ import { personHeaderOf } from '@highsea-tv/client/films'
 import { filmographyOf, LONG_BIO, playPath } from '@highsea-tv/client/library'
 import { useT } from '@highsea-tv/i18n/react'
 import { useMedia } from '@highsea-tv/native/media'
-import { web } from '@highsea-tv/tokens'
 import {
   Button,
   EmptyState,
@@ -32,6 +31,7 @@ import {
   useControl,
   useFormFactor,
   usePageGutter,
+  usePageMeasure,
   useTheme,
 } from '@highsea-tv/ui'
 import {
@@ -49,6 +49,7 @@ import { type Ref, useCallback, useMemo, useState } from 'react'
 import { StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { OverlayBack } from '../../../detail/back.tsx'
+import { useHero } from '../../../detail/hero.tsx'
 import { PERSON_ART, PERSON_TV, PHONE_PERSON } from '../../../detail/layout.ts'
 import { personMessages } from '../../../detail/messages.ts'
 import {
@@ -56,7 +57,6 @@ import {
   idOf,
   isMissing,
   Middle,
-  useHero,
   useRowWidths,
   useTexts,
 } from '../../../detail/parts.tsx'
@@ -179,6 +179,7 @@ function Bio({ text, lines, ref }: { text: string; lines: number; ref?: Ref<View
 // ---------------------------------------------------------------- touch and a pointer
 
 function PagePerson({ p }: { p: ClientPerson }) {
+  const measure = usePageMeasure()
   const { facts } = useTexts()
   const theme = useTheme()
   const insets = useSafeAreaInsets()
@@ -262,7 +263,7 @@ function PagePerson({ p }: { p: ClientPerson }) {
           <View
             style={{
               width: '100%',
-              maxWidth: web.maxWidth,
+              maxWidth: measure,
               alignSelf: 'center',
               flexDirection: side ? 'row' : 'column',
               alignItems: side ? 'center' : touch ? 'center' : 'flex-start',
@@ -286,7 +287,7 @@ function PagePerson({ p }: { p: ClientPerson }) {
         <View
           style={{
             width: '100%',
-            maxWidth: web.maxWidth,
+            maxWidth: measure,
             alignSelf: 'center',
             gap: space['10'],
           }}
@@ -344,7 +345,11 @@ function TvPerson({ p }: { p: ClientPerson }) {
         ref={i === 0 && !long ? downRef : undefined}
         title={facts.departmentTitle(department)}
         items={credits.map((c) => c.item)}
-        art={(x) => ({ poster: media(x.art.poster), backdrop: media(x.art.backdrop) })}
+        art={(x) => ({
+          poster: media(x.art.poster),
+          backdrop: media(x.art.backdrop),
+          logo: media(x.art.logo),
+        })}
         meta={films.leadOf}
         noteOf={(x) => roles.get(x.id) ?? ''}
         onOpen={(x) => router.push(filmPath(x.id))}

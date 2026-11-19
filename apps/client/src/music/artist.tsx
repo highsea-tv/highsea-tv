@@ -18,7 +18,6 @@ import { useArtist } from '@highsea-tv/client/data'
 import { LONG_BIO } from '@highsea-tv/client/library'
 import { useT } from '@highsea-tv/i18n/react'
 import { useMedia } from '@highsea-tv/native/media'
-import { web } from '@highsea-tv/tokens'
 import {
   Button,
   PersonPortrait,
@@ -29,6 +28,7 @@ import {
   tokens,
   useFormFactor,
   usePageGutter,
+  usePageMeasure,
   useTheme,
 } from '@highsea-tv/ui'
 import { Kept, TV_HEAD_HEIGHT, TV_ROW_GAP, TvPage, type ViewHandle } from '@highsea-tv/ui/tv'
@@ -192,6 +192,7 @@ function Rows({
 // ---------------------------------------------------------------- touch and a pointer
 
 function PageArtist({ x }: { x: ClientArtistDetail }) {
+  const measure = usePageMeasure()
   const t = useT(messages)
   const theme = useTheme()
   const media = useMedia()
@@ -235,7 +236,7 @@ function PageArtist({ x }: { x: ClientArtistDetail }) {
           <View
             style={{
               width: '100%',
-              maxWidth: web.maxWidth,
+              maxWidth: measure,
               alignSelf: 'center',
               flexDirection: side ? 'row' : 'column',
               alignItems: touch ? 'center' : side ? 'center' : 'flex-start',
@@ -317,9 +318,7 @@ function PageArtist({ x }: { x: ClientArtistDetail }) {
             {theirs}
           </View>
         ) : null}
-        <View
-          style={{ width: '100%', maxWidth: web.maxWidth, alignSelf: 'center', gap: space['10'] }}
-        >
+        <View style={{ width: '100%', maxWidth: measure, alignSelf: 'center', gap: space['10'] }}>
           <Rows
             x={x}
             widths={

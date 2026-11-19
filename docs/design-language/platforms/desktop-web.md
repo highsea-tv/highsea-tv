@@ -7,10 +7,10 @@
 ## Structure
 
 - **Same structure as TV:** Hero + rows, adapted for a pointer and a keyboard.
-  - The hero is shorter (about 55–60% of the viewport height).
+  - The hero is shorter (about 55–60% of the viewport height). When the featured section is Home's first section (the owner's change of 2026-11-18), Home's hero is a title page's: full bleed under the clear top bar, the first screen tall, faded into the page, the title's logo low on the left with Play and More info, and the Pager at its foot's right. A collection's page has the same hero. Further down Home, the featured section is the featured card.
   - A row's posters are about 10.5% of the window, between 104 and 192 wide, and its stills about 24%, between 240 and 336, so a wider window shows more of them (`pointerItemWidth` in the library's `row.tsx`).
 - **Navigation:** the top bar holds the server at the left, Search as its icon, then Home, Collections and Movies centred (Shows and Music follow on a server that serves them), with Alerts and the profile at the right. It is clear over a page's art until the page scrolls under it, and then glass. The desktop app adds its window's buttons and, on Downloads' own page, what it keeps.
-- **Layout:** the form-factor rule ([spacing and layout › Width classes](../spacing-layout.md#width-classes)). A pointer window is compact below 768 and regular from 768. The page's side margin is 16px when compact and 64px when regular (`usePageGutter`, `web.margin.wide`), and content is at most 1680px wide (`web.maxWidth`), centred. Rows still bleed to the right edge. There's no column grid: a screen lays out by its parts' own measures inside the margins.
+- **Layout:** the form-factor rule ([spacing and layout › Width classes](../spacing-layout.md#width-classes)). A pointer window is compact below 768 and regular from 768. The page's side margin is 16px when compact and 64px when regular (`usePageGutter`, `web.margin.wide`), and content fills the window inside them (Full width, the default) or is at most 1680px wide (`web.maxWidth`), centred (Contained): the person's Layout setting, per device ([client-settings.md](../../product/client-settings.md#the-pages-width-layout)). Rows still bleed to the right edge. There's no column grid: a screen lays out by its parts' own measures inside the margins.
 
 ## Pointer
 
