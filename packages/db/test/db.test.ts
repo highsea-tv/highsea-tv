@@ -289,7 +289,7 @@ describe('0018_profiles', () => {
     const file = join(dir, 'highsea.db')
     const first = older(file)
     const result = migrate(first, { backupDir: join(dir, 'backups') })
-    expect(result.applied).toEqual(['0018_profiles', '0019_artwork'])
+    expect(result.applied).toEqual(['0018_profiles', '0019_artwork', '0020_shows'])
     expect(result.backup).not.toBeNull()
     const once = state(first)
     first.close()
@@ -315,6 +315,167 @@ describe('0018_profiles', () => {
     expect(raw.all("SELECT profile_id FROM devices WHERE id = 'dev-usr_ines'")).toEqual([
       { profile_id: null },
     ])
+    raw.close()
+  })
+})
+
+describe('0020_shows', () => {
+  const before = migrations.filter((m) => m.tag < '0020')
+
+  /**
+   * A server as the owner's NAS is before shows: films with versions, files, watch positions,
+   * history and chosen artwork, every migration up to 0019_artwork applied.
+   */
+  function withFilms(file: string) {
+    const { raw } = openDatabase(file)
+    migrate(raw, { all: before })
+    raw.exec('PRAGMA foreign_keys = OFF')
+    raw.run(
+      "INSERT INTO users (id, username, display_name, role, webauthn_id, created_at, updated_at) VALUES ('usr_ines', 'ines', 'Ines', 'owner', 'w-1', 5, 5)",
+    )
+    raw.run(
+      "INSERT INTO profiles (id, user_id, name, tone, main, created_at, updated_at) VALUES ('usr_ines', 'usr_ines', 'Ines', 'accent', 1, 5, 5)",
+    )
+    for (let n = 1; n <= 300; n++) {
+      const id = `itm_${n}`
+      raw.run(
+        "INSERT INTO media_items (id, type, tmdb_id, title, sort_title, year, status, monitored, minimum_availability, quality_profile_id, root_folder, path, added_at, updated_at) VALUES (?, 'movie', ?, ?, ?, 2001, 'available', 1, 'released', 'qp', '/media/movies', ?, ?, ?)",
+        id,
+        n,
+        `Film ${n}`,
+        `film ${n}`,
+        `/media/movies/Film ${n} (2001)`,
+        n,
+        n,
+      )
+      raw.run(
+        "INSERT INTO media_files (id, item_id, version_id, path, size, quality, added_at) VALUES (?, ?, ?, ?, 1000, 'Bluray-1080p', ?)",
+        `fil_${n}`,
+        id,
+        `ver_${n}`,
+        `/media/movies/Film ${n} (2001)/Film ${n}.mkv`,
+        n,
+      )
+      raw.run(
+        "INSERT INTO versions (id, item_id, label, quality_profile_id, file_id, position, created_at) VALUES (?, ?, 'Main', 'qp', ?, 0, ?)",
+        `ver_${n}`,
+        id,
+        `fil_${n}`,
+        n,
+      )
+    }
+    raw.run(
+      "INSERT INTO watch_positions (user_id, profile_id, item_id, position_seconds, duration_seconds, updated_at) VALUES ('usr_ines', 'usr_ines', 'itm_7', 600, 6000, 10)",
+    )
+    raw.run(
+      "INSERT INTO artwork (owner_type, owner_id, kind, source, file, chosen_at) VALUES ('movie', 7, 'logo', 'tmdb', '/logo.png', 10)",
+    )
+    raw.exec('PRAGMA foreign_keys = ON')
+    return raw
+  }
+
+  const films = (raw: ReturnType<typeof withFilms>) => ({
+    items: raw.all(
+      'SELECT id, type, tmdb_id, parent_id, title, status, path, added_at FROM media_items ORDER BY added_at',
+    ),
+    versions: raw.all('SELECT id, item_id, file_id FROM versions ORDER BY id'),
+    files: raw.all('SELECT id, item_id, version_id, path FROM media_files ORDER BY id'),
+    positions: raw.all('SELECT profile_id, item_id, position_seconds FROM watch_positions'),
+    artwork: raw.all('SELECT owner_type, owner_id, kind, file FROM artwork'),
+  })
+
+  test('leaves every film, version, file and watch position as it was', () => {
+    const raw = withFilms(':memory:')
+    const was = films(raw)
+    expect(migrate(raw).applied).toEqual(['0020_shows'])
+    expect(films(raw)).toEqual(was)
+    expect(raw.all('SELECT count(*) AS n FROM media_items')).toEqual([{ n: 300 }])
+    // the new columns are empty on films
+    expect(
+      raw.all(
+        'SELECT count(*) AS n FROM media_items WHERE show_id IS NULL AND season_number IS NULL AND episode_number IS NULL',
+      ),
+    ).toEqual([{ n: 300 }])
+    expect(raw.all('PRAGMA foreign_key_check')).toEqual([])
+    expect(raw.all('PRAGMA integrity_check')).toEqual([{ integrity_check: 'ok' }])
+    raw.close()
+  })
+
+  test('a show, a season and an episode sit beside the films, and go with the show', () => {
+    const raw = withFilms(':memory:')
+    migrate(raw)
+    const row = (id: string, type: string, tmdbId: number, parent: string | null, extra: object) => ({
+      id,
+      type,
+      tmdbId,
+      parentId: parent,
+      title: id,
+      sortTitle: id,
+      status: 'wanted',
+      monitored: 1,
+      minimumAvailability: 'released',
+      qualityProfileId: 'qp',
+      rootFolder: '/media/shows',
+      path: '/media/shows/Show',
+      addedAt: 1,
+      updatedAt: 1,
+      ...extra,
+    })
+    for (const r of [
+      row('itm_show', 'show', 87108, null, {}),
+      row('itm_s1', 'season', 7, 'itm_show', { showId: 'itm_show', seasonNumber: 1 }),
+      // a film and an episode may share a TMDB number (itm_1 is film 1): type tells them apart
+      row('itm_e1', 'episode', 1, 'itm_s1', {
+        showId: 'itm_show',
+        seasonNumber: 1,
+        episodeNumber: 1,
+      }),
+    ])
+      raw.run(
+        'INSERT INTO media_items (id, type, tmdb_id, parent_id, show_id, season_number, episode_number, title, sort_title, status, monitored, minimum_availability, quality_profile_id, root_folder, path, added_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        r.id,
+        r.type,
+        r.tmdbId,
+        r.parentId,
+        (r as { showId?: string }).showId ?? null,
+        (r as { seasonNumber?: number }).seasonNumber ?? null,
+        (r as { episodeNumber?: number }).episodeNumber ?? null,
+        r.title,
+        r.sortTitle,
+        r.status,
+        r.monitored,
+        r.minimumAvailability,
+        r.qualityProfileId,
+        r.rootFolder,
+        r.path,
+        r.addedAt,
+        r.updatedAt,
+      )
+    raw.run("INSERT INTO show_details (item_id, tvdb_id) VALUES ('itm_show', 360893)")
+    expect(raw.all("SELECT season_folders FROM show_details WHERE item_id = 'itm_show'")).toEqual([
+      { season_folders: 1 },
+    ])
+    expect(
+      raw.all(
+        "SELECT id FROM media_items WHERE show_id = 'itm_show' ORDER BY season_number, episode_number",
+      ),
+    ).toEqual([{ id: 'itm_s1' }, { id: 'itm_e1' }])
+    raw.run("DELETE FROM media_items WHERE id = 'itm_show'")
+    expect(raw.all('SELECT item_id FROM show_details')).toEqual([])
+    raw.close()
+  })
+
+  test('a cached season goes with its show', () => {
+    const raw = withFilms(':memory:')
+    migrate(raw)
+    raw.run(
+      "INSERT INTO show_metadata (tmdb_id, name, original_name, language, data, fetched_at) VALUES (87108, 'Chernobyl', 'Chernobyl', 'en-US', '{}', 1)",
+    )
+    raw.run(
+      "INSERT INTO season_metadata (show_id, season_number, tmdb_id, language, data, fetched_at) VALUES (87108, 1, 116924, 'en-US', '{}', 1)",
+    )
+    raw.run('DELETE FROM show_metadata WHERE tmdb_id = 87108')
+    expect(raw.all('SELECT * FROM season_metadata')).toEqual([])
     raw.close()
   })
 })
