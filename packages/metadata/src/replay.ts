@@ -4,7 +4,9 @@
 // which keeps the repo small. The dev and sweep servers boot on it too
 // (`createReplayFetch()` as `BootOptions.fetch`), so the admin works without a TMDB key. fanart.tv
 // (HT-74) is answered from hand-written files in its documented shape (test/fixtures/fanart), as
-// highsea has no fanart.tv key to record with yet.
+// highsea has no fanart.tv key to record with yet. MusicBrainz and the Cover Art Archive (ADR 0065)
+// are replayed from their own recordings (test/fixtures/musicbrainz), made by
+// `bun run record:musicbrainz`; their images come back as placeholders too.
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -18,6 +20,16 @@ export const RECORDINGS_DIR = fileURLToPath(new URL('../test/fixtures/tmdb/', im
 export const FANART_FIXTURES_DIR = fileURLToPath(
   new URL('../test/fixtures/fanart/', import.meta.url),
 )
+
+/** MusicBrainz's and the Cover Art Archive's recordings: `test/fixtures/musicbrainz`. */
+export const MUSICBRAINZ_RECORDINGS_DIR = fileURLToPath(
+  new URL('../test/fixtures/musicbrainz/', import.meta.url),
+)
+
+/** The hosts MusicBrainz's recordings answer for; they need no credential. */
+const MUSICBRAINZ_HOSTS = new Set(['musicbrainz.org', 'coverartarchive.org'])
+/** Where the Cover Art Archive's images are served from: placeholders, as TMDB's are. */
+const COVER_ART_IMAGE_HOSTS = /(^|\.)archive\.org$/
 
 /** A credential the replay treats as one TMDB refuses: anything starting `invalid`. */
 export const INVALID_CREDENTIAL_PREFIX = 'invalid'
@@ -65,9 +77,11 @@ function placeholderFor(path: string, png: boolean) {
 
 /** The request had no recording: a test (or a page in the sweep) asked for something new. */
 export class ReplayMissError extends Error {
-  constructor(key: string) {
+  constructor(key: string, source: 'tmdb' | 'musicbrainz' = 'tmdb') {
     super(
-      `There's no TMDB recording for ${key}. Add it with \`bun run record:tmdb\` in packages/metadata.`,
+      source === 'tmdb'
+        ? `There's no TMDB recording for ${key}. Add it with \`bun run record:tmdb\` in packages/metadata.`
+        : `There's no MusicBrainz recording for ${key}. Add it with \`bun run record:musicbrainz\` in packages/metadata.`,
     )
     this.name = 'ReplayMissError'
   }
@@ -75,6 +89,7 @@ export class ReplayMissError extends Error {
 
 export function loadRecordings(dir = RECORDINGS_DIR): Map<string, Recording> {
   const recordings = new Map<string, Recording>()
+  if (!existsSync(dir)) return recordings
   for (const name of readdirSync(dir)
     .filter((n) => n.endsWith('.json'))
     .sort()) {
@@ -88,6 +103,8 @@ export type ReplayOptions = {
   dir?: string
   /** fanart.tv's answers: `movie_{tmdb id}.json`. */
   fanartDir?: string
+  /** MusicBrainz's and the Cover Art Archive's recordings. */
+  musicBrainzDir?: string
   /** Seen before a request is answered: tests count calls or fail one on purpose. */
   onRequest?: (url: URL, init?: RequestInit) => Response | undefined
 }
@@ -113,9 +130,11 @@ function fanartAnswer(dir: string, url: URL, headers: Headers): Response {
 export function createReplayFetch({
   dir,
   fanartDir = FANART_FIXTURES_DIR,
+  musicBrainzDir = MUSICBRAINZ_RECORDINGS_DIR,
   onRequest,
 }: ReplayOptions = {}): ReplayFetch {
   const recordings = loadRecordings(dir)
+  const musicBrainz = loadRecordings(musicBrainzDir)
   const requests: string[] = []
 
   const replay = (async (input: string | URL | Request, init?: RequestInit) => {
@@ -130,7 +149,20 @@ export function createReplayFetch({
 
     if (url.hostname === 'webservice.fanart.tv')
       return fanartAnswer(fanartDir, url, new Headers(init?.headers ?? request?.headers))
-    if (url.hostname === 'image.tmdb.org' || url.hostname === 'assets.fanart.tv') {
+    if (MUSICBRAINZ_HOSTS.has(url.hostname)) {
+      const key = recordingKey(method, url.toString(), 'valid')
+      const found = musicBrainz.get(key)
+      if (!found) throw new ReplayMissError(key, 'musicbrainz')
+      return new Response(JSON.stringify(found.response.body), {
+        status: found.response.status,
+        headers: found.response.headers,
+      })
+    }
+    if (
+      url.hostname === 'image.tmdb.org' ||
+      url.hostname === 'assets.fanart.tv' ||
+      COVER_ART_IMAGE_HOSTS.test(url.hostname)
+    ) {
       const png = url.pathname.endsWith('.png')
       const bytes = placeholderFor(url.pathname, png)
       return new Response(bytes, {

@@ -1,0 +1,156 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "https://musicbrainz.org/ws/2/release-group/67461c8e-d864-3910-9bf4-39e44357aac9?fmt=json&inc=genres%2Bartist-credits",
+    "credential": "valid"
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json"
+    },
+    "body": {
+      "artist-credit": [
+        {
+          "name": "Blur",
+          "joinphrase": "",
+          "artist": {
+            "disambiguation": "UK alternative rock band",
+            "sort-name": "Blur",
+            "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b",
+            "name": "Blur",
+            "genres": [
+              {
+                "name": "alternative rock",
+                "disambiguation": "",
+                "id": "ceeaa283-5d7b-4202-8d1d-e25d116b2a18",
+                "count": 19
+              },
+              {
+                "id": "930ef127-3653-4677-9b95-ecc90c7c1a14",
+                "disambiguation": "",
+                "name": "art pop",
+                "count": 1
+              },
+              {
+                "name": "art rock",
+                "disambiguation": "",
+                "id": "b7ef058e-6d83-4ca4-8123-9724bff4648b",
+                "count": 4
+              },
+              {
+                "disambiguation": "",
+                "id": "f1c9b874-7ef2-4e79-9419-c0bcb5f33a30",
+                "name": "britpop",
+                "count": 18
+              },
+              {
+                "name": "experimental rock",
+                "disambiguation": "",
+                "id": "65c97e89-b42b-45c2-a70e-0eca1b8f0ff7",
+                "count": 2
+              },
+              {
+                "disambiguation": "",
+                "id": "3f08faa9-6c3e-4b6d-b4b8-08eea45954e2",
+                "name": "grunge",
+                "count": 1
+              },
+              {
+                "count": 15,
+                "name": "indie rock",
+                "disambiguation": "",
+                "id": "ccd19ebf-052c-4afe-8ad9-fbb0a73f94a7"
+              },
+              {
+                "disambiguation": "",
+                "id": "013161b9-3f21-468f-aa1f-28adf1eae085",
+                "name": "madchester",
+                "count": 2
+              },
+              {
+                "disambiguation": "",
+                "id": "cd99451c-f6d5-47c7-8d49-6c08b51e61aa",
+                "name": "neo-psychedelia",
+                "count": 2
+              },
+              {
+                "count": 2,
+                "id": "8e5474b7-f445-49a7-866d-0f8e34b0a519",
+                "disambiguation": "",
+                "name": "noise rock"
+              },
+              {
+                "count": 1,
+                "id": "797e2e85-5ffd-495c-a757-8b4079052f0e",
+                "disambiguation": "",
+                "name": "pop rock"
+              },
+              {
+                "count": 2,
+                "disambiguation": "",
+                "id": "bbb1310c-24cb-4fc9-97c4-f93e4549f1e2",
+                "name": "post-grunge"
+              },
+              {
+                "id": "0e3fc579-2d24-4f20-9dae-736e1ec78798",
+                "disambiguation": "",
+                "name": "rock",
+                "count": 2
+              },
+              {
+                "name": "shoegaze",
+                "id": "a4012b2e-5c27-4f81-8781-9ae5998d882c",
+                "disambiguation": "",
+                "count": 2
+              },
+              {
+                "name": "slacker rock",
+                "id": "f2e920a2-a2b4-4688-b9c4-913224e9f140",
+                "disambiguation": "",
+                "count": 1
+              }
+            ],
+            "type": "Group",
+            "country": "GB",
+            "id": "ba853904-ae25-4ebb-89d6-c44cfbd71bd2"
+          }
+        }
+      ],
+      "primary-type-id": "f529b476-6e62-324f-b0aa-1f3e33d313fc",
+      "primary-type": "Album",
+      "disambiguation": "",
+      "secondary-type-ids": [],
+      "secondary-types": [],
+      "title": "Parklife",
+      "genres": [
+        {
+          "count": 4,
+          "name": "alternative rock",
+          "id": "ceeaa283-5d7b-4202-8d1d-e25d116b2a18",
+          "disambiguation": ""
+        },
+        {
+          "count": 8,
+          "id": "f1c9b874-7ef2-4e79-9419-c0bcb5f33a30",
+          "disambiguation": "",
+          "name": "britpop"
+        },
+        {
+          "name": "indie rock",
+          "disambiguation": "",
+          "id": "ccd19ebf-052c-4afe-8ad9-fbb0a73f94a7",
+          "count": 2
+        },
+        {
+          "count": 5,
+          "name": "rock",
+          "id": "0e3fc579-2d24-4f20-9dae-736e1ec78798",
+          "disambiguation": ""
+        }
+      ],
+      "id": "67461c8e-d864-3910-9bf4-39e44357aac9",
+      "first-release-date": "1994-04-25"
+    }
+  }
+}
