@@ -950,7 +950,9 @@ describe('a movie in the library', () => {
     const card = page.getByRole('region', { name: 'In the queue' })
     expect(within(card).getByText('The.Matrix.1999.1080p.BluRay.x264-GRP1')).toBeTruthy()
     expect(within(card).getByText('Downloading')).toBeTruthy()
-    expect(within(card).getByText('42% · 2.5 MB/s · Web seed · archive.org · 30m left')).toBeTruthy()
+    expect(
+      within(card).getByText('42% · 2.5 MB/s · Web seed · archive.org · 30m left'),
+    ).toBeTruthy()
     expect(within(card).queryByText('Reloaded.2003')).toBeNull()
 
     // the import is blocked: the badge, the bar and the reason follow the event
