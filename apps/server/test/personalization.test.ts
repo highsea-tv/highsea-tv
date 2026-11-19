@@ -365,6 +365,7 @@ describe('appearance', () => {
       'playback',
       'profiles',
       'shows',
+      'music',
     ])
   })
 })

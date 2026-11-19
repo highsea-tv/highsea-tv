@@ -6,6 +6,7 @@ import type { EventBus } from '@highsea-tv/core'
 import type { JobQueue } from '@highsea-tv/jobs'
 import type { Metadata } from '@highsea-tv/metadata'
 import type { MediaDeps } from '../shared/context.ts'
+import type { CoverExtractor } from './images.ts'
 import type { TagReader } from './tags.ts'
 
 export type MusicDeps = MediaDeps & {
@@ -14,6 +15,13 @@ export type MusicDeps = MediaDeps & {
   metadata: Pick<Metadata, 'music'>
   /** ffprobe's tag reader; defaults to `HIGHSEA_FFPROBE` or `ffprobe` on the PATH. */
   readTags?: TagReader
+  /**
+   * Where covers copied out of files and pictures fetched from the Cover Art Archive and fanart.tv
+   * are kept (the data folder's `images/music`); without it, only pictures in folders are served.
+   */
+  imagesDir?: string
+  /** Copies the picture out of an audio file (ffmpeg); without it, those covers aren't served. */
+  extractCover?: CoverExtractor
 }
 
 /** Says music changed: the albums and artists by id (`music.updated`). */

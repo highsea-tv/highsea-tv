@@ -105,3 +105,15 @@ The owner chose music's own tables when asked (2026-11-19).
   - the cover and picture image route;
   - artists' pictures from fanart.tv ([ADR 0070](0070-fanart-tv-second-artwork-source.md); `fanart_images` already has the `artist` subject).
 - Music videos are counted per artist and left on disk for a later part (answer 11).
+
+## 2026-11-19: the routes served, covers, plays, Match and naming (phase 5 D; HT-101)
+
+The contract's drafted music routes are served (`apps/server/src/api/music.ts`): the admin's artists, albums with their discs, tracks and files, Unmatched with Match and Ignore, Refresh, each Music folder's figures and track naming; the apps' library, album, artist, queue, songs, Search and each profile's playlists. Public info's `sources` lists `music`, and `music` is a library a user can be given (`LIBRARIES`). Someone without it gets an empty library and a 404 for the rest, as for shows.
+
+- **Covers and pictures** at `/api/v1/images/music/{album|artist}/{id}` (`@highsea-tv/media/music`'s `images.ts`). An album: its folder's cover file, then the picture in one of its files (copied out once with ffmpeg's image2 muxer, https://ffmpeg.org/ffmpeg-formats.html#image2-1), then the Cover Art Archive's front cover for its release group (https://musicbrainz.org/doc/Cover_Art_Archive/API), fetched once. An artist: the folder's picture, then fanart.tv's (0070's section of this date). Copies are kept under the data folder's `images/music/`, named by a hash of their source; paths come only from the library's rows. Answers carry an ETag and `Cache-Control: private, max-age=86400`.
+- **Plays** are a table of their own, `music_plays` (migration 0027): who, which profile and device, the track with its artist's and album's names copied in (so a deleted artist leaves the history readable), the seconds heard, and whether it counts. It counts past half the track or four minutes, Last.fm's rule for a scrobble (https://www.last.fm/api/scrobbling). A song shows on Now playing and in its history beside films; Stop ends it as it ends a film. Recently played (`music_recent`) is what a profile queued, and Home gains a Recently played row.
+- **Match** is kept by folder in `music_matches` and laid over the tags at every scan, so the folder stays an album; nothing on disk changes. There's no searching MusicBrainz by name (answer 10).
+- **Track naming** is Lidarr's, with its defaults and renaming off (https://wiki.servarr.com/lidarr/settings#track-naming), saved and checked (a track's format needs `{track}`). Nothing renames a file yet: it's acted on once highsea files music it downloads.
+- **Storage** counts the Music folders' tracks in `usedBy.music`.
+
+What real files forced: an album's year, release date and label are nullable (a rip with no date has none). Loudness is left empty and an artist's bio null until a source gives them.

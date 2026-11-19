@@ -368,8 +368,17 @@ function PageAlbum({ x }: { x: ClientAlbumDetail }) {
             ))}
           </View>
           <View style={{ gap: space['0.5'] }}>
-            {[text.releasedOn(released), summary, t('copyright', { year: a.year, label })].map(
-              (line) => (
+            {[
+              released ? text.releasedOn(released) : null,
+              summary,
+              label
+                ? a.year
+                  ? t('copyright', { year: a.year, label })
+                  : t('copyrightNoYear', { label })
+                : null,
+            ]
+              .filter((line): line is string => line !== null)
+              .map((line) => (
                 <Text
                   key={line}
                   variant="caption"
@@ -378,8 +387,7 @@ function PageAlbum({ x }: { x: ClientAlbumDetail }) {
                 >
                   {line}
                 </Text>
-              ),
-            )}
+              ))}
           </View>
         </View>
         {more.length > 0 ? (

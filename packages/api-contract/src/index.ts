@@ -129,7 +129,7 @@ export const routes = {
   collections,
   announcements,
   tags,
-  // drafted with B3 (one-client-platform-b.md): the mock answers them, the server 501s
+  // drafted with B3 (one-client-platform-b.md), served since Phase 5 (shows B, music D)
   shows,
   music,
   playlists,
@@ -137,6 +137,6 @@ export const routes = {
   // drafted with D3 (one-client-platform-d.md, answer 5): the admin's shows, as `shows` above
   // with Shows' settings (series-settings.ts): episode naming, episode sizes, profiles' use
   series: { ...series, ...seriesSettings },
-  // drafted with HT-68 (Phase 5's part D, answer 12): the admin's music, as `series` above
+  // drafted with HT-68 and served since Phase 5's part D: the admin's music, as `series` above
   musicLibrary,
 } as const

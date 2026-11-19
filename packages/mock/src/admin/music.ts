@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The admin's music routes (HT-68, Phase 5's part D), drafted in the contract (`musicLibrary`,
+// The admin's music routes (HT-68, Phase 5's part D), in the contract (`musicLibrary`,
 // api-contract's music-library.ts) and answered here from the mock's music as the admin keeps it
 // (music-admin.ts): the artists and albums with their discs, tracks and files, Refresh, Unmatched
 // with its match and ignore, each Music folder's figures, and music's naming. The real server
-// answers every one 501 until it has music.
+// serves them since HT-101 (apps/server/src/api/music.ts).
 //
 // What the mock doesn't keep, and what stands in for it here:
 // - Refresh reads nothing again: it says it's done, as the job would once MusicBrainz answered;

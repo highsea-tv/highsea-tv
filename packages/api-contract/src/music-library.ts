@@ -2,11 +2,11 @@
 // Music as the admin keeps it (docs/product/music.md), drafted with HT-68 for Phase 5's part D
 // (phase-5-real-use.md, the owner's answers 10 and 12; prototype-gaps.md's stage 7): artists, their
 // albums, each album's discs and tracks with the file behind each, the folders the scan couldn't
-// read as an album (Unmatched), each Music folder's figures, and music's naming. Every route here
-// is a draft the prototypes' mock answers and the real server answers 501 until it has music
-// (`draft()` in common.ts), and the admin draws Music only when public info's `sources` lists
-// `music`. They sit beside the apps' `/music` (music.ts), as the admin's shows sit at `/series`
-// beside the apps' `/shows`, and take Lidarr's nouns: artists, albums, tracks and track files.
+// read as an album (Unmatched), each Music folder's figures, and music's naming. Drafted with the
+// prototype and served since Phase 5's part D (HT-101, ADR 0065); the admin draws Music only when
+// public info's `sources` lists `music`. They sit beside the apps' `/music` (music.ts), as the
+// admin's shows sit at `/series` beside the apps' `/shows`, and take Lidarr's nouns: artists,
+// albums, tracks and track files.
 //
 // Music differs from films where the plan says so: metadata comes from the files' tags first, then
 // MusicBrainz and the Cover Art Archive where a MusicBrainz id is known (answer 10), so there's no
@@ -17,14 +17,12 @@ import {
   API_PREFIX,
   access,
   body,
-  draft,
   errors,
   IdParam,
   IsoDate,
   IsoDay,
   json,
   noContent,
-  notServed,
 } from './common.ts'
 import { ALBUM_KINDS } from './kinds.ts'
 
@@ -122,7 +120,7 @@ export const LibraryArtist = z
     id: z.string(),
     name: z.string(),
     sortName: z.string(),
-    /** The folder's artist picture, else MusicBrainz's; null when neither. */
+    /** The folder's artist picture, else fanart.tv's for their MusicBrainz id; null when neither. */
     photo: z.string().nullable(),
     genres: z.array(z.string()),
     albums: z.number().int().nonnegative(),
@@ -210,9 +208,8 @@ export const TrackNaming = z
   })
   .openapi('TrackNaming')
 
-const staff = { ...access('staff'), ...draft() }
+const staff = access('staff')
 const refused = errors('unauthorized', 'forbidden')
-const DRAFTED = 'Drafted: the server answers 501 until it has music.'
 
 const ARTISTS = `${API_PREFIX}/artists`
 const ALBUMS = `${API_PREFIX}/albums`
@@ -224,147 +221,136 @@ export const musicLibrary = {
     method: 'get',
     path: `${API_PREFIX}/music/folders`,
     tags: ['Music library'],
-    summary: 'Each Music folder’s artists, albums, tracks and size (draft)',
-    description: `For Settings › Media management and the dashboard’s Storage. ${DRAFTED}`,
+    summary: 'Each Music folder’s artists, albums, tracks and size',
+    description: 'For Settings › Media management and the dashboard’s Storage.',
     ...staff,
-    responses: { 200: json(z.array(MusicFolder), 'The folders'), ...refused, ...notServed },
+    responses: { 200: json(z.array(MusicFolder), 'The folders'), ...refused },
   }),
   unmatched: createRoute({
     method: 'get',
     path: UNMATCHED,
     tags: ['Music library'],
-    summary: 'The folders the scan couldn’t read as an album (draft)',
-    description: DRAFTED,
+    summary: 'The folders the scan couldn’t read as an album',
     ...staff,
     responses: {
       200: json(z.array(UnmatchedMusic), 'The folders set aside'),
       ...refused,
-      ...notServed,
     },
   }),
   match: createRoute({
     method: 'post',
     path: `${UNMATCHED}/{id}`,
     tags: ['Music library'],
-    summary: 'Say what a set-aside folder is (draft)',
-    description: `Its files join that album, made when it isn’t here; nothing on disk changes. ${DRAFTED}`,
+    summary: 'Say what a set-aside folder is',
+    description: `Its files join that album, made when it isn’t here; nothing on disk changes.`,
     ...staff,
     request: { params: IdParam, ...body(MusicMatch) },
     responses: {
       ...noContent,
       ...errors('invalid', 'unauthorized', 'forbidden', 'not-found'),
-      ...notServed,
     },
   }),
   ignore: createRoute({
     method: 'delete',
     path: `${UNMATCHED}/{id}`,
     tags: ['Music library'],
-    summary: 'Leave a set-aside folder out of the library (draft)',
-    description: `Later scans pass it by; nothing on disk changes. ${DRAFTED}`,
+    summary: 'Leave a set-aside folder out of the library',
+    description: `Later scans pass it by; nothing on disk changes.`,
     ...staff,
     request: { params: IdParam },
     responses: {
       ...noContent,
       ...errors('unauthorized', 'forbidden', 'not-found'),
-      ...notServed,
     },
   }),
   artists: createRoute({
     method: 'get',
     path: ARTISTS,
     tags: ['Music library'],
-    summary: 'The artists in the library (draft)',
-    description: DRAFTED,
+    summary: 'The artists in the library',
     ...staff,
-    responses: { 200: json(z.array(LibraryArtist), 'The artists'), ...refused, ...notServed },
+    responses: { 200: json(z.array(LibraryArtist), 'The artists'), ...refused },
   }),
   artist: createRoute({
     method: 'get',
     path: `${ARTISTS}/{id}`,
     tags: ['Music library'],
-    summary: 'An artist with their albums (draft)',
-    description: `404 when they aren’t here. ${DRAFTED}`,
+    summary: 'An artist with their albums',
+    description: `404 when they aren’t here.`,
     ...staff,
     request: { params: IdParam },
     responses: {
       200: json(LibraryArtistDetail, 'The artist'),
       ...errors('unauthorized', 'forbidden', 'not-found'),
-      ...notServed,
     },
   }),
   refreshArtist: createRoute({
     method: 'post',
     path: `${ARTISTS}/{id}/refresh`,
     tags: ['Music library'],
-    summary: 'Read an artist’s tags again and refresh them from MusicBrainz (draft)',
-    description: `Their albums too. MusicBrainz is asked only where an id is known, at its pace of one request a second. ${DRAFTED}`,
+    summary: 'Read an artist’s tags again and refresh them from MusicBrainz',
+    description: `Their albums too. MusicBrainz is asked only where an id is known, at its pace of one request a second.`,
     ...staff,
     request: { params: IdParam },
     responses: {
       ...noContent,
       ...errors('unauthorized', 'forbidden', 'not-found'),
-      ...notServed,
     },
   }),
   albums: createRoute({
     method: 'get',
     path: ALBUMS,
     tags: ['Music library'],
-    summary: 'The albums in the library (draft)',
-    description: DRAFTED,
+    summary: 'The albums in the library',
     ...staff,
-    responses: { 200: json(z.array(LibraryAlbum), 'The albums'), ...refused, ...notServed },
+    responses: { 200: json(z.array(LibraryAlbum), 'The albums'), ...refused },
   }),
   album: createRoute({
     method: 'get',
     path: `${ALBUMS}/{id}`,
     tags: ['Music library'],
-    summary: 'An album with its discs, tracks and files (draft)',
-    description: `404 when it isn’t here. ${DRAFTED}`,
+    summary: 'An album with its discs, tracks and files',
+    description: `404 when it isn’t here.`,
     ...staff,
     request: { params: IdParam },
     responses: {
       200: json(LibraryAlbumDetail, 'The album'),
       ...errors('unauthorized', 'forbidden', 'not-found'),
-      ...notServed,
     },
   }),
   refreshAlbum: createRoute({
     method: 'post',
     path: `${ALBUMS}/{id}/refresh`,
     tags: ['Music library'],
-    summary: 'Read an album’s tags again and refresh it from MusicBrainz (draft)',
-    description: `The Cover Art Archive’s cover comes too, unless the folder has its own. ${DRAFTED}`,
+    summary: 'Read an album’s tags again and refresh it from MusicBrainz',
+    description: `The Cover Art Archive’s cover comes too, unless the folder has its own.`,
     ...staff,
     request: { params: IdParam },
     responses: {
       ...noContent,
       ...errors('unauthorized', 'forbidden', 'not-found'),
-      ...notServed,
     },
   }),
   naming: createRoute({
     method: 'get',
     path: `${API_PREFIX}/settings/trackNaming`,
     tags: ['Music library'],
-    summary: 'Music’s naming (draft)',
-    description: `Lidarr’s formats and tokens. ${DRAFTED}`,
+    summary: 'Music’s naming',
+    description: `Lidarr’s formats and tokens.`,
     ...staff,
-    responses: { 200: json(TrackNaming, 'Track naming'), ...refused, ...notServed },
+    responses: { 200: json(TrackNaming, 'Track naming'), ...refused },
   }),
   saveNaming: createRoute({
     method: 'put',
     path: `${API_PREFIX}/settings/trackNaming`,
     tags: ['Music library'],
-    summary: 'Save music’s naming (draft)',
-    description: `The details’ \`reason\` names the field a format is refused for. ${DRAFTED}`,
+    summary: 'Save music’s naming',
+    description: `The details’ \`reason\` names the field a format is refused for.`,
     ...staff,
     request: { ...body(TrackNaming) },
     responses: {
       200: json(TrackNaming, 'Saved'),
       ...errors('invalid', 'unauthorized', 'forbidden'),
-      ...notServed,
     },
   }),
 } as const

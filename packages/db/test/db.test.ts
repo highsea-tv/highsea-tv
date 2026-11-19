@@ -299,6 +299,7 @@ describe('0018_profiles', () => {
       '0024_show_dismissals',
       '0025_music',
       '0026_unmatched_dismissed',
+      '0027_music_plays',
     ])
     expect(result.backup).not.toBeNull()
     const once = state(first)
@@ -405,6 +406,7 @@ describe('0020_shows', () => {
       '0024_show_dismissals',
       '0025_music',
       '0026_unmatched_dismissed',
+      '0027_music_plays',
     ])
     expect(films(raw)).toEqual(was)
     expect(raw.all('SELECT count(*) AS n FROM media_items')).toEqual([{ n: 300 }])
@@ -554,6 +556,7 @@ describe('0020_shows', () => {
         '0024_show_dismissals',
         '0025_music',
         '0026_unmatched_dismissed',
+        '0027_music_plays',
       ])
       expect(all(raw)).toEqual(was)
       expect(raw.all('SELECT count(*) AS n FROM unmatched_files')).toEqual([{ n: 0 }])
@@ -616,7 +619,7 @@ describe('0020_shows', () => {
         expect(raw.all('SELECT count(*) AS n FROM show_dismissals')).toEqual([{ n: 0 }])
         expect(raw.all('PRAGMA foreign_key_check')).toEqual([])
         expect(raw.all('PRAGMA integrity_check')).toEqual([{ integrity_check: 'ok' }])
-        expect(migrate(raw).applied).toEqual(['0026_unmatched_dismissed'])
+        expect(migrate(raw).applied).toEqual(['0026_unmatched_dismissed', '0027_music_plays'])
         expect(migrate(raw).applied).toEqual([])
         raw.close()
       })
@@ -667,7 +670,9 @@ describe('0020_shows', () => {
         const { raw } = withUnmatched()
         migrate(raw, { all: migrations.filter((m) => m.tag < '0026') })
         const was = everything(raw)
-        expect(migrate(raw).applied).toEqual(['0026_unmatched_dismissed'])
+        expect(migrate(raw, { all: migrations.filter((m) => m.tag < '0027') }).applied).toEqual([
+          '0026_unmatched_dismissed',
+        ])
         const now = everything(raw)
         expect(now.unmatched).toEqual(
           (was.unmatched as Record<string, unknown>[]).map((r) => ({ ...r, dismissed_at: null })),
@@ -698,6 +703,70 @@ describe('0020_shows', () => {
         expect(
           raw.all("SELECT id, language_profile_id FROM media_items WHERE type = 'movie'"),
         ).toEqual(films)
+        raw.close()
+      })
+
+      // HT-101: a song's plays, the owner's matches by hand, playlists and Recently played, beside
+      // the films, the show and the music already there
+      test('0027_music_plays adds its tables and an artist’s photo_url, and leaves the rest as it was', () => {
+        const { raw, profile } = withUnmatched()
+        migrate(raw, { all: migrations.filter((m) => m.tag < '0027') })
+        raw.run(
+          "INSERT INTO music_artists (id, name, sort_name, name_key, root_folder, source, added_at, updated_at) VALUES ('ar_1', 'Blur', 'blur', 'blur', '/music', 'tags', 1, 1)",
+        )
+        raw.run(
+          "INSERT INTO music_albums (id, artist_id, title, sort_title, path, root_folder, source, added_at, updated_at) VALUES ('al_1', 'ar_1', 'Parklife', 'parklife', '/music/Blur/Parklife', '/music', 'tags', 1, 1)",
+        )
+        raw.run(
+          "INSERT INTO music_tracks (id, album_id, number, title, path, size, mtime, format, codec, added_at, updated_at) VALUES ('tr_1', 'al_1', 1, 'Girls & Boys', '/music/Blur/Parklife/01.flac', 1, 1, 'FLAC', 'flac', 1, 1)",
+        )
+        const music = () => ({
+          albums: raw.all('SELECT * FROM music_albums'),
+          tracks: raw.all('SELECT * FROM music_tracks'),
+        })
+        const was = { ...everything(raw), ...music() }
+        const artists = raw.all('SELECT * FROM music_artists') as Record<string, unknown>[]
+        const tables = () =>
+          (
+            raw.all("SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name") as {
+              name: string
+            }[]
+          ).map((t) => t.name)
+        const before = tables()
+        expect(migrate(raw).applied).toEqual(['0027_music_plays'])
+        expect({ ...everything(raw), ...music() }).toEqual(was)
+        expect(raw.all('SELECT * FROM music_artists')).toEqual(
+          artists.map((a) => ({ ...a, photo_url: null })),
+        )
+        expect(tables().filter((t) => !before.includes(t))).toEqual([
+          'music_matches',
+          'music_playlist_entries',
+          'music_playlists',
+          'music_plays',
+          'music_recent',
+        ])
+        // a play keeps its words when its track goes; a playlist's entry goes with its track
+        raw.run(
+          "INSERT INTO music_plays (id, user_id, profile_id, profile_name, track_id, album_id, artist_id, title, artist_name, album_title, device_name, client, version, method, away, played, finished, started_at, ended_at) VALUES ('mpl_1', ?, ?, 'Main', 'tr_1', 'al_1', 'ar_1', 'Girls & Boys', 'Blur', 'Parklife', 'TV', 'web', 'FLAC', 'direct-play', 0, 200, 1, 1, 2)",
+          profile?.user_id,
+          profile?.id,
+        )
+        raw.run(
+          "INSERT INTO music_playlists (id, user_id, profile_id, name, created_at, updated_at) VALUES ('pl_1', ?, ?, 'Mornings', 1, 1)",
+          profile?.user_id,
+          profile?.id,
+        )
+        raw.run(
+          "INSERT INTO music_playlist_entries (id, playlist_id, track_id, position) VALUES ('pe_1', 'pl_1', 'tr_1', 0)",
+        )
+        raw.run("DELETE FROM music_artists WHERE id = 'ar_1'")
+        expect(raw.all('SELECT track_id, album_id, artist_id, title FROM music_plays')).toEqual([
+          { track_id: null, album_id: null, artist_id: null, title: 'Girls & Boys' },
+        ])
+        expect(raw.all('SELECT count(*) AS n FROM music_playlist_entries')).toEqual([{ n: 0 }])
+        expect(raw.all('PRAGMA foreign_key_check')).toEqual([])
+        expect(raw.all('PRAGMA integrity_check')).toEqual([{ integrity_check: 'ok' }])
+        expect(migrate(raw).applied).toEqual([])
         raw.close()
       })
 

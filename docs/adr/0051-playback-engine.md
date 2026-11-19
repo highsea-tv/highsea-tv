@@ -174,3 +174,7 @@ The iPhone failed most resumes of a direct-streamed film with `CoreMediaErrorDom
 - Segments that start with an IDR frame where `EXT-X-INDEPENDENT-SEGMENTS` is written (7.4, 9.11).
 
 AVPlayer plays these streams once the header is whole, so they wait for a finding of their own.
+
+## 2026-11-19: a song's play (phase 5 D; HT-101)
+
+Music plays by the same rules, for audio alone (`packages/media/src/music/playback.ts`). Direct play, the file by byte ranges at `/stream/music/{token}`, when the device's profile lists the track's codec with enough channels and the container is one an audio element loads: FLAC, MP3, MP4/M4A (AAC, ALAC), Ogg (Opus, Vorbis) and WAV, as MDN's container and audio codec guides list them (https://developer.mozilla.org/en-US/docs/Web/Media/Guides/Formats/Containers, https://developer.mozilla.org/en-US/docs/Web/Media/Guides/Formats/Audio_codecs). Otherwise AAC in MP4 from ffmpeg's native encoder, 256 kb/s for stereo and 384 above (https://trac.ffmpeg.org/wiki/Encode/AAC), downmixed to what the device takes, with `-movflags +faststart` (https://ffmpeg.org/ffmpeg-formats.html#Options-11). A track is short, so the transcode is made whole before it's sent and sought by ranges like a file, rather than as HLS; it's kept a day in `transcodes-music` and the folder is emptied at start. So a song's transcode doesn't count against the running transcodes' limit. The token is the only credential, compared in constant time, and ends with the play; a play ends when stopped or after five minutes without a report.

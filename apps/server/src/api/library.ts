@@ -4,8 +4,9 @@
 // an episode and Search's shows and episodes (Phase 5 B). Search adds TMDB's titles only for people
 // who may add them (Manage the library), as the contract says. Someone who can't see the movie
 // library gets an empty list and a 404 for its titles (checkpoint 4.1a); someone who can't see the
-// shows, a 404 for an episode and no shows in Search.
-import { routes } from '@highsea-tv/api-contract'
+// shows, a 404 for an episode and no shows in Search; someone who can't hear the music, no artists,
+// albums or songs in it (HT-101).
+import { routes, type SearchSection } from '@highsea-tv/api-contract'
 import type { OpenAPIHono } from '@hono/zod-openapi'
 import type { Context } from 'hono'
 import { type Env, me } from './guard.ts'
@@ -40,7 +41,24 @@ export function registerLibrary(app: OpenAPIHono<Env>) {
       mayRequest: false,
     })
     const { libraries } = p.user
-    if (libraries !== 'all' && !libraries.includes('shows')) return c.json(films, 200)
-    return c.json(c.get('runtime').shows.client.search.merge(films, query, p.profileId), 200)
+    const sees = (kind: string) => libraries === 'all' || libraries.includes(kind)
+    const runtime = c.get('runtime')
+    // music's artists, albums and songs (HT-101), ranked among the rest
+    const music = sees('music') ? runtime.music.client.search(query) : null
+    const sections: SearchSection[] = music
+      ? [
+          { kind: 'artists', items: music.artists },
+          { kind: 'albums', items: music.albums },
+          { kind: 'songs', items: music.songs },
+        ]
+      : []
+    if (!sees('shows') && sections.length === 0) return c.json(films, 200)
+    return c.json(
+      runtime.shows.client.search.merge(films, query, p.profileId, {
+        shows: sees('shows'),
+        sections,
+      }),
+      200,
+    )
   })
 }
