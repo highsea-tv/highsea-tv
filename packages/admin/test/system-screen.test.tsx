@@ -52,6 +52,7 @@ const queueItem = (n: number, state: string, extra: Record<string, unknown> = {}
   eta: state === 'downloading' ? 600 : null,
   peers: { connected: state === 'downloading' ? 3 : 0, total: 9 },
   seeds: { connected: state === 'downloading' ? 2 : 0, total: 5 },
+  webSeeds: { connected: 0, total: 0, hosts: [] as string[], downRate: 0 },
   ratio: 0,
   state,
   stateReason: null,
@@ -655,9 +656,9 @@ describe('the Queue widget', () => {
       act(() => page.getByRole('link', { name: 'Movie 2' }).focus())
     expect(page.getByText('No video file in the download')).toBeTruthy()
     expect(page.getByRole('progressbar', { name: 'Movie 1 progress' })).toBeTruthy()
-    // seeds/peers connected, as Downloads shows them (HT-76, the owner's ask)
-    expect(page.getAllByText('Peers').length).toBeGreaterThan(0)
-    expect(page.getByText('2/3')).toBeTruthy()
+    // where the data comes from, as Downloads shows it (HT-76, HT-100: the owner's asks)
+    expect(page.getAllByText('Source').length).toBeGreaterThan(0)
+    expect(page.getByText('Peers 2/3')).toBeTruthy()
 
     await user.click(page.getByRole('tab', { name: /Issues/ }))
     expect(page.queryByText('Movie 1')).toBeNull()

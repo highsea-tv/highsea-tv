@@ -163,7 +163,18 @@ describe('web seeds (BEP 19)', () => {
       savePath: dir,
       category: 'movies',
     })
-    await until(() => b.engine.get(id).state === 'seeding', 15_000, 'the web seed download')
+    // while it downloads, the seed says it's sending (HT-100: Downloads shows the source)
+    let sending = false
+    await until(
+      () => {
+        const s = b.engine.get(id)
+        if (s.webSeeds[0]?.sending) sending = true
+        return s.state === 'seeding'
+      },
+      15_000,
+      'the web seed download',
+    )
+    expect(sending).toBe(true)
 
     expect(same(join(dir, 'Sintel.mkv'), data)).toBe(true)
     // ranges, never the whole file, and every one from the binding's address
@@ -177,7 +188,13 @@ describe('web seeds (BEP 19)', () => {
       b.sockets.filter((s) => s.kind === 'http').every((s) => s.localAddress === '127.0.0.1'),
     ).toBe(true)
     expect(b.engine.get(id).webSeeds).toEqual([
-      { url: `${web.url}/pub/`, status: 'working', message: null, downRate: expect.any(Number) },
+      {
+        url: `${web.url}/pub/`,
+        status: 'working',
+        message: null,
+        downRate: expect.any(Number),
+        sending: expect.any(Boolean),
+      },
     ])
 
     // the web seed is stored with the torrent: a restart still has it

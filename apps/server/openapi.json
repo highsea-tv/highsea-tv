@@ -11617,6 +11617,9 @@
               "total"
             ]
           },
+          "webSeeds": {
+            "$ref": "#/components/schemas/WebSeedSource"
+          },
           "ratio": {
             "type": "number"
           },
@@ -11657,9 +11660,36 @@
           "eta",
           "peers",
           "seeds",
+          "webSeeds",
           "ratio",
           "state",
           "stateReason"
+        ]
+      },
+      "WebSeedSource": {
+        "type": "object",
+        "properties": {
+          "connected": {
+            "type": "integer"
+          },
+          "total": {
+            "type": "integer"
+          },
+          "hosts": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "downRate": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "connected",
+          "total",
+          "hosts",
+          "downRate"
         ]
       },
       "SearchAlternativeInput": {
@@ -11918,6 +11948,9 @@
               "total"
             ]
           },
+          "webSeeds": {
+            "$ref": "#/components/schemas/WebSeedSource"
+          },
           "ratio": {
             "type": "number"
           },
@@ -12005,6 +12038,7 @@
           "eta",
           "peers",
           "seeds",
+          "webSeeds",
           "ratio",
           "state",
           "stateReason",
@@ -12078,6 +12112,10 @@
               "string",
               "null"
             ]
+          },
+          "downRate": {
+            "type": "number",
+            "default": 0
           }
         },
         "required": [
