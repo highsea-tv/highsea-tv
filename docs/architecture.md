@@ -74,6 +74,7 @@ bun run smoke           # the platform under Node, as production runs it
 bun run check:node      # is `node` the version in .nvmrc (26.11.1)?
 bun run clean           # removes what development rebuilds (.next, dist, the Rust target, stale highsea-* temp folders) and says what it freed
 bun run clean --docker  # also Docker's build cache and dangling images; --deps also node_modules; --dry-run removes nothing
+bun run flaky           # CI's jobs and tests that failed and then passed on the same commit, from the last 300 runs through gh (--limit N, --no-logs); read-only
 
 bun run server          # the server in development, http://localhost:3000 (data in .dev/)
 HIGHSEA_TMDB_REPLAY=1 bun run server   # the same, answering TMDB from the recordings: no key, no network
@@ -96,6 +97,7 @@ bun run --cwd apps/client test              # its Jest tests (bun run test runs 
 bun run pin hono zod    # versions old enough to pin
 bun run licenses        # the license audit
 bun run catalog:build   # validate, bundle and sign the catalog (dev key unless HIGHSEA_CATALOG_KEY)
+bun run catalog:verify [id…]   # each public definition against its real site, by hand; writes catalog/indexers/verified.json (--dry: only the table)
 bun run record:tmdb     # in packages/metadata: refresh the TMDB recordings, with HIGHSEA_TMDB_READ_TOKEN from .env.local (never in CI)
 bun scripts/calibrate-sync.ts <library> --cache <dir>   # the sync's confidence on real films: reads them, never writes (never in CI)
 docker compose -f docker/compose.dev.yaml up --build   # the image from this checkout (compose.yaml runs the published one)

@@ -2,7 +2,7 @@
 // System's Tasks, Logs, Crash reports, Backups and Updates, and Settings › Backups, through the
 // mock's transport (one-client-platform-d.md › D3): in the contract's shapes, the writes showing on
 // the next read, the server's refusals, and the files the mock doesn't keep left at 501.
-import { describe, expect, test } from 'bun:test'
+import { describe, expect, spyOn, test } from 'bun:test'
 import { routes } from '@highsea-tv/api-contract'
 import { createMockFetch, memoryStorage } from '@highsea-tv/mock/transport'
 import { type ApiError, createClient } from '@highsea-tv/sdk'
@@ -60,6 +60,18 @@ describe('System › Logs', () => {
     expect(all.entries.some((l) => l.level === 'debug')).toBe(true)
     const times = all.entries.map((l) => Date.parse(l.at))
     expect(times).toEqual([...times].sort((a, b) => b - a))
+
+    // the real clock moving on while the list is made, a millisecond a read, as a busy runner's
+    // did: the dates keep the order of the mock's own (HT-72)
+    let at = Date.now()
+    const tick = spyOn(Date, 'now').mockImplementation(() => at++)
+    try {
+      const ticking = await c.system.logs({ query: {} })
+      const wall = ticking.entries.map((l) => Date.parse(l.at))
+      expect(wall).toEqual([...wall].sort((a, b) => b - a))
+    } finally {
+      tick.mockRestore()
+    }
 
     const errors = await c.system.logs({ query: { level: 'warn' } })
     expect(errors.entries.every((l) => l.level === 'warn' || l.level === 'error')).toBe(true)

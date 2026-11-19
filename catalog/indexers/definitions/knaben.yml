@@ -1,0 +1,59 @@
+# SPDX-License-Identifier: CC0-1.0
+# Written for highsea from Knaben's own API documentation (https://knaben.org/api/v2); no definition was copied.
+id: knaben
+version: 1.0.0
+minEngineVersion: 1.1.0
+name: Knaben
+description: A meta search over many public trackers, from Knaben's public API. Films only.
+kind: json
+privacy: public
+language: en
+links: [https://knaben.org/]
+# "Use the server address is: https://api.knaben.org"
+baseUrl: https://api.knaben.org
+logo: knaben.svg
+# The category ids on Knaben's RSS page (https://knaben.org/rss/, Toggle show categories), which
+# its API v1 page points to for them.
+categories:
+  - { id: '3000000', standard: 2000, name: Movies }
+  - { id: '3001000', standard: 2040, name: Movies / HD }
+  - { id: '3002000', standard: 2030, name: Movies / SD }
+  - { id: '3003000', standard: 2045, name: Movies / UHD }
+  - { id: '3004000', standard: 2030, name: Movies / DVD }
+  - { id: '3005000', standard: 2010, name: Movies / Foreign }
+  - { id: '3006000', standard: 2010, name: Movies / Bollywood }
+  - { id: '3007000', standard: 2060, name: Movies / 3D }
+  - { id: '3008000', standard: 2020, name: Movies / Other }
+search:
+  request:
+    # "/v2/search" needs a query; "/v2/browse" lists by recency, for the newest releases
+    path: '{{ if .Query.Keywords }}/v2/search{{ else }}/v2/browse{{ end }}'
+    query:
+      q: '{{ .Query.Keywords }}'
+      c: '{{ .Query.Categories }}'
+      # "Size of the response, maximum is 300"
+      s: '100'
+  rows: { path: hits }
+  fields:
+    title: { path: title }
+    guid: { path: id, filters: [{ filter: prepend, value: 'knaben:' }] }
+    magnet: { path: magnetUrl, optional: true }
+    infohash: { path: hash, optional: true }
+    _link: { path: link, optional: true }
+    # the .torrent only when there's no magnet: a grab takes the .torrent first
+    download: { text: '{{ if .Result.magnet }}{{ else }}{{ .Result._link }}{{ end }}', optional: true }
+    details: { path: details, optional: true }
+    category: { path: categoryId.0, optional: true }
+    size: { path: bytes, optional: true }
+    seeders: { path: seeders, optional: true }
+    leechers: { path: peers, optional: true }
+    grabs: { path: grabs, optional: true }
+    published: { path: date, optional: true, filters: [{ filter: date }] }
+  supports: [q]
+# The page asks clients not to load the server and names no number.
+rateLimit: { requests: 20, seconds: 60, minGapMs: 1000 }
+test: { keywords: '' }
+source:
+  author: highsea
+  documentation: https://knaben.org/api/v2
+license: CC0-1.0

@@ -3,7 +3,9 @@
 // engine skips one whose major is higher than its own, and stays backward compatible within a
 // major (ADR 0007). Raise the minor when the format gains something a definition may use; raise
 // the major only when an old definition would no longer mean the same thing.
-export const ENGINE_VERSION = '1.0.0'
+// 1.1.0 (2026-11-19): rows inside rows (`rows.each`), a list that's left out when empty
+// (`rows.optional`), and `latest: false` for a site that can't list its newest releases.
+export const ENGINE_VERSION = '1.1.0'
 
 const SEMVER = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/
 

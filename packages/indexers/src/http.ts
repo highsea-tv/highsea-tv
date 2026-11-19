@@ -141,6 +141,12 @@ export async function send(fetch: Fetch, url: URL, options: RequestOptions): Pro
 /** Turns a status that isn't a success into the right failure. 3xx is left to the caller. */
 export function checkStatus(answer: Answer, now: number): void {
   const { status } = answer
+  // Cloudflare marks its challenge pages so (https://developers.cloudflare.com/cloudflare-challenges/challenge-types/challenge-pages/detect-response/)
+  if (answer.headers.get('cf-mitigated')?.toLowerCase() === 'challenge')
+    throw new IndexerError(
+      'unavailable',
+      `The site showed a Cloudflare challenge page (HTTP ${status}), which highsea can’t pass.`,
+    )
   if (status === 401)
     throw new IndexerError(
       'auth',
