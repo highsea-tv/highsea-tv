@@ -82,6 +82,7 @@ export const widgets = defineMessages({
   'storage.none': 'No disks reported',
   'storage.bar': '{percent} used',
   'storage.movies': '{count, plural, =0 {no movies} one {# movie} other {# movies}}',
+  'storage.albums': '{count, plural, =0 {no albums} one {# album} other {# albums}}',
 
   'indexers.none': 'No indexers yet',
   'indexers.noneBody': 'Searches need at least one. The catalog adds public ones in a click.',
@@ -129,6 +130,8 @@ export const widgets = defineMessages({
   'activity.progress': 'Progress',
   'activity.down': '↓',
   'activity.up': '↑',
+  'activity.peers': 'Peers',
+  'activity.peersOf': '{seeds}/{peers} peers',
   'activity.eta': 'ETA',
   'activity.status': 'Status',
   'activity.queued': 'queued',

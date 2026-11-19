@@ -15,14 +15,15 @@ afterEach(cleanup)
 const concrete = (path: string) => path.replace(/\{\w+\}/g, 'x1')
 
 describe('drafted routes', () => {
-  // `series` is the admin's shows, drafted with D3 (one-client-platform-d.md, answer 5)
-  test('are the shows, series, music and playlists groups, and nothing else', () => {
+  // `series` is the admin's shows, drafted with D3 (one-client-platform-d.md, answer 5);
+  // `musicLibrary` the admin's music, drafted with HT-68 (Phase 5's part D)
+  test('are the shows, series, music, music library and playlists groups, and nothing else', () => {
     const groups = new Set(
       Object.entries(routes).flatMap(([group, rs]) =>
         Object.values(rs).some((r) => isDraft(r)) ? [group] : [],
       ),
     )
-    expect([...groups].sort()).toEqual(['music', 'playlists', 'series', 'shows'])
+    expect([...groups].sort()).toEqual(['music', 'musicLibrary', 'playlists', 'series', 'shows'])
     for (const g of groups)
       for (const r of Object.values(routes[g as keyof typeof routes]))
         expect(isDraft(r), `${g} ${r.path}`).toBe(true)

@@ -716,9 +716,26 @@ export function createMockFetch(options: TransportOptions = {}): MockTransport {
     bus.emit({ topic: RESET_TOPIC })
   }
   const mockNow = () => mock.clock.now()
+  /**
+   * The real clock's lead on the mock's, read once a turn: read once a date, a millisecond passing
+   * partway through a list moved some of its dates and not others, and a list in the mock's order
+   * came out of order on the real clock (HT-72). It's read again after the turn
+   * (https://developer.mozilla.org/docs/Web/API/Window/queueMicrotask), so the clocks' drift
+   * between answers still shows.
+   */
+  let lead: number | null = null
+  const ahead = () => {
+    if (lead === null) {
+      lead = Date.now() - mockNow()
+      queueMicrotask(() => {
+        lead = null
+      })
+    }
+    return lead
+  }
   /** The mock's time on the real clock, which the apps compare dates against. */
-  const wall = (date: string) => new Date(Date.parse(date) + (Date.now() - mockNow())).toISOString()
-  const wallMs = (ms: number) => new Date(ms + (Date.now() - mockNow())).toISOString()
+  const wall = (date: string) => new Date(Date.parse(date) + ahead()).toISOString()
+  const wallMs = (ms: number) => new Date(ms + ahead()).toISOString()
 
   const apis = new Map<string, Api>()
   const api = () => {
@@ -1252,7 +1269,8 @@ export function createMockFetch(options: TransportOptions = {}): MockTransport {
       publicInfo: (_, { host }) => publicInfoOf(host),
       server: (_, { host }) => serverOf(host),
       // System › Status and the status bar (one-client-platform-d.md › D1), from the mock's own
-      // status: the disks' TV and music folded into Other, as the server has no shows or music yet
+      // status: the disks' TV folded into Other, as the server has no shows yet; music on its own,
+      // as the admin's Music draws it (HT-68)
       status: (_, ctx) => {
         const st = ctx.api.system.status()
         const server = serverOf(ctx.host)
@@ -1276,7 +1294,8 @@ export function createMockFetch(options: TransportOptions = {}): MockTransport {
             usedBy: {
               movies: d.usedBy.movies,
               downloads: d.usedBy.downloads,
-              other: d.usedBy.other + d.usedBy.tv + d.usedBy.music,
+              other: d.usedBy.other + d.usedBy.tv,
+              music: d.usedBy.music,
             },
           })),
         }

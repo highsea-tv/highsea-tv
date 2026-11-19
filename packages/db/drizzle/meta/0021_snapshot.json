@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "201012c3-5d22-41b7-9402-37726c32930e",
+  "id": "f8126db6-61fc-48f5-8ee7-a69c23ae5b3b",
   "prevId": "ef657660-4f2f-4fc5-bb78-2bc9357f3b91",
   "tables": {
     "account_links": {
@@ -3410,52 +3410,6 @@
       },
       "foreignKeys": {},
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "checkConstraints": {}
-    },
-    "fanart_images": {
-      "name": "fanart_images",
-      "columns": {
-        "subject": {
-          "name": "subject",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "external_id": {
-          "name": "external_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "data": {
-          "name": "data",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "fetched_at": {
-          "name": "fetched_at",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {},
-      "compositePrimaryKeys": {
-        "fanart_images_subject_external_id_pk": {
-          "columns": [
-            "subject",
-            "external_id"
-          ],
-          "name": "fanart_images_subject_external_id_pk"
-        }
-      },
       "uniqueConstraints": {},
       "checkConstraints": {}
     },
@@ -7338,6 +7292,14 @@
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
+        },
+        "web_seeds": {
+          "name": "web_seeds",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'[]'"
         },
         "magnet": {
           "name": "magnet",

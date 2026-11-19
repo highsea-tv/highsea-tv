@@ -165,6 +165,14 @@ describe.skipIf(!hasFfmpeg)('HLS over HTTP', () => {
       body: { profile: 'web-chromium', subtitleId: 'fil_sintel:2' },
     })
 
+  /**
+   * Waits for `check` for as long as the test's time limit allows: a fixed count of short sleeps
+   * guesses the machine's speed, and a loaded runner runs past it (HT-72).
+   */
+  const until = async (check: () => boolean) => {
+    while (!check()) await Bun.sleep(10)
+  }
+
   const logged = (message: string, session?: string) =>
     runtime.logs
       .entries()
@@ -217,8 +225,7 @@ describe.skipIf(!hasFfmpeg)('HLS over HTTP', () => {
     expect(logged('subtitle converted', session.id)).toEqual([])
     expect(existsSync(join(root, file.id))).toBe(false)
     // the segment is counted when its sending ends, as its "first segment served" line is written
-    for (let i = 0; i < 50 && !logged('first segment served', session.id).length; i++)
-      await Bun.sleep(20)
+    await until(() => logged('first segment served', session.id).length > 0)
     await api.playback.stop({ params: { id: session.id } })
     // one segment and gone: a player that gave up, said at warn (HT-56)
     expect(logged('play session ended early', session.id).map((l) => [l.level, l.fields])).toEqual([
@@ -266,8 +273,7 @@ describe.skipIf(!hasFfmpeg)('HLS over HTTP', () => {
     expect(ready.ffmpegMs).toBeGreaterThan(0)
     expect(ready.playlistMs).toBeGreaterThanOrEqual(0)
     expect(ready.sinceOpenMs).toBeGreaterThanOrEqual(ready.ffmpegMs as number)
-    for (let i = 0; i < 50 && !logged('first segment served', session.id).length; i++)
-      await Bun.sleep(20)
+    await until(() => logged('first segment served', session.id).length > 0)
     const served = one('first segment served')
     expect(served).toMatchObject({ segment: Number(name.split('.')[0]) })
     expect(served.bytes).toBeGreaterThan(0)
@@ -346,7 +352,7 @@ describe.skipIf(!hasFfmpeg)('HLS over HTTP', () => {
     const folder = join(runtime.config.dataDir, 'transcodes', session.id)
     expect(existsSync(folder)).toBe(true)
     await api.playback.stop({ params: { id: session.id } })
-    for (let i = 0; i < 50 && existsSync(folder); i++) await Bun.sleep(20)
+    await until(() => !existsSync(folder))
     expect(existsSync(folder)).toBe(false)
     expect((await fetch(`${base}video.m3u8`)).status).toBe(404)
   })

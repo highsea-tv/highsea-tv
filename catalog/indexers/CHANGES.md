@@ -2,6 +2,17 @@
 
 Newest first. Each version's notes appear in the server's What changed dialog.
 
+## 2026.11.19.3
+
+- The Torznab definition (1.0.1) now describes a feed the tracker or site serves itself, and says where its address and key come from, instead of suggesting a feed from another app.
+
+## 2026.11.19.2
+
+- YTS: films at 720p, 1080p and 2160p from YTS's public API, found by their IMDb id when highsea knows it.
+- Knaben: a search over many public trackers' films, from Knaben's public API.
+- BitSearch: a torrent search engine's films. It allows 200 requests a day from one address, so it's used for searches only, not for checking new releases every 15 minutes.
+- Torrents-CSV: an open list of seeded torrents, for searches only.
+
 ## 2026.11.19
 
 - highsea 0.4.5 is out. System › Updates has its notes.

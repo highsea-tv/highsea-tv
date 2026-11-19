@@ -1,10 +1,10 @@
 # SPDX-License-Identifier: CC0-1.0
 # Written for highsea from the Torznab specification; no definition was copied.
 id: generic-torznab
-version: 1.0.0
+version: 1.0.1
 minEngineVersion: 1.0.0
 name: Torznab
-description: Any indexer that speaks Torznab, including one you already run in Prowlarr or Jackett.
+description: A Torznab feed that a tracker or site serves itself, for sites that aren't in the catalog.
 kind: torznab
 privacy: private
 language: en
@@ -21,12 +21,12 @@ settings:
     type: url
     required: true
     help: >-
-      The feed's address without /api at the end. In Prowlarr, open the indexer and copy its
-      Torznab feed. In Jackett, copy the indexer's Torznab feed.
+      The feed's address without /api at the end, as the tracker or site gives it on its own
+      pages or in its API documentation.
   - key: apiKey
     label: API key
     type: password
-    help: The API key the feed asks for. Prowlarr and Jackett show theirs in Settings.
+    help: The API key the feed asks for. The tracker or site shows yours in your account.
 login: { method: apikey }
 api:
   path: /api

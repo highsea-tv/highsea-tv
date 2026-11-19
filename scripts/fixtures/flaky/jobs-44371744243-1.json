@@ -1,0 +1,168 @@
+{
+  "total_count": 17,
+  "jobs": [
+    {
+      "id": 135040078252,
+      "name": "reuse",
+      "conclusion": "success",
+      "run_id": 44371744243,
+      "run_attempt": 1,
+      "head_sha": "02a9c93b8361c4858a169b8018cb9f4661f68d54",
+      "steps": []
+    },
+    {
+      "id": 135040078641,
+      "name": "prepare",
+      "conclusion": "success",
+      "run_id": 44371744243,
+      "run_attempt": 1,
+      "head_sha": "02a9c93b8361c4858a169b8018cb9f4661f68d54",
+      "steps": []
+    },
+    {
+      "id": 135040398502,
+      "name": "spk",
+      "conclusion": "success",
+      "run_id": 44371744243,
+      "run_attempt": 1,
+      "head_sha": "02a9c93b8361c4858a169b8018cb9f4661f68d54",
+      "steps": []
+    },
+    {
+      "id": 135040400886,
+      "name": "ci",
+      "conclusion": "skipped",
+      "run_id": 44371744243,
+      "run_attempt": 1,
+      "head_sha": "02a9c93b8361c4858a169b8018cb9f4661f68d54",
+      "steps": []
+    },
+    {
+      "id": 135040401259,
+      "name": "e2e",
+      "conclusion": "skipped",
+      "run_id": 44371744243,
+      "run_attempt": 1,
+      "head_sha": "02a9c93b8361c4858a169b8018cb9f4661f68d54",
+      "steps": []
+    },
+    {
+      "id": 135040557610,
+      "name": "checks",
+      "conclusion": "success",
+      "run_id": 44371744243,
+      "run_attempt": 1,
+      "head_sha": "02a9c93b8361c4858a169b8018cb9f4661f68d54",
+      "steps": []
+    },
+    {
+      "id": 135040611467,
+      "name": "image (linux/amd64, ubuntu-24.04, amd64)",
+      "conclusion": "success",
+      "run_id": 44371744243,
+      "run_attempt": 1,
+      "head_sha": "02a9c93b8361c4858a169b8018cb9f4661f68d54",
+      "steps": []
+    },
+    {
+      "id": 135040611471,
+      "name": "catalog",
+      "conclusion": "success",
+      "run_id": 44371744243,
+      "run_attempt": 1,
+      "head_sha": "02a9c93b8361c4858a169b8018cb9f4661f68d54",
+      "steps": []
+    },
+    {
+      "id": 135040611474,
+      "name": "desktop (macos-15, universal-apple-darwin)",
+      "conclusion": "cancelled",
+      "run_id": 44371744243,
+      "run_attempt": 1,
+      "head_sha": "02a9c93b8361c4858a169b8018cb9f4661f68d54",
+      "steps": []
+    },
+    {
+      "id": 135040611477,
+      "name": "github-release",
+      "conclusion": "failure",
+      "run_id": 44371744243,
+      "run_attempt": 1,
+      "head_sha": "02a9c93b8361c4858a169b8018cb9f4661f68d54",
+      "steps": [
+        {
+          "name": "Everything the release needs passed",
+          "conclusion": "failure"
+        }
+      ]
+    },
+    {
+      "id": 135040611573,
+      "name": "desktop (windows-2025, x86_64-pc-windows-msvc)",
+      "conclusion": "success",
+      "run_id": 44371744243,
+      "run_attempt": 1,
+      "head_sha": "02a9c93b8361c4858a169b8018cb9f4661f68d54",
+      "steps": []
+    },
+    {
+      "id": 135040611612,
+      "name": "desktop (ubuntu-24.04, x86_64-unknown-linux-gnu)",
+      "conclusion": "success",
+      "run_id": 44371744243,
+      "run_attempt": 1,
+      "head_sha": "02a9c93b8361c4858a169b8018cb9f4661f68d54",
+      "steps": []
+    },
+    {
+      "id": 135040611650,
+      "name": "image (linux/arm64, ubuntu-24.04-arm, arm64)",
+      "conclusion": "success",
+      "run_id": 44371744243,
+      "run_attempt": 1,
+      "head_sha": "02a9c93b8361c4858a169b8018cb9f4661f68d54",
+      "steps": []
+    },
+    {
+      "id": 135044637496,
+      "name": "merge",
+      "conclusion": "success",
+      "run_id": 44371744243,
+      "run_attempt": 1,
+      "head_sha": "02a9c93b8361c4858a169b8018cb9f4661f68d54",
+      "steps": []
+    },
+    {
+      "id": 135044984308,
+      "name": "pages",
+      "conclusion": "success",
+      "run_id": 44371744243,
+      "run_attempt": 1,
+      "head_sha": "02a9c93b8361c4858a169b8018cb9f4661f68d54",
+      "steps": []
+    },
+    {
+      "id": 135050287404,
+      "name": "desktop-feed",
+      "conclusion": "skipped",
+      "run_id": 44371744243,
+      "run_attempt": 1,
+      "head_sha": "02a9c93b8361c4858a169b8018cb9f4661f68d54",
+      "steps": []
+    },
+    {
+      "id": 135050355330,
+      "name": "outcome",
+      "conclusion": "failure",
+      "run_id": 44371744243,
+      "run_attempt": 1,
+      "head_sha": "02a9c93b8361c4858a169b8018cb9f4661f68d54",
+      "steps": [
+        {
+          "name": "Every job ended as the release needs",
+          "conclusion": "failure"
+        }
+      ]
+    }
+  ]
+}

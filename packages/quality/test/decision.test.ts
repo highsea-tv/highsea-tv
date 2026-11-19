@@ -70,6 +70,37 @@ describe('decide', () => {
       })
     })
 
+    // HT-76: an Internet Archive torrent's title is "{title} {year}", with no quality in it, so it
+    // parses as Unknown. Every profile lists Unknown, not allowed, as Radarr's do (Servarr wiki,
+    // Quality Profiles); ticking it in the profile is how such releases are let in.
+    test('a release with no quality in its name is Unknown, refused until the profile allows it', () => {
+      const archive = release('His Girl Friday 1940', {
+        title: 'His Girl Friday',
+        year: 1940,
+        quality: { source: 'unknown', resolution: null },
+      })
+      const movie = {
+        title: 'His Girl Friday',
+        year: 1940,
+        runtimeMinutes: 92,
+        originalLanguage: 'en',
+      }
+      const refused = decide(input({ release: archive, movie, profile: uhd, size: 1.5 * GB }))
+      expect(refused.quality).toBe('Unknown')
+      expect(refused.approved).toBe(false)
+      expect(refused.reasons[0]).toEqual({
+        kind: 'rejected',
+        message: 'Unknown isn’t allowed in Ultra HD',
+      })
+      const allowing: QualityProfile = {
+        ...uhd,
+        items: uhd.items.map((i) => (i.name === 'Unknown' ? { ...i, allowed: true } : i)),
+      }
+      const letIn = decide(input({ release: archive, movie, profile: allowing, size: 1.5 * GB }))
+      expect(letIn.reasons.some((r) => r.message.includes('isn’t allowed'))).toBe(false)
+      expect(letIn.approved).toBe(true)
+    })
+
     test('allowed, below the cutoff', () => {
       const web = release('Sintel.2010.1080p.WEB-DL.H.264-NTb', { quality: { source: 'webdl' } })
       expect(messages({ release: web })[0]).toEqual({

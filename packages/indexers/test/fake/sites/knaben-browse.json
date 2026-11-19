@@ -1,0 +1,30 @@
+{
+  "hits": [
+    {
+      "bytes": 900000000,
+      "category": "Movies / UHD",
+      "categoryId": [3003000, 3000000],
+      "date": "2026-11-19T04:10:04+00:00",
+      "hash": "4444444444444444444444444444444444444444",
+      "id": "4444444444444444444444444444444444444444",
+      "magnetUrl": "magnet:?xt=urn:btih:4444444444444444444444444444444444444444",
+      "peers": 110,
+      "seeders": 3,
+      "title": "Tears of Steel (2012) (2160p UHD BluRay x265 HDR10 5.1) [QxR]"
+    },
+    {
+      "bytes": 350000000,
+      "category": "Anime / Subbed",
+      "categoryId": [6001000, 6000000, 3008000, 3000000],
+      "date": "2026-11-19T03:00:00+00:00",
+      "hash": "5555555555555555555555555555555555555555",
+      "id": "5555555555555555555555555555555555555555",
+      "magnetUrl": "magnet:?xt=urn:btih:5555555555555555555555555555555555555555",
+      "peers": 2,
+      "seeders": 40,
+      "title": "[Group] An Open Short - 07 [1080p]"
+    }
+  ],
+  "max_score": null,
+  "total": { "relation": "eq", "value": 2 }
+}

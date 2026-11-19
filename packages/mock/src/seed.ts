@@ -838,6 +838,18 @@ function torrent(
         peers: 12,
         message: o.state === 'stalled' ? 'Connection timed out' : null,
       },
+      // a stalled torrent's web seed (BEP 19), listed with the trackers, busy
+      ...(o.state === 'stalled'
+        ? [
+            {
+              url: 'https://archive.example/download/',
+              kind: 'web-seed' as const,
+              status: 'error' as const,
+              peers: 0,
+              message: 'archive.example is busy (HTTP 503).',
+            },
+          ]
+        : []),
     ],
     seedingRule: { ratio: 2, minutes: 7 * 24 * 60 },
   }
@@ -1358,7 +1370,7 @@ function seedBySlug(kind: 'populated' | 'empty', now: number): ServerState {
         state: 'stalled',
         progress: 0.27,
         uhd: false,
-        reason: 'No seeds for 2 hours. highsea will search for another release at 3 hours.',
+        reason: 'No peers or data for 2 hours. highsea will search for another release at 3 hours.',
         indexer: 'Driftnet',
         addedAgo: 5 * HOUR,
       },

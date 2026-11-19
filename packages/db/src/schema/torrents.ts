@@ -17,6 +17,8 @@ export const torrents = sqliteTable('torrents', {
   info: blob('info', { mode: 'buffer' }),
   /** BEP 12's tracker tiers. */
   trackers: text('trackers', { mode: 'json' }).$type<string[][]>().notNull(),
+  /** BEP 19's web seeds (`url-list`), outside the info dictionary, so kept here. */
+  webSeeds: text('web_seeds', { mode: 'json' }).$type<string[]>().notNull().default([]),
   /** The magnet it was added from, if it was. */
   magnet: text('magnet'),
   savePath: text('save_path').notNull(),

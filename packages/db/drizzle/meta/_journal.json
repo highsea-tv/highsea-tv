@@ -152,8 +152,15 @@
     {
       "idx": 21,
       "version": "6",
-      "when": 1795067248680,
-      "tag": "0021_fanart",
+      "when": 1795068756378,
+      "tag": "0021_web_seeds",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "6",
+      "when": 1795072290765,
+      "tag": "0022_fanart",
       "breakpoints": true
     }
   ]

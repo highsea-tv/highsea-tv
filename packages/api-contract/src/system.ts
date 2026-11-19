@@ -97,8 +97,17 @@ export const Disk = z
     label: z.string(),
     free: z.number(),
     total: z.number(),
-    /** What uses the disk, in bytes: the movies, the downloads, and everything else. */
-    usedBy: z.object({ movies: z.number(), downloads: z.number(), other: z.number() }),
+    /**
+     * What uses the disk, in bytes: the movies, the downloads, and everything else. `music` is the
+     * Music folders' tracks, drafted with HT-68 for Phase 5's part D: the server leaves it out (and
+     * counts them in `other`) until it has music.
+     */
+    usedBy: z.object({
+      movies: z.number(),
+      downloads: z.number(),
+      other: z.number(),
+      music: z.number().optional(),
+    }),
   })
   .openapi('Disk')
 

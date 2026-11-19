@@ -263,7 +263,8 @@ function Page({ id, tab }: { id: string; tab: ShowTab }) {
 // ---------------------------------------------------------------- summary
 
 /** A run of caption-sized parts with a dot between each (the prototype's summary line). */
-function Line({ children }: { children: ReactNode[] }) {
+/** A meta line's parts with middle dots between them (Music's pages share it, HT-68). */
+export function Line({ children }: { children: ReactNode[] }) {
   const parts = children.filter(Boolean)
   return (
     <View

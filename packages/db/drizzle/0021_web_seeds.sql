@@ -1,0 +1,1 @@
+ALTER TABLE `torrents` ADD `web_seeds` text DEFAULT '[]' NOT NULL;

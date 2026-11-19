@@ -2,7 +2,9 @@
 // Metainfo (BEP 3) and magnets (BEP 9). highsea parses `.torrent` files itself with `bencode`
 // rather than through `parse-torrent`, so every file path is checked here before it can reach the
 // disk: a name of `..` or one with a slash would otherwise write outside the save folder. Tracker
-// tiers follow BEP 12, private torrents BEP 27.
+// tiers follow BEP 12, private torrents BEP 27. Web seeds are BEP 19's `url-list`
+// (https://www.bittorrent.org/beps/bep_0019.html), and padding files BEP 47's `attr` `p`
+// (https://www.bittorrent.org/beps/bep_0047.html).
 import { createHash } from 'node:crypto'
 import { AppError } from '@highsea-tv/core'
 import bencode from 'bencode'
@@ -14,6 +16,13 @@ export type MetainfoFile = {
   length: number
   /** Where the file starts in the torrent's concatenated data. */
   offset: number
+  /**
+   * The path as the torrent spells it, each part percent-encoded, the torrent's name first: what a
+   * web seed's URL ends in (BEP 19). `path` may differ, made safe for the disk.
+   */
+  urlPath: string
+  /** A BEP 47 padding file: zeros, never asked of a web seed. */
+  pad: boolean
 }
 
 export type Metainfo = {
@@ -29,6 +38,8 @@ export type Metainfo = {
   private: boolean
   /** BEP 12's tiers, or the single `announce` as one tier. */
   trackers: string[][]
+  /** BEP 19's web seeds: http(s) addresses from `url-list`, outside the info dictionary. */
+  webSeeds: string[]
   /** The bencoded info dictionary: what metadata exchange (BEP 9) sends to peers. */
   info: Uint8Array
 }
@@ -39,6 +50,8 @@ export type Magnet = {
   trackers: string[][]
   /** `x.pe` peer addresses (`host:port`), BEP 9. */
   peers: string[]
+  /** `ws` web seeds (BEP 19 through BEP 9's magnet), http(s) only. */
+  webSeeds: string[]
 }
 
 type Dict = { [key: string]: unknown }
@@ -68,6 +81,22 @@ const MAX_PIECE_LENGTH = 128 * 1024 * 1024
 
 const announceUrl = (url: string) => /^(https?|udp):\/\//i.test(url)
 
+const webUrl = (url: string) => /^https?:\/\/[^/]/i.test(url)
+
+/**
+ * BEP 19's `url-list`: one address or a list. Only HTTP and HTTPS are used ("a client should
+ * ignore any protocols it does not know"), at most 10, each once.
+ */
+export function webSeedsOf(value: unknown): string[] {
+  const str = (v: unknown) => (typeof v === 'string' ? v : text(v))
+  const list = Array.isArray(value) ? value.map(str) : [str(value)]
+  return list
+    .filter((u): u is string => !!u && webUrl(u.trim()))
+    .map((u) => u.trim())
+    .filter((u, i, all) => all.indexOf(u) === i)
+    .slice(0, 10)
+}
+
 function trackersOf(torrent: Dict): string[][] {
   const tiers: string[][] = []
   const list = torrent['announce-list']
@@ -86,7 +115,11 @@ function trackersOf(torrent: Dict): string[][] {
 }
 
 /** The info dictionary's fields, checked. `infoBytes` must be what `infoHash` hashes. */
-export function parseInfo(infoBytes: Uint8Array, trackers: string[][] = []): Metainfo {
+export function parseInfo(
+  infoBytes: Uint8Array,
+  trackers: string[][] = [],
+  webSeeds: string[] = [],
+): Metainfo {
   let info: unknown
   try {
     info = bencode.decode(infoBytes)
@@ -97,6 +130,7 @@ export function parseInfo(infoBytes: Uint8Array, trackers: string[][] = []): Met
   const rawName = text(info['name.utf-8']) ?? text(info.name)
   if (!rawName) throw invalid('it has no name')
   const name = safeComponent(rawName)
+  const enc = (part: string) => encodeURIComponent(part)
   const pieceLength = info['piece length']
   if (typeof pieceLength !== 'number' || pieceLength <= 0 || !Number.isInteger(pieceLength))
     throw invalid('it has no piece length')
@@ -112,17 +146,29 @@ export function parseInfo(infoBytes: Uint8Array, trackers: string[][] = []): Met
     for (const f of info.files) {
       if (!isDict(f) || typeof f.length !== 'number' || f.length < 0)
         throw invalid('a file has no size')
+      // the plain `path` is what web servers name the file by; `path.utf-8` only for the disk
       const parts = (Array.isArray(f['path.utf-8']) ? f['path.utf-8'] : f.path) as unknown
       if (!Array.isArray(parts) || parts.length === 0) throw invalid('a file has no path')
+      const raw = (Array.isArray(f.path) ? f.path : parts).map((p) => text(p) ?? '')
       const path = [name, ...parts.map((p) => safeComponent(text(p) ?? ''))].join('/')
       // BEP 47 padding files hold no data worth keeping, but count toward the offsets
-      files.push({ path, length: f.length, offset })
+      const attr = text(f.attr) ?? ''
+      const pad =
+        attr.includes('p') || raw[0] === '.pad' || /^_____padding_file/.test(raw.at(-1) ?? '')
+      const urlPath = [text(info.name) ?? rawName, ...raw].map(enc).join('/')
+      files.push({ path, length: f.length, offset, urlPath, pad })
       offset += f.length
     }
     if (!files.length) throw invalid('it lists no files')
   } else {
     if (typeof info.length !== 'number' || info.length < 0) throw invalid('it has no size')
-    files.push({ path: name, length: info.length, offset: 0 })
+    files.push({
+      path: name,
+      length: info.length,
+      offset: 0,
+      urlPath: enc(text(info.name) ?? rawName),
+      pad: false,
+    })
     offset = info.length
   }
 
@@ -144,6 +190,7 @@ export function parseInfo(infoBytes: Uint8Array, trackers: string[][] = []): Met
     files,
     private: info.private === 1,
     trackers,
+    webSeeds,
     info: infoBytes,
   }
 }
@@ -159,7 +206,11 @@ export function parseTorrentFile(data: Uint8Array): Metainfo {
   if (!isDict(torrent) || !isDict(torrent.info)) throw invalid('it has no file list')
   // the info dictionary is hashed as bencoded, as BEP 3 defines the info hash; bencode's encoder
   // writes keys in sorted order, so a canonical file hashes the same as its bytes
-  return parseInfo(bencode.encode(torrent.info), trackersOf(torrent))
+  return parseInfo(
+    bencode.encode(torrent.info),
+    trackersOf(torrent),
+    webSeedsOf(torrent['url-list']),
+  )
 }
 
 const HEX_HASH = /^[0-9a-f]{40}$/i
@@ -178,17 +229,29 @@ export function parseMagnet(uri: string): Magnet {
     // magnets carry no tiers: each tracker is its own tier, as clients treat `tr` parameters
     trackers: trackers.map((t) => [t]),
     peers: m.peerAddresses ?? [],
+    webSeeds: webSeedsOf(m.urlList ?? []),
   }
 }
 
-export const toMagnet = (m: { infoHash: string; name: string | null; trackers: string[][] }) =>
-  magnetEncode({ infoHash: m.infoHash, name: m.name ?? undefined, announce: m.trackers.flat() })
+export const toMagnet = (m: {
+  infoHash: string
+  name: string | null
+  trackers: string[][]
+  webSeeds?: string[]
+}) =>
+  magnetEncode({
+    infoHash: m.infoHash,
+    name: m.name ?? undefined,
+    announce: m.trackers.flat(),
+    ...(m.webSeeds?.length ? { urlList: m.webSeeds } : {}),
+  })
 
 /** A whole `.torrent` from metadata, to store a magnet's torrent once its metadata arrives. */
 export const torrentFileOf = (m: Metainfo) =>
   bencode.encode({
     ...(m.trackers[0]?.[0] ? { announce: m.trackers[0][0] } : {}),
     ...(m.trackers.length ? { 'announce-list': m.trackers } : {}),
+    ...(m.webSeeds.length ? { 'url-list': m.webSeeds } : {}),
     info: bencode.decode(m.info),
   })
 

@@ -66,6 +66,7 @@ import { useRouter } from './navigation.tsx'
 import { NetworkWidget } from './network-widget.tsx'
 import { nowPlaying } from './now-playing-messages.ts'
 import { RecentlyAdded } from './recent-widget.tsx'
+import { useServes } from './serves.tsx'
 import { useNow } from './time.ts'
 import {
   Empty,
@@ -139,10 +140,35 @@ function StorageWithFolders(props: WidgetProps) {
     (c) => c.rootFolders.list({ query: { kind: 'movies' } }),
     ['settings.updated', MEDIA_TOPICS.movies],
   )
-  return <StorageOf {...props} folders={folders.data ?? []} />
+  const music = useServes('music')
+  return music ? (
+    <StorageWithMusic {...props} movies={folders.data ?? NO_FOLDERS} />
+  ) : (
+    <StorageOf {...props} folders={folders.data ?? NO_FOLDERS} />
+  )
 }
 
-function StorageOf({ folders, ...props }: WidgetProps & { folders: RootFolder[] }) {
+/** With music served (HT-68): its folders join the legend, each with how many albums it holds. */
+function StorageWithMusic({ movies, ...props }: WidgetProps & { movies: RootFolder[] }) {
+  const folders = useQuery(
+    'widget:storage-music',
+    (c) => c.rootFolders.list({ query: { kind: 'music' } }),
+    ['settings.updated'],
+  )
+  const figures = useQuery('music:folders', (c) => c.musicLibrary.folders(), ['music.updated'])
+  const albums = Object.fromEntries((figures.data ?? []).map((f) => [f.id, f.albums]))
+  return (
+    <StorageOf {...props} folders={[...movies, ...(folders.data ?? NO_FOLDERS)]} albums={albums} />
+  )
+}
+
+const NO_FOLDERS: RootFolder[] = []
+
+function StorageOf({
+  folders,
+  albums,
+  ...props
+}: WidgetProps & { folders: RootFolder[]; albums?: Record<string, number> }) {
   const t = useT(messages)
   const theme = useTheme()
   const query = useQuery('widget:storage', (c) => c.system.status(), [], {
@@ -246,7 +272,9 @@ function StorageOf({ folders, ...props }: WidgetProps & { folders: RootFolder[] 
                     {f.path}
                   </Text>
                   <Text variant="caption" color="text-3" style={{ flexShrink: 0 }}>
-                    {t('storage.movies', { count: f.movies })}
+                    {f.kind === 'music'
+                      ? t('storage.albums', { count: albums?.[f.id] ?? 0 })
+                      : t('storage.movies', { count: f.movies })}
                   </Text>
                 </View>
               ))}
@@ -732,7 +760,7 @@ function QueueRows({ items, layout }: { items: QueueItem[]; layout: 'table' | 'm
               />
               <Fig numberOfLines={1}>
                 {q.state === 'downloading'
-                  ? `${rate(q.downRate)} · ${q.eta ? t('activity.left', { duration: duration(q.eta, locale) }) : dash}`
+                  ? `${rate(q.downRate)} · ${t('activity.peersOf', { seeds: q.seeds.connected, peers: q.peers.connected })} · ${q.eta ? t('activity.left', { duration: duration(q.eta, locale) }) : dash}`
                   : (q.stateReason ?? bytes(q.size))}
               </Fig>
             </View>
@@ -753,6 +781,8 @@ function QueueRows({ items, layout }: { items: QueueItem[]; layout: 'table' | 'm
             <TableHead>{t('activity.progress')}</TableHead>
             <TableHead numeric>{t('activity.down')}</TableHead>
             {full ? <TableHead numeric>{t('activity.up')}</TableHead> : null}
+            {/* seeds/peers connected, as Downloads shows them (the owner's ask, 2026-11-19) */}
+            <TableHead numeric>{t('activity.peers')}</TableHead>
             <TableHead numeric>{t('activity.eta')}</TableHead>
             <TableHead>{t('activity.status')}</TableHead>
           </TableRow>
@@ -791,6 +821,7 @@ function QueueRows({ items, layout }: { items: QueueItem[]; layout: 'table' | 'm
                 </TableCell>
                 <TableCell numeric>{q.downRate ? rate(q.downRate) : dash}</TableCell>
                 {full ? <TableCell numeric>{q.upRate ? rate(q.upRate) : dash}</TableCell> : null}
+                <TableCell numeric>{`${q.seeds.connected}/${q.peers.connected}`}</TableCell>
                 <TableCell numeric>
                   {q.state === 'downloading' && q.eta
                     ? duration(q.eta, locale)
@@ -1008,6 +1039,7 @@ function NowPlaying(props: WidgetProps) {
                     <Poster
                       title={x.item.title}
                       src={x.item.poster ?? undefined}
+                      aspect={x.item.song ? 'square' : 'poster'}
                       width={admin.widgets.poster}
                     />
                   </View>
@@ -1032,6 +1064,12 @@ function NowPlaying(props: WidgetProps) {
                         </Badge>
                       )}
                     </View>
+                    {/* a song names its artist and album (HT-68), as a film's card names nothing more */}
+                    {x.item.song ? (
+                      <Text variant="caption" color="text-2" numberOfLines={1}>
+                        {`${x.item.song.artist.name} · ${x.item.song.album.title}`}
+                      </Text>
+                    ) : null}
                     <Text variant="caption" color="text-3" numberOfLines={1}>
                       {`${watcher(x.user)} · ${x.deviceName}${x.state === 'paused' && !x.stopped ? t('playing.paused') : ''}`}
                     </Text>
