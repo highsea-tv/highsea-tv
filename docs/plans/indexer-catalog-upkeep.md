@@ -59,7 +59,7 @@ Seven parts. A to E are upkeep and each is a task of its own; F is the growth th
 
 ## Progress
 
-Nothing yet.
+- **2026-11-19 (HT-84), E's issue forms:** `.github/ISSUE_TEMPLATE/` has **An indexer isn't working** (the form the Report a problem link will fill; its field ids and an example URL are in [catalog/indexers/README.md](../../catalog/indexers/README.md#issue-forms)), **Suggest an indexer**, **A site moved or shut down**, a general bug report and feature idea, and `config.yml` with blank issues allowed. Not yet built: the guide, `CONTRIBUTING.md` and the pull request template.
 
 ## Freshness: noticing a broken definition (B, C)
 

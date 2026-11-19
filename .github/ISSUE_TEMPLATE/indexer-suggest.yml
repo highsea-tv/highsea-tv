@@ -1,0 +1,49 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+name: Suggest an indexer
+description: Ask for a site to be added to the catalog.
+title: "[Suggestion] "
+labels: ["catalog", "indexer", "indexer-suggestion"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The catalog's rules: definitions are written from the site's own documentation. No site behind a browser challenge is in the catalog. Public torrent indexers are never on by default.
+
+        Please never paste API keys, passkeys, cookies, or feed addresses that contain one. If a line has a key in it, remove the key first.
+  - type: input
+    id: site
+    attributes:
+      label: The site
+      description: Its name and address.
+    validations:
+      required: true
+  - type: input
+    id: documentation
+    attributes:
+      label: Its API or feed documentation
+      description: A link to the site's own page that describes its API, RSS feed, or Torznab endpoint.
+    validations:
+      required: true
+  - type: dropdown
+    id: access
+    attributes:
+      label: Public or private
+      options:
+        - Public
+        - Private (needs an account)
+    validations:
+      required: true
+  - type: textarea
+    id: carries
+    attributes:
+      label: What it carries
+      description: Films, shows, anime, music, books, or something else, and why it's worth adding.
+    validations:
+      required: true
+  - type: checkboxes
+    id: originality
+    attributes:
+      label: Where the definition comes from
+      options:
+        - label: This is not a copy of another project's indexer definition.
+          required: true

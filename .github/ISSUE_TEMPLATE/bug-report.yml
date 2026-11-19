@@ -1,0 +1,42 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+name: Bug report
+description: Something in highsea doesn't work as it should.
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please never paste API keys, passkeys, cookies, or feed addresses that contain one. If a line has a key in it, remove the key first.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: And what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: How to see it
+      description: The steps, shortest first.
+    validations:
+      required: false
+  - type: input
+    id: highsea-version
+    attributes:
+      label: highsea version
+    validations:
+      required: true
+  - type: dropdown
+    id: where
+    attributes:
+      label: Where you saw it
+      options:
+        - The server or admin
+        - The web client
+        - The desktop app
+        - The phone app
+        - The TV app
+    validations:
+      required: false

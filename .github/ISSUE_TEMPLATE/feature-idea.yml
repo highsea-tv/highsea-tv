@@ -1,0 +1,23 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+name: Feature idea
+description: Something you'd like highsea to do.
+title: "[Idea] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please never paste API keys, passkeys, cookies, or feed addresses that contain one. If a line has a key in it, remove the key first.
+  - type: textarea
+    id: idea
+    attributes:
+      label: What you'd like
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why
+      description: What you do today instead, and what gets in the way.
+    validations:
+      required: false

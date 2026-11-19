@@ -1,0 +1,97 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# The Report a problem link in the admin (docs/plans/indexer-catalog-upkeep.md, part C) opens this form filled in
+# through URL query parameters, one per field id below. Keep the ids stable; catalog/indexers/README.md lists them.
+name: An indexer isn't working
+description: A catalog indexer returns nothing, errors, or finds things that can't be grabbed.
+title: "[Indexer] "
+labels: ["catalog", "indexer", "broken-indexer"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for telling us. Please never paste API keys, passkeys, cookies, or feed addresses that contain one. If a line has a key in it, remove the key first.
+  - type: input
+    id: indexer
+    attributes:
+      label: Which indexer
+      description: Its catalog id, as shown on the indexer's page in the admin (for example, yts).
+    validations:
+      required: true
+  - type: input
+    id: indexer-version
+    attributes:
+      label: Indexer version
+      description: The definition's version, shown beside its name.
+    validations:
+      required: false
+  - type: input
+    id: catalog-version
+    attributes:
+      label: Catalog version
+      description: For example 2026.11.19.2. It's in Settings, under Indexers.
+    validations:
+      required: false
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What happens
+      options:
+        - No results
+        - An error
+        - A challenge page
+        - Wrong sizes or dates
+        - Grabs fail
+        - Something else
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: Details
+      description: The error's text if there is one, what you searched for, and what you expected.
+    validations:
+      required: true
+  - type: input
+    id: since
+    attributes:
+      label: Since when
+      description: A date, or "always" if it never worked.
+    validations:
+      required: false
+  - type: input
+    id: highsea-version
+    attributes:
+      label: highsea version
+      description: Shown at the bottom of the admin's sidebar.
+    validations:
+      required: true
+  - type: dropdown
+    id: channel
+    attributes:
+      label: Catalog channel
+      description: Settings, General, Updates.
+      options:
+        - Stable
+        - Beta
+    validations:
+      required: true
+  - type: input
+    id: vpn
+    attributes:
+      label: VPN
+      description: Leave empty if you don't use one. Otherwise, the provider's name.
+    validations:
+      required: false
+  - type: input
+    id: vpn-country
+    attributes:
+      label: Country the VPN exits from
+    validations:
+      required: false
+  - type: textarea
+    id: test-result
+    attributes:
+      label: What Test says
+      description: Press Test on the indexer in the admin and paste what it shows.
+    validations:
+      required: false
