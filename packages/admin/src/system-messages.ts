@@ -110,6 +110,7 @@ export const system = defineMessages({
   'status.free': '{free} free of {total}',
   'status.used': '{label}: {percent} used',
   'status.usedBy.movies': 'Movies {size}',
+  'status.usedBy.music': 'Music {size}',
   'status.usedBy.downloads': 'Downloads {size}',
   'status.usedBy.other': 'Everything else {size}',
   // ---------------------------------------------------------------- logs

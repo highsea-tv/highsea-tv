@@ -309,7 +309,8 @@ function Resources({ s, fill }: { s: SystemStatus; fill: boolean }) {
   )
 }
 
-const USED_BY = ['movies', 'downloads', 'other'] as const
+/** Music's share is drafted with HT-68, so a server without music leaves it out. */
+const USED_BY = ['movies', 'music', 'downloads', 'other'] as const
 
 function Disks({ disks }: { disks: SystemStatus['disks'] }) {
   const t = useT(messages)
@@ -359,8 +360,8 @@ function Disks({ disks }: { disks: SystemStatus['disks'] }) {
               label={t('status.used', { label: d.label, percent: percent(fraction) })}
             />
             <Text variant="caption" color="text-3">
-              {USED_BY.filter((k) => d.usedBy[k] > 0)
-                .map((k) => t(`status.usedBy.${k}`, { size: bytes(d.usedBy[k]) }))
+              {USED_BY.filter((k) => (d.usedBy[k] ?? 0) > 0)
+                .map((k) => t(`status.usedBy.${k}`, { size: bytes(d.usedBy[k] ?? 0) }))
                 .join(' · ')}
             </Text>
           </View>

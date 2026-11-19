@@ -596,6 +596,7 @@ function createTranscode(id: string, source: HlsSource, ctx: Context) {
   let headerCopy: Promise<void> | null = null
   function copyHeader(): Promise<void> {
     if (headerCopy) return headerCopy
+    if (ended) return Promise.reject(new TranscodeError('The stream has ended.'))
     const part = join(dir, `${HEADER}.part`)
     const copy = copyFile(join(dir, INIT_NAME), part)
       .then(() => rename(part, join(dir, HEADER)))
@@ -603,7 +604,27 @@ function createTranscode(id: string, source: HlsSource, ctx: Context) {
         if (headerCopy === copy) headerCopy = null
       })
     headerCopy = copy
+    writing(copy)
     return copy
+  }
+
+  /**
+   * What may still write into the folder: each run's ffmpeg until it has exited, and the header's
+   * copy. end() waits for them before it removes the folder (HT-72). A kill isn't a death:
+   * kill(2) only sends the signal, and the process is gone once its 'exit' comes
+   * (https://nodejs.org/api/child_process.html#subprocesskillsignal, #event-exit). And a rename
+   * into the folder during the removal left it there whole: the header's copy, renamed into place
+   * as a session ended, kept its folder and pieces on disk, where a session of the same name later
+   * found its first piece already made.
+   */
+  const writers = new Set<Promise<void>>()
+  function writing(p: Promise<unknown>) {
+    const w: Promise<void> = p.then(
+      () => {},
+      () => {},
+    )
+    writers.add(w)
+    void w.then(() => writers.delete(w))
   }
 
   function settle() {
@@ -746,6 +767,12 @@ function createTranscode(id: string, source: HlsSource, ctx: Context) {
     }
     // killed if this process ends first: a paused run would otherwise outlive it, stopped
     const child = endWithProcess(spawn(options.ffmpeg, runArgs(input)))
+    writing(
+      new Promise<void>((resolve) => {
+        child.once('exit', () => resolve())
+        child.once('error', () => resolve())
+      }),
+    )
     const r: Run = {
       child,
       first: s.first,
@@ -1049,6 +1076,7 @@ function createTranscode(id: string, source: HlsSource, ctx: Context) {
     }
     stop('ended')
     if (counts) slots.release(id)
+    await Promise.all(writers)
     await rm(dir, { recursive: true, force: true })
   }
 

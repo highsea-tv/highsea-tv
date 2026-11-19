@@ -244,7 +244,13 @@ describe('errors', () => {
     const c = await app(LAN, 'theo')
     const status = await c.system.status()
     expect(status.disks.length).toBeGreaterThan(0)
-    expect(Object.keys(status.disks[0]?.usedBy ?? {})).toEqual(['movies', 'downloads', 'other'])
+    // music's share is drafted with HT-68
+    expect(Object.keys(status.disks[0]?.usedBy ?? {})).toEqual([
+      'movies',
+      'downloads',
+      'other',
+      'music',
+    ])
     expect(status.uptime).toBeGreaterThanOrEqual(0)
     expect(Array.isArray(await c.system.healthChecks())).toBe(true)
     expect((await c.system.jobs()).some((j) => j.name === 'Catalog sync')).toBe(true)

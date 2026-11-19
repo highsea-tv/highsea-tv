@@ -35,6 +35,7 @@ import {
   shuffled,
   trackOf,
 } from './music.ts'
+import { musicAdmin } from './music-admin.ts'
 import { waiting } from './pairing.ts'
 import { type AccelerationPath, finishCheck, playbackStatus } from './playback.ts'
 import { type ProfileTone, profilesOf } from './profiles.ts'
@@ -1076,6 +1077,8 @@ export function createApi(srv: MockServer, ctx: Ctx) {
         poster: song.album.cover,
         artist: song.album.artist.name,
         album: song.album.title,
+        artistId: song.album.artist.id,
+        albumId: song.album.id,
       }
     return { kind: 'movie', id: itemId, title: 'Unknown', year: null, poster: '' }
   }
@@ -1583,14 +1586,26 @@ export function createApi(srv: MockServer, ctx: Ctx) {
         auth: { local: true, oidc: { name: 'Authentik' } },
       }),
       server: () => state.server,
-      /** The disks' use by kind; TV is the shows' files (stage 6), taken out of what was Other. */
+      /**
+       * The disks' use by kind; TV is the shows' files (stage 6) and music the Music folders'
+       * tracks (HT-68), each taken out of what was Other.
+       */
       status: (): SystemStatus => {
         const tv = showAdmin.list().reduce((n, x) => n + x.size, 0)
+        const music = musicAdmin(allMusic()).size
         return {
           ...state.status,
           disks: state.status.disks.map((d, i) =>
-            i === 0 && d.usedBy.tv === 0 && tv > 0
-              ? { ...d, usedBy: { ...d.usedBy, tv, other: Math.max(0, d.usedBy.other - tv) } }
+            i === 0 && d.usedBy.tv === 0 && d.usedBy.music === 0 && tv + music > 0
+              ? {
+                  ...d,
+                  usedBy: {
+                    ...d.usedBy,
+                    tv,
+                    music,
+                    other: Math.max(0, d.usedBy.other - tv - music),
+                  },
+                }
               : d,
           ),
         }

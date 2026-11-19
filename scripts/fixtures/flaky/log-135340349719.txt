@@ -1,0 +1,22 @@
+tests (bun 4/4)	UNKNOWN STEP	2026-11-19T04:32:03.3639814Z 541 |     await set.open('a', source({ decision: transcode })).segment(0)
+tests (bun 4/4)	UNKNOWN STEP	2026-11-19T04:32:03.3640489Z 542 |     const b = set.open('b', source({ decision: transcode }))
+tests (bun 4/4)	UNKNOWN STEP	2026-11-19T04:32:03.3641036Z 543 |     const error = (await b.segment(0).catch((e: unknown) => e)) as TranscodeError
+tests (bun 4/4)	UNKNOWN STEP	2026-11-19T04:32:03.3641709Z 544 |     expect(error).toBeInstanceOf(TranscodeError)
+tests (bun 4/4)	UNKNOWN STEP	2026-11-19T04:32:03.3642211Z                         ^
+tests (bun 4/4)	UNKNOWN STEP	2026-11-19T04:32:03.3642664Z error: expect(received).toBeInstanceOf(expected)
+tests (bun 4/4)	UNKNOWN STEP	2026-11-19T04:32:03.3642897Z 
+tests (bun 4/4)	UNKNOWN STEP	2026-11-19T04:32:03.3643116Z Expected constructor: [class TranscodeError extends Error]
+tests (bun 4/4)	UNKNOWN STEP	2026-11-19T04:32:03.3643675Z Received value: [ "/tmp/highsea-test-3zSCCV/highsea-hls-jEVMiw/limited/b/0.m4s" ]
+tests (bun 4/4)	UNKNOWN STEP	2026-11-19T04:32:03.3643991Z 
+tests (bun 4/4)	UNKNOWN STEP	2026-11-19T04:32:03.3644354Z       at <anonymous> (/home/runner/work/highsea-tv/highsea-tv/packages/stream/test/hls-ffmpeg.test.ts:544:19)
+tests (bun 4/4)	UNKNOWN STEP	2026-11-19T04:32:03.3644825Z 
+tests (bun 4/4)	UNKNOWN STEP	2026-11-19T04:32:03.3671198Z ##[error]Expected constructor: [class TranscodeError extends Error]
+tests (bun 4/4)	UNKNOWN STEP	Received value: [ "/tmp/highsea-test-3zSCCV/highsea-hls-jEVMiw/limited/b/0.m4s" ]
+tests (bun 4/4)	UNKNOWN STEP	
+tests (bun 4/4)	UNKNOWN STEP	      at <anonymous> (/home/runner/work/highsea-tv/highsea-tv/packages/stream/test/hls-ffmpeg.test.ts:544:19)
+tests (bun 4/4)	UNKNOWN STEP	2026-11-19T04:32:03.3679660Z (fail) HLS with ffmpeg > a transcode that waits too long gives up with the limit as its reason [1403.96ms]
+tests (bun 4/4)	UNKNOWN STEP	2026-11-19T04:32:06.4798253Z (pass) HLS with ffmpeg > raising the limit lets a waiting transcode start [3115.46ms]
+tests (bun 4/4)	UNKNOWN STEP	2026-11-19T04:32:09.3053303Z (pass) HLS with ffmpeg > past the cache’s limit, pieces furthest behind the player go, and are made again when asked [2825.42ms]
+tests (bun 4/4)	UNKNOWN STEP	2026-11-19T04:33:45.0332942Z 1 tests failed:
+tests (bun 4/4)	UNKNOWN STEP	2026-11-19T04:33:45.0333846Z (fail) HLS with ffmpeg > a transcode that waits too long gives up with the limit as its reason [1403.96ms]
+tests (bun 4/4)	UNKNOWN STEP	2026-11-19T04:33:45.0334461Z 

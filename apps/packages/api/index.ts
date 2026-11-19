@@ -39,6 +39,8 @@ export type SourceOptions = {
   downloads: (release: string) => string
   fetch: (url: string, init?: RequestInit) => Promise<Response>
   now: () => number
+  /** Where a manifest that couldn't be read is said; the console unless a test listens. */
+  log?: (line: string) => void
 }
 
 /** How long a manifest is used before it's read again. */
@@ -95,7 +97,7 @@ export function createSource(options: SourceOptions) {
       cached = { manifest: read, at: options.now() }
     } catch (error) {
       // a stale manifest is better than none while GitHub is away
-      console.error(`highsea's manifest couldn't be read: ${String(error)}`)
+      ;(options.log ?? console.error)(`highsea's manifest couldn't be read: ${String(error)}`)
     }
     return cached?.manifest
   }

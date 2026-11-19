@@ -59,6 +59,7 @@ import { View } from 'react-native'
 import { behind, clientIcon, mbps, methodTone, timecode, watcher } from './delivery.ts'
 import { Loadable } from './loadable.tsx'
 import { moviePath } from './media-links.ts'
+import { albumPath } from './music-data.ts'
 import { nowPlaying as messages } from './now-playing-messages.ts'
 import { AdminPage } from './shell.tsx'
 import { Muted } from './table-parts.tsx'
@@ -181,12 +182,26 @@ function InlineLink({ href, children }: { href: string; children: string }) {
   )
 }
 
+/**
+ * Where a title links: a film's page, or a song's album (HT-68; music has no page per track).
+ * Nowhere once it has left the library.
+ */
+export function playingHref(item: StreamSession['item']) {
+  if (item.song) return albumPath(item.song.album.id)
+  return item.tmdbId === null ? undefined : moviePath(item.tmdbId)
+}
+
+/** A song's "artist · album", in place of a film's year. */
+export const songLine = (item: StreamSession['item']) =>
+  item.song ? `${item.song.artist.name} · ${item.song.album.title}` : null
+
 function SessionRow({ s, onStop }: { s: StreamSession; onStop: () => void }) {
   const t = useT(messages)
   const theme = useTheme()
   const late = behind(s)
   const waiting = !s.stopped && s.state === 'waiting'
-  const href = s.item.tmdbId === null ? undefined : moviePath(s.item.tmdbId)
+  const href = playingHref(s.item)
+  const song = songLine(s.item)
   const by = s.hardware ? t(`path.${s.hardware}`) : t('processor')
   const figure = (v: string) => <Figure color="text-2">{v}</Figure>
   return (
@@ -208,6 +223,8 @@ function SessionRow({ s, onStop }: { s: StreamSession; onStop: () => void }) {
       <Poster
         title={s.item.title}
         src={s.item.poster ?? undefined}
+        // a song shows its album's cover, square, at the poster's width
+        aspect={song ? 'square' : 'poster'}
         width={POSTER_WIDTH}
         href={href}
       />
@@ -239,7 +256,11 @@ function SessionRow({ s, onStop }: { s: StreamSession; onStop: () => void }) {
                   {s.item.title}
                 </Text>
               )}
-              {s.item.year ? (
+              {song ? (
+                <Text size={ui.size} leading={ui.leading} color="text-3">
+                  {song}
+                </Text>
+              ) : s.item.year ? (
                 <Text size={ui.size} leading={ui.leading} color="text-3">
                   {String(s.item.year)}
                 </Text>
@@ -465,7 +486,10 @@ function History() {
           <TableFrame>
             <TableToolbar>
               <Text variant="caption" color="text-3" style={{ marginEnd: 'auto' }}>
-                {t('history.count', { count: xs.length })}
+                {/* with songs among them (HT-68) the count and the column say what they hold */}
+                {xs.some((w) => w.item.song)
+                  ? t('history.countPlayed', { count: xs.length })
+                  : t('history.count', { count: xs.length })}
               </Text>
               <View style={{ width: SELECT_WIDTH }}>
                 <Select
@@ -482,7 +506,9 @@ function History() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>{t('history.movie')}</TableHead>
+                  <TableHead>
+                    {t(xs.some((w) => w.item.song) ? 'history.title' : 'history.movie')}
+                  </TableHead>
                   <TableHead>{t('history.who')}</TableHead>
                   <TableHead>{t('history.device')}</TableHead>
                   <TableHead>{t('history.sentAs')}</TableHead>
@@ -496,13 +522,16 @@ function History() {
                     <TableCell tall truncate>
                       <TitleCell
                         art={w.item.poster ?? null}
-                        title={
-                          w.item.tmdbId === null ? (
-                            w.item.title
+                        aspect={w.item.song ? 'square' : 'poster'}
+                        title={(() => {
+                          const href = playingHref(w.item)
+                          return href ? (
+                            <TitleLink href={href}>{w.item.title}</TitleLink>
                           ) : (
-                            <TitleLink href={moviePath(w.item.tmdbId)}>{w.item.title}</TitleLink>
+                            w.item.title
                           )
-                        }
+                        })()}
+                        detail={songLine(w.item) ?? undefined}
                       />
                     </TableCell>
                     <TableCell>

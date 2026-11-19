@@ -76,6 +76,8 @@ export const nowPlaying = defineMessages({
   'history.whose': 'Whose history',
   'history.everyone': 'Everyone',
   'history.movie': 'Movie',
+  'history.title': 'Title',
+  'history.countPlayed': '{count, plural, one {# title} other {# titles}} played',
   'history.who': 'Who',
   'history.device': 'Device',
   'history.sentAs': 'Sent as',

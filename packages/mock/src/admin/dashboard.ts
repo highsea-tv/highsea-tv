@@ -107,8 +107,9 @@ export function dashboardAnswers({ wall, wallMs, userOf }: AdminKit): Answers {
   }
 
   /**
-   * What a session plays, as the contract's film title. Episodes and songs (drafted kinds the
-   * server doesn't stream yet) carry their show or artist in the title, and no TMDB id to link.
+   * What a session plays, as the contract's film title. An episode (a drafted kind the server
+   * doesn't stream yet) carries its show in the title, and no TMDB id to link; a song is its own
+   * title, with its artist and album beside it (`song`, HT-68).
    */
   const titleOf = (ctx: Ctx, item: PlayingItem): Title => {
     const film = ctx.srv.state.items.find((m) => m.id === item.id)
@@ -116,7 +117,7 @@ export function dashboardAnswers({ wall, wallMs, userOf }: AdminKit): Answers {
       item.kind === 'episode'
         ? `${item.show.title} · ${item.code}`
         : item.kind === 'song'
-          ? `${item.artist} · ${item.title}`
+          ? item.title
           : item.title === 'Unknown'
             ? t('sessions.unknown')
             : item.title
@@ -125,6 +126,15 @@ export function dashboardAnswers({ wall, wallMs, userOf }: AdminKit): Answers {
       title,
       year: item.year,
       poster: item.poster || null,
+      // a song names its artist and album, by their ids in the admin's music (HT-68)
+      ...(item.kind === 'song'
+        ? {
+            song: {
+              artist: { id: item.artistId, name: item.artist },
+              album: { id: item.albumId, title: item.album },
+            },
+          }
+        : {}),
     }
   }
 
