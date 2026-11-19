@@ -377,9 +377,12 @@ export function showAdminApi(d: ShowAdminDeps) {
       const existing = all().find((s) => s.tmdbId === input.tmdbId)
       if (existing) return detail(existing)
       const meta = elsewhere.find((x) => x.tmdbId === input.tmdbId)
+      // what was sent, else the catalogue: the server itself reads TMDB's
+      const title = input.title ?? meta?.title ?? `Show ${input.tmdbId}`
+      const year = input.year ?? meta?.year ?? new Date(d.now()).getUTCFullYear()
       const now = d.now()
       const id = meta?.id ?? `added-show-${++added}`
-      const path = `${input.rootFolder}/${input.title} (${input.year})`
+      const path = `${input.rootFolder}/${title} (${year})`
       const count = meta?.seasons ?? 1
       const seasonList: AdminSeason[] = Array.from({ length: count }, (_, i) => {
         const n = i + 1
@@ -388,7 +391,7 @@ export function showAdminApi(d: ShowAdminDeps) {
           const t =
             meta?.endYear === null && n === count
               ? now + (k - 3) * 7 * DAY
-              : Date.UTC(input.year + i, 2, 1) + k * 7 * DAY
+              : Date.UTC(year + i, 2, 1) + k * 7 * DAY
           return {
             id: `${id}-s${n}e${k + 1}`,
             show: id,
@@ -407,16 +410,16 @@ export function showAdminApi(d: ShowAdminDeps) {
           number: n,
           title: `Season ${n}`,
           monitored: episodes.some((e) => e.monitored),
-          poster: posterArt(`${input.title} Season ${n}`),
+          poster: posterArt(`${title} Season ${n}`),
           episodes,
         }
       })
       const show: Kept = {
         id,
         tmdbId: input.tmdbId,
-        title: input.title,
-        sortTitle: input.title.replace(/^(the|a)\s+/i, ''),
-        year: input.year,
+        title: title,
+        sortTitle: title.replace(/^(the|a)\s+/i, ''),
+        year: year,
         endYear: meta?.endYear ?? null,
         airing: (meta?.endYear ?? null) === null,
         network: meta?.network ?? '',
@@ -427,12 +430,12 @@ export function showAdminApi(d: ShowAdminDeps) {
         runtimeMinutes: 45,
         monitored: input.monitor !== 'none',
         qualityProfileId: input.qualityProfileId,
-        languageProfileId: input.languageProfileId,
+        languageProfileId: input.languageProfileId ?? '',
         rootFolder: input.rootFolder,
         path,
         seasonFolders: input.seasonFolders,
         addedAt: new Date(now).toISOString(),
-        art: { poster: posterArt(input.title), backdrop: backdropArt(input.title) },
+        art: { poster: posterArt(title), backdrop: backdropArt(title) },
         seasonList,
       }
       all().push(show)

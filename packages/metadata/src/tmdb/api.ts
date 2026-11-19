@@ -139,7 +139,7 @@ export function tmdbApi(client: TmdbClient) {
      * ([Find by ID](https://developer.themoviedb.org/reference/find-by-id)).
      */
     findImdb: (c: Credential, imdbId: string, language: string) =>
-      client.json<{ movie_results: TmdbMovieItem[] }>(c, `/3/find/${encodeURIComponent(imdbId)}`, {
+      client.json<TmdbFind>(c, `/3/find/${encodeURIComponent(imdbId)}`, {
         external_source: 'imdb_id',
         language,
       }),

@@ -90,5 +90,9 @@ export const migrations: Migration[] = [
   {
     "tag": "0021_web_seeds",
     "sql": "ALTER TABLE `torrents` ADD `web_seeds` text DEFAULT '[]' NOT NULL;"
+  },
+  {
+    "tag": "0022_unmatched_files",
+    "sql": "CREATE TABLE `unmatched_files` (\n\t`path` text PRIMARY KEY NOT NULL,\n\t`kind` text NOT NULL,\n\t`root_folder` text NOT NULL,\n\t`item_id` text,\n\t`reason` text NOT NULL,\n\t`message` text NOT NULL,\n\t`size` integer DEFAULT 0 NOT NULL,\n\t`found_at` integer NOT NULL,\n\tFOREIGN KEY (`item_id`) REFERENCES `media_items`(`id`) ON UPDATE no action ON DELETE cascade\n);\n--> statement-breakpoint\nCREATE INDEX `unmatched_files_root` ON `unmatched_files` (`root_folder`,`kind`);--> statement-breakpoint\nCREATE INDEX `unmatched_files_item` ON `unmatched_files` (`item_id`);"
   }
 ]

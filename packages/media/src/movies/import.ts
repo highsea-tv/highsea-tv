@@ -21,7 +21,6 @@ import {
   isQualityName,
   type QualityName,
   qualityDefinition,
-  qualityOf,
 } from '@highsea-tv/quality'
 import { and, asc, eq } from 'drizzle-orm'
 import {
@@ -41,26 +40,18 @@ import {
   isVideo,
   listFiles,
   minimumRuntimeSeconds,
-  sampleReason,
-  skipBeforeProbe,
 } from '../shared/files.ts'
 import type { HistoryPage } from '../shared/history.ts'
 import { applyPermissions, recycle } from '../shared/housekeeping.ts'
 import type { Media } from '../shared/index.ts'
+import { fileErrorMessage, type Probed, probeFile, qualityFor } from '../shared/inspect.ts'
 import type { ItemRow, VersionRow } from '../shared/map.ts'
 import { isoOf } from '../shared/map.ts'
 import { matchKey, safeName } from '../shared/names.ts'
 import { buildFileName, type NamingFile, type NamingMovie } from '../shared/naming.ts'
 import { type NfoMovie, writeArtwork, writeNfo } from '../shared/nfo.ts'
 import { checkPath } from '../shared/paths.ts'
-import {
-  type MediaInfo,
-  type Probe,
-  ProbeError,
-  resolutionOf,
-  type Stream,
-  streamsOf,
-} from '../shared/probe.ts'
+import { type MediaInfo, type Probe, type Stream, streamsOf } from '../shared/probe.ts'
 import type { MediaManagement } from '../shared/settings.ts'
 import {
   nodeFs,
@@ -217,10 +208,7 @@ function parsedQuality(quality: QualityName, release: ParsedRelease): ParsedRele
   }
 }
 
-const errorMessage = (e: unknown) =>
-  e instanceof AppError || e instanceof ProbeError
-    ? e.message
-    : 'Something went wrong moving the file.'
+const errorMessage = fileErrorMessage
 
 export function createImports(ctx: Ctx, deps: { media: Media; library: Library }) {
   const { db, clock, events, metadata } = ctx
@@ -287,20 +275,6 @@ export function createImports(ctx: Ctx, deps: { media: Media; library: Library }
     tmdbId: row.tmdbId,
     collection: meta?.collection?.name ?? null,
   })
-
-  /**
-   * The file's quality: as grabbed when the download says, else the name's, with a resolution the
-   * name leaves out taken from the probe, as Radarr augments a quality from media info.
-   */
-  function qualityFor(
-    release: ParsedRelease,
-    info: MediaInfo | null,
-    grabbed?: string | null,
-  ): QualityName {
-    if (grabbed && isQualityName(grabbed)) return grabbed
-    const resolution = release.quality.resolution ?? resolutionOf(info?.video ?? null)
-    return qualityOf({ ...release.quality, resolution })
-  }
 
   /** The file's name in the library: the naming format, or its own name when renaming is off. */
   function targetName(
@@ -685,24 +659,9 @@ export function createImports(ctx: Ctx, deps: { media: Media; library: Library }
     announceItem(row)
   }
 
-  /** Probes a file, or says why it can't be imported. */
-  async function probed(
-    file: FoundFile,
-    root: string,
-    meta: MovieMetadata | null,
-  ): Promise<{ info: MediaInfo; skip: null } | { info: MediaInfo | null; skip: string }> {
-    const early = skipBeforeProbe(file.path, root)
-    if (early) return { info: null, skip: early }
-    let info: MediaInfo
-    try {
-      info = await probe(file.path)
-    } catch (e) {
-      return { info: null, skip: errorMessage(e) }
-    }
-    if (!info.video) return { info, skip: 'No video stream in the file. Skipped.' }
-    const sample = sampleReason(file.path, file.size, info.duration, minimumSeconds(meta))
-    return sample ? { info, skip: sample } : { info, skip: null }
-  }
+  /** Probes a file, or says why it can't be imported (shared/inspect.ts). */
+  const probed = (file: FoundFile, root: string, meta: MovieMetadata | null): Promise<Probed> =>
+    probeFile(probe, file, root, minimumSeconds(meta))
 
   /**
    * Imports a finished download into its movie: the plan's steps 1 and 3 to 9. Returns what

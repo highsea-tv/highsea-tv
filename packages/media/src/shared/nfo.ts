@@ -215,3 +215,61 @@ export async function readFolderNfo(
   }
   return null
 }
+
+// ------------------------------------------------------------ a show's tvshow.nfo (Phase 5 B, ADR 0064)
+
+/** The ids a show folder's `tvshow.nfo` names: TheTVDB's, TMDB's and IMDb's. */
+export type ShowNfoIds = { tvdb: number | null; tmdb: number | null; imdb: string | null }
+
+/**
+ * The ids in a `tvshow.nfo`'s text, as Kodi and Jellyfin read them:
+ * - `<uniqueid type="tvdb|tmdb|imdb">` (Kodi wiki, NFO files/TV shows:
+ *   https://kodi.wiki/view/NFO_files/TV_shows; Jellyfin's NFO support,
+ *   https://jellyfin.org/docs/general/server/metadata/nfo/);
+ * - the provider tags `<tvdbid>`, `<tmdbid>` and `<imdbid>`, which Jellyfin also reads;
+ * - Kodi's older `<id>`, which Sonarr's Kodi metadata fills with the TheTVDB id (Sonarr's
+ *   XbmcMetadata.SeriesMetadata writes `id` and `uniqueid` for TheTVDB, IMDb and TMDB:
+ *   https://github.com/Sonarr/Sonarr/blob/v4.0.15.2941/src/NzbDrone.Core/Extras/Metadata/Consumers/Xbmc/XbmcMetadata.cs),
+ *   read as TheTVDB's when it's a number and IMDb's when it's `tt…`;
+ * - a link to the show's TMDB or TheTVDB page.
+ * TheTVDB numbers its shows, seasons and episodes apart, so a show's NFO holds a show's id.
+ */
+export function showIdsFromNfo(text: string): ShowNfoIds {
+  const tag = (name: string) =>
+    new RegExp(`<${name}(?:\\s[^>]*)?>\\s*([^<]*?)\\s*</${name}>`, 'i').exec(text)?.[1]
+  const unique = (type: string) =>
+    new RegExp(
+      `<uniqueid\\b[^>]*\\btype\\s*=\\s*["']${type}["'][^>]*>\\s*([^<]*?)\\s*</uniqueid>`,
+      'i',
+    ).exec(text)?.[1]
+  const id = tag('id')
+  const tmdbLink = /themoviedb\.org\/tv\/(\d+)/i.exec(text)?.[1]
+  const tvdbLink = /thetvdb\.com\/[^"'<\s]*?[?&]id=(\d+)/i.exec(text)?.[1]
+  const imdbLink = /imdb\.com\/title\/(tt\d{7,10})/i.exec(text)?.[1]
+  return {
+    tvdb: tmdbOf(unique('tvdb')) ?? tmdbOf(tag('tvdbid')) ?? tmdbOf(id) ?? tmdbOf(tvdbLink),
+    tmdb: tmdbOf(unique('tmdb')) ?? tmdbOf(tag('tmdbid')) ?? tmdbOf(tmdbLink),
+    imdb: imdbOf(unique('imdb')) ?? imdbOf(tag('imdbid')) ?? imdbOf(id) ?? imdbOf(imdbLink),
+  }
+}
+
+/** A show folder's `tvshow.nfo` ids, whatever the file name's case; null when none is there. */
+export async function readShowNfo(folder: string): Promise<ShowNfoIds | null> {
+  let entries: string[]
+  try {
+    entries = await fsp.readdir(folder)
+  } catch {
+    return null
+  }
+  const found = entries.find((e) => e.toLowerCase() === 'tvshow.nfo')
+  if (!found) return null
+  try {
+    const path = join(folder, found)
+    const st = await fsp.stat(path)
+    if (!st.isFile() || st.size > MAX_NFO_BYTES) return null
+    const ids = showIdsFromNfo(await fsp.readFile(path, 'utf8'))
+    return ids.tvdb || ids.tmdb || ids.imdb ? ids : null
+  } catch {
+    return null
+  }
+}
