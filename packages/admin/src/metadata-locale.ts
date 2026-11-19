@@ -168,3 +168,9 @@ export const tmdbBusy = (reason: string | undefined) =>
 
 /** Where TMDB's API key and Read Access Token are (TMDB's Getting Started guide). */
 export const TMDB_KEY_PAGE = 'https://www.themoviedb.org/settings/api'
+
+/** fanart.tv refused the personal key (400 `fanart-key-rejected`, HT-74). */
+export const fanartKeyRejected = (reason: string | undefined) => reason === 'fanart-key-rejected'
+
+/** Where fanart.tv explains its keys; a personal key is on the account's API page. */
+export const FANART_KEY_PAGE = 'https://fanart.tv/get-an-api-key/'

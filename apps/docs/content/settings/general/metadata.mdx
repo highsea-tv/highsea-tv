@@ -1,6 +1,6 @@
 ---
 title: Metadata
-description: The TMDB key highsea gets film details with, its own or yours, and the language and region those details come in.
+description: The TMDB key highsea gets film details with, an optional fanart.tv key for more artwork, and the language and region those details come in.
 ---
 
 {/* SPDX-License-Identifier: AGPL-3.0-only */}
@@ -11,13 +11,16 @@ description: The TMDB key highsea gets film details with, its own or yours, and 
     image, ADR 0057) and packages/admin/src/setup.tsx (metadata language and region from the
     browser).
   - TMDB's API settings: https://www.themoviedb.org/settings/api
+  - fanart.tv (HT-74, ADR 0070): packages/metadata/src/fanart/ and settings.ts; its keys and their
+    delays on new images: https://api.fanart.tv/ (Authentication, Access Tiers) and
+    https://fanart.tv/get-an-api-key/
 */}
 
-Written for highsea 0.2.0-beta.3.
+Written for highsea 0.4.5.
 
 Where film details come from, and the language and region they're in. highsea gets titles, posters, cast and release dates from TMDB, with its own key unless you add yours. Only the Owner can change these.
 
-![The Metadata group in Settings › General: the TMDB key shown as Set with Replace and Remove, then Metadata language and Region.](/images/admin/settings-general/metadata.png)
+![The Metadata group in Settings › General: the TMDB key shown as Set with Replace and Remove, Metadata language and Region, then the fanart.tv key on highsea’s key with a field for a personal one.](/images/admin/settings-general/metadata.png)
 
 ## The TMDB key
 
@@ -32,6 +35,24 @@ To add or change your key:
 3. Choose **Save**. highsea checks the key with TMDB before it keeps it. If TMDB refuses it, copy it again; if TMDB can't be reached, nothing is saved, so check the server's internet connection and try again.
 
 **Remove** takes your key away after you confirm, and highsea goes back to its own.
+
+## The fanart.tv key
+
+[fanart.tv](https://fanart.tv) is a community site of film artwork. highsea uses it for more posters, backdrops and logos in **Change artwork**, and for a film's logo when TMDB has none. TMDB stays first; fanart.tv only adds to it.
+
+The **fanart.tv key** line says which key is in use:
+
+- **highsea’s key**: highsea's own key is built into its published image, and fanart.tv is on. A new image on fanart.tv reaches highsea after a week.
+- **Set**, with its last four characters: your personal key is in use beside highsea's. A new image reaches highsea after two days.
+- **Off**: there's no key, as in an image you built yourself. highsea doesn't ask fanart.tv, and nothing else changes.
+
+A personal key is optional. To add one:
+
+1. Choose **Open fanart.tv’s API page**, sign in to fanart.tv (or make an account) and copy the key under **Personal API keys**.
+2. Paste it into **Personal fanart.tv key**. With one set, choose **Replace** first.
+3. Choose **Save**. highsea checks the key with fanart.tv before it keeps it.
+
+**Remove** takes your key away after you confirm. highsea goes back to its own key, or stops asking fanart.tv if it has none. Artwork you've already chosen stays.
 
 ## Language and region
 

@@ -116,8 +116,9 @@ process.on('SIGINT', () => void stop('SIGINT'))
 /**
  * `HIGHSEA_TMDB_REPLAY=1` answers TMDB from the recordings in packages/metadata (ADR 0029), for
  * development and the browser sweeps without a key or the network. Any key is accepted except one
- * starting `invalid`; a request with no recording answers 503 `tmdb-unreachable`. Other hosts
- * (single sign-on's provider) still go out.
+ * starting `invalid`; a request with no recording answers 503 `tmdb-unreachable`. fanart.tv (HT-74)
+ * is answered from its hand-written fixtures the same way. Other hosts (single sign-on's provider)
+ * still go out.
  */
 async function outsideFetch(): Promise<Fetch | undefined> {
   const fixtures = process.env.HIGHSEA_FIXTURES_URL
@@ -125,10 +126,15 @@ async function outsideFetch(): Promise<Fetch | undefined> {
   if (process.env.HIGHSEA_TMDB_REPLAY !== '1') return undefined
   const { createReplayFetch } = await import('@highsea-tv/metadata/replay')
   const replay = createReplayFetch()
-  const tmdb = new Set(['api.themoviedb.org', 'image.tmdb.org'])
+  const replayed = new Set([
+    'api.themoviedb.org',
+    'image.tmdb.org',
+    'webservice.fanart.tv',
+    'assets.fanart.tv',
+  ])
   return (input, init) => {
     const url = new URL(input instanceof Request ? input.url : input.toString())
-    return tmdb.has(url.hostname) ? replay(input, init) : fetch(input, init)
+    return replayed.has(url.hostname) ? replay(input, init) : fetch(input, init)
   }
 }
 

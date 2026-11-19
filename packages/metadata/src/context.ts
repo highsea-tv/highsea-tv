@@ -22,6 +22,11 @@ export type MetadataDeps = {
    */
   builtInKey?: string
   /**
+   * highsea's fanart.tv project key, built into the image as the TMDB key is (ADR 0057, 0070).
+   * Without it and without the owner's personal key, fanart.tv isn't asked.
+   */
+  fanartKey?: string
+  /**
    * Scales an uploaded image to a width or height, keeping its type (HT-66); the runtime's uses
    * ffmpeg. Without it, an upload serves at its own size everywhere.
    */

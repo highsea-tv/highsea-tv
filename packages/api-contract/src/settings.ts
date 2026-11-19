@@ -86,6 +86,16 @@ export const MetadataSettings = z
       /** The image carries highsea's own key, used while `set` is false (4.3c). */
       builtIn: z.boolean(),
     }),
+    /**
+     * fanart.tv, the second artwork source (HT-74): `set` is the owner's personal key, never the
+     * key itself; `project` is highsea's own, carried by the image. fanart.tv is asked when either
+     * is there.
+     */
+    fanart: z.object({
+      set: z.boolean(),
+      last4: z.string().nullable(),
+      project: z.boolean(),
+    }),
     language: MetadataLanguage,
     /** For certifications, release dates and Discover's lists. The owner's locale by default. */
     region: Region,
@@ -96,6 +106,8 @@ export const MetadataInput = z
   .object({
     /** A new key, checked with TMDB before it's saved. Omit to keep the current one. */
     key: MetadataKey,
+    /** A personal fanart.tv key, checked with fanart.tv before it's saved. */
+    fanartKey: z.string().trim().min(1).max(128).openapi({ example: 'a1b2c3d4e5f6a7b8' }),
     language: MetadataLanguage,
     region: Region,
   })
@@ -194,14 +206,26 @@ export const settings = {
     method: 'put',
     path: `${SETTINGS}/metadata`,
     tags: ['Settings'],
-    summary: 'Save the TMDB key, the metadata language or the region',
+    summary: 'Save the TMDB key, the fanart.tv key, the metadata language or the region',
     description:
-      'A new key is checked with TMDB first: 400 with `details.reason` `tmdb-key-rejected` when TMDB doesn’t accept it, 503 (`tmdb-unreachable`) when TMDB can’t be reached. Nothing is saved unless every field is. The key is stored encrypted and never returned.',
+      'A new key is checked with TMDB first: 400 with `details.reason` `tmdb-key-rejected` when TMDB doesn’t accept it, 503 (`tmdb-unreachable`) when TMDB can’t be reached. A personal fanart.tv key is checked with fanart.tv the same way (`fanart-key-rejected`, `fanart-unavailable`). Nothing is saved unless every field is. Keys are stored encrypted and never returned.',
     ...access('owner'),
     request: { ...body(MetadataInput) },
     responses: {
       200: json(MetadataSettings, 'Saved'),
       ...errors('invalid', 'unauthorized', 'forbidden', 'rate-limited', 'unavailable'),
+    },
+  }),
+  removeFanartKey: createRoute({
+    method: 'delete',
+    path: `${SETTINGS}/metadata/fanart`,
+    tags: ['Settings'],
+    summary: 'Remove the personal fanart.tv key',
+    description: 'fanart.tv stays on while the image carries highsea’s project key.',
+    ...access('owner'),
+    responses: {
+      200: json(MetadataSettings, 'Removed'),
+      ...errors('unauthorized', 'forbidden'),
     },
   }),
   removeMetadataKey: createRoute({

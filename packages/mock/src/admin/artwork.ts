@@ -4,7 +4,8 @@
 // in its words (packages/metadata's artwork.ts) before the writes.
 //
 // What stands in for TMDB's images: the title's own art, then three more of each kind drawn the
-// fixtures' way from the title's name, so the picker has a grid to choose from. An upload is kept
+// fixtures' way from the title's name, so the picker has a grid to choose from. A film has two of
+// fanart.tv's too (HT-74) while fanart.tv is on (a project or personal key in the mock's settings). An upload is kept
 // as a data URL, and a film's choice is written to its art, so every page and app shows it. A
 // collection's is kept beside the mock and laid over its art where `metadata.collection` answers.
 import type { ArtworkKind, ArtworkKindView, ArtworkView } from '@highsea-tv/api-contract'
@@ -20,6 +21,7 @@ const t = createT(
   defineMessages({
     // packages/metadata, word for word
     notAnOption: 'TMDB has no such image for this title.',
+    notAFanartOption: 'fanart.tv has no such image for this title.',
     notInLibrary: 'That movie isn’t in the library.',
     tmdbCollection: 'TMDB has no collection with that id.',
   }),
@@ -29,7 +31,7 @@ const KINDS: ArtworkKind[] = ['poster', 'backdrop', 'logo']
 
 /** A choice, as the server's `artwork` row keeps it. */
 type Choice = {
-  source: 'tmdb' | 'upload'
+  source: 'tmdb' | 'fanart' | 'upload'
   file: string
   url: string
   language: string | null
@@ -71,7 +73,15 @@ export function chosenCollectionArt<A extends { poster: string | null; backdrop:
   }
 }
 
-type Option = { file: string; url: string; language: string | null; width: number; height: number }
+type Option = {
+  source: 'tmdb' | 'fanart'
+  file: string
+  url: string
+  language: string | null
+  width: number
+  height: number
+  likes: number | null
+}
 
 const SIZES: Record<ArtworkKind, [number, number]> = {
   poster: [2000, 3000],
@@ -86,13 +96,43 @@ function optionsOf(slug: string, name: string, kind: ArtworkKind, own: string | 
   const [width, height] = SIZES[kind]
   return [own ?? draw(name), draw(`${name} 2`), draw(`${name} 3`), draw(`${name} 4`)].map(
     (url, i) => ({
+      source: 'tmdb' as const,
       file: `/${slug}-${kind}-${i + 1}.jpg`,
       url,
       language: LANGUAGES[i] ?? null,
       width: width - i * 100,
       height: Math.round(((width - i * 100) * height) / width),
+      likes: null,
     }),
   )
+}
+
+/** fanart.tv's sizes for each kind (its posters 1000×1426, backgrounds 1920×1080, HD logos 800×310). */
+const FANART_SIZES: Record<ArtworkKind, [number, number]> = {
+  poster: [1000, 1426],
+  backdrop: [1920, 1080],
+  logo: [800, 310],
+}
+
+/** Two of fanart.tv's for a film, the most liked first, named the server's way (`/ftv_…`). */
+function fanartOptionsOf(slug: string, name: string, kind: ArtworkKind): Option[] {
+  const draw = kind === 'poster' ? posterArt : kind === 'backdrop' ? backdropArt : logoArt
+  const [width, height] = FANART_SIZES[kind]
+  return [draw(`${name} fanart`), draw(`${name} fanart 2`)].map((url, i) => ({
+    source: 'fanart' as const,
+    file: `/ftv_${slug}-${kind}-${i + 1}.${kind === 'logo' ? 'png' : 'jpg'}`,
+    url,
+    language: kind === 'backdrop' ? null : 'en',
+    width,
+    height,
+    likes: 12 - i * 5,
+  }))
+}
+
+/** fanart.tv is on with highsea's project key or the owner's personal one, as on the server. */
+const fanartOn = (ctx: Ctx) => {
+  const { fanart } = ctx.api.settings.metadata()
+  return fanart.project || fanart.set
 }
 
 export function artworkAnswers(kit: AdminKit): Answers {
@@ -153,10 +193,14 @@ export function artworkAnswers(kit: AdminKit): Answers {
       const chosen = memory.choices.get(key(owner, id, kind)) ?? null
       const automatic = title.automatic[kind]
       // TMDB keeps no logos for collections
-      const options =
-        owner === 'collection' && kind === 'logo'
+      const options = [
+        ...(owner === 'collection' && kind === 'logo'
           ? []
-          : optionsOf(title.slug, title.name, kind, automatic)
+          : optionsOf(title.slug, title.name, kind, automatic)),
+        ...(owner === 'movie' && fanartOn(ctx)
+          ? fanartOptionsOf(title.slug, title.name, kind)
+          : []),
+      ]
       const current = chosen?.url ?? automatic ?? null
       const by = chosen ? users.find((u) => u.id === chosen.by) : undefined
       return {
@@ -175,8 +219,8 @@ export function artworkAnswers(kit: AdminKit): Answers {
           : null,
         options: options.map((o) => ({
           ...o,
-          voteAverage: 0,
-          voteCount: 0,
+          voteAverage: o.source === 'tmdb' ? 0 : null,
+          voteCount: o.source === 'tmdb' ? 0 : null,
           current: chosen ? chosen.file === o.file : o.url === automatic,
         })),
       }
@@ -190,16 +234,23 @@ export function artworkAnswers(kit: AdminKit): Answers {
       choose: ({ params, body }, ctx) => {
         const { owner, id, kind } = params
         const title = titleOf(ctx, owner, id)
-        const option =
-          owner === 'collection' && kind === 'logo'
+        const fanart = body.file.startsWith('/ftv_')
+        const option = fanart
+          ? owner === 'movie' && fanartOn(ctx)
+            ? fanartOptionsOf(title.slug, title.name, kind).find((o) => o.file === body.file)
+            : undefined
+          : owner === 'collection' && kind === 'logo'
             ? undefined
             : optionsOf(title.slug, title.name, kind, title.automatic[kind]).find(
                 (o) => o.file === body.file,
               )
-        if (!option) throw refuse('invalid', t('notAnOption'), { reason: 'not-an-option' })
+        if (!option)
+          throw refuse('invalid', t(fanart ? 'notAFanartOption' : 'notAnOption'), {
+            reason: 'not-an-option',
+          })
+        const { likes: _, ...picked } = option
         memory.choices.set(key(owner, id, kind), {
-          source: 'tmdb',
-          ...option,
+          ...picked,
           by: ctx.userId,
           at: ctx.srv.clock.now(),
         })

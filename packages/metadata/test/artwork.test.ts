@@ -119,7 +119,7 @@ describe('choosing', () => {
     expect(poster?.current).toBe(poster?.automatic as string)
     expect(poster?.choice).toBeNull()
     expect(poster?.options.length).toBeGreaterThan(1)
-    const votes = poster?.options.map((o) => o.voteAverage) ?? []
+    const votes = poster?.options.map((o) => o.voteAverage ?? 0) ?? []
     expect(votes).toEqual([...votes].sort((a, b) => b - a))
     const logos = kinds.find((k) => k.kind === 'logo')?.options ?? []
     expect(logos.some((o) => o.file.endsWith('.svg'))).toBe(false)

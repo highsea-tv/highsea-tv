@@ -263,6 +263,7 @@ describe('contract', () => {
     })
     ok(MetadataSettings, {
       key: { set: true, last4: '9f2c', builtIn: false },
+      fanart: { set: false, last4: null, project: true },
       language: 'en-US',
       region: 'GB',
     })

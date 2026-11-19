@@ -70,6 +70,7 @@ Short records of decisions that shape the system. Each one is immutable once acc
 | [0064](0064-shows-on-the-server.md) | Shows on the server: shows, seasons and episodes in the item tree, TMDB's TV metadata and the parser's numbering | Accepted |
 | [0066](0066-client-error-reports.md) | Client error reports: what the apps send, only to their own server | Accepted |
 | [0068](0068-profiles.md) | Profiles: the people who watch with an account, chosen per device | Accepted |
+| [0070](0070-fanart-tv-second-artwork-source.md) | fanart.tv as a second artwork source: TMDB first, fanart.tv's logo when TMDB has none, and a catch-up after an update | Accepted |
 
 Template: copy [`template.md`](template.md).
 

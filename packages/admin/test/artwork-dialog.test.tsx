@@ -34,8 +34,10 @@ const KINDS: Kind[] = ['poster', 'backdrop', 'logo']
 const img = (kind: Kind, file: string) => `/api/v1/images/movie/603/${kind}/w185${file}`
 
 let state: {
-  chosen: Partial<Record<Kind, { file: string; source: 'tmdb' | 'upload' }>>
+  chosen: Partial<Record<Kind, { file: string; source: 'tmdb' | 'fanart' | 'upload' }>>
   tmdb: boolean
+  /** fanart.tv on (HT-74): two of its posters after TMDB's */
+  fanart: boolean
   requests: { method: string; path: string; body: unknown }[]
 }
 
@@ -44,7 +46,17 @@ const options = (kind: Kind) =>
     { file: `/${kind}-a.jpg`, language: 'en', width: 2000, height: 3000 },
     { file: `/${kind}-b.jpg`, language: null, width: 1400, height: 2100 },
     { file: `/${kind}-c.jpg`, language: 'de', width: 1000, height: 1500 },
-  ].filter((o) => kind !== 'logo' || o.language !== 'de')
+  ]
+    .filter((o) => kind !== 'logo' || o.language !== 'de')
+    .map((o) => ({ ...o, source: 'tmdb' as const, likes: null, voteAverage: 5, voteCount: 3 }))
+
+const fanartOptions = (kind: Kind) =>
+  state.fanart && kind === 'poster'
+    ? [
+        { file: '/ftv_matrix-1.jpg', language: 'en', width: 1000, height: 1426, likes: 12 },
+        { file: '/ftv_matrix-2.jpg', language: null, width: 1000, height: 1426, likes: 4 },
+      ].map((o) => ({ ...o, source: 'fanart' as const, voteAverage: null, voteCount: null }))
+    : []
 
 function view(owner: 'movie' | 'collection', id: number) {
   return {
@@ -69,15 +81,11 @@ function view(owner: 'movie' | 'collection', id: number) {
               height: 3000,
             }
           : null,
-        options: state.tmdb
-          ? options(kind).map((o) => ({
-              ...o,
-              url: img(kind, o.file),
-              voteAverage: 5,
-              voteCount: 3,
-              current: o.file === current,
-            }))
-          : [],
+        options: [...(state.tmdb ? options(kind) : []), ...fanartOptions(kind)].map((o) => ({
+          ...o,
+          url: img(kind, o.file),
+          current: o.file === current,
+        })),
       }
     }),
   }
@@ -112,7 +120,11 @@ async function api(url: string, init: RequestInit = {}): Promise<Response> {
           400,
         )
       state.chosen[kind] = { file: '/hs_up.jpg', source: 'upload' }
-    } else if (kind && method === 'PUT') state.chosen[kind] = { file: body.file, source: 'tmdb' }
+    } else if (kind && method === 'PUT')
+      state.chosen[kind] = {
+        file: body.file,
+        source: body.file.startsWith('/ftv_') ? 'fanart' : 'tmdb',
+      }
     else if (kind && method === 'DELETE') delete state.chosen[kind]
     return json(view(owner, Number(m[2])))
   }
@@ -128,7 +140,7 @@ async function api(url: string, init: RequestInit = {}): Promise<Response> {
 }
 
 beforeEach(() => {
-  state = { chosen: {}, tmdb: true, requests: [] }
+  state = { chosen: {}, tmdb: true, fanart: false, requests: [] }
 })
 afterEach(() => cleanup())
 
@@ -169,10 +181,12 @@ describe('Change artwork', () => {
     expect(d.getByText(/at least 500 px wide and close to 2:3/)).toBeTruthy()
     const tiles = d.getAllByRole('radio')
     expect(tiles.map((t) => t.getAttribute('aria-label'))).toEqual([
-      'Poster, English, 2000 × 3000',
-      'Poster, No text, 1400 × 2100',
-      'Poster, German, 1000 × 1500',
+      'Poster from TMDB, English, 2000 × 3000',
+      'Poster from TMDB, No text, 1400 × 2100',
+      'Poster from TMDB, German, 1000 × 1500',
     ])
+    // fanart.tv is off: no section of its own
+    expect(d.queryByText('From fanart.tv')).toBeNull()
     expect(tiles[0]?.getAttribute('aria-checked')).toBe('true')
     expect(d.getAllByText('Current')).toHaveLength(1)
     // no Reset while the automatic one is shown
@@ -208,6 +222,35 @@ describe('Change artwork', () => {
     })
     expect(within(dialog(page)).getByText('Automatic: highsea’s pick from TMDB')).toBeTruthy()
     expect(page.getByText('Poster reset')).toBeTruthy()
+  })
+
+  test('with fanart.tv on, its images follow TMDB’s under their own heading, and one can be chosen', async () => {
+    state.fanart = true
+    const { page, user } = await open(
+      <ArtworkDialog owner="movie" id={603} title="The Matrix" open onOpenChange={() => {}} />,
+    )
+    const d = within(dialog(page))
+    expect(d.getByText('From TMDB')).toBeTruthy()
+    expect(d.getByText('From fanart.tv')).toBeTruthy()
+    expect(d.getAllByRole('radio').map((t) => t.getAttribute('aria-label'))).toEqual([
+      'Poster from TMDB, English, 2000 × 3000',
+      'Poster from TMDB, No text, 1400 × 2100',
+      'Poster from TMDB, German, 1000 × 1500',
+      'Poster from fanart.tv, English, 1000 × 1426',
+      'Poster from fanart.tv, No text, 1000 × 1426',
+    ])
+    await user.click(d.getByRole('radio', { name: 'Poster from fanart.tv, English, 1000 × 1426' }))
+    await settle()
+    expect(writes().at(-1)).toEqual({
+      method: 'PUT',
+      path: '/api/v1/artwork/movie/603/poster',
+      body: { file: '/ftv_matrix-1.jpg' },
+    })
+    expect(within(dialog(page)).getByText(/Chosen from fanart.tv by ruth/)).toBeTruthy()
+    // the backdrop has none from fanart.tv: no empty section
+    await user.click(within(dialog(page)).getByRole('tab', { name: 'Backdrop' }))
+    await settle()
+    expect(within(dialog(page)).queryByText('From fanart.tv')).toBeNull()
   })
 
   test('without TMDB, the dialog says so and Upload still works', async () => {

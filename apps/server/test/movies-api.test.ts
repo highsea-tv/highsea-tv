@@ -87,6 +87,7 @@ describe('metadata settings and the setup key step', () => {
     })
     expect(saved).toEqual({
       key: { set: true, last4: '1234', builtIn: false },
+      fanart: { set: false, last4: null, project: false },
       language: 'en-US',
       region: 'US',
     })
@@ -128,6 +129,7 @@ describe('metadata settings and the setup key step', () => {
     expect(res.status).toBe(200)
     expect(runtime.metadata.settings.get()).toEqual({
       key: { set: true, last4: '-key', builtIn: false },
+      fanart: { set: false, last4: null, project: false },
       language: 'pt-BR',
       region: 'BR',
     })

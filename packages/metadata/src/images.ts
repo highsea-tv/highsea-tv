@@ -2,7 +2,9 @@
 // Images cached by the server (owner's decision 4): fetched from TMDB's image server on first use,
 // kept under `/data/images/{size}/{file}`, and served from `/api/v1/images/…`. Clients never contact
 // TMDB. A file's path is built only from parts `parseImageRef` accepted, and checked to stay inside
-// the folder (docs/plans/phase-3-server.md, Known pitfalls › Paths).
+// the folder (docs/plans/phase-3-server.md, Known pitfalls › Paths). fanart.tv's files (`/ftv_…`,
+// HT-74) come from its asset server, at an address its answer for the title gave, and are resized
+// to the size asked for as uploads are.
 import { mkdirSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { join, resolve, sep } from 'node:path'
 import { AppError, newId } from '@highsea-tv/core'
@@ -10,6 +12,7 @@ import { schema } from '@highsea-tv/db'
 import { and, eq } from 'drizzle-orm'
 import { type Artwork, UPLOAD_PREFIX } from './artwork.ts'
 import type { MetadataDeps } from './context.ts'
+import { isFanartFile } from './fanart/source.ts'
 import { contentTypeOf, type ImageRef, parseImageRef } from './image-url.ts'
 import type { TmdbClient } from './tmdb/client.ts'
 
@@ -33,6 +36,11 @@ export function createImages(
   client: TmdbClient,
   baseUrl: () => string,
   artwork?: Pick<Artwork, 'uploaded'>,
+  fanart?: {
+    /** The address of a fanart file for a title at a width, from its cached answer; null if none. */
+    url: (owner: string, ownerId: number, file: string, width: number) => string | null
+    image: (url: string) => Promise<Response>
+  },
 ) {
   const { db, clock, imagesDir } = deps
   const root = resolve(imagesDir)
@@ -63,7 +71,7 @@ export function createImages(
         type: original.contentType === 'image/png' ? 'image/png' : 'image/jpeg',
       })
     } catch (e) {
-      deps.logger.warn('couldn’t resize uploaded artwork; serving the original', {
+      deps.logger.warn('couldn’t resize artwork; serving the original', {
         file: ref.file,
         error: (e as Error).message,
       })
@@ -77,6 +85,7 @@ export function createImages(
     if (original) return store(ref, path, await rendition(ref, original))
     // an upload's name is highsea's own: once replaced or reset, TMDB has nothing by it
     if (ref.file.startsWith(`/${UPLOAD_PREFIX}_`)) throw notFound()
+    if (isFanartFile(ref.file)) return fromFanart(ref, path)
     const res = await client.image(`${baseUrl()}${ref.size}${ref.file}`)
     if (res.status === 404) throw notFound()
     if (!res.ok)
@@ -88,6 +97,35 @@ export function createImages(
     const bytes = new Uint8Array(await res.arrayBuffer())
     if (bytes.length === 0 || bytes.length > MAX_BYTES) throw notFound()
     return store(ref, path, bytes)
+  }
+
+  /**
+   * A fanart.tv file: only one its answer for this title lists (so no other address is fetched),
+   * then made the size asked for, as an upload is. fanart.tv down is the same as TMDB's images down.
+   */
+  async function fromFanart(ref: ImageRef, path: string): Promise<CachedImage> {
+    const n = Number(ref.size.slice(1)) || 0
+    const url = fanart?.url(ref.owner, Number(ref.ownerId), ref.file, n)
+    if (!fanart || !url) throw notFound()
+    let res: Response
+    try {
+      res = await fanart.image(url)
+    } catch (e) {
+      if (e instanceof AppError) throw e
+      throw new AppError('unavailable', 'fanart.tv’s images aren’t answering. Try again later.', {
+        reason: 'fanart-unavailable',
+      })
+    }
+    if (res.status === 404) throw notFound()
+    if (!res.ok)
+      throw new AppError('unavailable', 'fanart.tv’s images aren’t answering. Try again later.', {
+        reason: 'fanart-unavailable',
+      })
+    const type = res.headers.get('content-type')?.split(';')[0]?.trim() ?? ''
+    if (!/^image\/(jpeg|png)$/.test(type)) throw notFound()
+    const data = new Uint8Array(await res.arrayBuffer())
+    if (data.length === 0 || data.length > MAX_BYTES) throw notFound()
+    return store(ref, path, await rendition(ref, { data, contentType: type }))
   }
 
   function store(ref: ImageRef, path: string, bytes: Uint8Array): CachedImage {

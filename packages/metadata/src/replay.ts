@@ -2,8 +2,10 @@
 // The replaying `fetch` (ADR 0029): serves TMDB's recorded answers and fails on any request it has
 // no recording for, so a test never reaches the network. Images come back as tiny placeholders,
 // which keeps the repo small. The dev and sweep servers boot on it too
-// (`createReplayFetch()` as `BootOptions.fetch`), so the admin works without a TMDB key.
-import { readdirSync, readFileSync } from 'node:fs'
+// (`createReplayFetch()` as `BootOptions.fetch`), so the admin works without a TMDB key. fanart.tv
+// (HT-74) is answered from hand-written files in its documented shape (test/fixtures/fanart), as
+// highsea has no fanart.tv key to record with yet.
+import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { Fetch } from '@highsea-tv/core'
@@ -11,6 +13,11 @@ import { type RecordedCredential, type Recording, recordingKey } from './recordi
 
 /** The recordings in this package: `test/fixtures/tmdb`. */
 export const RECORDINGS_DIR = fileURLToPath(new URL('../test/fixtures/tmdb/', import.meta.url))
+
+/** fanart.tv's answers, written by hand in its documented shape (that folder's README). */
+export const FANART_FIXTURES_DIR = fileURLToPath(
+  new URL('../test/fixtures/fanart/', import.meta.url),
+)
 
 /** A credential the replay treats as one TMDB refuses: anything starting `invalid`. */
 export const INVALID_CREDENTIAL_PREFIX = 'invalid'
@@ -79,13 +86,35 @@ export function loadRecordings(dir = RECORDINGS_DIR): Map<string, Recording> {
 
 export type ReplayOptions = {
   dir?: string
+  /** fanart.tv's answers: `movie_{tmdb id}.json`. */
+  fanartDir?: string
   /** Seen before a request is answered: tests count calls or fail one on purpose. */
   onRequest?: (url: URL, init?: RequestInit) => Response | undefined
 }
 
 export type ReplayFetch = Fetch & { requests: string[] }
 
-export function createReplayFetch({ dir, onRequest }: ReplayOptions = {}): ReplayFetch {
+/** fanart.tv's answer for a path (`/v3.2/movies/10378`), as its docs give it, or a 404 or 401. */
+function fanartAnswer(dir: string, url: URL, headers: Headers): Response {
+  const keys = [headers.get('api-key'), headers.get('client-key')].filter(Boolean) as string[]
+  // fanart.tv answers 401 for a missing or invalid key (its docs' error responses)
+  if (!keys.length || keys.some((k) => k.startsWith(INVALID_CREDENTIAL_PREFIX)))
+    return Response.json({ status: 'error', 'error message': 'Not authorized' }, { status: 401 })
+  const m = /^\/v3\.2\/movies\/(\d+)$/.exec(url.pathname)
+  const file = m ? join(dir, `movie_${m[1]}.json`) : null
+  if (file && existsSync(file))
+    return new Response(readFileSync(file, 'utf8'), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    })
+  return Response.json({ status: 'error', 'error message': 'Not found' }, { status: 404 })
+}
+
+export function createReplayFetch({
+  dir,
+  fanartDir = FANART_FIXTURES_DIR,
+  onRequest,
+}: ReplayOptions = {}): ReplayFetch {
   const recordings = loadRecordings(dir)
   const requests: string[] = []
 
@@ -99,7 +128,9 @@ export function createReplayFetch({ dir, onRequest }: ReplayOptions = {}): Repla
     const forced = onRequest?.(url, init)
     if (forced) return forced
 
-    if (url.hostname === 'image.tmdb.org') {
+    if (url.hostname === 'webservice.fanart.tv')
+      return fanartAnswer(fanartDir, url, new Headers(init?.headers ?? request?.headers))
+    if (url.hostname === 'image.tmdb.org' || url.hostname === 'assets.fanart.tv') {
       const png = url.pathname.endsWith('.png')
       const bytes = placeholderFor(url.pathname, png)
       return new Response(bytes, {

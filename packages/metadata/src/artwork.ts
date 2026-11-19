@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Artwork an admin chose (HT-66, ADR 0030's 2026-11-18 section): a title's poster, backdrop or logo
-// picked from TMDB's other images, or uploaded, in place of highsea's automatic choice. The choice
+// picked from TMDB's other images or fanart.tv's (HT-74, ADR 0070), or uploaded, in place of highsea's automatic choice. The choice
 // is a row in `artwork`, applied wherever the title's art is mapped (map.ts's `ArtPick`), so a
 // refresh, which replaces only the cached TMDB response, never undoes it; Reset deletes the row.
 // An upload's checks are artwork-check.ts's.
@@ -17,7 +17,7 @@ const { artwork } = schema
 
 export type ArtworkChoice = {
   kind: ArtworkKind
-  source: 'tmdb' | 'upload'
+  source: 'tmdb' | 'fanart' | 'upload'
   file: string
   language: string | null
   width: number | null
@@ -26,14 +26,18 @@ export type ArtworkChoice = {
   chosenAt: number
 }
 
-/** One of TMDB's images for a kind, as the picker lists it. */
+/** One of TMDB's or fanart.tv's images for a kind, as the picker lists it. */
 export type ArtworkOption = {
+  source: 'tmdb' | 'fanart'
   file: string
   language: string | null
   width: number
   height: number
-  voteAverage: number
-  voteCount: number
+  /** TMDB's votes; null for fanart.tv's. */
+  voteAverage: number | null
+  voteCount: number | null
+  /** fanart.tv's likes; null for TMDB's. */
+  likes: number | null
 }
 
 const RASTER = /^\/[A-Za-z0-9_-]{1,100}\.(jpg|jpeg|png|webp)$/
@@ -50,12 +54,14 @@ export function optionsOf(images: TmdbImages, kind: ArtworkKind): ArtworkOption[
         (b.vote_average ?? 0) - (a.vote_average ?? 0) || (b.vote_count ?? 0) - (a.vote_count ?? 0),
     )
     .map((i) => ({
+      source: 'tmdb' as const,
       file: i.file_path,
       language: i.iso_639_1 ?? null,
       width: i.width,
       height: i.height,
       voteAverage: i.vote_average ?? 0,
       voteCount: i.vote_count ?? 0,
+      likes: null,
     }))
 }
 
@@ -136,8 +142,8 @@ export function createArtwork({ db, clock }: Deps) {
   return {
     pick,
     choices,
-    /** Chooses one of TMDB's images (already checked to be among the title's). */
-    chooseTmdb(
+    /** Chooses one of TMDB's or fanart.tv's images (already checked to be among the title's). */
+    chooseOption(
       owner: ArtworkOwner,
       id: number,
       kind: ArtworkKind,
@@ -145,7 +151,7 @@ export function createArtwork({ db, clock }: Deps) {
       by: string | null,
     ) {
       return put(owner, id, kind, {
-        source: 'tmdb',
+        source: option.source,
         file: option.file,
         language: option.language,
         width: option.width,
