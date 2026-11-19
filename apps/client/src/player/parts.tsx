@@ -13,10 +13,12 @@ import {
   chromeShown,
   countsDown,
   createPlayerText,
+  creditsSkip,
   cuesAt,
   cueText,
   filmUpNext,
   HIDE_MS,
+  introShown,
   leavePlayer,
   NUDGE_MS,
   nextChange,
@@ -57,11 +59,13 @@ import {
   scrimOf,
   Text,
   tokens,
+  useControl,
   useTheme,
 } from '@highsea-tv/ui'
+import type { ViewHandle } from '@highsea-tv/ui/tv'
 import { Image } from 'expo-image'
 import { type Href, router } from 'expo-router'
-import { type ReactNode, useCallback, useEffect, useState } from 'react'
+import { type ReactNode, type Ref, useCallback, useEffect, useRef, useState } from 'react'
 import {
   ActivityIndicator,
   type GestureResponderEvent,
@@ -185,10 +189,37 @@ export function usePlayerModel(
             d?.related ?? [],
           )
         : null
-  const autoplay = usePlaybackPrefs().current?.autoplayNext ?? true
+  const prefs = usePlaybackPrefs().current
+  const autoplay = prefs?.autoplayNext ?? true
   const counting = countsDown(next) && autoplay
   const stream = streamState(state, now, !!next)
   const left = nextUpIn(state)
+
+  // an episode's marks (ADR 0067): Next up shows where its credits start
+  const credits = d?.episode?.credits ?? null
+  useEffect(() => dispatch({ type: 'marks', credits }), [dispatch, credits])
+  // Skip intro and Skip credits (player.md › Episodes), only over the stream as it plays
+  const intro = d?.episode?.intro ?? null
+  const clear = stream === 'normal' && !panel
+  const introNow = clear && introShown(intro, state)
+  const creditsNow = clear ? creditsSkip(state, !!next) : null
+  const { seekTo } = p
+  // Skip intros automatically (client-settings.md › Playback): once per intro, so seeking back
+  // into it plays it
+  const skipped = useRef<number | null>(null)
+  useEffect(() => {
+    if (!introNow || !intro || !prefs?.skipIntros || skipped.current === intro.start) return
+    skipped.current = intro.start
+    seekTo(intro.end)
+  }, [introNow, intro, prefs?.skipIntros, seekTo])
+  const skip: { which: 'intro' | 'credits'; run: () => void } | null =
+    introNow && intro
+      ? { which: 'intro', run: () => seekTo(intro.end) }
+      : creditsNow === 'next'
+        ? { which: 'credits', run: () => dispatch({ type: 'resume-next' }) }
+        : creditsNow === 'end'
+          ? { which: 'credits', run: () => seekTo(state.duration) }
+          : null
 
   const wake = useCallback(() => {
     const at = Date.now()
@@ -259,6 +290,8 @@ export function usePlayerModel(
         }
       : null,
     cancelNext: () => dispatch({ type: 'cancel-next' }),
+    /** Skip intro or Skip credits, while one shows. */
+    skip,
   }
 }
 
@@ -883,6 +916,45 @@ export function NextUpCard({
         </Button>
         <Button onPress={m.cancelNext}>{t('cancel')}</Button>
       </View>
+    </View>
+  )
+}
+
+/**
+ * Skip intro or Skip credits (player.md › Episodes): the library's overlay button on the frame's
+ * glass, at the bottom right where Next up shows, never with it. On TV it takes the focus while it
+ * shows (`focus`), and the player gives it back to the scrubber after.
+ */
+export function SkipButton({
+  m,
+  place,
+  focus,
+}: {
+  m: PlayerModel
+  /** The right and bottom insets. */
+  place: { right: number; bottom: number }
+  focus?: Ref<ViewHandle>
+}) {
+  const t = useT(messages)
+  const theme = useTheme()
+  const control = useControl('md')
+  const skip = m.skip
+  if (!skip) return null
+  return (
+    <View
+      style={{
+        position: 'absolute',
+        right: place.right,
+        bottom: place.bottom,
+        borderRadius: control.radius,
+        backgroundColor: glassOf(theme.colors),
+        boxShadow: tokens.elevation[4].boxShadow,
+        zIndex: 30,
+      }}
+    >
+      <Button ref={focus} variant="overlay" icon="next" onPress={skip.run}>
+        {skip.which === 'intro' ? t('skipIntro') : t('skipCredits')}
+      </Button>
     </View>
   )
 }

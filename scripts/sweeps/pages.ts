@@ -38,10 +38,14 @@ const VARIANTS = onlyQuery
       'motion=reduced',
     ]
 
+// SWEEP_ONLY=<regex> sweeps only the routes it matches, as server.ts's does its visits
+const routeOnly = process.env.SWEEP_ONLY ? new RegExp(process.env.SWEEP_ONLY) : null
 const jobs = Object.entries(prototypeRoutes())
   .filter(([p]) => !only || p === only)
   .flatMap(([p, routes]) =>
-    routes.flatMap((r) => WIDTHS[p as Platform].flatMap((w) => VARIANTS.map((q) => ({ r, w, q })))),
+    routes
+      .filter((r) => !routeOnly || routeOnly.test(r))
+      .flatMap((r) => WIDTHS[p as Platform].flatMap((w) => VARIANTS.map((q) => ({ r, w, q })))),
   )
   // a client frame has one size, so its widths are one job
   .filter(

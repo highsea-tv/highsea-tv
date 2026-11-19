@@ -137,6 +137,7 @@ import { ffmpegResizer } from './image-resize.ts'
 import { createListLibrary } from './list-library.ts'
 import { createLogFiles } from './logs.ts'
 import { createMailBrand } from './mail-brand.ts'
+import { createMarkers } from './markers.ts'
 import { createNetworkService, type NetworkService } from './network.ts'
 import { createNetworkActivity, type NetworkActivityService } from './network-activity.ts'
 import { createNotify, HEALTH_EVERY_MS, type Notify } from './notify.ts'
@@ -849,6 +850,18 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
         .filter((t) => t.kind === 'embedded' && isTextSubtitle(t.format))
         .flatMap((t) => trackIndex(fileId, t.id) ?? []),
   })
+  // an episode's intro and credits (Phase 5 C2, ADR 0067): a season at a time behind the imports,
+  // never one being played; `playback` is read when the job runs, after it's made below
+  const markers = createMarkers({
+    db,
+    jobs,
+    clock,
+    logger,
+    ffmpeg: ffmpegBinary(),
+    ffprobe: ffprobeBinary(),
+    workers,
+    busy: () => new Set(playback.sessions().map((s) => s.file.id)),
+  })
   const movies = createMovies(
     {
       db,
@@ -899,6 +912,7 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
           afterImport: async (file) => {
             await trickplay.afterImport()
             await ahead.afterImport()
+            await markers.afterImport()
             await subtitles.hooks.afterImport?.(file)
           },
         },
@@ -927,6 +941,7 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
   scheduleFileFacts({ db, jobs, clock })
   trickplay.start()
   ahead.start()
+  void markers.start()
 
   // HLS made on demand (4.1b, ADR 0051): one folder per play session in the data folder's
   // `transcodes/`, emptied on boot, since no session outlives the process
@@ -1938,6 +1953,7 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
       await transcodes.close()
       movies.close()
       shows.close()
+      markers.close()
       stopSubtitles()
       stopIndexers()
       await network.close()

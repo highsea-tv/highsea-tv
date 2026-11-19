@@ -54,6 +54,10 @@ export type PlayerState = {
   reportedPosition: number | null
   /** Next up was cancelled for this film's ending. */
   nextCancelled: boolean
+  /** Where an episode's credits start (ADR 0067), which is where Next up shows; null for a film. */
+  credits: number | null
+  /** Where Next up was brought back by Skip credits: its countdown starts again from here. */
+  nextFrom: number | null
   stoppedBy: StoppedBy | null
   /** Why it didn't start, for the log; the screen says it in plain words. */
   error: string | null
@@ -80,6 +84,10 @@ export type PlayerEvent =
   | { type: 'input'; at: number }
   | { type: 'reported'; position: number; at: number }
   | { type: 'cancel-next' }
+  /** The title's marks: an episode's credits start, or none. */
+  | { type: 'marks'; credits: number | null }
+  /** Skip credits with something next: Next up shows again, counting down from here. */
+  | { type: 'resume-next' }
 
 export const initialPlayer = (at = 0): PlayerState => ({
   phase: 'idle',
@@ -92,13 +100,23 @@ export const initialPlayer = (at = 0): PlayerState => ({
   reportedAt: null,
   reportedPosition: null,
   nextCancelled: false,
+  credits: null,
+  nextFrom: null,
   stoppedBy: null,
   error: null,
 })
 
-/** Inside Next up's window: the film's last NEXT_UP_S seconds. */
-const nearEnd = (s: Pick<PlayerState, 'duration' | 'position'>) =>
-  s.duration > 0 && s.duration - s.position <= NEXT_UP_S
+type Window = Pick<PlayerState, 'duration' | 'position' | 'credits' | 'nextFrom'>
+
+/**
+ * Where Next up's window opens (player.md › Next up): where Skip credits brought it back, where
+ * an episode's credits start, or a film's last NEXT_UP_S seconds.
+ */
+const nextOpens = (s: Window) =>
+  s.nextFrom ?? (s.credits !== null && s.credits < s.duration ? s.credits : s.duration - NEXT_UP_S)
+
+/** Inside Next up's window. */
+const nearEnd = (s: Window) => s.duration > 0 && s.position >= nextOpens(s)
 
 export function playerReducer(s: PlayerState, e: PlayerEvent): PlayerState {
   switch (e.type) {
@@ -137,6 +155,7 @@ export function playerReducer(s: PlayerState, e: PlayerEvent): PlayerState {
         ...s,
         position: e.position,
         nextCancelled: s.nextCancelled && nearEnd({ ...s, position: e.position }),
+        nextFrom: s.nextFrom !== null && e.position < s.nextFrom ? null : s.nextFrom,
       }
     case 'duration':
       return e.duration > 0 && Number.isFinite(e.duration) ? { ...s, duration: e.duration } : s
@@ -145,6 +164,7 @@ export function playerReducer(s: PlayerState, e: PlayerEvent): PlayerState {
         ...s,
         position: e.position,
         nextCancelled: s.nextCancelled && nearEnd({ ...s, position: e.position }),
+        nextFrom: s.nextFrom !== null && e.position < s.nextFrom ? null : s.nextFrom,
       }
     case 'ended':
       return { ...s, playing: false, waitingSince: null, position: s.duration || s.position }
@@ -158,6 +178,10 @@ export function playerReducer(s: PlayerState, e: PlayerEvent): PlayerState {
       return { ...s, reportedAt: e.at, reportedPosition: e.position }
     case 'cancel-next':
       return { ...s, nextCancelled: true }
+    case 'marks':
+      return { ...s, credits: e.credits }
+    case 'resume-next':
+      return { ...s, nextCancelled: false, nextFrom: s.position }
   }
 }
 
@@ -217,8 +241,46 @@ export function nextChange(s: PlayerState, now: number): number | null {
   return at > now ? at : null
 }
 
-/** Next up's "Starts in N s": the film's seconds left, so it pauses when the film does. */
-export const nextUpIn = (s: PlayerState) => Math.max(0, Math.ceil(s.duration - s.position))
+/**
+ * Next up's "Starts in N s": NEXT_UP_S from where its window opened, never past the end, counted
+ * in the title's seconds so it pauses when the title does.
+ */
+export const nextUpIn = (s: PlayerState) =>
+  Math.max(0, Math.ceil(Math.min(nextOpens(s) + NEXT_UP_S, s.duration) - s.position))
+
+/** The last moments of an intro, when skipping it would gain nothing: Skip intro has gone. */
+export const INTRO_TAIL_S = 1
+
+/**
+ * Whether Skip intro shows (player.md › Skip intro): while an episode's intro plays, from its
+ * start until its last second.
+ */
+export const introShown = (
+  intro: { start: number; end: number } | null | undefined,
+  s: Pick<PlayerState, 'phase' | 'position'>,
+) =>
+  !!intro &&
+  s.phase === 'ready' &&
+  s.position >= intro.start &&
+  s.position < intro.end - INTRO_TAIL_S
+
+/**
+ * What Skip credits does, if it shows (player.md › Skip credits): during an episode's credits
+ * once Next up has been cancelled, it brings Next up back (`next`); with nothing to come, it
+ * ends the episode (`end`). Not in the last second, nor while Next up shows.
+ */
+export function creditsSkip(
+  s: Pick<
+    PlayerState,
+    'phase' | 'position' | 'duration' | 'credits' | 'nextCancelled' | 'nextFrom'
+  >,
+  hasNext: boolean,
+): 'next' | 'end' | null {
+  if (s.phase !== 'ready' || s.credits === null || s.duration <= 0) return null
+  if (s.position < s.credits || s.position >= s.duration - INTRO_TAIL_S) return null
+  if (hasNext) return s.nextCancelled ? 'next' : null
+  return 'end'
+}
 
 /**
  * Whether the chrome shows: while paused, while waiting, while a panel is open, and for HIDE_MS

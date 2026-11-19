@@ -139,4 +139,23 @@ export function registerShows(app: OpenAPIHono<Env>) {
     audit(c, 'show.episode-monitored', id)
     return c.body(null, 204)
   })
+
+  // an episode's intro and credits (Phase 5 C2, ADR 0067): the owner's word, or found again
+  app.openapi(routes.series.setMarkers, (c) => {
+    const { id, episodeId } = c.req.valid('param')
+    if (!/^\d+$/.test(episodeId))
+      throw new AppError('not-found', 'That episode isn’t in this show.')
+    shows(c).admin.setMarkers(id, episodeId, c.req.valid('json'))
+    audit(c, 'show.episode-markers', id)
+    return c.body(null, 204)
+  })
+
+  app.openapi(routes.series.findMarkers, (c) => {
+    const { id, episodeId } = c.req.valid('param')
+    if (!/^\d+$/.test(episodeId))
+      throw new AppError('not-found', 'That episode isn’t in this show.')
+    shows(c).admin.findMarkers(id, episodeId)
+    audit(c, 'show.episode-markers-found', id)
+    return c.body(null, 204)
+  })
 }

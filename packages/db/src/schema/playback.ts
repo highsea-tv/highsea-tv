@@ -3,8 +3,9 @@
 // player's picks per person and title (player.md › Data), and what each device reported it plays
 // (ADR 0052). Where a person stopped is `watch_positions`, in media.ts since checkpoint 4.
 // Checkpoint 4.1b adds what HLS and the scrubber read of each file: its keyframes and its trickplay;
-// 4.3a, Now playing's 30 days of what was watched.
-import { index, integer, primaryKey, sqliteTable, text } from 'drizzle-orm/sqlite-core'
+// 4.3a, Now playing's 30 days of what was watched. Phase 5 C2 adds an episode file's intro and
+// credits (ADR 0067).
+import { index, integer, primaryKey, real, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 import { CLIENT_TYPES, devices, profiles, users } from './auth.ts'
 import { mediaFiles, mediaItems } from './media.ts'
 
@@ -99,6 +100,31 @@ export const trickplay = sqliteTable('trickplay', {
   manifest: text('manifest', { mode: 'json' }),
   error: text('error'),
   madeAt: integer('made_at').notNull(),
+})
+
+/** Where a marker came from: a chapter's name, the audio a season shares, or the owner. */
+export const MARKER_SOURCES = ['chapters', 'audio', 'owner'] as const
+
+/**
+ * An episode file's intro and where its credits start, in seconds (Phase 5 C2, ADR 0067), found by
+ * the `media.markers` job for the file's size, as trickplay is. Each has its source; the owner's
+ * word (`owner`, a time or none) is never changed by the job. A row with no times is a file looked
+ * at that has none.
+ */
+export const episodeMarkers = sqliteTable('episode_markers', {
+  fileId: text('file_id')
+    .primaryKey()
+    .references(() => mediaFiles.id, { onDelete: 'cascade' }),
+  /** The file's size when it was looked at: another size is looked at again. */
+  size: integer('size').notNull(),
+  introStart: real('intro_start'),
+  introEnd: real('intro_end'),
+  introSource: text('intro_source', { enum: MARKER_SOURCES }),
+  credits: real('credits'),
+  creditsSource: text('credits_source', { enum: MARKER_SOURCES }),
+  /** Why it couldn't be looked at (no sound, ffmpeg stopped); null when it was. */
+  error: text('error'),
+  checkedAt: integer('checked_at').notNull(),
 })
 
 /**

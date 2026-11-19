@@ -4,7 +4,9 @@
 // once from the shows library the apps see (shows.ts), so the two agree on what's here; the admin
 // adds what the apps don't show: the episodes still to air, the ones missing or downloading, and
 // files below their profile's cutoff. Every case is seeded so the pages have each to show.
+import type { EpisodeMarkersPatch } from '@highsea-tv/api-contract'
 import { backdropArt, posterArt } from '@highsea-tv/fixtures'
+import { mockMarks } from './markers.ts'
 import type { ShowSeed } from './shows.ts'
 import type {
   AddShowInput,
@@ -161,6 +163,17 @@ export function showAdminApi(d: ShowAdminDeps) {
               releaseGroup: q.includes('2160') ? 'FRAMESTOR' : q.includes('720') ? 'TLA' : 'NTb',
               episodes: double ? [1, 2] : [e.number],
             },
+            markers: {
+              ...mockMarks(n, e.number, e.runtimeMinutes),
+              // a 4K remux carries its chapters; the rest were found from the season's sound
+              introSource: mockMarks(n, e.number, e.runtimeMinutes).intro
+                ? profile === 'qp-uhd'
+                  ? 'chapters'
+                  : 'audio'
+                : null,
+              creditsSource: profile === 'qp-uhd' ? 'chapters' : 'audio',
+              checked: true,
+            },
           }
         })
         return {
@@ -200,6 +213,7 @@ export function showAdminApi(d: ShowAdminDeps) {
             monitored: true,
             status,
             file: null,
+            markers: null,
             ...(status === 'downloading' ? { progress: 64 } : {}),
           })
         }
@@ -403,6 +417,7 @@ export function showAdminApi(d: ShowAdminDeps) {
             monitored: false,
             status: t > now ? 'unaired' : 'missing',
             file: null,
+            markers: null,
           }
         })
         for (const e of episodes) e.monitored = monitorFor(input.monitor, e, now)
@@ -476,6 +491,33 @@ export function showAdminApi(d: ShowAdminDeps) {
       e.monitored = monitored
       const season = s.seasonList.find((x) => x.number === e.season)
       if (season) season.monitored = season.episodes.some((x) => x.monitored)
+      d.emit()
+    },
+    /** The owner's intro and credits for an episode: a mark given is set or cleared as theirs. */
+    setMarkers: (id: string, episodeId: string, patch: EpisodeMarkersPatch) => {
+      d.requireStaff()
+      const e = episodes(find(id)).find((x) => x.id === episodeId)
+      if (!e) throw d.fail(404, 'not-found', 'That episode isn’t in this show.')
+      if (!e.markers) throw d.fail(404, 'not-found', 'That episode has no file.')
+      if (patch.intro !== undefined)
+        e.markers = { ...e.markers, intro: patch.intro, introSource: 'owner' }
+      if (patch.credits !== undefined)
+        e.markers = { ...e.markers, credits: patch.credits, creditsSource: 'owner' }
+      d.emit()
+    },
+    /** Forgets an episode's marks and finds them again: here, at once, as the season's sound has them. */
+    findMarkers: (id: string, episodeId: string) => {
+      d.requireStaff()
+      const e = episodes(find(id)).find((x) => x.id === episodeId)
+      if (!e) throw d.fail(404, 'not-found', 'That episode isn’t in this show.')
+      if (!e.markers) throw d.fail(404, 'not-found', 'That episode has no file.')
+      const found = mockMarks(e.season, e.number, e.runtimeMinutes)
+      e.markers = {
+        ...found,
+        introSource: found.intro ? 'audio' : null,
+        creditsSource: 'audio',
+        checked: true,
+      }
       d.emit()
     },
     /** Search for a whole show, a season, or one episode: what's missing or below the cutoff. */

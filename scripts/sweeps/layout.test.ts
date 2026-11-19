@@ -597,6 +597,7 @@ group("B1's destinations", () => {
     'what’s ready': '1 film ready 2 5 gb 61 5 gb free on this phone',
     'the scrubber': 'position',
     'the stop that shows the controls': 'show controls',
+    'skip intro': 'skip intro',
     'the settings title': 'settings',
     'saltmarsh’s poster': 'saltmarsh 2021',
     'the show’s title': 'saltmarsh',
@@ -709,6 +710,7 @@ group("B1's destinations", () => {
       'now-playing',
       'who',
       'player',
+      'episode',
     ])
   })
 
@@ -766,6 +768,7 @@ group('the command line', () => {
           'now-playing',
           'who',
           'player',
+          'episode',
           'settings',
         ],
         targets: ['web', 'phone', 'tv'],

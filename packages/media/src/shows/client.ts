@@ -37,6 +37,7 @@ import { chunks, escapeLike } from '../shared/sql.ts'
 import { audioTracks, versionDetail, versionQuality } from '../shared/tracks.ts'
 import { createWatch, type Watcher } from '../shared/watch.ts'
 import type { ShowsDeps } from './context.ts'
+import { clientMarks, type ShowMarkers } from './markers.ts'
 
 const {
   mediaItems,
@@ -79,9 +80,16 @@ const byPlace = (a: ItemRow, b: ItemRow) => {
   return (a.episodeNumber ?? 0) - (b.episodeNumber ?? 0)
 }
 
-export function createShowClient(ctx: ShowsDeps) {
+export function createShowClient(ctx: ShowsDeps, deps: { markers: ShowMarkers }) {
   const { db, metadata, events } = ctx
   const watch = createWatch(ctx)
+
+  /** A file's intro and credits for the player, none without a file (ADR 0067). */
+  const markedFile = (fileId: string | null, files: Map<string, { size: number }>) => {
+    const file = fileId ? files.get(fileId) : undefined
+    if (!fileId || !file) return { intro: null, credits: null }
+    return clientMarks(deps.markers.forFiles([fileId]).get(fileId), file.size)
+  }
 
   // ---------------------------------------------------------------- rows
 
@@ -511,9 +519,8 @@ export function createShowClient(ctx: ShowsDeps) {
         number,
         title: ep.row.title,
         code: episodeCode(season, number),
-        // markers are part C2's
-        intro: null,
-        credits: null,
+        // the first version's file's, found by the markers job or set by the owner (ADR 0067)
+        ...markedFile(versions.find((v) => v.fileId)?.fileId ?? null, files),
       },
     }
   }

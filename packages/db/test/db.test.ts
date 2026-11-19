@@ -301,6 +301,7 @@ describe('0018_profiles', () => {
       '0026_unmatched_dismissed',
       '0027_job_subjects',
       '0028_music_plays',
+      '0029_episode_markers',
     ])
     expect(result.backup).not.toBeNull()
     const once = state(first)
@@ -409,6 +410,7 @@ describe('0020_shows', () => {
       '0026_unmatched_dismissed',
       '0027_job_subjects',
       '0028_music_plays',
+      '0029_episode_markers',
     ])
     expect(films(raw)).toEqual(was)
     expect(raw.all('SELECT count(*) AS n FROM media_items')).toEqual([{ n: 300 }])
@@ -560,6 +562,7 @@ describe('0020_shows', () => {
         '0026_unmatched_dismissed',
         '0027_job_subjects',
         '0028_music_plays',
+        '0029_episode_markers',
       ])
       expect(all(raw)).toEqual(was)
       expect(raw.all('SELECT count(*) AS n FROM unmatched_files')).toEqual([{ n: 0 }])
@@ -626,6 +629,7 @@ describe('0020_shows', () => {
           '0026_unmatched_dismissed',
           '0027_job_subjects',
           '0028_music_plays',
+          '0029_episode_markers',
         ])
         expect(migrate(raw).applied).toEqual([])
         raw.close()
@@ -740,12 +744,13 @@ describe('0020_shows', () => {
             }[]
           ).map((t) => t.name)
         const before = tables()
-        expect(migrate(raw).applied).toEqual(['0028_music_plays'])
+        expect(migrate(raw).applied).toEqual(['0028_music_plays', '0029_episode_markers'])
         expect({ ...everything(raw), ...music() }).toEqual(was)
         expect(raw.all('SELECT * FROM music_artists')).toEqual(
           artists.map((a) => ({ ...a, photo_url: null })),
         )
         expect(tables().filter((t) => !before.includes(t))).toEqual([
+          'episode_markers',
           'music_matches',
           'music_playlist_entries',
           'music_playlists',
@@ -771,6 +776,32 @@ describe('0020_shows', () => {
           { track_id: null, album_id: null, artist_id: null, title: 'Girls & Boys' },
         ])
         expect(raw.all('SELECT count(*) AS n FROM music_playlist_entries')).toEqual([{ n: 0 }])
+        expect(raw.all('PRAGMA foreign_key_check')).toEqual([])
+        expect(raw.all('PRAGMA integrity_check')).toEqual([{ integrity_check: 'ok' }])
+        expect(migrate(raw).applied).toEqual([])
+        raw.close()
+      })
+
+      // Phase 5 C2, ADR 0067: an episode file's intro and credits, beside films, shows and music
+      test('0029_episode_markers only adds its table, and leaves films, shows and music as they were', () => {
+        const { raw } = withUnmatched()
+        migrate(raw, { all: migrations.filter((m) => m.tag < '0029') })
+        raw.run(
+          "INSERT INTO music_artists (id, name, sort_name, name_key, root_folder, source, added_at, updated_at) VALUES ('ar_1', 'Blur', 'blur', 'blur', '/music', 'tags', 1, 1)",
+        )
+        const music = () => ({ artists: raw.all('SELECT * FROM music_artists') })
+        const was = { ...everything(raw), ...music() }
+        expect(migrate(raw).applied).toEqual(['0029_episode_markers'])
+        expect({ ...everything(raw), ...music() }).toEqual(was)
+        // a file's markers, the owner's beside the found, go with the file
+        raw.run(
+          "INSERT INTO episode_markers (file_id, size, intro_start, intro_end, intro_source, credits, credits_source, checked_at) VALUES ('fil_e12', 1000, 62.5, 120, 'chapters', 3150.2, 'owner', 1)",
+        )
+        expect(raw.all('SELECT intro_start, credits, credits_source FROM episode_markers')).toEqual(
+          [{ intro_start: 62.5, credits: 3150.2, credits_source: 'owner' }],
+        )
+        raw.run("DELETE FROM media_files WHERE id = 'fil_e12'")
+        expect(raw.all('SELECT count(*) AS n FROM episode_markers')).toEqual([{ n: 0 }])
         expect(raw.all('PRAGMA foreign_key_check')).toEqual([])
         expect(raw.all('PRAGMA integrity_check')).toEqual([{ integrity_check: 'ok' }])
         expect(migrate(raw).applied).toEqual([])

@@ -145,6 +145,7 @@ import { clientMessages } from './client.ts'
 import { EPOCH, iso } from './clock.ts'
 import { FilmRefused, filmsOf, type Refusal } from './films.ts'
 import { type KindRefusal, KindRefused, kindsOf } from './kinds.ts'
+import { clipMarks } from './markers.ts'
 import { createMock, type Mock, userFor } from './mock.ts'
 import { waiting } from './pairing.ts'
 import { createPlays, type MockMedia } from './play.ts'
@@ -1219,11 +1220,15 @@ export function createMockFetch(options: TransportOptions = {}): MockTransport {
   }
   /** A title by its address: a film from films.ts, an episode (B3) from kinds.ts. */
   const titleOf = (ctx: Ctx, type: TitleType, id: number) =>
-    found(() =>
-      type === 'episode'
-        ? kinds(ctx).detail(id, clientOf(ctx))
-        : films(ctx).detail(id, clientOf(ctx)),
-    )
+    found(() => {
+      if (type !== 'episode') return films(ctx).detail(id, clientOf(ctx))
+      const d = kinds(ctx).detail(id, clientOf(ctx))
+      // with a clip served, its intro and credits fall inside the clip (ADR 0067)
+      const e = d.episode
+      return e && options.media
+        ? { ...d, episode: { ...e, ...clipMarks(e.season, e.number, options.media.duration) } }
+        : d
+    })
   /** A live session of the caller's, or the 404 the runtime answers: who stopped it, when someone did. */
   const session = (ctx: Ctx, id: string) => {
     const s = plays.find(ctx.userId, id)

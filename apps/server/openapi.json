@@ -6999,6 +6999,9 @@
             "type": "number",
             "minimum": 0,
             "maximum": 100
+          },
+          "markers": {
+            "$ref": "#/components/schemas/EpisodeMarkers"
           }
         },
         "required": [
@@ -7011,7 +7014,77 @@
           "runtimeMinutes",
           "monitored",
           "status",
-          "file"
+          "file",
+          "markers"
+        ]
+      },
+      "EpisodeMarkers": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "intro": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "start": {
+                "type": "number",
+                "minimum": 0
+              },
+              "end": {
+                "type": "number",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "start",
+              "end"
+            ]
+          },
+          "introSource": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "chapters",
+              "audio",
+              "owner",
+              null
+            ]
+          },
+          "credits": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "creditsSource": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "chapters",
+              "audio",
+              "owner",
+              null
+            ]
+          },
+          "checked": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "intro",
+          "introSource",
+          "credits",
+          "creditsSource",
+          "checked"
         ]
       },
       "AddSeriesInput": {
@@ -7083,6 +7156,38 @@
           },
           "seasonFolders": {
             "type": "boolean"
+          }
+        }
+      },
+      "EpisodeMarkersPatch": {
+        "type": "object",
+        "properties": {
+          "intro": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "start": {
+                "type": "number",
+                "minimum": 0
+              },
+              "end": {
+                "type": "number",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "start",
+              "end"
+            ]
+          },
+          "credits": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0
           }
         }
       },
@@ -28752,6 +28857,166 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/series/{id}/episodes/{episodeId}/markers": {
+      "put": {
+        "tags": [
+          "Series"
+        ],
+        "summary": "Set or clear an episode’s intro and credits",
+        "description": "The owner’s word on an episode file’s intro and where its credits start (ADR 0067). A mark set or cleared here is kept when the server looks at the season again.",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "episodeId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EpisodeMarkersPatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Done"
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Series"
+        ],
+        "summary": "Forget an episode’s marks and find them again",
+        "description": "Forgets what was set or found for an episode file’s intro and credits, and queues its season to be looked at again, from chapters and then the sound the episodes share.",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "episodeId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Done"
           },
           "401": {
             "description": "unauthorized",

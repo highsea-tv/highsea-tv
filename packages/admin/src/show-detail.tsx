@@ -55,6 +55,7 @@ import { useShowOptions } from './add-show-dialog.tsx'
 import { ArtworkDialog } from './artwork-dialog.tsx'
 import { artwork as artworkMessages } from './artwork-messages.ts'
 import { FormError } from './collections-rules.tsx'
+import { EpisodeMarks } from './episode-marks.tsx'
 import { ItemWorkMark, useItemWork } from './item-work.tsx'
 import { Loadable } from './loadable.tsx'
 import { MediaSummary, SummarySkeleton } from './media-sections.tsx'
@@ -674,6 +675,7 @@ function EpisodeFile({ episode: e }: { episode: SeriesEpisode }) {
           {t('episode.oneFile', { code: episodeCode(e.season, f.episodes) })}
         </Text>
       )}
+      <EpisodeMarks episode={e} label={`${episodeCode(e.season, [e.number])} ${e.title}`} />
     </View>
   )
 }

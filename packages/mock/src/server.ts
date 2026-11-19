@@ -16,6 +16,7 @@ import { describe, evaluate, type Facts, fields, preview } from './collections.t
 import { connectionsApi } from './connections.ts'
 import { librarySettingsApi } from './library-settings.ts'
 import { importListsApi } from './lists.ts'
+import { mockMarks } from './markers.ts'
 import {
   collection,
   collectionRefs,
@@ -962,10 +963,6 @@ export function createApi(srv: MockServer, ctx: Ctx) {
     const prefs = state.prefs[`${me().id}:${e.id}`] ?? {}
     const version = versions.find((v) => v.id === prefs.versionId) ?? versions[0]
     const code = episodeCode(e)
-    const length = e.runtimeMinutes * 60
-    // a cold open, then the titles; a pilot and the specials open on the story itself
-    const opens = e.season > 0 && !(e.season === 1 && e.number === 1)
-    const introStart = 40 + ((e.season * 31 + e.number * 17) % 80)
     const after = episodeAfter(s, e)
     const item = episodeItem(s, e)
     return {
@@ -992,8 +989,7 @@ export function createApi(srv: MockServer, ctx: Ctx) {
         number: e.number,
         title: e.title,
         code,
-        intro: opens ? { start: introStart, end: introStart + 52 } : null,
-        credits: length - 75,
+        ...mockMarks(e.season, e.number, e.runtimeMinutes),
       },
       soundtrack: null,
       upNext: after
