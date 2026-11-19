@@ -78,6 +78,8 @@ import {
   previewSeasonFolder,
   previewSeriesFolder,
 } from './episode-naming.ts'
+import { Browse } from './folder-picker.tsx'
+import { folderPicker as pickerMessages } from './folder-picker-messages.ts'
 import { Loadable } from './loadable.tsx'
 import { media as messages } from './media-management-messages.ts'
 import { errorReason } from './metadata-locale.ts'
@@ -951,6 +953,7 @@ function Folder({
 
 function AddFolder({ kind, onAdded }: { kind: LibraryKind; onAdded: () => void }) {
   const t = useT(messages)
+  const tp = useT(pickerMessages)
   const [path, setPath] = useState('')
   const [readOnly, setReadOnly] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -1018,6 +1021,15 @@ function AddFolder({ kind, onAdded }: { kind: LibraryKind; onAdded: () => void }
               onSubmitEditing={submit}
             />
           </View>
+          <Browse
+            value={path}
+            title={tp(`title.${kind}`)}
+            needsWrite={!readOnly}
+            onPick={(p) => {
+              setError(null)
+              setPath(p)
+            }}
+          />
           <Button icon="add" loading={add.pending} onPress={submit}>
             {t('add.submit')}
           </Button>

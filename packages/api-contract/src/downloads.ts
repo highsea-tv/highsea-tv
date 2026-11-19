@@ -394,6 +394,23 @@ export const FsListing = z
 
 const FsQuery = z.object({ path: z.string().max(4096).optional() })
 
+/** The folder picker's listing (HT-91): folders only, never files. */
+export const FolderListing = z
+  .object({
+    /** The folder listed, absolute, `..` resolved. */
+    path: z.string(),
+    /** The allowed folder it's in, where the picker's path starts. */
+    root: z.string(),
+    /** The folder above, while it's still inside an allowed folder; else null. */
+    parent: z.string().nullable(),
+    folders: z.array(z.object({ name: z.string(), path: z.string() })),
+    /** Folders left out past the first 5,000 by name. */
+    more: z.number().int(),
+    /** Whether highsea may write in this folder. */
+    writable: z.boolean(),
+  })
+  .openapi('FolderListing')
+
 export const SpeedSample = z
   .object({ at: IsoDate, down: z.number(), up: z.number() })
   .openapi('SpeedSample')
@@ -741,6 +758,20 @@ export const fs = {
       ...errors('invalid', 'unauthorized', 'forbidden', 'not-found'),
     },
   }),
+  folders: createRoute({
+    method: 'get',
+    path: `${API_PREFIX}/fs/folders`,
+    tags: ['Import'],
+    summary: 'The folders inside a folder, for the admin’s folder picker',
+    description:
+      'Folders only, sorted by name, inside the data root, a root folder, the downloads folder or a category’s, never the config folder, after `..` and symlinks are resolved. Without `path`, the data root. 403 with `details.reason` `outside` for a path outside those, `unreadable` for a folder highsea may not read; 404 (`missing`) for one that isn’t there.',
+    ...access('staff'),
+    request: { query: FsQuery },
+    responses: {
+      200: json(FolderListing, 'The folders'),
+      ...errors('invalid', 'unauthorized', 'forbidden', 'not-found'),
+    },
+  }),
 } as const
 
 export const manualImport = {
@@ -903,6 +934,7 @@ export type ImportRunInput = z.infer<typeof ImportRunInput>
 export type ImportRunResult = z.infer<typeof ImportRunResult>
 export type FsItem = z.infer<typeof FsItem>
 export type FsListing = z.infer<typeof FsListing>
+export type FolderListing = z.infer<typeof FolderListing>
 export type SpeedSample = z.infer<typeof SpeedSample>
 export type MediaManagementSettings = z.infer<typeof MediaManagementSettings>
 export type DownloadClientSettings = z.infer<typeof DownloadClientSettings>

@@ -24,6 +24,8 @@ import { CATEGORY_TOPICS, Categories } from './download-categories.tsx'
 import { watchFolder as watchMessages } from './download-categories-messages.ts'
 import { downloadClient as messages } from './download-client-messages.ts'
 import { hoursText, minutesOf, ratioOf, ratioText } from './download-client-seeding.ts'
+import { WithBrowse } from './folder-picker.tsx'
+import { folderPicker as pickerMessages } from './folder-picker-messages.ts'
 import { Loadable } from './loadable.tsx'
 import { InlineLink } from './media-sections.tsx'
 import { AreaPage, Group, SaveBar } from './settings.tsx'
@@ -99,6 +101,7 @@ export function DownloadClient() {
 
 function Form({ loaded, reload }: { loaded: DownloadClientSettings; reload: () => void }) {
   const t = useT(messages)
+  const tp = useT(pickerMessages)
   const initial = draftOf(loaded)
   const [v, setDraft] = useState(initial)
   const [touched, setTouched] = useState(false)
@@ -254,18 +257,28 @@ function Form({ loaded, reload }: { loaded: DownloadClientSettings; reload: () =
       <Group title={tw('title')} description={tw('description')}>
         <Columns shares={[2, 1]}>
           <Field label={tw('folder')} hint={tw('folderHint')} error={watchError ?? undefined}>
-            <Input
+            <WithBrowse
               value={v.watchFolder}
-              icon="folder"
-              placeholder={tw('folderPlaceholder')}
-              spellCheck={false}
-              autoCapitalize="none"
-              mono
-              onChangeText={(watchFolder) => {
+              title={tp('title.watch')}
+              needsWrite
+              onPick={(watchFolder) => {
                 setWatchError(null)
                 set({ watchFolder })
               }}
-            />
+            >
+              <Input
+                value={v.watchFolder}
+                icon="folder"
+                placeholder={tw('folderPlaceholder')}
+                spellCheck={false}
+                autoCapitalize="none"
+                mono
+                onChangeText={(watchFolder) => {
+                  setWatchError(null)
+                  set({ watchFolder })
+                }}
+              />
+            </WithBrowse>
           </Field>
           <Field label={tw('category')} hint={tw('categoryHint')}>
             <Select
