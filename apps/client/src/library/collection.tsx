@@ -13,7 +13,6 @@ import { playPath } from '@highsea-tv/client/library'
 import { useT } from '@highsea-tv/i18n/react'
 import { useFormat } from '@highsea-tv/native/format'
 import { useMedia } from '@highsea-tv/native/media'
-import { web } from '@highsea-tv/tokens'
 import {
   Button,
   EmptyState,
@@ -26,6 +25,7 @@ import {
   Text,
   tokens,
   usePageGutter,
+  usePageMeasure,
   useTheme,
 } from '@highsea-tv/ui'
 import { TV_HEAD_HEIGHT, TvAmbient, TvMessage, type ViewHandle } from '@highsea-tv/ui/tv'
@@ -239,11 +239,12 @@ export function PointerCollection({ id }: { id: string }) {
 
 /** A collection's page while it loads, as the web prototype draws it (web/collection.tsx). */
 function PointerSkeleton() {
+  const measure = usePageMeasure()
   const theme = useTheme()
   const gutter = usePageGutter()
   const column = {
     width: '100%' as const,
-    maxWidth: web.maxWidth,
+    maxWidth: measure,
     alignSelf: 'center' as const,
     paddingHorizontal: gutter,
   }
@@ -278,6 +279,7 @@ function PointerSkeleton() {
 }
 
 function PointerLoaded({ data }: { data: Loaded }) {
+  const measure = usePageMeasure()
   const theme = useTheme()
   const media = useMedia()
   const gutter = usePageGutter()
@@ -287,7 +289,7 @@ function PointerLoaded({ data }: { data: Loaded }) {
   const backdrop = media(c.art.backdrop)
   const column = {
     width: '100%' as const,
-    maxWidth: web.maxWidth,
+    maxWidth: measure,
     paddingHorizontal: gutter,
   }
   return (

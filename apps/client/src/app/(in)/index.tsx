@@ -25,7 +25,6 @@ import { useServedHomeRows } from '@highsea-tv/client/data'
 import { heroOf, rowsOf } from '@highsea-tv/client/films'
 import { shellMessages } from '@highsea-tv/client/gate'
 import { useT } from '@highsea-tv/i18n/react'
-import { web } from '@highsea-tv/tokens'
 import {
   Bloom,
   Button,
@@ -34,6 +33,7 @@ import {
   tokens,
   useFormFactor,
   usePageGutter,
+  usePageMeasure,
   useTheme,
 } from '@highsea-tv/ui'
 import { TvMessage } from '@highsea-tv/ui/tv'
@@ -184,6 +184,7 @@ const messageOf = (e: unknown) => (e instanceof Error ? e.message : String(e))
 // ---------------------------------------------------------------- a pointer
 
 function PointerHome() {
+  const measure = usePageMeasure()
   const home = useServedHomeRows(useDeviceClient())
   const gutter = usePageGutter()
   return (
@@ -199,7 +200,7 @@ function PointerHome() {
             justifyContent: 'center',
             paddingHorizontal: gutter,
             width: '100%',
-            maxWidth: web.maxWidth,
+            maxWidth: measure,
             alignSelf: 'center',
           }}
         >
@@ -211,6 +212,7 @@ function PointerHome() {
 }
 
 function PointerSections({ sections }: { sections: Section[] }) {
+  const measure = usePageMeasure()
   const hero = heroOf(sections.filter(isFilmRow))
   // the top bar lies over the page, clear until the page scrolls under it, as the prototype's
   // overHero="bloom"
@@ -247,9 +249,7 @@ function PointerSections({ sections }: { sections: Section[] }) {
           <HomeFeatured items={hero.items} onShow={setShown} />
         </View>
       ) : null}
-      <View
-        style={{ width: '100%', maxWidth: web.maxWidth, alignSelf: 'center', gap: POINTER_APART }}
-      >
+      <View style={{ width: '100%', maxWidth: measure, alignSelf: 'center', gap: POINTER_APART }}>
         {rowsOf(sections).map((s) => (
           <HomeRow key={s.id} section={s} />
         ))}

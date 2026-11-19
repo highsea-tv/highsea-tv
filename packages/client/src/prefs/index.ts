@@ -35,7 +35,12 @@ export type DevicePrefs = {
   /** Whether sound is the device's own choice, not the server's default for this kind of app. */
   soundChosen: boolean
   volume: number
+  /** How wide pages lay out with a pointer: `full` or `contained`. */
+  layout: PageLayout
 }
+
+/** How wide a page lays out with a pointer (client-settings.md › Appearance). */
+export type PageLayout = Preferences['values']['layout']
 
 /** Reads ADR 0027's layers into what a device uses; the user layer's theme wins when it's set. */
 export function devicePrefs(p: Preferences): DevicePrefs {
@@ -47,10 +52,16 @@ export function devicePrefs(p: Preferences): DevicePrefs {
     sound: p.values.sound,
     soundChosen: p.layers.device.sound !== undefined,
     volume: p.values.volume,
+    layout: p.values.layout,
   }
 }
 
-type Patch = { theme?: string | null; sound?: boolean | null; volume?: number | null }
+type Patch = {
+  theme?: string | null
+  sound?: boolean | null
+  volume?: number | null
+  layout?: PageLayout | null
+}
 
 export function useDevicePrefs() {
   const prefs = useQuery('client:preferences', (c) => c.preferences.get(), [
@@ -88,6 +99,8 @@ export function useDevicePrefs() {
     },
     setSound: (sound: boolean | null) => write('device', { sound }),
     setVolume: (volume: number) => write('device', { volume }),
+    /** This device's page width with a pointer. */
+    setLayout: (layout: PageLayout) => write('device', { layout }),
     pending: save.pending,
   }
 }
@@ -260,6 +273,10 @@ export const settingsPageMessages = defineMessages({
   everywhereOff: 'Off: each device keeps its own theme.',
   everywhereOn:
     'Your phone, TV and computers use this theme too. Turn it off and each keeps it until you change it there.',
+  layout: 'Layout',
+  layoutHint: 'How wide pages are in this window. Only this device changes.',
+  layoutFull: 'Full width',
+  layoutContained: 'Contained',
   sounds: 'Interface sounds',
   followingOn:
     'Following {name}: on for {device, select, tv {the TV} web {the web} other {the phone}}.',

@@ -34,8 +34,18 @@ const LANGUAGE = /^[a-z]{2,3}$/
 export const QUALITY_CAPS = ['original', '20', '8', '4', '2'] as const
 export type QualityCap = (typeof QUALITY_CAPS)[number]
 
+/**
+ * How wide a page lays out with a pointer (client-settings.md › Appearance): `full` fills the window
+ * inside the page's gutters, `contained` holds it to the page's measure (web.maxWidth). The phone
+ * and the TV always fill their screen.
+ */
+export const PAGE_LAYOUTS = ['full', 'contained'] as const
+export type PageLayout = (typeof PAGE_LAYOUTS)[number]
+
 export const preferenceSchemas = {
   theme: z.string().regex(THEME_ID),
+  /** The page's width with a pointer on this device. */
+  layout: z.enum(PAGE_LAYOUTS),
   /** Interface sounds on this device. */
   sound: z.boolean(),
   /** 0–1. */
@@ -70,6 +80,7 @@ export type Preferences = {
 /** A layer's values: any of the keys. */
 export const preferenceLayer = z.strictObject({
   theme: preferenceSchemas.theme.optional(),
+  layout: preferenceSchemas.layout.optional(),
   sound: preferenceSchemas.sound.optional(),
   volume: preferenceSchemas.volume.optional(),
   'admin.addMovie.defaults': addMovieDefaults.optional(),
@@ -86,6 +97,7 @@ export type PreferenceLayer = z.output<typeof preferenceLayer>
 /** A change to a layer: a value sets the key, `null` clears it so the next layer shows through. */
 export const preferencePatch = z.strictObject({
   theme: preferenceSchemas.theme.nullable().optional(),
+  layout: preferenceSchemas.layout.nullable().optional(),
   sound: preferenceSchemas.sound.nullable().optional(),
   volume: preferenceSchemas.volume.nullable().optional(),
   'admin.addMovie.defaults': addMovieDefaults.nullable().optional(),
@@ -147,6 +159,8 @@ export const serverPreferences = (
   client: string | null,
 ): Preferences => ({
   theme: appearance.defaultTheme,
+  // full width until a device chooses otherwise (the owner, 2026-11-18)
+  layout: 'full',
   sound: appearance.sound[appKind(client)],
   volume: appearance.sound.volume,
   'admin.addMovie.defaults': null,

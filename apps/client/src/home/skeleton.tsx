@@ -1,14 +1,3 @@
-// SPDX-License-Identifier: AGPL-3.0-only
-// Home while it loads, laid out as it will be, on the library's skeletons (FeaturedCardSkeleton,
-// RowSkeleton and FilmRowSkeleton), by the form factor:
-// - touch (mobile/home.tsx HomeSkeleton): the featured cards, the next one peeking, then
-//   Continue watching's stills with their bar and a row of stills (the library's RowSkeleton);
-// - a pointer (web/home.tsx HomeSkeleton): the featured card inside the page's gutters, then
-//   Continue watching's stills and two film rows, a screen apart, no wider than the page's measure;
-// - the TV (tv/home.tsx HomeSkeleton): under the shell's head, the featured card, Continue
-//   watching's wide tiles (RowSkeleton) and a film row, at the rows' gap.
-// The screen says it's busy; the placeholders are hidden from assistive tech.
-import { web } from '@highsea-tv/tokens'
 import {
   FeaturedCardSkeleton,
   FilmRowSkeleton,
@@ -16,6 +5,7 @@ import {
   tokens,
   useFormFactor,
   usePageGutter,
+  usePageMeasure,
   usePosterWidth,
   useTheme,
 } from '@highsea-tv/ui'
@@ -47,6 +37,7 @@ function TouchSkeleton() {
 }
 
 function PointerSkeleton() {
+  const measure = usePageMeasure()
   const gutter = usePageGutter()
   return (
     <View
@@ -62,15 +53,13 @@ function PointerSkeleton() {
         style={{
           paddingHorizontal: gutter,
           width: '100%',
-          maxWidth: web.maxWidth,
+          maxWidth: measure,
           alignSelf: 'center',
         }}
       >
         <FeaturedCardSkeleton />
       </View>
-      <View
-        style={{ width: '100%', maxWidth: web.maxWidth, alignSelf: 'center', gap: POINTER_APART }}
-      >
+      <View style={{ width: '100%', maxWidth: measure, alignSelf: 'center', gap: POINTER_APART }}>
         <RowSkeleton aspect="still" resume />
         <FilmRowSkeleton />
         <FilmRowSkeleton />

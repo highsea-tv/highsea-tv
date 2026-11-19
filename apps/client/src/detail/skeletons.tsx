@@ -1,12 +1,3 @@
-// SPDX-License-Identifier: AGPL-3.0-only
-// A film's page and a person's page while they load, at every form factor, as the prototypes draw
-// them (mobile/detail.tsx, web/detail.tsx and tv/detail.tsx's DetailSkeleton; mobile/person.tsx,
-// web/person.tsx and tv/person.tsx's loading state): the art's place and fade, the lines of words
-// and the buttons in the library's Skeleton and SkeletonText, then a row, each laid out as the
-// loaded page lays it out, so nothing moves as it arrives. By touch Back stands over it, as it
-// does over the page; with a pointer and on the TV the chrome lies over it as over the page. Each
-// is `aria-busy`.
-import { web } from '@highsea-tv/tokens'
 import {
   FilmRowSkeleton,
   PosterSkeleton,
@@ -18,6 +9,7 @@ import {
   useControl,
   useFormFactor,
   usePageGutter,
+  usePageMeasure,
   useTheme,
 } from '@highsea-tv/ui'
 import { TV_HEAD_HEIGHT, TV_ROW_GAP } from '@highsea-tv/ui/tv'
@@ -83,6 +75,7 @@ function TouchFilmSkeleton() {
 }
 
 function PointerFilmSkeleton() {
+  const measure = usePageMeasure()
   const theme = useTheme()
   const gutter = usePageGutter()
   const m = useControl()
@@ -104,7 +97,7 @@ function PointerFilmSkeleton() {
         <View
           style={{
             width: '100%',
-            maxWidth: web.maxWidth,
+            maxWidth: measure,
             alignSelf: 'center',
             gap: space['4'],
             paddingTop: chrome.pad + space['8'],
@@ -126,7 +119,7 @@ function PointerFilmSkeleton() {
           </View>
         </View>
       </View>
-      <View style={{ width: '100%', maxWidth: web.maxWidth, alignSelf: 'center' }}>
+      <View style={{ width: '100%', maxWidth: measure, alignSelf: 'center' }}>
         <StillsSkeleton count={5} />
       </View>
     </View>
@@ -196,6 +189,7 @@ export function PersonSkeleton() {
 }
 
 function PagePersonSkeleton() {
+  const measure = usePageMeasure()
   const theme = useTheme()
   const touch = useFormFactor().input === 'touch'
   const insets = useSafeAreaInsets()
@@ -219,7 +213,7 @@ function PagePersonSkeleton() {
       <View
         style={{
           width: '100%',
-          maxWidth: web.maxWidth,
+          maxWidth: measure,
           alignSelf: 'center',
           flexDirection: side ? 'row' : 'column',
           alignItems: side ? 'center' : touch ? 'center' : 'flex-start',
@@ -254,7 +248,7 @@ function PagePersonSkeleton() {
         <View
           style={{
             width: '100%',
-            maxWidth: web.maxWidth,
+            maxWidth: measure,
             alignSelf: 'center',
             gap: space['3'],
             paddingHorizontal: gutter,

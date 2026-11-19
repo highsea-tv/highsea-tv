@@ -17,7 +17,7 @@
 // (https://reactnative.dev/docs/view-style-props#backgroundimage).
 // Bloom is the glow behind the card with a pointer and on the TV, in the art's colour
 // (client/bloom.tsx).
-import { featuredCard, REGULAR_WIDTH, tvText, web } from '@highsea-tv/tokens'
+import { featuredCard, REGULAR_WIDTH, tvText } from '@highsea-tv/tokens'
 import { type ReactNode, type Ref, useEffect } from 'react'
 import { StyleSheet, useWindowDimensions, View } from 'react-native'
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
@@ -27,7 +27,7 @@ import { Button } from './button.tsx'
 import { scrimOf } from './glass.ts'
 import { Image } from './image.tsx'
 import { Press } from './press.tsx'
-import { usePageGutter, usePosterWidth } from './row.tsx'
+import { usePageGutter, usePageMeasure, usePosterWidth } from './row.tsx'
 import { Skeleton, SkeletonText } from './skeleton.tsx'
 import { Text, textStyle } from './text.tsx'
 import { tokens, useMotionReduced, useTheme } from './theme.tsx'
@@ -59,7 +59,7 @@ const SHADE = `linear-gradient(90deg, ${scrimOf(70)}, transparent 55%), linear-g
 /** The pointer's card at this window: its height, and where its words sit. */
 function usePointerCard() {
   const window = useWindowDimensions()
-  const measure = Math.min(window.width, web.maxWidth)
+  const measure = Math.min(window.width, usePageMeasure() ?? window.width)
   const h = POINTER_HEIGHT
   const height = Math.min(
     h.max,

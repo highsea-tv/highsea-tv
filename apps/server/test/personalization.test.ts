@@ -131,6 +131,7 @@ describe('preferences', () => {
       theme: 'oled',
       sound: false,
       volume: 0.8,
+      layout: 'full',
       'admin.addMovie.defaults': null,
       ...PLAYBACK_DEFAULTS,
     })
@@ -138,6 +139,7 @@ describe('preferences', () => {
       theme: 'user',
       sound: 'device',
       volume: 'server',
+      layout: 'server',
       'admin.addMovie.defaults': 'server',
       ...playbackFromServer,
     })

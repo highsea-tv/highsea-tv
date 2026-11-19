@@ -30,7 +30,7 @@
 //
 // The row knows nothing of servers, routes or sounds: the app hands it each film's artwork as
 // sources, what opening and playing a film do, and what a move sounds like, so any app draws one.
-import { art, filmRow, tvText, web } from '@highsea-tv/tokens'
+import { art, filmRow, tvText } from '@highsea-tv/tokens'
 import { type ReactNode, type Ref, useCallback, useEffect, useRef, useState } from 'react'
 import { StyleSheet, useWindowDimensions, View, type ViewStyle } from 'react-native'
 import Animated, {
@@ -50,7 +50,14 @@ import { Image } from './image.tsx'
 import { brighten, HOVER_BRIGHTNESS, useLift } from './lift.ts'
 import { Poster } from './poster.tsx'
 import { Press } from './press.tsx'
-import { pointerItemWidth, Row, RowSkeleton, usePageGutter, usePosterWidth } from './row.tsx'
+import {
+  pointerItemWidth,
+  Row,
+  RowSkeleton,
+  usePageGutter,
+  usePageMeasure,
+  usePosterWidth,
+} from './row.tsx'
 import { RowArrow } from './row-arrow.tsx'
 import { SectionHeading } from './section-heading.tsx'
 import { Skeleton, SkeletonText } from './skeleton.tsx'
@@ -73,8 +80,6 @@ const mod = (a: number, n: number) => ((a % n) + n) % n
 
 /** A pointer's posters' gap, the prototype's 0.75rem. */
 const POINTER_GAP = tokens.space['3']
-/** The page's width, beyond which the row stops reaching for the window's edge (web.maxWidth). */
-const PAGE_WIDTH = web.maxWidth
 /** The fade across each inset, eased so it has no edge: an ease-in-out curve at five stops. */
 const EASE = [0, 0.06, 0.25, 0.6, 0.88, 1]
 
@@ -182,14 +187,22 @@ function placeOf(poster: number, gap: number) {
  * fill the page inside its gutters once the row is measured, the card's, the inset the arrows and
  * the fade take, and the fade's mask.
  */
-function pointerStrip(windowWidth: number, measured: number | null, gutter: number) {
+function pointerStrip(
+  windowWidth: number,
+  measured: number | null,
+  gutter: number,
+  measure: number | undefined,
+) {
   const gap = POINTER_GAP
   // a pointer's poster, near 10.5% of the window between 6.5rem and 12rem (the prototype's clamp)
   const target = pointerItemWidth(windowWidth)
   const room = (measured ?? windowWidth) - 2 * gutter
   const count = Math.max(1, Math.round((room - WIDE * target) / (target + gap)))
   const poster = measured ? (room - count * gap) / (WIDE + count) : target
-  const inset = Math.min(poster + gap, Math.max(0, (windowWidth - PAGE_WIDTH) / 2) + gutter)
+  const inset = Math.min(
+    poster + gap,
+    Math.max(0, (windowWidth - (measure ?? Number.POSITIVE_INFINITY)) / 2) + gutter,
+  )
   const ramp = (side: 'start' | 'end') =>
     EASE.map((a, i) => {
       const x = ((inset - gap) * i) / (EASE.length - 1)
@@ -369,6 +382,7 @@ function PointerForm<T extends RowFilm>({
 }: FilmRowProps<T>) {
   const reduced = useMotionReduced()
   const gutter = usePageGutter()
+  const measure = usePageMeasure()
   const window = useWindowDimensions()
   const [measured, setMeasured] = useState<number | null>(null)
   const [over, setOver] = useState(false)
@@ -378,7 +392,12 @@ function PointerForm<T extends RowFilm>({
   const { pos, can, move } = card
   const item = items[card.at]
   if (!item) return null
-  const { gap, poster, height, wide, inset, fade } = pointerStrip(window.width, measured, gutter)
+  const { gap, poster, height, wide, inset, fade } = pointerStrip(
+    window.width,
+    measured,
+    gutter,
+    measure,
+  )
   const { place, exit } = placeOf(poster, gap)
   const radius = tokens.radius.poster
   const line = meta(item)
@@ -795,9 +814,15 @@ const TV_SKELETON = {
 
 function PointerRowSkeleton() {
   const gutter = usePageGutter()
+  const measure = usePageMeasure()
   const window = useWindowDimensions()
   const [measured, setMeasured] = useState<number | null>(null)
-  const { gap, poster, height, wide, inset, fade } = pointerStrip(window.width, measured, gutter)
+  const { gap, poster, height, wide, inset, fade } = pointerStrip(
+    window.width,
+    measured,
+    gutter,
+    measure,
+  )
   const { place } = placeOf(poster, gap)
   const radius = tokens.radius.poster
   const t = SKELETON_TITLE.pointer

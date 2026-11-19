@@ -23,7 +23,7 @@ import { peopleOf } from '@highsea-tv/client/library'
 import { episodePlayPath, seasonOf } from '@highsea-tv/client/shows'
 import { useT } from '@highsea-tv/i18n/react'
 import { useMedia } from '@highsea-tv/native/media'
-import { REGULAR_WIDTH, web } from '@highsea-tv/tokens'
+import { REGULAR_WIDTH } from '@highsea-tv/tokens'
 import {
   Badge,
   Button,
@@ -46,6 +46,7 @@ import {
   useControl,
   useFormFactor,
   usePageGutter,
+  usePageMeasure,
   useTheme,
 } from '@highsea-tv/ui'
 import {
@@ -514,6 +515,7 @@ function TouchShow(props: ShowProps) {
 // ---------------------------------------------------------------- a pointer
 
 function PointerShow(props: ShowProps) {
+  const measure = usePageMeasure()
   const { d, refresh } = props
   const p = useShowPage(props)
   const t = p.t
@@ -539,7 +541,7 @@ function PointerShow(props: ShowProps) {
         <View
           style={{
             width: '100%',
-            maxWidth: web.maxWidth,
+            maxWidth: measure,
             alignSelf: 'center',
             gap: space['4'],
             paddingTop: chrome.pad + space['8'],
@@ -606,9 +608,7 @@ function PointerShow(props: ShowProps) {
           </View>
         </View>
       </View>
-      <View
-        style={{ width: '100%', maxWidth: web.maxWidth, alignSelf: 'center', gap: space['10'] }}
-      >
+      <View style={{ width: '100%', maxWidth: measure, alignSelf: 'center', gap: space['10'] }}>
         <Episodes p={p} refresh={refresh} />
         <Below p={p} d={d} />
       </View>

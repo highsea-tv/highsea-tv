@@ -18,7 +18,6 @@ import { usePlaylist } from '@highsea-tv/client/data'
 import { shownEntries } from '@highsea-tv/client/music'
 import { useT } from '@highsea-tv/i18n/react'
 import { useMedia } from '@highsea-tv/native/media'
-import { web } from '@highsea-tv/tokens'
 import {
   alpha,
   Button,
@@ -32,6 +31,7 @@ import {
   tokens,
   useFormFactor,
   usePageGutter,
+  usePageMeasure,
   useTheme,
 } from '@highsea-tv/ui'
 import { Kept, TV_HEAD_HEIGHT, TV_ROW_GAP, TvPage, type ViewHandle } from '@highsea-tv/ui/tv'
@@ -141,6 +141,7 @@ function usePlayPlaylist(x: ClientPlaylistDetail) {
 // ---------------------------------------------------------------- touch and a pointer
 
 function PagePlaylist({ x, edits }: { x: ClientPlaylistDetail; edits: Edits }) {
+  const measure = usePageMeasure()
   const t = useT(messages)
   const text = useMusicText()
   const theme = useTheme()
@@ -230,7 +231,7 @@ function PagePlaylist({ x, edits }: { x: ClientPlaylistDetail; edits: Edits }) {
           <View
             style={{
               width: '100%',
-              maxWidth: web.maxWidth,
+              maxWidth: measure,
               alignSelf: 'center',
               flexDirection: side ? 'row' : 'column',
               alignItems: side ? 'flex-end' : touch ? 'center' : 'flex-start',
@@ -312,7 +313,7 @@ function PagePlaylist({ x, edits }: { x: ClientPlaylistDetail; edits: Edits }) {
         <View
           style={{
             width: '100%',
-            maxWidth: web.maxWidth,
+            maxWidth: measure,
             alignSelf: 'center',
             paddingHorizontal: gutter,
           }}

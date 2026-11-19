@@ -4899,6 +4899,9 @@
               "theme": {
                 "type": "string"
               },
+              "layout": {
+                "$ref": "#/components/schemas/PageLayout"
+              },
               "sound": {
                 "type": "boolean"
               },
@@ -4954,6 +4957,7 @@
             },
             "required": [
               "theme",
+              "layout",
               "sound",
               "volume",
               "admin.addMovie.defaults",
@@ -4970,6 +4974,15 @@
             "type": "object",
             "properties": {
               "theme": {
+                "type": "string",
+                "enum": [
+                  "device",
+                  "client",
+                  "user",
+                  "server"
+                ]
+              },
+              "layout": {
                 "type": "string",
                 "enum": [
                   "device",
@@ -5071,6 +5084,7 @@
             },
             "required": [
               "theme",
+              "layout",
               "sound",
               "volume",
               "admin.addMovie.defaults",
@@ -5128,6 +5142,13 @@
           "layers",
           "client",
           "deviceId"
+        ]
+      },
+      "PageLayout": {
+        "type": "string",
+        "enum": [
+          "full",
+          "contained"
         ]
       },
       "AddMovieDefaults": {
@@ -5193,6 +5214,9 @@
           "theme": {
             "type": "string",
             "pattern": "^[a-z0-9][a-z0-9-]{0,39}$"
+          },
+          "layout": {
+            "$ref": "#/components/schemas/PageLayout"
           },
           "sound": {
             "type": "boolean"
@@ -5273,6 +5297,19 @@
                   "null"
                 ],
                 "pattern": "^[a-z0-9][a-z0-9-]{0,39}$"
+              },
+              "layout": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/PageLayout"
+                  },
+                  {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                ]
               },
               "sound": {
                 "type": [

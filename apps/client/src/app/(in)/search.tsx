@@ -31,7 +31,6 @@ import { showPath } from '@highsea-tv/client/shows'
 import { useT } from '@highsea-tv/i18n/react'
 import { useFormat } from '@highsea-tv/native/format'
 import { useMedia } from '@highsea-tv/native/media'
-import { web } from '@highsea-tv/tokens'
 import {
   Button,
   Chip,
@@ -48,6 +47,7 @@ import {
   useControl,
   useFormFactor,
   usePageGutter,
+  usePageMeasure,
   usePosterWidth,
   useTheme,
 } from '@highsea-tv/ui'
@@ -109,6 +109,7 @@ export default function SearchScreen() {
 // ---------------------------------------------------------------- touch and a pointer
 
 function PageSearch({ search }: { search: Search }) {
+  const measure = usePageMeasure()
   const t = useT(searchMessages)
   const words = useFilmsText().search
   const theme = useTheme()
@@ -144,7 +145,7 @@ function PageSearch({ search }: { search: Search }) {
       keyboardDismissMode="on-drag"
       contentContainerStyle={{
         width: '100%',
-        maxWidth: touch ? undefined : web.maxWidth,
+        maxWidth: touch ? undefined : measure,
         alignSelf: 'center',
         // on touch the phone's header heads the page, under the safe area's top
         paddingTop: touch ? insets.top : space['8'],

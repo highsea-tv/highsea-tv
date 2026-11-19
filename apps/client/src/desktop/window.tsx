@@ -14,8 +14,7 @@
 // Tauri moves the window from any element marked `data-tauri-drag-region`
 // (https://v2.tauri.app/learn/window-customization/), which react-native-web writes from `dataSet`.
 import { useT } from '@highsea-tv/i18n/react'
-import { web } from '@highsea-tv/tokens'
-import { Button, Mark, Press, Text, tokens, useTheme } from '@highsea-tv/ui'
+import { Button, Mark, Press, Text, tokens, usePageMeasure, useTheme } from '@highsea-tv/ui'
 import { router, useGlobalSearchParams, usePathname } from 'expo-router'
 import { useEffect, useSyncExternalStore } from 'react'
 import { Platform, StyleSheet, useWindowDimensions, View, type ViewStyle } from 'react-native'
@@ -406,12 +405,15 @@ export function useDesktopTopBar(gutter: number): {
   drag: object | null
   start: { paddingStart: number } | null
 } {
+  const measure = usePageMeasure()
   const chrome = useWindowChrome()
   const { width } = useWindowDimensions()
   if (chrome === 'none') return { drag: null, start: null }
   return {
     drag: DRAG,
     start:
-      chrome === 'mac' ? { paddingStart: trafficLightInset(gutter, width, web.maxWidth) } : null,
+      chrome === 'mac'
+        ? { paddingStart: trafficLightInset(gutter, width, measure ?? width) }
+        : null,
   }
 }

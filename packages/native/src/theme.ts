@@ -22,3 +22,12 @@ export function useAppTheme(): NativeTheme {
     return spec ? toNativeTheme(createTheme({ ...spec }).theme) : nativeTokens.themes.default
   }, [id, custom])
 }
+
+/**
+ * Whether pages fill the window with a pointer (the Layout setting, client-settings.md ›
+ * Appearance): this device's choice, full width until it makes one and before the preferences load.
+ */
+export function useFullWidth(): boolean {
+  const { current } = useDevicePrefs()
+  return (current?.layout ?? 'full') === 'full'
+}

@@ -25,7 +25,6 @@ import { peopleOf, playPath } from '@highsea-tv/client/library'
 import { useT } from '@highsea-tv/i18n/react'
 import { useFormat } from '@highsea-tv/native/format'
 import { useMedia } from '@highsea-tv/native/media'
-import { web } from '@highsea-tv/tokens'
 import {
   Button,
   FactsCard,
@@ -44,6 +43,7 @@ import {
   useControl,
   useFormFactor,
   usePageGutter,
+  usePageMeasure,
   useTheme,
 } from '@highsea-tv/ui'
 import {
@@ -220,6 +220,7 @@ function TouchFilm({ d, refresh }: FilmProps) {
 // ---------------------------------------------------------------- a pointer
 
 function PointerFilm({ d, refresh }: FilmProps) {
+  const measure = usePageMeasure()
   const t = useT(detailMessages)
   const films = useT(filmsMessages)
   const theme = useTheme()
@@ -252,7 +253,7 @@ function PointerFilm({ d, refresh }: FilmProps) {
         <View
           style={{
             width: '100%',
-            maxWidth: web.maxWidth,
+            maxWidth: measure,
             alignSelf: 'center',
             gap: space['4'],
             // clear of the top bar, then the prototype's pt-28 less the bar's height
@@ -352,7 +353,7 @@ function PointerFilm({ d, refresh }: FilmProps) {
       <View
         style={{
           width: '100%',
-          maxWidth: web.maxWidth,
+          maxWidth: measure,
           alignSelf: 'center',
           gap: space['10'],
         }}

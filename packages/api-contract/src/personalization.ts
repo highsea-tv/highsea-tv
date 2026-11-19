@@ -159,9 +159,13 @@ export const QualityCap = z.enum(['original', '20', '8', '4', '2']).openapi('Qua
   description: 'The original, or a cap in Mbit/s; the server’s remote limit still applies.',
 })
 
+/** How wide a page lays out with a pointer: the window inside its gutters, or the page's measure. */
+export const PageLayout = z.enum(['full', 'contained']).openapi('PageLayout')
+
 const PreferenceLayer = z
   .object({
     theme: z.string().regex(THEME_ID).optional(),
+    layout: PageLayout.optional(),
     sound: z.boolean().optional(),
     volume: z.number().min(0).max(1).optional(),
     'admin.addMovie.defaults': AddMovieDefaults.optional(),
@@ -182,6 +186,7 @@ export const Preferences = z
     /** What this device uses. */
     values: z.object({
       theme: z.string(),
+      layout: PageLayout,
       sound: z.boolean(),
       volume: z.number(),
       /** Null until the person has added a movie. */
@@ -199,6 +204,7 @@ export const Preferences = z
     /** Which layer each value came from. */
     from: z.object({
       theme: LayerName,
+      layout: LayerName,
       sound: LayerName,
       volume: LayerName,
       'admin.addMovie.defaults': LayerName,
@@ -224,6 +230,7 @@ export const PreferencePatch = z
     /** A value sets the key; null clears it so the next layer shows through. */
     values: z.strictObject({
       theme: z.string().regex(THEME_ID).nullable().optional(),
+      layout: PageLayout.nullable().optional(),
       sound: z.boolean().nullable().optional(),
       volume: z.number().min(0).max(1).nullable().optional(),
       'admin.addMovie.defaults': AddMovieDefaults.nullable().optional(),

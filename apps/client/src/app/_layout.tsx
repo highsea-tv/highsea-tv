@@ -15,10 +15,10 @@ import '@highsea-tv/native/intl'
 import { I18nProvider } from '@highsea-tv/i18n/react'
 import { ServersProvider, useServers } from '@highsea-tv/native/servers'
 import { ReachableProvider, SessionContext, useSessionGate } from '@highsea-tv/native/session'
-import { useAppTheme } from '@highsea-tv/native/theme'
+import { useAppTheme, useFullWidth } from '@highsea-tv/native/theme'
 import { ClientProvider } from '@highsea-tv/sdk/react'
 import type { NativeTheme } from '@highsea-tv/tokens/native'
-import { ThemeProvider, tokens, useFormFactor, useTheme } from '@highsea-tv/ui'
+import { PageMeasure, ThemeProvider, tokens, useFormFactor, useTheme } from '@highsea-tv/ui'
 import {
   type Href,
   router,
@@ -154,11 +154,17 @@ function SignedInGate() {
   )
 }
 
-/** The person's theme once they're in, unless the prototypes' toolbar has chosen one. */
+/** The person's theme once they're in, unless the prototypes' toolbar has chosen one, and the
+ * page's width with a pointer (the Layout setting). */
 function Themed({ children }: { children: ReactNode }) {
   const framed = useContext(FramedTheme)
   const theme = useAppTheme()
-  return <ThemeProvider theme={framed ?? theme}>{children}</ThemeProvider>
+  const full = useFullWidth()
+  return (
+    <ThemeProvider theme={framed ?? theme}>
+      <PageMeasure full={full}>{children}</PageMeasure>
+    </ThemeProvider>
+  )
 }
 
 /** Whether a root route is one of the player's (a film's or an episode's). */

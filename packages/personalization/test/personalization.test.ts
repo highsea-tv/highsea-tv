@@ -266,6 +266,7 @@ describe('preferences', () => {
       theme: 'default',
       sound: true,
       volume: 0.8,
+      layout: 'full',
       'admin.addMovie.defaults': null,
       ...PLAYBACK_DEFAULTS,
     })
@@ -284,6 +285,7 @@ describe('preferences', () => {
       theme: 'high-contrast',
       sound: true,
       volume: 0.2,
+      layout: 'full',
       'admin.addMovie.defaults': null,
       ...PLAYBACK_DEFAULTS,
     })
@@ -291,6 +293,7 @@ describe('preferences', () => {
       theme: 'client',
       sound: 'server',
       volume: 'device',
+      layout: 'server',
       'admin.addMovie.defaults': 'server',
       ...playbackFromServer,
     })

@@ -20,7 +20,6 @@ import { useAlbum } from '@highsea-tv/client/data'
 import { songSource } from '@highsea-tv/client/downloads'
 import { useT } from '@highsea-tv/i18n/react'
 import { useMedia } from '@highsea-tv/native/media'
-import { web } from '@highsea-tv/tokens'
 import {
   Button,
   Icon,
@@ -32,6 +31,7 @@ import {
   tokens,
   useFormFactor,
   usePageGutter,
+  usePageMeasure,
   useTheme,
 } from '@highsea-tv/ui'
 import {
@@ -169,6 +169,7 @@ function FilmLine({ film }: { film: NonNullable<ClientAlbumDetail['film']> }) {
 // ---------------------------------------------------------------- touch and a pointer
 
 function PageAlbum({ x }: { x: ClientAlbumDetail }) {
+  const measure = usePageMeasure()
   const t = useT(messages)
   const text = useMusicText()
   const theme = useTheme()
@@ -216,7 +217,7 @@ function PageAlbum({ x }: { x: ClientAlbumDetail }) {
           <View
             style={{
               width: '100%',
-              maxWidth: web.maxWidth,
+              maxWidth: measure,
               alignSelf: 'center',
               flexDirection: side ? 'row' : 'column',
               alignItems: side ? 'flex-end' : touch ? 'center' : 'flex-start',
@@ -324,7 +325,7 @@ function PageAlbum({ x }: { x: ClientAlbumDetail }) {
           accessibilityLabel={t('songs')}
           style={{
             width: '100%',
-            maxWidth: web.maxWidth,
+            maxWidth: measure,
             alignSelf: 'center',
             paddingHorizontal: gutter,
             gap: touch ? space['3'] : space['4'],
@@ -382,7 +383,7 @@ function PageAlbum({ x }: { x: ClientAlbumDetail }) {
           </View>
         </View>
         {more.length > 0 ? (
-          <View style={{ width: '100%', maxWidth: web.maxWidth, alignSelf: 'center' }}>
+          <View style={{ width: '100%', maxWidth: measure, alignSelf: 'center' }}>
             <Row
               title={t('moreBy', { artist: a.artist.name })}
               items={more}
