@@ -168,4 +168,106 @@ export type MetadataSettingsView = {
   region: string
 }
 
-export type CacheKind = 'movie' | 'person' | 'collection'
+export type CacheKind = 'movie' | 'person' | 'collection' | 'show'
+
+// ---------------------------------------------------------------- shows (ADR 0064)
+
+/**
+ * A show on TMDB, as lists show it: search and recommendations. Laid out as `DiscoverMovie` is, with
+ * a show's words: its title is TMDB's `name`, its date the first air date.
+ */
+export type DiscoverShow = {
+  id: number
+  title: string
+  originalTitle: string
+  /** The year it first aired. */
+  year: number | null
+  /** `YYYY-MM-DD`; null when TMDB has none yet. */
+  firstAired: string | null
+  genres: string[]
+  synopsis: string
+  /** TMDB's `vote_average`, 0 to 10. */
+  rating: number
+  voteCount: number
+  art: MovieArt
+}
+
+/** An episode, from its season's answer. */
+export type EpisodeMetadata = {
+  /** TMDB's id for the episode: with the `episode` type, its address (`TITLE_TYPES`). */
+  id: number
+  /** TMDB's id for the show. */
+  show: number
+  /** 0 for specials. */
+  season: number
+  /** Its place in the season, from 1. */
+  number: number
+  title: string
+  synopsis: string
+  /** `YYYY-MM-DD`; null until TMDB has a date. */
+  aired: string | null
+  /** Minutes; null when TMDB doesn't say. */
+  runtimeMinutes: number | null
+  /** The episode's still, a server URL. */
+  still: string | null
+  rating: number
+}
+
+/** A season with its episodes. */
+export type SeasonMetadata = {
+  /** TMDB's id for the season. */
+  id: number
+  /** 0 for specials. */
+  number: number
+  /** TMDB's name for it: "Season 2", "Specials", or a name of its own. */
+  title: string
+  synopsis: string
+  /** `YYYY-MM-DD` of its first episode; null when unknown. */
+  aired: string | null
+  year: number | null
+  poster: string | null
+  tvdbId: number | null
+  /** In order; empty when the season itself couldn't be fetched. */
+  episodes: EpisodeMetadata[]
+}
+
+/** Everything TMDB knows about a show, in any library state. */
+export type ShowMetadata = DiscoverShow & {
+  /** ISO 639-1. */
+  originalLanguage: string
+  tagline: string | null
+  /** TMDB's status: Returning Series, Planned, In Production, Ended, Canceled, Pilot. */
+  status: string
+  /** Still making episodes: Returning Series, Planned, In Production or Pilot. */
+  airing: boolean
+  /** The year it ended; null while it's airing. */
+  endYear: number | null
+  /** `YYYY-MM-DD` of the latest episode aired. */
+  lastAired: string | null
+  /** The first network it's on ("BBC Two"), and every one. */
+  network: string | null
+  networks: string[]
+  /** For the server's region, from TMDB's content ratings; null when unrated there. */
+  certification: string | null
+  /** An episode's usual length in minutes: TMDB's run time, else the episodes' middle one. */
+  runtimeMinutes: number | null
+  tvdbId: number | null
+  imdbId: string | null
+  wikidataId: string | null
+  creators: Credit[]
+  /** Across every season, most episodes first, as TMDB's aggregate credits order them. */
+  cast: Credit[]
+  crew: Credit[]
+  videos: Video[]
+  /** In order with specials last, as the apps place them (`ClientShowDetail`). */
+  seasons: SeasonMetadata[]
+  recommendations: DiscoverShow[]
+  fetchedAt: number
+  goneAt: number | null
+}
+
+/** What a TheTVDB id is on TMDB: a show, or a season or an episode of one. */
+export type TvdbMatch =
+  | { kind: 'show'; show: number }
+  | { kind: 'season'; show: number; season: number }
+  | { kind: 'episode'; show: number; season: number; episode: number }

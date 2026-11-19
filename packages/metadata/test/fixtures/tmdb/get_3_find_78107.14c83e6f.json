@@ -1,0 +1,56 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "https://api.themoviedb.org/3/find/78107?external_source=tvdb_id&language=en-US",
+    "credential": "valid"
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json;charset=utf-8"
+    },
+    "body": {
+      "movie_results": [],
+      "person_results": [],
+      "tv_results": [
+        {
+          "adult": false,
+          "backdrop_path": "/9GWU1AyNqUYIUl1tU7CvXEHUVs9.jpg",
+          "genre_ids": [35],
+          "id": 2996,
+          "origin_country": ["GB"],
+          "original_language": "en",
+          "original_name": "The Office",
+          "overview": "Nightmare boss. Tedious colleagues. Pointless tasks. Welcome to Wernham Hogg.",
+          "popularity": 11.0753,
+          "poster_path": "/oX2JKE1RzAONMbYlujHx0hRAJo1.jpg",
+          "first_air_date": "2001-07-09",
+          "softcore": false,
+          "name": "The Office",
+          "vote_average": 7.838,
+          "vote_count": 1023,
+          "media_type": "tv"
+        }
+      ],
+      "tv_episode_results": [
+        {
+          "id": 597454,
+          "overview": "A high-school wrestling team takes new drugs which cause some unexpected changes.",
+          "name": "Lion's Den",
+          "vote_average": 5.5,
+          "vote_count": 4,
+          "media_type": "tv_episode",
+          "air_date": "2001-09-08",
+          "episode_number": 18,
+          "episode_type": "standard",
+          "production_code": "",
+          "runtime": 45,
+          "season_number": 7,
+          "show_id": 21561,
+          "still_path": "/2EYH272MBNqmGlBwplljq5ZQEzr.jpg"
+        }
+      ],
+      "tv_season_results": []
+    }
+  }
+}

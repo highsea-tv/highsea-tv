@@ -1,0 +1,50 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "https://api.themoviedb.org/3/find/14296?external_source=tvdb_id&language=en-US",
+    "credential": "valid"
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json;charset=utf-8"
+    },
+    "body": {
+      "movie_results": [],
+      "person_results": [],
+      "tv_results": [],
+      "tv_episode_results": [
+        {
+          "air_date": "1964-12-23",
+          "episode_number": 15,
+          "episode_type": "standard",
+          "id": 420148,
+          "name": "Man of the People",
+          "overview": "Trouble comes to Medicine Bow in the form of a number of settlers who camp on land they say has been promised to them but that Judge Garth and others traditionally have leased from the government for grazing cattle. The land settlement has been promoted by Congressman Matt Cosgrove (James Dunn) who had read law with the Judge 30 years before. The Judge knows the soil is no good for farming but is told government reports support the reverse. While the Judge and Cosgrove are at odds, Cosgrove's nephew, Army Lt. David O'Mara (Martin West), and Betsy Garth find each other more to their liking.",
+          "production_code": "",
+          "runtime": 90,
+          "season_number": 3,
+          "show_id": 10180,
+          "still_path": null,
+          "vote_average": 0,
+          "vote_count": 0,
+          "media_type": "tv_episode"
+        }
+      ],
+      "tv_season_results": [
+        {
+          "air_date": "2001-07-09",
+          "id": 9607,
+          "name": "Series 1",
+          "overview": "The story of an office that faces closure when the company decides to downsize its branches. A documentary film crew follow staff and the manager David Brent as they continue their daily lives.",
+          "season_number": 1,
+          "show_id": 2996,
+          "vote_average": 7.3,
+          "media_type": "tv_season",
+          "episode_count": 6,
+          "poster_path": "/np9mCZVQKM1fULT0L0VKKmAr6sQ.jpg"
+        }
+      ]
+    }
+  }
+}

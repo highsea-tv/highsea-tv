@@ -26,21 +26,25 @@ import {
   toPage,
   toPerson,
 } from './map.ts'
+import { toDiscoverShow, toShowMetadata } from './map-shows.ts'
 import { createSettings, noKeyError } from './settings.ts'
 import { tmdbApi } from './tmdb/api.ts'
 import { type Credential, createTmdbClient, isTmdbNotFound } from './tmdb/client.ts'
-import type { TmdbCollection, TmdbMovie, TmdbPerson } from './tmdb/types.ts'
+import type { TmdbCollection, TmdbMovie, TmdbPerson, TmdbSeason, TmdbShow } from './tmdb/types.ts'
 import type {
   CacheKind,
   Collection,
   DiscoverList,
   DiscoverMovie,
+  DiscoverShow,
   MovieMetadata,
   Page,
   Person,
+  ShowMetadata,
+  TvdbMatch,
 } from './types.ts'
 
-const { movieMetadata, people, collections, credits, mediaItems } = schema
+const { movieMetadata, people, collections, credits, mediaItems, showMetadata } = schema
 const imageRows = schema.images
 
 const DAY = 24 * 60 * 60 * 1000
@@ -176,7 +180,10 @@ export function createMetadataCore(deps: MetadataDeps) {
     try {
       if (kind === 'movie')
         cache.putMovie(await api.movie(credential, id, language), language, now, settings.region())
-      else if (kind === 'person')
+      else if (kind === 'show') {
+        const show = await api.show(credential, id, language)
+        cache.putShow(show, await fetchSeasons(credential, show, language), language, now)
+      } else if (kind === 'person')
         cache.putPerson(await api.person(credential, id, language), language, now)
       else cache.putCollection(await api.collection(credential, id, language), language, now)
       return true
@@ -187,6 +194,25 @@ export function createMetadataCore(deps: MetadataDeps) {
   }
 
   /**
+   * Every season the show lists, each with its episodes: one request a season, at the client's pace
+   * (at most 4 at once, ADR 0029). A season TMDB answers 404 for is left out; any other failure
+   * fails the show's fetch, so the cached show serves until the next try.
+   */
+  async function fetchSeasons(credential: Credential, show: TmdbShow, language: string) {
+    const seasons = await Promise.all(
+      (show.seasons ?? []).map(async (s) => {
+        try {
+          return await api.season(credential, show.id, s.season_number, language)
+        } catch (e) {
+          if (isTmdbNotFound(e)) return null
+          throw e
+        }
+      }),
+    )
+    return seasons.filter((s): s is TmdbSeason => s !== null)
+  }
+
+  /**
    * Whether a cached movie came with `images` (asked for since HT-66), which its automatic logo is
    * picked from. A movie cached before has no logo until TMDB is asked again: reading one fetches it
    * again, and the sweep queues every such library movie at once.
@@ -194,12 +220,19 @@ export function createMetadataCore(deps: MetadataDeps) {
   const hasImages = (data: unknown) => (data as TmdbMovie).images !== undefined
 
   const rowOf = (kind: CacheKind, id: number) =>
-    kind === 'movie' ? cache.movie(id) : kind === 'person' ? cache.person(id) : cache.collection(id)
+    kind === 'movie'
+      ? cache.movie(id)
+      : kind === 'show'
+        ? cache.show(id)
+        : kind === 'person'
+          ? cache.person(id)
+          : cache.collection(id)
 
   const notFoundMessage: Record<CacheKind, string> = {
     movie: 'TMDB has no movie with that id.',
     person: 'TMDB has no person with that id.',
     collection: 'TMDB has no collection with that id.',
+    show: 'TMDB has no show with that id.',
   }
 
   /**
@@ -264,6 +297,31 @@ export function createMetadataCore(deps: MetadataDeps) {
       : null
   }
 
+  const showOf = (row: NonNullable<ReturnType<typeof cache.show>>) =>
+    toShowMetadata(row.data as TmdbShow, cache.seasons(row.tmdbId), {
+      region: settings.region(),
+      fetchedAt: row.fetchedAt,
+      goneAt: row.goneAt,
+      language: row.language,
+      pick,
+    })
+
+  /**
+   * A show with its seasons and episodes (ADR 0064), fetched when it isn't cached, is in another
+   * language or is older than a month, as a movie is.
+   */
+  async function show(id: number): Promise<ShowMetadata> {
+    const row = await load('show', id)
+    if (!row) throw new AppError('not-found', notFoundMessage.show)
+    return showOf(row as NonNullable<ReturnType<typeof cache.show>>)
+  }
+
+  /** The cached show without asking TMDB, or null: what the library shows offline. */
+  function cachedShow(id: number): ShowMetadata | null {
+    const row = cache.show(id)
+    return row ? showOf(row) : null
+  }
+
   /** TMDB's recommendations, falling back to "similar" when it has none (owner's decision 6). */
   async function recommendations(id: number): Promise<DiscoverMovie[]> {
     const row = await load('movie', id)
@@ -317,6 +375,43 @@ export function createMetadataCore(deps: MetadataDeps) {
       const result = await api.findImdb(credential, imdbId, settings.language())
       const first = result.movie_results?.[0]
       return first ? toDiscoverMovie(first, pick) : null
+    },
+    /** TMDB's TV search, paged, as `search` is for films. Writes nothing. */
+    async searchShows(query: string, pageNumber?: number): Promise<Page<DiscoverShow>> {
+      const q = query.trim()
+      if (!q) return { page: 1, totalPages: 0, totalResults: 0, results: [] }
+      const credential = requireKey()
+      const result = await api.searchShows(credential, q, page(pageNumber), settings.language())
+      return toPage(result, (s) => toDiscoverShow(s, pick))
+    },
+    /**
+     * What a TheTVDB id is on TMDB, through Find by ID with `external_source=tvdb_id`
+     * ([Find by ID](https://developer.themoviedb.org/reference/find-by-id)); null when TMDB has none.
+     * TheTVDB numbers shows, seasons and episodes apart, so one number can be a show and an
+     * episode at once (78107 is The Office's show and an episode of another): the caller says
+     * which it holds. A `tvdb-…` folder name or a `tvshow.nfo` gives a show's (the owner's answer 8).
+     */
+    async findByTvdb(tvdbId: number, kind: TvdbMatch['kind'] = 'show'): Promise<TvdbMatch | null> {
+      if (!Number.isSafeInteger(tvdbId) || tvdbId <= 0) return null
+      const credential = requireKey()
+      const result = await api.findTvdb(credential, tvdbId, settings.language())
+      if (kind === 'show') {
+        const show = result.tv_results?.[0]
+        return show ? { kind, show: show.id } : null
+      }
+      if (kind === 'season') {
+        const season = result.tv_season_results?.[0]
+        return season ? { kind, show: season.show_id, season: season.season_number } : null
+      }
+      const episode = result.tv_episode_results?.[0]
+      return episode
+        ? {
+            kind,
+            show: episode.show_id,
+            season: episode.season_number,
+            episode: episode.episode_number,
+          }
+        : null
     },
     /**
      * Trending (this week), Popular, Now playing or Upcoming, for the server's region; Top rated
@@ -493,7 +588,14 @@ export function createMetadataCore(deps: MetadataDeps) {
 
   /** Ids in `ids` that are cached as `kind` (and not gone). */
   function cachedOf(kind: CacheKind, ids: number[]) {
-    const table = kind === 'movie' ? movieMetadata : kind === 'person' ? people : collections
+    const table =
+      kind === 'movie'
+        ? movieMetadata
+        : kind === 'show'
+          ? showMetadata
+          : kind === 'person'
+            ? people
+            : collections
     const found: number[] = []
     for (let i = 0; i < ids.length; i += 500)
       found.push(
@@ -528,6 +630,7 @@ export function createMetadataCore(deps: MetadataDeps) {
         ['movie', movieMetadata],
         ['person', people],
         ['collection', collections],
+        ['show', showMetadata],
       ] as const) {
         const due = db
           .select({ id: table.tmdbId })
@@ -543,10 +646,14 @@ export function createMetadataCore(deps: MetadataDeps) {
       mode = 'changes'
       const start = utcDate(Math.max(state.lastRunAt, now - CHANGES_WINDOW_MS))
       const end = utcDate(now)
-      for (const kind of ['movie', 'person'] as const) {
+      // TV's list only once a show is cached: a server of films asks nothing more than it did
+      const anyShow = !!db.select({ id: showMetadata.tmdbId }).from(showMetadata).limit(1).get()
+      for (const kind of anyShow
+        ? (['movie', 'person', 'show'] as const)
+        : (['movie', 'person'] as const)) {
         const changed: number[] = []
         for (let n = 1, pages = 1; n <= pages && n <= 500; n++) {
-          const result = await api.changes(credential, kind, start, end, n)
+          const result = await api.changes(credential, kind === 'show' ? 'tv' : kind, start, end, n)
           pages = result.total_pages
           changed.push(...result.results.map((r) => r.id))
         }
@@ -561,7 +668,10 @@ export function createMetadataCore(deps: MetadataDeps) {
     return { mode, queued }
   }
 
-  /** TMDB ids the library refers to: its movies, their collections, their credited people. */
+  /**
+   * TMDB ids the library refers to: its movies, their collections, their credited people, and its
+   * shows (ADR 0064; a show's seasons are cached with it).
+   */
   function referenced() {
     const library = db
       .select({ id: mediaItems.tmdbId })
@@ -569,6 +679,10 @@ export function createMetadataCore(deps: MetadataDeps) {
       .where(eq(mediaItems.type, 'movie'))
     return {
       library,
+      shows: db
+        .select({ id: mediaItems.tmdbId })
+        .from(mediaItems)
+        .where(eq(mediaItems.type, 'show')),
       collections: db
         .select({ id: movieMetadata.collectionId })
         .from(movieMetadata)
@@ -609,6 +723,20 @@ export function createMetadataCore(deps: MetadataDeps) {
       enqueueRefresh('movie', r.id)
       queued++
     }
+    // library shows with no cached row yet
+    for (const r of db
+      .select({ id: mediaItems.tmdbId })
+      .from(mediaItems)
+      .where(
+        and(
+          eq(mediaItems.type, 'show'),
+          notInArray(mediaItems.tmdbId, db.select({ id: showMetadata.tmdbId }).from(showMetadata)),
+        ),
+      )
+      .all()) {
+      enqueueRefresh('show', r.id)
+      queued++
+    }
     // library movies cached before `images` was asked for, all at once: their logos are missing
     // until they're fetched again, and once they are they're never queued for it again. SQLite's
     // json_type is NULL for a path that isn't there (https://sqlite.org/json1.html#jtype)
@@ -631,6 +759,7 @@ export function createMetadataCore(deps: MetadataDeps) {
       ['movie', movieMetadata, ref.library],
       ['collection', collections, ref.collections],
       ['person', people, ref.people],
+      ['show', showMetadata, ref.shows],
     ] as const) {
       const rows = db
         .select({ id: table.tmdbId, fetchedAt: table.fetchedAt })
@@ -658,12 +787,14 @@ export function createMetadataCore(deps: MetadataDeps) {
   function runPurge() {
     const cutoff = clock.now() - CACHE_LIMIT_MS
     const ref = referenced()
-    const purged = { movies: 0, people: 0, collections: 0, images: 0 }
+    const purged = { movies: 0, people: 0, collections: 0, shows: 0, images: 0 }
     const owners: { type: CacheKind; ids: number[] }[] = []
     for (const [kind, table, keep, count] of [
       ['movie', movieMetadata, ref.library, 'movies'],
       ['person', people, ref.people, 'people'],
       ['collection', collections, ref.collections, 'collections'],
+      // a show's seasons go with it (season_metadata's foreign key)
+      ['show', showMetadata, ref.shows, 'shows'],
     ] as const) {
       const where = and(lt(table.fetchedAt, cutoff), notInArray(table.tmdbId, keep))
       const ids = db
@@ -701,7 +832,7 @@ export function createMetadataCore(deps: MetadataDeps) {
     )
     const unique = [...new Map(doomed.map((d) => [`${d.size}${d.path}`, d])).values()]
     purged.images = images.remove(unique)
-    if (purged.movies + purged.people + purged.collections + purged.images)
+    if (purged.movies + purged.people + purged.collections + purged.shows + purged.images)
       logger.info('metadata purged', purged)
     return purged
   }
@@ -715,6 +846,8 @@ export function createMetadataCore(deps: MetadataDeps) {
     certifications,
     movie,
     cachedMovie,
+    show,
+    cachedShow,
     recommendations,
     collection,
     person,

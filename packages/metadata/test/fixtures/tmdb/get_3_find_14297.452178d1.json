@@ -1,0 +1,50 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "https://api.themoviedb.org/3/find/14297?external_source=tvdb_id&language=en-US",
+    "credential": "valid"
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json;charset=utf-8"
+    },
+    "body": {
+      "movie_results": [],
+      "person_results": [],
+      "tv_results": [],
+      "tv_episode_results": [
+        {
+          "air_date": "1964-12-30",
+          "episode_number": 16,
+          "episode_type": "standard",
+          "id": 420146,
+          "name": "The Hour of the Tiger",
+          "overview": "A landslide blocks the pass needed to drive the Shiloh cattle to the rail line. The only alternative route would have to cross the property of Junius Antlow (Tom Tully), an arch enemy of Judge Garth, and Antlow refuses permission to use that route. The Judge hires Big Jim Lafferty (Leo Gordon), foreman of a crew of Chinese coolies, to clear a way through the blocked pass. Amongst the Chinese, disguised as a man, is a girl, Kam Ho (Cely Carrillo) who falls in love with the Virginian even though she is promised in marriage to one of the other workers named Chang (Kam Tong). Junius Antlow attempts to sabotage the work, hoping the cattle will starve, and in the process some of the Chinese labourers are killed and others wounded. His actions bring him into conflict not only with the Judge but also with his own son, Chris (Tom Simcox), and tragedy results.",
+          "production_code": "",
+          "runtime": null,
+          "season_number": 3,
+          "show_id": 10180,
+          "still_path": null,
+          "vote_average": 0,
+          "vote_count": 0,
+          "media_type": "tv_episode"
+        }
+      ],
+      "tv_season_results": [
+        {
+          "air_date": "2002-09-30",
+          "id": 9608,
+          "name": "Series 2",
+          "overview": "",
+          "season_number": 2,
+          "show_id": 2996,
+          "vote_average": 7.4,
+          "media_type": "tv_season",
+          "episode_count": 6,
+          "poster_path": "/cgLRLqeCxmLBmC2MrAbYPIf3uHp.jpg"
+        }
+      ]
+    }
+  }
+}

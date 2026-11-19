@@ -25887,7 +25887,8 @@
               "enum": [
                 "movie",
                 "person",
-                "collection"
+                "collection",
+                "show"
               ],
               "example": "movie"
             },

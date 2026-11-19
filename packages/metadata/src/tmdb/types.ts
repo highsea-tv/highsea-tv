@@ -200,3 +200,161 @@ export type TmdbChanges = TmdbPage<{ id: number; adult?: boolean | null }>
 
 /** TMDB's error body ([Errors](https://developer.themoviedb.org/docs/errors)). */
 export type TmdbError = { success?: false; status_code: number; status_message: string }
+
+// ---------------------------------------------------------------- TV (Phase 5's part B, ADR 0064)
+
+/** A show in a list: search, recommendations ([Search TV](https://developer.themoviedb.org/reference/search-tv)). */
+export type TmdbShowItem = {
+  id: number
+  name: string
+  original_name?: string
+  original_language?: string
+  overview?: string
+  poster_path?: string | null
+  backdrop_path?: string | null
+  first_air_date?: string
+  genre_ids?: number[]
+  origin_country?: string[]
+  vote_average?: number
+  vote_count?: number
+  popularity?: number
+}
+
+/** A season as the show lists it, without its episodes. */
+export type TmdbSeasonSummary = {
+  id: number
+  season_number: number
+  name: string
+  overview?: string | null
+  air_date?: string | null
+  episode_count?: number
+  poster_path?: string | null
+  vote_average?: number
+}
+
+/**
+ * `/3/tv/{id}/aggregate_credits`: everyone across every season, each with their roles or jobs
+ * ([TV series aggregate credits](https://developer.themoviedb.org/reference/tv-series-aggregate-credits)).
+ */
+export type TmdbAggregateCredits = {
+  cast: {
+    id: number
+    name: string
+    profile_path?: string | null
+    order?: number
+    total_episode_count?: number
+    roles?: { credit_id: string; character?: string; episode_count?: number }[]
+    known_for_department?: string
+  }[]
+  crew: {
+    id: number
+    name: string
+    profile_path?: string | null
+    department: string
+    total_episode_count?: number
+    jobs?: { credit_id: string; job: string; episode_count?: number }[]
+    known_for_department?: string
+  }[]
+}
+
+/** TV's own external ids: TheTVDB's among them ([TV series external IDs](https://developer.themoviedb.org/reference/tv-series-external-ids)). */
+export type TmdbTvExternalIds = TmdbExternalIds & { tvdb_id?: number | null }
+
+/**
+ * `/3/tv/{id}` with `append_to_response=aggregate_credits,content_ratings,external_ids,videos,
+ * recommendations,keywords,images` ([TV series details](https://developer.themoviedb.org/reference/tv-series-details)).
+ */
+export type TmdbShow = {
+  id: number
+  name: string
+  original_name: string
+  original_language: string
+  overview?: string | null
+  tagline?: string | null
+  /** Returning Series, Planned, In Production, Ended, Canceled, Pilot. */
+  status?: string
+  /** Scripted, Reality, Documentary, News, Talk Show, Miniseries, Video. */
+  type?: string
+  in_production?: boolean
+  first_air_date?: string | null
+  last_air_date?: string | null
+  number_of_seasons?: number
+  number_of_episodes?: number
+  /** Minutes; TMDB's own note: often empty for newer shows, so episodes' runtimes fill in. */
+  episode_run_time?: number[]
+  genres?: TmdbGenre[]
+  networks?: { id: number; name: string; logo_path?: string | null; origin_country?: string }[]
+  created_by?: { id: number; credit_id: string; name: string; profile_path?: string | null }[]
+  origin_country?: string[]
+  poster_path?: string | null
+  backdrop_path?: string | null
+  vote_average?: number
+  vote_count?: number
+  popularity?: number
+  seasons?: TmdbSeasonSummary[]
+  next_episode_to_air?: TmdbEpisode | null
+  last_episode_to_air?: TmdbEpisode | null
+  aggregate_credits?: TmdbAggregateCredits
+  /** Each country's rating ([TV series content ratings](https://developer.themoviedb.org/reference/tv-series-content-ratings)). */
+  content_ratings?: { results: { iso_3166_1: string; rating: string }[] }
+  external_ids?: TmdbTvExternalIds
+  videos?: { results: TmdbVideo[] }
+  recommendations?: TmdbPage<TmdbShowItem>
+  /** TV's keywords are `results`, where a movie's are `keywords`. */
+  keywords?: { results: { id: number; name: string }[] }
+  images?: TmdbImages
+}
+
+/** An episode inside a season ([TV season details](https://developer.themoviedb.org/reference/tv-season-details)). */
+export type TmdbEpisode = {
+  id: number
+  show_id?: number
+  season_number: number
+  episode_number: number
+  /** standard, finale, mid_season, … */
+  episode_type?: string
+  name: string
+  overview?: string | null
+  air_date?: string | null
+  runtime?: number | null
+  still_path?: string | null
+  vote_average?: number
+  vote_count?: number
+  production_code?: string | null
+  /** The episode's own crew and guests come with the season; highsea keeps them as sent. */
+  crew?: TmdbCrew[]
+  guest_stars?: TmdbCast[]
+  external_ids?: TmdbTvExternalIds
+}
+
+/** `/3/tv/{id}/season/{n}` with `append_to_response=external_ids`. */
+export type TmdbSeason = {
+  /** TMDB's internal document id, a string; `id` is the number. */
+  _id?: string
+  id: number
+  season_number: number
+  name: string
+  overview?: string | null
+  air_date?: string | null
+  poster_path?: string | null
+  vote_average?: number
+  episodes: TmdbEpisode[]
+  external_ids?: TmdbTvExternalIds
+}
+
+/**
+ * `GET /3/find/{external_id}?external_source=tvdb_id`: what a TheTVDB id is on TMDB, a show, a season
+ * or an episode ([Find by ID](https://developer.themoviedb.org/reference/find-by-id)).
+ */
+export type TmdbFind = {
+  movie_results?: TmdbMovieItem[]
+  tv_results?: TmdbShowItem[]
+  tv_season_results?: { id: number; season_number: number; show_id: number; name?: string }[]
+  tv_episode_results?: {
+    id: number
+    show_id: number
+    season_number: number
+    episode_number: number
+    name?: string
+  }[]
+}

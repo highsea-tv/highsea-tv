@@ -55,7 +55,7 @@ export const METADATA_REASONS = [
 ] as const
 
 /** The owners, kinds and sizes of cached images: @highsea-tv/metadata's `image-url.ts`. */
-export const IMAGE_OWNERS = ['movie', 'person', 'collection'] as const
+export const IMAGE_OWNERS = ['movie', 'person', 'collection', 'show'] as const
 export const IMAGE_KINDS = ['poster', 'backdrop', 'profile', 'still', 'logo'] as const
 
 /** The notice TMDB's terms ask for, in their wording (https://www.themoviedb.org/api-terms-of-use). */
