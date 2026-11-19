@@ -1986,6 +1986,552 @@
           "shows"
         ]
       },
+      "MusicFolder": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "artists": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "albums": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "tracks": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "size": {
+            "type": "number",
+            "minimum": 0
+          },
+          "unmatched": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "id",
+          "artists",
+          "albums",
+          "tracks",
+          "size",
+          "unmatched"
+        ]
+      },
+      "UnmatchedMusic": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "files": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "size": {
+            "type": "number",
+            "minimum": 0
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "no-tags",
+              "no-album",
+              "many-albums",
+              "unreadable"
+            ]
+          },
+          "guess": {
+            "type": "object",
+            "properties": {
+              "artist": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "album": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "year": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "artist",
+              "album",
+              "year"
+            ]
+          },
+          "foundAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-10-17T20:15:00.000Z"
+          }
+        },
+        "required": [
+          "id",
+          "path",
+          "files",
+          "size",
+          "reason",
+          "guess",
+          "foundAt"
+        ]
+      },
+      "MusicMatch": {
+        "type": "object",
+        "properties": {
+          "artist": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "album": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "year": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1000,
+            "maximum": 9999
+          }
+        },
+        "required": [
+          "artist",
+          "album",
+          "year"
+        ]
+      },
+      "LibraryArtist": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "sortName": {
+            "type": "string"
+          },
+          "photo": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "genres": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "albums": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "tracks": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "size": {
+            "type": "number",
+            "minimum": 0
+          },
+          "path": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "musicbrainz",
+              "tags"
+            ]
+          },
+          "musicBrainzId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "addedAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-10-17T20:15:00.000Z"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "sortName",
+          "photo",
+          "genres",
+          "albums",
+          "tracks",
+          "size",
+          "path",
+          "source",
+          "musicBrainzId",
+          "addedAt"
+        ]
+      },
+      "LibraryArtistDetail": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/LibraryArtist"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "bio": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "albumList": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/LibraryAlbum"
+                }
+              },
+              "videos": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "bio",
+              "albumList",
+              "videos"
+            ]
+          }
+        ]
+      },
+      "LibraryAlbum": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "sortTitle": {
+            "type": "string"
+          },
+          "artist": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "name"
+            ]
+          },
+          "year": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "album",
+              "ep",
+              "single",
+              "soundtrack",
+              "compilation"
+            ]
+          },
+          "cover": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "genres": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "tracks": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "discs": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "duration": {
+            "type": "number",
+            "minimum": 0
+          },
+          "size": {
+            "type": "number",
+            "minimum": 0
+          },
+          "formats": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "path": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "musicbrainz",
+              "tags"
+            ]
+          },
+          "musicBrainzId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "addedAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-10-17T20:15:00.000Z"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "sortTitle",
+          "artist",
+          "year",
+          "kind",
+          "cover",
+          "genres",
+          "tracks",
+          "discs",
+          "duration",
+          "size",
+          "formats",
+          "path",
+          "source",
+          "musicBrainzId",
+          "addedAt"
+        ]
+      },
+      "LibraryAlbumDetail": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/LibraryAlbum"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "released": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date",
+                "example": "1999-03-30"
+              },
+              "label": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "discList": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/LibraryDisc"
+                }
+              },
+              "extras": {
+                "type": "object",
+                "properties": {
+                  "coverFile": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "nfo": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "coverFile",
+                  "nfo"
+                ]
+              }
+            },
+            "required": [
+              "released",
+              "label",
+              "discList",
+              "extras"
+            ]
+          }
+        ]
+      },
+      "LibraryDisc": {
+        "type": "object",
+        "properties": {
+          "number": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "folder": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "tracks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LibraryTrack"
+            }
+          }
+        },
+        "required": [
+          "number",
+          "folder",
+          "tracks"
+        ]
+      },
+      "LibraryTrack": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "disc": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "number": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "title": {
+            "type": "string"
+          },
+          "artist": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "duration": {
+            "type": "number",
+            "minimum": 0
+          },
+          "file": {
+            "$ref": "#/components/schemas/TrackFile"
+          }
+        },
+        "required": [
+          "id",
+          "disc",
+          "number",
+          "title",
+          "artist",
+          "duration",
+          "file"
+        ]
+      },
+      "TrackFile": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "format": {
+            "type": "string"
+          },
+          "bitrate": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "sampleRate": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "bitDepth": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "size": {
+            "type": "number",
+            "minimum": 0
+          },
+          "lyrics": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "path",
+          "format",
+          "bitrate",
+          "sampleRate",
+          "bitDepth",
+          "size",
+          "lyrics"
+        ]
+      },
+      "TrackNaming": {
+        "type": "object",
+        "properties": {
+          "rename": {
+            "type": "boolean"
+          },
+          "standardFormat": {
+            "type": "string"
+          },
+          "multiDiscFormat": {
+            "type": "string"
+          },
+          "artistFolderFormat": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "rename",
+          "standardFormat",
+          "multiDiscFormat",
+          "artistFolderFormat"
+        ]
+      },
       "Server": {
         "type": "object",
         "properties": {
@@ -2198,6 +2744,9 @@
                 "type": "number"
               },
               "other": {
+                "type": "number"
+              },
+              "music": {
                 "type": "number"
               }
             },
@@ -9575,6 +10124,45 @@
                   "string",
                   "null"
                 ]
+              },
+              "song": {
+                "type": "object",
+                "properties": {
+                  "artist": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "name"
+                    ]
+                  },
+                  "album": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "title": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "title"
+                    ]
+                  }
+                },
+                "required": [
+                  "artist",
+                  "album"
+                ]
               }
             },
             "required": [
@@ -9775,6 +10363,45 @@
                 "type": [
                   "string",
                   "null"
+                ]
+              },
+              "song": {
+                "type": "object",
+                "properties": {
+                  "artist": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "name"
+                    ]
+                  },
+                  "album": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "title": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "title"
+                    ]
+                  }
+                },
+                "required": [
+                  "artist",
+                  "album"
                 ]
               }
             },
@@ -18684,6 +19311,878 @@
                   "items": {
                     "$ref": "#/components/schemas/ProfileUsage"
                   }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "Drafted: the server doesn’t serve this yet",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/music/folders": {
+      "get": {
+        "tags": [
+          "Music library"
+        ],
+        "summary": "Each Music folder’s artists, albums, tracks and size (draft)",
+        "description": "For Settings › Media management and the dashboard’s Storage. Drafted: the server answers 501 until it has music.",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "x-highsea-draft": true,
+        "responses": {
+          "200": {
+            "description": "The folders",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MusicFolder"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "Drafted: the server doesn’t serve this yet",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/albums/unmatched": {
+      "get": {
+        "tags": [
+          "Music library"
+        ],
+        "summary": "The folders the scan couldn’t read as an album (draft)",
+        "description": "Drafted: the server answers 501 until it has music.",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "x-highsea-draft": true,
+        "responses": {
+          "200": {
+            "description": "The folders set aside",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UnmatchedMusic"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "Drafted: the server doesn’t serve this yet",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/albums/unmatched/{id}": {
+      "post": {
+        "tags": [
+          "Music library"
+        ],
+        "summary": "Say what a set-aside folder is (draft)",
+        "description": "Its files join that album, made when it isn’t here; nothing on disk changes. Drafted: the server answers 501 until it has music.",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "x-highsea-draft": true,
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MusicMatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Done"
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "Drafted: the server doesn’t serve this yet",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Music library"
+        ],
+        "summary": "Leave a set-aside folder out of the library (draft)",
+        "description": "Later scans pass it by; nothing on disk changes. Drafted: the server answers 501 until it has music.",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "x-highsea-draft": true,
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Done"
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "Drafted: the server doesn’t serve this yet",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/artists": {
+      "get": {
+        "tags": [
+          "Music library"
+        ],
+        "summary": "The artists in the library (draft)",
+        "description": "Drafted: the server answers 501 until it has music.",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "x-highsea-draft": true,
+        "responses": {
+          "200": {
+            "description": "The artists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LibraryArtist"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "Drafted: the server doesn’t serve this yet",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/artists/{id}": {
+      "get": {
+        "tags": [
+          "Music library"
+        ],
+        "summary": "An artist with their albums (draft)",
+        "description": "404 when they aren’t here. Drafted: the server answers 501 until it has music.",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "x-highsea-draft": true,
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The artist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LibraryArtistDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "Drafted: the server doesn’t serve this yet",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/artists/{id}/refresh": {
+      "post": {
+        "tags": [
+          "Music library"
+        ],
+        "summary": "Read an artist’s tags again and refresh them from MusicBrainz (draft)",
+        "description": "Their albums too. MusicBrainz is asked only where an id is known, at its pace of one request a second. Drafted: the server answers 501 until it has music.",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "x-highsea-draft": true,
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Done"
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "Drafted: the server doesn’t serve this yet",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/albums": {
+      "get": {
+        "tags": [
+          "Music library"
+        ],
+        "summary": "The albums in the library (draft)",
+        "description": "Drafted: the server answers 501 until it has music.",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "x-highsea-draft": true,
+        "responses": {
+          "200": {
+            "description": "The albums",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LibraryAlbum"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "Drafted: the server doesn’t serve this yet",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/albums/{id}": {
+      "get": {
+        "tags": [
+          "Music library"
+        ],
+        "summary": "An album with its discs, tracks and files (draft)",
+        "description": "404 when it isn’t here. Drafted: the server answers 501 until it has music.",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "x-highsea-draft": true,
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The album",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LibraryAlbumDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "Drafted: the server doesn’t serve this yet",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/albums/{id}/refresh": {
+      "post": {
+        "tags": [
+          "Music library"
+        ],
+        "summary": "Read an album’s tags again and refresh it from MusicBrainz (draft)",
+        "description": "The Cover Art Archive’s cover comes too, unless the folder has its own. Drafted: the server answers 501 until it has music.",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "x-highsea-draft": true,
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Done"
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "Drafted: the server doesn’t serve this yet",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/settings/trackNaming": {
+      "get": {
+        "tags": [
+          "Music library"
+        ],
+        "summary": "Music’s naming (draft)",
+        "description": "Lidarr’s formats and tokens. Drafted: the server answers 501 until it has music.",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "x-highsea-draft": true,
+        "responses": {
+          "200": {
+            "description": "Track naming",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrackNaming"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "Drafted: the server doesn’t serve this yet",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Music library"
+        ],
+        "summary": "Save music’s naming (draft)",
+        "description": "The details’ `reason` names the field a format is refused for. Drafted: the server answers 501 until it has music.",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "x-highsea-draft": true,
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TrackNaming"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Saved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrackNaming"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
                 }
               }
             }

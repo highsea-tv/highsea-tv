@@ -1250,7 +1250,8 @@ export function createMockFetch(options: TransportOptions = {}): MockTransport {
       publicInfo: (_, { host }) => publicInfoOf(host),
       server: (_, { host }) => serverOf(host),
       // System › Status and the status bar (one-client-platform-d.md › D1), from the mock's own
-      // status: the disks' TV and music folded into Other, as the server has no shows or music yet
+      // status: the disks' TV folded into Other, as the server has no shows yet; music on its own,
+      // as the admin's Music draws it (HT-68)
       status: (_, ctx) => {
         const st = ctx.api.system.status()
         const server = serverOf(ctx.host)
@@ -1274,7 +1275,8 @@ export function createMockFetch(options: TransportOptions = {}): MockTransport {
             usedBy: {
               movies: d.usedBy.movies,
               downloads: d.usedBy.downloads,
-              other: d.usedBy.other + d.usedBy.tv + d.usedBy.music,
+              other: d.usedBy.other + d.usedBy.tv,
+              music: d.usedBy.music,
             },
           })),
         }

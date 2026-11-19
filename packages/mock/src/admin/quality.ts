@@ -48,8 +48,7 @@ export const qualityMessages = defineMessages({
   'media.invalid': 'That setting isn’t valid. Check it and try again.',
   'media.recycleBin': 'Use a full path for the recycle bin, starting with /.',
   'folders.unknown': 'There’s no such root folder.',
-  'folders.notYet':
-    'highsea reads shows and music from a later release. The folder is kept until then.',
+  'folders.notYet': 'highsea reads shows from a later release. The folder is kept until then.',
 })
 
 const t = createT(qualityMessages)
@@ -329,8 +328,8 @@ export function qualityAnswers({ emit }: AdminKit): Answers {
       scan: ({ params }, ctx) => {
         const f = ctx.api.rootFolders.list().find((x) => x.id === params.id)
         if (!f) throw refuse('not-found', t('folders.unknown'))
-        if (f.kind !== 'movies')
-          throw refuse('conflict', t('folders.notYet'), { reason: 'not-yet' })
+        // music is scanned as the admin's Music draws it (HT-68); shows wait for their part
+        if (f.kind === 'shows') throw refuse('conflict', t('folders.notYet'), { reason: 'not-yet' })
         ctx.api.rootFolders.scan(params.id)
       },
       remove: ({ params }, ctx) => {

@@ -226,6 +226,8 @@ The order is films, then shows, then music: films are already built and only nee
   - **Layout** (Settings › Appearance, web and desktop): Full width (the default) or Contained, per device.
   - The specs: client-home.md, collections.md, client-search.md, client-settings.md; the design language's mobile, TV, desktop-web and spacing-layout pages.
 
+- **2026-11-18, D, Music in the admin prototyped, waiting for the owner's review (HT-68):** stage 7 of prototype-gaps.md and [answers 10 and 12](#the-owners-answers), drawn in `packages/admin` over the mock on a drafted `musicLibrary` contract group (the server answers it 501): Music in the sidebar when public info's `sources` lists it; Artists, Albums and Unmatched (Match and Ignore); an artist's page and an album's, with discs, tracks and Files (format, bit depth, rate, bitrate, size); Track naming and the Music folder's figures in Settings › Media management; Music in Storage and System › Status; songs in Now playing, its history and the dashboard's widget. Details from tags first, then MusicBrainz and the Cover Art Archive; nothing searched for or downloaded. The spec is [music.md](../product/music.md); the owner's questions (grid or table, Artists or Albums first, removing from the library) are in the pull request.
+
 ## Running highsea on the NAS (A1)
 
 - **Where:** the DS1520+ (Intel Celeron J4125, VAAPI checked in 4.3b), through the Synology package from Package Center with `packages.highsea.tv` as its source, the way an owner installs it (install-simplicity.md's part D). This Mac stays the development machine; [answer 2](#the-owners-answers) has the alternatives.
