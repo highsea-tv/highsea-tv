@@ -12,6 +12,7 @@ import {
   errors,
   IdParam,
   IsoDate,
+  IsoDay,
   json,
   noContent,
   TmdbIdParam,
@@ -25,6 +26,8 @@ export const INDEXER_KINDS = ['torznab', 'newznab', 'json', 'html', 'rss'] as co
 export const INDEXER_PROTOCOLS = ['torrent', 'usenet'] as const
 export const INDEXER_HEALTH = ['healthy', 'backoff', 'failing', 'disabled'] as const
 export const CATALOG_CHANNELS = ['stable', 'beta'] as const
+/** A definition's status in the catalog (indexer-catalog-upkeep.md, part C); drafted, see below. */
+export const DEFINITION_STATUSES = ['working', 'broken', 'retired'] as const
 /** @highsea-tv/quality's `INDEXER_FLAGS`. */
 export const RELEASE_FLAGS = [
   'freeleech',
@@ -61,6 +64,31 @@ export const SettingField = z
   })
   .openapi('IndexerSettingField')
 
+/**
+ * What the catalog says about a definition's upkeep (indexer-catalog-upkeep.md, part C): the last
+ * day `catalog:verify` passed for this version from a home connection, the channel it ships on, and
+ * whether it's broken or retired, with a note written for owners.
+ *
+ * **Drafted for the prototype (HT-95), not served yet.** The mock fills it so A9 can be reviewed;
+ * the server leaves it out until the owner signs the prototype off and part C carries `verified`
+ * and `status` in the signed bundle (`bundleSchema` in @highsea-tv/catalog, read from
+ * `catalog/indexers/verified.json` and a status per definition). The admin draws nothing for it
+ * when it's absent.
+ */
+export const DefinitionCheck = z
+  .object({
+    /** The last day it was checked working; null when it never has been. */
+    verified: IsoDay.nullable(),
+    /** `beta` when the definition ships from `beta/` (on Beta only). */
+    channel: z.enum(CATALOG_CHANNELS),
+    status: z.enum(DEFINITION_STATUSES),
+    /** The day it was marked broken or retired; null while working. */
+    since: IsoDay.nullable(),
+    /** Why, for owners ("The site changed how it answers searches. A fix is being worked on."). */
+    note: z.string().nullable(),
+  })
+  .openapi('DefinitionCheck')
+
 export const CatalogIndexer = z
   .object({
     id: z.string(),
@@ -90,6 +118,8 @@ export const CatalogIndexer = z
     origin: z.string(),
     /** How many installed indexers use it. */
     installed: z.number().int(),
+    /** Drafted (HT-95): the server leaves it out; see `DefinitionCheck`. */
+    check: DefinitionCheck.optional(),
   })
   .openapi('CatalogIndexer')
 
@@ -491,6 +521,7 @@ export const releaseRoutes = {
 }
 
 export type CatalogIndexer = z.infer<typeof CatalogIndexer>
+export type DefinitionCheck = z.infer<typeof DefinitionCheck>
 export type Indexer = z.infer<typeof Indexer>
 export type IndexerStats = z.infer<typeof IndexerStats>
 export type IndexerTestResult = z.infer<typeof IndexerTestResult>
