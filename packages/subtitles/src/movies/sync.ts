@@ -16,7 +16,7 @@ import { applyCorrection, type Correction, IDENTITY, type Section } from '../syn
 import { SyncError } from '../sync/binaries.ts'
 import { chooseReference } from '../sync/reference.ts'
 import type { SyncOutcome, SyncTask } from '../sync/worker.ts'
-import { announce, type SubtitlesDeps } from './context.ts'
+import { announceItem, type SubtitlesDeps } from './context.ts'
 import type { FileInfo, TrackRow, Tracks, TrackView } from './tracks.ts'
 
 const { subtitleFiles } = schema
@@ -68,7 +68,7 @@ export function createSync(
   deps: SubtitlesDeps,
   { tracks, settings, run }: { tracks: Tracks; settings: Settings; run: RunSync },
 ) {
-  const { db, clock, events, media } = deps
+  const { db, clock, media } = deps
   const log = deps.logger.child('subtitles')
 
   /** Writes a track's sidecar from its original, moved by `correction` and the nudge. */
@@ -99,7 +99,7 @@ export function createSync(
 
   const announceRow = (row: TrackRow, history = false) => {
     const item = tracks.item(row.itemId)
-    if (item) announce(events, [item.tmdbId], { history })
+    announceItem(deps, item, { history })
   }
 
   /** A text track with its original can be synced and nudged; an image subtitle can't. */

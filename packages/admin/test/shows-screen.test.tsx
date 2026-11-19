@@ -105,6 +105,31 @@ const lantern = () => ({
   ],
 })
 
+const FOUND = '2026-11-18T10:00:00.000Z'
+const UNMATCHED = [
+  {
+    path: '/data/media/tv/Harbour Lights',
+    kind: 'show-folder',
+    rootFolder: '/data/media/tv',
+    show: null,
+    reason: 'ambiguous',
+    message: 'TMDB has more than one show by this name.',
+    size: 4e9,
+    foundAt: FOUND,
+  },
+  {
+    path: '/data/media/tv/The Lantern Keepers (2024)/Season 01/Recap.mkv',
+    kind: 'episode-file',
+    rootFolder: '/data/media/tv',
+    show: '100',
+    reason: 'no-episode-number',
+    message: 'Its name gives no season and episode.',
+    size: 7e8,
+    foundAt: FOUND,
+  },
+]
+let unmatched: typeof UNMATCHED = []
+
 let sources: string[] = []
 type Request = { method: string; path: string; body: unknown }
 let requests: Request[] = []
@@ -125,6 +150,12 @@ async function api(url: string, init: RequestInit = {}): Promise<Response> {
         show('the-lantern-keepers', 'The Lantern Keepers'),
         show('small-town-radio', 'Small Town Radio', { airing: false }),
       ])
+    case 'GET /api/v1/series/unmatched':
+      return json(unmatched)
+    case 'POST /api/v1/series/unmatched/match':
+    case 'POST /api/v1/series/unmatched/dismiss':
+    case 'POST /api/v1/series/the-lantern-keepers/refresh':
+      return new Response(null, { status: 204 })
     case 'GET /api/v1/series/the-lantern-keepers':
       return json(lantern())
     case 'GET /api/v1/series/rootfolders':
@@ -162,6 +193,7 @@ async function api(url: string, init: RequestInit = {}): Promise<Response> {
 
 beforeEach(() => {
   requests = []
+  unmatched = []
   sources = ['shows', 'music', 'profiles']
   localStorage.setItem('highsea:shows-view', 'table')
 })
@@ -238,6 +270,72 @@ describe('the library', () => {
   })
 })
 
+describe('Unmatched', () => {
+  test('its tab is drawn only once something is unmatched, with the count', async () => {
+    const { page } = await open(<ShowsLibrary />)
+    expect(page.queryByRole('tablist', { name: 'Shows sections' })).toBeNull()
+    cleanup()
+    unmatched = UNMATCHED
+    const again = await open(<ShowsLibrary />)
+    const tabs = within(again.page.getByRole('tablist', { name: 'Shows sections' }))
+    expect(tabs.getByRole('tab', { name: /Unmatched/ }).textContent).toContain('2')
+  })
+
+  test('a file is matched to its episodes, a folder to a show found on TMDB, one ignored', async () => {
+    unmatched = UNMATCHED
+    const { user, page } = await open(<ShowsLibrary tab="unmatched" />)
+    expect(page.getByText('Its name gives no season and episode.')).toBeTruthy()
+    expect(page.getByText('More than one match')).toBeTruthy()
+
+    // an episode file: its season and episodes
+    const file = UNMATCHED[1]?.path as string
+    await user.click(page.getByRole('button', { name: `Match ${file}` }))
+    await settle()
+    let dialog = within(page.getByRole('dialog'))
+    await user.click(dialog.getByRole('button', { name: 'Match' }))
+    expect(dialog.getByText('A season is a number.')).toBeTruthy()
+    expect(sent('POST', '/api/v1/series/unmatched/match')).toEqual([])
+    await user.type(dialog.getByLabelText('Season'), '1')
+    await user.type(dialog.getByLabelText('Episodes'), '3-4')
+    await user.click(dialog.getByRole('button', { name: 'Match' }))
+    await settle()
+    expect(sent('POST', '/api/v1/series/unmatched/match').map((r) => r.body)).toEqual([
+      {
+        path: file,
+        episodes: [
+          { season: 1, episode: 3 },
+          { season: 1, episode: 4 },
+        ],
+      },
+    ])
+
+    // a show folder: TMDB searched by the folder's name, a show picked
+    const folder = UNMATCHED[0]?.path as string
+    await user.click(page.getByRole('button', { name: `Match ${folder}` }))
+    await settle()
+    dialog = within(page.getByRole('dialog'))
+    expect(sent('GET', '/api/v1/discover/shows').at(-1)?.path).toContain('query=Harbour+Lights')
+    await user.click(dialog.getByRole('button', { name: 'Show' }))
+    await settle()
+    await user.click(page.getByRole('menuitemradio', { name: 'Harbour Lights (2025)' }))
+    await settle()
+    await user.click(within(page.getByRole('dialog')).getByRole('button', { name: 'Match' }))
+    await settle()
+    expect(sent('POST', '/api/v1/series/unmatched/match').at(-1)?.body).toEqual({
+      path: folder,
+      show: '200',
+    })
+
+    await user.click(page.getByRole('button', { name: `Ignore ${folder}` }))
+    await settle()
+    await user.click(within(page.getByRole('dialog')).getByRole('button', { name: 'Ignore' }))
+    await settle()
+    expect(sent('POST', '/api/v1/series/unmatched/dismiss').map((r) => r.body)).toEqual([
+      { path: folder },
+    ])
+  })
+})
+
 describe('a show’s page', () => {
   const at = (path: string) => (
     <Routed<'files'> base="/shows/the-lantern-keepers" at={path}>
@@ -263,6 +361,16 @@ describe('a show’s page', () => {
     await settle()
     expect(router.history).toEqual(['/shows/the-lantern-keepers/files'])
     expect(page.getByText('S01E01.mkv')).toBeTruthy()
+  })
+
+  test('Refresh metadata asks the server for TMDB’s refresh', async () => {
+    const { user, page } = await open(at('/shows/the-lantern-keepers'))
+    await user.click(page.getByRole('button', { name: 'More actions' }))
+    await settle()
+    await user.click(page.getByRole('menuitem', { name: 'Refresh metadata' }))
+    await settle()
+    expect(sent('POST', '/api/v1/series/the-lantern-keepers/refresh')).toHaveLength(1)
+    expect(page.getByText('Refreshing from TMDB')).toBeTruthy()
   })
 
   test('Remove can delete the files too', async () => {

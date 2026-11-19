@@ -41,13 +41,19 @@ export type ProviderId = (typeof SUBTITLE_PROVIDER_IDS)[number]
 /** Text formats highsea processes; image subtitles (`sup`, `idx`) are copied unchanged. */
 export type TextFormat = 'srt' | 'vtt' | 'ass' | 'ssa'
 
-/** One search: a library file and the languages it wants. */
+/**
+ * One search: a library file and the languages it wants. For an episode's file (Phase 5 B), the ids,
+ * title and year are its show's and `episode` says which: the providers search a show's episode by
+ * the show's ids with a season and an episode number.
+ */
 export type SubtitleQuery = {
   tmdbId: number
   /** `tt0123456`, or null when TMDB has none. */
   imdbId: string | null
   title: string
   year: number | null
+  /** The episode, for a show's file; absent for a film. A multi-episode file asks for its first. */
+  episode?: { season: number; episode: number } | null
   /** OpenSubtitles.com's hash of the file (moviehash.ts), or null outside its size range. */
   moviehash: string | null
   /** Profile codes: ISO 639-1 plus `pt-BR`, `zh-Hans` and `zh-Hant`. */

@@ -53,8 +53,7 @@ import {
   useWidth,
   visuallyHidden,
 } from '@highsea-tv/ui/native'
-import type { ReactNode } from 'react'
-import { useState } from 'react'
+import { type ReactNode, useMemo, useState } from 'react'
 import { View, type ViewStyle } from 'react-native'
 import { ClockWidget, WeatherWidget } from './clock-weather-widgets.tsx'
 import { widgets as messages } from './dashboard-messages.ts'
@@ -133,33 +132,42 @@ function Storage(props: WidgetProps) {
   return movies ? <StorageWithFolders {...props} /> : <StorageOf {...props} folders={[]} />
 }
 
-/** With the library: the root folders on the disk, as what uses it. */
+/**
+ * With the library: the root folders on the disk, as what uses it. Films' always; Shows' (Phase 5
+ * B) and Music's when the server serves them, each with how many titles it holds.
+ */
 function StorageWithFolders(props: WidgetProps) {
-  const folders = useQuery(
-    'widget:storage-folders',
-    (c) => c.rootFolders.list({ query: { kind: 'movies' } }),
-    ['settings.updated', MEDIA_TOPICS.movies],
-  )
+  const folders = useQuery('widget:storage-folders', (c) => c.rootFolders.list({ query: {} }), [
+    'settings.updated',
+    MEDIA_TOPICS.movies,
+    'shows.updated',
+  ])
+  const shows = useServes('shows')
   const music = useServes('music')
+  const shown = useMemo(
+    () =>
+      (folders.data ?? NO_FOLDERS)
+        .filter(
+          (f) =>
+            f.kind === 'movies' || (shows && f.kind === 'shows') || (music && f.kind === 'music'),
+        )
+        .sort((a, b) => KINDS.indexOf(a.kind) - KINDS.indexOf(b.kind)),
+    [folders.data, shows, music],
+  )
   return music ? (
-    <StorageWithMusic {...props} movies={folders.data ?? NO_FOLDERS} />
+    <StorageWithMusic {...props} folders={shown} />
   ) : (
-    <StorageOf {...props} folders={folders.data ?? NO_FOLDERS} />
+    <StorageOf {...props} folders={shown} />
   )
 }
 
-/** With music served (HT-68): its folders join the legend, each with how many albums it holds. */
-function StorageWithMusic({ movies, ...props }: WidgetProps & { movies: RootFolder[] }) {
-  const folders = useQuery(
-    'widget:storage-music',
-    (c) => c.rootFolders.list({ query: { kind: 'music' } }),
-    ['settings.updated'],
-  )
+const KINDS: RootFolder['kind'][] = ['movies', 'shows', 'music']
+
+/** With music served (HT-68): its folders say how many albums each holds. */
+function StorageWithMusic({ folders, ...props }: WidgetProps & { folders: RootFolder[] }) {
   const figures = useQuery('music:folders', (c) => c.musicLibrary.folders(), ['music.updated'])
   const albums = Object.fromEntries((figures.data ?? []).map((f) => [f.id, f.albums]))
-  return (
-    <StorageOf {...props} folders={[...movies, ...(folders.data ?? NO_FOLDERS)]} albums={albums} />
-  )
+  return <StorageOf {...props} folders={folders} albums={albums} />
 }
 
 const NO_FOLDERS: RootFolder[] = []
@@ -274,7 +282,9 @@ function StorageOf({
                   <Text variant="caption" color="text-3" style={{ flexShrink: 0 }}>
                     {f.kind === 'music'
                       ? t('storage.albums', { count: albums?.[f.id] ?? 0 })
-                      : t('storage.movies', { count: f.movies })}
+                      : f.kind === 'shows'
+                        ? t('storage.shows', { count: f.shows ?? 0 })
+                        : t('storage.movies', { count: f.movies })}
                   </Text>
                 </View>
               ))}

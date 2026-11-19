@@ -1680,6 +1680,9 @@
               "other": {
                 "type": "number"
               },
+              "shows": {
+                "type": "number"
+              },
               "music": {
                 "type": "number"
               }
@@ -6983,6 +6986,9 @@
           "movies": {
             "type": "integer"
           },
+          "shows": {
+            "type": "integer"
+          },
           "languageProfileId": {
             "type": [
               "string",
@@ -7610,6 +7616,46 @@
           "message",
           "size",
           "foundAt"
+        ]
+      },
+      "UnmatchedShowMatch": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          },
+          "show": {
+            "type": "string",
+            "pattern": "^\\d{1,10}$"
+          },
+          "episodes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "season": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9999
+                },
+                "episode": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 99999
+                }
+              },
+              "required": [
+                "season",
+                "episode"
+              ]
+            },
+            "maxItems": 20
+          }
+        },
+        "required": [
+          "path"
         ]
       },
       "Series": {
@@ -14235,7 +14281,9 @@
                 "videoCodec",
                 "audioCodec",
                 "streamingService",
-                "hearingImpaired"
+                "hearingImpaired",
+                "season",
+                "episode"
               ]
             }
           },
@@ -29319,6 +29367,172 @@
         }
       }
     },
+    "/api/v1/series/unmatched/match": {
+      "post": {
+        "tags": [
+          "Series"
+        ],
+        "summary": "Match something unmatched by hand",
+        "description": "A show folder is imported as the show picked (409 `running` while a library import runs); an episode file is filed under the episodes picked, an episode another file held taken from it. 404 when the path isn’t unmatched.",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UnmatchedShowMatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Done"
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/series/unmatched/dismiss": {
+      "post": {
+        "tags": [
+          "Series"
+        ],
+        "summary": "Dismiss something unmatched",
+        "description": "It leaves the list and the scan doesn’t offer it again; the file or folder stays where it is.",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "path": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 4096
+                  }
+                },
+                "required": [
+                  "path"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Done"
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/series": {
       "get": {
         "tags": [
@@ -29632,6 +29846,69 @@
             "required": false,
             "name": "deleteFiles",
             "in": "query"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Done"
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/series/{id}/refresh": {
+      "post": {
+        "tags": [
+          "Series"
+        ],
+        "summary": "Refresh a show’s details from TMDB",
+        "description": "Queues TMDB’s refresh of the show and its seasons; new episodes and changed titles follow when it lands (`shows.updated`).",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
           }
         ],
         "responses": {

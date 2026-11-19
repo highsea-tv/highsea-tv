@@ -29,8 +29,9 @@ import type {
   ProviderResult,
   SubtitleQuery,
 } from '../shared/types.ts'
+import { episodeOf } from '../shows/index.ts'
 import type { Accounts } from './accounts.ts'
-import { announce, RESULTS_TTL_MS, SEARCH_DEADLINE_MS, type SubtitlesDeps } from './context.ts'
+import { announceItem, RESULTS_TTL_MS, SEARCH_DEADLINE_MS, type SubtitlesDeps } from './context.ts'
 import type { FileInfo, FileRow, ItemRow, Tracks, TrackView } from './tracks.ts'
 import type { Wanted } from './wanted.ts'
 
@@ -115,7 +116,7 @@ export function createSearch(
     settings: Settings
   },
 ) {
-  const { db, clock, media, events } = deps
+  const { db, clock, media } = deps
   const log = deps.logger.child('subtitles')
 
   function profileOf(item: ItemRow): LanguageProfile | null {
@@ -128,21 +129,35 @@ export function createSearch(
 
   function scoredFile(file: FileRow, item: ItemRow): ScoredFile {
     const info = (file.mediaInfo ?? {}) as FileInfo
+    const episode = episodeOf(db, item, file.id)
     return {
-      title: item.title,
-      year: item.year,
+      // an episode is scored on its show's title and year, with its season and numbers
+      title: episode?.show.title ?? item.title,
+      year: episode ? episode.show.year : item.year,
       releaseName: file.sceneName ?? basename(file.path, extname(file.path)),
       videoCodec: codecOf(info),
+      episode: episode ? { season: episode.season, episodes: episode.episodes } : null,
     }
   }
 
   function query(file: FileRow, item: ItemRow, languages: string[]): SubtitleQuery {
+    const info = (file.mediaInfo ?? {}) as FileInfo
+    const episode = episodeOf(db, item, file.id)
+    if (episode)
+      return {
+        tmdbId: episode.show.tmdbId,
+        imdbId: episode.show.imdbId,
+        title: episode.show.title,
+        year: episode.show.year,
+        episode: { season: episode.season, episode: episode.episodes[0] ?? 0 },
+        moviehash: info.moviehash ?? null,
+        languages,
+      }
     const imdb = db
       .select({ imdbId: sql<string | null>`json_extract(${movieMetadata.data}, '$.imdbId')` })
       .from(movieMetadata)
       .where(eq(movieMetadata.tmdbId, item.tmdbId))
       .get()?.imdbId
-    const info = (file.mediaInfo ?? {}) as FileInfo
     return {
       tmdbId: item.tmdbId,
       imdbId: imdb ?? null,
@@ -449,7 +464,7 @@ export function createSearch(
         data: { key, trackId: id, score, matches },
       })
     wanted.refresh(item.id)
-    announce(events, [item.tmdbId], { history: true })
+    announceItem(deps, item, { history: true })
     log.info('subtitle kept', {
       tmdbId: item.tmdbId,
       language: result.language,

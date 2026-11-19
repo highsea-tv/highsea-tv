@@ -64,7 +64,11 @@ export function createFakeSubdl(world: FakeWorld) {
         .filter(Boolean)
         .map(profileCode)
         .filter((c): c is string => c !== null)
-      const found = world.find('subdl', { tmdbId, imdbId: imdb, year }, languages)
+      const episode =
+        p.get('type') === 'tv' && p.get('season_number')
+          ? { season: Number(p.get('season_number')), episode: Number(p.get('episode_number')) }
+          : null
+      const found = world.find('subdl', { tmdbId, imdbId: imdb, year, episode }, languages)
       if (found.length === 0) return json({ status: false, error: "can't find movie or tv" })
       const perPage = Math.min(30, Number(p.get('subs_per_page') ?? 10) || 10)
       const sdId = 3_000_000 + (tmdbId % 1_000_000)
@@ -74,7 +78,7 @@ export function createFakeSubdl(world: FakeWorld) {
           {
             imdb_id: found[0]?.imdbId ?? imdb ?? null,
             tmdb_id: tmdbId,
-            type: 'movie',
+            type: episode ? 'tv' : 'movie',
             name: 'Fake Movie',
             sd_id: sdId,
             first_air_date: null,
@@ -88,8 +92,8 @@ export function createFakeSubdl(world: FakeWorld) {
           author: 'highsea-fake',
           url: `/subtitle/${sdId}-${e.id}.zip`,
           subtitle_page: `/s/info/fake/${e.id}`,
-          season: 0,
-          episode: null,
+          season: e.season ?? 0,
+          episode: e.episode,
           language: subdlLanguage(e.language),
           framerate: 0,
           fps: null,

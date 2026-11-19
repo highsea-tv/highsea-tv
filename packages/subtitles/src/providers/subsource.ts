@@ -15,9 +15,14 @@
 //                                                      one language per request
 //   GET /subtitles/{subtitleId}/download             → a zip
 //
+// An episode (Phase 5 B), as Bazarr's provider asks for one: the show is found by its IMDb id with
+// `season`, its subtitles with `seasonNumber` and `episodeNumber`, and a result is kept only when
+// its release names give that season and episode (a season pack is left out: its zip holds them all).
+//
 // Languages are English names, lowercased in the query (`brazilian_portuguese`, `farsi_persian`),
 // as Bazarr's SubSource converter has them. On a 429, `Retry-After` is read, then
 // `X-RateLimit-Reset` (an ISO 8601 time, as Bazarr reads it), then the body's `retryAfter`.
+import { parseEpisode } from '@highsea-tv/parser'
 import { languageName, toLanguageCode } from '../shared/languages.ts'
 import {
   type Provider,
@@ -79,6 +84,19 @@ function retryAfter(response: Response, body: unknown, now: number): number | nu
   return fromBody === null ? null : fromBody * 1000
 }
 
+/** Whether a result's release names give this season and episode (a whole season doesn't). */
+export function forEpisode(
+  releases: readonly string[],
+  episode: { season: number; episode: number },
+): boolean {
+  for (const name of releases) {
+    const named = parseEpisode(name)
+    if (!named || named.fullSeason) continue
+    return named.season === episode.season && named.episodes.includes(episode.episode)
+  }
+  return false
+}
+
 export function createSubSource(deps: ProviderDeps): Provider {
   const { fetch, clock, store, userAgent } = deps
 
@@ -131,11 +149,16 @@ export function createSubSource(deps: ProviderDeps): Provider {
     imdbId: string,
     year: number | null,
     signal?: AbortSignal,
+    season?: number,
   ): Promise<number | null> {
     const params = new URLSearchParams({ searchType: 'imdb', imdb: imdbId })
+    if (season !== undefined) params.set('season', String(season))
     const movies = (await getJson(`/movies/search?${params}`, signal)) ?? []
     const found = movies.map(record).filter((m) => num(m?.movieId) !== null)
-    const pick = found.find((m) => year === null || num(m?.releaseYear) === year) ?? found[0]
+    // a season's entry carries that season's year, not the show's
+    const pick =
+      found.find((m) => season !== undefined || year === null || num(m?.releaseYear) === year) ??
+      found[0]
     return pick ? num(pick.movieId) : null
   }
 
@@ -145,7 +168,8 @@ export function createSubSource(deps: ProviderDeps): Provider {
     async search(query, signal) {
       apiKey()
       if (!query.imdbId || query.languages.length === 0) return []
-      const id = await movieId(query.imdbId, query.year, signal)
+      const episode = query.episode ?? null
+      const id = await movieId(query.imdbId, query.year, signal, episode?.season)
       if (id === null) return []
       // One language per request: each name once, answered in the first code that asked for it.
       const names = new Map<string, string>()
@@ -156,6 +180,10 @@ export function createSubSource(deps: ProviderDeps): Provider {
       const results: ProviderResult[] = []
       for (const [name, code] of names) {
         const params = new URLSearchParams({ movieId: String(id), language: name, limit: '100' })
+        if (episode) {
+          params.set('seasonNumber', String(episode.season))
+          params.set('episodeNumber', String(episode.episode))
+        }
         const items = (await getJson(`/subtitles?${params}`, signal)) ?? []
         for (const item of items) {
           const s = record(item)
@@ -168,6 +196,7 @@ export function createSubSource(deps: ProviderDeps): Provider {
             : typeof s.releaseInfo === 'string'
               ? [s.releaseInfo]
               : []
+          if (episode && !forEpisode(releases, episode)) continue
           results.push({
             provider: 'subsource',
             ref: String(subtitleId),

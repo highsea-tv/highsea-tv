@@ -72,6 +72,7 @@ export function rootFolderOf(f: ReturnType<Ctx['api']['rootFolders']['list']>[nu
     readOnly: f.readOnly ?? false,
     mountedReadOnly: false,
     movies: f.kind === 'movies' ? f.titles : 0,
+    ...(f.kind === 'shows' ? { shows: f.titles } : {}),
     languageProfileId: f.languageProfileId,
     waiting: f.waiting,
   }

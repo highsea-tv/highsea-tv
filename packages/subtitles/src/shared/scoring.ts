@@ -9,9 +9,17 @@
 // title and year count. Bazarr is read for behaviour only; nothing is copied (ADR 0031's practice).
 // The release fields come from @highsea-tv/parser on both sides: the subtitle's release names and the
 // library file's scene name (or its file name).
+//
+// An episode (Phase 5 B) is scored on Bazarr's episode weights from the same file: hash 359, series
+// 160, year 90, season 30, episode 30, source 25, release group 20, and 1 each for the rest, out of
+// 360 (`MAX_SCORES`, the weights but the hash). The show's title stands for the series and is
+// reported as `title`; a release name that names another episode doesn't fit at all, and one that
+// names none counts the season and episode only when the provider matched the show by id (it was
+// asked for this episode). Edition isn't an episode's. A name without a year counts the year, as
+// subliminal's `guess_matches` does for an original series (an episode's names seldom give one).
 
 import type { ParsedRelease } from '@highsea-tv/parser'
-import { parse } from '@highsea-tv/parser'
+import { parse, parseEpisode } from '@highsea-tv/parser'
 import { satisfies } from './languages.ts'
 import type { LanguageRule, ProviderResult } from './types.ts'
 
@@ -31,7 +39,25 @@ export const WEIGHTS = {
 
 export const MAX_POINTS = 180
 
-export type Match = keyof typeof WEIGHTS
+/** Bazarr's episode weights; `title` is its `series`. */
+export const EPISODE_WEIGHTS = {
+  hash: 359,
+  title: 160,
+  year: 90,
+  season: 30,
+  episode: 30,
+  source: 25,
+  releaseGroup: 20,
+  resolution: 1,
+  videoCodec: 1,
+  audioCodec: 1,
+  streamingService: 1,
+  hearingImpaired: 1,
+} as const
+
+export const EPISODE_MAX_POINTS = 360
+
+export type Match = keyof typeof WEIGHTS | keyof typeof EPISODE_WEIGHTS
 
 /** The library file as scoring sees it. */
 export type ScoredFile = {
@@ -41,6 +67,8 @@ export type ScoredFile = {
   releaseName: string
   /** The probe's video codec as the parser spells it, when the name doesn't say. */
   videoCodec?: string | null
+  /** For an episode's file: its season and the episodes it holds. `title` and `year` are the show's. */
+  episode?: { season: number; episodes: number[] } | null
 }
 
 export type Scored = { score: number; points: number; matches: Match[] }
@@ -115,31 +143,50 @@ export function scoreResult(
 ): Scored {
   const fileRelease = parse(file.releaseName)
   const codec = fileRelease.codec ?? file.videoCodec ?? null
+  const episode = file.episode ?? null
+  const weights: Record<string, number> = episode ? EPISODE_WEIGHTS : WEIGHTS
+  const max = episode ? EPISODE_MAX_POINTS : MAX_POINTS
   let best: Scored = { score: 0, points: 0, matches: [] }
   for (const name of result.releases.length > 0 ? result.releases : [result.releaseName]) {
     const sub = parse(name)
     const release = releaseMatches(fileRelease, file.releaseName, sub, codec)
     const matches = new Set<Match>()
+    if (episode) {
+      // a name for another episode (or a whole season) isn't this file's subtitle
+      const named = parseEpisode(name)
+      if (named && (named.fullSeason || named.season !== episode.season)) continue
+      if (named && !named.episodes.some((n) => episode.episodes.includes(n))) continue
+      if (named || result.idMatch) {
+        matches.add('season')
+        matches.add('episode')
+      }
+      release.delete('edition')
+    }
     if (result.idMatch || fold(sub.title) === fold(file.title)) matches.add('title')
-    if (result.idMatch || (file.year !== null && sub.year === file.year)) matches.add('year')
+    if (
+      result.idMatch ||
+      (file.year !== null && sub.year === file.year) ||
+      (episode && sub.year === null)
+    )
+      matches.add('year')
     // a hash match stands alone, but only with the source and the codec (Bazarr's rule)
     const hash = result.hashMatch && release.has('source') && release.has('videoCodec')
     let points: number
     let found: Match[]
     if (hash) {
-      points = WEIGHTS.hash
+      points = weights.hash ?? 0
       found = ['hash']
     } else {
       if (options.preferReleaseMatch) for (const r of release) matches.add(r)
       if (rule && rule.hi !== 'no' && result.hi) matches.add('hearingImpaired')
       if (rule && rule.hi === 'no' && !result.hi) matches.add('hearingImpaired')
       found = [...matches]
-      points = found.reduce((sum, k) => sum + WEIGHTS[k], 0)
+      points = found.reduce((sum, k) => sum + (weights[k] ?? 0), 0)
     }
     const scored = {
       points,
       matches: found,
-      score: Math.round((Math.min(points, MAX_POINTS) * 100) / MAX_POINTS),
+      score: Math.round((Math.min(points, max) * 100) / max),
     }
     if (scored.points > best.points) best = scored
   }

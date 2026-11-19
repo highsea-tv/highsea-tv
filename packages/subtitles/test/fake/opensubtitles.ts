@@ -74,8 +74,15 @@ export function createFakeOpenSubtitles(world: FakeWorld) {
         legacy_subtitle_id: entry.id,
         uploader: { uploader_id: 1, name: 'highsea-fake', rank: 'member' },
         feature_details: {
+          ...(entry.season !== null
+            ? {
+                parent_tmdb_id: entry.tmdbId,
+                season_number: entry.season,
+                episode_number: entry.episode,
+              }
+            : {}),
           feature_id: entry.tmdbId,
-          feature_type: 'Movie',
+          feature_type: entry.season !== null ? 'Episode' : 'Movie',
           year: 2010,
           title: 'Fake Movie',
           movie_name: 'Fake Movie',
@@ -160,7 +167,11 @@ export function createFakeOpenSubtitles(world: FakeWorld) {
         return new Response(null, { status: 301, headers: { location: location.toString() } })
       }
       const p = url.searchParams
-      const tmdbId = Number(p.get('tmdb_id'))
+      const tmdbId = Number(p.get('tmdb_id') ?? p.get('parent_tmdb_id'))
+      const episode =
+        p.get('type') === 'episode'
+          ? { season: Number(p.get('season_number')), episode: Number(p.get('episode_number')) }
+          : null
       if (!tmdbId) return json({ total_pages: 0, total_count: 0, per_page: 60, page: 1, data: [] })
       const languages = [
         ...new Set(
@@ -178,7 +189,7 @@ export function createFakeOpenSubtitles(world: FakeWorld) {
       const found = world
         .find(
           'opensubtitles',
-          { tmdbId, imdbId: imdb ? `tt${imdb}` : null, year },
+          { tmdbId, imdbId: imdb ? `tt${imdb}` : null, year, episode },
           languages,
           moviehash,
         )

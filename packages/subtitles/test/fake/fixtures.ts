@@ -30,12 +30,19 @@ export type FakeSubtitle = {
   /** The file's text; a short generated subtitle by default. */
   content?: string
   format?: 'srt' | 'ass' | 'vtt'
+  /** An episode's subtitle: `tmdbId` is then the show's. */
+  season?: number
+  episode?: number
 }
 
 /** A subtitle the fake serves: the added or made-up one, its id and its file. */
-export type FakeEntry = Required<Omit<FakeSubtitle, 'imdbId' | 'moviehash'>> & {
+export type FakeEntry = Required<
+  Omit<FakeSubtitle, 'imdbId' | 'moviehash' | 'season' | 'episode'>
+> & {
   imdbId: string | null
   moviehash: string | null
+  season: number | null
+  episode: number | null
   id: number
 }
 
@@ -170,6 +177,8 @@ export function entryFor(sub: FakeSubtitle, id: number): FakeEntry {
     hi: sub.hi ?? false,
     forced: sub.forced ?? false,
     moviehash: sub.moviehash ?? null,
+    season: sub.season ?? null,
+    episode: sub.episode ?? null,
     translated: sub.translated ?? false,
     downloads: sub.downloads ?? 100,
     format,

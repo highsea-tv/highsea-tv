@@ -199,6 +199,127 @@ export function setup({
     return { itemId, fileId, path, folder, tmdbId }
   }
 
+  /**
+   * A show's season folder with one file per episode (or one file for several), each an episode
+   * row inheriting the show's profile, the way the shows' import writes them.
+   */
+  function show({
+    tmdbId = 1399,
+    imdbId = 'tt0944947',
+    title = 'Game of Thrones',
+    year = 2011,
+    season = 1,
+    files = [[1], [2]],
+    profile = 'lp-en',
+  }: {
+    tmdbId?: number
+    imdbId?: string | null
+    title?: string
+    year?: number
+    season?: number
+    /** Each file's episode numbers. */
+    files?: number[][]
+    profile?: string | null
+  } = {}) {
+    const i = ++n
+    const now = clock.now()
+    const showId = `show${i}`
+    const showFolder = join(dir, `${title} (${year})`)
+    const folder = join(showFolder, `Season ${String(season).padStart(2, '0')}`)
+    mkdirSync(folder, { recursive: true })
+    const base = {
+      tmdbId,
+      sortTitle: title.toLowerCase(),
+      status: 'available' as const,
+      monitored: true,
+      minimumAvailability: 'released' as const,
+      qualityProfileId: 'qp-hd',
+      languageProfileId: profile,
+      rootFolder: dir,
+      addedAt: now,
+      updatedAt: now,
+    }
+    db.insert(schema.mediaItems)
+      .values({ ...base, id: showId, type: 'show', title, year, path: showFolder })
+      .run()
+    db.insert(schema.showDetails).values({ itemId: showId, imdbId }).run()
+    const seasonId = `${showId}s${season}`
+    db.insert(schema.mediaItems)
+      .values({
+        ...base,
+        tmdbId: tmdbId * 100 + season,
+        id: seasonId,
+        type: 'season',
+        title: `Season ${season}`,
+        year,
+        path: folder,
+        parentId: showId,
+        showId,
+        seasonNumber: season,
+      })
+      .run()
+    const out: { fileId: string; itemIds: string[]; path: string; base: string }[] = []
+    for (const episodes of files) {
+      const code = episodes.map((e) => `E${String(e).padStart(2, '0')}`).join('')
+      const name = `${title} - S${String(season).padStart(2, '0')}${code}`
+      const path = join(folder, `${name}.mkv`)
+      writeFileSync(path, Buffer.alloc(200_000, episodes[0] ?? 0))
+      const fileId = `${showId}f${code}`
+      const itemIds = episodes.map((e) => `${seasonId}e${e}`)
+      for (const [k, e] of episodes.entries()) {
+        const itemId = itemIds[k] as string
+        db.insert(schema.mediaItems)
+          .values({
+            ...base,
+            // an episode's own TMDB id; unique per type
+            tmdbId: tmdbId * 10_000 + season * 100 + e,
+            id: itemId,
+            type: 'episode',
+            title: `Episode ${e}`,
+            year,
+            path: folder,
+            parentId: seasonId,
+            showId,
+            seasonNumber: season,
+            episodeNumber: e,
+          })
+          .run()
+        db.insert(schema.versions)
+          .values({
+            id: `v${itemId}`,
+            itemId,
+            label: 'Default',
+            qualityProfileId: 'qp-hd',
+            fileId,
+            position: 0,
+            createdAt: now,
+          })
+          .run()
+      }
+      db.insert(schema.mediaFiles)
+        .values({
+          id: fileId,
+          itemId: itemIds[0] as string,
+          path,
+          size: 200_000,
+          sceneName: `${title.replace(/ /g, '.')}.S${String(season).padStart(2, '0')}${code}.1080p.WEB-DL.x264-GRP`,
+          mediaInfo: {
+            probe: {
+              duration: 60,
+              container: 'matroska,webm',
+              video: { index: 0, codec: 'h264', codecTag: null },
+              audio: [],
+              subtitles: [],
+            },
+          },
+          addedAt: now,
+        } as typeof schema.mediaFiles.$inferInsert)
+        .run()
+      out.push({ fileId, itemIds, path, base: name })
+    }
+    return { showId, tmdbId, folder, showFolder, files: out }
+  }
+
   /** Runs every job that's due, until none is. */
   async function drain(queue = jobs) {
     for (let i = 0; i < 20; i++) {
@@ -239,6 +360,7 @@ export function setup({
     subtitles,
     engine,
     movie,
+    show,
     drain,
     restart,
     rows,

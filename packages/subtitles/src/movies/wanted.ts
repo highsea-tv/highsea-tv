@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The wanted list (checkpoint 7's plan, "The wanted list"): rows in `subtitle_wanted`, one per
-// file, language and flags an available movie's profile asks for and nothing present fills.
+// file, language and flags an available movie's or episode's profile asks for and nothing present
+// fills.
 // They're rewritten for one movie when its file, tracks or profile change, and for every movie when
 // a profile changes, so A10's page reads an index instead of every file's streams. Each row keeps
 // when it may be searched again: after 1 day, then 3, then 7, then weekly (judgement call 6).
@@ -61,7 +62,10 @@ export function createWanted(deps: SubtitlesDeps, tracks: Tracks, profiles: Prof
   function wantsOf(itemId: string, importing: boolean): { fileId: string; wants: Want[] }[] {
     const item = tracks.item(itemId)
     const available = importing || item?.status === 'available'
-    if (item?.type !== 'movie' || !available || !item.languageProfileId) return []
+    // an episode's file wants what its show's profile asks for (Phase 5 B); the episode holds the
+    // show's profile, as its other settings
+    const kind = item?.type === 'movie' || item?.type === 'episode'
+    if (!item || !kind || !available || !item.languageProfileId) return []
     const profile = profiles.find(item.languageProfileId)
     if (!profile) return []
     return tracks
@@ -114,7 +118,7 @@ export function createWanted(deps: SubtitlesDeps, tracks: Tracks, profiles: Prof
       const ids = db
         .select({ id: mediaItems.id })
         .from(mediaItems)
-        .where(and(eq(mediaItems.type, 'movie'), gt(mediaItems.id, after)))
+        .where(and(inArray(mediaItems.type, ['movie', 'episode']), gt(mediaItems.id, after)))
         .orderBy(asc(mediaItems.id))
         .limit(500)
         .all()
@@ -172,11 +176,17 @@ export function createWanted(deps: SubtitlesDeps, tracks: Tracks, profiles: Prof
     }
   }
 
-  /** How many movies want something: the stats card and A10's tab count. */
+  /**
+   * How many movies want something: the stats card and A10's tab count. Episodes' rows are searched
+   * as films' are, but A10 lists films only (its design has no episode line), so they aren't
+   * counted here.
+   */
   const total = (): number =>
     db
       .select({ n: countDistinct(subtitleWanted.itemId) })
       .from(subtitleWanted)
+      .innerJoin(mediaItems, eq(mediaItems.id, subtitleWanted.itemId))
+      .where(eq(mediaItems.type, 'movie'))
       .get()?.n ?? 0
 
   /** A10's Wanted tab: movies by sort title, cursor-paged (judgement call 7). */

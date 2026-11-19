@@ -6,7 +6,13 @@ import type { Clock } from '@highsea-tv/core'
 import type { ProviderId } from '../../src/shared/types.ts'
 import { entryFor, type FakeEntry, type FakeSubtitle, generated, hash } from './fixtures.ts'
 
-export type FakeMovie = { tmdbId: number; imdbId: string | null; year: number | null }
+export type FakeMovie = {
+  tmdbId: number
+  imdbId: string | null
+  year: number | null
+  /** Asked for an episode of the show `tmdbId` names. */
+  episode?: { season: number; episode: number } | null
+}
 
 export type FakeWorld = {
   clock: Clock
@@ -52,11 +58,15 @@ export function createWorld(options: {
       const out: FakeEntry[] = []
       world.added.forEach((sub, i) => {
         if (sub.provider !== provider || !languages.includes(sub.language)) return
+        // a film's search finds films; an episode's, that episode
+        const ep = movie.episode ?? null
+        if (ep ? sub.season !== ep.season || sub.episode !== ep.episode : sub.season !== undefined)
+          return
         const same =
           sub.tmdbId === movie.tmdbId || (movie.imdbId !== null && sub.imdbId === movie.imdbId)
         if (same) out.push(register(entryFor(sub, 1000 + i)))
       })
-      if (world.generate)
+      if (world.generate && !movie.episode)
         for (const language of languages)
           generated(provider, movie, language, moviehash).forEach((sub, i) => {
             const id =

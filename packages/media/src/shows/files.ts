@@ -22,7 +22,7 @@ import { AppError, newId } from '@highsea-tv/core'
 import { schema } from '@highsea-tv/db'
 import type { UnmatchedKind } from '@highsea-tv/db/schema'
 import { parse, parseEpisode, parseSeasonFolder } from '@highsea-tv/parser'
-import { and, asc, eq, inArray } from 'drizzle-orm'
+import { and, asc, eq, inArray, isNull } from 'drizzle-orm'
 import type { StoredFileInfo } from '../movies/import.ts'
 import { createProbe } from '../shared/ffprobe.ts'
 import { writeFileFacts } from '../shared/file-facts.ts'
@@ -180,6 +180,16 @@ export function createShowFiles(ctx: ShowsDeps, deps: { media: Media }) {
       return (rootFolder ? q.where(eq(unmatchedFiles.rootFolder, rootFolder)) : q)
         .orderBy(asc(unmatchedFiles.path))
         .all()
+    },
+    /** The owner set it aside: it stays known (the scan won't offer it again) but leaves the list. */
+    dismiss(path: string): void {
+      db.update(unmatchedFiles)
+        .set({ dismissedAt: clock.now() })
+        .where(and(eq(unmatchedFiles.path, path), isNull(unmatchedFiles.dismissedAt)))
+        .run()
+    },
+    find(path: string) {
+      return db.select().from(unmatchedFiles).where(eq(unmatchedFiles.path, path)).get() ?? null
     },
     has(path: string) {
       return !!db

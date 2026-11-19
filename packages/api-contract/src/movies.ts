@@ -269,6 +269,8 @@ export const RootFolder = z
     mountedReadOnly: z.boolean(),
     /** Library movies filed under it. */
     movies: z.number().int(),
+    /** Library shows filed under it (Phase 5 B): a Shows folder's figure on the dashboard. */
+    shows: z.number().int().optional(),
     /**
      * The subtitle language profile a movie added here takes when none is chosen (checkpoint
      * 8c): the add dialog starts on it, and import lists, the library import and migration use it.

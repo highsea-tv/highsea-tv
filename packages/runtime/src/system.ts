@@ -104,46 +104,62 @@ export function memory() {
   return { used: total - freemem(), total }
 }
 
-/** What uses a disk, in bytes: the library's files, downloads, and everything else. */
-export type DiskUse = { movies: number; downloads: number; other: number }
+/** What uses a disk, in bytes: the library's files by kind, downloads, and everything else. */
+export type DiskUse = {
+  movies: number
+  shows: number
+  music: number
+  downloads: number
+  other: number
+}
+
+const LIBRARY = ['movies', 'shows', 'music'] as const
 
 /**
  * Free and total space where the config, the media and the downloads live, one entry per
- * filesystem (by `stat`'s device), with what highsea knows uses each: `movies` and `downloads` are
- * attributed to the disk their folder is on, and `other` is the rest of what's used.
+ * filesystem (by `stat`'s device), with what highsea knows uses each: the films', the shows' and
+ * the music's files and the downloads are attributed to the disk their folder is on, and `other`
+ * is the rest of what's used.
  */
 export function disks(
-  paths: { label: string; path: string; movies?: number; downloads?: number }[],
+  paths: {
+    label: string
+    path: string
+    movies?: number
+    shows?: number
+    music?: number
+    downloads?: number
+  }[],
 ): Disk[] {
   const out = new Map<number, Disk & { used: number }>()
-  for (const { label, path, movies = 0, downloads = 0 } of paths) {
+  for (const entry of paths) {
     try {
-      const dev = statSync(path).dev
+      const dev = statSync(entry.path).dev
       let disk = out.get(dev)
       if (!disk) {
-        const s = statfsSync(path)
+        const s = statfsSync(entry.path)
         const free = s.bavail * s.bsize
         const total = s.blocks * s.bsize
         disk = {
-          path: resolve(path),
-          label,
+          path: resolve(entry.path),
+          label: entry.label,
           free,
           total,
           used: Math.max(0, total - free),
-          usedBy: { movies: 0, downloads: 0, other: 0 },
+          usedBy: { movies: 0, shows: 0, music: 0, downloads: 0, other: 0 },
         }
         out.set(dev, disk)
       }
-      disk.usedBy.movies += movies
-      disk.usedBy.downloads += downloads
+      for (const k of LIBRARY) disk.usedBy[k] += entry[k] ?? 0
+      disk.usedBy.downloads += entry.downloads ?? 0
     } catch {
       // not there yet: setup makes it
     }
   }
-  return [...out.values()].map(({ used, ...d }) => ({
-    ...d,
-    usedBy: { ...d.usedBy, other: Math.max(0, used - d.usedBy.movies - d.usedBy.downloads) },
-  }))
+  return [...out.values()].map(({ used, ...d }) => {
+    const known = LIBRARY.reduce((n, k) => n + d.usedBy[k], 0) + d.usedBy.downloads
+    return { ...d, usedBy: { ...d.usedBy, other: Math.max(0, used - known) } }
+  })
 }
 
 export type HealthIssue = {

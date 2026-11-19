@@ -291,3 +291,47 @@ describe('a shows root folder', () => {
     ).toEqual({ code: 'invalid', reason: 'rename-shows' })
   })
 })
+
+describe('the admin’s unmatched and refresh', () => {
+  test('listed, dismissed and refused once gone; a show refreshed, one not here a 404', async () => {
+    const { api, root, runtime } = await served()
+    const path = join(root, 'Chernobyl (2019)', 'Season 01', 'Chernobyl Recap.mkv')
+    const show = runtime.db
+      .select()
+      .from(schema.mediaItems)
+      .all()
+      .find((r) => r.type === 'show' && r.tmdbId === CHERNOBYL)
+    runtime.db
+      .insert(schema.unmatchedFiles)
+      .values({
+        path,
+        kind: 'episode-file',
+        rootFolder: root,
+        itemId: show?.id ?? null,
+        reason: 'no-episode-number',
+        message: 'Its name gives no season and episode.',
+        size: 10,
+        foundAt: Date.now(),
+      })
+      .run()
+    expect(await api.series.unmatched({ query: {} })).toMatchObject([
+      { path, kind: 'episode-file', show: String(CHERNOBYL), reason: 'no-episode-number' },
+    ])
+    // the file isn't on disk: matching it says so
+    expect(
+      await failure(
+        api.series.matchUnmatched({ body: { path, episodes: [{ season: 1, episode: 3 }] } }),
+      ),
+    ).toEqual({ code: 'not-found', reason: 'no-file' })
+    await api.series.dismissUnmatched({ body: { path } })
+    expect(await api.series.unmatched({ query: {} })).toEqual([])
+    expect(
+      await failure(api.series.dismissUnmatched({ body: { path: join(root, 'nothing.mkv') } })),
+    ).toMatchObject({ code: 'not-found' })
+
+    await api.series.refresh({ params: { id: String(CHERNOBYL) } })
+    expect(await failure(api.series.refresh({ params: { id: '1' } }))).toMatchObject({
+      code: 'not-found',
+    })
+  })
+})

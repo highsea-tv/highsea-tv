@@ -102,5 +102,9 @@ export const migrations: Migration[] = [
   {
     "tag": "0024_show_dismissals",
     "sql": "CREATE TABLE `show_dismissals` (\n\t`user_id` text NOT NULL,\n\t`profile_id` text NOT NULL,\n\t`item_id` text NOT NULL,\n\t`dismissed_at` integer NOT NULL,\n\tPRIMARY KEY(`profile_id`, `item_id`),\n\tFOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE cascade,\n\tFOREIGN KEY (`profile_id`) REFERENCES `profiles`(`id`) ON UPDATE no action ON DELETE cascade,\n\tFOREIGN KEY (`item_id`) REFERENCES `media_items`(`id`) ON UPDATE no action ON DELETE cascade\n);\n"
+  },
+  {
+    "tag": "0025_unmatched_dismissed",
+    "sql": "ALTER TABLE `unmatched_files` ADD `dismissed_at` integer;"
   }
 ]

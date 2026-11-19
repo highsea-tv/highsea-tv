@@ -1,0 +1,1 @@
+ALTER TABLE `unmatched_files` ADD `dismissed_at` integer;
