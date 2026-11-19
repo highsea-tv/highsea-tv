@@ -72,6 +72,7 @@ import {
   createLibraryWatch,
   createMedia,
   ffprobeBinary,
+  isWithin,
   type LibraryWatch,
   type Media,
   trackIndex,
@@ -80,6 +81,7 @@ import {
   vetFiles,
   type WatchFn,
 } from '@highsea-tv/media/shared'
+import { createShows } from '@highsea-tv/media/shows'
 import { createMetadata, type Metadata, TMDB_ATTRIBUTION } from '@highsea-tv/metadata'
 import type { MdnsResponder } from '@highsea-tv/network'
 import { createNotifications, type Notifications } from '@highsea-tv/notifications/service'
@@ -852,6 +854,24 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
     media,
   )
   movies.jobs.schedule(clock.now())
+  // shows: added from TMDB, the ones on disk imported in place and scanned (Phase 5 B); their
+  // routes are drafts until part B's third task, and their sidecar subtitles its fourth
+  const shows = createShows(
+    {
+      db,
+      jobs,
+      clock,
+      events,
+      logger,
+      metadata,
+      files: {
+        probe: options.importing?.probe,
+        sampleSeconds: options.importing?.sampleSeconds,
+      },
+    },
+    media,
+  )
+  shows.jobs.schedule(clock.now())
   scheduleFileFacts({ db, jobs, clock })
   trickplay.start()
   ahead.start()
@@ -957,12 +977,19 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
 
   // watching only speeds the library scan up: a change asks for its title folder's scan
   const watch = createLibraryWatch({
-    onChange: (folder) => movies.libraryScan.queue(folder),
+    // each change goes to its root folder's kind
+    onChange: (folder) =>
+      media.rootFolders.list('shows').some((r) => isWithin(r.path, folder))
+        ? shows.libraryScan.queue(folder)
+        : movies.libraryScan.queue(folder),
     watch: options.watch,
     log: logger.child('watch'),
   })
-  // shows' and music's folders are watched once the server reads them (parts B and D)
-  const syncWatch = () => watch.sync(media.rootFolders.list('movies').map((f) => f.path))
+  // music's folders are watched once the server reads them (part D)
+  const syncWatch = () =>
+    watch.sync(
+      [...media.rootFolders.list('movies'), ...media.rootFolders.list('shows')].map((f) => f.path),
+    )
   syncWatch()
   // root folders added or removed announce `settings.updated` (the root folder routes)
   const stopWatchSync = events.subscribe((e) => {
@@ -1493,6 +1520,10 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
       // the movies already in the folder, matched with the key just saved
       const folder = resolve(input.folders.movies)
       if (media.rootFolders.find(folder)) movies.libraryScan.queue(folder)
+      // and the shows: each folder added where it is when it's identified surely
+      const showsFolder = input.folders.shows?.trim() ? resolve(input.folders.shows) : null
+      if (showsFolder && media.rootFolders.find(showsFolder, 'shows'))
+        shows.libraryScan.queue(showsFolder)
       // the indexer step: added once the owner exists, each tested first. Not awaited, so a slow
       // or unreachable site doesn't hold up Finish for its 30 seconds; they appear on the
       // dashboard as they pass, and one that fails is logged and can be added from Indexers
@@ -1769,6 +1800,7 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
       playbackSettings.close()
       await transcodes.close()
       movies.close()
+      shows.close()
       stopSubtitles()
       stopIndexers()
       await network.close()

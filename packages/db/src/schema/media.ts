@@ -422,6 +422,38 @@ export const showDetails = sqliteTable(
   (t) => [index('show_details_tvdb').on(t.tvdbId)],
 )
 
+/** What an unmatched path is: a show's folder no show was found for, or a file in a show's folder. */
+export const UNMATCHED_KINDS = ['show-folder', 'episode-file'] as const
+export type UnmatchedKind = (typeof UNMATCHED_KINDS)[number]
+
+/**
+ * What the library found on disk and couldn't place, with why (ADR 0064's 2026-11-18 section): a
+ * show folder TMDB has no sure match for, or a file in a show's folder that names no episode the
+ * show has. Nothing is guessed; the admin resolves them (part B's fourth task). A show's files go
+ * with it; a row goes when its path is matched, or is gone at the next scan.
+ */
+export const unmatchedFiles = sqliteTable(
+  'unmatched_files',
+  {
+    path: text('path').primaryKey(),
+    kind: text('kind', { enum: UNMATCHED_KINDS }).notNull(),
+    /** The root folder it was found under. */
+    rootFolder: text('root_folder').notNull(),
+    /** The show whose folder holds the file; null for a show folder. */
+    itemId: text('item_id').references(() => mediaItems.id, { onDelete: 'cascade' }),
+    /** A code the admin can act on (`no-episode-number`, `unknown-season`, `ambiguous` …). */
+    reason: text('reason').notNull(),
+    /** The reason in the owner's words. */
+    message: text('message').notNull(),
+    size: integer('size').notNull().default(0),
+    foundAt: integer('found_at').notNull(),
+  },
+  (t) => [
+    index('unmatched_files_root').on(t.rootFolder, t.kind),
+    index('unmatched_files_item').on(t.itemId),
+  ],
+)
+
 /**
  * Where each profile stopped, per item (ADR 0054, per profile since ADR 0068). Written by playback
  * in Phase 4; read by the client API now.

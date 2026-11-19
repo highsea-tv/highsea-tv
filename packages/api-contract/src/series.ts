@@ -146,13 +146,18 @@ export const DiscoverSeries = z
   })
   .openapi('DiscoverSeries')
 
+/**
+ * What Add a show sends. The server needs only the show's TMDB id; `title` and `year` are what the
+ * dialog shows and the server reads TMDB's own. No language profile is `null`, left out, or the
+ * empty string (ADR 0064's 2026-11-18 section).
+ */
 export const AddSeriesInput = z
   .object({
     tmdbId: z.number().int(),
-    title: z.string().min(1),
-    year: z.number().int(),
+    title: z.string().optional(),
+    year: z.number().int().optional(),
     qualityProfileId: z.string(),
-    languageProfileId: z.string(),
+    languageProfileId: z.string().nullable().optional(),
     rootFolder: z.string().min(1),
     monitor: z.enum(SHOW_MONITOR),
     seasonFolders: z.boolean(),

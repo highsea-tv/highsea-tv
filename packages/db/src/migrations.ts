@@ -92,7 +92,11 @@ export const migrations: Migration[] = [
     "sql": "ALTER TABLE `torrents` ADD `web_seeds` text DEFAULT '[]' NOT NULL;"
   },
   {
-    "tag": "0022_fanart",
+    "tag": "0022_unmatched_files",
+    "sql": "CREATE TABLE `unmatched_files` (\n\t`path` text PRIMARY KEY NOT NULL,\n\t`kind` text NOT NULL,\n\t`root_folder` text NOT NULL,\n\t`item_id` text,\n\t`reason` text NOT NULL,\n\t`message` text NOT NULL,\n\t`size` integer DEFAULT 0 NOT NULL,\n\t`found_at` integer NOT NULL,\n\tFOREIGN KEY (`item_id`) REFERENCES `media_items`(`id`) ON UPDATE no action ON DELETE cascade\n);\n--> statement-breakpoint\nCREATE INDEX `unmatched_files_root` ON `unmatched_files` (`root_folder`,`kind`);--> statement-breakpoint\nCREATE INDEX `unmatched_files_item` ON `unmatched_files` (`item_id`);"
+  },
+  {
+    "tag": "0023_fanart",
     "sql": "CREATE TABLE `fanart_images` (\n\t`subject` text NOT NULL,\n\t`external_id` text NOT NULL,\n\t`data` text,\n\t`fetched_at` integer NOT NULL,\n\tPRIMARY KEY(`subject`, `external_id`)\n);\n"
   }
 ]

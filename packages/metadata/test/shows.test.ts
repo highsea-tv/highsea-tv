@@ -212,6 +212,13 @@ describe('TheTVDB’s ids through find', () => {
     expect(await t.metadata.discover.findByTvdb(801960)).toBeNull()
     expect(await t.metadata.discover.findByTvdb(-1)).toBeNull()
   })
+
+  test('an IMDb id that’s no show on TMDB is null, and a film’s isn’t taken for a show', async () => {
+    const t = await open()
+    expect(await t.metadata.discover.findShowByImdb('tt0000000')).toBeNull()
+    // Sintel's IMDb id: TMDB finds a film, not a show
+    expect(await t.metadata.discover.findShowByImdb('tt1727587')).toBeNull()
+  })
 })
 
 describe('TV search', () => {
