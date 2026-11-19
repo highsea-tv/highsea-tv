@@ -299,6 +299,7 @@ describe('0018_profiles', () => {
       '0024_show_dismissals',
       '0025_music',
       '0026_unmatched_dismissed',
+      '0027_episode_markers',
     ])
     expect(result.backup).not.toBeNull()
     const once = state(first)
@@ -405,6 +406,7 @@ describe('0020_shows', () => {
       '0024_show_dismissals',
       '0025_music',
       '0026_unmatched_dismissed',
+      '0027_episode_markers',
     ])
     expect(films(raw)).toEqual(was)
     expect(raw.all('SELECT count(*) AS n FROM media_items')).toEqual([{ n: 300 }])
@@ -554,6 +556,7 @@ describe('0020_shows', () => {
         '0024_show_dismissals',
         '0025_music',
         '0026_unmatched_dismissed',
+        '0027_episode_markers',
       ])
       expect(all(raw)).toEqual(was)
       expect(raw.all('SELECT count(*) AS n FROM unmatched_files')).toEqual([{ n: 0 }])
@@ -616,7 +619,7 @@ describe('0020_shows', () => {
         expect(raw.all('SELECT count(*) AS n FROM show_dismissals')).toEqual([{ n: 0 }])
         expect(raw.all('PRAGMA foreign_key_check')).toEqual([])
         expect(raw.all('PRAGMA integrity_check')).toEqual([{ integrity_check: 'ok' }])
-        expect(migrate(raw).applied).toEqual(['0026_unmatched_dismissed'])
+        expect(migrate(raw).applied).toEqual(['0026_unmatched_dismissed', '0027_episode_markers'])
         expect(migrate(raw).applied).toEqual([])
         raw.close()
       })
@@ -667,7 +670,9 @@ describe('0020_shows', () => {
         const { raw } = withUnmatched()
         migrate(raw, { all: migrations.filter((m) => m.tag < '0026') })
         const was = everything(raw)
-        expect(migrate(raw).applied).toEqual(['0026_unmatched_dismissed'])
+        expect(migrate(raw, { all: migrations.filter((m) => m.tag < '0027') }).applied).toEqual([
+          '0026_unmatched_dismissed',
+        ])
         const now = everything(raw)
         expect(now.unmatched).toEqual(
           (was.unmatched as Record<string, unknown>[]).map((r) => ({ ...r, dismissed_at: null })),
@@ -698,6 +703,42 @@ describe('0020_shows', () => {
         expect(
           raw.all("SELECT id, language_profile_id FROM media_items WHERE type = 'movie'"),
         ).toEqual(films)
+        raw.close()
+      })
+
+      // Phase 5 C2, ADR 0067: an episode file's intro and credits, beside films, shows and music
+      test('0027_episode_markers only adds its table, and leaves films, shows and music as they were', () => {
+        const { raw } = withUnmatched()
+        migrate(raw, { all: migrations.filter((m) => m.tag < '0027') })
+        raw.run(
+          "INSERT INTO music_artists (id, name, sort_name, name_key, root_folder, source, added_at, updated_at) VALUES ('ar_1', 'Blur', 'blur', 'blur', '/music', 'tags', 1, 1)",
+        )
+        raw.run(
+          "INSERT INTO music_albums (id, artist_id, title, sort_title, path, root_folder, source, added_at, updated_at) VALUES ('al_1', 'ar_1', 'Parklife', 'parklife', '/music/Blur/Parklife', '/music', 'tags', 1, 1)",
+        )
+        raw.run(
+          "INSERT INTO music_tracks (id, album_id, number, title, path, size, mtime, format, codec, added_at, updated_at) VALUES ('tr_1', 'al_1', 1, 'Girls & Boys', '/music/Blur/Parklife/01.flac', 1, 1, 'FLAC', 'flac', 1, 1)",
+        )
+        const music = () => ({
+          artists: raw.all('SELECT * FROM music_artists'),
+          albums: raw.all('SELECT * FROM music_albums'),
+          tracks: raw.all('SELECT * FROM music_tracks'),
+        })
+        const was = { ...everything(raw), ...music() }
+        expect(migrate(raw).applied).toEqual(['0027_episode_markers'])
+        expect({ ...everything(raw), ...music() }).toEqual(was)
+        // a file's markers, the owner's beside the found, go with the file
+        raw.run(
+          "INSERT INTO episode_markers (file_id, size, intro_start, intro_end, intro_source, credits, credits_source, checked_at) VALUES ('fil_e12', 1000, 62.5, 120, 'chapters', 3150.2, 'owner', 1)",
+        )
+        expect(raw.all('SELECT intro_start, credits, credits_source FROM episode_markers')).toEqual([
+          { intro_start: 62.5, credits: 3150.2, credits_source: 'owner' },
+        ])
+        raw.run("DELETE FROM media_files WHERE id = 'fil_e12'")
+        expect(raw.all('SELECT count(*) AS n FROM episode_markers')).toEqual([{ n: 0 }])
+        expect(raw.all('PRAGMA foreign_key_check')).toEqual([])
+        expect(raw.all('PRAGMA integrity_check')).toEqual([{ integrity_check: 'ok' }])
+        expect(migrate(raw).applied).toEqual([])
         raw.close()
       })
 

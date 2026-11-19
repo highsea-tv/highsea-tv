@@ -110,5 +110,9 @@ export const migrations: Migration[] = [
   {
     "tag": "0026_unmatched_dismissed",
     "sql": "ALTER TABLE `unmatched_files` ADD `dismissed_at` integer;--> statement-breakpoint\n-- HT-92: shows imported before their subtitles were served take their root folder's profile, as\n-- an import does now; a show's seasons and episodes hold it with the show\nUPDATE `media_items` SET `language_profile_id` = (\n\tSELECT `root_folders`.`language_profile_id` FROM `root_folders`\n\tWHERE `root_folders`.`path` = `media_items`.`root_folder`\n) WHERE `type` IN ('show', 'season', 'episode') AND `language_profile_id` IS NULL;"
+  },
+  {
+    "tag": "0027_episode_markers",
+    "sql": "CREATE TABLE `episode_markers` (\n\t`file_id` text PRIMARY KEY NOT NULL,\n\t`size` integer NOT NULL,\n\t`intro_start` real,\n\t`intro_end` real,\n\t`intro_source` text,\n\t`credits` real,\n\t`credits_source` text,\n\t`error` text,\n\t`checked_at` integer NOT NULL,\n\tFOREIGN KEY (`file_id`) REFERENCES `media_files`(`id`) ON UPDATE no action ON DELETE cascade\n);\n"
   }
 ]
