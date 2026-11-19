@@ -39,7 +39,8 @@
         "object-src": "'none'",
         "base-uri": "'self'",
         "form-action": "'none'"
-      }
+      },
+      "dangerousDisableAssetCspModification": ["style-src"]
     }
   },
   "plugins": {
