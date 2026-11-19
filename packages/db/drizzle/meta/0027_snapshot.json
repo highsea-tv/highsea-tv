@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "710af8cc-f292-43ec-9597-a8948d17beb6",
+  "id": "bab21816-a075-403c-9b3d-c2220d55fb05",
   "prevId": "855dcd49-0405-4181-8271-81c88828e534",
   "tables": {
     "account_links": {
@@ -1830,13 +1830,6 @@
           "notNull": false,
           "autoincrement": false
         },
-        "episode_ids": {
-          "name": "episode_ids",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
         "indexer_id": {
           "name": "indexer_id",
           "type": "text",
@@ -2587,104 +2580,6 @@
       "uniqueConstraints": {},
       "checkConstraints": {}
     },
-    "show_releases": {
-      "name": "show_releases",
-      "columns": {
-        "show_tmdb_id": {
-          "name": "show_tmdb_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "scope": {
-          "name": "scope",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "indexer_id": {
-          "name": "indexer_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "guid": {
-          "name": "guid",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "data": {
-          "name": "data",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "download": {
-          "name": "download",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "fetched_at": {
-          "name": "fetched_at",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "expires_at": {
-          "name": "expires_at",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        }
-      },
-      "indexes": {
-        "show_releases_expires": {
-          "name": "show_releases_expires",
-          "columns": [
-            "expires_at"
-          ],
-          "isUnique": false
-        }
-      },
-      "foreignKeys": {
-        "show_releases_indexer_id_indexers_id_fk": {
-          "name": "show_releases_indexer_id_indexers_id_fk",
-          "tableFrom": "show_releases",
-          "tableTo": "indexers",
-          "columnsFrom": [
-            "indexer_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {
-        "show_releases_show_tmdb_id_scope_indexer_id_guid_pk": {
-          "columns": [
-            "show_tmdb_id",
-            "scope",
-            "indexer_id",
-            "guid"
-          ],
-          "name": "show_releases_show_tmdb_id_scope_indexer_id_guid_pk"
-        }
-      },
-      "uniqueConstraints": {},
-      "checkConstraints": {}
-    },
     "job_runs": {
       "name": "job_runs",
       "columns": {
@@ -2900,6 +2795,20 @@
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
+        },
+        "subject": {
+          "name": "subject",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "subject_of": {
+          "name": "subject_of",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
         }
       },
       "indexes": {
@@ -2908,6 +2817,14 @@
           "columns": [
             "status",
             "run_at"
+          ],
+          "isUnique": false
+        },
+        "jobs_subject_of": {
+          "name": "jobs_subject_of",
+          "columns": [
+            "subject_of",
+            "status"
           ],
           "isUnique": false
         },

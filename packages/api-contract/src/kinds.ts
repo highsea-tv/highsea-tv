@@ -139,7 +139,8 @@ export const ClientAlbum = z
     title: z.string(),
     sortTitle: z.string(),
     artist: z.object({ id: z.string(), name: z.string() }),
-    year: z.number().int(),
+    /** Null when neither the tags nor MusicBrainz give one. */
+    year: z.number().int().nullable(),
     cover: Image,
     genres: z.array(z.string()),
     tracks: z.number().int(),

@@ -58,6 +58,7 @@ import {
 import { useState } from 'react'
 import { View } from 'react-native'
 import { toBase64 } from './base64.ts'
+import { downloadSource, useDownloadSource } from './download-source.ts'
 import { downloads as messages } from './downloads-messages.ts'
 import { torrentTone } from './downloads-status.ts'
 import { Loadable } from './loadable.tsx'
@@ -98,6 +99,8 @@ const failed = (t: ReturnType<typeof useT<typeof messages>>) => (e: Error) =>
 
 export function Downloads() {
   const t = useT(messages)
+  const tSource = useT(downloadSource)
+  const source = useDownloadSource()
   const torrents = useQuery('torrents', (c) => c.downloads.list(), LIVE, {
     interval: RATES_EVERY,
   })
@@ -211,7 +214,7 @@ export function Downloads() {
                           <TableHead>{t('col.progress')}</TableHead>
                           <TableHead numeric>↓</TableHead>
                           <TableHead numeric>↑</TableHead>
-                          <TableHead numeric>{t('col.peers')}</TableHead>
+                          <TableHead>{tSource('title')}</TableHead>
                           <TableHead numeric>{t('col.ratio')}</TableHead>
                           <TableHead>{t('col.status')}</TableHead>
                         </TableRow>
@@ -248,9 +251,8 @@ export function Downloads() {
                               </TableCell>
                               <TableCell numeric>{x.downRate ? rate(x.downRate) : '—'}</TableCell>
                               <TableCell numeric>{x.upRate ? rate(x.upRate) : '—'}</TableCell>
-                              <TableCell numeric>
-                                {`${x.seeds.connected}/${x.peers.connected}`}
-                              </TableCell>
+                              {/* how the data arrives: peers, web seeds or both (HT-100) */}
+                              <TableCell truncate>{source(x) ?? '—'}</TableCell>
                               <TableCell numeric>{x.ratio.toFixed(2)}</TableCell>
                               <TableCell>
                                 <Badge tone={s.tone}>{t(`state.${x.state}`)}</Badge>
@@ -772,14 +774,33 @@ function TorrentSheet({
 
 function General({ torrent: x }: { torrent: Torrent }) {
   const t = useT(messages)
+  const tSource = useT(downloadSource)
+  const source = useDownloadSource()
   const locale = useLocale()
   const { relative } = useRelative()
+  const web = x.webSeeds
+  const swarm = x.seeds.connected + x.peers.connected > 0
   const rows: [string, string][] = [
     [
       t('general.progress'),
       t('general.progressValue', { percent: percent(x.progress), size: bytes(x.size) }),
     ],
     [t('general.speed'), t('totals', { down: rate(x.downRate), up: rate(x.upRate) })],
+    // where the data comes from, and how the speed splits when peers and web seeds both send
+    [
+      tSource('title'),
+      [
+        source(x) ?? '—',
+        web.connected > 0 && swarm && x.downRate > 0
+          ? tSource('split', {
+              peers: rate(Math.max(0, x.downRate - web.downRate)),
+              web: rate(web.downRate),
+            })
+          : null,
+      ]
+        .filter(Boolean)
+        .join('\n'),
+    ],
     [t('general.eta'), x.eta ? duration(x.eta, locale) : '—'],
     [
       t('general.seeds'),
@@ -789,6 +810,14 @@ function General({ torrent: x }: { torrent: Torrent }) {
       t('general.peers'),
       t('general.count', { connected: x.peers.connected, total: x.peers.total }),
     ],
+    ...(web.total > 0
+      ? [
+          [
+            t('general.webSeeds'),
+            t('general.webSeedsValue', { connected: web.connected, total: web.total }),
+          ] as [string, string],
+        ]
+      : []),
     [
       t('general.uploaded'),
       t('general.uploadedValue', { size: bytes(x.uploaded), ratio: x.ratio.toFixed(2) }),
@@ -868,6 +897,15 @@ function Files({ torrent: x, onChanged }: { torrent: Torrent; onChanged: () => v
   )
 }
 
+/** A web seed's host (`archive.org`), as the server names it in a download's source. */
+const webSeedHost = (url: string) => {
+  try {
+    return new URL(url).hostname.replace(/^www\./, '') || url
+  } catch {
+    return url
+  }
+}
+
 const trackerTone = (status: Torrent['trackers'][number]['status']) =>
   status === 'working'
     ? 'success'
@@ -908,7 +946,17 @@ function Trackers({ torrent: x }: { torrent: Torrent }) {
             <Badge tone={trackerTone(tr.status)}>{t(`tracker.${tr.status}`)}</Badge>
           </View>
           <Text variant="caption" color="text-3">
-            {`${tr.kind === 'web-seed' ? t('tracker.webSeed') : t('tracker.peers', { count: tr.peers })}${tr.message ? ` · ${tr.message}` : ''}`}
+            {[
+              tr.kind === 'web-seed'
+                ? t('tracker.webSeed', { host: webSeedHost(tr.url) })
+                : t('tracker.peers', { count: tr.peers }),
+              tr.kind === 'web-seed' && tr.downRate > 0
+                ? t('tracker.sending', { rate: rate(tr.downRate) })
+                : null,
+              tr.message,
+            ]
+              .filter(Boolean)
+              .join(' · ')}
           </Text>
         </View>
       ))}

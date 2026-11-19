@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The admin's music routes (HT-68, Phase 5's part D), drafted in the contract (`musicLibrary`,
+// The admin's music routes (HT-68, Phase 5's part D), in the contract (`musicLibrary`,
 // api-contract's music-library.ts) and answered here from the mock's music as the admin keeps it
 // (music-admin.ts): the artists and albums with their discs, tracks and files, Refresh, Unmatched
 // with its match and ignore, each Music folder's figures, and music's naming. The real server
-// answers every one 501 until it has music.
+// serves them since HT-101 (apps/server/src/api/music.ts).
 //
 // What the mock doesn't keep, and what stands in for it here:
 // - Refresh reads nothing again: it says it's done, as the job would once MusicBrainz answered;
@@ -115,6 +115,7 @@ export function musicAnswers(kit: AdminKit): Answers {
       },
       refreshArtist: ({ params }, ctx) => {
         if (!libraryOf(ctx).artist(params.id)) throw refuse('not-found', t('artist'))
+        kit.work?.queue(ctx, 'music.metadata', { kind: 'artist', id: params.id })
         return changed(undefined)
       },
       albums: (_, ctx) => libraryOf(ctx).albums.map(dated),
@@ -125,6 +126,7 @@ export function musicAnswers(kit: AdminKit): Answers {
       },
       refreshAlbum: ({ params }, ctx) => {
         if (!libraryOf(ctx).album(params.id)) throw refuse('not-found', t('album'))
+        kit.work?.queue(ctx, 'music.metadata', { kind: 'album', id: params.id })
         return changed(undefined)
       },
       naming: (_, ctx) => naming.get(ctx.srv) ?? DEFAULT_TRACK_NAMING,

@@ -83,6 +83,10 @@ export async function setup() {
         throw new AppError('not-found', 'No indexers here.')
       },
       releases: () => [],
+      grabEpisodes: async () => {
+        throw new AppError('not-found', 'No indexers here.')
+      },
+      episodeReleases: () => [],
     },
     fetch: async () => new Response(null, { status: 404 }),
     movie: () => null,

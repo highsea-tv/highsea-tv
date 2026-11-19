@@ -53,6 +53,8 @@ export const Tracker = z
     status: z.enum(['working', 'updating', 'not-contacted', 'error']),
     peers: z.number().int(),
     message: z.string().nullable(),
+    /** A web seed's bytes per second now; 0 for a tracker. */
+    downRate: z.number().default(0),
   })
   .openapi('Tracker')
 
@@ -80,6 +82,24 @@ export const EpisodeRef = z
   })
   .openapi('EpisodeRef')
 
+/**
+ * Where the data comes from besides peers: BEP 19's web seeds, web servers holding the files that
+ * the engine asks by HTTP range (https://www.bittorrent.org/beps/bep_0019.html). They aren't peers,
+ * so a download fed only by them has 0 seeds and 0 peers; this says so (HT-100).
+ */
+export const WebSeedSource = z
+  .object({
+    /** Web seeds sending now. */
+    connected: z.number().int(),
+    /** Web seeds the torrent lists. */
+    total: z.number().int(),
+    /** The host names of those sending now (`archive.org`), each once. */
+    hosts: z.array(z.string()),
+    /** Bytes per second from web seeds; the rest of `downRate` is from peers. */
+    downRate: z.number(),
+  })
+  .openapi('WebSeedSource')
+
 export const Torrent = z
   .object({
     id: z.string(),
@@ -104,6 +124,7 @@ export const Torrent = z
     eta: z.number().nullable(),
     peers: Count,
     seeds: Count,
+    webSeeds: WebSeedSource,
     ratio: z.number(),
     state: z.enum(TORRENT_STATES),
     /** Why it's stalled, blocked or failed, in plain words. */
@@ -142,6 +163,7 @@ export const QueueItem = z
     /** As Downloads shows them; none once the torrent has gone. */
     peers: Count,
     seeds: Count,
+    webSeeds: WebSeedSource,
     ratio: z.number(),
     state: z.enum(TORRENT_STATES),
     stateReason: z.string().nullable(),

@@ -17,6 +17,7 @@
 //   shows.client.list(profileId) / show(tmdbId, profileId) / item(episodeTmdbId, profileId) / home …
 //   shows.playback.source / position / played / … by the episode's TMDB id, as films' playback
 //   shows.admin.list() / get(id) / update / remove / monitorSeason / monitorEpisode / discover
+//   shows.admin.setMarkers / findMarkers   the owner's intro and credits (ADR 0067)
 //   shows.settings.naming() / sizes() / profileUsage(ids)
 //   shows.close()                          stops listening for metadata.updated
 import { DRAFT_TOPICS } from '@highsea-tv/api-contract'
@@ -33,6 +34,7 @@ import { createShowFiles } from './files.ts'
 import { createEpisodeImport } from './import.ts'
 import { createShowLibrary } from './library.ts'
 import { createShowLibraryImport } from './library-import.ts'
+import { createShowMarkers } from './markers.ts'
 import { createShowPlayback } from './playback.ts'
 import { createShowScan, SHOW_SCAN_JOB } from './scan.ts'
 import { createShowSearch } from './search.ts'
@@ -43,9 +45,10 @@ export function createShows(deps: ShowsDeps, media: Media) {
   const files = createShowFiles(deps, { media })
   const libraryImport = createShowLibraryImport(deps, { media, library, files })
   const libraryScan = createShowScan(deps, { media, files, addNew: libraryImport.addNew })
-  const client = createShowClient(deps)
+  const markers = createShowMarkers(deps)
+  const client = createShowClient(deps, { markers })
   const playback = createShowPlayback(deps, { client })
-  const admin = createShowAdmin(deps, { media, get: library.get })
+  const admin = createShowAdmin(deps, { media, get: library.get, markers })
   const settings = createShowSettings(deps)
   const episodeImport = createEpisodeImport(deps, { media, files, settings })
   const search = createShowSearch(deps, { media, settings })
@@ -178,6 +181,15 @@ export {
   type ShowImportItem,
   type ShowImportState,
 } from './library-import.ts'
+export {
+  adminMarks,
+  clientMarks,
+  createShowMarkers,
+  MARKERS_JOB,
+  type MarkerRow,
+  queueMarkers,
+  type ShowMarkers,
+} from './markers.ts'
 export type { ShowPlayback } from './playback.ts'
 export { SHOW_SCAN_JOB, type ShowScanResult } from './scan.ts'
 export type { ShowScope } from './search.ts'

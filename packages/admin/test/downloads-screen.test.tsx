@@ -61,6 +61,7 @@ const torrent = (extra: Record<string, unknown> = {}) => ({
   eta: 330,
   peers: { connected: 4, total: 30 },
   seeds: { connected: 12, total: 80 },
+  webSeeds: { connected: 0, total: 0, hosts: [], downRate: 0 },
   ratio: 0,
   state: 'downloading',
   stateReason: null,
@@ -75,8 +76,14 @@ const torrent = (extra: Record<string, unknown> = {}) => ({
     { path: 'Sintel/Sample.mkv', size: 100_000_000, progress: 0, priority: 'normal' },
   ],
   trackers: [
-    { url: 'udp://tracker.test:6969', status: 'working', peers: 30, message: null },
-    { url: 'https://slow.test/announce', status: 'not-contacted', peers: 0, message: null },
+    { url: 'udp://tracker.test:6969', status: 'working', peers: 30, message: null, downRate: 0 },
+    {
+      url: 'https://slow.test/announce',
+      status: 'not-contacted',
+      peers: 0,
+      message: null,
+      downRate: 0,
+    },
   ],
   seedingRule: { ratio: 1.5, minutes: null, minMinutes: 4320 },
   ...extra,
@@ -213,7 +220,7 @@ describe('A8 Downloads', () => {
     const sintel = within(page.getByRole('row', { name: /Sintel\.2010/ }))
     expect(sintel.getByText('Downloading')).toBeTruthy()
     expect(sintel.getByText('movies · Fake Torznab')).toBeTruthy()
-    expect(sintel.getByText('12/4')).toBeTruthy()
+    expect(sintel.getByText('Peers 12/4')).toBeTruthy()
     const other = within(page.getByRole('row', { name: /Something\.Else/ }))
     expect(other.getByText('Stalled')).toBeTruthy()
     expect(other.getByText('manual · Added by hand')).toBeTruthy()
@@ -225,6 +232,64 @@ describe('A8 Downloads', () => {
     await user.click(page.getByRole('tab', { name: /Paused/ }))
     await settle()
     expect(page.getByText('No torrents match.')).toBeTruthy()
+  })
+
+  test('a download fed by web seeds names the host, never 0/0 alone (HT-100)', async () => {
+    state.torrents = [
+      torrent({
+        id: 'tr_web',
+        name: 'Big.Buck.Bunny.1080p',
+        peers: { connected: 0, total: 0 },
+        seeds: { connected: 0, total: 0 },
+        webSeeds: { connected: 1, total: 1, hosts: ['archive.org'], downRate: 3_000_000 },
+        trackers: [
+          {
+            url: 'https://archive.org/download/BigBuckBunny/',
+            kind: 'web-seed',
+            status: 'working',
+            peers: 0,
+            message: null,
+            downRate: 3_000_000,
+          },
+        ],
+      }),
+      torrent({
+        id: 'tr_both',
+        name: 'Both.Kinds',
+        webSeeds: { connected: 1, total: 2, hosts: ['archive.org'], downRate: 1_000_000 },
+      }),
+      torrent({
+        id: 'tr_wait',
+        name: 'Nobody.Yet',
+        peers: { connected: 0, total: 0 },
+        seeds: { connected: 0, total: 0 },
+        downRate: 0,
+      }),
+    ]
+    const { user, page } = await open()
+    const web = within(page.getByRole('row', { name: /Big\.Buck\.Bunny/ }))
+    expect(web.getByText('Web seed · archive.org')).toBeTruthy()
+    expect(web.queryByText('0/0')).toBeNull()
+    expect(
+      within(page.getByRole('row', { name: /Both\.Kinds/ })).getByText('Peers 12/4 + archive.org'),
+    ).toBeTruthy()
+    expect(
+      within(page.getByRole('row', { name: /Nobody\.Yet/ })).getByText('Waiting for peers'),
+    ).toBeTruthy()
+
+    await user.click(page.getByRole('button', { name: 'Both.Kinds' }))
+    await settle()
+    let sheet = within(page.getByRole('dialog'))
+    // the speed's split, and how many web seeds send
+    expect(sheet.getByText(/2(\.0)? MB\/s from peers · 1(\.0)? MB\/s from web seeds/)).toBeTruthy()
+    expect(sheet.getByText('1 of 2 sending')).toBeTruthy()
+
+    await user.click(page.getByRole('button', { name: 'Big.Buck.Bunny.1080p' }))
+    await settle()
+    sheet = within(page.getByRole('dialog'))
+    await user.click(sheet.getByRole('tab', { name: /Trackers/ }))
+    await settle()
+    expect(sheet.getByText(/^Web seed · archive\.org · Sending 3(\.0)? MB\/s$/)).toBeTruthy()
   })
 
   test('no torrents: the empty state offers Add', async () => {

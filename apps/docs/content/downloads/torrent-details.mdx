@@ -6,7 +6,8 @@ description: A torrent's progress and swarm, its files and their priorities, its
 {/* SPDX-License-Identifier: AGPL-3.0-only */}
 {/*
   Sources:
-  - The details sheet: packages/admin/src/downloads.tsx and downloads-messages.ts.
+  - The details sheet: packages/admin/src/downloads.tsx, downloads-messages.ts and
+    download-source.ts.
   - Behaviour: packages/downloads/src/service.ts (file priorities, the seeding rule a torrent gets,
     states and reasons).
   - The engine: packages/torrent/src/picker.ts (high-priority files first, skipped files not
@@ -19,10 +20,13 @@ On [Downloads](/downloads/), select a torrent's name to open its details. The to
 
 ## General
 
-![A torrent's details on the General tab: Sintel's release, Queued, with Pause, Open the movie and Remove, then Progress, Speed, Time left, Seeds, Peers, Uploaded, Added, Swarm Public, Saved to /data/downloads/movies and the info hash](/images/admin/downloads/details-general.png)
+![A torrent's details on the General tab: Sintel's release, Queued, with Pause, Open the movie and Remove, then Progress, Speed, Source (a dash while it waits in the queue), Time left, Seeds, Peers, Uploaded, Added, Swarm Public, Saved to /data/downloads/movies and the info hash](/images/admin/downloads/details-general.png)
 
-- **Progress**, **Speed** and **Time left**.
+- **Progress** and **Speed**.
+- **Source**: where the data comes from, as the list shows it. When peers and web seeds both send, a second line splits the speed between them, such as "9.2 MB/s from peers · 5.0 MB/s from web seeds".
+- **Time left**.
 - **Seeds** and **Peers**: how many it's connected to, of how many it knows about.
+- **Web seeds**, for a torrent that has them: how many are sending, of how many it lists.
 - **Uploaded**, with the ratio.
 - **Added**: when.
 - **Swarm**: **Public**, or **Private: trackers only, no DHT or peer exchange** for a torrent from a private tracker.
@@ -48,6 +52,8 @@ A torrent added from a magnet link has no file list until its details arrive fro
 ![The Trackers tab, with one tracker's address, 0 peers and the state Not contacted yet](/images/admin/downloads/details-trackers.png)
 
 Each tracker shows its address, how many peers it gave, any message it sent, and its state: **Working**, **Updating**, **Not contacted yet** or **Not responding**. A torrent with no trackers finds peers through the DHT and from other peers.
+
+Web seeds are listed here too. A web seed is a web server holding the torrent's files, such as the Internet Archive's, which highsea downloads from as it would from a peer that has everything. Each shows its address, **Web seed** and its host, such as archive.org, how fast it's sending, any message, and its state.
 
 ## Seeding
 

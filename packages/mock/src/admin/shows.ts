@@ -26,6 +26,7 @@ import type {
   UnmatchedShowPath,
 } from '@highsea-tv/api-contract'
 import type { AdminEpisode, AdminSeason, AdminShow, AdminShowDetail } from '../types.ts'
+import { chosenShowArt } from './artwork.ts'
 import { type AdminKit, type Answers, type Ctx, refuse } from './kit.ts'
 import { t } from './movies-shared.ts'
 
@@ -50,6 +51,7 @@ export function showsAnswers(kit: AdminKit): Answers {
   })
   const showOf = (s: AdminShow): Series => ({
     ...s,
+    art: chosenShowArt(kit, s.tmdbId, s.art),
     addedAt: kit.wall(s.addedAt),
     nextAiring: s.nextAiring && { ...s.nextAiring, aired: day(s.nextAiring.aired) },
   })
@@ -209,7 +211,10 @@ export function showsAnswers(kit: AdminKit): Answers {
         settled.add(body.path)
         return changed(undefined)
       },
-      refresh: () => changed(undefined),
+      refresh: ({ params }, ctx) => {
+        kit.work?.queue(ctx, 'metadata.refresh', { kind: 'show', id: params.id })
+        return changed(undefined)
+      },
       list: (_, ctx) => ctx.api.shows.list().map(showOf),
       add: ({ body }, ctx) => changed(detailOf(ctx.api.shows.add(body))),
       get: ({ params }, ctx) => detailOf(ctx.api.shows.get(params.id)),
@@ -224,6 +229,14 @@ export function showsAnswers(kit: AdminKit): Answers {
       },
       monitorEpisode: ({ params, body }, ctx) => {
         ctx.api.shows.monitorEpisode(params.id, params.episodeId, body.monitored)
+        return changed(undefined)
+      },
+      setMarkers: ({ params, body }, ctx) => {
+        ctx.api.shows.setMarkers(params.id, params.episodeId, body)
+        return changed(undefined)
+      },
+      findMarkers: ({ params }, ctx) => {
+        ctx.api.shows.findMarkers(params.id, params.episodeId)
         return changed(undefined)
       },
       search: ({ params, body }, ctx) => {
@@ -270,6 +283,7 @@ export function showsAnswers(kit: AdminKit): Answers {
           peers: { connected: 0, total: 0 },
           seeds: { connected: 0, total: r.seeders ?? 0 },
           ratio: 0,
+          webSeeds: { connected: 0, total: 0, hosts: [], downRate: 0 },
           state: 'downloading',
           stateReason: null,
         }

@@ -154,3 +154,13 @@ jobs:
         # Tauri runs the client's desktop export first (tauri.conf.json's beforeBuildCommand)
         env:
           EXPO_NO_TELEMETRY: 1
+      # The page comes alive (HT-107): the export the app embeds, served with the policy Tauri
+      # sends, opened in WebKit (the Mac's WKWebView engine), styled, laid out and answering a
+      # click (scripts/sweeps/desktop.ts). The export is the same on all three systems, so the Mac
+      # job checks it; WebKit for macOS needs no system libraries (`playwright-core install`).
+      - if: runner.os == 'macOS' && steps.reuse.outputs.reused != 'true'
+        name: The page comes alive under Tauri's policy
+        timeout-minutes: 10
+        run: |
+          bunx playwright-core install webkit
+          bun scripts/sweeps/desktop.ts

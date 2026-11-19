@@ -11,6 +11,7 @@
 // Drawn only when the server serves music (`Served`, serves.tsx): the routes are drafts the mock
 // answers and the server answers 501.
 import type {
+  ItemJob,
   LibraryAlbum,
   LibraryArtist,
   MusicFolder,
@@ -54,6 +55,7 @@ import {
 } from '@highsea-tv/ui/native'
 import { type ReactNode, type Ref, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { View } from 'react-native'
+import { useLibraryWork, WithItemWork } from './item-work.tsx'
 import { LibraryPosters, STUCK, useLetters, WithLetters } from './library-grid.tsx'
 import { Loadable, PosterSkeletons } from './loadable.tsx'
 import {
@@ -234,6 +236,8 @@ const artistCompare: Record<ArtistSort, (a: LibraryArtist, b: LibraryArtist) => 
 function Artists({ view, noFolders }: { view: 'grid' | 'table'; noFolders: boolean }) {
   const t = useT(messages)
   const artists = useQuery('music:artists', (c) => c.musicLibrary.artists(), MUSIC_TOPICS)
+  // HT-106: a mark on each artist and album the server is working on
+  const workOf = useLibraryWork('artist')
   const [filter, setFilter] = useState<ArtistFilter>('all')
   const [sort, setSort] = useState<ArtistSort>('name')
   const [text, setText] = useState('')
@@ -288,7 +292,7 @@ function Artists({ view, noFolders }: { view: 'grid' | 'table'; noFolders: boole
             byName={sort === 'name'}
             view={view}
             label={t('tab.artists')}
-            tile={(a) => <ArtistTile artist={a} />}
+            tile={(a) => <ArtistTile artist={a} work={workOf(a.id)} />}
             table={(rows) => (
               <Table label={t('tab.artists')}>
                 <TableHeader>
@@ -305,12 +309,14 @@ function Artists({ view, noFolders }: { view: 'grid' | 'table'; noFolders: boole
                   {shown.map((a) => (
                     <TableRow key={a.id}>
                       <TableCell tall truncate>
-                        <TitleCell
-                          title={<TitleLink href={artistPath(a.id)}>{a.name}</TitleLink>}
-                          detail={a.path}
-                          art={a.photo}
-                          aspect="square"
-                        />
+                        <WithItemWork jobs={workOf(a.id)} look="thumb" aspect="square">
+                          <TitleCell
+                            title={<TitleLink href={artistPath(a.id)}>{a.name}</TitleLink>}
+                            detail={a.path}
+                            art={a.photo}
+                            aspect="square"
+                          />
+                        </WithItemWork>
                       </TableCell>
                       <TableCell tall truncate>
                         <Text size={UI} color="text-2" numberOfLines={1}>
@@ -344,19 +350,21 @@ function Artists({ view, noFolders }: { view: 'grid' | 'table'; noFolders: boole
 }
 
 /** An artist in the grid: their round photo, their name, and how many albums are here. */
-function ArtistTile({ artist: a }: { artist: LibraryArtist }) {
+function ArtistTile({ artist: a, work }: { artist: LibraryArtist; work?: ItemJob[] }) {
   const t = useT(messages)
   return (
-    <Poster
-      title={a.name}
-      src={a.photo}
-      aspect="square"
-      round
-      href={artistPath(a.id)}
-      showTitle
-      titleSize="ui"
-      caption={t('albums', { count: a.albums })}
-    />
+    <WithItemWork jobs={work} look="poster">
+      <Poster
+        title={a.name}
+        src={a.photo}
+        aspect="square"
+        round
+        href={artistPath(a.id)}
+        showTitle
+        titleSize="ui"
+        caption={t('albums', { count: a.albums })}
+      />
+    </WithItemWork>
   )
 }
 
@@ -386,6 +394,7 @@ const albumCompare: Record<AlbumSort, (a: LibraryAlbum, b: LibraryAlbum) => numb
 function Albums({ view, noFolders }: { view: 'grid' | 'table'; noFolders: boolean }) {
   const t = useT(messages)
   const albums = useQuery('music:albums', (c) => c.musicLibrary.albums(), MUSIC_TOPICS)
+  const workOf = useLibraryWork('album')
   const [filter, setFilter] = useState<AlbumFilter>('all')
   const [sort, setSort] = useState<AlbumSort>('title')
   const [text, setText] = useState('')
@@ -441,8 +450,10 @@ function Albums({ view, noFolders }: { view: 'grid' | 'table'; noFolders: boolea
             byName={sort === 'title'}
             view={view}
             label={t('tab.albums')}
-            tile={(a) => <AlbumTile album={a} />}
-            table={(rows) => <AlbumTable albums={shown} rows={rows} virtual={sort === 'title'} />}
+            tile={(a) => <AlbumTile album={a} work={workOf(a.id)} />}
+            table={(rows) => (
+              <AlbumTable albums={shown} rows={rows} virtual={sort === 'title'} workOf={workOf} />
+            )}
           />
         )
       }
@@ -456,12 +467,15 @@ export function AlbumTable({
   rows,
   virtual = false,
   artist = true,
+  workOf,
 }: {
   albums: LibraryAlbum[]
   rows?: Ref<VirtualList>
   virtual?: boolean
   /** The artist's column, which an artist's own page leaves out. */
   artist?: boolean
+  /** HT-106: an album's work in hand, for the mark over its cover. */
+  workOf?: (id: string) => ItemJob[] | undefined
 }) {
   const t = useT(messages)
   return (
@@ -482,12 +496,14 @@ export function AlbumTable({
         {albums.map((a) => (
           <TableRow key={a.id}>
             <TableCell tall truncate>
-              <TitleCell
-                title={<TitleLink href={albumPath(a.id)}>{a.title}</TitleLink>}
-                detail={a.discs > 1 ? t('discs', { count: a.discs }) : undefined}
-                art={a.cover}
-                aspect="square"
-              />
+              <WithItemWork jobs={workOf?.(a.id)} look="thumb" aspect="square">
+                <TitleCell
+                  title={<TitleLink href={albumPath(a.id)}>{a.title}</TitleLink>}
+                  detail={a.discs > 1 ? t('discs', { count: a.discs }) : undefined}
+                  art={a.cover}
+                  aspect="square"
+                />
+              </WithItemWork>
             </TableCell>
             {artist && (
               <TableCell tall truncate>
@@ -524,7 +540,15 @@ export function AlbumTable({
 }
 
 /** An album in the grid: its square cover, its title, and its artist and year under it. */
-export function AlbumTile({ album: a, artist = true }: { album: LibraryAlbum; artist?: boolean }) {
+export function AlbumTile({
+  album: a,
+  artist = true,
+  work,
+}: {
+  album: LibraryAlbum
+  artist?: boolean
+  work?: ItemJob[]
+}) {
   const t = useT(messages)
   const caption = [
     artist ? a.artist.name : null,
@@ -534,15 +558,17 @@ export function AlbumTile({ album: a, artist = true }: { album: LibraryAlbum; ar
     .filter(Boolean)
     .join(' · ')
   return (
-    <Poster
-      title={a.title}
-      src={a.cover}
-      aspect="square"
-      href={albumPath(a.id)}
-      showTitle
-      titleSize="ui"
-      caption={caption || undefined}
-    />
+    <WithItemWork jobs={work} look="poster">
+      <Poster
+        title={a.title}
+        src={a.cover}
+        aspect="square"
+        href={albumPath(a.id)}
+        showTitle
+        titleSize="ui"
+        caption={caption || undefined}
+      />
+    </WithItemWork>
   )
 }
 

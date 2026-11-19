@@ -12,16 +12,22 @@
 // subtitle's rendition `subs/{track}.m3u8` with its WebVTT segments `subs/{track}/{n}.vtt`, at the
 // picture's own times (HT-49): a segment the session hasn't read yet is a 503 with Retry-After.
 // `/stream/subtitles/{token}/{track}.vtt` is a text track whole, for direct play.
+//
+// Since HT-101, `/stream/music/{token}` is a song, by ranges as a film's file is: the track's own
+// file, or the AAC made from it, which is made whole before the first byte goes (a song takes a
+// second or two); one that can't be made is a 503.
 import { createReadStream } from 'node:fs'
 import { stat } from 'node:fs/promises'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { createRequire } from 'node:module'
+import { AppError } from '@highsea-tv/core'
 import type { Runtime } from '@highsea-tv/runtime'
 import { NotReadYet, TranscodeError } from '@highsea-tv/stream/hls'
 import { ifRangeAllows, parseRange } from './ranges.ts'
 import { TRY_PAGE } from './try.ts'
 
 const FILES = '/stream/files/'
+const MUSIC = '/stream/music/'
 const HLS = '/stream/hls/'
 const SUBTITLES = '/stream/subtitles/'
 
@@ -99,7 +105,8 @@ export type StreamOptions = {
 }
 
 export function createStream(
-  runtime: Pick<Runtime, 'playback' | 'logger'> & Partial<Pick<Runtime, 'networkActivity'>>,
+  runtime: Pick<Runtime, 'playback' | 'logger'> &
+    Partial<Pick<Runtime, 'networkActivity' | 'musicPlayback'>>,
   options: StreamOptions = {},
 ) {
   const log = runtime.logger.child('stream')
@@ -109,6 +116,28 @@ export function createStream(
   async function file(req: IncomingMessage, res: ServerResponse, token: string) {
     const target = runtime.playback.open(token)
     if (!target) return fail(res, 404, 'That stream has ended.')
+    return send(req, res, target)
+  }
+
+  /** `/stream/music/{token}`: a song, once its file is ready. */
+  async function song(req: IncomingMessage, res: ServerResponse, token: string) {
+    let target: { path: string; contentType: string } | null
+    try {
+      target = (await runtime.musicPlayback?.open(token)) ?? null
+    } catch (e) {
+      if (e instanceof AppError) return fail(res, 503, e.message)
+      throw e
+    }
+    if (!target) return fail(res, 404, 'That stream has ended.')
+    return send(req, res, { path: target.path, type: target.contentType })
+  }
+
+  /** A file by byte ranges (RFC 9110 § 14), with its validators for If-Range. */
+  async function send(
+    req: IncomingMessage,
+    res: ServerResponse,
+    target: { path: string; type: string },
+  ) {
     let info: Awaited<ReturnType<typeof stat>>
     try {
       info = await stat(target.path)
@@ -223,6 +252,14 @@ export function createStream(
     if (path.startsWith(FILES)) {
       const token = decodeURIComponent(path.slice(FILES.length))
       return void file(req, res, token).catch((e) => {
+        log.error('streaming failed', { error: (e as Error).message })
+        if (!res.headersSent) fail(res, 500, 'Something went wrong.')
+        else res.destroy()
+      })
+    }
+    if (path.startsWith(MUSIC)) {
+      const token = decodeURIComponent(path.slice(MUSIC.length))
+      return void song(req, res, token).catch((e) => {
         log.error('streaming failed', { error: (e as Error).message })
         if (!res.headersSent) fail(res, 500, 'Something went wrong.')
         else res.destroy()

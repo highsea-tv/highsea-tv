@@ -29,7 +29,7 @@ import {
   type Indexers,
   type ReleaseView,
 } from '@highsea-tv/indexers'
-import type { JobQueue } from '@highsea-tv/jobs'
+import { itemSubject, type JobQueue } from '@highsea-tv/jobs'
 import type {
   EngineEvent,
   EngineState,
@@ -116,14 +116,53 @@ export type QueueItem = {
   /** As Downloads shows them; none once the torrent has gone. */
   peers: { connected: number; total: number }
   seeds: { connected: number; total: number }
+  webSeeds: WebSeedSource
   ratio: number
   state: QueueState
   stateReason: string | null
 }
 
+/** Web seeds as a download's source (HT-100): the contract's `WebSeedSource`. */
+export type WebSeedSource = {
+  connected: number
+  total: number
+  hosts: string[]
+  downRate: number
+}
+
+const NO_WEB_SEEDS: WebSeedSource = { connected: 0, total: 0, hosts: [], downRate: 0 }
+
+/** A web seed's host name (`archive.org`), without a leading `www.`; the URL itself if it has none. */
+export function webSeedHost(url: string): string {
+  try {
+    return new URL(url).hostname.replace(/^www\./, '') || url
+  } catch {
+    return url
+  }
+}
+
+/**
+ * Which web seeds are sending and how much of the rate is theirs. BEP 19 web seeds aren't peers
+ * (https://www.bittorrent.org/beps/bep_0019.html), so without this a download fed by them shows
+ * 0 seeds and 0 peers at full speed.
+ */
+export function webSeedSource(snap: Pick<TorrentSnapshot, 'webSeeds' | 'downRate'>): WebSeedSource {
+  const sending = snap.webSeeds.filter((w) => w.sending)
+  const rate = sending.reduce((n, w) => n + w.downRate, 0)
+  return {
+    connected: sending.length,
+    total: snap.webSeeds.length,
+    hosts: [...new Set(sending.map((w) => webSeedHost(w.url)))],
+    // the seeds' meters count bytes as they stream, the torrent's as blocks land: never more
+    downRate: Math.min(rate, snap.downRate),
+  }
+}
+
 /** A tracker's row in the detail sheet, or a web seed's beside them (BEP 19). */
 export type TrackerView = Omit<TrackerStatus, 'seeders' | 'leechers'> & {
   kind: 'tracker' | 'web-seed'
+  /** A web seed's bytes per second; 0 for a tracker. */
+  downRate: number
 }
 
 export type TorrentFileView = { path: string; size: number; progress: number; priority: Priority }
@@ -146,6 +185,7 @@ export type TorrentView = {
   eta: number | null
   peers: { connected: number; total: number }
   seeds: { connected: number; total: number }
+  webSeeds: WebSeedSource
   ratio: number
   state: QueueState
   stateReason: string | null
@@ -893,6 +933,7 @@ export function createDownloads(deps: DownloadsDeps) {
       eta: state === 'stalled' ? null : (snap?.eta ?? null),
       peers: snap ? { ...snap.peers } : { connected: 0, total: 0 },
       seeds: snap ? { ...snap.seeds } : { connected: 0, total: 0 },
+      webSeeds: snap ? webSeedSource(snap) : NO_WEB_SEEDS,
       ratio: snap?.ratio ?? 0,
       state,
       stateReason: reason,
@@ -920,6 +961,7 @@ export function createDownloads(deps: DownloadsDeps) {
       eta: state === 'stalled' ? null : snap.eta,
       peers: snap.peers,
       seeds: snap.seeds,
+      webSeeds: webSeedSource(snap),
       ratio: snap.ratio,
       state,
       stateReason: reason,
@@ -942,13 +984,15 @@ export function createDownloads(deps: DownloadsDeps) {
           status,
           peers,
           message,
+          downRate: 0,
         })),
-        ...snap.webSeeds.map(({ url, status, message }) => ({
+        ...snap.webSeeds.map(({ url, status, message, downRate }) => ({
           url,
           kind: 'web-seed' as const,
           status,
           peers: 0,
           message,
+          downRate,
         })),
       ],
       seedingRule: snap.rule,
@@ -1179,6 +1223,14 @@ export function createDownloads(deps: DownloadsDeps) {
       deps.jobs.define({
         type: DOWNLOADS_IMPORT_JOB,
         payload: z.object({ downloadId: z.string(), force: z.boolean() }),
+        subject: ({ downloadId }) => {
+          const d = db
+            .select({ itemId: downloads.itemId })
+            .from(downloads)
+            .where(eq(downloads.id, downloadId))
+            .get()
+          return d ? itemSubject(db, d.itemId) : null
+        },
         attempts: 3,
         timeoutMs: 60 * 60 * 1000,
         run: ({ downloadId, force }) => runImport(downloadId, force),

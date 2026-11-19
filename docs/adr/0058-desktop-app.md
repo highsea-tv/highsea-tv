@@ -77,3 +77,9 @@ One Rust command is new, `server_info`: a server's public info at an address, wi
 The Forget question says "This computer" in the desktop app, where its form factor alone would have made it "This browser".
 
 Whether YouTube's embed plays with the window's `tauri://localhost` referrer (this ADR's B1 section) is still to be tried in the built app on each system; it couldn't be tried from here.
+
+## 2026-11-19: Tauri leaves `style-src` as written (HT-107)
+
+Every release from 0.4.0 to 0.4.9 shipped a desktop app that was unstyled and couldn't be clicked; `tauri dev` never showed it. At build time Tauri puts a nonce on each `<style>` of the embedded HTML and adds it to `style-src` ([Tauri: Content Security Policy](https://v2.tauri.app/security/csp/); tauri-utils' `inject_nonce_token`, tauri's `replace_csp_nonce`). The export has one, Expo's `expo-reset`. With a nonce in the directive a browser ignores `'unsafe-inline'` ([MDN: CSP `style-src`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Content-Security-Policy/style-src#unsafe_inline_styles)), so react-native-web's stylesheet, Reanimated's and expo-font's `@font-face`, all inserted at run time, were refused. The C2 section above said the CSP "gains nothing", which held for the Vite build's static CSS, not for react-native-web's.
+
+`tauri.conf.json` now sets `"dangerousDisableAssetCspModification": ["style-src"]`, the option's documented use for a directive Tauri mustn't narrow ([Tauri: SecurityConfig](https://v2.tauri.app/reference/config/#securityconfig)). `script-src` keeps Tauri's nonces and stays `'self'`, so injected script is still refused. Inline styles are allowed, as the policy always meant. `scripts/sweeps/desktop.ts` serves the export with the policy and nonces Tauri sends and checks it in WebKit; the Desktop workflow and the release run it on the Mac.

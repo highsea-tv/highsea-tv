@@ -22,6 +22,7 @@ import { registerLibraryImport } from './library-import.ts'
 import { registerLists } from './lists.ts'
 import { registerMetadata } from './metadata.ts'
 import { registerMovies } from './movies.ts'
+import { registerMusic } from './music.ts'
 import { registerOperations } from './operations.ts'
 import { registerPersonalization } from './personalization.ts'
 import { registerPlayback } from './playback.ts'
@@ -93,7 +94,7 @@ export function createApi(runtime: Runtime) {
   app.get(routes.system.events.path, events(runtime))
   app.openAPIRegistry.registerPath(routes.system.events)
 
-  // shows, music, playlists and profiles: drafts this server answers 501 (one-client-platform-b.md)
+  // what the contract still drafts (a show's episode search): answered 501 (one-client-platform-b.md)
   registerDrafts(app)
   registerSystem(app)
   registerOperations(app)
@@ -106,6 +107,7 @@ export function createApi(runtime: Runtime) {
   registerArtwork(app)
   registerMovies(app)
   registerShows(app)
+  registerMusic(app)
   registerQuality(app)
   registerLibrary(app)
   registerPlayback(app)

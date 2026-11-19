@@ -138,9 +138,16 @@ export function createMetadataCore(deps: MetadataDeps) {
     sleep: deps.sleep,
     keys: () => settings.fanartKeys(),
   })
-  /** What fanart.tv keys an image owner on: a film by its TMDB id; shows and artists later. */
-  const subjectOf = (owner: string, id: number): [FanartSubject, string] | null =>
-    owner === 'movie' ? ['movie', String(id)] : null
+  /**
+   * What fanart.tv keys an image owner on: a film by its TMDB id, a show by its TheTVDB id from the
+   * cached show (HT-105; none until TMDB has given one); artists later.
+   */
+  const subjectOf = (owner: string, id: number): [FanartSubject, string] | null => {
+    if (owner === 'movie') return ['movie', String(id)]
+    if (owner !== 'show') return null
+    const tvdb = cache.show(id)?.tvdbId
+    return tvdb ? ['show', String(tvdb)] : null
+  }
   const images = createImages(deps, client, imageBase, artwork, {
     url: (owner, id, file, width) => {
       const subject = subjectOf(owner, id)
@@ -547,6 +554,17 @@ export function createMetadataCore(deps: MetadataDeps) {
         logo: automaticLogo(data.images?.logos, row.language) ?? fanartLogo(id, row.language)(),
       } satisfies Record<ArtworkKind, string | null>
     }
+    if (owner === 'show') {
+      // the logo by the same rule a show's page has (map-shows.ts): TMDB's only, no fanart.tv stand-in
+      const row = await load('show', id)
+      if (!row) throw new AppError('not-found', notFoundMessage.show)
+      const data = row.data as TmdbShow
+      return {
+        poster: data.poster_path ?? null,
+        backdrop: data.backdrop_path ?? null,
+        logo: automaticLogo(data.images?.logos, row.language),
+      } satisfies Record<ArtworkKind, string | null>
+    }
     const row = await load('collection', id)
     if (!row) throw new AppError('not-found', notFoundMessage.collection)
     const data = row.data as TmdbCollection
@@ -562,7 +580,9 @@ export function createMetadataCore(deps: MetadataDeps) {
     const credential = requireKey()
     return owner === 'movie'
       ? api.movieImages(credential, id)
-      : api.collectionImages(credential, id)
+      : owner === 'show'
+        ? api.showImages(credential, id)
+        : api.collectionImages(credential, id)
   }
 
   /**

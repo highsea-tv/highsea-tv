@@ -27,6 +27,7 @@ import type {
   FeaturedSectionInput,
   FeaturedSource,
   HomeItem,
+  HomeMusic,
   HomeRow,
   HomeSection,
   RuleOptions,
@@ -67,7 +68,8 @@ const SAMPLE = 6
 /**
  * A built-in row of the home screen (ADR 0028): Continue watching, Recently added, a genre; with
  * shows (Phase 5 B), Next up and New episodes (`episodes`, episodes as titles) and Recently added
- * shows (`shows`). Continue watching and Next up follow the hero; the rest the featured rows.
+ * shows (`shows`); with music (HT-101), Recently played (`music`, albums and artists). Continue
+ * watching and Next up follow the hero; the rest the featured rows.
  */
 export type BuiltInRow =
   | {
@@ -78,6 +80,7 @@ export type BuiltInRow =
       items: ClientItem[]
     }
   | { id: string; title: string | null; layout: 'shows'; items: ClientShow[] }
+  | { id: string; title: string | null; layout: 'music'; items: HomeMusic[] }
 
 /** The built-in rows that sit right after the hero. */
 const WATCHING = ['continue', 'next-up']
@@ -318,13 +321,15 @@ export function createCuration(deps: {
         (r): HomeRow =>
           r.layout === 'shows'
             ? { id: r.id, title: r.title, suffix: null, layout: 'shows', items: r.items }
-            : {
-                id: r.id,
-                title: r.title,
-                suffix: null,
-                layout: r.layout ?? (r.id === 'continue' ? 'continue' : 'row'),
-                items: r.items.map((m) => ({ ...m, tagline: null })),
-              },
+            : r.layout === 'music'
+              ? { id: r.id, title: r.title, suffix: null, layout: 'music', items: r.items }
+              : {
+                  id: r.id,
+                  title: r.title,
+                  suffix: null,
+                  layout: r.layout ?? (r.id === 'continue' ? 'continue' : 'row'),
+                  items: r.items.map((m) => ({ ...m, tagline: null })),
+                },
       )
     // the first hero in the order fills the top, wherever it sits among the rows
     const top = featured.find((s) => s.layout === 'hero') ?? null

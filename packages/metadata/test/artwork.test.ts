@@ -184,6 +184,58 @@ describe('choosing', () => {
   })
 })
 
+describe('a show’s artwork (HT-105)', () => {
+  const CHERNOBYL = 87108
+  /** fanart.tv's answer for Chernobyl by its TheTVDB id (360893), in v3.2's documented shape. */
+  const fanartTv = (url: URL) =>
+    url.hostname === 'webservice.fanart.tv' && url.pathname === '/v3.2/tv/360893'
+      ? Response.json({
+          name: 'Chernobyl',
+          thetvdb_id: '360893',
+          tvposter: [
+            {
+              id: '1',
+              url: 'https://assets.fanart.tv/fanart/tv/360893/tvposter/chernobyl-5c1a.jpg',
+              lang: 'en',
+              likes: '4',
+              width: '1000',
+              height: '1426',
+            },
+          ],
+        })
+      : undefined
+
+  test('TMDB’s images, then fanart.tv’s by TheTVDB id; a choice sticks through a refresh', async () => {
+    const t = await open({ fanartKey: 'projectkeyforreplay01', onRequest: fanartTv })
+    await t.metadata.show(CHERNOBYL)
+    const { kinds, optionsError } = await t.metadata.artwork.view('show', CHERNOBYL)
+    expect(optionsError).toBeNull()
+    const poster = kinds.find((k) => k.kind === 'poster')
+    expect(poster?.automatic).toBe('/hlLXt2tOPT6RRnjiUmoxyG1LTFi.jpg')
+    expect(poster?.options.filter((o) => o.source === 'tmdb').length).toBeGreaterThan(1)
+    expect(poster?.options.filter((o) => o.source === 'fanart').map((o) => o.file)).toEqual([
+      '/ftv_chernobyl-5c1a.jpg',
+    ])
+    const other = poster?.options.find((o) => o.source === 'tmdb' && o.file !== poster.automatic)
+    if (!other) throw new Error('no other poster')
+    await t.metadata.artwork.choose('show', CHERNOBYL, 'poster', other.file, null)
+    const chosen = `/api/v1/images/show/${CHERNOBYL}/poster/w342${other.file}`
+    expect((await t.metadata.show(CHERNOBYL)).art.poster).toBe(chosen)
+    await t.metadata.refreshNow('show', CHERNOBYL)
+    expect((await t.metadata.show(CHERNOBYL)).art.poster).toBe(chosen)
+    expect(t.metadata.artwork.reset('show', CHERNOBYL, 'poster')).toBe(true)
+    expect((await t.metadata.show(CHERNOBYL)).art.poster).not.toBe(chosen)
+  })
+
+  test('an upload becomes the show’s logo', async () => {
+    const t = await open()
+    const file = await t.metadata.artwork.upload('show', CHERNOBYL, 'logo', png(800, 200), null)
+    expect((await t.metadata.show(CHERNOBYL)).art.logo).toBe(
+      `/api/v1/images/show/${CHERNOBYL}/logo/w500${file}`,
+    )
+  })
+})
+
 describe('uploads', () => {
   test('kept in the database under a new name each time, served at every size, removed on Reset', async () => {
     const t = await open()

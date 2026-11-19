@@ -28,7 +28,7 @@ Movies are built in the prototype. Shows, music, books, podcasts and online vide
 | Book | `/books/{id}` | |
 | Podcast, channel | `/podcasts/{id}`, `/channels/{id}` | |
 | Person | `/people/{id}` | Cast, crew, authors and artists' members. One person, one page, across types. |
-| Collection | `/collections/{id}` | The summary card (backdrop, poster, overview), then the Collection row its parts show. Not in the prototype, which shows a collection only on its parts' pages (checkpoint 4). |
+| Collection | `/collections/{id}` | The hero (backdrop, logo or name, "3 of 3 in the library", overview; HT-105), then the Collection row its parts show. Not in the prototype, which shows a collection only on its parts' pages (checkpoint 4). |
 
 `{id}` is the title's **id at its metadata provider**, within its type: the TMDB id for movies, shows, collections and people (`/movies/969681` is TMDB's `movie/969681`), never a slug ([ADR 0014, amended 2026-10-20](../adr/0014-universal-media-pages.md#amendment-2026-10-20-addresses-use-the-providers-id)). Any title the provider knows opens at its address, whether the server has seen it before or not, in the library or not. Adding a title creates its library layer; the address stays the same, and the page gains that layer in place. Every way to a title (Discover, the library, the dashboard, people, collections, ⌘K) links to that one address, and two titles with the same name never compete for it.
 
@@ -37,7 +37,8 @@ Movies are built in the prototype. Shows, music, books, podcasts and online vide
 The anatomy every media page shares.
 
 - **Page header:** the title; actions by state (see States).
-- **Summary card:** the backdrop at 15% behind it; the poster (9rem column in a regular window, stacked in a compact one); a facts line (year, runtime, certification, genres, rating); the tagline; "Directed by …" (people as links; "Created by" for shows, the artist for albums, "By" for books); status badges; the synopsis (65ch); then the library line (path, **Monitored**) once added.
+- **Hero** (films, shows and collections; the owner's change of 2026-11-19, HT-105, in place of the summary card): the clients' treatment, the backdrop full bleed behind the page header and under it, fading into the page ([admin.md › Media pages' hero](../design-language/platforms/admin.md#media-pages-hero)). Over it, low on the left: the logo, or the name when there's no logo; a facts line (year, runtime, certification, genres, rating); the tagline; "Directed by …" (people as links; "Created by" for shows); status badges; the synopsis (65ch); then the library line (path, **Monitored**) once added. No poster, as on the clients. Without a backdrop the words sit on the page under the header.
+- **Summary card** (a person's page, an album): the backdrop at 15% behind it; the poster (9rem column in a regular window, stacked in a compact one); a facts line; "By …"; status badges; the synopsis (65ch).
 - **Tabs** (line variant):
   - **Overview:** always.
   - **Cast and crew:** always.

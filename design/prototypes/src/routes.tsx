@@ -158,6 +158,8 @@ export const screenRoutes: Record<'admin' | 'web' | 'mobile' | 'tv', string[]> =
     '/web/connect?app=desktop&lan=refused',
     '/web/play/4?stream=failed',
     '/web/play/4?stream=next-up',
+    // an episode from its start, inside its intro: Skip intro (ADR 0067)
+    '/web/play/episode/7144425/start',
     '/web/nowhere',
   ],
   mobile: [
@@ -167,6 +169,8 @@ export const screenRoutes: Record<'admin' | 'web' | 'mobile' | 'tv', string[]> =
     '/mobile/movies/4',
     '/mobile/play/4',
     '/mobile/play/4?stream=stopped',
+    // an episode from its start, inside its intro: Skip intro (ADR 0067)
+    '/mobile/play/episode/7144425/start',
     '/mobile/search',
     '/mobile/collections/caminandes',
     '/mobile/people/buster-keaton',
@@ -216,6 +220,8 @@ export const screenRoutes: Record<'admin' | 'web' | 'mobile' | 'tv', string[]> =
     '/tv/play/4',
     '/tv/play/4?stream=failed',
     '/tv/play/4?stream=next-up',
+    // an episode from its start, inside its intro: Skip intro (ADR 0067)
+    '/tv/play/episode/7144425/start',
     '/tv/search',
     '/tv/collections/caminandes',
     '/tv/people/buster-keaton',

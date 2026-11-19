@@ -29,7 +29,6 @@ export const downloads = defineMessages({
   'col.name': 'Name',
   'col.size': 'Size',
   'col.progress': 'Progress',
-  'col.peers': 'Peers',
   'col.ratio': 'Ratio',
   'col.status': 'Status',
   detail: '{category} · {indexer}',
@@ -120,6 +119,8 @@ export const downloads = defineMessages({
   'general.seeds': 'Seeds',
   'general.peers': 'Peers',
   'general.count': '{connected} of {total}',
+  'general.webSeeds': 'Web seeds',
+  'general.webSeedsValue': '{connected} of {total} sending',
   'general.uploaded': 'Uploaded',
   'general.uploadedValue': '{size} · ratio {ratio}',
   'general.added': 'Added',
@@ -140,7 +141,8 @@ export const downloads = defineMessages({
   'tracker.not-contacted': 'Not contacted yet',
   'tracker.error': 'Not responding',
   'tracker.peers': '{count, plural, one {# peer} other {# peers}}',
-  'tracker.webSeed': 'Web seed',
+  'tracker.webSeed': 'Web seed · {host}',
+  'tracker.sending': 'Sending {rate}',
   noTrackers: 'No trackers. Peers come from the DHT and other peers.',
 
   'seeding.rule':

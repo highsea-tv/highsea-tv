@@ -49,6 +49,7 @@ import type {
   TorrentLimits,
   TorrentState,
   User,
+  WebSeedSource,
 } from './types.ts'
 import type { VpnRuntime } from './vpn.ts'
 
@@ -758,6 +759,18 @@ function track(m: MediaItem, f: MediaFile, n: number): SubtitleTrack {
   }
 }
 
+/** A web seed's share of a download that also has peers. */
+export const WEB_SHARE = 0.35
+
+/** A torrent's web seeds as the API answers them: sending only while it downloads (HT-100). */
+export function webSeedsOf(t: Torrent): WebSeedSource {
+  const w = t.webSeeds
+  if (!w) return { connected: 0, total: 0, hosts: [], downRate: 0 }
+  if (t.state !== 'downloading' || t.downRate === 0)
+    return { connected: 0, total: w.total, hosts: [], downRate: 0 }
+  return { ...w, hosts: [...w.hosts] }
+}
+
 function torrent(
   id: string,
   m: MediaItem,
@@ -772,6 +785,11 @@ function torrent(
     reason?: string
     indexer: string
     addedAgo: number
+    /**
+     * Web seeds (BEP 19) sending: `only` is a download fed by them alone, as the Internet
+     * Archive's are (0 peers at full speed, HT-100); `also` is peers and a web seed together.
+     */
+    web?: 'only' | 'also'
   },
   now: number,
 ): Torrent {
@@ -781,6 +799,8 @@ function torrent(
   const downloaded = Math.round(size * o.progress)
   const down = o.down ?? 0
   const blocked = o.state === 'import-blocked'
+  const swarm = down > 0 && o.web !== 'only'
+  const webUrl = `https://archive.org/download/${m.title.replace(/[^\w]+/g, '')}/`
   return {
     id,
     name,
@@ -796,8 +816,18 @@ function torrent(
     downRate: down,
     upRate: o.up ?? 0,
     eta: down > 0 ? Math.round((size - downloaded) / down) : null,
-    peers: { connected: down > 0 ? 18 : 0, total: down > 0 ? 64 : 3 },
-    seeds: { connected: down > 0 ? 9 : 0, total: down > 0 ? 41 : 0 },
+    peers: { connected: swarm ? 18 : 0, total: swarm ? 64 : o.web === 'only' ? 0 : 3 },
+    seeds: { connected: swarm ? 9 : 0, total: swarm ? 41 : 0 },
+    ...(o.web
+      ? {
+          webSeeds: {
+            connected: down > 0 ? 1 : 0,
+            total: 1,
+            hosts: down > 0 ? ['archive.org'] : [],
+            downRate: o.web === 'only' ? down : Math.round(down * WEB_SHARE),
+          },
+        }
+      : {}),
     ratio: o.ratio ?? 0,
     state: o.state,
     stateReason: o.reason ?? null,
@@ -838,6 +868,19 @@ function torrent(
         peers: 12,
         message: o.state === 'stalled' ? 'Connection timed out' : null,
       },
+      // its web seed (BEP 19), listed with the trackers, sending
+      ...(o.web
+        ? [
+            {
+              url: webUrl,
+              kind: 'web-seed' as const,
+              status: 'working' as const,
+              peers: 0,
+              message: null,
+              downRate: o.web === 'only' ? down : Math.round(down * WEB_SHARE),
+            },
+          ]
+        : []),
       // a stalled torrent's web seed (BEP 19), listed with the trackers, busy
       ...(o.state === 'stalled'
         ? [
@@ -1333,6 +1376,7 @@ function seedBySlug(kind: 'populated' | 'empty', now: number): ServerState {
         up: 1.1 * MB,
         indexer: 'Anchorage',
         addedAgo: 22 * MIN,
+        web: 'also',
       },
       now,
     ),
@@ -1384,9 +1428,10 @@ function seedBySlug(kind: 'populated' | 'empty', now: number): ServerState {
         progress: 0.18,
         uhd: true,
         down: 4.2 * MB,
-        up: 0.2 * MB,
+        up: 0,
         indexer: 'Lighthouse',
         addedAgo: 6 * MIN,
+        web: 'only',
       },
       now,
     ),

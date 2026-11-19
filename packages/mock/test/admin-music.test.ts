@@ -35,8 +35,9 @@ const shaped = (route: { responses: Record<number, unknown> }, value: unknown) =
 }
 
 describe('the admin’s music', () => {
-  test('every route is a draft', () => {
-    for (const r of Object.values(routes.musicLibrary)) expect(isDraft(r)).toBe(true)
+  // drafted with HT-68, served by the real server since HT-101
+  test('no route is a draft now', () => {
+    for (const r of Object.values(routes.musicLibrary)) expect(isDraft(r)).toBe(false)
   })
 
   test('lists artists and albums, and opens each with its albums, discs and files', async () => {

@@ -47,7 +47,7 @@ const Title = z.object({
   /**
    * A song's artist and album, by their ids in the admin's music (music-library.ts), so Now
    * playing names them and links the album; absent for a film. Drafted with HT-68 for Phase 5's
-   * part D: the server leaves it out until it plays music.
+   * part D, sent since HT-101.
    */
   song: z
     .object({

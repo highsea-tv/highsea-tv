@@ -242,3 +242,131 @@ describe('job queue', () => {
     expect(queue.list({ status: ['running'] })).toHaveLength(0)
   })
 })
+
+// HT-106: the admin marks the item a job works on
+describe('a job’s item', () => {
+  function withItems() {
+    const s = setup()
+    let release: () => void = () => {}
+    s.queue.define(
+      defineJob({
+        type: 'refresh',
+        payload: z.object({ kind: z.enum(['movie', 'show', 'person']), id: z.number() }),
+        subject: ({ kind, id }) => (kind === 'person' ? null : { kind, id: String(id) }),
+        run: () => new Promise<void>((r) => (release = r)),
+      }),
+    )
+    s.queue.define(
+      defineJob({
+        type: 'subs',
+        payload: z.object({ episode: z.number() }),
+        subject: ({ episode }) => ({
+          kind: 'episode',
+          id: String(episode),
+          of: { kind: 'show', id: '1396' },
+        }),
+        async run(_, ctx) {
+          ctx.progress(0.25)
+          ctx.progress(0.252)
+          ctx.progress(0.5)
+          throw new Error('No provider answered.')
+        },
+        attempts: 1,
+      }),
+    )
+    return { ...s, release: () => release() }
+  }
+
+  test('keeps the item its type names, and a show’s carries its episodes’ work', async () => {
+    const { queue, release, clock } = withItems()
+    const film = queue.enqueue('refresh', { kind: 'movie', id: 603 })
+    queue.enqueue('refresh', { kind: 'person', id: 1 })
+    const show = queue.enqueue('refresh', { kind: 'show', id: 1396 })
+    const subs = queue.enqueue('subs', { episode: 62085 })
+    // an enqueue's own subject wins over its type's
+    const other = queue.enqueue(
+      'refresh',
+      { kind: 'movie', id: 604 },
+      { subject: { kind: 'collection', id: 'col_1' } },
+    )
+
+    const all = queue.atWork()
+    expect(all.map((j) => [j.id, j.subject, j.of, j.status])).toEqual([
+      [film, { kind: 'movie', id: '603' }, { kind: 'movie', id: '603' }, 'queued'],
+      [show, { kind: 'show', id: '1396' }, { kind: 'show', id: '1396' }, 'queued'],
+      [subs, { kind: 'episode', id: '62085' }, { kind: 'show', id: '1396' }, 'queued'],
+      [other, { kind: 'collection', id: 'col_1' }, { kind: 'collection', id: 'col_1' }, 'queued'],
+    ])
+
+    expect(queue.workOf({ kind: 'show', id: '1396' }).active.map((j) => j.id)).toEqual([show, subs])
+    // an episode's own read finds its work too
+    expect(queue.workOf({ kind: 'episode', id: '62085' }).active.map((j) => j.id)).toEqual([subs])
+
+    // the episode's job fails: it leaves the work and stays a while, with its reason
+    clock.advance(1000)
+    await queue.tick()
+    const running = queue.workOf({ kind: 'movie', id: '603' }).active[0]
+    expect(running?.status).toBe('running')
+    expect(running?.since).toBe(clock.now())
+    release()
+    await queue.idle()
+    const showWork = queue.workOf({ kind: 'show', id: '1396' })
+    expect(showWork.active.map((j) => j.id)).toEqual([show])
+    expect(showWork.finished.map((j) => [j.id, j.status, j.error])).toEqual([
+      [subs, 'failed', 'No provider answered.'],
+    ])
+    expect(queue.workOf({ kind: 'movie', id: '603' }).finished.map((j) => j.status)).toEqual([
+      'succeeded',
+    ])
+
+    // ten minutes on, it's no longer news
+    clock.advance(10 * 60_000 + 1)
+    expect(queue.workOf({ kind: 'show', id: '1396' }).finished).toEqual([])
+  })
+
+  test('progress is read while it runs and announced by the whole percent', async () => {
+    const { queue, events } = withItems()
+    const seen: number[] = []
+    queue.define(
+      defineJob({
+        type: 'long',
+        payload: z.object({}),
+        subject: () => ({ kind: 'movie', id: '603' }),
+        async run(_, ctx) {
+          ctx.progress(0.4)
+          seen.push(queue.atWork()[0]?.progress ?? -1)
+          ctx.progress(0.401)
+          ctx.progress(1.5)
+          seen.push(queue.atWork()[0]?.progress ?? -1)
+        },
+      }),
+    )
+    queue.enqueue('long', {})
+    let announced = 0
+    events.subscribe((e) => {
+      if (e.topic === 'jobs.updated') announced++
+    })
+    await queue.tick()
+    await queue.idle()
+    expect(seen).toEqual([0.4, 1])
+    // started, 40%, 100%, finished: the step inside a percent says nothing
+    expect(announced).toBe(4)
+  })
+
+  test('a lookup that throws queues the work without its item', () => {
+    const { queue } = setup()
+    queue.define(
+      defineJob({
+        type: 'odd',
+        payload: z.object({}),
+        subject: () => {
+          throw new Error('gone')
+        },
+        run: async () => {},
+      }),
+    )
+    const id = queue.enqueue('odd', {})
+    expect(queue.get(id)?.subject).toBeNull()
+    expect(queue.atWork()).toEqual([])
+  })
+})

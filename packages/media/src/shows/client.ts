@@ -37,6 +37,7 @@ import { chunks, escapeLike } from '../shared/sql.ts'
 import { audioTracks, versionDetail, versionQuality } from '../shared/tracks.ts'
 import { createWatch, type Watcher } from '../shared/watch.ts'
 import type { ShowsDeps } from './context.ts'
+import { clientMarks, type ShowMarkers } from './markers.ts'
 
 const {
   mediaItems,
@@ -79,9 +80,16 @@ const byPlace = (a: ItemRow, b: ItemRow) => {
   return (a.episodeNumber ?? 0) - (b.episodeNumber ?? 0)
 }
 
-export function createShowClient(ctx: ShowsDeps) {
+export function createShowClient(ctx: ShowsDeps, deps: { markers: ShowMarkers }) {
   const { db, metadata, events } = ctx
   const watch = createWatch(ctx)
+
+  /** A file's intro and credits for the player, none without a file (ADR 0067). */
+  const markedFile = (fileId: string | null, files: Map<string, { size: number }>) => {
+    const file = fileId ? files.get(fileId) : undefined
+    if (!fileId || !file) return { intro: null, credits: null }
+    return clientMarks(deps.markers.forFiles([fileId]).get(fileId), file.size)
+  }
 
   // ---------------------------------------------------------------- rows
 
@@ -511,9 +519,8 @@ export function createShowClient(ctx: ShowsDeps) {
         number,
         title: ep.row.title,
         code: episodeCode(season, number),
-        // markers are part C2's
-        intro: null,
-        credits: null,
+        // the first version's file's, found by the markers job or set by the owner (ADR 0067)
+        ...markedFile(versions.find((v) => v.fileId)?.fileId ?? null, files),
       },
     }
   }
@@ -708,7 +715,16 @@ export function createShowClient(ctx: ShowsDeps) {
    * The films' results with shows and episodes among them, every kind ranked by its best name's
    * score (`rankSections`' rule); ties keep the films' kinds first, then shows, then episodes.
    */
-  function mergeSearch(films: SearchResults, query: string, profileId: string): SearchResults {
+  /**
+   * The films' results with the shows' and episodes' ranked among them, and any other kinds given
+   * (music's artists, albums and songs, HT-101); `shows: false` for someone who can't see shows.
+   */
+  function mergeSearch(
+    films: SearchResults,
+    query: string,
+    profileId: string,
+    more: { shows?: boolean; sections?: SearchSection[] } = {},
+  ): SearchResults {
     const q = query.trim()
     if (!q) return films
     const nameOf = (x: SearchSection): string[] =>
@@ -717,8 +733,13 @@ export function createShowClient(ctx: ShowsDeps) {
         return r.title ?? r.name ?? ''
       })
     const added: SearchSection[] = [
-      { kind: 'shows', items: searchShows(q, profileId) },
-      { kind: 'episodes', items: searchEpisodes(q) },
+      ...(more.shows === false
+        ? []
+        : [
+            { kind: 'shows' as const, items: searchShows(q, profileId) },
+            { kind: 'episodes' as const, items: searchEpisodes(q) },
+          ]),
+      ...(more.sections ?? []),
     ]
     const discover = films.sections.filter((x) => x.kind === 'discover')
     const ranked = [...films.sections.filter((x) => x.kind !== 'discover'), ...added]

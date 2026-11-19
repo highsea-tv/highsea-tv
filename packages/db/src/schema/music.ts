@@ -18,6 +18,7 @@ import {
   text,
   uniqueIndex,
 } from 'drizzle-orm/sqlite-core'
+import { CLIENT_TYPES, profiles, users } from './auth.ts'
 
 /** Where an artist's or album's details came from (the contract's `MUSIC_METADATA_SOURCES`). */
 export const MUSIC_SOURCES = ['musicbrainz', 'tags'] as const
@@ -51,6 +52,11 @@ export const musicArtists = sqliteTable(
     rootFolder: text('root_folder').notNull(),
     /** A picture in their folder (`artist.jpg`, `folder.jpg`), used as found. */
     photoFile: text('photo_file'),
+    /**
+     * fanart.tv's artist thumb for their MusicBrainz id (ADR 0070), when the folder has no picture:
+     * the address its answer gave, fetched into the image cache the first time it's asked for.
+     */
+    photoUrl: text('photo_url'),
     /** From MusicBrainz when known, else every album's genre tags. */
     genres: text('genres', { mode: 'json' }).$type<string[]>().notNull().default(sql`'[]'`),
     /** Music videos (`.mp4`) in their folder, set aside for a later part (the owner's answer 11). */
@@ -202,4 +208,120 @@ export const musicBrainzCache = sqliteTable(
     fetchedAt: integer('fetched_at').notNull(),
   },
   (t) => [primaryKey({ columns: [t.kind, t.mbid] }), index('musicbrainz_fetched').on(t.fetchedAt)],
+)
+
+/**
+ * What the owner said a set-aside folder is (the admin's Match, `MusicMatch`): its album artist,
+ * album and year, laid over every file's tags when the scan reads it, so it stays an album at every
+ * scan after. Nothing on disk changes. Kept by the folder's path; a folder that's gone leaves its
+ * row, which does nothing until a folder of that name comes back.
+ */
+export const musicMatches = sqliteTable('music_matches', {
+  path: text('path').primaryKey(),
+  artist: text('artist').notNull(),
+  album: text('album').notNull(),
+  year: integer('year'),
+  matchedAt: integer('matched_at').notNull(),
+})
+
+/** How a track went to the player: the file as it is, or made into AAC (ADR 0051's section). */
+export const MUSIC_PLAY_METHODS = ['direct-play', 'transcode'] as const
+
+/**
+ * A track played (ADR 0065's section of 2026-11-19): who, on which device, how, and how long, for
+ * play counts, Recently played and Now playing's history. A row is written when the play ends,
+ * as films' `playback_history` is; one with nothing heard leaves none. The names are kept as they
+ * were, so the history reads the same after an album leaves; the ids go null then.
+ */
+export const musicPlays = sqliteTable(
+  'music_plays',
+  {
+    id: text('id').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    profileId: text('profile_id').references(() => profiles.id, { onDelete: 'set null' }),
+    /** The profile by name as it was then, for the history (ADR 0068). */
+    profileName: text('profile_name'),
+    trackId: text('track_id').references(() => musicTracks.id, { onDelete: 'set null' }),
+    albumId: text('album_id').references(() => musicAlbums.id, { onDelete: 'set null' }),
+    artistId: text('artist_id').references(() => musicArtists.id, { onDelete: 'set null' }),
+    title: text('title').notNull(),
+    artistName: text('artist_name').notNull(),
+    albumTitle: text('album_title').notNull(),
+    year: integer('year'),
+    deviceName: text('device_name').notNull(),
+    client: text('client', { enum: CLIENT_TYPES }).notNull(),
+    /** "FLAC · 16-bit · 44.1 kHz · 32.1 MB", as the history's version column reads. */
+    version: text('version').notNull(),
+    method: text('method', { enum: MUSIC_PLAY_METHODS }).notNull(),
+    away: integer('away', { mode: 'boolean' }).notNull(),
+    /** Seconds heard. */
+    played: integer('played').notNull(),
+    /** Heard past half its length, or four minutes, as Last.fm counts a scrobble. */
+    finished: integer('finished', { mode: 'boolean' }).notNull(),
+    startedAt: integer('started_at').notNull(),
+    endedAt: integer('ended_at').notNull(),
+  },
+  (t) => [
+    index('music_plays_ended').on(t.endedAt),
+    index('music_plays_user').on(t.userId, t.endedAt),
+    index('music_plays_track').on(t.trackId),
+    index('music_plays_profile').on(t.profileId, t.endedAt),
+  ],
+)
+
+/** A person's own playlist (the apps' `playlists` group): each profile keeps its own (ADR 0068). */
+export const musicPlaylists = sqliteTable(
+  'music_playlists',
+  {
+    id: text('id').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    profileId: text('profile_id')
+      .notNull()
+      .references(() => profiles.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    createdAt: integer('created_at').notNull(),
+    updatedAt: integer('updated_at').notNull(),
+  },
+  (t) => [index('music_playlists_profile').on(t.profileId, t.updatedAt)],
+)
+
+/** A song in a playlist, at its place; its id is the entry, so a song can be in one twice. */
+export const musicPlaylistEntries = sqliteTable(
+  'music_playlist_entries',
+  {
+    id: text('id').primaryKey(),
+    playlistId: text('playlist_id')
+      .notNull()
+      .references(() => musicPlaylists.id, { onDelete: 'cascade' }),
+    trackId: text('track_id')
+      .notNull()
+      .references(() => musicTracks.id, { onDelete: 'cascade' }),
+    position: integer('position').notNull(),
+  },
+  (t) => [index('music_playlist_entries_list').on(t.playlistId, t.position)],
+)
+
+/**
+ * Home's Recently played (`recent-music`): an album or an artist a profile asked the player for as
+ * a whole (`music.queue`), the latest first. One row each, its time moved on at every play.
+ */
+export const musicRecent = sqliteTable(
+  'music_recent',
+  {
+    profileId: text('profile_id')
+      .notNull()
+      .references(() => profiles.id, { onDelete: 'cascade' }),
+    kind: text('kind', { enum: ['album', 'artist'] }).notNull(),
+    /** The album's or artist's id; a row whose album or artist is gone is passed over. */
+    targetId: text('target_id').notNull(),
+    playedAt: integer('played_at').notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.profileId, t.kind, t.targetId] }),
+    index('music_recent_profile').on(t.profileId, t.playedAt),
+  ],
 )

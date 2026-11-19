@@ -224,6 +224,7 @@ export type MediaFile = {
 // ---------------------------------------------------------------- acquisition
 
 // Profiles, custom formats and the decision engine's reasons are @highsea-tv/quality's (ADR 0031).
+import type { EpisodeMarkers } from '@highsea-tv/api-contract'
 import type { CustomFormat, DecisionReason, QualityProfile } from '@highsea-tv/quality'
 
 export type { CustomFormat, DecisionReason, QualityProfile }
@@ -281,6 +282,8 @@ export type AdminEpisode = {
   } | null
   /** 0–100 while it downloads. */
   progress?: number
+  /** Its file's intro and credits, as the server's `EpisodeMarkers` (Phase 5 C2); null without a file. */
+  markers: EpisodeMarkers | null
 }
 
 export type AdminSeason = {
@@ -318,7 +321,7 @@ export type AdminShow = {
   /** Files go in "Season 01" folders. */
   seasonFolders: boolean
   addedAt: ISODate
-  art: { poster: string; backdrop: string }
+  art: { poster: string; backdrop: string; logo?: string | null }
   /** Seasons, specials not counted. */
   seasons: number
   /**
@@ -785,6 +788,16 @@ export type Tracker = {
   status: 'working' | 'updating' | 'error'
   peers: number
   message: string | null
+  /** A web seed's bytes per second; none for a tracker. */
+  downRate?: number
+}
+
+/** Web seeds as a download's source (HT-100): those sending, their hosts and their share. */
+export type WebSeedSource = {
+  connected: number
+  total: number
+  hosts: string[]
+  downRate: number
 }
 
 export type SeedingRule = { ratio: number | null; minutes: number | null }
@@ -807,6 +820,8 @@ export type Torrent = {
   eta: number | null
   peers: { connected: number; total: number }
   seeds: { connected: number; total: number }
+  /** Web seeds (BEP 19); none when left out. */
+  webSeeds?: WebSeedSource
   ratio: number
   state: TorrentState
   /** Why it's stalled, blocked or failed, in plain words. */
@@ -839,6 +854,7 @@ export type QueueItem = {
   eta: number | null
   peers: { connected: number; total: number }
   seeds: { connected: number; total: number }
+  webSeeds?: WebSeedSource
   ratio: number
   state: TorrentState
   stateReason: string | null

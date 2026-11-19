@@ -278,9 +278,23 @@ describe.skipIf(!hasFfmpeg)('HLS over HTTP', () => {
     expect(served).toMatchObject({ segment: Number(name.split('.')[0]) })
     expect(served.bytes).toBeGreaterThan(0)
     expect(served.sincePlayMs).toBeGreaterThanOrEqual(served.sendMs as number)
-    // once a session: the next segment says nothing more. Read whole, as a player does: a
-    // segment counts once it's sent whole, so the stop below can't come before it (HT-56)
-    await (await fetch(`${base}${Number(name.split('.')[0]) + 1}.m4s`)).arrayBuffer()
+    // once a session: the next segment says nothing more. A segment counts once it's sent whole
+    // (HT-56), when the response's `finish` has called back on the server: that's when it was
+    // handed to the system, not when the player had it (https://nodejs.org/api/http.html#event-finish),
+    // so the player can have it all and ask to stop first. The stop waits for the count (HT-102)
+    const next = Number(name.split('.')[0]) + 1
+    const counted: number[] = []
+    const sent = runtime.playback.hls.sent
+    runtime.playback.hls.sent = (token, index, took) => {
+      sent(token, index, took)
+      counted.push(index)
+    }
+    try {
+      await (await fetch(`${base}${next}.m4s`)).arrayBuffer()
+      await until(() => counted.includes(next))
+    } finally {
+      runtime.playback.hls.sent = sent
+    }
     expect(logged('first segment served', session.id).length).toBe(1)
     await api.playback.stop({ params: { id: session.id } })
     expect(logged('play session ended early', session.id)).toEqual([])

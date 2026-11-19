@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Chosen artwork (HT-66): staff change a title's poster, backdrop or logo to another of TMDB's, or
 // to a file of their own, and Reset puts highsea's automatic choice back. A refresh never replaces
-// a chosen image. Owners are addressed as images are (`movie`, `collection`, by TMDB id); shows,
-// seasons and episodes join the owner list with Phase 5 part B, on the same routes.
+// a chosen image. Owners are addressed as images are (`movie`, `collection`, `show`, by TMDB id);
+// shows joined with HT-105, and seasons and episodes can join later on the same routes.
 import { createRoute, z } from '@hono/zod-openapi'
 import { API_PREFIX, access, body, errors, IsoDate, json } from './common.ts'
 import { ImageUrl } from './metadata.ts'
 
-export const ARTWORK_OWNERS = ['movie', 'collection'] as const
+export const ARTWORK_OWNERS = ['movie', 'collection', 'show'] as const
 export const ARTWORK_KINDS = ['poster', 'backdrop', 'logo'] as const
 
 /** At most 10 MB once decoded, base64 in JSON as the mark is (ADR 0028). */

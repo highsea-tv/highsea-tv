@@ -58,6 +58,7 @@ import { View, type ViewStyle } from 'react-native'
 import { ClockWidget, WeatherWidget } from './clock-weather-widgets.tsx'
 import { widgets as messages } from './dashboard-messages.ts'
 import { behind, mbps, methodTone, watcher } from './delivery.ts'
+import { downloadSource, useDownloadSource } from './download-source.ts'
 import { type QueueFilter, queueFilters, torrentTone } from './downloads-status.ts'
 import { foldersOnDisk, releasesByDay } from './library-figures.ts'
 import { titleOf, titlePath } from './media-links.ts'
@@ -733,6 +734,8 @@ function QueueLive(props: WidgetProps) {
 
 function QueueRows({ items, layout }: { items: QueueItem[]; layout: 'table' | 'mid' | 'stacked' }) {
   const t = useT(messages)
+  const tSource = useT(downloadSource)
+  const source = useDownloadSource()
   const ts = useT(torrentState)
   const theme = useTheme()
   const locale = useLocale()
@@ -772,7 +775,7 @@ function QueueRows({ items, layout }: { items: QueueItem[]; layout: 'table' | 'm
               <Fig numberOfLines={1}>
                 {/* a reason first: one held by the VPN is downloading, but nothing moves (HT-90) */}
                 {q.state === 'downloading' && !q.stateReason
-                  ? `${rate(q.downRate)} · ${t('activity.peersOf', { seeds: q.seeds.connected, peers: q.peers.connected })} · ${q.eta ? t('activity.left', { duration: duration(q.eta, locale) }) : dash}`
+                  ? `${rate(q.downRate)} · ${source(q) ?? dash} · ${q.eta ? t('activity.left', { duration: duration(q.eta, locale) }) : dash}`
                   : (q.stateReason ?? bytes(q.size))}
               </Fig>
             </View>
@@ -793,8 +796,8 @@ function QueueRows({ items, layout }: { items: QueueItem[]; layout: 'table' | 'm
             <TableHead>{t('activity.progress')}</TableHead>
             <TableHead numeric>{t('activity.down')}</TableHead>
             {full ? <TableHead numeric>{t('activity.up')}</TableHead> : null}
-            {/* seeds/peers connected, as Downloads shows them (the owner's ask, 2026-11-19) */}
-            <TableHead numeric>{t('activity.peers')}</TableHead>
+            {/* where the data comes from, as Downloads shows it (the owner's asks, 2026-11-19) */}
+            <TableHead>{tSource('title')}</TableHead>
             <TableHead numeric>{t('activity.eta')}</TableHead>
             <TableHead>{t('activity.status')}</TableHead>
           </TableRow>
@@ -835,7 +838,7 @@ function QueueRows({ items, layout }: { items: QueueItem[]; layout: 'table' | 'm
                 </TableCell>
                 <TableCell numeric>{q.downRate ? rate(q.downRate) : dash}</TableCell>
                 {full ? <TableCell numeric>{q.upRate ? rate(q.upRate) : dash}</TableCell> : null}
-                <TableCell numeric>{`${q.seeds.connected}/${q.peers.connected}`}</TableCell>
+                <TableCell truncate>{source(q) ?? dash}</TableCell>
                 <TableCell numeric>
                   {q.state === 'downloading' && q.eta
                     ? duration(q.eta, locale)

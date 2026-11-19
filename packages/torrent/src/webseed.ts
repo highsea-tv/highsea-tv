@@ -39,6 +39,11 @@ export type WebSeedStatus = {
   message: string | null
   /** Bytes per second from this seed now. */
   downRate: number
+  /**
+   * Sending now: a range request in flight, or bytes in the last few seconds. A web seed is a
+   * permanently unchoked seed (BEP 19), so this is the one sign it's in use.
+   */
+  sending: boolean
 }
 
 /** Requests in flight per seed. */
@@ -347,12 +352,16 @@ export function createWebSeeds(
     usable: () => seeds.filter((s) => !s.dropped).length,
 
     statuses: (): WebSeedStatus[] =>
-      seeds.map((s) => ({
-        url: s.url,
-        status: s.status,
-        message: s.message,
-        downRate: s.meter.rate(),
-      })),
+      seeds.map((s) => {
+        const downRate = s.meter.rate()
+        return {
+          url: s.url,
+          status: s.status,
+          message: s.message,
+          downRate,
+          sending: !s.dropped && (s.busy > 0 || downRate > 0),
+        }
+      }),
   }
 }
 

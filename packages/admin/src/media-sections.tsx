@@ -38,12 +38,14 @@ import {
   Skeleton,
   SkeletonText,
   Text,
+  TitleLogo,
   tokens,
   useRegularWindow,
   useTheme,
 } from '@highsea-tv/ui/native'
 import { Fragment, type ReactNode, useState } from 'react'
 import { useWindowDimensions, View, type ViewStyle } from 'react-native'
+import { useHeroArt } from './hero-art.ts'
 import { Loadable } from './loadable.tsx'
 import { collectionPath, moviePath, personPath } from './media-links.ts'
 import { media as messages } from './media-sections-messages.ts'
@@ -55,7 +57,9 @@ import { useNow } from './time.ts'
 export type TitleBase = Pick<
   DiscoverMovie,
   'title' | 'year' | 'runtimeMinutes' | 'genres' | 'rating' | 'synopsis'
-> & { art: Pick<DiscoverMovie['art'], 'poster' | 'backdrop'> }
+> & {
+  art: Pick<DiscoverMovie['art'], 'poster' | 'backdrop'> & { logo?: string | null }
+}
 
 export type MetadataQuery = Query<MovieMetadata>
 
@@ -266,6 +270,12 @@ const Dot = () => (
   </Text>
 )
 
+/**
+ * A film's or a show's words in its page's hero (HT-105, the clients' treatment; AdminPage's `hero`,
+ * over the backdrop): the logo, when the title has one, then the facts, the tagline, the library's
+ * badges, the synopsis, who directed it and the last line. The name is the page's heading in its
+ * top row, so without a logo it isn't drawn twice.
+ */
 export function MediaSummary({
   item: m,
   meta,
@@ -283,11 +293,7 @@ export function MediaSummary({
   const locale = useLocale()
   const directors = meta?.crew.filter((c) => c.job === 'Director') ?? []
   return (
-    <SummaryCard
-      label={t('summary')}
-      backdrop={m.art.backdrop}
-      poster={(width) => <Poster title={m.title} src={m.art.poster ?? undefined} width={width} />}
-    >
+    <HeroWords label={t('summary')} title={m.title} logo={meta?.art.logo ?? m.art.logo ?? null}>
       <View
         style={{
           flexDirection: 'row',
@@ -341,7 +347,7 @@ export function MediaSummary({
         </View>
       )}
       {m.synopsis && (
-        <Text variant="body" color="text-2" style={{ maxWidth: MEASURE }}>
+        <Text variant="body" color="text-2">
           {m.synopsis}
         </Text>
       )}
@@ -351,7 +357,41 @@ export function MediaSummary({
         </Text>
       )}
       {children}
-    </SummaryCard>
+    </HeroWords>
+  )
+}
+
+/**
+ * A media page's words in its hero (a film's, a show's, a collection's): the logo, when the title
+ * has one, over the rest, within the running text's measure, on the backdrop's faded side.
+ */
+export function HeroWords({
+  label,
+  title,
+  logo,
+  children,
+}: {
+  label: string
+  title: string
+  logo: string | null
+  children: ReactNode
+}) {
+  // over art, the logo or else the name, as the clients' hero; on a plain page only a logo, since
+  // the name is already the page's heading
+  const art = useHeroArt()
+  return (
+    <View
+      role="region"
+      aria-label={label}
+      style={{ gap: tokens.space['3'], maxWidth: MEASURE, minWidth: 0 }}
+    >
+      {logo || art ? (
+        <View style={{ marginBottom: tokens.space['1'] }}>
+          <TitleLogo title={title} logo={logo ? { uri: logo } : null} aria-level={2} />
+        </View>
+      ) : null}
+      {children}
+    </View>
   )
 }
 
