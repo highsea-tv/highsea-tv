@@ -14,8 +14,25 @@
 # made with setpriv(1) instead: it sets PR_SET_KEEPCAPS, changes user, then raises CAP_NET_ADMIN in
 # the inheritable and ambient sets, so `node` (and the `ip`, `wg` and wireguard-go it runs) keep it
 # across execve (capabilities(7), "Ambient capability set"). Without the capability, nothing changes.
+#
+# A container that starts as a non-root user (the Synology package's) can't use setpriv's --reuid,
+# so it raises the same two sets through the image's copy of setpriv that holds CAP_NET_ADMIN in its
+# file permitted set (the Dockerfile says why), tried once with `true` first so a refusal never stops
+# the server. The TUN device wireguard-go needs, on kernels without WireGuard, is made here when the
+# container starts as root and doesn't have one: the compose files allow its numbers (10:200) with
+# device_cgroup_rules rather than passing the host's node with `devices:`, which stops a container
+# from starting on a host that hasn't loaded the tun module
+# (https://docs.docker.com/reference/cli/docker/container/run/#device-cgroup-rule;
+# /dev/net/tun as 10:200 in the kernel's Documentation/admin-guide/devices.txt). A mknod refused,
+# or a host without the module, leaves no device, and Settings › VPN says so (ADR 0042, 2026-11-19).
 set -eu
 mkdir -p "$HIGHSEA_CONFIG_DIR" "$HIGHSEA_DATA_DIR"
+capbnd="$(sed -n 's/^CapBnd:[[:space:]]*//p' /proc/self/status 2>/dev/null || true)"
+net_admin=""
+if [ -n "$capbnd" ] && [ $(( (0x$capbnd >> 12) & 1 )) = 1 ]; then net_admin=1; fi
+if [ "$(id -u)" = "0" ] && [ ! -c /dev/net/tun ]; then
+  { mkdir -p /dev/net && mknod -m 0666 /dev/net/tun c 10 200; } 2>/dev/null || true
+fi
 if [ "$(id -u)" = "0" ] && { [ -z "${PUID:-}" ] || [ -z "${PGID:-}" ]; }; then
   owner="$(find "$HIGHSEA_DATA_DIR" -maxdepth 1 ! -uid 0 -printf '%U:%G\n' -quit 2>/dev/null || true)"
   from="the owner of $HIGHSEA_DATA_DIR"
@@ -48,8 +65,7 @@ if [ "$(id -u)" = "0" ] && [ "${PUID:-0}" != "0" ]; then
   done
   [ -n "$(ls -A "$HIGHSEA_DATA_DIR" 2>/dev/null)" ] || chown "$PUID:$PGID" "$HIGHSEA_DATA_DIR"
   cd /app/apps/server
-  capbnd="$(sed -n 's/^CapBnd:[[:space:]]*//p' /proc/self/status 2>/dev/null || true)"
-  if [ -n "$capbnd" ] && [ $(( (0x$capbnd >> 12) & 1 )) = 1 ]; then
+  if [ -n "$net_admin" ]; then
     exec setpriv --reuid="$PUID" --regid="$PGID" --init-groups \
       --inh-caps=+net_admin --ambient-caps=+net_admin -- "$@"
   fi
@@ -59,4 +75,9 @@ if [ "$(id -u)" = "0" ] && [ "${PUID:-0}" != "0" ]; then
   exec gosu "$PUID:$PGID" "$@"
 fi
 cd /app/apps/server
+capped=/usr/local/lib/highsea/setpriv-net-admin
+if [ "$(id -u)" != "0" ] && [ -n "$net_admin" ] && [ -x "$capped" ] &&
+  "$capped" --inh-caps=+net_admin --ambient-caps=+net_admin -- true 2>/dev/null; then
+  exec "$capped" --inh-caps=+net_admin --ambient-caps=+net_admin -- "$@"
+fi
 exec "$@"

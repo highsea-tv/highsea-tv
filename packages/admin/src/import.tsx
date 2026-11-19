@@ -41,6 +41,8 @@ import {
 } from '@highsea-tv/ui/native'
 import { useEffect, useState } from 'react'
 import { View } from 'react-native'
+import { Browse } from './folder-picker.tsx'
+import { folderPicker as pickerMessages } from './folder-picker-messages.ts'
 import { manualImport as messages } from './import-messages.ts'
 import { clashes, defaultVersion, VersionSelect } from './import-versions.tsx'
 import { ImportModes, ImportPanel } from './library-import.tsx'
@@ -59,6 +61,7 @@ type Row = ImportCandidate & { selected: boolean; done: boolean; error: string |
 
 export function ManualImport({ initialPath }: { initialPath?: string } = {}) {
   const t = useT(messages)
+  const tp = useT(pickerMessages)
   const client = useClient()
   const [path, setPath] = useState(initialPath ?? '')
   const [scanned, setScanned] = useState('')
@@ -169,6 +172,14 @@ export function ManualImport({ initialPath }: { initialPath?: string } = {}) {
               <View style={{ flexGrow: 1, flexShrink: 1, flexBasis: wrapBasis, minWidth: 0 }}>
                 <Input mono value={path} onChangeText={setPath} />
               </View>
+              <Browse
+                value={path}
+                title={tp('title.import')}
+                onPick={(p) => {
+                  setPath(p)
+                  scan(p)
+                }}
+              />
               <Button
                 variant="primary"
                 icon="search"

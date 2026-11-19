@@ -68,6 +68,7 @@ describe('Compose for the built-in VPN', () => {
         '      - "7368:7368/udp"   # the apps find the server here',
         '    # only on a kernel before Linux 5.6, which has no WireGuard of its own:',
         '    # devices: [/dev/net/tun:/dev/net/tun]',
+        '    # keep /run/dbus:/run/dbus:ro under volumes: the iPhone finds highsea through it',
       ].join('\n'),
     )
   })

@@ -226,6 +226,29 @@ async function api(url: string, init: RequestInit = {}): Promise<Response> {
       return json([{ quality: 'WEBDL-1080p', min: 15, preferred: null, max: null }])
     case 'GET /api/v1/quality/profileUsage':
       return json([{ profileId: 'qp-hd', movies: 12, shows: 1 }])
+    // the folder picker (HT-91): the data folder holds media, which holds movies and shows
+    case 'GET /api/v1/fs/folders': {
+      const at = u.searchParams.get('path') || '/data'
+      const tree: Record<string, string[]> = {
+        '/data': ['media'],
+        '/data/media': ['movies', 'shows'],
+        '/data/media/movies': [],
+        '/data/media/shows': [],
+      }
+      const names = tree[at]
+      if (!names)
+        return failure('not-found', `${at} doesn’t exist on the server.`, 404, {
+          reason: 'missing',
+        })
+      return json({
+        path: at,
+        root: '/data',
+        parent: at === '/data' ? null : at.slice(0, at.lastIndexOf('/')),
+        folders: names.map((name) => ({ name, path: `${at}/${name}` })),
+        more: 0,
+        writable: true,
+      })
+    }
     case 'GET /api/v1/rootfolders':
       return json(state.folders)
     case 'POST /api/v1/rootfolders':
@@ -571,6 +594,29 @@ describe('Settings › Media management › root folders', () => {
     expect(link.getAttribute('href')).toBe(
       `/activity/import?mode=library&root=${encodeURIComponent('/data/media/movies')}`,
     )
+  })
+
+  test('Browse picks a folder on the server and fills the field (HT-91)', async () => {
+    const { user, page } = await open(<MediaManagement />)
+    const field = page.getByLabelText('Add a Shows folder') as HTMLInputElement
+    // Shows' section is the second, so its Browse is the second
+    await user.click(page.getAllByRole('button', { name: 'Browse' })[1] as HTMLElement)
+    await settle()
+    shown()
+    const picker = page.getByRole('dialog', { name: 'Choose a shows folder' })
+    // an empty field opens where browsing starts: the data folder
+    expect(requested('GET', '/api/v1/fs/folders').at(-1)?.path).toBe('/api/v1/fs/folders')
+    await user.click(within(picker).getByRole('button', { name: 'media' }))
+    await settle()
+    await user.click(within(picker).getByRole('button', { name: 'shows' }))
+    await settle()
+    expect(
+      within(picker).getByText('No folders inside. Use this one, or go up a level.'),
+    ).toBeTruthy()
+    await user.click(within(picker).getByRole('button', { name: 'Use this folder' }))
+    expect(field.value).toBe('/data/media/shows')
+    // nothing's added until Add folder
+    expect(requested('POST', '/api/v1/rootfolders')).toHaveLength(0)
   })
 
   test('adding checks the path; the server’s reasons read as plain sentences', async () => {

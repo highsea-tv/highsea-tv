@@ -74,13 +74,6 @@ export const setup = defineMessages({
   'picker.downloads': 'Choose the downloads folder',
   'picker.shows': 'Choose the shows folder',
   'picker.music': 'Choose the music folder',
-  'picker.detail': 'Folders on the server, not on this device.',
-  'picker.cancel': 'Cancel',
-  'picker.use': 'Use this folder',
-  'picker.path': 'Folder path',
-  'picker.error': 'Can’t open this folder',
-  'picker.up': 'Up one level',
-  'picker.empty': 'No folders inside. Use this one, or go up a level.',
   'review.title': 'Check and finish',
   'review.detail':
     'highsea chose these from what it found. Change anything here now, or later in Settings.',

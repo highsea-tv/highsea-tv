@@ -4,7 +4,8 @@
 // and the VPN's status; 6b's categories. The engine is offline (helpers.ts), so a grab is added and nothing
 // downloads; the downloads package's tests cover the swarm. Who may call what: the guard table.
 import { afterEach, describe, expect, test } from 'bun:test'
-import { mkdirSync, writeFileSync } from 'node:fs'
+import { mkdirSync, symlinkSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { Fetch } from '@highsea-tv/core'
 import { createFakeIndexer, FAKE_CREDENTIALS, FAKE_ORIGIN } from '@highsea-tv/indexers/fake'
@@ -58,7 +59,7 @@ async function started() {
   const { indexer } = await adminApi.indexers.add({
     body: { definitionId: 'generic-torznab', settings: torznab },
   })
-  return { runtime, fake, folder, ownerApi, adminApi, indexer }
+  return { runtime, app, owner, fake, folder, ownerApi, adminApi, indexer }
 }
 
 describe('grabbing', () => {
@@ -229,6 +230,44 @@ describe('manual import', () => {
   })
 })
 
+describe('the folder picker', () => {
+  test('lists folders only, for staff, inside the allowed folders and never the config folder', async () => {
+    const { adminApi, ownerApi, runtime, app, owner, folder } = await started()
+    const member = await addMember(runtime, owner.id, 'Tomas')
+    const memberApi = clientFor(app, { token: member.token })
+    const signedOut = clientFor(app)
+    mkdirSync(join(folder, 'Sintel (2010)'), { recursive: true })
+    writeFileSync(join(folder, 'notes.txt'), 'a file')
+    symlinkSync(tmpdir(), join(folder, 'out'))
+
+    const top = await adminApi.fs.folders({ query: {} })
+    expect(top.path).toBe(runtime.config.dataDir)
+    const movies = await ownerApi.fs.folders({ query: { path: folder } })
+    // the link out is listed by name, but files never are
+    expect(movies.folders.map((f) => f.name)).toEqual(['out', 'Sintel (2010)'])
+    expect(movies).toMatchObject({ root: runtime.config.dataDir, writable: true, more: 0 })
+
+    expect(await failure(adminApi.fs.folders({ query: { path: join(folder, 'out') } }))).toEqual({
+      code: 'forbidden',
+      reason: 'outside',
+    })
+    expect(
+      await failure(adminApi.fs.folders({ query: { path: `${folder}/../../../../etc` } })),
+    ).toMatchObject({ code: 'forbidden', reason: 'outside' })
+    expect(
+      await failure(adminApi.fs.folders({ query: { path: runtime.config.configDir } })),
+    ).toMatchObject({ code: 'forbidden', reason: 'outside' })
+    expect(await failure(adminApi.fs.folders({ query: { path: join(folder, 'gone') } }))).toEqual({
+      code: 'not-found',
+      reason: 'missing',
+    })
+    expect(await failure(memberApi.fs.folders({ query: {} }))).toMatchObject({ code: 'forbidden' })
+    expect(await failure(signedOut.fs.folders({ query: {} }))).toMatchObject({
+      code: 'unauthorized',
+    })
+  })
+})
+
 describe('settings', () => {
   test('media management saves, and refuses a bad format', async () => {
     const { adminApi } = await started()
@@ -261,10 +300,11 @@ describe('settings', () => {
     expect(saved.utp).toBe(false)
 
     const status = await adminApi.vpn.status()
-    expect(status).toMatchObject({ mode: 'off', state: 'off' })
+    // the built-in VPN is the default, not connected until a provider is saved (ADR 0042, 2026-11-19)
+    expect(status).toMatchObject({ mode: 'builtin', state: 'off', provider: null, install: null })
     expect((await ownerApi.vpn.providers()).length).toBeGreaterThan(0)
     const vpn = await ownerApi.vpn.settings()
-    expect(vpn.mode).toBe('off')
+    expect(vpn.mode).toBe('builtin')
     // Test with nothing to test, and with an interface that isn't there: nothing is saved
     expect(await failure(ownerApi.vpn.test({ body: { mode: 'off' } }))).toMatchObject({
       code: 'invalid',
@@ -274,7 +314,7 @@ describe('settings', () => {
     })
     expect(missing.ok).toBe(false)
     expect(missing.checks[0]).toMatchObject({ id: 'tunnel', result: 'fail' })
-    expect((await ownerApi.vpn.settings()).mode).toBe('off')
+    expect((await ownerApi.vpn.settings()).mode).toBe('builtin')
   })
 })
 

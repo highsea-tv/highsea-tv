@@ -20,9 +20,18 @@ for node in /dev/dri/renderD*; do
   break
 done
 
+# The TUN device, for the built-in VPN's wireguard-go (DSM's kernel has no WireGuard): the host's
+# /dev/net, which DSM makes once the tun module is loaded, or an empty folder, since Container
+# Manager won't start a project whose bind source is missing. The package's scripts don't run as
+# root, so they can't load the module themselves (DSM 7 Developer Guide, Privilege: a package that
+# runs as root must be signed by Synology); Settings › VPN says what to do when it's missing.
+tun="/var/packages/highsea/target/compose/no-tun"
+[ -d /dev/net ] && tun=/dev/net
+
 cat > "$SYNOPKG_PKGINST_TEMP_DIR/compose/.env" <<ENV
 HIGHSEA_DATA='/var/packages/highsea/shares/$share'
 HIGHSEA_DRI=$dri
+HIGHSEA_TUN=$tun
 HIGHSEA_RENDER_GID=$gid
 HIGHSEA_HOSTNAME=$(hostname -s 2>/dev/null || hostname)
 ENV

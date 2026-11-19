@@ -4,10 +4,14 @@ services:
     image: ghcr.io/highsea-tv/highsea:0.1.0
     container_name: highsea
     network_mode: bridge
+    # the built-in VPN's WireGuard interface and routes, in this container's own network
+    cap_add:
+      - NET_ADMIN
     environment:
       PUID: $PUID
       PGID: $PGID
       TZ: $TZ
+      HIGHSEA_INSTALL: casaos
     ports:
       - target: 3000
         published: "3636"

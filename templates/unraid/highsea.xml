@@ -37,7 +37,7 @@ Put downloads and the library on one share (the data path), so imports hardlink 
   <WebUI>http://[IP]:[PORT:3000]/</WebUI>
   <TemplateURL>https://raw.githubusercontent.com/highsea-tv/highsea-tv/main/templates/unraid/highsea.xml</TemplateURL>
   <Icon>https://raw.githubusercontent.com/highsea-tv/highsea-tv/main/packages/brand/assets/icons/web/icon-512.png</Icon>
-  <ExtraParams>--device-cgroup-rule='c 226:128 rw' --device-cgroup-rule='c 226:129 rw' --device-cgroup-rule='c 226:130 rw' --device-cgroup-rule='c 226:131 rw' --device-cgroup-rule='c 226:132 rw' --device-cgroup-rule='c 226:133 rw' --device-cgroup-rule='c 226:134 rw' --device-cgroup-rule='c 226:135 rw'</ExtraParams>
+  <ExtraParams>--cap-add=NET_ADMIN --device-cgroup-rule='c 226:128 rw' --device-cgroup-rule='c 226:129 rw' --device-cgroup-rule='c 226:130 rw' --device-cgroup-rule='c 226:131 rw' --device-cgroup-rule='c 226:132 rw' --device-cgroup-rule='c 226:133 rw' --device-cgroup-rule='c 226:134 rw' --device-cgroup-rule='c 226:135 rw'</ExtraParams>
   <PostArgs/>
   <Shell>bash</Shell>
   <Config Name="Web UI" Target="3000" Default="3000" Mode="tcp" Description="The admin, the API and the apps' address." Type="Port" Display="always" Required="true" Mask="false">3000</Config>
@@ -50,5 +50,6 @@ Put downloads and the library on one share (the data path), so imports hardlink 
   <Config Name="D-Bus" Target="/run/dbus" Default="/run/dbus" Mode="ro" Description="Unraid's system bus, so highsea can publish itself over mDNS through Unraid's avahi." Type="Path" Display="advanced" Required="false" Mask="false">/run/dbus</Config>
   <Config Name="PUID" Target="PUID" Default="99" Mode="" Description="The user that owns your files." Type="Variable" Display="advanced" Required="true" Mask="false">99</Config>
   <Config Name="PGID" Target="PGID" Default="100" Mode="" Description="The group that owns your files." Type="Variable" Display="advanced" Required="true" Mask="false">100</Config>
+  <Config Name="Install" Target="HIGHSEA_INSTALL" Default="unraid" Mode="" Description="Tells highsea it came from Unraid's template, so Settings › VPN says how to fix it here." Type="Variable" Display="advanced-hide" Required="false" Mask="false">unraid</Config>
   <Config Name="Public address" Target="HIGHSEA_PUBLIC_URL" Default="" Mode="" Description="Optional. The https:// address you reach highsea at from outside, if you serve it through a reverse proxy." Type="Variable" Display="advanced" Required="false" Mask="false"/>
 </Container>

@@ -42,19 +42,19 @@ highsea brings up a WireGuard tunnel inside its own container and binds every to
 
 - **Linux.** highsea's Docker image runs Linux, so this works wherever highsea runs in Docker. If you run highsea some other way on macOS or Windows, use another mode.
 - **The NET_ADMIN capability** for highsea's container, so it can make its own network interface and routes. This reaches only highsea's container, not the host.
-- **Its own network**, not host networking. With host networking, highsea's interface and routes would land in the host's network beside everything else.
+- **Its own network**, not host networking. With host networking, highsea's interface and routes would land in the host's network beside everything else. Since 2026-11-19, the compose file in [Install with Docker](/install/docker/), [the installer](/install/script/) and the NAS packages give highsea all of this already.
 - **The TUN device**, only on older kernels without WireGuard built in (Linux before 5.6, which some NAS systems still run).
 
-Settings › VPN writes the lines for you. Under the provider's fields, open **Compose for the built-in VPN** and choose **Copy**. The lines give highsea's service the capability, publish its ports in place of `network_mode: host`, and hold the TUN device as a comment, for a kernel that needs it. Paste them into highsea's service in your compose file, take out `network_mode: host`, then recreate the container.
+Settings › VPN writes the lines for you. Under the provider's fields, open **Compose for the built-in VPN** and choose **Copy**. The lines give highsea's service the capability, publish its ports in place of `network_mode: host`, and hold the TUN device as a comment, for a kernel that needs it. Paste them into highsea's service in your compose file, take out `network_mode: host`, keep the `/run/dbus` line under `volumes`, then recreate the container.
 
 ![Settings › VPN with the built-in VPN chosen and Compose for the built-in VPN open: the lines for highsea's service, with cap_add NET_ADMIN, the published ports and the TUN device as a comment, and a Copy button](/images/admin/settings-vpn/connects-compose.png)
 
-Because the container doesn't use host networking, apps on your network find the server through the UDP broadcast on port 7368 rather than mDNS. See [Discovery](/settings/network/#discovery).
+Apps on your network still find the server in its own network. The iPhone and Apple TV apps look for it by Bonjour, which highsea announces through the host's avahi over the `/run/dbus` line, so the host needs avahi running (`sudo apt install avahi-daemon` on Debian and Ubuntu; most NAS systems and desktop Linux run it already). The desktop app also finds it by the broadcast on UDP port 7368, through the published port. See [Discovery](/settings/network/#discovery).
 
 The status at the top of the page says when the container isn't set up for the tunnel yet:
 
 - **highsea is on host networking** means highsea's container still shares the host's network. highsea won't start the tunnel there, and **Reconnect** stays off. Put the lines from **Compose for the built-in VPN** in place of `network_mode: host`, then recreate the container.
-- **highsea can't run the tunnel yet** means the container lacks the NET_ADMIN capability. The same lines add it.
+- **highsea can't run the tunnel yet** means the container lacks the NET_ADMIN capability. The same lines add it. On a NAS app store install, the status says to update highsea there instead: the update recreates the container with it.
 
 In either case **Compose for the built-in VPN** opens by itself. When the tunnel can run, it stays folded until you open it.
 

@@ -40,7 +40,12 @@ Since 24.10, TrueNAS runs apps on Docker and can install one straight from a com
 services:
   highsea:
     image: ghcr.io/highsea-tv/highsea:latest
-    network_mode: host
+    cap_add: [NET_ADMIN]
+    ports:
+      - "3000:3000"
+      - "6881:6881/tcp"
+      - "6881:6881/udp"
+      - "7368:7368/udp"
     environment:
       PUID: "568"
       PGID: "568"
@@ -65,9 +70,9 @@ If your pool isn't called `tank`, change it in the two paths. highsea takes your
 
 The `/dev/dri` line and the rules under it give highsea Intel or AMD graphics, for [hardware acceleration](/install/hardware-acceleration/). On a NAS without them, the app starts all the same. TrueNAS checks only that the YAML is well formed, so a wrong path shows up when the app starts, in its logs.
 
-Host networking lets apps on your network find highsea by themselves. If something else on the NAS already uses port 3000 or 6881, stop it first.
+highsea has its own network with published ports, and `cap_add: [NET_ADMIN]` lets the [built-in VPN](/settings/vpn/connects/) run its tunnel inside it, with no changes later. If something else on the NAS already uses port 3000 or 6881, stop it first, or change the left-hand number.
 
-The `/run/dbus` line lets highsea announce itself through TrueNAS's own mDNS service, which keeps that job to itself. Without the line, apps still find highsea by its broadcast on port 7368.
+The `/run/dbus` line lets highsea announce itself through TrueNAS's own mDNS service, which keeps that job to itself, so the iPhone and Apple TV apps find it by Bonjour from highsea's own network. Without the line, only the desktop app finds highsea, by its broadcast on port 7368.
 
 ![TrueNAS's Install via YAML screen, with the name and custom config filled in](/images/truenas-install-via-yaml.png)
 
