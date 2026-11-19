@@ -1,0 +1,47 @@
+# SPDX-License-Identifier: CC0-1.0
+# Written for highsea from BitSearch's own API documentation (https://bitsearch.eu/api); no definition was copied.
+id: bitsearch
+version: 1.0.0
+minEngineVersion: 1.1.0
+name: BitSearch
+description: A torrent search engine's films, from BitSearch's public API. It allows 200 requests a day from one address and can't list its newest releases, so RSS passes it by.
+kind: json
+privacy: public
+language: en
+links: [https://bitsearch.eu/]
+logo: bitsearch.svg
+# "Category & Subcategory IDs": 2 is Movies
+categories:
+  - { id: '2', standard: 2000, name: Movies }
+search:
+  request:
+    path: /api/v1/search
+    query:
+      # "q: required"
+      q: '{{ .Query.Keywords }}'
+      category: '2'
+      # "Results per page, max 100"
+      limit: '100'
+  rows: { path: results }
+  fields:
+    title: { path: title }
+    infohash: { path: infohash }
+    _id: { path: id }
+    guid: { text: 'bitsearch:{{ .Result._id }}' }
+    # search results carry the info hash; the magnet is built from it, with no trackers (DHT)
+    magnet: { text: 'magnet:?xt=urn:btih:{{ .Result.infohash }}&dn={{ .Result.title | urlencode }}' }
+    category: { path: category, optional: true }
+    size: { path: size, optional: true }
+    seeders: { path: seeders, optional: true }
+    leechers: { path: leechers, optional: true }
+    published: { path: createdAt, optional: true, filters: [{ filter: date }] }
+  supports: [q]
+# "200 requests per day per IP" without a key. RSS never reads it (latest: false), and the limit
+# keeps a margin for the address's other use of the API.
+latest: false
+rateLimit: { requests: 180, seconds: 86400, minGapMs: 2000 }
+test: { keywords: Sintel }
+source:
+  author: highsea
+  documentation: https://bitsearch.eu/api
+license: CC0-1.0

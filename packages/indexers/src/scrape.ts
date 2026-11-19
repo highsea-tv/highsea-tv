@@ -59,7 +59,7 @@ function readRow(
         ? renderTemplate(mapping.text, { Config: ctx.config, Result: fields })
         : read(mapping)
     value = applyFilters(value, mapping.filters, ctx.now)
-    if (value !== null && URL_FIELDS.has(name) && !/^magnet:/i.test(value)) {
+    if (value && URL_FIELDS.has(name) && !/^magnet:/i.test(value)) {
       try {
         value = new URL(value, ctx.pageUrl).href
       } catch {
@@ -80,6 +80,33 @@ function finish(ctx: ScrapeContext, fields: Record<string, string | null>): Inde
 const layoutChanged = (what: string) =>
   new IndexerError('parse', `The site’s answer has no ${what}. Its layout may have changed.`)
 
+/**
+ * One row per item of the list under `key` in each row, as the outer row with `key` holding that
+ * item, so a field reads `torrents.hash` beside the film's own `title`. A row without the list
+ * gives none.
+ */
+function nested(rows: unknown[], key: string): unknown[] {
+  const parts = key.split('.')
+  /** A copy of `value` with the item at `parts`, sharing everything off that path. */
+  const withItem = (value: unknown, i: number, item: unknown): unknown =>
+    i === parts.length
+      ? item
+      : {
+          ...(value as Record<string, unknown>),
+          [parts[i] as string]: withItem(
+            (value as Record<string, unknown>)[parts[i] as string],
+            i + 1,
+            item,
+          ),
+        }
+  const out: unknown[] = []
+  for (const row of rows) {
+    const items = getPath(row, key)
+    if (Array.isArray(items)) for (const item of items) out.push(withItem(row, 0, item))
+  }
+  return out
+}
+
 export function scrapeJson(ctx: ScrapeContext, body: string): IndexerRelease[] {
   let doc: unknown
   try {
@@ -98,8 +125,10 @@ export function scrapeJson(ctx: ScrapeContext, body: string): IndexerRelease[] {
   }
   const rowsRule = ctx.definition.search.rows
   if (!('path' in rowsRule)) throw layoutChanged('results list')
-  const rows = getPath(doc, rowsRule.path)
-  if (!Array.isArray(rows)) throw layoutChanged(`results list at “${rowsRule.path}”`)
+  const found = getPath(doc, rowsRule.path)
+  if (found === undefined && rowsRule.optional) return []
+  if (!Array.isArray(found)) throw layoutChanged(`results list at “${rowsRule.path}”`)
+  const rows = rowsRule.each ? nested(found, rowsRule.each) : found
   const out: IndexerRelease[] = []
   for (const row of rows) {
     const fields = readRow(ctx, (m) =>
