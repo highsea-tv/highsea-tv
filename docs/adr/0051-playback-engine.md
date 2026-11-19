@@ -148,3 +148,29 @@ Not chosen, with their costs:
 The playback sweep's open-GOP film now seeks right after its resume to a keyframe, on between two, back between two, back before the run's start and far back, in Firefox; Chromium skips those seeks and says why in the script. A test reads a later piece of a copy through ffmpeg and checks its keyframe keeps its own time, after its leading frames.
 
 The iPhone's QuickTime logo on a resume (the section above) didn't reproduce on the iPhone 17 Pro simulator (iOS 26): a probe app with AVPlayer played the open-GOP H.264 film, HEVC Main and HEVC Main 10 from the start and resumed at 92 s, with and without `skip_sidx`, frames drawn every second and nothing in the error log. It waits for the film's stream list and a report from the NAS.
+
+## 2026-11-18: the init is whole when it's sent, and every failed start is reported (phase 5; HT-64)
+
+The iPhone failed most resumes of a direct-streamed film with `CoreMediaErrorDomain error 1718449215`, the four characters `fmt?`, which is Core Audio's and Core Media's "unsupported data format" (`kAudioFileUnsupportedDataFormatError`, [Apple](https://developer.apple.com/documentation/audiotoolbox/kaudiofileunsupporteddataformaterror)). It happened for HEVC with E-AC-3 and for H.264 with AAC, and once the same start showed AVPlayer's QuickTime logo with the sound playing and no error. The server's log was the same for every attempt.
+
+**The cause** was the session's header. A run's `init.mp4` is copied to the session's `header.mp4` once the run's first piece is out (`packages/stream/src/hls/runner.ts`, `copyHeader`). Node's `fs.copyFile` is libuv's `uv__fs_copyfile` ([src/unix/fs.c](https://github.com/libuv/libuv/blob/v1.x/src/unix/fs.c)), which on Linux opens the destination with `O_CREAT`, then sets its owner and mode, and only then writes the bytes (FICLONE or `sendfile`). So the header exists, empty, for a moment. A player's request for `init.mp4` that came before the first piece waited for it; the same `settle()` that woke it started the copy, and `init()` then trusted `existsSync(header)`. The server stats the file for `Content-Length` (`sendFiles` in `apps/server/src/stream/index.ts`), so the player was sent 0 bytes, or part of the header. A resume asks for the init while its run is still starting, which is why resumes failed and fresh plays mostly didn't, and why it came and went.
+
+**The fix:** the header is copied to `header.mp4.part` and renamed into place. POSIX makes rename atomic ([rename(2)](https://pubs.opengroup.org/onlinepubs/9799919799/functions/rename.html)), so `header.mp4` exists only whole. A test makes the copy behave as libuv's does on Linux (the file first, empty, its bytes 40 ms later) and asks for the header before the first piece. It got 0 bytes before the fix and the whole header after.
+
+**What it does to a player:**
+- **The iPhone simulator (iOS 26.5) with the app:** a resume sent an empty init fails with exactly `CoreMediaErrorDomain error 1718449215`, after fetching four segments.
+- **AVPlayer on the Mac:** an empty init leaves the item ready with only its sound track enabled and no frame drawn, the logo's symptom. A partial one (25 to 95%) fails at once with -12894.
+
+**The apps:**
+- **Each failed session is reported.** A failed play is reported once per session, not once per run of the app: three failed starts in a row had left one report.
+- **A failed stream ends its session at once,** so the server stops its ffmpeg.
+- **The server logs each failed play's report** in the playback log (`a player said a play failed`, with the session). A start can fail after its first segments, whose end isn't "early" by `play session ended early`'s rule.
+- **No picture counts as a failed start.** The phone and the TV count a start that plays 8 s of the film without a frame drawn (expo-video's `onFirstFrameRender`, from `AVPlayerViewController.isReadyForDisplay`) as failed. AirPlay is excepted. This catches a start that plays sound under AVPlayer's logo and says nothing.
+- **AVPlayer's own account goes in the message.** expo-video's patch adds the underlying errors and the item's [error log](https://developer.apple.com/documentation/avfoundation/avplayeritem/errorlog()) and [access log](https://developer.apple.com/documentation/avfoundation/avplayeritem/accesslog()) to the failure's message. For an item that fails before it's ready they're empty, as they were for the empty init.
+- **Nothing is left under the failed screen.** The picture and the subtitle line go under a stream's message, on every client: a failed item's picture is AVPlayerViewController's play glyph.
+
+**Not changed, though Apple's [HLS authoring specification](https://developer.apple.com/documentation/http-live-streaming/hls-authoring-specification-for-apple-devices) asks for them:**
+- A direct stream's `CODECS` attribute (9.1, MUST).
+- Segments that start with an IDR frame where `EXT-X-INDEPENDENT-SEGMENTS` is written (7.4, 9.11).
+
+AVPlayer plays these streams once the header is whole, so they wait for a finding of their own.

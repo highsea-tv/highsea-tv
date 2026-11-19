@@ -379,6 +379,45 @@ describe('client reports', () => {
     ])
     rmSync(dir, { recursive: true, force: true })
   })
+
+  test('a failed play is a line in the playback log, with its session (HT-64)', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'highsea-client-reports-'))
+    const lines: { message: string; fields: unknown }[] = []
+    const log = {
+      warn: (message: string, fields?: unknown) => lines.push({ message, fields }),
+    } as unknown as Parameters<typeof createClientReports>[0]['playbackLog']
+    const reports = createClientReports({
+      dir,
+      version: '0.4.4',
+      clock: { now: () => Date.parse('2026-11-18T10:00:00Z') },
+      keep: 3,
+      playbackLog: log,
+    })
+    reports.record(report, { userId: 'u1' })
+    expect(lines).toEqual([])
+    const id = reports.record(
+      {
+        ...report,
+        kind: 'play',
+        error: { name: 'PlaybackError', message: 'Failed to load the player item', stack: null },
+        play: { sessionId: 's1', type: 'movie', id: 1 },
+      },
+      { userId: 'u1' },
+    )
+    expect(lines).toEqual([
+      {
+        message: 'a player said a play failed',
+        fields: {
+          session: 's1',
+          app: 'ios',
+          version: '0.4.2',
+          report: id,
+          error: 'Failed to load the player item',
+        },
+      },
+    ])
+    rmSync(dir, { recursive: true, force: true })
+  })
 })
 
 describe('updates', () => {

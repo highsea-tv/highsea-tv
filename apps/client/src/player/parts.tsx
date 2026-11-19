@@ -21,6 +21,7 @@ import {
   NUDGE_MS,
   nextChange,
   nextUpIn,
+  pictureShown,
   playNext,
   SEEK_S,
   SPEEDS,
@@ -441,7 +442,8 @@ export function CueLine({ p }: { p: Playback }) {
   const tv = theme.formFactor.input === 'tv'
   const u = theme.u
   const lines = cuesAt(p.cues, p.state.position, p.offsetMs)
-  if (!lines.length) return null
+  // no line under a stream's message: the one showing when it failed stayed (HT-64)
+  if (!lines.length || !pictureShown(p.state)) return null
   return (
     <View pointerEvents="none" style={{ alignItems: 'center', gap: player.subtitle.gap * u }}>
       {lines.map((line) => (

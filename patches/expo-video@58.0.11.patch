@@ -13,6 +13,55 @@ index a8f92a5f4599b8f8a348c6d104c77965afea0892..5d90359f3767bfe7bfe16d6179d9ea65
        log.warn("[expo-video] Couldn't display the artwork: the response was empty")
        completion(nil)
        return
+diff --git a/ios/VideoPlayerObserver.swift b/ios/VideoPlayerObserver.swift
+index adf5820b4848be7da35d212d9cff91172aacdb2a..6c6841b888ede1939aa5bea3a970ae28a747f31d 100644
+--- a/ios/VideoPlayerObserver.swift
++++ b/ios/VideoPlayerObserver.swift
+@@ -470,7 +470,12 @@ class VideoPlayerObserver: VideoSourceLoaderListener {
+     // The AVPlayerItem.error can't be modified, so we have a custom field for caching errors
+     if newStatus == .error {
+       let playerItemError = (playerItem as? VideoPlayerItem)?.urlAsset.transportError ?? playerItem.error ?? error
+-      error = PlayerItemLoadException(playerItemError?.localizedDescription)
++      // highsea: what AVPlayer knows of the failure goes in the message, which the app reports
++      // (HT-64): the underlying errors, then the item's error log and the last of its access log
++      // (https://developer.apple.com/documentation/avfoundation/avplayeritem/errorlog(),
++      // https://developer.apple.com/documentation/avfoundation/avplayeritem/accesslog())
++      let described = playerItemError.map { highseaDescribe($0, item: playerItem) }
++      error = PlayerItemLoadException(described)
+       status = .error
+     }
+ 
+@@ -623,3 +628,30 @@ fileprivate extension AVPlayerItem.Status {
+     }
+   }
+ }
++
++// highsea: an item's failure in words a report can carry: the error, each underlying error by its
++// domain and code (NSUnderlyingErrorKey), the error log's events and the access log's last three
++// (an event per URI the item read). Kept to about 1,800 characters, the report's limit being 2,000.
++func highseaDescribe(_ error: Error, item: AVPlayerItem) -> String {
++  var parts = [error.localizedDescription]
++  var under = (error as NSError).userInfo[NSUnderlyingErrorKey] as? NSError
++  var depth = 0
++  while let u = under, depth < 4 {
++    parts.append("under: \(u.domain) \(u.code)")
++    under = u.userInfo[NSUnderlyingErrorKey] as? NSError
++    depth += 1
++  }
++  let path = { (uri: String?) -> String in
++    guard let uri, let url = URL(string: uri) else { return uri ?? "" }
++    // the session's token is in the path: only the last two parts say which file
++    return url.pathComponents.suffix(2).joined(separator: "/")
++  }
++  for e in (item.errorLog()?.events ?? []).suffix(6) {
++    parts.append("errorLog: \(e.errorDomain) \(e.errorStatusCode) \(e.errorComment ?? "") \(path(e.uri))")
++  }
++  for e in (item.accessLog()?.events ?? []).suffix(3) {
++    parts.append("accessLog: \(path(e.uri)) requests \(e.numberOfMediaRequests) bytes \(e.numberOfBytesTransferred) stalls \(e.numberOfStalls)")
++  }
++  let line = parts.joined(separator: "; ")
++  return line.count > 1800 ? String(line.prefix(1800)) : line
++}
 diff --git a/ios/VideoView.swift b/ios/VideoView.swift
 index 152c74e72c65a447e01e468b137ea8d193771faf..57f571c3f9bfa464ad1c27f1c20b9a80ca27e4f8 100644
 --- a/ios/VideoView.swift
