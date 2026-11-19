@@ -4,6 +4,7 @@ import { useLocalSearchParams } from 'expo-router'
 import { PlayerScreen } from '../../../player/screen.tsx'
 
 export default function PlayRoute() {
-  const { id } = useLocalSearchParams<{ id: string }>()
-  return <PlayerScreen id={id} fromStart={false} />
+  // `?queue=1`: the first film of a collection's Play, resumed (player.md › Play in order)
+  const { id, queue } = useLocalSearchParams<{ id: string; queue?: string }>()
+  return <PlayerScreen id={id} fromStart={false} queue={queue === '1'} />
 }

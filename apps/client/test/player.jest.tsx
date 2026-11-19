@@ -12,6 +12,12 @@ import { MOCK_CLIP, STOP_AFTER_MS } from '@highsea-tv/mock/play'
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react-native'
 import { router } from 'expo-router'
 import { navigationRef } from 'expo-router/build/global-state/navigationRef'
+import {
+  currentShuffle,
+  endShuffle,
+  playInOrder,
+  startShuffle,
+} from '../../../packages/client/src/shuffle/index.ts'
 import type { FakeVideo } from './mock.ts'
 import { flush, fresh, rewrite, sent, server, signedIn } from './mock.ts'
 
@@ -310,6 +316,63 @@ describe('the player on the phone', () => {
     expect(stack?.routes.map((r) => r.name)).toEqual(['(in)', '(in)'])
     expect(screen.queryByRole('header', { name: 'Tears of Steel' })).toBeNull()
     expect(screen.getAllByText('Settings').length).toBeGreaterThan(0)
+  })
+
+  test('a shuffle’s Previous and Next move through its order, each from its start, and leaving ends it', async () => {
+    // a generator that never swaps keeps the order as given: the film, then another
+    // the seed spaces its films 37 apart: the one after Tears of Steel
+    const other = FILM + 37
+    const to = startShuffle('movie', [FILM, other], () => 0.999)
+    const r = await signedIn()
+    await act(() => router.navigate(to as never))
+    await flush(2000)
+    expect(player().playing).toBe(true)
+    const previous = screen.getByRole('button', { name: 'Previous' })
+    expect(previous.props.accessibilityState).toMatchObject({ disabled: true })
+    await fireEvent.press(screen.getByRole('button', { name: 'Next' }))
+    await flush()
+    expect(r.getPathname()).toBe(`/play/${other}/start`)
+    expect(r.getSearchParams()).toMatchObject({ queue: '1' })
+    expect(currentShuffle()?.at).toBe(1)
+    // at the last, Next has nowhere to go and Previous goes back
+    expect(screen.getByRole('button', { name: 'Next' }).props.accessibilityState).toMatchObject({
+      disabled: true,
+    })
+    await fireEvent.press(screen.getByRole('button', { name: 'Previous' }))
+    await flush()
+    expect(r.getPathname()).toBe(`/play/${FILM}/start`)
+    await fireEvent.press(screen.getByRole('button', { name: 'Back to details' }))
+    await flush()
+    expect(currentShuffle()).toBeNull()
+  })
+
+  test('a collection’s Play resumes its first film, then Next takes the next from its start', async () => {
+    const other = FILM + 37
+    const to = playInOrder('movie', [FILM, other])
+    expect(to).toBe(`/play/${FILM}?queue=1`)
+    const r = await signedIn()
+    await act(() => router.navigate(to as never))
+    await flush(2000)
+    expect(player().playing).toBe(true)
+    expect(screen.getByRole('button', { name: 'Previous' }).props.accessibilityState).toMatchObject(
+      { disabled: true },
+    )
+    await fireEvent.press(screen.getByRole('button', { name: 'Next' }))
+    await flush()
+    expect(r.getPathname()).toBe(`/play/${other}/start`)
+    expect(r.getSearchParams()).toMatchObject({ queue: '1' })
+    expect(currentShuffle()?.shuffled).toBe(false)
+    expect(currentShuffle()?.at).toBe(1)
+    await fireEvent.press(screen.getByRole('button', { name: 'Back to details' }))
+    await flush()
+    expect(currentShuffle()).toBeNull()
+  })
+
+  test('the same film opened without the shuffle has no Previous or Next', async () => {
+    startShuffle('movie', [FILM, FILM + 1], () => 0.999)
+    await playing({}, `/play/${FILM}/start`)
+    expect(screen.queryByRole('button', { name: 'Next' })).toBeNull()
+    endShuffle()
   })
 
   test('Play from the beginning starts at 0', async () => {

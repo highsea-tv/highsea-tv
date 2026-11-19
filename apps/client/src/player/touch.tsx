@@ -24,6 +24,7 @@ import {
   type PlayerModel,
   Round,
   Scrubber,
+  ShuffleStep,
   StreamMessage,
   TrackLists,
   Waiting,
@@ -180,9 +181,11 @@ export function TouchPlayer({
               flexDirection: 'row',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: space['12'],
+              // a shuffle's Previous and Next go either side, closer, to fit a phone held upright
+              gap: m.shuffle ? space['6'] : space['12'],
             }}
           >
+            {m.shuffle ? <ShuffleStep m={m} step="previous" onPress={wake} /> : null}
             <Round
               icon="replay"
               label={t('backBy', { seconds: SEEK_S })}
@@ -214,6 +217,7 @@ export function TouchPlayer({
                 wake()
               }}
             />
+            {m.shuffle ? <ShuffleStep m={m} step="next" onPress={wake} /> : null}
           </View>
           <View
             style={{

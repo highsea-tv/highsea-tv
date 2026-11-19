@@ -589,6 +589,27 @@ export function TvPlayer({
               >
                 {t('tracks')}
               </Button>
+              {/* a shuffle's Previous and Next (player.md › Shuffle), beside Audio and subtitles */}
+              {m.shuffle ? (
+                <>
+                  <Button
+                    variant="overlay"
+                    icon="previous"
+                    disabled={!m.shuffle.previous}
+                    onPress={() => m.shuffle?.previous?.()}
+                  >
+                    {t('shufflePrevious')}
+                  </Button>
+                  <Button
+                    variant="overlay"
+                    icon="next"
+                    disabled={!m.shuffle.next}
+                    onPress={() => m.shuffle?.next?.()}
+                  >
+                    {t('shuffleNext')}
+                  </Button>
+                </>
+              ) : null}
               <View
                 accessibilityElementsHidden
                 importantForAccessibility="no-hide-descendants"

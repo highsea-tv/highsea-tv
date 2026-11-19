@@ -70,6 +70,10 @@ export const playerScreenMessages = defineMessages({
   nextEpisode: 'Next episode',
   seasonStarts: 'Season {season} starts',
   moreLike: 'More like this',
+  // a shuffle's (player.md › Shuffle)
+  nextInShuffle: 'Next in shuffle',
+  shuffleNext: 'Next',
+  shufflePrevious: 'Previous',
   startsIn: 'Starts in {seconds} s',
   playNow: 'Play now',
   cancel: 'Cancel',

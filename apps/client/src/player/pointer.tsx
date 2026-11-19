@@ -37,6 +37,7 @@ import {
   type PlayerModel,
   Round,
   Scrubber,
+  ShuffleSteps,
   StreamMessage,
   TrackLists,
   Waiting,
@@ -293,6 +294,7 @@ export function PointerPlayer({
               label={t('forwardBy', { seconds: SEEK_S })}
               onPress={() => p.seekBy(SEEK_S)}
             />
+            {m.shuffle ? <ShuffleSteps m={m} iconSize={tokens.icon.size.md} /> : null}
             {/* phones and tablets set the volume with their own buttons; this leaves Picture in
                 picture and Full screen room at a compact width */}
             {regular ? (

@@ -21,6 +21,7 @@ import { useEpisodeActions, useMarkShowWatched, useShow } from '@highsea-tv/clie
 import { episodeSource, seasonGroup } from '@highsea-tv/client/downloads'
 import { peopleOf } from '@highsea-tv/client/library'
 import { episodePlayPath, seasonOf } from '@highsea-tv/client/shows'
+import { canShuffle, showEpisodes, startShuffle } from '@highsea-tv/client/shuffle'
 import { useT } from '@highsea-tv/i18n/react'
 import { useMedia } from '@highsea-tv/native/media'
 import { REGULAR_WIDTH } from '@highsea-tv/tokens'
@@ -132,6 +133,7 @@ function useShowPage({ d, refresh, episode }: ShowProps) {
   }
   const seasonWatched =
     !!shown && shown.episodes.length > 0 && shown.episodes.every((e) => e.watched)
+  const shuffleIds = showEpisodes(d.seasons)
   return {
     d,
     t,
@@ -154,6 +156,13 @@ function useShowPage({ d, refresh, episode }: ShowProps) {
       : null,
     play: () => next && router.push(episodePlayPath(next.episode.id) as Href),
     fromStart: () => next && router.push(episodePlayPath(next.episode.id, true) as Href),
+    /** Shuffle: its episodes in a new random order, offered with two or more (player.md › Shuffle). */
+    shuffle: canShuffle(shuffleIds)
+      ? () => {
+          const to = startShuffle('episode', shuffleIds)
+          if (to) router.push(to as Href)
+        }
+      : null,
     markShow: () => void mark({ season: null, watched: !s.watched }),
     markSeason: () => shown && void mark({ season: shown.number, watched: !seasonWatched }),
     /** The season's episodes as downloads, kept under it (C8). */
@@ -483,6 +492,9 @@ function TouchShow(props: ShowProps) {
             {next?.kind === 'resume' ? (
               <NamedAction icon="replay" label={t('fromStart')} onPress={p.fromStart} />
             ) : null}
+            {p.shuffle ? (
+              <NamedAction icon="shuffle" label={t('shuffle')} onPress={p.shuffle} />
+            ) : null}
             {p.preview ? (
               <NamedAction
                 icon="trailer"
@@ -567,6 +579,9 @@ function PointerShow(props: ShowProps) {
             ) : null}
             {next?.kind === 'resume' ? (
               <NamedAction icon="replay" label={words('playFromStart')} onPress={p.fromStart} />
+            ) : null}
+            {p.shuffle ? (
+              <NamedAction icon="shuffle" label={t('shuffleEpisodes')} onPress={p.shuffle} />
             ) : null}
             {p.preview ? (
               <NamedAction
@@ -686,6 +701,9 @@ function TvShow(props: ShowProps) {
                 ) : null}
                 {next?.kind === 'resume' ? (
                   <NamedAction icon="replay" label={t('fromStart')} onPress={p.fromStart} />
+                ) : null}
+                {p.shuffle ? (
+                  <NamedAction icon="shuffle" label={t('shuffleEpisodes')} onPress={p.shuffle} />
                 ) : null}
                 <NamedAction
                   ref={firstRef}
