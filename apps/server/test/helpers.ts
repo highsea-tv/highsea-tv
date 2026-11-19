@@ -49,6 +49,7 @@ export async function bootRuntime(
     clock?: BootOptions['clock']
     containerNetwork?: BootOptions['containerNetwork']
     weather?: BootOptions['weather']
+    catalog?: BootOptions['catalog']
   } = {},
 ): Promise<Runtime> {
   const dir = mkdtempSync(join(tmpdir(), 'highsea-api-'))
@@ -79,6 +80,7 @@ export async function bootRuntime(
     containerNetwork: options.containerNetwork ?? null,
     // Open-Meteo is never asked: the fake answers, as HIGHSEA_WEATHER_FAKE=1 does
     weather: options.weather ?? { fetch: createFakeWeather().fetch },
+    catalog: options.catalog,
   })
 }
 

@@ -2212,15 +2212,7 @@
       "DefinitionCheck": {
         "type": "object",
         "properties": {
-          "verified": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "format": "date",
-            "example": "1999-03-30"
-          },
-          "channel": {
+          "stage": {
             "type": "string",
             "enum": [
               "stable",
@@ -2248,14 +2240,45 @@
               "string",
               "null"
             ]
+          },
+          "checked": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date",
+            "example": "1999-03-30"
+          },
+          "result": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "working",
+              "failing",
+              "challenge",
+              "skipped",
+              null
+            ]
+          },
+          "verified": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date",
+            "example": "1999-03-30"
           }
         },
         "required": [
-          "verified",
-          "channel",
+          "stage",
           "status",
           "since",
-          "note"
+          "note",
+          "checked",
+          "result",
+          "verified"
         ]
       },
       "Language": {
@@ -10997,6 +11020,9 @@
             "type": "string",
             "format": "date-time",
             "example": "2026-10-17T20:15:00.000Z"
+          },
+          "check": {
+            "$ref": "#/components/schemas/DefinitionCheck"
           }
         },
         "required": [

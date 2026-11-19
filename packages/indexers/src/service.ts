@@ -17,6 +17,8 @@ import {
   HEALTH_TOPIC,
   INDEXERS_TOPIC,
   type IndexersDeps,
+  type SourceDefinition,
+  type SourceStatus,
 } from './context.ts'
 import {
   baseUrlOf,
@@ -87,6 +89,26 @@ export type IndexerView = {
   /** Tag ids (checkpoint 8c): used only for movies sharing one; empty for every movie. */
   tags: string[]
   addedAt: string
+  /** What its catalog says of the definition's upkeep, a retired one's included; absent: nothing. */
+  check?: DefinitionCheck
+}
+
+/** A definition's upkeep as A9 reads it (ADR 0069): the catalog's status, less its name. */
+export type DefinitionCheck = SourceStatus
+
+/**
+ * What A9 is told of a definition's upkeep: nothing for a local one, nor a private one (the weekly
+ * check skips them, so its silence would read as "not checked yet"), nor one its catalog says
+ * nothing about (a bundle built before stages).
+ */
+export function checkOf(
+  loaded: Pick<SourceDefinition, 'definition' | 'origin' | 'status'> | null,
+  status: SourceStatus | null | undefined,
+): DefinitionCheck | null {
+  if (loaded && (loaded.origin === 'local' || loaded.definition.privacy === 'private')) return null
+  if (!status) return null
+  const { stage, status: s, since, note, checked, result, verified } = status
+  return { stage, status: s, since, note, checked, result, verified }
 }
 
 export type CatalogEntry = {
@@ -110,6 +132,8 @@ export type CatalogEntry = {
   origin: string
   /** How many installed indexers use it. */
   installed: number
+  /** What its catalog says of its upkeep; absent: nothing. */
+  check?: DefinitionCheck
 }
 
 export type TestResult = { ok: boolean; message: string; latencyMs: number }
@@ -177,6 +201,11 @@ export function createIndexers(deps: IndexersDeps) {
     const loaded = definitionOf(r)
     const def = loaded?.definition ?? null
     const now = clock.now()
+    // a retired definition is gone from definitions(); its catalog still says why
+    const check = checkOf(
+      loaded,
+      loaded ? loaded.status : (source.statusOf?.(r.definitionId) ?? null),
+    )
     return {
       id: r.id,
       definitionId: r.definitionId,
@@ -201,6 +230,7 @@ export function createIndexers(deps: IndexersDeps) {
       seeding: { ratio: r.seedRatio, minutes: r.seedMinutes, minMinutes: r.minSeedMinutes },
       tags: r.tags,
       addedAt: iso(r.addedAt),
+      ...(check ? { check } : {}),
     }
   }
 
@@ -446,27 +476,32 @@ export function createIndexers(deps: IndexersDeps) {
         .filter(
           (d) => !options.starter || (d.definition.starter && d.definition.privacy === 'public'),
         )
-        .map(({ definition: d, origin, logo }) => ({
-          id: d.id,
-          version: d.version,
-          name: d.name,
-          description: d.description,
-          privacy: d.privacy,
-          language: d.language,
-          kind: d.kind,
-          protocol: protocolOf(d),
-          categories: [...new Set(d.categories.map((c) => categoryName(c.standard)))],
-          settings: d.settings,
-          source: d.source,
-          license: d.license,
-          minEngineVersion: d.minEngineVersion,
-          starter: d.starter,
-          links: d.links,
-          logo,
-          local: origin === 'local',
-          origin,
-          installed: counts.get(d.id) ?? 0,
-        }))
+        .map((loaded) => {
+          const { definition: d, origin, logo } = loaded
+          const check = checkOf(loaded, loaded.status)
+          return {
+            id: d.id,
+            version: d.version,
+            name: d.name,
+            description: d.description,
+            privacy: d.privacy,
+            language: d.language,
+            kind: d.kind,
+            protocol: protocolOf(d),
+            categories: [...new Set(d.categories.map((c) => categoryName(c.standard)))],
+            settings: d.settings,
+            source: d.source,
+            license: d.license,
+            minEngineVersion: d.minEngineVersion,
+            starter: d.starter,
+            links: d.links,
+            logo,
+            local: origin === 'local',
+            origin,
+            installed: counts.get(d.id) ?? 0,
+            ...(check ? { check } : {}),
+          }
+        })
         .sort((a, b) => a.name.localeCompare(b.name))
     },
 
