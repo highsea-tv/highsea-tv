@@ -57,6 +57,7 @@ describe('grabbing', () => {
       versionId: VERSION,
       path: join(t.downloadsDir, 'movies', 'Sintel.2010.1080p.BluRay.x264-GRP.mkv'),
       force: false,
+      grabbedAnyway: false,
     })
     const row = t.db.select().from(schema.downloads).get()
     expect(row?.state).toBe('completed')
@@ -131,6 +132,27 @@ describe('grabbing', () => {
     const item = await grab(true)
     expect(item.release).toBe(rejected?.title ?? '')
     expect(t.history.at(-1)?.message).toStartWith('Grabbed anyway; the decision engine rejected it')
+  })
+
+  test('a release grabbed anyway reaches the import as grabbed anyway', async () => {
+    const t = await start()
+    const { releases } = await t.indexers.search(sintelSearch())
+    const rejected = releases.find((r) => !r.approved)
+    if (!rejected) throw new Error('The fake indexer has no rejected release.')
+    const id = Number(rejected.guid.split(':').at(-1))
+    const name = `${rejected.title}.mkv`
+    await t.seed(id, [{ path: name, data: data(300_000) }], name)
+    await t.downloads.grab({
+      itemId: ITEM,
+      versionId: VERSION,
+      indexerId: t.indexer.id,
+      guid: rejected.guid,
+      force: true,
+    })
+    await until(() => t.downloads.queue()[0]?.state === 'importing', 20_000, 'the download')
+    await t.drain()
+    // the import doesn't judge its quality against the profile again (@highsea-tv/media)
+    expect(t.imports[0]).toMatchObject({ releaseTitle: rejected.title, grabbedAnyway: true })
   })
 
   test('a release that left the cache, or one already downloading, is refused', async () => {

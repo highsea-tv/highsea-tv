@@ -31,7 +31,7 @@ The Owner and Admins can change both. You pick a film's profile when you add it,
 
 ## Qualities
 
-A quality is a source and a resolution together, such as **Bluray-1080p**, **WEBDL-2160p** or **Remux-1080p**. highsea reads it from the release's name. The qualities run from **Unknown**, **CAM** and **TELESYNC** at the bottom, through DVD, HDTV, WEB and Blu-ray at 480p to 2160p, up to **Remux-2160p** at the top.
+A quality is a source and a resolution together, such as **Bluray-1080p**, **WEBDL-2160p** or **Remux-1080p**. highsea reads it from the release's name, and when the name doesn't say (the Internet Archive's names give none), from the file once it's downloaded: its resolution, with the source unknown, so a 480-line film is SDTV and a 1080-line one HDTV-1080p. The qualities run from **Unknown**, **CAM** and **TELESYNC** at the bottom, through DVD, HDTV, WEB and Blu-ray at 480p to 2160p, up to **Remux-2160p** at the top.
 
 Inside a profile, qualities can be grouped, so they count as equal. The starting profiles group WEBRip and WEB-DL at each resolution as **WEB 1080p**, **WEB 2160p** and so on.
 
@@ -50,4 +50,4 @@ For each release a search finds, highsea checks these in order and gives the rea
 
 Of the releases that pass, highsea takes the best: higher in the profile's list first, then the newer revision, then the higher format score. If those tie, the indexer's priority, then more seeders, then the size nearer the preferred size.
 
-You see these reasons when you search for a film by hand: releases your profile accepts come first, and **Show rejected** lists the rest with their reasons. **Grab anyway** overrides your profile for one release. "Bluray-1080p isn't allowed in HD 1080p" means the quality isn't ticked; "Too large" and "Too small" give the size and the limit for the film's runtime. [Movies](/movies/) and [Activity](/activity/) have more on searching and grabbing, and [Indexers](/indexers/) has indexer priority.
+You see these reasons when you search for a film by hand: releases your profile accepts come first, and **Show rejected** lists the rest with their reasons. **Grab anyway** overrides your profile for one release, at the import too: the file comes in at the quality it's found to be, and if that's below your cutoff the film stays wanted for an upgrade. A release whose name gives no quality is listed as "Unknown quality: the name doesn't say" unless your profile allows Unknown. "Bluray-1080p isn't allowed in HD 1080p" means the quality isn't ticked; "Too large" and "Too small" give the size and the limit for the film's runtime. [Movies](/movies/) and [Activity](/activity/) have more on searching and grabbing, and [Indexers](/indexers/) has indexer priority.

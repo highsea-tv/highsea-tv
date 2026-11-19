@@ -18,14 +18,18 @@ export const fileErrorMessage = (e: unknown) =>
 
 /**
  * The file's quality: as grabbed when the download says, else the name's, with a resolution the
- * name leaves out taken from the probe, as Radarr and Sonarr augment a quality from media info.
+ * name leaves out taken from the probe, as Radarr and Sonarr augment a quality from media info
+ * (Radarr's AugmentQualityFromMediaInfo: the width and height give the resolution, the source stays
+ * unknown). A grab recorded as Unknown says nothing, so the file decides: an unnamed source at 480
+ * or 576 lines is SDTV, at 720, 1080 or 2160 it's HDTV of that resolution (`qualityOf`, as Radarr's
+ * QualityParser files a resolution with no source).
  */
 export function qualityFor(
   release: ParsedRelease,
   info: MediaInfo | null,
   grabbed?: string | null,
 ): QualityName {
-  if (grabbed && isQualityName(grabbed)) return grabbed
+  if (grabbed && grabbed !== 'Unknown' && isQualityName(grabbed)) return grabbed
   const resolution = release.quality.resolution ?? resolutionOf(info?.video ?? null)
   return qualityOf({ ...release.quality, resolution })
 }

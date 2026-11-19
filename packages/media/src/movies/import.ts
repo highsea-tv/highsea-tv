@@ -18,9 +18,11 @@ import {
   decide,
   defaultSpecifications,
   type ExistingFile,
+  fileQualitySpec,
   isQualityName,
   type QualityName,
   qualityDefinition,
+  withSpecification,
 } from '@highsea-tv/quality'
 import { and, asc, eq } from 'drizzle-orm'
 import {
@@ -126,6 +128,8 @@ export type ImportInput = {
   indexer?: string | null
   downloadId?: string | null
   mode?: ImportMode
+  /** The owner grabbed it anyway over the profile's rejection: its quality isn't judged again. */
+  grabbedAnyway?: boolean
 }
 
 export type ImportResult =
@@ -194,9 +198,21 @@ export type StoredFileInfo = {
 }
 
 /** The specifications that apply to a file at import: the quality and upgrades (Radarr's import specs). */
-const IMPORT_SPECS = defaultSpecifications.filter((s) =>
-  ['quality', 'upgradeAllowed', 'cutoff', 'upgrade'].includes(s.id),
+const IMPORT_SPECS = withSpecification(
+  defaultSpecifications.filter((s) =>
+    ['quality', 'upgradeAllowed', 'cutoff', 'upgrade'].includes(s.id),
+  ),
+  fileQualitySpec,
 )
+
+/**
+ * A release the owner grabbed anyway: the profile already rejected it once and the owner overrode
+ * that, so the import doesn't refuse it again for its quality; the upgrade checks still apply.
+ * Radarr imports by the same rule: its import specifications (ImportDecisionMaker) judge a file
+ * against the one it would replace, not against the profile's allowed qualities, and its manual
+ * import imports a file the person picked with no rejections at all (ManualImportService).
+ */
+const FORCED_IMPORT_SPECS = IMPORT_SPECS.filter((s) => s.id !== 'quality')
 
 function parsedQuality(quality: QualityName, release: ParsedRelease): ParsedRelease['quality'] {
   const def = qualityDefinition(quality)
@@ -396,6 +412,8 @@ export function createImports(ctx: Ctx, deps: { media: Media; library: Library }
     release: ParsedRelease
     sourceTitle: string
     grabbedQuality?: string | null
+    /** Grabbed anyway: the profile's allowed qualities don't refuse it (FORCED_IMPORT_SPECS). */
+    grabbedAnyway?: boolean
     indexer?: string | null
     downloadId?: string | null
     mode: ImportMode
@@ -471,7 +489,7 @@ export function createImports(ctx: Ctx, deps: { media: Media; library: Library }
         sizes: media.qualitySizes(),
         existing: existingFile,
       },
-      { specifications: IMPORT_SPECS },
+      { specifications: args.grabbedAnyway ? FORCED_IMPORT_SPECS : IMPORT_SPECS },
     )
     if (!decision.approved) {
       const why =
@@ -747,6 +765,7 @@ export function createImports(ctx: Ctx, deps: { media: Media; library: Library }
       release: parse(sourceTitle),
       sourceTitle,
       grabbedQuality: input.quality,
+      grabbedAnyway: input.grabbedAnyway,
       indexer: input.indexer,
       downloadId: input.downloadId,
       // a download that's one file has no folder of its own: its parent is the downloads folder

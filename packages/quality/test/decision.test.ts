@@ -6,6 +6,7 @@ import {
   decide,
   defaultSpecifications,
   existingFile,
+  fileQualitySpec,
   isCutoffMet,
   SPECIFICATION_IDS,
   withSpecification,
@@ -88,10 +89,19 @@ describe('decide', () => {
       const refused = decide(input({ release: archive, movie, profile: uhd, size: 1.5 * GB }))
       expect(refused.quality).toBe('Unknown')
       expect(refused.approved).toBe(false)
+      // HT-86: a grab anyway reads the quality from the file at import, and the reason says so
       expect(refused.reasons[0]).toEqual({
         kind: 'rejected',
-        message: 'Unknown isn’t allowed in Ultra HD',
+        message:
+          'Unknown quality: the name doesn’t say, and Ultra HD doesn’t allow Unknown. Grab anyway and highsea reads the quality from the file',
       })
+      // a file at import has no grab left to take: the plain reason
+      const atImport = decide(input({ release: archive, movie, profile: uhd, size: 1.5 * GB }), {
+        specifications: [fileQualitySpec],
+      })
+      expect(atImport.reasons).toEqual([
+        { kind: 'rejected', message: 'Unknown isn’t allowed in Ultra HD' },
+      ])
       const allowing: QualityProfile = {
         ...uhd,
         items: uhd.items.map((i) => (i.name === 'Unknown' ? { ...i, allowed: true } : i)),

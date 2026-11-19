@@ -1068,6 +1068,7 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
         quality: input.quality,
         indexer: input.indexer,
         downloadId: input.downloadId,
+        grabbedAnyway: input.grabbedAnyway,
       })
       if (result.status === 'imported') return { ok: true, transfer: result.transfer }
       return result.status === 'blocked' && result.replace

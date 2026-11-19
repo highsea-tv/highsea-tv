@@ -174,6 +174,11 @@ export type ImportInput = {
   indexer: string | null
   /** Import without a blocked file (the queue's Import without the blocked file). */
   force: boolean
+  /**
+   * The owner grabbed it anyway over the profile's rejection (Search's Grab anyway): the import
+   * doesn't judge its quality against the profile again.
+   */
+  grabbedAnyway: boolean
 }
 
 export type ImportOutcome =
@@ -747,6 +752,7 @@ export function createDownloads(deps: DownloadsDeps) {
         quality: d.quality,
         indexer: d.indexerName,
         force,
+        grabbedAnyway: (d.release as { grabbedAnyway?: boolean } | null)?.grabbedAnyway === true,
       })
     } catch (e) {
       outcome = { ok: false, reason: (e as Error).message }
