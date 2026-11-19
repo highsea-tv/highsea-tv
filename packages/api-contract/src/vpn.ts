@@ -18,6 +18,10 @@ export const VpnSettings = z
     piaUsername: z.string(),
     piaPasswordSet: z.boolean(),
     piaRegion: z.string(),
+    /** An access token is stored (connect: token); the token itself is never returned. */
+    tokenSet: z.boolean(),
+    /** The country a token provider connects in, by name; empty leaves it to the provider. */
+    tokenCountry: z.string(),
     staticPort: z.number().int().nullable(),
     containerUrl: z.string(),
     containerKeySet: z.boolean(),
@@ -29,12 +33,18 @@ export const VpnSettings = z
   .openapi('VpnSettings')
 
 /** The secrets are write-only: absent or empty keeps what's stored. */
-export const VpnSettingsInput = VpnSettings.omit({ piaPasswordSet: true, containerKeySet: true })
+export const VpnSettingsInput = VpnSettings.omit({
+  piaPasswordSet: true,
+  containerKeySet: true,
+  tokenSet: true,
+})
   .extend({
     staticPort: z.number().int().min(1).max(65_535).nullable(),
     /** A new WireGuard configuration's text. */
     config: z.string().max(20_000),
     piaPassword: z.string().max(1000),
+    /** A new access token, sent once in the body and never read back. */
+    token: z.string().max(1000),
     containerKey: z.string().max(1000),
   })
   .partial()
@@ -85,7 +95,7 @@ export const VpnProvider = z
   .object({
     id: z.string(),
     name: z.string(),
-    connect: z.enum(['config', 'account']),
+    connect: z.enum(['config', 'account', 'token']),
     steps: z.array(z.string()),
     portForwarding: z.enum(['natpmp', 'pia', 'static', 'none']),
     ipv6: z.boolean(),

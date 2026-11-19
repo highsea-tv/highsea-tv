@@ -78,6 +78,14 @@ export const vpn = defineMessages({
   secretSet: 'Set. Type a new one to replace it.',
   region: 'Region',
   regionHint: 'Each forwards a port.',
+  // HT-87: connecting with an access token
+  token: 'Access token',
+  tokenHint:
+    'highsea sends it to {provider} for your WireGuard key and a server before the tunnel is up. Nothing else leaves outside the tunnel.',
+  country: 'Country',
+  countryHint: 'highsea asks for a recommended server there each time it connects.',
+  countryAny: 'Any: {provider} recommends one',
+  configInstead: 'Or a WireGuard configuration you wrote',
   config: 'WireGuard configuration',
   configReplace: 'Replace the file',
   configUpload: 'Upload a file',

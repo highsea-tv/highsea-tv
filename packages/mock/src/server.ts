@@ -1100,10 +1100,11 @@ export function createApi(srv: MockServer, ctx: Ctx) {
    */
   const saveVpn = (value: VpnSettings): VpnSettings => {
     const failure = connectionFailure(value)
-    const { config, piaPassword, containerKey, ...rest } = value
+    const { config, piaPassword, token, containerKey, ...rest } = value
     const saved: VpnSettings = {
       ...rest,
       piaPasswordSet: rest.piaPasswordSet || (!!piaPassword && !failure),
+      tokenSet: rest.tokenSet || (!!token && !failure),
       containerKeySet: rest.containerKeySet || (!!containerKey && !failure),
     }
     if (failure) {

@@ -53,6 +53,8 @@ const settings = (extra: Record<string, unknown> = {}) => ({
   piaUsername: '',
   piaPasswordSet: false,
   piaRegion: '',
+  tokenSet: false,
+  tokenCountry: '',
   staticPort: null,
   containerUrl: 'http://127.0.0.1:8000',
   containerKeySet: false,
@@ -119,11 +121,16 @@ async function api(url: string, init: RequestInit = {}): Promise<Response> {
     case 'PUT /api/v1/settings/vpn': {
       if (body.containerKey === 'wrong')
         return failure('invalid', 'gluetun refused the API key.', 400, { field: 'containerKey' })
-      const { containerKey, piaPassword, config, ...rest } = body
+      if (body.token === 'wrong')
+        return failure('invalid', 'NordVPN didn’t accept that access token.', 400, {
+          field: 'token',
+        })
+      const { containerKey, piaPassword, config, token, ...rest } = body
       state.settings = {
         ...state.settings,
         ...rest,
         ...(containerKey ? { containerKeySet: true } : {}),
+        ...(token ? { tokenSet: true } : {}),
       }
       return json(state.settings)
     }
@@ -149,6 +156,15 @@ async function api(url: string, init: RequestInit = {}): Promise<Response> {
           steps: ['Sign in to Mullvad.'],
           portForwarding: 'none',
           ipv6: true,
+        },
+        {
+          id: 'nordvpn',
+          name: 'NordVPN',
+          connect: 'token',
+          steps: ['Generate an access token in Nord Account.'],
+          portForwarding: 'none',
+          ipv6: false,
+          regions: ['Netherlands', 'Sweden'],
         },
       ])
     case 'GET /api/v1/vpn/interfaces':
@@ -263,6 +279,41 @@ describe('Settings › VPN', () => {
       provider: 'proton',
       config: 'not a real config',
     })
+  })
+
+  test('a token provider: the token is write-only, a refusal shows under it, Test sends it', async () => {
+    state.settings = settings({ mode: 'builtin', provider: 'nordvpn' })
+    const { user, page } = await open()
+    expect(page.getByText('Generate an access token in Nord Account.')).toBeTruthy()
+    // the hint says what leaves before the tunnel is up
+    expect(page.getByText(/sends it to NordVPN for your WireGuard key and a server/)).toBeTruthy()
+    expect(page.getByText('Any: NordVPN recommends one')).toBeTruthy()
+    // a file written by hand stays as the fallback
+    expect(page.getByText('Or a WireGuard configuration you wrote')).toBeTruthy()
+
+    await user.type(page.getByLabelText('Access token'), 'wrong')
+    await user.click(page.getByRole('button', { name: 'Save' }))
+    await settle()
+    expect(page.getAllByText('NordVPN didn’t accept that access token.').length).toBeGreaterThan(0)
+
+    const field = page.getByLabelText('Access token')
+    await user.clear(field)
+    await user.type(field, 'abc123')
+    await user.click(page.getByRole('button', { name: 'Test' }))
+    await settle()
+    expect(requested('POST', '/api/v1/settings/vpn/test').at(-1)?.body).toMatchObject({
+      mode: 'builtin',
+      provider: 'nordvpn',
+      token: 'abc123',
+      tokenCountry: '',
+    })
+    await user.click(page.getByRole('button', { name: 'Save' }))
+    await settle()
+    const saved = requested('PUT', '/api/v1/settings/vpn').at(-1)?.body as Record<string, unknown>
+    expect(saved).toMatchObject({ provider: 'nordvpn', token: 'abc123' })
+    expect(saved).not.toHaveProperty('tokenSet')
+    expect(page.getByText('Set. Type a new one to replace it.')).toBeTruthy()
+    expect((page.getByLabelText('Access token') as HTMLInputElement).value).toBe('')
   })
 
   test('connected: the exit, the checks, Check now and when it last checked', async () => {

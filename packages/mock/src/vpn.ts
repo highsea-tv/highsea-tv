@@ -18,6 +18,12 @@ export type VpnSettings = {
   /** Write-only, like `config`. */
   piaPassword?: string
   piaRegion: string
+  /** An access token is stored (connect: token, HT-87). */
+  tokenSet: boolean
+  /** Write-only, like `config`. */
+  token?: string
+  /** The country a token provider connects in; empty leaves it to the provider. */
+  tokenCountry: string
   /** A port the provider reserved for the owner, typed in (AirVPN, and others that offer one). */
   staticPort: number | null
   containerUrl: string
@@ -32,7 +38,7 @@ export type VpnSettings = {
 export type VpnProvider = {
   id: string
   name: string
-  connect: 'config' | 'account'
+  connect: 'config' | 'account' | 'token'
   /** Where to find what highsea needs in the provider's account, in order. */
   steps: string[]
   portForwarding: 'natpmp' | 'pia' | 'static' | 'none'
@@ -94,14 +100,15 @@ export const vpnProviders: VpnProvider[] = [
   {
     id: 'nordvpn',
     name: 'NordVPN',
-    connect: 'config',
+    connect: 'token',
     steps: [
-      'Generate an access token in Nord Account › NordVPN › Advanced settings.',
-      'Use it to get your NordLynx key and a server, and write a WireGuard file from them.',
-      'Upload it here, or paste it.',
+      'Sign in to Nord Account, open NordVPN › Advanced settings › Get access token, enter the code Nord emails you, and generate a token. Copy it now; Nord shows it once.',
+      'Paste it here and pick a country, or leave the country to NordVPN. highsea fetches your NordLynx key and a recommended server with it, so there’s no file.',
+      'If you’d rather write the WireGuard file yourself, upload it instead; the token is used whenever it’s set.',
     ],
     portForwarding: 'none',
     ipv6: false,
+    regions: ['Germany', 'Netherlands', 'Sweden', 'Switzerland', 'United Kingdom', 'United States'],
   },
   ...(['IVPN', 'Windscribe', 'Surfshark'] as const).map(
     (name): VpnProvider => ({
@@ -138,6 +145,8 @@ export const defaultVpnSettings = (kind: 'populated' | 'empty'): VpnSettings => 
   piaUsername: '',
   piaPasswordSet: false,
   piaRegion: 'Netherlands',
+  tokenSet: false,
+  tokenCountry: '',
   staticPort: null,
   containerUrl: 'http://127.0.0.1:8000',
   containerKeySet: false,
@@ -417,7 +426,7 @@ export function vpnStatus(
 
 /**
  * Checks new settings the way the server would before connecting: the spec's copy for each
- * failure, or null. PIA's password `wrong` and gluetun's key `wrong` play a refusal.
+ * failure, or null. PIA's password `wrong`, an access token `wrong` and gluetun's key `wrong` play a refusal.
  */
 export function connectionFailure(s: VpnSettings): string | null {
   if (s.mode === 'builtin') {
@@ -427,6 +436,15 @@ export function connectionFailure(s: VpnSettings): string | null {
       if (s.piaPassword === 'wrong') return 'PIA didn’t accept that username and password.'
       if (!s.piaPasswordSet && !s.piaPassword) return 'Enter your PIA password.'
       return null
+    }
+    if (p?.connect === 'token') {
+      if (s.token === 'wrong')
+        return `${p.name} didn’t accept that access token. Generate a new one in your ${p.name} account and paste it here.`
+      if (s.tokenCountry === 'Atlantis')
+        return `${p.name} has no country called Atlantis. Pick another one.`
+      if (!s.tokenSet && !s.token && !s.configName && s.config === undefined)
+        return `Paste your ${p.name} access token.`
+      if (s.token || s.tokenSet) return null
     }
     if (s.config !== undefined && !/^\s*\[Interface\]/m.test(s.config))
       return 'That file isn’t a WireGuard configuration: it has no [Interface] section.'
