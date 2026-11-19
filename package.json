@@ -26,6 +26,8 @@
     "one-place": "bun scripts/one-place.ts",
     "catalog:build": "bun scripts/catalog.ts build",
     "catalog:verify": "bun scripts/catalog-verify.ts",
+    "catalog:check": "bun scripts/catalog-check.ts",
+    "catalog:watch": "bun scripts/catalog-watch.ts",
     "clean": "bun scripts/clean.ts",
     "flaky": "bun scripts/flaky.ts"
   },

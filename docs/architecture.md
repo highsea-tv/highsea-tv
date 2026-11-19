@@ -98,6 +98,9 @@ bun run pin hono zod    # versions old enough to pin
 bun run licenses        # the license audit
 bun run catalog:build   # validate, bundle and sign the catalog (dev key unless HIGHSEA_CATALOG_KEY)
 bun run catalog:verify [id…]   # each public definition against its real site, by hand; writes catalog/indexers/verified.json (--dry: only the table)
+bun run catalog:check   # the weekly check (ADR 0069): catalog:verify, then the stages, promotions, CHANGES.md and the seed, with a report; --dry, --github (reports and the Catalog check issue), retire <id> --note "…", schedule / unschedule (the launchd job on the owner's Mac)
+bun run catalog:watch   # monthly: the file names in other projects' indexer lists, names only, against highsea's; keeps catalog/indexers/watch.json (--dry, --all)
+bun scripts/catalog.ts publishable https://catalog.highsea.tv   # whether a catalog-only publish may go out (catalog-release.yml runs it)
 bun run record:tmdb     # in packages/metadata: refresh the TMDB recordings, with HIGHSEA_TMDB_READ_TOKEN from .env.local (never in CI)
 bun scripts/calibrate-sync.ts <library> --cache <dir>   # the sync's confidence on real films: reads them, never writes (never in CI)
 docker compose -f docker/compose.dev.yaml up --build   # the image from this checkout (compose.yaml runs the published one)

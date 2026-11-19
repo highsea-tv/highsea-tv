@@ -130,5 +130,11 @@ export const bundleSchema = z.object({
   definitions: z.array(z.unknown()).max(5000),
   /** Logos by file name, as data URLs. */
   logos: z.record(z.string(), z.string()).default({}),
+  /**
+   * Each definition's stage, status and last check by id, and recently retired ones' notes
+   * (`definitionStatusSchema` in stages.ts, read entry by entry with `readStatuses`). Optional and
+   * unparsed here, so a bundle without it, or with an entry a later build adds, still installs.
+   */
+  status: z.record(z.string(), z.unknown()).optional(),
 })
 export type Bundle = z.infer<typeof bundleSchema>
