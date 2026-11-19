@@ -18,7 +18,7 @@ import { useAction, useQuery } from '@highsea-tv/sdk/react'
 // noted. Search, Edit, and More (Refresh metadata, Remove) are in the header.
 //
 // Since Phase 5 C1, beside each season's and episode's Search, Releases opens the interactive
-// release list for it (release-list.tsx, a film's Search tab's table with an Episodes column), and
+// release list for it (release-list.tsx, a film's Search tab's table, each release named with its episodes), and
 // a show in a root folder highsea only reads (ADR 0063) has no monitoring switches and no Search:
 // nothing is searched for or imported there. Drawn only when the server serves shows (`Served`,
 // serves.tsx).
@@ -897,7 +897,7 @@ const CELL_X = admin.table.cellX
 
 /**
  * A season's or an episode's releases from every usable indexer, judged by the show's profile and
- * the episode sizes: the film page's release list with an Episodes column. Opening it shows the
+ * the episode sizes: the film page's release list, each release named with its episodes. Opening it shows the
  * last 30 minutes' results when there are some; Search again always searches.
  */
 function ReleasesDialog({

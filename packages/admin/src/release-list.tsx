@@ -5,8 +5,9 @@
 // drawing the same table. Each says where its releases come from (`load`, the last 30 minutes'
 // first when the page opens, a new search on Search again), how a grab goes (`grab`, which sends
 // `force` for a rejected release: Grab anyway overrides the profile), and what it says of the
-// releases the indexers answered with that aren't listed. A show's adds the Episodes column: the
-// season pack's season, or the episodes a release brings. The small table parts beside it
+// releases the indexers answered with that aren't listed. A show's names the season pack, or the
+// episodes a release brings, before the indexer in the release's cell: an Episodes column of its own
+// would push Grab past the edge of the 800-pixel dialog. The small table parts beside it
 // (Caption, TitleTd, Words, TableNone) are the film page's, kept here so both draw them once.
 import type { Release } from '@highsea-tv/api-contract'
 import { bytes, duration } from '@highsea-tv/core/format'
@@ -117,7 +118,7 @@ export function ReleaseList<R extends Release>({
   noneForThis: string
   /** What's said of a left-out row, or null to say nothing of it. */
   leftOutNote: (l: LeftOut) => string | null
-  /** A show's Episodes column: the text for each release. */
+  /** A show's episodes for each release, put before the indexer's name. */
   episodes?: (release: R) => string
 }) {
   const t = useT(messages)
@@ -137,7 +138,7 @@ export function ReleaseList<R extends Release>({
       },
       (e: Error) => toast.error(t('grab.failed'), { description: e.message }),
     )
-  const columns = episodes ? 9 : 8
+  const columns = 8
 
   return (
     <Loadable
@@ -184,7 +185,6 @@ export function ReleaseList<R extends Release>({
                   <TableHeader>
                     <TableRow>
                       <TableHead>{t('search.release')}</TableHead>
-                      {episodes && <TableHead>{t('search.episodes')}</TableHead>}
                       <TableHead>{t('search.quality')}</TableHead>
                       <TableHead numeric>{t('search.score')}</TableHead>
                       <TableHead numeric>{t('search.size')}</TableHead>
@@ -203,8 +203,10 @@ export function ReleaseList<R extends Release>({
                         : t('search.rejected', { count: rejected })
                       const row = (
                         <TableRow key={r.guid}>
-                          <TitleTd title={r.indexer} detail={r.title} />
-                          {episodes && <TableCell>{episodes(r)}</TableCell>}
+                          <TitleTd
+                            title={episodes ? `${episodes(r)} · ${r.indexer}` : r.indexer}
+                            detail={r.title}
+                          />
                           <TableCell>
                             <QualityTag overlay={false}>{r.quality}</QualityTag>
                             {r.customFormats.slice(0, 2).map((f) => (

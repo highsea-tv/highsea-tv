@@ -172,6 +172,22 @@ describe('the admin’s shows', () => {
     ).toEqual({ code: 'conflict', reason: 'delete-files' })
   })
 
+  test('a show in a root folder highsea only reads is never searched for (Phase 5 C1)', async () => {
+    const { runtime, api } = await served()
+    const id = '87108'
+    expect((await api.series.get({ params: { id } })).readOnly).toBe(false)
+    const root = runtime.media.rootFolders.list('shows')[0]
+    if (!root) throw new Error('no root folder')
+    runtime.media.rootFolders.setReadOnly(root.id, true)
+    // the admin hides its monitoring switches and Search by this
+    expect((await api.series.get({ params: { id } })).readOnly).toBe(true)
+    const refused = { code: 'conflict' as const, reason: 'read-only' }
+    expect(await failure(api.series.search({ params: { id }, body: {} }))).toEqual(refused)
+    expect(
+      await failure(api.series.interactiveSearch({ params: { id }, body: { season: 1 } })),
+    ).toEqual(refused)
+  })
+
   test('Shows’ settings: naming, sizes and the profiles’ use', async () => {
     const { api, profile } = await served()
     const naming = await api.series.naming()

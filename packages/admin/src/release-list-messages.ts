@@ -32,6 +32,5 @@ export const releaseList = defineMessages({
   'grab.doneBody': '{title} is downloading. Follow it in Activity.',
   'grab.failed': 'Couldn’t grab it',
   'search.failedIndexer': '{indexer} didn’t answer: {message}',
-  'search.episodes': 'Episodes',
   'search.pack': 'Season {season}',
 })
