@@ -223,7 +223,13 @@ export function peopleAnswers({ wall, emit, userOf, devicesOf }: AdminKit): Answ
   }
 
   const vpnOf = (ctx: Ctx): VpnOut => {
-    const { config: _c, piaPassword: _p, containerKey: _k, ...v } = ctx.api.settings.get('vpn')
+    const {
+      config: _c,
+      piaPassword: _p,
+      token: _t,
+      containerKey: _k,
+      ...v
+    } = ctx.api.settings.get('vpn')
     return { ...v, echoUrl: extra(ctx).echoUrl }
   }
 

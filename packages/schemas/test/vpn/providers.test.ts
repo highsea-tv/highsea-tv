@@ -4,6 +4,7 @@ import { describe, expect, test } from 'bun:test'
 import {
   formatProviderIssues,
   type ProviderValidation,
+  readAnswerPath,
   validateVpnProvider,
   vpnEngineSupports,
 } from '../../src/vpn/index.ts'
@@ -66,6 +67,71 @@ describe('The VPN provider format', () => {
 
   test('an entry for a newer server is recognised as such', () => {
     expect(vpnEngineSupports('1.0.0')).toBe(true)
+    expect(vpnEngineSupports('1.1.0')).toBe(true)
     expect(vpnEngineSupports('2.0.0')).toBe(false)
+    // a server from before connect: token (engine 1.0.0) skips an entry that needs it
+    expect(vpnEngineSupports('1.1.0', '1.0.0')).toBe(false)
+  })
+
+  const tokenEntry = {
+    ...proton,
+    id: 'nordvpn',
+    name: 'NordVPN',
+    minEngineVersion: '1.1.0',
+    connect: 'token',
+    portForwarding: { method: 'none' },
+    token: {
+      auth: { scheme: 'basic', username: 'token' },
+      key: { url: 'https://api.example.com/v1/credentials', field: 'nordlynx_private_key' },
+      servers: {
+        url: 'https://api.example.com/v1/servers?limit=1',
+        host: 'station',
+        publicKey: 'technologies[id=35].metadata[name=public_key].value',
+        country: 'filters[country_id]',
+      },
+      countries: { url: 'https://api.example.com/v1/countries', id: 'id', name: 'name' },
+      tunnel: { address: '10.5.0.2/32', port: 51820, dns: ['103.86.96.100'] },
+    },
+    regions: ['Netherlands'],
+  }
+
+  test('an access token connects with a token block, described as data', () => {
+    expect(errors(validateVpnProvider(tokenEntry))).toEqual([])
+    const { token: _t, regions: _r, ...noBlock } = tokenEntry
+    expect(errors(validateVpnProvider(noBlock))).toEqual([
+      'token: connect: token needs a token block.',
+    ])
+    expect(errors(validateVpnProvider({ ...tokenEntry, connect: 'config' }))).toEqual([
+      'token: A token block needs connect: token.',
+    ])
+    const { countries: _c, ...noCountries } = tokenEntry.token
+    expect(errors(validateVpnProvider({ ...tokenEntry, token: noCountries }))).toEqual([
+      'token.countries: A country filter needs the countries list to find the id.',
+    ])
+    // no code in a path, no plain http, and a tunnel address with its prefix
+    for (const token of [
+      { ...tokenEntry.token, key: { ...tokenEntry.token.key, field: 'a; rm -rf /' } },
+      { ...tokenEntry.token, key: { ...tokenEntry.token.key, url: 'http://api.example.com' } },
+      { ...tokenEntry.token, tunnel: { ...tokenEntry.token.tunnel, address: '10.5.0.2' } },
+      { ...tokenEntry.token, auth: { scheme: 'query' } },
+    ])
+      expect(validateVpnProvider({ ...tokenEntry, token }).ok).toBe(false)
+  })
+
+  test('a path reads fields, and picks an item from a list by one of its fields', () => {
+    const server = {
+      station: '194.127.167.108',
+      technologies: [
+        { id: 3, metadata: [] },
+        { id: 35, metadata: [{ name: 'public_key', value: 'key=' }] },
+      ],
+    }
+    expect(readAnswerPath(server, 'station')).toBe('194.127.167.108')
+    expect(readAnswerPath(server, 'technologies[id=35].metadata[name=public_key].value')).toBe(
+      'key=',
+    )
+    expect(readAnswerPath(server, 'technologies[id=51].metadata')).toBeUndefined()
+    expect(readAnswerPath(server, 'station.nothing')).toBeUndefined()
+    expect(readAnswerPath(null, 'station')).toBeUndefined()
   })
 })

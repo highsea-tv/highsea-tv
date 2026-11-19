@@ -1,19 +1,44 @@
 # SPDX-License-Identifier: CC0-1.0
 # Written for highsea from NordVPN's own support pages and its own open-source clients; nothing was
-# copied. NordVPN offers no WireGuard file to download, so the steps build one: the access token
-# (its support page), the NordLynx key the token unlocks and a server from its public API (libtelio's
-# README), and the tunnel's address and port its Linux client uses (nordvpn-linux's nordlynx.go).
+# copied. The owner pastes an access token (its support page); highsea asks NordVPN's API for the
+# NordLynx private key the token unlocks (GET /v1/users/services/credentials with HTTP Basic
+# token:<token>, field nordlynx_private_key) and for a recommended WireGuard server (GET
+# /v1/servers/recommendations: each server's station address, and the public_key in the metadata of
+# technology 35, wireguard_udp), as libtelio's README and its tcli client do. The countries are
+# /v1/servers/countries (id, name, code), narrowed with filters[country_id], and the tunnel's address
+# 10.5.0.2 and port 51820 are those nordvpn-linux uses (core/urls.go, core/models.go, nordlynx.go).
 id: nordvpn
-version: 1.0.0
-minEngineVersion: 1.0.0
+version: 2.0.0
+minEngineVersion: 1.1.0
 name: NordVPN
-connect: config
+connect: token
+token:
+  auth:
+    scheme: basic
+    username: token
+  key:
+    url: https://api.nordvpn.com/v1/users/services/credentials
+    field: nordlynx_private_key
+  servers:
+    url: https://api.nordvpn.com/v1/servers/recommendations?filters[servers_technologies][identifier]=wireguard_udp&filters[servers_technologies][pivot][status]=online&limit=1
+    host: station
+    publicKey: technologies[id=35].metadata[name=public_key].value
+    country: filters[country_id]
+  countries:
+    url: https://api.nordvpn.com/v1/servers/countries
+    id: id
+    name: name
+    code: code
+  tunnel:
+    address: 10.5.0.2/32
+    port: 51820
+    dns:
+      - 103.86.96.100
+      - 103.86.99.100
 steps:
   - Sign in to Nord Account, open NordVPN › Advanced settings › Get access token, enter the code Nord emails you, and generate a token. Copy it now; Nord shows it once.
-  - "Get your NordLynx key with that token: curl -u token:YOUR_TOKEN https://api.nordvpn.com/v1/users/services/credentials and copy nordlynx_private_key."
-  - Open https://api.nordvpn.com/v1/servers/recommendations?filters[servers_technologies][identifier]=wireguard_udp&limit=1 and note the hostname, and the public_key under wireguard_udp.
-  - "Write a file: [Interface] PrivateKey = your key, Address = 10.5.0.2/32, DNS = 103.86.96.100, 103.86.99.100; [Peer] PublicKey = the server’s key, AllowedIPs = 0.0.0.0/0, Endpoint = the hostname:51820."
-  - Upload it here, or paste it.
+  - Paste it here and pick a country, or leave the country to NordVPN. highsea fetches your NordLynx key and a recommended server with it, so there’s no file.
+  - If you’d rather write the WireGuard file yourself, upload it instead; the token is used whenever it’s set.
 links:
   - label: NordVPN’s access token
     url: https://support.nordvpn.com/hc/en-us/articles/45535038276753-How-to-generate-a-NordVPN-login-token-to-connect-to-a-VPN-server-on-a-router
@@ -23,9 +48,36 @@ portForwarding:
   # only with the Dedicated Server add-on; standard servers and Dedicated IP don't forward ports
   method: none
 ipv6: false
+# the countries offered; each is matched by name against NordVPN's live list as highsea connects
+regions:
+  - Australia
+  - Austria
+  - Belgium
+  - Canada
+  - Czech Republic
+  - Denmark
+  - Finland
+  - France
+  - Germany
+  - Ireland
+  - Italy
+  - Japan
+  - Netherlands
+  - Norway
+  - Poland
+  - Romania
+  - Singapore
+  - Spain
+  - Sweden
+  - Switzerland
+  - United Kingdom
+  - United States
 sources:
   - https://support.nordvpn.com/hc/en-us/articles/45535038276753-How-to-generate-a-NordVPN-login-token-to-connect-to-a-VPN-server-on-a-router
   - https://support.nordvpn.com/hc/en-us/articles/19483392309649-Does-NordVPN-offer-port-forwarding
   - https://support.nordvpn.com/hc/en-us/articles/19587726859793-What-are-NordVPN-DNS-server-addresses
   - https://github.com/NordSecurity/libtelio/blob/main/README.md
+  - https://github.com/NordSecurity/libtelio/blob/main/clis/tcli/src/nord.rs
+  - https://github.com/NordSecurity/nordvpn-linux/blob/main/core/urls.go
+  - https://github.com/NordSecurity/nordvpn-linux/blob/main/core/models.go
   - https://github.com/NordSecurity/nordvpn-linux/blob/main/daemon/vpn/nordlynx/nordlynx.go

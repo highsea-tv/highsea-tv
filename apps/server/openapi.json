@@ -12833,7 +12833,8 @@
             "type": "string",
             "enum": [
               "config",
-              "account"
+              "account",
+              "token"
             ]
           },
           "steps": {
@@ -12941,6 +12942,12 @@
           "piaRegion": {
             "type": "string"
           },
+          "tokenSet": {
+            "type": "boolean"
+          },
+          "tokenCountry": {
+            "type": "string"
+          },
           "staticPort": {
             "type": [
               "integer",
@@ -12973,6 +12980,8 @@
           "piaUsername",
           "piaPasswordSet",
           "piaRegion",
+          "tokenSet",
+          "tokenCountry",
           "staticPort",
           "containerUrl",
           "containerKeySet",
@@ -13009,6 +13018,9 @@
           "piaRegion": {
             "type": "string"
           },
+          "tokenCountry": {
+            "type": "string"
+          },
           "staticPort": {
             "type": [
               "integer",
@@ -13037,6 +13049,10 @@
             "maxLength": 20000
           },
           "piaPassword": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "token": {
             "type": "string",
             "maxLength": 1000
           },

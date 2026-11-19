@@ -3,7 +3,7 @@
 // Settings › VPN (docs/product/vpn.md), ported from the signed-off prototype
 // (design/prototypes/src/admin/settings/vpn.tsx): status first, with the checks; then how highsea
 // connects, and what it does with the tunnel. The owner's only (ADR 0032's answers). The secrets,
-// a WireGuard configuration, PIA's password and gluetun's API key, are write-only: the settings
+// a WireGuard configuration, PIA's password, an access token and gluetun's API key, are write-only: the settings
 // say whether one is set, and the draft holds a new one until Save. Built-in mode (highsea
 // connects) is 6b's, so its card is shown as the prototype has it but can't be picked yet. The
 // interfaces, providers and compose block come from the server, not the prototype's tables, and
@@ -120,7 +120,12 @@ function Spinning({ children }: { children: ReactNode }) {
 type T = Translate<typeof messages>
 
 /** The settings with the secrets the owner has typed and not yet saved. */
-type Draft = VpnSettings & { config?: string; piaPassword?: string; containerKey?: string }
+type Draft = VpnSettings & {
+  config?: string
+  piaPassword?: string
+  token?: string
+  containerKey?: string
+}
 type Set = (patch: Partial<Draft>) => void
 
 const MODES = ['builtin', 'container', 'interface', 'off'] as const
@@ -161,11 +166,21 @@ export function Vpn() {
 
 /** What a save or a test sends: the draft without the `*Set` flags, and secrets only when typed. */
 function bodyOf(draft: Draft): VpnSettingsInput {
-  const { piaPasswordSet, containerKeySet, config, piaPassword, containerKey, ...rest } = draft
+  const {
+    piaPasswordSet,
+    containerKeySet,
+    tokenSet,
+    config,
+    piaPassword,
+    token,
+    containerKey,
+    ...rest
+  } = draft
   return {
     ...rest,
     ...(config !== undefined ? { config } : {}),
     ...(piaPassword ? { piaPassword } : {}),
+    ...(token ? { token } : {}),
     ...(containerKey ? { containerKey } : {}),
   }
 }
@@ -638,6 +653,7 @@ function ConnectionGroup({
         <BuiltIn
           v={v}
           set={set}
+          errors={errors}
           // the lines open by themselves when highsea can't run the tunnel as it's set up now
           linesNeeded={status?.hostNetwork === true || status?.needsCapability === true}
         />
@@ -705,7 +721,17 @@ function Steps({ provider }: { provider: VpnProvider }) {
 }
 
 /** Shown only when the stored mode is built-in, which the page can't pick until 6b. */
-function BuiltIn({ v, set, linesNeeded }: { v: Draft; set: Set; linesNeeded: boolean }) {
+function BuiltIn({
+  v,
+  set,
+  errors,
+  linesNeeded,
+}: {
+  v: Draft
+  set: Set
+  errors: Record<string, string>
+  linesNeeded: boolean
+}) {
   const t = useT(messages)
   const providers = useQuery('vpn:providers', (c) => c.vpn.providers())
   const [pasting, setPasting] = useState(false)
@@ -722,7 +748,13 @@ function BuiltIn({ v, set, linesNeeded }: { v: Draft; set: Set; linesNeeded: boo
                   aria-label={t('provider')}
                   value={provider.id}
                   onValueChange={(id) =>
-                    set({ provider: id, config: undefined, configName: null, staticPort: null })
+                    set({
+                      provider: id,
+                      config: undefined,
+                      configName: null,
+                      staticPort: null,
+                      token: undefined,
+                    })
                   }
                   options={list.map((p) => ({ value: p.id, label: p.name }))}
                 />
@@ -759,89 +791,122 @@ function BuiltIn({ v, set, linesNeeded }: { v: Draft; set: Set; linesNeeded: boo
                 </Field>
               </Columns>
             ) : (
-              <View style={{ gap: s['2'] }}>
-                <Text size={ui.size} leading={ui.leading} weight={500}>
-                  {t('config')}
-                </Text>
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    flexWrap: 'wrap',
-                    alignItems: 'center',
-                    gap: s['2'],
-                  }}
-                >
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    icon="upload"
-                    onPress={() =>
-                      pickFile('.conf,text/plain', (file) =>
-                        file.text().then((config) => set({ config, configName: file.name })),
-                      )
-                    }
-                  >
-                    {v.configName || v.config !== undefined
-                      ? t('configReplace')
-                      : t('configUpload')}
-                  </Button>
-                  <Button size="sm" variant="ghost" onPress={() => setPasting((p) => !p)}>
-                    {pasting ? t('configHide') : t('configPaste')}
-                  </Button>
-                  {v.configName && (
-                    <View
-                      style={{
-                        flexDirection: 'row',
-                        minWidth: 0,
-                        flexShrink: 1,
-                        alignItems: 'center',
-                        gap: s['1'] + s['0.5'],
-                      }}
-                    >
-                      <Icon name="check" size={tokens.icon.size.xs} color="success" />
-                      <Text variant="caption" color="text-2" mono numberOfLines={1}>
-                        {v.configName}
-                      </Text>
-                      {v.config === undefined && (
-                        <Text variant="caption" color="text-3">
-                          {t('configKept')}
-                        </Text>
-                      )}
-                    </View>
-                  )}
-                </View>
-                {pasting && (
-                  <Field label={t('configPasteLabel')}>
-                    <Textarea
-                      mono
-                      numberOfLines={6}
-                      spellCheck={false}
-                      placeholder={
-                        '[Interface]\nPrivateKey = …\nAddress = 10.2.0.2/32\n\n[Peer]\n…'
-                      }
-                      value={v.config ?? ''}
-                      onChangeText={(config) =>
-                        set({ config, configName: v.configName ?? 'pasted.conf' })
-                      }
-                    />
-                  </Field>
-                )}
-                {provider.portForwarding === 'static' && (
+              <>
+                {provider.connect === 'token' && (
                   <Columns count={3}>
-                    <Field label={t('staticPort')} hint={t('staticPortHint')}>
+                    <Field
+                      label={t('token')}
+                      error={errors.token}
+                      hint={
+                        v.tokenSet ? t('secretSet') : t('tokenHint', { provider: provider.name })
+                      }
+                    >
                       <Input
+                        secureTextEntry
                         mono
-                        inputMode="numeric"
-                        keyboardType="number-pad"
-                        value={v.staticPort == null ? '' : String(v.staticPort)}
-                        onChangeText={(port) =>
-                          set({ staticPort: port.trim() ? Number(port) : null })
-                        }
+                        autoComplete="off"
+                        value={v.token ?? ''}
+                        placeholder={v.tokenSet ? '••••••••' : ''}
+                        onChangeText={(token) => set({ token })}
+                      />
+                    </Field>
+                    <Field label={t('country')} hint={t('countryHint')} error={errors.tokenCountry}>
+                      <Select
+                        aria-label={t('country')}
+                        value={v.tokenCountry}
+                        onValueChange={(tokenCountry) => set({ tokenCountry })}
+                        options={[
+                          { value: '', label: t('countryAny') },
+                          ...(provider.regions ?? []).map((r) => ({ value: r, label: r })),
+                        ]}
                       />
                     </Field>
                   </Columns>
                 )}
-              </View>
+                <View style={{ gap: s['2'] }}>
+                  <Text size={ui.size} leading={ui.leading} weight={500}>
+                    {provider.connect === 'token' ? t('configInstead') : t('config')}
+                  </Text>
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      flexWrap: 'wrap',
+                      alignItems: 'center',
+                      gap: s['2'],
+                    }}
+                  >
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      icon="upload"
+                      onPress={() =>
+                        pickFile('.conf,text/plain', (file) =>
+                          file.text().then((config) => set({ config, configName: file.name })),
+                        )
+                      }
+                    >
+                      {v.configName || v.config !== undefined
+                        ? t('configReplace')
+                        : t('configUpload')}
+                    </Button>
+                    <Button size="sm" variant="ghost" onPress={() => setPasting((p) => !p)}>
+                      {pasting ? t('configHide') : t('configPaste')}
+                    </Button>
+                    {v.configName && (
+                      <View
+                        style={{
+                          flexDirection: 'row',
+                          minWidth: 0,
+                          flexShrink: 1,
+                          alignItems: 'center',
+                          gap: s['1'] + s['0.5'],
+                        }}
+                      >
+                        <Icon name="check" size={tokens.icon.size.xs} color="success" />
+                        <Text variant="caption" color="text-2" mono numberOfLines={1}>
+                          {v.configName}
+                        </Text>
+                        {v.config === undefined && (
+                          <Text variant="caption" color="text-3">
+                            {t('configKept')}
+                          </Text>
+                        )}
+                      </View>
+                    )}
+                  </View>
+                  {pasting && (
+                    <Field label={t('configPasteLabel')}>
+                      <Textarea
+                        mono
+                        numberOfLines={6}
+                        spellCheck={false}
+                        placeholder={
+                          '[Interface]\nPrivateKey = …\nAddress = 10.2.0.2/32\n\n[Peer]\n…'
+                        }
+                        value={v.config ?? ''}
+                        onChangeText={(config) =>
+                          set({ config, configName: v.configName ?? 'pasted.conf' })
+                        }
+                      />
+                    </Field>
+                  )}
+                  {provider.portForwarding === 'static' && (
+                    <Columns count={3}>
+                      <Field label={t('staticPort')} hint={t('staticPortHint')}>
+                        <Input
+                          mono
+                          inputMode="numeric"
+                          keyboardType="number-pad"
+                          value={v.staticPort == null ? '' : String(v.staticPort)}
+                          onChangeText={(port) =>
+                            set({ staticPort: port.trim() ? Number(port) : null })
+                          }
+                        />
+                      </Field>
+                    </Columns>
+                  )}
+                </View>
+              </>
             )}
             <ConnectsCompose linesNeeded={linesNeeded} />
           </Section>

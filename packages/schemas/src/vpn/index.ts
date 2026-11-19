@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // @highsea-tv/schemas/vpn: the VPN provider format, the catalog's `vpn-providers` kind
 // (docs/plans/phase-3-checkpoint-6.md › Providers, ADR 0042). Facts are data, mechanisms are code:
-// an entry says which of highsea's mechanisms a provider uses (a WireGuard configuration file or
-// PIA's API to connect; NAT-PMP, PIA's API, a typed-in port or nothing to forward a port), and
+// an entry says which of highsea's mechanisms a provider uses (a WireGuard configuration file, PIA's
+// API or an access token to connect; NAT-PMP, PIA's API, a typed-in port or nothing to forward a
+// port), and
 // carries the steps and links for finding what highsea needs in the provider's account. Pure: no
 // I/O, so the catalog pipeline, the server and the tests share it.
 import { isIP } from 'node:net'
@@ -14,7 +15,7 @@ import { compareVersions, engineSupports, isSemver } from '../indexers/version.t
  * server skips an entry it can't use, as it does indexer definitions (ADR 0007). Raise the minor
  * when a mechanism is added, the major only when an old entry would mean something else.
  */
-export const VPN_ENGINE_VERSION = '1.0.0'
+export const VPN_ENGINE_VERSION = '1.1.0'
 
 export { compareVersions as compareProviderVersions }
 
@@ -30,8 +31,111 @@ const https = z
   .regex(/^https:\/\/[^\s]+$/, 'Use an https:// address.')
 const line = z.string().min(1).max(300)
 
-/** How highsea connects: a configuration file the owner uploads, or PIA's API. */
-export const CONNECT_METHODS = ['config', 'pia'] as const
+/**
+ * How highsea connects: a configuration file the owner uploads, PIA's API, or an access token the
+ * owner pastes, with which highsea fetches a WireGuard key and a server (engine 1.1.0, HT-87).
+ */
+export const CONNECT_METHODS = ['config', 'pia', 'token'] as const
+
+/**
+ * Where a value is in a JSON answer: field names joined by dots, and on an array a `[field=value]`
+ * that picks the first item whose field equals the value (`technologies[id=35].metadata[name=public_key].value`).
+ */
+export const ANSWER_PATH =
+  /^[a-z_][a-z0-9_]{0,40}(\[[a-z_][a-z0-9_]{0,40}=[A-Za-z0-9_-]{1,60}\])?(\.[a-z_][a-z0-9_]{0,40}(\[[a-z_][a-z0-9_]{0,40}=[A-Za-z0-9_-]{1,60}\])?){0,8}$/
+/** The value at `path` in a parsed JSON answer, or undefined. */
+export function readAnswerPath(value: unknown, path: string): unknown {
+  let here: unknown = value
+  for (const part of path.split('.')) {
+    const m = /^([a-z0-9_]+)(?:\[([a-z0-9_]+)=([^\]]+)\])?$/i.exec(part)
+    if (!m || here === null || typeof here !== 'object' || Array.isArray(here)) return undefined
+    here = (here as Record<string, unknown>)[m[1] as string]
+    if (m[2] !== undefined) {
+      if (!Array.isArray(here)) return undefined
+      const [field, wanted] = [m[2], m[3]]
+      here = here.find(
+        (item) =>
+          item !== null &&
+          typeof item === 'object' &&
+          String((item as Record<string, unknown>)[field]) === wanted,
+      )
+    }
+  }
+  return here
+}
+
+const answerPath = z
+  .string()
+  .regex(ANSWER_PATH, 'Use field names joined by dots, like a.b[id=1].c.')
+const queryName = z
+  .string()
+  .max(60)
+  .regex(/^[A-Za-z0-9_[\].-]+$/, 'A query parameter’s name.')
+const ipv4 = z.string().refine((v) => isIP(v) === 4, 'An IPv4 address.')
+
+/**
+ * `connect: token`: the owner pastes an access token, and highsea asks the provider's API for the
+ * WireGuard private key it unlocks and for a recommended server, then builds the tunnel from them
+ * and the fixed facts below. Like `pia`, the requests go out before the tunnel is up; unlike it,
+ * the key is the account's own (nothing is registered), and the server comes from a list rather
+ * than a region's fixed host. Every part is data, so another token-based provider needs an entry,
+ * not code.
+ */
+export const tokenConnectSchema = z
+  .object({
+    /**
+     * How the token goes with each request, always in a header and never in an address: HTTP Basic
+     * with this user name and the token as the password, or `Authorization: Bearer <token>`.
+     */
+    auth: z.discriminatedUnion('scheme', [
+      z.object({ scheme: z.literal('basic'), username: z.string().min(1).max(40) }).strict(),
+      z.object({ scheme: z.literal('bearer') }).strict(),
+    ]),
+    /** The account's WireGuard private key: a GET with the token, and the field holding the key. */
+    key: z.object({ url: https, field: answerPath }).strict(),
+    /** Recommended servers, best first: a GET without the token. */
+    servers: z
+      .object({
+        url: https,
+        /** Where the list is in the answer; absent when the answer is the list. */
+        list: answerPath.optional(),
+        /** Each server's address to connect to (an IPv4 address or a host name). */
+        host: answerPath,
+        /** Each server's WireGuard public key. */
+        publicKey: answerPath,
+        /** The query parameter that narrows the list to a country, given the country's id. */
+        country: queryName.optional(),
+      })
+      .strict(),
+    /** The countries the owner can pick from: a GET without the token. */
+    countries: z
+      .object({
+        url: https,
+        list: answerPath.optional(),
+        id: answerPath,
+        name: answerPath,
+        /** A short code the owner can type instead of the name. */
+        code: answerPath.optional(),
+      })
+      .strict()
+      .optional(),
+    /** What every server shares: the tunnel's address, the servers' port and the DNS servers. */
+    tunnel: z
+      .object({
+        address: z
+          .string()
+          .regex(
+            /^\d{1,3}(\.\d{1,3}){3}\/\d{1,2}$/,
+            'An IPv4 address with its prefix, like 10.5.0.2/32.',
+          )
+          .refine((v) => isIP(v.split('/')[0] ?? '') === 4, 'An IPv4 address with its prefix.'),
+        port: z.number().int().min(1).max(65_535),
+        dns: z.array(ipv4).min(1).max(4),
+      })
+      .strict(),
+  })
+  .strict()
+export type TokenConnect = z.infer<typeof tokenConnectSchema>
 
 /** RFC 6886 to the tunnel's gateway, as Proton documents it. */
 const natpmp = z.object({
@@ -77,7 +181,12 @@ export const vpnProviderSchema = z
     portForwarding: portForwardingSchema,
     /** Whether the provider's tunnels carry IPv6. */
     ipv6: z.boolean(),
-    /** PIA's regions by name, used when its server list can't be read. */
+    /** `connect: token`'s API: where the key and a server are, and the tunnel's fixed facts. */
+    token: tokenConnectSchema.optional(),
+    /**
+     * PIA's regions by name, used when its server list can't be read; with `connect: token`, the
+     * countries the owner can pick, matched by name against the live list as highsea connects.
+     */
     regions: z.array(z.string().min(1).max(60)).max(200).optional(),
     /**
      * The provider's own connection check, where it documents one: a JSON page that answers `field`
@@ -95,7 +204,10 @@ export type ProviderValidation =
   | { ok: true; definition: VpnProviderDefinition }
   | { ok: false; errors: ProviderIssue[] }
 
-/** The shape, plus what a shape can't say: PIA's API connects and forwards together. */
+/**
+ * The shape, plus what a shape can't say: PIA's API connects and forwards together, and a token
+ * block goes with `connect: token`.
+ */
 export function validateVpnProvider(input: unknown): ProviderValidation {
   const parsed = vpnProviderSchema.safeParse(input)
   if (!parsed.success)
@@ -115,6 +227,20 @@ export function validateVpnProvider(input: unknown): ProviderValidation {
     errors.push({
       path: 'regions',
       message: 'connect: pia needs a list of regions to fall back on.',
+    })
+  if (d.connect === 'token' && !d.token)
+    errors.push({ path: 'token', message: 'connect: token needs a token block.' })
+  if (d.token && d.connect !== 'token')
+    errors.push({ path: 'token', message: 'A token block needs connect: token.' })
+  if (d.connect === 'token' && d.token?.servers.country && !d.token.countries)
+    errors.push({
+      path: 'token.countries',
+      message: 'A country filter needs the countries list to find the id.',
+    })
+  if (d.connect === 'token' && d.regions?.length && !d.token?.servers.country)
+    errors.push({
+      path: 'regions',
+      message: 'Countries to pick from need token.servers.country to filter by.',
     })
   if (pf.method === 'natpmp' && pf.renewSeconds >= pf.lifetimeSeconds)
     errors.push({

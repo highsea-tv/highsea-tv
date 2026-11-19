@@ -34,6 +34,8 @@ describe('Settings › VPN', () => {
       piaUsername: '',
       piaPasswordSet: false,
       piaRegion: 'Netherlands',
+      tokenSet: false,
+      tokenCountry: '',
       staticPort: null,
       containerUrl: 'http://127.0.0.1:8000',
       containerKeySet: false,
@@ -70,6 +72,7 @@ describe('Settings › VPN', () => {
       expect(openSecrets(readStored(db), sealer)).toEqual({
         config: wgConfig(),
         piaPassword: 'hunter2',
+        token: null,
         containerKey: gluetun.state.apiKey,
       })
 
