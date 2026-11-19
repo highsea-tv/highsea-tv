@@ -70,7 +70,8 @@ export const makeShuffle = (
 export const shuffleNext = (s: Shuffle): number | null => s.ids[s.at + 1] ?? null
 
 /** The item before this one, or null at the first. */
-export const shufflePrevious = (s: Shuffle): number | null => (s.at > 0 ? s.ids[s.at - 1] ?? null : null)
+export const shufflePrevious = (s: Shuffle): number | null =>
+  s.at > 0 ? (s.ids[s.at - 1] ?? null) : null
 
 /** The shuffle moved to `id`, or null when it isn't one of its items. */
 export function shuffleAt(s: Shuffle, id: number): Shuffle | null {

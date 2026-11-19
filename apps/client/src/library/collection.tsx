@@ -13,6 +13,7 @@
 // which stays clear until the page scrolls under it; sharp across the TV's first screen.
 import { useCollection } from '@highsea-tv/client/data'
 import { playPath } from '@highsea-tv/client/library'
+import { canShuffle, collectionFilms, startShuffle } from '@highsea-tv/client/shuffle'
 import { useT } from '@highsea-tv/i18n/react'
 import { useFormat } from '@highsea-tv/native/format'
 import { useMedia } from '@highsea-tv/native/media'
@@ -62,6 +63,29 @@ type Found = ReturnType<typeof useCollection>
 const errorTitle = (error: Error | null, t: (key: 'notHere') => string) =>
   isMissing(error) ? t('notHere') : (error?.message ?? t('notHere'))
 type Loaded = Extract<Found, { status: 'success' }>['data']
+
+/**
+ * Shuffle (collections.md › Shuffle): the films with a file, watched or not, in a new random
+ * order, each from its start; offered with two or more. A collection has no Play of its own.
+ */
+function useShuffle(items: Loaded['items']) {
+  const ids = collectionFilms(items)
+  if (!canShuffle(ids)) return null
+  return () => {
+    const to = startShuffle('movie', ids)
+    if (to) router.push(to as Href)
+  }
+}
+
+/** The collection's Shuffle: a secondary button with the shuffle icon, named in full for the reader. */
+function ShuffleButton({ onPress, block }: { onPress: () => void; block?: boolean }) {
+  const t = useT(messages)
+  return (
+    <Button icon="shuffle" block={block} accessibilityLabel={t('shuffleFilms')} onPress={onPress}>
+      {t('shuffle')}
+    </Button>
+  )
+}
 
 /** "3 movies here · 2013–2016", and the kind's word: what the page says of the collection. */
 function useWords({ collection: c, items }: Loaded) {
@@ -131,6 +155,7 @@ function TouchLoaded({ data, back: backButton }: { data: Loaded; back: ReactNode
   const media = useMedia()
   const words = useWords(data)
   const { collection: c, items } = data
+  const shuffle = useShuffle(items)
   const f = useFormat()
   const gutter = tokens.mobile.gutter
   const backdrop = media(c.art.backdrop)
@@ -164,6 +189,7 @@ function TouchLoaded({ data, back: backButton }: { data: Loaded; back: ReactNode
               {c.overview}
             </Text>
           ) : null}
+          {shuffle ? <ShuffleButton block onPress={shuffle} /> : null}
         </TouchHero>
         <View style={{ paddingHorizontal: gutter }}>
           <LibraryGrid
@@ -251,6 +277,7 @@ function PointerLoaded({ data }: { data: Loaded }) {
   const f = useFormat()
   const words = useWords(data)
   const { collection: c, items } = data
+  const shuffle = useShuffle(items)
   // from medium the art runs under the top bar, which turns to glass as the page scrolls
   const { hero, chrome } = usePointerHero()
   return (
@@ -280,6 +307,11 @@ function PointerLoaded({ data }: { data: Loaded }) {
             </Text>
           ) : null}
         </View>
+        {shuffle ? (
+          <View style={{ flexDirection: 'row' }}>
+            <ShuffleButton onPress={shuffle} />
+          </View>
+        ) : null}
       </PointerHero>
       <View
         style={{ width: '100%', maxWidth: measure, alignSelf: 'center', paddingHorizontal: gutter }}
@@ -379,6 +411,7 @@ function TvLoaded({ data }: { data: Loaded }) {
   const f = useFormat()
   const words = useWords(data)
   const { collection: c, items } = data
+  const shuffle = useShuffle(items)
   // Down from the head lands on the films (the prototype's down="parts")
   const [down, setDown] = useState<ViewHandle | null>(null)
   const downRef = useCallback((v: ViewHandle | null) => setDown(v), [])
@@ -429,6 +462,12 @@ function TvLoaded({ data }: { data: Loaded }) {
             >
               {c.overview}
             </Text>
+          ) : null}
+          {/* Up from the films reaches it; the films keep first focus, as before */}
+          {shuffle ? (
+            <View style={{ flexDirection: 'row' }}>
+              <ShuffleButton onPress={shuffle} />
+            </View>
           ) : null}
         </View>
         <FilmRow

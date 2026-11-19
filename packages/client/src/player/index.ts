@@ -296,9 +296,14 @@ export const NEXT_CHOICES = 3
  * item, which counts down; otherwise a few choices that play only when picked (prototype-gaps.md
  * answer 4).
  */
-export type UpNext<Item, Id = string | number, Still extends string | null = string | null> =
+export type UpNext<
+  Item,
+  Id = string | number,
+  Still extends string | null = string | null,
+  Kind extends 'episode' | 'part' | 'shuffle' = 'episode' | 'part' | 'shuffle',
+> =
   | {
-      kind: 'episode' | 'part' | 'shuffle'
+      kind: Kind
       id: Id
       title: string
       /** "S1, E2 · The Long Night", or the collection's name. */
@@ -317,7 +322,7 @@ export function filmUpNext<Item, Id, Still extends string | null>(
   part: { id: Id; title: string; still: Still } | null,
   collection: string | null,
   related: Item[],
-): UpNext<Item, Id, Still> | null {
+): UpNext<Item, Id, Still, 'part'> | null {
   if (part)
     return {
       kind: 'part',
