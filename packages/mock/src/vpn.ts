@@ -138,8 +138,9 @@ export const vpnProviders: VpnProvider[] = [
 
 export const providerById = (id: string) => vpnProviders.find((p) => p.id === id)
 
+// the built-in VPN is the default everywhere (ADR 0042, 2026-11-19); the empty server's isn't set up
 export const defaultVpnSettings = (kind: 'populated' | 'empty'): VpnSettings => ({
-  mode: kind === 'empty' ? 'off' : 'builtin',
+  mode: 'builtin',
   provider: 'proton',
   configName: kind === 'empty' ? null : 'harbor-NL-FREE-P2P-21.conf',
   piaUsername: '',
@@ -160,8 +161,9 @@ export type VpnRuntime = {
   /** Whether highsea's container was given NET_ADMIN (the empty server's wasn't). */
   capability: boolean
   /**
-   * Whether highsea's container is on host networking: the empty server is compose.yaml as the
-   * installer writes it, the populated one has the built-in VPN's lines (one-compose-file.md, B).
+   * Whether highsea's container is on host networking: the empty server plays an install from
+   * before 2026-11-19, whose compose file had host networking and no NET_ADMIN; the populated one
+   * has today's lines (ADR 0042, 2026-11-19).
    */
   hostNetwork: boolean
   phase: 'connected' | 'connecting' | 'down' | 'failed'
@@ -194,6 +196,8 @@ export type VpnStatus = {
   needsCapability: boolean
   /** On host networking, where the built-in VPN can't keep the tunnel in its own network. */
   hostNetwork: boolean
+  /** The store that installed highsea, or null for a compose file the owner wrote. */
+  install: 'synology' | 'truenas' | 'umbrel' | 'casaos' | 'unraid' | null
   exitIp: string | null
   country: string | null
   forwardedPort: number | null
@@ -247,6 +251,7 @@ export function vpnStatus(
     message: null,
     needsCapability: false,
     hostNetwork: rt.hostNetwork,
+    install: null,
     exitIp: null,
     country: null,
     forwardedPort: null,
@@ -254,6 +259,9 @@ export function vpnStatus(
     checkedAt: s.mode === 'off' ? null : new Date(rt.checkedAt).toISOString(),
   }
   if (s.mode === 'off') return base
+  // the built-in VPN without a provider's file, token or password: not connected, nothing failed
+  if (s.mode === 'builtin' && !s.configName && !s.tokenSet && !s.piaPasswordSet)
+    return { ...base, provider: null, checkedAt: null }
   // the network first: the built-in VPN's lines change both, and the network is what's unsafe
   if (s.mode === 'builtin' && rt.hostNetwork)
     return {

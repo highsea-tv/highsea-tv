@@ -219,7 +219,7 @@ describe('NordVPN by access token alone', () => {
     ])
     expect(ok.ok).toBe(true)
     expect(n.wg.kernel.link).toBe(false)
-    expect(n.vpn.settings()).toMatchObject({ mode: 'off', tokenSet: false })
+    expect(n.vpn.settings()).toMatchObject({ mode: 'builtin', tokenSet: false })
     expect(readStored(n.db).tokenSealed).toBeNull()
 
     const bad = await n.vpn.test({ mode: 'builtin', provider: 'nordvpn', token: 'nope' })

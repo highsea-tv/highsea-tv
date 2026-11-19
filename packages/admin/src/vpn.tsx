@@ -265,8 +265,9 @@ const stateLine = (
       return {
         icon: 'warning',
         tone: 'warning',
-        title: t('state.off'),
-        line: t('state.off.line'),
+        // the built-in VPN, the default, before it has a provider's file, token or password
+        title: v.mode === 'builtin' ? t('state.notSetUp') : t('state.off'),
+        line: v.mode === 'builtin' ? t('state.notSetUp.line') : t('state.off.line'),
       }
     case 'connecting':
       return {
@@ -467,8 +468,9 @@ function StatusGroup({ status: v }: { status: VpnStatus }) {
           </Text>
         </View>
       </View>
-      {/* the host-networking line already names the lines; the capability's doesn't */}
-      {v.needsCapability && !v.hostNetwork && (
+      {/* the host-networking line already names the lines; the capability's doesn't. A store's
+          install has no compose file to edit: its message says what to do instead */}
+      {v.needsCapability && !v.hostNetwork && !v.install && (
         <Text variant="caption" color="text-2">
           {t('capabilityHelp')}
         </Text>
@@ -655,7 +657,9 @@ function ConnectionGroup({
           set={set}
           errors={errors}
           // the lines open by themselves when highsea can't run the tunnel as it's set up now
-          linesNeeded={status?.hostNetwork === true || status?.needsCapability === true}
+          linesNeeded={
+            status?.hostNetwork === true || (status?.needsCapability === true && !status.install)
+          }
         />
       )}
       {v.mode === 'container' && <Container v={v} set={set} errors={errors} />}

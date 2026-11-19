@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The Media management guide's screenshots (apps/docs/content/settings/media-management/): its
-// Naming, Importing and Tags cards, the root folders the seed made, and removing a tag.
+// Naming, Importing and Tags cards, the root folders the seed made, the folder picker, and removing a tag.
 import type { Page } from 'playwright-core'
 import type { Area } from '../shot.ts'
 
@@ -23,6 +23,16 @@ export default {
       height: 2400,
       crop: (p) =>
         p.getByRole('heading', { name: 'Root folders', exact: true }).locator('xpath=../..'),
+    },
+    {
+      // HT-91: Browse beside Add a Shows folder, opened where browsing starts, the data folder
+      name: 'folder-picker',
+      path: '/settings/media',
+      act: async (p) => {
+        await p.getByRole('button', { name: 'Browse' }).nth(1).click()
+        await p.getByRole('dialog').getByRole('list').waitFor()
+      },
+      crop: (p) => p.getByRole('dialog'),
     },
     { name: 'tags', path: '/settings/media', height: 1800, crop: card('Tags') },
     {

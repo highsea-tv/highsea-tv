@@ -57,3 +57,23 @@ The TV app browses for `_highsea._tcp` with the phone's module, now in `@highsea
 ## 2026-11-06: the Docker Desktop setup in the guide rather than a file (one-compose-file.md, part A)
 
 `compose.bridge.yaml` is removed (ADR 0057's section of this date). Docker Desktop's setup, published ports with UDP 7368 for the apps' broadcast and no `/run/dbus`, is written in one place: the Docker guide's macOS and Windows tab (`apps/docs/content/install/docker.mdx`). What this ADR says of discovery there stands: the broadcast reaches the container through the published port, and mDNS needs the host's network or its D-Bus. Docker Desktop's own host networking stays out, since Docker documents it as an opt-in setting that reaches the container from the computer itself rather than from the network ([Host network driver › Docker Desktop](https://docs.docker.com/engine/network/drivers/host/#docker-desktop)).
+
+## 2026-11-19: discovery off host networking (HT-90)
+
+The root `compose.yaml` and get.highsea.tv's installer leave host networking for the built-in VPN (ADR 0042's section of this date). The owner's requirement: apps on the LAN must still find the server on every install type. What each method needs:
+
+- **The broadcast on UDP 7368** (the desktop app): the published port carries it. Docker forwards a published UDP port to the container ([Port publishing and mapping](https://docs.docker.com/engine/network/port-publishing/)), as on Docker Desktop and the Synology package since 2026-10-29. The responder answers the sender's address, which on a bridge arrives translated, and the reply returns through the same mapping.
+- **mDNS** (`_highsea._tcp`, the only way the iPhone and Apple TV look, ADR 0059): multicast doesn't leave a bridge network. highsea publishes through the host's avahi over `/run/dbus`, as this ADR's 2026-10-28 section decided, proven bridged on the DS1520+ and Unraid. On a host without avahi, the record would never reach the LAN.
+
+So, on the owner's choice of 2026-11-19 (the easiest to set up, and zero-configuration):
+
+- **The installer makes sure avahi runs.** Where it doesn't, it installs it from the distribution's own package (`avahi-daemon` with apt, `avahi` with dnf, zypper, apk and pacman) and enables it with systemd or OpenRC. It asks nothing an unattended run would wait on:
+  - sudo only where it needs no password or someone is at a terminal;
+  - each package manager's non-interactive flags.
+
+  If it can't install it (an unknown package manager, no root, or a failed install), the install still finishes. It says the iPhone and Apple TV apps won't find the server by themselves and to add it by address, and repeats that with the address at the end. `--no-avahi` skips the step. avahi is the system's own mDNS responder on Debian, Ubuntu, Fedora and Arch ([Arch Wiki › Avahi](https://wiki.archlinux.org/title/Avahi)).
+- **`compose.yaml` keeps the `/run/dbus` line.** The Docker guide says the host needs avahi and how to add it, and the built-in VPN's compose lines remind a hand-written install to keep it.
+- **The NAS templates are unchanged for discovery.** Synology, Unraid, CasaOS and Umbrel were already on a bridge with the host's bus or their own. TrueNAS moves to a bridge with its `/run/dbus` line, TrueNAS's own avahi.
+- **The advertised address.** Off host networking, setup offers the address the browser opened, as on a bridge before. `HIGHSEA_PUBLISHED_URL` overrides it.
+
+Consequences: NAT-PMP and UPnP router forwarding from inside the container's network don't reach the router, so the Docker guide asks the owner to forward 6881 for incoming peers. With the built-in VPN connected, the provider's forwarded port takes its place. What was proven: the installer's avahi step, against stand-in commands in `apps/docs/test/install.test.ts`. What wasn't: the iPhone finding a bridged server on a plain Linux host and on the DS1520+ after the update. Both are on HT-90's NAS checklist.

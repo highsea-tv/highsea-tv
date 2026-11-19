@@ -11,14 +11,21 @@
 # permissions through an ACL, but root still owns it, so highsea's own guess would be 1000:1000
 # (ADR 0057). 568 is the user and group TrueNAS's own apps run as.
 #
-# Host networking lets apps on your network find highsea by its broadcast on 7368/udp (ADR 0020).
-# For mDNS, highsea publishes through TrueNAS's own avahi, over the host's D-Bus (/run/dbus), since
-# that avahi keeps port 5353 to itself (`disallow-other-stacks=yes`).
+# Published ports, so the built-in VPN's interface and routes stay in the container's own network
+# (ADR 0042): apps on your network find highsea by its broadcast on 7368/udp (ADR 0020), and by
+# mDNS through TrueNAS's own avahi, over the host's D-Bus (/run/dbus), since that avahi keeps port
+# 5353 to itself (`disallow-other-stacks=yes`).
 services:
   highsea:
     # `latest` is the newest stable release; pin a version (0.1.0) to choose when you move
     image: ghcr.io/highsea-tv/highsea:latest
-    network_mode: host
+    # the built-in VPN's WireGuard interface and routes, in this container's own network
+    cap_add: [NET_ADMIN]
+    ports:
+      - "3000:3000"
+      - "6881:6881/tcp"
+      - "6881:6881/udp"
+      - "7368:7368/udp"
     environment:
       PUID: "568"
       PGID: "568"

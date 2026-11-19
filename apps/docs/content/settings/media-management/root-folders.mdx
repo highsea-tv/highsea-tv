@@ -7,14 +7,15 @@ description: The folders your films, shows and music are filed under, adding and
 {/*
   Sources:
   - The screen and its copy: packages/admin/src/media-management.tsx and media-management-messages.ts,
-    library-import-messages.ts.
+    library-import-messages.ts; the folder picker, folder-picker.tsx and folder-picker-messages.ts,
+    and what it may list, packages/runtime/src/browse.ts (browseFolders).
   - The checks on a new root folder: packages/media/src/shared/settings.ts.
   - Films found in a root folder: packages/media/src/movies/scan.ts and library-import.ts (addNew).
   - Folders highsea only reads: packages/media/src/shared/root-folders.ts (assertWritable), and
     subtitles' place for them, packages/subtitles/src/movies/tracks.ts.
 */}
 
-Written for highsea 0.4.0.
+Written for highsea 0.4.8.
 
 A root folder is a folder your library is filed under, such as `/data/media/movies`. Each film gets a folder of its own inside one. Setup adds the movies' folder, and the shows' and music's when it finds them beside it; most servers need one of each.
 
@@ -24,7 +25,13 @@ Root folders are listed under **Importing** on **Settings › Media management**
 
 ## Add a root folder
 
-Type the folder's full path under **Add a Movies folder**, **Add a Shows folder** or **Add a Music folder** and choose **Add folder**. The path is a folder on the server, as highsea sees it inside its container, not on the device you're browsing from. highsea checks that:
+Choose **Browse** beside **Add a Movies folder**, **Add a Shows folder** or **Add a Music folder** to pick the folder, or type or paste its full path, then choose **Add folder**. The path is a folder on the server, as highsea sees it inside its container, not on the device you're browsing from.
+
+**Browse** opens the folders on the server at the path in the field, or at highsea's data folder when the field is empty or that folder isn't there. Choose a folder to go into it, **Up one level** or a part of the path to go back, then **Use this folder** to fill the field. A folder with many folders inside gets a **Filter folders** box, and at most 200 are listed at once: type part of a name to find the rest. The picker shows the data folder and the folders highsea already uses, never its own configuration folder. It says when highsea can't read a folder, and when it can only read one: add that one with **Only read it** on, or give highsea write access first.
+
+![The folder picker over Media management, titled Choose a shows folder, at /data, listing downloads, films, movies, movies-4k, transcodes, trickplay and tv, with Cancel and Use this folder](/images/admin/settings-media-management/folder-picker.png)
+
+highsea checks that:
 
 - the path is a full one, starting with `/`;
 - the folder exists;

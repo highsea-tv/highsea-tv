@@ -11,7 +11,14 @@ services:
     container_name: highsea
     # the NAS's own name, which setup offers as the server's (a container's is its id otherwise)
     hostname: ${HIGHSEA_HOSTNAME:-highsea}
+    # the built-in VPN (ADR 0042, 2026-11-19): its WireGuard interface and routes, in this container's
+    # own network. The container starts as the package's user, so the image's entrypoint raises the
+    # capability for highsea itself (docker/entrypoint.sh)
+    cap_add: [NET_ADMIN]
     environment:
+      # how highsea was installed, so Settings › VPN says to update the package rather than to
+      # edit a compose file nobody here writes
+      HIGHSEA_INSTALL: synology
       # what highsea makes (images, previews, transcodes) in a folder of its own in the shared folder,
       # apart from the library's folders, which are chosen in setup and Settings (ADR 0057, 2026-11-17)
       HIGHSEA_WORK_DIR: /data/highsea
@@ -23,6 +30,10 @@ services:
       # the graphics chip's folder, or an empty one on a model without it (Synology's Docker
       # won't start a container whose bind mount is missing)
       - ${HIGHSEA_DRI}:/dev/dri
+      # the host's /dev/net, for the TUN device wireguard-go needs, since DSM's kernel has no
+      # WireGuard: a folder rather than the device, so a module loaded later shows up here too. An
+      # empty folder where DSM hasn't loaded tun, as for the graphics above; Settings › VPN says so
+      - ${HIGHSEA_TUN}:/dev/net
       - /run/dbus:/run/dbus:ro
     # the render node's group (videodriver on DSM), so ffmpeg can open it (ADR 0056)
     group_add:

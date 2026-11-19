@@ -92,3 +92,39 @@ highsea connects needs its container changed: `cap_add: [NET_ADMIN]`, and a netw
 - **`VpnStatus.hostNetwork` is required.** HT-9's prototype drafted it as optional until the server reported it. Every server knows its answer, so it's always there: false outside a container, where there's no compose file to change, and on a bridge. An optional field would let a client read a missing answer as "not on host networking".
 
 Consequences: a host-networked container on a host where Docker makes no bridge of its own (`"bridge": "none"` in the daemon's settings, with no compose networks) reads as a bridge, and highsea connects tries the tunnel as before. Other runtimes, such as Podman, leave no `/.dockerenv`, so highsea reads them as outside a container.
+
+## 2026-11-19: the built-in VPN ready on every install, and the default mode (HT-90)
+
+The owner's NAS (DS1520+, DSM 7, Linux 4.4) couldn't start the built-in VPN: "RTNETLINK answers: Operation not permitted". The owner then decided (2026-11-19) that the built-in VPN is the default across the board.
+
+- **Every install highsea writes has what the tunnel needs.** That means `cap_add: [NET_ADMIN]` and its own network:
+  - Root `compose.yaml` and get.highsea.tv's installer: off host networking, onto published ports. ADR 0057 and 0020 have this date's sections on what that changes.
+  - Synology package: the capability and the host's `/dev/net`.
+  - TrueNAS app and its Custom Config: `NET_ADMIN` and `MKNOD`, the latter by TrueNAS's own capability list.
+  - Umbrel and CasaOS: `cap_add`.
+  - Unraid: `--cap-add=NET_ADMIN` in Extra Parameters.
+
+  Docker's `cap_add` adds to the container's bounding set ([Runtime privilege and Linux capabilities](https://docs.docker.com/engine/containers/run/#runtime-privilege-and-linux-capabilities)). An update fixes an existing package install: DSM's docker-project worker rewrites the compose file and recreates the container (`force_recreate`, Synology's DSM 7 Developer Guide › docker-project).
+- **Non-root starts get the capability without root.** A container started as a user, as DSM's package user is, gets no ambient capabilities, so `ip` as that user has no CAP_NET_ADMIN even with `cap_add` ([capabilities(7)](https://man7.org/linux/man-pages/man7/capabilities.7.html), "Transformation of capabilities during execve()").
+  - The image keeps a copy of setpriv (util-linux) with `cap_net_admin+p` set by libcap2-bin's `setcap`. The entrypoint execs node through it, raising the capability into the inheritable and ambient sets.
+  - The root path does the same with `setpriv --reuid … --inh-caps=+net_admin --ambient-caps=+net_admin` ([setpriv(1)](https://man7.org/linux/man-pages/man1/setpriv.1.html)).
+- **The TUN device.** A kernel without WireGuard (before 5.6) needs wireguard-go and `/dev/net/tun`.
+  - The entrypoint, as root, makes the node (`c 10:200`) when it's missing; Docker's default device rules allow it.
+  - The Synology package binds DSM's `/dev/net`, or an empty folder where DSM has none. `preinst` picks which, and each start switches to `/dev/net` once it appears.
+  - DSM loads `tun.ko` only when asked, and a package can't load modules (no root). The copy names a boot-up task in DSM's Task Scheduler (`insmod /lib/modules/tun.ko`).
+- **Failures read right.**
+  - EPERM on `ip link add` means no capability. "Unknown device type" means the capability is there but the kernel has no WireGuard, and any wireguard-go failure after that, other than not installed or not Linux, means no device.
+  - `HIGHSEA_INSTALL` (`synology`, `truenas`, `umbrel`, `casaos`, `unraid`), set by each store's template, is the smallest honest signal of who wrote the compose file. With it the copy says how that store fixes it, such as "Update highsea in Package Center". Without it, it gives the compose lines. `VpnStatus.install` carries it, and Settings › VPN hides the lines for a store install.
+- **The default mode is `builtin`, unconnected until a provider is saved.** With no configuration, token or PIA password stored, the built-in VPN acts as Off:
+  - torrents use the direct connection;
+  - UPnP may map the port;
+  - the status is `off` with no provider, shown as "Not connected yet".
+
+  So an install that never chose a VPN keeps downloading after the update, rather than holding every torrent for a tunnel nobody set up (judgement call). No VPN's warning is unchanged.
+- **Downloads held by the VPN say so.** While a mode with a VPN is set up and its tunnel isn't up, a downloading or queued torrent reads "Waiting for the VPN." in Downloads, the Queue widget and the film's page. The wait never counts toward the stall checks, and the torrent carries on when the tunnel's network event comes.
+
+Consequences:
+
+- The image carries libcap2-bin (BSD-3-Clause or GPL-2.0, in `docker/NOTICE`).
+- A host-networked install from before keeps working. Settings › VPN gives it the lines when the built-in VPN is chosen.
+- What was not proven in the repository is listed in HT-90's pull request: the capability and device on the DS1520+, and Test's four checks there.

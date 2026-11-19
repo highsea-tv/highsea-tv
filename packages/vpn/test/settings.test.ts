@@ -25,10 +25,10 @@ async function refusal(save: Promise<unknown>) {
 }
 
 describe('Settings › VPN', () => {
-  test('a new server is off, with the prototype’s defaults', () => {
+  test('a new server has the built-in VPN, not set up, with the prototype’s defaults', () => {
     const { vpn } = testVpn()
     expect(vpn.settings()).toEqual({
-      mode: 'off',
+      mode: 'builtin',
       provider: 'proton',
       configName: null,
       piaUsername: '',
@@ -128,7 +128,10 @@ describe('Settings › VPN', () => {
     })
     expect((await refusal(vpn.save({ staticPort: 0 }))).field).toBe('staticPort')
     expect((await refusal(vpn.save({ provider: 'novpn' }))).field).toBe('provider')
-    expect(vpn.settings()).toMatchObject({ mode: 'off', provider: DEFAULT_VPN_SETTINGS.provider })
+    expect(vpn.settings()).toMatchObject({
+      mode: 'builtin',
+      provider: DEFAULT_VPN_SETTINGS.provider,
+    })
   })
 
   test('the container mode’s key and address are tried against gluetun before saving', async () => {

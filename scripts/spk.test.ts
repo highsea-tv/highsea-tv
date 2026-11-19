@@ -158,6 +158,25 @@ describe('spk', () => {
     expect(compose).toContain('image: ghcr.io/highsea-tv/highsea:0.2.0\n')
     expect(compose).not.toContain('@VERSION@')
     expect(statSync(join(payload, 'compose/no-graphics')).isDirectory()).toBe(true)
+    expect(statSync(join(payload, 'compose/no-tun')).isDirectory()).toBe(true)
+    // ready for the built-in VPN with no edits (ADR 0042, 2026-11-19)
+    const service = (
+      Bun.YAML.parse(compose) as {
+        services: {
+          highsea: {
+            cap_add: string[]
+            volumes: string[]
+            environment: Record<string, string>
+            network_mode?: string
+          }
+        }
+      }
+    ).services.highsea
+    expect(service.cap_add).toEqual(['NET_ADMIN'])
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: Compose's own variable, not a template
+    expect(service.volumes).toContain('${HIGHSEA_TUN}:/dev/net')
+    expect(service.environment.HIGHSEA_INSTALL).toBe('synology')
+    expect(service.network_mode).toBeUndefined()
   })
 
   test('the scripts DSM runs are executable, and parse', () => {
@@ -353,6 +372,12 @@ describe('preinst', () => {
     expect(r.env).toContain("HIGHSEA_DATA='/var/packages/highsea/shares/films and tv'\n")
     expect(r.env).toMatch(/^HIGHSEA_RENDER_GID=\d+$/m)
     expect(r.env).toMatch(/^HIGHSEA_HOSTNAME=.+$/m)
+    // the host's /dev/net when DSM has made it, else the package's empty folder
+    expect(r.env).toContain(
+      existsSync('/dev/net')
+        ? 'HIGHSEA_TUN=/dev/net\n'
+        : 'HIGHSEA_TUN=/var/packages/highsea/target/compose/no-tun\n',
+    )
   })
 
   test('keeps the folder chosen at install when upgrading', () => {

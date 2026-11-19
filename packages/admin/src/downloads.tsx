@@ -313,7 +313,13 @@ function vpnLine(
     case 'connecting':
       return ['loading', 'text-3', t('vpn.connecting', { provider }), t('vpn.connectingLine')]
     case 'off':
-      return ['warning', 'warning', t('vpn.off'), t('vpn.offLine')]
+      // the built-in VPN, the default, before it's set up: the same warning, under its own name
+      return [
+        'warning',
+        'warning',
+        v.mode === 'builtin' ? t('vpn.notSetUp') : t('vpn.off'),
+        t('vpn.offLine'),
+      ]
     default:
       return [
         'error',

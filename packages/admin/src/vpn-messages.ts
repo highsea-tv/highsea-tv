@@ -25,6 +25,9 @@ export const vpn = defineMessages({
   'status.title': 'Status',
   'state.off': 'No VPN',
   'state.off.line': 'Torrents use your own connection. Anyone in the swarm can see your address.',
+  'state.notSetUp': 'Not connected yet',
+  'state.notSetUp.line':
+    'Choose your provider under Connection and save. Until then, torrents use your own connection.',
   'state.connecting': 'Connecting to {provider}…',
   'state.connecting.line': 'Torrents wait until the tunnel is up.',
   'state.bound': 'Bound to {provider}',
@@ -107,7 +110,7 @@ export const vpn = defineMessages({
   composeError: 'Couldn’t make the compose block.',
   'compose.builtin': 'Compose for the built-in VPN',
   'compose.builtin.body':
-    'The lines highsea’s service needs for the tunnel. Add them to highsea in your compose file, take out network_mode: host, then recreate the container. The capability reaches only highsea’s own container, not the host. Apps on your network still find the server by its broadcast on port 7368.',
+    'The lines highsea’s service needs for the tunnel. Add them to highsea in your compose file, take out network_mode: host, then recreate the container. The capability reaches only highsea’s own container, not the host. Apps on your network still find the server: the desktop app by its broadcast on port 7368, the iPhone and Apple TV through the host’s avahi, over the /run/dbus line you keep.',
 
   'behaviour.title': 'Behaviour',
   stopWhenDown: 'Stop torrents when the VPN is down',
