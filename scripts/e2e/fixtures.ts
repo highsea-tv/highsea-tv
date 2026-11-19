@@ -102,6 +102,12 @@ source:
 license: CC0-1.0
 `,
 )
+// a starter, so stages.json lists it: the build refuses a starter its `starters` doesn't name
+// (packages/catalog › stages.ts, starterProblem; ADR 0069)
+const stagesFile = join(catalogSource, 'stages.json')
+const stages = JSON.parse(readFileSync(stagesFile, 'utf8')) as { starters: string[] }
+stages.starters.push('e2e-indexer')
+writeFileSync(stagesFile, JSON.stringify(stages, null, 2))
 // newer than the server's seed, so the server takes this one
 const changes = readFileSync(join(catalogSource, 'CHANGES.md'), 'utf8')
 writeFileSync(

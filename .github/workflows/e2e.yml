@@ -57,13 +57,53 @@ permissions:
   contents: read
 
 jobs:
+  # Since 2026-11-19 (HT-97): a pull request into next that touches what the run's own stack is
+  # built from (the catalog and its build, the fixtures, the Dockerfile) runs it without the label,
+  # since only this workflow builds the fixtures' catalog and #95 broke it unseen. The files come
+  # from `git diff --name-only`, as ci.yml's `changes` lists them; a path filter can't be read in a
+  # job's `if:`. Anything else answers false and leaves the job's own condition to decide.
+  changes:
+    if: github.event_name == 'pull_request' && github.base_ref == 'next'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      stack: ${{ steps.files.outputs.stack }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+      - name: Does it touch the run's own stack?
+        id: files
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          stack=false
+          while IFS= read -r file; do
+            case "$file" in
+              catalog/* | packages/catalog/* | scripts/e2e/* | Dockerfile | .dockerignore) stack=true ;;
+            esac
+          done <<< "$(git diff --name-only --no-renames "$BASE...$HEAD")"
+          echo "stack=$stack" >> "$GITHUB_OUTPUT"
+          if [ "$stack" = true ]; then
+            echo "::notice::It touches the catalog, the fixtures or the Dockerfile, so the end-to-end run runs"
+          fi
+
   e2e:
-    # the heavy tier's condition (the comment above `on:`)
+    # the heavy tier's condition (the comment above `on:`), and a pull request into next that
+    # touches the run's own stack (`changes`). `changes` is skipped on every other event, and a job
+    # whose `needs` was skipped is skipped too unless its `if:` has a status check function, so
+    # `!cancelled()` keeps the rest running
+    # (https://docs.github.com/en/actions/reference/workflows-and-actions/expressions#status-check-functions).
+    needs: changes
     if: >-
-      (github.event_name == 'pull_request'
-        && (github.base_ref == 'main' || contains(github.event.pull_request.labels.*.name, 'full-ci')))
-      || (github.event_name == 'push' && github.ref == 'refs/heads/next')
-      || (github.event_name != 'pull_request' && github.event_name != 'push')
+      !cancelled() && (
+        (github.event_name == 'pull_request'
+          && (github.base_ref == 'main' || contains(github.event.pull_request.labels.*.name, 'full-ci')
+            || needs.changes.outputs.stack == 'true'))
+        || (github.event_name == 'push' && github.ref == 'refs/heads/next')
+        || (github.event_name != 'pull_request' && github.event_name != 'push'))
     runs-on: ubuntu-24.04
     # its runs took 10 to 13 minutes, and it may wait 15 for next's run first
     timeout-minutes: 30
