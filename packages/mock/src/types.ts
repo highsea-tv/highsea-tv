@@ -316,7 +316,7 @@ export type AdminShow = {
   /** Files go in "Season 01" folders. */
   seasonFolders: boolean
   addedAt: ISODate
-  art: { poster: string; backdrop: string }
+  art: { poster: string; backdrop: string; logo?: string | null }
   /** Seasons, specials not counted. */
   seasons: number
   /**

@@ -102,7 +102,12 @@ export const Series = z
     /** Files go in "Season 01" folders. */
     seasonFolders: z.boolean(),
     addedAt: IsoDate,
-    art: z.object({ poster: z.string(), backdrop: z.string() }),
+    /** The logo, for the admin's hero (HT-105): absent or null when there's none. */
+    art: z.object({
+      poster: z.string(),
+      backdrop: z.string(),
+      logo: z.string().nullable().optional(),
+    }),
     /** Seasons, specials not counted. */
     seasons: z.number().int().nonnegative(),
     /**

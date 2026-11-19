@@ -20,6 +20,7 @@ import type {
   UnmatchedShowPath,
 } from '@highsea-tv/api-contract'
 import type { AdminEpisode, AdminSeason, AdminShow, AdminShowDetail } from '../types.ts'
+import { chosenShowArt } from './artwork.ts'
 import type { AdminKit, Answers } from './kit.ts'
 
 const DAY = 86_400_000
@@ -39,6 +40,7 @@ export function showsAnswers(kit: AdminKit): Answers {
   })
   const showOf = (s: AdminShow): Series => ({
     ...s,
+    art: chosenShowArt(kit, s.tmdbId, s.art),
     addedAt: kit.wall(s.addedAt),
     nextAiring: s.nextAiring && { ...s.nextAiring, aired: day(s.nextAiring.aired) },
   })

@@ -81,6 +81,11 @@ The admin lays out by the clients' one rule ([spacing-layout › Width classes](
 
 - **Side sheets float off the edge,** as the TV's side dialog does: the detail, account and menu sheets stand `space-6` (24) from the window's top, bottom and outer edge, `radius-xl` at every corner, `s3` at level 4 ([elevation](../elevation.md)). A narrow window keeps `space-8` (32) of scrim beside the sheet, past that gap. The owner's change of 2026-11-17 (HT-44), to a layout that was locked.
 - **Toasts show above every sheet and dialog,** so a change saved in one is confirmed where it was made. The stack keeps its own `space-6` gap, so a toast lines up with a sheet's edge.
+- **Toasts stand clear of the status bar,** as far above it as they stand from the window's end edge (`space-6`, `space-4` compact). The admin passes the bar's height to the library's `Toaster` (`bottomInset`), so the clients, with no bar, are unchanged. The owner's change of 2026-11-19 (HT-105).
+
+## Media pages' hero
+
+A film's, a show's and a collection's page open on the clients' hero (the owner's change of 2026-11-19, HT-105, in place of the summary card): the library's `TitleBackdrop`, its side and foot fades, runs from the main area's top edge to edge, behind the page's top row (title, search, actions) and under it, and fades into the page above the tabs. The words sit low on the left, within the 65ch measure: the logo, or the name in display type when there's none, then the facts, badges, synopsis and the library line (path, **Monitored**). A scrim at the top keeps the top row readable over bright art; in a compact window the art darkens under the words, which have no faded side there. The block is at least 24rem tall, 60% of the window in a regular one and never more than the art's 16:9, 16rem compact. With no backdrop there's no art: the words sit on the page under the top row and the name isn't drawn twice. The poster isn't shown, as on the clients. Announcements stay above the art.
 
 ## Sound
 

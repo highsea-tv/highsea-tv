@@ -14,6 +14,7 @@ import { useT } from '@highsea-tv/i18n/react'
 import { useAction, useQuery } from '@highsea-tv/sdk/react'
 import { admin } from '@highsea-tv/tokens'
 import {
+  alpha,
   Button,
   type CommandGroup,
   CommandPalette,
@@ -26,8 +27,10 @@ import {
   ServerCard,
   Sheet,
   Sidebar,
+  STATUS_BAR_HEIGHT,
   StatusBar,
   StatusItem,
+  TitleBackdrop,
   Toaster,
   toast,
   tokens,
@@ -51,9 +54,10 @@ import {
   useRef,
   useState,
 } from 'react'
-import { ScrollView, View } from 'react-native'
+import { ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native'
 import { AccountSheet } from './account.tsx'
 import { AnnouncementBanners } from './announcement-banners.tsx'
+import { HeroArt } from './hero-art.ts'
 import { moviePath } from './media-links.ts'
 import { shell as messages } from './messages.ts'
 import { type Page, pageAt, type Role } from './nav.ts'
@@ -100,13 +104,63 @@ export type AdminPageProps = {
   description?: ReactNode
   actions?: ReactNode
   children?: ReactNode
+  /**
+   * A media page's hero (HT-105, the clients' treatment): its words, laid low over `backdrop`, which
+   * runs full bleed behind the page's top row and fades into the page. Without a backdrop the words
+   * sit on the page as they are.
+   */
+  hero?: ReactNode
+  backdrop?: string | null
 }
 
-/** A page's top row (title, search, actions) with the compact menu button, then its content. */
-export function AdminPage({ title, description, actions, children }: AdminPageProps) {
+/** The main area's padding: the page's own, which a hero's art runs out across. */
+export function useMainPadding() {
+  return useRegularWindow() ? tokens.density.mainPadding : tokens.space['4']
+}
+
+/**
+ * A page's top row (title, search, actions) with the compact menu button, then its content; a
+ * media page's hero around the top row and its words.
+ */
+export function AdminPage({
+  title,
+  description,
+  actions,
+  children,
+  hero,
+  backdrop,
+}: AdminPageProps) {
   const shell = useShell()
   const t = useT(messages)
   const compact = useFormFactor().widthClass === 'compact'
+  const header = (
+    <PageHeader
+      title={title}
+      description={description}
+      start={
+        compact ? (
+          <Button
+            variant="ghost"
+            iconOnly
+            icon="menu"
+            accessibilityLabel={t('menu')}
+            onPress={shell.openMenu}
+          />
+        ) : null
+      }
+      search={<SearchTrigger onPress={shell.openPalette} />}
+      actions={actions}
+    />
+  )
+  if (hero !== undefined)
+    return (
+      <>
+        <HeroFrame backdrop={backdrop ?? null} header={header}>
+          {hero}
+        </HeroFrame>
+        {children}
+      </>
+    )
   return (
     <>
       <PageHeader
@@ -129,6 +183,74 @@ export function AdminPage({ title, description, actions, children }: AdminPagePr
       {children}
     </>
   )
+}
+
+/**
+ * A media page's hero (HT-105): the library's TitleBackdrop, the clients' art and fades, from the
+ * main area's top edge to edge, behind the top row and the words, which sit low on the left over
+ * its faded side. A scrim at the top keeps the row's title and buttons readable over bright art;
+ * the art's foot fades into the page, so the tabs below sit on `bg`. The words' block is at least
+ * the first screen's share the clients' hero takes, never taller than its 16:9 frame.
+ */
+function HeroFrame({
+  backdrop,
+  header,
+  children,
+}: {
+  backdrop: string | null
+  header: ReactNode
+  children: ReactNode
+}) {
+  const pad = useMainPadding()
+  const regular = useRegularWindow()
+  const window = useWindowDimensions()
+  const { colors } = useTheme()
+  const s = tokens.space
+  const minHeight = backdrop
+    ? regular
+      ? Math.max(HERO.min, Math.min(window.height * HERO.share, (window.width * 9) / 16))
+      : HERO.compact
+    : undefined
+  return (
+    <View style={{ minHeight, justifyContent: 'space-between', gap: s['5'] }}>
+      {backdrop ? (
+        <View
+          aria-hidden
+          pointerEvents="none"
+          style={{ position: 'absolute', top: -pad, left: -pad, right: -pad, bottom: 0 }}
+        >
+          <TitleBackdrop source={{ uri: backdrop }} />
+          <View
+            style={[
+              StyleSheet.absoluteFill,
+              {
+                backgroundImage: regular
+                  ? `linear-gradient(180deg, ${alpha(colors.bg, 0.75)} 0%, ${alpha(colors.bg, 0)} 30%)`
+                  : // a narrow window has no faded side for the words: the art shows round the top
+                    // row, then darkens under them
+                    `linear-gradient(180deg, ${alpha(colors.bg, 0.6)} 0%, ${alpha(colors.bg, 0.3)} 20%, ${alpha(colors.bg, 0.85)} 50%, ${colors.bg} 100%)`,
+              },
+            ]}
+          />
+        </View>
+      ) : null}
+      {header}
+      <View style={{ gap: s['3'], paddingBottom: backdrop ? s['2'] : 0 }}>
+        <HeroArt.Provider value={!!backdrop}>{children}</HeroArt.Provider>
+      </View>
+    </View>
+  )
+}
+
+/**
+ * The hero's least height: from a regular window the clients' share of the first screen (their
+ * pointer hero's 82%, here 60% as the admin's top row and tabs share it) with 24rem the least;
+ * 16rem in a compact window, where the words take most of it.
+ */
+const HERO = {
+  min: tokens.space['16'] * 6,
+  share: 0.6,
+  compact: tokens.space['16'] * 4,
 }
 
 // ---------------------------------------------------------------- navigation
@@ -572,7 +694,7 @@ export function AdminShell({ role: initialRole, children }: { role: Role; childr
         />
         <AccountSheet open={account} onOpenChange={setAccount} />
         {/* the admin's toasts: the one stack every screen raises them in */}
-        <Toaster label={t('notifications')} />
+        <Toaster label={t('notifications')} bottomInset={STATUS_BAR_HEIGHT} />
       </View>
     </ShellContext.Provider>
   )

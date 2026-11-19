@@ -6221,7 +6221,8 @@
         "type": "string",
         "enum": [
           "movie",
-          "collection"
+          "collection",
+          "show"
         ]
       },
       "ArtworkKindView": {
@@ -7813,6 +7814,12 @@
               },
               "backdrop": {
                 "type": "string"
+              },
+              "logo": {
+                "type": [
+                  "string",
+                  "null"
+                ]
               }
             },
             "required": [
