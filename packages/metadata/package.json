@@ -11,7 +11,8 @@
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",
-    "record:tmdb": "bun --env-file=../../.env.local scripts/record.ts"
+    "record:tmdb": "bun --env-file=../../.env.local scripts/record.ts",
+    "record:musicbrainz": "bun scripts/record-musicbrainz.ts"
   },
   "dependencies": {
     "@highsea-tv/core": "workspace:*",

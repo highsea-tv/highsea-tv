@@ -1,0 +1,155 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "https://musicbrainz.org/ws/2/release/23a46e92-b629-4869-94f6-ff984ea317c5?fmt=json&inc=release-groups%2Blabels%2Bgenres",
+    "credential": "valid"
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json"
+    },
+    "body": {
+      "release-group": {
+        "primary-type-id": "f529b476-6e62-324f-b0aa-1f3e33d313fc",
+        "genres": [
+          {
+            "count": 4,
+            "disambiguation": "",
+            "name": "alternative rock",
+            "id": "ceeaa283-5d7b-4202-8d1d-e25d116b2a18"
+          },
+          {
+            "id": "f1c9b874-7ef2-4e79-9419-c0bcb5f33a30",
+            "name": "britpop",
+            "disambiguation": "",
+            "count": 8
+          },
+          {
+            "count": 2,
+            "name": "indie rock",
+            "disambiguation": "",
+            "id": "ccd19ebf-052c-4afe-8ad9-fbb0a73f94a7"
+          },
+          {
+            "id": "0e3fc579-2d24-4f20-9dae-736e1ec78798",
+            "name": "rock",
+            "disambiguation": "",
+            "count": 5
+          }
+        ],
+        "secondary-types": [],
+        "disambiguation": "",
+        "first-release-date": "1994-04-25",
+        "title": "Parklife",
+        "primary-type": "Album",
+        "id": "67461c8e-d864-3910-9bf4-39e44357aac9",
+        "secondary-type-ids": []
+      },
+      "barcode": "724382919421",
+      "disambiguation": "printed/made in the UK, price code F: PM: 520",
+      "country": "GB",
+      "status": "Official",
+      "cover-art-archive": {
+        "count": 15,
+        "front": true,
+        "back": true,
+        "artwork": true,
+        "darkened": false
+      },
+      "date": "1994-04-25",
+      "id": "23a46e92-b629-4869-94f6-ff984ea317c5",
+      "title": "Parklife",
+      "label-info": [
+        {
+          "label": {
+            "label-code": 299,
+            "type-id": "7aaa37fe-2def-3476-b359-80245850062d",
+            "id": "df7d1c7f-ef95-425f-8eef-445b3d7bcbd9",
+            "type": "Original Production",
+            "sort-name": "Parlophone",
+            "genres": [
+              {
+                "id": "ceeaa283-5d7b-4202-8d1d-e25d116b2a18",
+                "disambiguation": "",
+                "name": "alternative rock",
+                "count": 1
+              },
+              {
+                "name": "art rock",
+                "disambiguation": "",
+                "id": "b7ef058e-6d83-4ca4-8123-9724bff4648b",
+                "count": 1
+              },
+              {
+                "count": 1,
+                "name": "baroque pop",
+                "disambiguation": "",
+                "id": "150eb95a-7739-4fde-a5fe-b62ca576a928"
+              },
+              {
+                "count": 1,
+                "id": "911c7bbb-172d-4df8-9478-dbff4296e791",
+                "name": "pop",
+                "disambiguation": ""
+              },
+              {
+                "count": 1,
+                "disambiguation": "",
+                "name": "rock",
+                "id": "0e3fc579-2d24-4f20-9dae-736e1ec78798"
+              }
+            ],
+            "disambiguation": "",
+            "name": "Parlophone"
+          },
+          "catalog-number": "7234 8 29194 2 1"
+        },
+        {
+          "label": {
+            "genres": [],
+            "sort-name": "Food",
+            "name": "Food",
+            "disambiguation": "",
+            "label-code": 299,
+            "type": "Original Production",
+            "type-id": "7aaa37fe-2def-3476-b359-80245850062d",
+            "id": "4da71031-2698-4778-9eed-5a441ea83fcc"
+          },
+          "catalog-number": "FOODCD 10"
+        }
+      ],
+      "quality": "high",
+      "text-representation": {
+        "language": "eng",
+        "script": "Latn"
+      },
+      "release-events": [
+        {
+          "area": {
+            "sort-name": "United Kingdom",
+            "name": "United Kingdom",
+            "disambiguation": "",
+            "iso-3166-1-codes": ["GB"],
+            "type": null,
+            "type-id": null,
+            "id": "8a754a16-0027-3a29-b6d7-2b40ea0481ed"
+          },
+          "date": "1994-04-25"
+        }
+      ],
+      "asin": "B000002TQB",
+      "packaging-id": "ec27701a-4a22-37f4-bfac-6616e0f9750a",
+      "packaging": "Jewel Case",
+      "genres": [
+        {
+          "count": 1,
+          "disambiguation": "",
+          "name": "britpop",
+          "id": "f1c9b874-7ef2-4e79-9419-c0bcb5f33a30"
+        }
+      ],
+      "status-id": "4e304316-386d-3409-af2e-78857eec5cfe"
+    }
+  }
+}
