@@ -9,6 +9,7 @@ type Id =
   | 'discover'
   | 'movies'
   | 'shows'
+  | 'music'
   | 'collections'
   | 'wanted'
   | 'activity'
@@ -27,7 +28,7 @@ export type Page = {
   icon: IconName
   path: string
   /** Drawn only when the server serves it (`serves.ts`): Shows is drafted (D3, answer 5). */
-  source?: 'shows'
+  source?: 'shows' | 'music'
 }
 
 const page = (id: Id, icon: IconName, path: string, source?: Page['source']): Page => ({
@@ -45,6 +46,8 @@ export const pageGroups: Page[][] = [
     page('discover', 'discover', '/discover'),
     page('movies', 'movie', '/movies'),
     page('shows', 'tv', '/shows', 'shows'),
+    // drafted with HT-68 (Phase 5's part D): shown while the server lists music among its sources
+    page('music', 'music', '/music', 'music'),
     page('collections', 'library', '/collections'),
     page('wanted', 'calendar', '/wanted'),
     page('activity', 'activity', '/activity'),

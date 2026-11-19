@@ -22,8 +22,11 @@ export function useServes(source: ClientSource): boolean {
 /** The sidebar's and the palette's pages, without those this server doesn't serve. */
 export function usePageGroups(): Page[][] {
   const shows = useServes('shows')
+  const music = useServes('music')
   return pageGroups.map((group) =>
-    group.filter((p) => !p.source || (p.source === 'shows' && shows)),
+    group.filter(
+      (p) => !p.source || (p.source === 'shows' && shows) || (p.source === 'music' && music),
+    ),
   )
 }
 

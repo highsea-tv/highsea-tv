@@ -28,6 +28,10 @@
 // shows (`useServes`, D3's answer 5): its own drafted route (series-settings.ts), drafted with the
 // rest, so one save bar saves both, as the prototype's does. A real server doesn't serve shows yet,
 // so its page is as before.
+//
+// Music (HT-68, Phase 5's part D) joins the same way when the server serves music: track naming
+// (Lidarr's formats, music-library.ts's drafted route) beside episode naming under the one save
+// bar, and each Music folder's figures and Scan now, as a Movies folder has them.
 import {
   COLON_REPLACEMENTS,
   type EpisodeNaming,
@@ -35,7 +39,9 @@ import {
   type LibraryKind,
   type MediaManagementSettings,
   MULTI_EPISODE_STYLES,
+  type MusicFolder,
   type RootFolder,
+  type TrackNaming,
 } from '@highsea-tv/api-contract'
 import { bytes } from '@highsea-tv/core/format'
 import { useT } from '@highsea-tv/i18n/react'
@@ -79,6 +85,12 @@ import { useServes } from './serves.tsx'
 import { AreaPage, Group, SaveBar } from './settings.tsx'
 import { Card, Cards, Note, WRAP_ANYWHERE } from './settings-card.tsx'
 import { TagSettings } from './tag-settings.tsx'
+import {
+  checkTrackNaming,
+  previewArtistFolder,
+  previewTrackFile,
+  TRACK_TOKENS,
+} from './track-naming.ts'
 
 const s = tokens.space
 const ui = tokens.adminText.ui
@@ -112,6 +124,9 @@ type NamingErrors = Partial<Record<keyof Naming, string>>
 
 /** Episode naming as loaded, when the server serves shows. */
 type Episodes = { loaded: Naming; reload: () => void }
+/** Track naming as loaded, when the server serves music. */
+type Tracks = { loaded: TrackNaming; reload: () => void }
+type TrackErrors = Partial<Record<keyof TrackNaming, string>>
 
 type Draft = Omit<MediaManagementSettings, 'recycleBinDays'> & { recycleBinDays: string }
 
@@ -153,16 +168,18 @@ export function MediaManagement() {
     'settings.updated',
   ])
   const shows = useServes('shows')
+  const music = useServes('music')
   const folders = <RootFolders />
-  const page = (episodes?: Episodes) =>
+  const page = (episodes?: Episodes, tracks?: Tracks) =>
     data.status === 'success' ? (
       // a fresh draft whenever the saved settings change
       <Form
-        key={JSON.stringify([data.data, episodes?.loaded])}
+        key={JSON.stringify([data.data, episodes?.loaded, tracks?.loaded])}
         loaded={data.data}
         reload={data.refetch}
         folders={folders}
         episodes={episodes}
+        tracks={tracks}
       />
     ) : (
       <>
@@ -174,7 +191,11 @@ export function MediaManagement() {
     )
   return (
     <AreaPage id="media">
-      {shows ? <WithEpisodes>{page}</WithEpisodes> : page()}
+      {(() => {
+        const withTracks = (episodes?: Episodes) =>
+          music ? <WithTracks>{(tracks) => page(episodes, tracks)}</WithTracks> : page(episodes)
+        return shows ? <WithEpisodes>{withTracks}</WithEpisodes> : withTracks()
+      })()}
       <TagSettings />
     </AreaPage>
   )
@@ -186,16 +207,24 @@ function WithEpisodes({ children }: { children: (episodes?: Episodes) => ReactNo
   return <>{children(q.status === 'success' ? { loaded: q.data, reload: q.refetch } : undefined)}</>
 }
 
+/** Reads track naming; until it's loaded (or if it fails) the form is drawn without it. */
+function WithTracks({ children }: { children: (tracks?: Tracks) => ReactNode }) {
+  const q = useQuery('settings:track-naming', (c) => c.musicLibrary.naming(), ['settings.updated'])
+  return <>{children(q.status === 'success' ? { loaded: q.data, reload: q.refetch } : undefined)}</>
+}
+
 function Form({
   loaded,
   reload,
   folders,
   episodes,
+  tracks,
 }: {
   loaded: MediaManagementSettings
   reload: () => void
   folders: ReactNode
   episodes?: Episodes
+  tracks?: Tracks
 }) {
   const t = useT(messages)
   const theme = useTheme()
@@ -218,7 +247,15 @@ function Form({
     setEp((d) => (d ? { ...d, ...patch } : d))
   }
   const epDirty = JSON.stringify(ep) !== JSON.stringify(episodes?.loaded ?? null)
-  const dirty = JSON.stringify(v) !== JSON.stringify(initial) || epDirty
+  const [tr, setTr] = useState(tracks?.loaded ?? null)
+  const [trErrors, setTrErrors] = useState<TrackErrors>({})
+  const saveTracks = useAction((c, body: TrackNaming) => c.musicLibrary.saveNaming({ body }))
+  const setTracks = (patch: Partial<TrackNaming>) => {
+    setTrErrors({})
+    setTr((d) => (d ? { ...d, ...patch } : d))
+  }
+  const trDirty = JSON.stringify(tr) !== JSON.stringify(tracks?.loaded ?? null)
+  const dirty = JSON.stringify(v) !== JSON.stringify(initial) || epDirty || trDirty
   // the import's own naming, so the preview and the files it names never disagree
   const naming = { colonReplacement: v.colonReplacement }
   const file = buildFileName(v.fileFormat, PREVIEW_MOVIE, PREVIEW_FILE, naming)
@@ -241,7 +278,18 @@ function Form({
                 token: why === 'needsEpisode' ? '{episode:00}' : '{Air-Date}',
               })
     setEpErrors(epProblems)
-    if (Object.keys(problems).length || Object.keys(epProblems).length) return setErrors(problems)
+    const trProblems: TrackErrors = {}
+    if (tr)
+      for (const [k, why] of Object.entries(checkTrackNaming(tr)))
+        trProblems[k as keyof TrackNaming] =
+          why === 'blank' ? t('format.missing') : t('tracks.needsTrack', { token: '{track:00}' })
+    setTrErrors(trProblems)
+    if (
+      Object.keys(problems).length ||
+      Object.keys(epProblems).length ||
+      Object.keys(trProblems).length
+    )
+      return setErrors(problems)
     try {
       await save.run({ ...v, chmod: v.chmod.trim(), recycleBinDays })
     } catch (e) {
@@ -257,9 +305,18 @@ function Form({
         if (reason && reason in ep) setEpErrors({ [reason]: (e as Error).message })
         return toast.error(t('saveError'), { description: (e as Error).message })
       }
+    if (tr && trDirty)
+      try {
+        await saveTracks.run(tr)
+      } catch (e) {
+        const reason = errorReason(e)
+        if (reason && reason in tr) setTrErrors({ [reason]: (e as Error).message })
+        return toast.error(t('saveError'), { description: (e as Error).message })
+      }
     toast.success(t('saved'))
     reload()
     if (epDirty) episodes?.reload()
+    if (trDirty) tracks?.reload()
   }
 
   return (
@@ -319,6 +376,7 @@ function Form({
         </Columns>
       </Group>
       {ep ? <EpisodeNamingGroup v={ep} set={setEpisodes} errors={epErrors} /> : null}
+      {tr ? <TrackNamingGroup v={tr} set={setTracks} errors={trErrors} /> : null}
       <Group title={t('importing.title')}>
         <Switch
           label={t('hardlinks')}
@@ -391,13 +449,15 @@ function Form({
       </Group>
       <SaveBar
         dirty={dirty}
-        saving={save.pending || saveEpisodes.pending}
+        saving={save.pending || saveEpisodes.pending || saveTracks.pending}
         onSave={submit}
         onDiscard={() => {
           setErrors({})
           setDraft(initial)
           setEpErrors({})
           setEp(episodes?.loaded ?? null)
+          setTrErrors({})
+          setTr(tracks?.loaded ?? null)
         }}
       />
     </>
@@ -492,6 +552,68 @@ function EpisodeNamingGroup({
   )
 }
 
+// ---------------------------------------------------------------- track naming
+
+/** Music's naming, as Lidarr's (HT-68): a track's file, one on a disc of several, an artist's folder. */
+function TrackNamingGroup({
+  v,
+  set,
+  errors,
+}: {
+  v: TrackNaming
+  set: (patch: Partial<TrackNaming>) => void
+  errors: TrackErrors
+}) {
+  const t = useT(messages)
+  const format = (key: Exclude<keyof TrackNaming, 'rename'>, label: string, preview: ReactNode) => (
+    <Field label={label} error={errors[key]}>
+      <Input
+        value={v[key]}
+        disabled={!v.rename}
+        mono
+        spellCheck={false}
+        autoCapitalize="none"
+        onChangeText={(text) => set({ [key]: text })}
+      />
+      {errors[key] ? null : preview}
+    </Field>
+  )
+  return (
+    <Group title={t('tracks.title')} description={t('tracks.description')}>
+      <Switch
+        label={t('tracks.rename')}
+        hint={t('tracks.renameHint')}
+        checked={v.rename}
+        onCheckedChange={(rename) => set({ rename })}
+      />
+      {format(
+        'standardFormat',
+        t('tracks.standard'),
+        <Note style={WRAP_ANYWHERE}>
+          {t('becomes')} <Name>{previewTrackFile(v.standardFormat)}.flac</Name>
+        </Note>,
+      )}
+      {format(
+        'multiDiscFormat',
+        t('tracks.multiDisc'),
+        <Note style={WRAP_ANYWHERE}>
+          {t('tracks.multiDiscHint')} <Name>{previewTrackFile(v.multiDiscFormat, true)}.flac</Name>
+        </Note>,
+      )}
+      {format(
+        'artistFolderFormat',
+        t('tracks.artist'),
+        <Note style={WRAP_ANYWHERE}>
+          {t('becomes')} <Name>{previewArtistFolder(v.artistFolderFormat)}</Name>
+        </Note>,
+      )}
+      <Note>
+        {t('tokens')} {TRACK_TOKENS}
+      </Note>
+    </Group>
+  )
+}
+
 /** Each kind's section: its icon, and the placeholder of its Add field (the stage-6 prototype). */
 const KIND: Record<LibraryKind, { icon: 'movie' | 'series' | 'music'; placeholder: string }> = {
   movies: { icon: 'movie', placeholder: '/data/media/movies' },
@@ -509,6 +631,7 @@ function RootFolders() {
   ])
   const [removing, setRemoving] = useState<RootFolder | null>(null)
   const remove = useAction((c, id: string) => c.rootFolders.remove({ params: { id } }))
+  const music = useServes('music')
   return (
     <View style={{ gap: s['4'] }}>
       <View style={{ gap: s['0.5'] }}>
@@ -519,65 +642,72 @@ function RootFolders() {
       </View>
       <Loadable query={folders} what={t('folders.what')}>
         {(fs) => (
-          <View style={{ gap: s['5'] }}>
-            {KINDS.map((kind, i) => {
-              const mine = fs.filter((f) => f.kind === kind)
-              return (
-                <View
-                  key={kind}
-                  style={[
-                    { gap: s['3'] },
-                    i > 0 && {
-                      borderTopWidth: line.thin,
-                      borderColor: theme.colors.line,
-                      paddingTop: s['5'],
-                    },
-                  ]}
-                >
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: s['2'] }}>
-                    <Icon name={KIND[kind].icon} size={tokens.icon.size.sm} color="text-3" />
-                    <Text
-                      size={ui.size}
-                      leading={ui.leading}
-                      weight={600}
-                      role="heading"
-                      aria-level={4}
-                    >
-                      {t(`folders.kind.${kind}`)}
-                    </Text>
-                  </View>
-                  {/* shows' and music's folders are kept for parts B and D (Phase 5) */}
-                  {kind !== 'movies' ? <Note>{t(`folders.later.${kind}`)}</Note> : null}
-                  {mine.length === 0 ? (
+          <WithMusicFigures on={music}>
+            {(figures) => (
+              <View style={{ gap: s['5'] }}>
+                {KINDS.map((kind, i) => {
+                  const mine = fs.filter((f) => f.kind === kind)
+                  return (
                     <View
-                      style={{
-                        padding: s['4'],
-                        borderWidth: line.thin,
-                        borderColor: theme.colors.line,
-                        borderRadius: tokens.radius.md,
-                        backgroundColor: theme.colors.s2,
-                      }}
+                      key={kind}
+                      style={[
+                        { gap: s['3'] },
+                        i > 0 && {
+                          borderTopWidth: line.thin,
+                          borderColor: theme.colors.line,
+                          paddingTop: s['5'],
+                        },
+                      ]}
                     >
-                      <Note style={{ textAlign: 'center' }}>{t(`folders.none.${kind}`)}</Note>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: s['2'] }}>
+                        <Icon name={KIND[kind].icon} size={tokens.icon.size.sm} color="text-3" />
+                        <Text
+                          size={ui.size}
+                          leading={ui.leading}
+                          weight={600}
+                          role="heading"
+                          aria-level={4}
+                        >
+                          {t(`folders.kind.${kind}`)}
+                        </Text>
+                      </View>
+                      {/* shows' folders are kept for part B (Phase 5); music's are read once it's served */}
+                      {kind === 'shows' || (kind === 'music' && !music) ? (
+                        <Note>{t(`folders.later.${kind}`)}</Note>
+                      ) : null}
+                      {mine.length === 0 ? (
+                        <View
+                          style={{
+                            padding: s['4'],
+                            borderWidth: line.thin,
+                            borderColor: theme.colors.line,
+                            borderRadius: tokens.radius.md,
+                            backgroundColor: theme.colors.s2,
+                          }}
+                        >
+                          <Note style={{ textAlign: 'center' }}>{t(`folders.none.${kind}`)}</Note>
+                        </View>
+                      ) : (
+                        <Cards label={t('folders.list', { kind: t(`folders.kind.${kind}`) })}>
+                          {mine.map((f) => (
+                            <Folder
+                              key={f.id}
+                              folder={f}
+                              languages={languages.data ?? []}
+                              figures={figures.find((x) => x.id === f.id)}
+                              onRemove={() => setRemoving(f)}
+                              onSaved={folders.refetch}
+                            />
+                          ))}
+                        </Cards>
+                      )}
+                      <AddFolder kind={kind} onAdded={folders.refetch} />
                     </View>
-                  ) : (
-                    <Cards label={t('folders.list', { kind: t(`folders.kind.${kind}`) })}>
-                      {mine.map((f) => (
-                        <Folder
-                          key={f.id}
-                          folder={f}
-                          languages={languages.data ?? []}
-                          onRemove={() => setRemoving(f)}
-                          onSaved={folders.refetch}
-                        />
-                      ))}
-                    </Cards>
-                  )}
-                  <AddFolder kind={kind} onAdded={folders.refetch} />
-                </View>
-              )
-            })}
-          </View>
+                  )
+                })}
+              </View>
+            )}
+          </WithMusicFigures>
         )}
       </Loadable>
       <ConfirmDialog
@@ -604,6 +734,23 @@ function RootFolders() {
   )
 }
 
+/** Each Music folder's artists, albums and folders set aside, when the server serves music. */
+function WithMusicFigures({
+  on,
+  children,
+}: {
+  on: boolean
+  children: (figures: MusicFolder[]) => ReactNode
+}) {
+  return on ? <MusicFigures>{children}</MusicFigures> : children(NO_FIGURES)
+}
+
+function MusicFigures({ children }: { children: (figures: MusicFolder[]) => ReactNode }) {
+  const q = useQuery('music:folders', (c) => c.musicLibrary.folders(), ['music.updated'])
+  return <>{children(q.data ?? NO_FIGURES)}</>
+}
+
+const NO_FIGURES: MusicFolder[] = []
 const NO_LANGUAGES = 'none'
 /** The languages select's width in a regular window (the web's `regular:w-56`). */
 const LANGUAGES_WIDTH = s['16'] * 3 + s['8']
@@ -611,17 +758,21 @@ const LANGUAGES_WIDTH = s['16'] * 3 + s['8']
 function Folder({
   folder: f,
   languages,
+  figures,
   onRemove,
   onSaved,
 }: {
   folder: RootFolder
   languages: LanguageProfile[]
+  /** A Music folder's figures, when the server serves music (HT-68). */
+  figures?: MusicFolder
   onRemove: () => void
   onSaved: () => void
 }) {
   const t = useT(messages)
   const regular = useRegularWindow()
   const movies = f.kind === 'movies'
+  const music = f.kind === 'music' && figures !== undefined
   const inUse = f.movies > 0
   const save = useAction((c, languageProfileId: string | null) =>
     c.rootFolders.update({ params: { id: f.id }, body: { languageProfileId } }),
@@ -694,6 +845,11 @@ function Folder({
               ? t('folders.free', { free: bytes(f.free), total: bytes(f.total) })
               : null,
             movies ? t('folders.movies', { count: f.movies }) : null,
+            music ? t('folders.artists', { count: figures.artists }) : null,
+            music ? t('folders.albums', { count: figures.albums }) : null,
+            music && figures.unmatched > 0
+              ? t('folders.unmatched', { count: figures.unmatched })
+              : null,
             // the library scan's new folders it couldn't match surely (4.1a's review)
             f.waiting > 0 ? t('folders.waiting', { count: f.waiting }) : null,
           ]
@@ -738,7 +894,7 @@ function Folder({
         ) : null}
       </View>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: s['2'] }}>
-        {movies ? (
+        {movies || music ? (
           <Button
             size="sm"
             variant="ghost"
@@ -751,7 +907,7 @@ function Folder({
                 () =>
                   toast({
                     title: t('folders.scanning', { path: f.path }),
-                    description: t('folders.scanningBody'),
+                    description: t(music ? 'folders.scanningMusic' : 'folders.scanningBody'),
                   }),
                 (e: Error) => toast.error(t('folders.scanFailed'), { description: e.message }),
               )

@@ -10,6 +10,7 @@ import { flowsAnswers } from './flows.ts'
 import { integrationsAnswers } from './integrations.ts'
 import type { AdminKit, Answers } from './kit.ts'
 import { moviesAnswers } from './movies.ts'
+import { musicAnswers } from './music.ts'
 import { peopleAnswers } from './people.ts'
 import { qualityAnswers } from './quality.ts'
 import { settingsGeneralAnswers } from './settings-general.ts'
@@ -31,6 +32,7 @@ export function adminAnswers(kit: AdminKit): Answers {
     subtitlesAnswers(kit),
     qualityAnswers(kit),
     showsAnswers(kit),
+    musicAnswers(kit),
     integrationsAnswers(kit),
     peopleAnswers(kit),
     flowsAnswers(kit),

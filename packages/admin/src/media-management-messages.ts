@@ -76,6 +76,11 @@ export const media = defineMessages({
   'folders.scanLabel': 'Scan {path} now',
   'folders.scanning': 'Scanning {path}',
   'folders.scanningBody': 'New movies are added as they’re found.',
+  'folders.scanningMusic':
+    'New albums are added as they’re found, and changed tags are read again.',
+  'folders.artists': '{count, plural, =0 {No artists} one {# artist} other {# artists}}',
+  'folders.albums': '{count, plural, =0 {no albums} one {# album} other {# albums}}',
+  'folders.unmatched': '{count, plural, one {# folder} other {# folders}} in Unmatched',
   'folders.scanFailed': 'Couldn’t scan the folder',
   'folders.importExisting': 'Import what’s already here',
   'folders.importExistingLabel': 'Import what’s already in {path}',
@@ -142,4 +147,15 @@ export const media = defineMessages({
   'episodes.multi.range': 'Range: S01E01-03',
   'episodes.multi.prefixed-range': 'Prefixed range: S01E01-E03',
   'episodes.needsEpisode': 'The format needs {token}, so episodes can be told apart.',
+  'tracks.title': 'Track naming',
+  'tracks.description':
+    'How highsea would name music it moves. Your files keep their names unless you turn this on.',
+  'tracks.rename': 'Rename tracks',
+  'tracks.renameHint':
+    'Off by default: music is read where it is, and a read-only folder is never renamed.',
+  'tracks.standard': 'Track',
+  'tracks.multiDisc': 'Track on an album of several discs',
+  'tracks.multiDiscHint': 'The first track of disc 2 becomes',
+  'tracks.artist': 'Artist folder',
+  'tracks.needsTrack': 'The format needs {token}, so tracks can be told apart.',
 })

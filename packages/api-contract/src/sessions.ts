@@ -44,6 +44,17 @@ const Title = z.object({
   year: z.number().int().nullable(),
   /** The server's image path, or null. */
   poster: z.string().nullable(),
+  /**
+   * A song's artist and album, by their ids in the admin's music (music-library.ts), so Now
+   * playing names them and links the album; absent for a film. Drafted with HT-68 for Phase 5's
+   * part D: the server leaves it out until it plays music.
+   */
+  song: z
+    .object({
+      artist: z.object({ id: z.string(), name: z.string() }),
+      album: z.object({ id: z.string(), title: z.string() }),
+    })
+    .optional(),
 })
 
 export const DeliveryMethod = z
