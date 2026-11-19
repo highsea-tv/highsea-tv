@@ -159,6 +159,10 @@ const queueItem = (n: number, movieId: number | null, extra: Record<string, unkn
   downRate: 2_500_000,
   upRate: 0,
   eta: 1800,
+  // fed by the Internet Archive's web seed alone, as the owner's was (HT-100)
+  peers: { connected: 0, total: 0 },
+  seeds: { connected: 0, total: 0 },
+  webSeeds: { connected: 1, total: 1, hosts: ['archive.org'], downRate: 2_500_000 },
   ratio: 0,
   state: 'downloading',
   stateReason: null,
@@ -946,7 +950,7 @@ describe('a movie in the library', () => {
     const card = page.getByRole('region', { name: 'In the queue' })
     expect(within(card).getByText('The.Matrix.1999.1080p.BluRay.x264-GRP1')).toBeTruthy()
     expect(within(card).getByText('Downloading')).toBeTruthy()
-    expect(within(card).getByText('42% · 2.5 MB/s · 30m left')).toBeTruthy()
+    expect(within(card).getByText('42% · 2.5 MB/s · Web seed · archive.org · 30m left')).toBeTruthy()
     expect(within(card).queryByText('Reloaded.2003')).toBeNull()
 
     // the import is blocked: the badge, the bar and the reason follow the event

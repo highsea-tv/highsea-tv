@@ -96,6 +96,7 @@ import { View } from 'react-native'
 import { AddMovieDialog } from './add-dialog.tsx'
 import { ArtworkDialog } from './artwork-dialog.tsx'
 import { artwork as artworkMessages } from './artwork-messages.ts'
+import { useDownloadSource } from './download-source.ts'
 import { torrentTone } from './downloads-status.ts'
 import { useSearchable } from './indexer-state.ts'
 import { library } from './library-messages.ts'
@@ -704,6 +705,7 @@ function InTheQueue({ movie: m }: { movie: Movie }) {
   const ts = useT(torrentState)
   const theme = useTheme()
   const locale = useLocale()
+  const source = useDownloadSource()
   const queue = useQuery('queue', (c) => c.queue.list(), QUEUE_TOPICS)
   const live = queue.data?.filter((q) => q.movieId === m.id) ?? []
   if (!live.length) return null
@@ -745,6 +747,8 @@ function InTheQueue({ movie: m }: { movie: Movie }) {
           <Text size={FIGURE.size} leading={FIGURE.leading} mono color="text-3">
             {percent(q.progress)}
             {q.downRate ? ` · ${rate(q.downRate)}` : ''}
+            {/* where it comes from: peers, web seeds or both (HT-100) */}
+            {q.state === 'downloading' && source(q) ? ` · ${source(q)}` : ''}
             {q.eta ? ` · ${t('queue.left', { duration: duration(q.eta, locale) })}` : ''}
             {q.stateReason ? ` · ${q.stateReason}` : ''}
           </Text>

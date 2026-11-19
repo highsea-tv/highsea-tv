@@ -32,6 +32,7 @@ import {
   recommendations,
   collection as tmdbCollection,
 } from '../metadata.ts'
+import { webSeedsOf } from '../seed.ts'
 import type {
   MediaItem,
   ImportListSettings as MockListSettings,
@@ -140,6 +141,7 @@ export function moviesAnswers(kit: AdminKit): Answers {
     eta: x.eta,
     peers: { ...x.peers },
     seeds: { ...x.seeds },
+    webSeeds: webSeedsOf(x),
     ratio: x.ratio,
     state: x.state,
     stateReason: x.stateReason,
