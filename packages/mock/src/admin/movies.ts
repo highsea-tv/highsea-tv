@@ -479,7 +479,7 @@ export function moviesAnswers(kit: AdminKit): Answers {
         const releases = found
           .map((r) => releaseOf(ctx, r))
           .sort((a, b) => Number(b.approved) - Number(a.approved) || b.formatScore - a.formatScore)
-        return { releases, searched: enabledIndexers(ctx).length, failed: [] }
+        return { releases, searched: enabledIndexers(ctx).length, failed: [], leftOut: [] }
       },
       releases: ({ params }, ctx) => {
         const m = inLibrary(ctx, params.id)

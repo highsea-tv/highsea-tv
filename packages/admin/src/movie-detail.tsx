@@ -1398,7 +1398,12 @@ function SearchTab({ id }: { id: number }) {
   return <InteractiveSearch id={id} indexers={searchable.enabled} />
 }
 
-type Found = { releases: Release[]; failed: { indexer: string; message: string }[] }
+type Found = {
+  releases: Release[]
+  failed: { indexer: string; message: string }[]
+  /** What the indexers answered with that isn't listed, and why (HT-85). */
+  leftOut: { indexer: string; reason: 'other-movie' | 'duplicate'; count: number; found: number }[]
+}
 
 /** A row's text in the admin's ui type, in `text` or `text-3`. */
 function Words({ children, color }: { children: string; color?: 'text-2' | 'text-3' }) {
@@ -1432,7 +1437,7 @@ function InteractiveSearch({ id, indexers }: { id: number; indexers: number }) {
   const releases = useQuery(`releases:${id}:${run}`, async (c): Promise<Found> => {
     if (run === 0) {
       const cached = await c.movies.releases({ params: { id } })
-      if (cached.length) return { releases: cached, failed: [] }
+      if (cached.length) return { releases: cached, failed: [], leftOut: [] }
     }
     return c.movies.interactiveSearch({ params: { id } })
   })
@@ -1469,8 +1474,11 @@ function InteractiveSearch({ id, indexers }: { id: number; indexers: number }) {
         </>
       }
     >
-      {({ releases: rs, failed }) => {
+      {({ releases: rs, failed, leftOut }) => {
         const shown = showRejected ? rs : rs.filter((r) => r.approved)
+        // releases for other films are said, not listed: an indexer whose whole answer was for
+        // other films may have ignored the search (HT-85)
+        const otherFilms = leftOut.filter((l) => l.reason === 'other-movie')
         return (
           <View style={{ gap: s['3'] }}>
             <TableFrame>
@@ -1491,7 +1499,9 @@ function InteractiveSearch({ id, indexers }: { id: number; indexers: number }) {
                 </Button>
               </TableToolbar>
               {rs.length === 0 ? (
-                <TableNone>{t('search.none')}</TableNone>
+                <TableNone>
+                  {t(otherFilms.length > 0 ? 'search.noneForThis' : 'search.none')}
+                </TableNone>
               ) : (
                 <Table>
                   <TableHeader>
@@ -1581,12 +1591,25 @@ function InteractiveSearch({ id, indexers }: { id: number; indexers: number }) {
                 </Table>
               )}
             </TableFrame>
-            {failed.length > 0 && (
+            {failed.length + otherFilms.length > 0 && (
               <View role="list" style={{ gap: s['1'] }}>
                 {failed.map((f) => (
                   <View key={f.indexer} role="listitem">
                     <Caption>
                       {t('search.failedIndexer', { indexer: f.indexer, message: f.message })}
+                    </Caption>
+                  </View>
+                ))}
+                {otherFilms.map((l) => (
+                  <View key={`${l.indexer}-left-out`} role="listitem">
+                    <Caption>
+                      {l.count === l.found
+                        ? t('search.leftOutAll', { indexer: l.indexer, count: l.count })
+                        : t('search.leftOut', {
+                            indexer: l.indexer,
+                            found: l.found,
+                            count: l.count,
+                          })}
                     </Caption>
                   </View>
                 ))}

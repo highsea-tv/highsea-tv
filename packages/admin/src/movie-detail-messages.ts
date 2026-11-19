@@ -56,6 +56,11 @@ export const movieDetail = defineMessages({
   'grab.doneBody': '{title} is downloading. Follow it in Activity.',
   'grab.failed': 'Couldn’t grab it',
   'search.failedIndexer': '{indexer} didn’t answer: {message}',
+  'search.noneForThis': 'The indexers answered, but with nothing for this film. Try again later.',
+  'search.leftOut':
+    '{indexer} answered with {found, plural, one {# release} other {# releases}}; {count, plural, one {# was} other {# were}} for other films and left out.',
+  'search.leftOutAll':
+    '{indexer} answered with {count, plural, one {# release} other {# releases}}, none for this film. The site may have ignored the search: try again later.',
   // tabs
   'tab.files': 'Files',
   'tab.history': 'History',

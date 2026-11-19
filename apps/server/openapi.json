@@ -11167,12 +11167,47 @@
                 "message"
               ]
             }
+          },
+          "leftOut": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "indexerId": {
+                  "type": "string"
+                },
+                "indexer": {
+                  "type": "string"
+                },
+                "reason": {
+                  "type": "string",
+                  "enum": [
+                    "other-movie",
+                    "duplicate"
+                  ]
+                },
+                "count": {
+                  "type": "integer"
+                },
+                "found": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "indexerId",
+                "indexer",
+                "reason",
+                "count",
+                "found"
+              ]
+            }
           }
         },
         "required": [
           "releases",
           "searched",
-          "failed"
+          "failed",
+          "leftOut"
         ]
       },
       "Release": {

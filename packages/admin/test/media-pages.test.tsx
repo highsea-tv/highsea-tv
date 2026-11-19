@@ -105,6 +105,8 @@ type State = {
   indexers: { id: string; name: string; enabled: boolean }[]
   /** The last 30 minutes' results, as GET …/releases answers them. */
   cached: ReturnType<typeof release>[]
+  /** The search's answer, when a test wants its own. */
+  search: unknown
   queue: ReturnType<typeof queueItem>[]
   files: ReturnType<typeof mediaFile>[]
   history: ReturnType<typeof historyEvent>[]
@@ -458,6 +460,7 @@ async function api(url: string, init: RequestInit = {}): Promise<Response> {
     case 'GET /api/v1/movies/603/releases':
       return json(state.cached)
     case 'POST /api/v1/movies/603/search':
+      if (state.search) return json(state.search)
       return json({
         releases: [
           release(1, true),
@@ -465,6 +468,10 @@ async function api(url: string, init: RequestInit = {}): Promise<Response> {
         ],
         searched: 2,
         failed: [{ indexerId: 'ix2', indexer: 'Slow tracker', message: 'it timed out' }],
+        leftOut: [
+          { indexerId: 'ix1', indexer: 'Archive', reason: 'other-movie', count: 3, found: 5 },
+          { indexerId: 'ix1', indexer: 'Archive', reason: 'duplicate', count: 1, found: 5 },
+        ],
       })
     case 'GET /api/v1/queue':
       return json(state.queue)
@@ -558,6 +565,7 @@ beforeEach(() => {
     push: null,
     indexers: [],
     cached: [],
+    search: null,
     queue: [],
     files: [],
     history: [],
@@ -834,11 +842,39 @@ describe('a movie in the library', () => {
       expect(page.getByRole('button', { name: /^Grab The\.Matrix/ })).toBeTruthy()
       expect(page.getByRole('button', { name: /^Grab anyway/ })).toBeTruthy()
       expect(page.getByText('Slow tracker didn’t answer: it timed out')).toBeTruthy()
+      // releases for other films are said, not listed (HT-85); a repeat isn't worth a line
+      expect(
+        page.getByText('Archive answered with 5 releases; 3 were for other films and left out.'),
+      ).toBeTruthy()
 
       await user.click(page.getByRole('button', { name: /Rejected \(1\)/ }))
       expect(page.getByText('Smaller than the minimum size for Bluray-1080p.')).toBeTruthy()
       await user.click(page.getByRole('switch', { name: 'Show rejected' }))
       expect(page.queryByRole('button', { name: /^Grab anyway/ })).toBeNull()
+    })
+
+    test('an answer that was all for other films says so instead of finding nothing (HT-85)', async () => {
+      state.search = {
+        releases: [],
+        searched: 1,
+        failed: [],
+        leftOut: [
+          { indexerId: 'ix1', indexer: 'Archive', reason: 'other-movie', count: 100, found: 100 },
+        ],
+      }
+      const { page, user } = await open(
+        <Routed<MovieTab> base="/movies/603">{(tab) => <MovieDetail id="603" tab={tab} />}</Routed>,
+      )
+      await user.click(page.getByRole('button', { name: 'Interactive search' }))
+      await settle()
+      expect(
+        page.getByText('The indexers answered, but with nothing for this film. Try again later.'),
+      ).toBeTruthy()
+      expect(
+        page.getByText(
+          'Archive answered with 100 releases, none for this film. The site may have ignored the search: try again later.',
+        ),
+      ).toBeTruthy()
     })
 
     test('recent results are shown without asking the indexers again; Search again asks', async () => {
