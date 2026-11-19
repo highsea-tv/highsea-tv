@@ -2,6 +2,10 @@
 
 Newest first. Each version's notes appear in the server's What changed dialog.
 
+## 2026.11.19.4
+
+- highsea 0.4.6 is out. System › Updates has its notes.
+
 ## 2026.11.19.3
 
 - The Torznab definition (1.0.1) now describes a feed the tracker or site serves itself, and says where its address and key come from, instead of suggesting a feed from another app.

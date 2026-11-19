@@ -1,5 +1,21 @@
 [
   {
+    "version": "0.4.6",
+    "channel": "stable",
+    "date": "2026-11-19",
+    "notes": [
+      "Add a live check of each catalog definition against its real site (#80)",
+      "HT-70 Hero banner without paging dots, the player's wrong Ultra HD badge, and a clipped card in Recently added (#75)",
+      "HT-67 Shows on the server: the model, the episode parser and TMDB's TV metadata (B, 1 of 4) (#77)",
+      "HT-68 Music in the admin, prototyped for the owner's approval (D, stage 7) (#74)",
+      "HT-72 Flaky tests: find and fix the causes, and a way to see the next one (#78)",
+      "HT-77 Indexers: YTS, Knaben, BitSearch and Torrents-CSV in the catalog (#82)",
+      "Record the owner's answers to the indexer catalog plan's questions (#85)",
+      "Download from web seeds, and say why a torrent waits (HT-76) (#83)"
+    ],
+    "url": "https://github.com/highsea-tv/highsea-tv/releases/tag/v0.4.6"
+  },
+  {
     "version": "0.4.5",
     "channel": "stable",
     "date": "2026-11-19",
