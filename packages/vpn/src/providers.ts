@@ -12,7 +12,7 @@ export function toApiProvider(d: VpnProviderDefinition): VpnProvider {
   return {
     id: d.id,
     name: d.name,
-    connect: d.connect === 'pia' ? 'account' : 'config',
+    connect: d.connect === 'pia' ? 'account' : d.connect,
     steps: d.steps,
     portForwarding: d.portForwarding.method,
     ipv6: d.ipv6,

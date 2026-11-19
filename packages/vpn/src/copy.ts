@@ -29,12 +29,35 @@ export const failures = {
   noEndpoint:
     'A [Peer] in that WireGuard configuration has no Endpoint, so highsea can’t reach it.',
   piaRegion: (region: string) => `PIA has no WireGuard server in ${region}. Pick another region.`,
+  // Not in the prototype: connecting with an access token (HT-87)
+  token: (provider: string) => `Paste your ${provider} access token.`,
   // Not in the prototype: the interface picker and the typed-in port can't be left wrong.
   interfaceName: 'Choose an interface.',
   staticPort: 'Enter a port from 1 to 65535.',
   echoUrl: 'Enter the address of an IP echo service, starting with http:// or https://.',
   provider: 'Choose a provider.',
   mode: 'Choose how torrents reach your VPN.',
+}
+
+/**
+ * Connecting with an access token (HT-87), with the provider's name. Not in the prototype. None of
+ * them carries the token or an address with it.
+ */
+export const tokenFailures = {
+  refused: (provider: string) =>
+    `${provider} didn’t accept that access token. Generate a new one in your ${provider} account and paste it here.`,
+  unreachable: (provider: string) =>
+    `Couldn’t reach ${provider}’s API. highsea tries again shortly.`,
+  status: (provider: string, status: number) => `${provider}’s API answered ${status}.`,
+  answer: (provider: string) => `${provider}’s API answered, but not in a way highsea understands.`,
+  noKey: (provider: string) =>
+    `${provider} answered without a WireGuard key for that token. Check that the account has an active subscription.`,
+  noCountry: (provider: string, country: string) =>
+    `${provider} has no country called ${country}. Pick another one.`,
+  noServersIn: (provider: string, country: string) =>
+    `${provider} recommends no WireGuard server in ${country} right now. Pick another country, or leave it to ${provider}.`,
+  noServers: (provider: string) =>
+    `${provider} recommends no WireGuard server right now. highsea tries again shortly.`,
 }
 
 /** The parser's refusals, past the one the prototype has. Not in the prototype. */

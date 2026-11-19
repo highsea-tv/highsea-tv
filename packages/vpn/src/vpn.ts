@@ -4,7 +4,7 @@
 // resolvers while torrents may leave, or null while they mustn't. Three modes:
 //
 // - the built-in VPN (6b): highsea brings up a WireGuard tunnel itself (tunnel.ts), from a
-//   configuration file or PIA's API, and binds torrents to the tunnel's address, which the kernel
+//   configuration file, PIA's API or an access token (token.ts), and binds torrents to the tunnel's address, which the kernel
 //   routes through the tunnel or nowhere. The tunnel is up once a handshake is seen (`wg show
 //   latest-handshakes`, every 5 seconds); no handshake for 3 minutes is down (vpn.md › Checks), and
 //   highsea tears the tunnel down and connects again, waiting longer after each try, up to
@@ -64,6 +64,7 @@ import {
   writeStored,
 } from './settings.ts'
 import { buildStatus, initialRuntime, leaking, type VpnRuntime } from './status.ts'
+import { connectWithToken, createTokenApi, type TokenApi, TokenError } from './token.ts'
 import { createTunnel, TunnelError, type TunnelSpec, tunnelAddresses } from './tunnel.ts'
 import type {
   VpnBinding,
@@ -149,6 +150,8 @@ export type VpnDeps = {
   runner?: Runner
   /** PIA's API; tests pass one over a fake transport. */
   pia?: Pia
+  /** `connect: token` providers' APIs; by default through `fetch`, outside the tunnel. */
+  tokenApi?: TokenApi
   /** NAT-PMP's mapping; tests pass a fake gateway's. */
   natPmp?: (options: NatPmpOptions, lifetime: number, current: number | null) => Promise<Mapping>
   /** The torrent engine's `setBinding`: null stops every torrent's networking. */
@@ -218,6 +221,7 @@ export function createVpn(deps: VpnDeps) {
   const providerList = deps.providers ?? (() => [])
   const tunnel = createTunnel(deps.runner ?? spawnRunner())
   const pia = deps.pia ?? createPia()
+  const tokenApi = deps.tokenApi ?? createTokenApi(deps.fetch)
   const natPmp = deps.natPmp ?? forwardWithNatPmp
   const log = deps.logger.child('vpn')
 
@@ -429,7 +433,11 @@ export function createVpn(deps: VpnDeps) {
     }
   }
 
-  /** The tunnel to build, from the provider: a configuration file, or PIA's API. */
+  /**
+   * The tunnel to build, from the provider: a configuration file, PIA's API, or an access token.
+   * A token provider asks for a fresh recommendation each time, so a reconnect after its server
+   * went away lands on another; with no token stored, its hand-written file is the fallback.
+   */
   async function prepare(
     s: StoredVpnSettings,
     provider: VpnProviderDefinition,
@@ -446,7 +454,22 @@ export function createVpn(deps: VpnDeps) {
         pia: { server: r.server, token, tokenAt: deps.clock.now(), forward: null },
       }
     }
-    if (!secrets.config) throw new WireGuardError(failures.upload(provider.name))
+    if (provider.connect === 'token' && provider.token && secrets.token) {
+      const r = await connectWithToken(
+        tokenApi,
+        { name: provider.name, token: provider.token },
+        secrets.token,
+        s.tokenCountry,
+      )
+      log.info('Got a server from the provider', { provider: provider.id, server: r.server })
+      return { spec: r.spec, dns: r.dns, pia: null }
+    }
+    if (!secrets.config)
+      throw new WireGuardError(
+        provider.connect === 'token'
+          ? failures.token(provider.name)
+          : failures.upload(provider.name),
+      )
     const config = parseWireGuard(secrets.config)
     return {
       spec: {
@@ -480,6 +503,11 @@ export function createVpn(deps: VpnDeps) {
       if (g !== generation) return
       if (e instanceof PiaError && e.kind === 'refused') return failBuiltin(failures.piaRefused)
       if (e instanceof WireGuardError) return failBuiltin(e.message)
+      if (e instanceof TokenError && e.kind !== 'unreachable') {
+        log.warn('The provider’s API didn’t give a tunnel', { error: e.message })
+        // a refused token or an unknown country is the owner's to fix; the rest may pass
+        return failBuiltin(e.message, e.kind !== 'refused' && e.kind !== 'noCountry')
+      }
       log.warn('Couldn’t reach the provider', { error: (e as Error).message })
       return lost(checkCopy.providerUnreachable(provider.name), true)
     }
@@ -867,7 +895,7 @@ export function createVpn(deps: VpnDeps) {
       prepared = await prepare(s, provider)
     } catch (e) {
       if (e instanceof PiaError && e.kind === 'refused') return failed(failures.piaRefused)
-      if (e instanceof WireGuardError) return failed(e.message)
+      if (e instanceof WireGuardError || e instanceof TokenError) return failed(e.message)
       return failed(checkCopy.providerUnreachable(provider.name)[0])
     }
     const spec = ipv4Only(prepared.spec)
@@ -959,7 +987,9 @@ export function createVpn(deps: VpnDeps) {
     (input.config !== undefined && input.config !== '') ||
     (input.piaPassword !== undefined && input.piaPassword !== '') ||
     (input.piaUsername !== undefined && input.piaUsername.trim() !== stored.piaUsername) ||
-    (input.piaRegion !== undefined && input.piaRegion !== stored.piaRegion)
+    (input.piaRegion !== undefined && input.piaRegion !== stored.piaRegion) ||
+    (input.token !== undefined && input.token !== '') ||
+    (input.tokenCountry !== undefined && input.tokenCountry.trim() !== stored.tokenCountry)
 
   // the modes
 
@@ -1079,8 +1109,8 @@ export function createVpn(deps: VpnDeps) {
     provider: (id: string) => findProvider(providerList(), id),
     /**
      * Checks and saves Settings › VPN, then reconnects with them. The container mode's key and
-     * address are tried against gluetun first, and PIA's username and password against PIA, as the
-     * prototype's form does.
+     * address are tried against gluetun first, PIA's username and password against PIA, as the
+     * prototype's form does, and a new access token against its provider.
      */
     async save(input: VpnSettingsInput): Promise<VpnSettings> {
       const next = mergeSettings(stored, input, deps.sealer, providerList())
@@ -1108,6 +1138,22 @@ export function createVpn(deps: VpnDeps) {
           // a refusal is the owner's to fix; PIA out of reach is tried again when connecting
           if (e instanceof PiaError && e.kind === 'refused')
             throw new AppError('invalid', failures.piaRefused, { field: 'piaPassword' })
+        }
+      }
+      const provider = currentProvider(next)
+      if (
+        next.mode === 'builtin' &&
+        provider?.connect === 'token' &&
+        provider.token &&
+        input.token !== undefined &&
+        input.token.trim() !== ''
+      ) {
+        try {
+          await tokenApi.key(provider.name, provider.token, input.token.trim())
+        } catch (e) {
+          // a refusal is the owner's to fix; the API out of reach is tried again when connecting
+          if (e instanceof TokenError && e.kind === 'refused')
+            throw new AppError('invalid', e.message, { field: 'token' })
         }
       }
       stored = writeStored(deps.db, next, deps.clock.now())

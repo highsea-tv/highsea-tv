@@ -8,6 +8,6 @@ The providers Settings › VPN › the built-in VPN offers ([vpn.md](../../docs/
 - `CHANGES.md`: one heading per catalog version, newest first.
 - `SOURCES.md`: the provider documentation each entry is written from.
 
-Facts are data and mechanisms are code. An entry says which of highsea's mechanisms the provider uses: `connect` is `config` (a WireGuard configuration file) or `pia` (PIA's API), and `portForwarding.method` is `natpmp`, `pia`, `static` (a port typed in) or `none`. A provider that fits these ships here without a server release; one that needs a new mechanism needs code first.
+Facts are data and mechanisms are code. An entry says which of highsea's mechanisms the provider uses: `connect` is `config` (a WireGuard configuration file), `pia` (PIA's API) or `token` (an access token, with the API's addresses, how the token is sent and where the key and a server are in its answers described in the entry's `token` block; engine 1.1.0), and `portForwarding.method` is `natpmp`, `pia`, `static` (a port typed in) or `none`. A provider that fits these ships here without a server release; one that needs a new mechanism needs code first.
 
 `bun run catalog:build` validates and signs this kind beside the indexers, into `dist/catalog/vpn-providers/`; `--seed` refreshes `packages/catalog/seed/vpn-providers/`.

@@ -15,6 +15,10 @@ export type VpnSettings = {
   piaUsername: string
   piaPasswordSet: boolean
   piaRegion: string
+  /** An access token is stored (`connect: token`, HT-87); the token itself never leaves the server. */
+  tokenSet: boolean
+  /** The country to connect in, by name; empty leaves the server to the provider. */
+  tokenCountry: string
   /** A port the provider reserved for the owner, typed in (AirVPN, and others that offer one). */
   staticPort: number | null
   containerUrl: string
@@ -30,22 +34,28 @@ export type VpnSettings = {
  * What the admin sends. The secrets are write-only: sent once, never read back, and an absent or
  * empty one keeps what's stored.
  */
-export type VpnSettingsInput = Partial<Omit<VpnSettings, 'piaPasswordSet' | 'containerKeySet'>> & {
+export type VpnSettingsInput = Partial<
+  Omit<VpnSettings, 'piaPasswordSet' | 'containerKeySet' | 'tokenSet'>
+> & {
   /** A new WireGuard configuration's text. */
   config?: string
   piaPassword?: string
+  /** A new access token. */
+  token?: string
   containerKey?: string
 }
 
 export type VpnProvider = {
   id: string
   name: string
-  connect: 'config' | 'account'
+  /** A file, PIA's username and password, or an access token (with a file as the fallback). */
+  connect: 'config' | 'account' | 'token'
   /** Where to find what highsea needs in the provider's account, in order. */
   steps: string[]
   portForwarding: 'natpmp' | 'pia' | 'static' | 'none'
   /** Whether the provider's tunnels carry IPv6. */
   ipv6: boolean
+  /** PIA's regions, or the countries a token provider can connect in. */
   regions?: string[]
 }
 

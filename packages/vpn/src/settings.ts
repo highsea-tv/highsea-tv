@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// Settings › VPN, stored in the `vpn` settings row. The WireGuard configuration, PIA's password and
-// gluetun's API key are sealed with the server's key (`Sealer`, as the indexers' credentials are)
-// and never leave the server: the API sees `configName`, `piaPasswordSet` and `containerKeySet`.
+// Settings › VPN, stored in the `vpn` settings row. The WireGuard configuration, PIA's password, an
+// access token and gluetun's API key are sealed with the server's key (`Sealer`, as the indexers'
+// credentials are) and never leave the server: the API sees `configName`, `piaPasswordSet`,
+// `tokenSet` and `containerKeySet`.
 // An absent or empty secret in a save keeps the stored one, as the prototype's form expects.
 import { AppError, type Sealer } from '@highsea-tv/core'
 import { type Db, readSetting, writeSetting } from '@highsea-tv/db'
@@ -14,9 +15,13 @@ import { parseWireGuard, WireGuardError } from './wireguard.ts'
 export const VPN_SETTINGS_KEY = 'vpn'
 
 /** The row as stored: the public fields, with sealed secrets in place of the `…Set` flags. */
-export type StoredVpnSettings = Omit<VpnSettings, 'piaPasswordSet' | 'containerKeySet'> & {
+export type StoredVpnSettings = Omit<
+  VpnSettings,
+  'piaPasswordSet' | 'containerKeySet' | 'tokenSet'
+> & {
   configSealed: string | null
   piaPasswordSealed: string | null
+  tokenSealed: string | null
   containerKeySealed: string | null
 }
 
@@ -29,6 +34,8 @@ export const DEFAULT_VPN_SETTINGS: StoredVpnSettings = {
   piaUsername: '',
   piaPasswordSealed: null,
   piaRegion: 'Netherlands',
+  tokenSealed: null,
+  tokenCountry: '',
   staticPort: null,
   containerUrl: 'http://127.0.0.1:8000',
   containerKeySealed: null,
@@ -53,10 +60,11 @@ export function readStored(db: Db): StoredVpnSettings {
 }
 
 export function toPublic(s: StoredVpnSettings): VpnSettings {
-  const { configSealed: _c, piaPasswordSealed, containerKeySealed, ...rest } = s
+  const { configSealed: _c, piaPasswordSealed, tokenSealed, containerKeySealed, ...rest } = s
   return {
     ...rest,
     piaPasswordSet: piaPasswordSealed !== null,
+    tokenSet: tokenSealed !== null,
     containerKeySet: containerKeySealed !== null,
   }
 }
@@ -67,6 +75,7 @@ export function openSecrets(s: StoredVpnSettings, sealer: Sealer) {
   return {
     config: open(s.configSealed),
     piaPassword: open(s.piaPasswordSealed),
+    token: open(s.tokenSealed),
     containerKey: open(s.containerKeySealed),
   }
 }
@@ -84,7 +93,7 @@ export function mergeSettings(
   sealer: Sealer,
   providers: readonly VpnProviderDefinition[],
 ): StoredVpnSettings {
-  const { config, piaPassword, containerKey, ...fields } = input
+  const { config, piaPassword, token, containerKey, ...fields } = input
   const next: StoredVpnSettings = { ...current }
   for (const [k, v] of Object.entries(fields))
     if (v !== undefined && k in DEFAULT_VPN_SETTINGS) (next as Record<string, unknown>)[k] = v
@@ -95,6 +104,7 @@ export function mergeSettings(
   next.containerUrl = next.containerUrl.trim().replace(/\/+$/, '')
   next.interface = next.interface.trim()
   next.piaUsername = next.piaUsername.trim()
+  next.tokenCountry = next.tokenCountry.trim()
   next.echoUrl = next.echoUrl.trim()
   if (
     next.staticPort !== null &&
@@ -108,7 +118,7 @@ export function mergeSettings(
       const parsed = parseWireGuard(config)
       // The built-in VPN builds the tunnel from the file, so it needs what wg-quick would: an
       // address to bind torrents to, and an endpoint for each peer
-      if (next.mode === 'builtin' && provider.connect === 'config') {
+      if (next.mode === 'builtin' && provider.connect !== 'pia') {
         if (!parsed.addresses.some((a) => !a.includes(':')))
           throw invalid(failures.noAddress, 'config')
         if (parsed.peers.some((p) => !p.endpoint)) throw invalid(failures.noEndpoint, 'config')
@@ -125,12 +135,21 @@ export function mergeSettings(
     next.configSealed = null
   } else next.configName = current.configName
   if (filled(piaPassword)) next.piaPasswordSealed = sealer.seal(piaPassword)
+  if (filled(token)) {
+    const t = token.trim()
+    if (!t || t.length > 1000 || /\s/.test(t)) throw invalid(failures.token(provider.name), 'token')
+    next.tokenSealed = sealer.seal(t)
+  }
   if (filled(containerKey)) next.containerKeySealed = sealer.seal(containerKey.trim())
 
   if (next.mode === 'builtin') {
     if (provider.connect === 'pia') {
       if (!next.piaUsername) throw invalid(failures.piaUsername, 'piaUsername')
       if (next.piaPasswordSealed === null) throw invalid(failures.piaPassword, 'piaPassword')
+    } else if (provider.connect === 'token') {
+      // the token, or a file written by hand as the fallback
+      if (next.tokenSealed === null && next.configSealed === null)
+        throw invalid(failures.token(provider.name), 'token')
     } else if (next.configSealed === null) throw invalid(failures.upload(provider.name), 'config')
   }
   if (next.mode === 'container') {

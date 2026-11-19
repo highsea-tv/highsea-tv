@@ -110,4 +110,5 @@ export function createFakeTimers(clock: FakeClock): FakeTimers {
   }
 }
 
+export * from './nordvpn.ts'
 export * from './wireguard.ts'
