@@ -23,33 +23,42 @@ const DAY = 86_400_000
 const NO_SEEDING: Seeding = { ratio: null, minutes: null, minMinutes: null }
 
 /**
- * The drafted upkeep line per definition (indexer-catalog-upkeep.md, part C, prototyped for the
- * owner's review in HT-95; the server doesn't serve it yet): days before the mock's now that it was
- * last checked working (null: never), its channel, and a status with the days since and a note.
- * One of each case A9 draws: checked lately, on Beta, checked long ago, broken, never checked, and
+ * What the catalog says of each definition's upkeep (indexer-catalog-upkeep.md, part C; ADR 0069),
+ * as the server passes the bundle's `status` on: days before the mock's now that it was last
+ * checked working (null: never), its stage, a status with the days since and a note, and the last
+ * check's days ago and result (by default the day it was last checked working, and working). One of
+ * each case A9 draws: checked lately, on Beta, checked long ago, broken, never checked, and
  * retired. Private definitions have none: `catalog:verify` skips them (the plan's part G).
  */
 const CHECKS: Record<
   string,
   {
     verified: number | null
-    channel?: DefinitionCheck['channel']
+    stage?: DefinitionCheck['stage']
     status?: DefinitionCheck['status']
     since?: number
     note?: string
+    checked?: { days: number; result: NonNullable<DefinitionCheck['result']> }
   }
 > = {
   lighthouse: { verified: 1 },
-  anchorage: { verified: 3, channel: 'beta' },
+  anchorage: { verified: 3, stage: 'beta' },
   driftnet: { verified: 41 },
   keel: {
     verified: 12,
     status: 'broken',
     since: 5,
     note: 'The site changed how it answers searches. A fix is being worked on.',
+    checked: { days: 5, result: 'failing' },
   },
-  beacon: { verified: null, channel: 'beta' },
-  tidewater: { verified: 64, status: 'retired', since: 20, note: 'The site closed.' },
+  beacon: { verified: null, stage: 'beta' },
+  tidewater: {
+    verified: 64,
+    status: 'retired',
+    since: 20,
+    note: 'The site closed.',
+    checked: { days: 27, result: 'failing' },
+  },
 }
 
 /** A definition's settings as the mock's test reads them: strings, nulls left out. */
@@ -107,6 +116,7 @@ export function indexerAnswers(kit: AdminKit): Answers {
     const def = s.catalog.find((d) => d.id === ix.definitionId)
     const k = keptOf(s, ix)
     const check = s.health.find((h) => h.id === `h-${ix.definitionId}`)
+    const upkeep = checkOf(ctx, ix.definitionId)
     return {
       id: ix.id,
       definitionId: ix.definitionId,
@@ -131,6 +141,7 @@ export function indexerAnswers(kit: AdminKit): Answers {
       tags: [...k.tags],
       // the mock keeps no date it was added: two months before the mock's now
       addedAt: wallMs(ctx.srv.clock.now() - 60 * DAY),
+      ...(upkeep ? { check: upkeep } : {}),
     }
   }
 
@@ -141,12 +152,16 @@ export function indexerAnswers(kit: AdminKit): Answers {
   const checkOf = (ctx: Ctx, id: string): DefinitionCheck | undefined => {
     const c = CHECKS[id]
     if (!c) return undefined
+    const checked =
+      c.checked ?? (c.verified === null ? null : { days: c.verified, result: 'working' as const })
     return {
-      verified: c.verified === null ? null : dayBefore(ctx, c.verified),
-      channel: c.channel ?? 'stable',
+      stage: c.stage ?? 'stable',
       status: c.status ?? 'working',
       since: c.since === undefined ? null : dayBefore(ctx, c.since),
       note: c.note ?? null,
+      checked: checked ? dayBefore(ctx, checked.days) : null,
+      result: checked?.result ?? null,
+      verified: c.verified === null ? null : dayBefore(ctx, c.verified),
     }
   }
 
@@ -196,9 +211,13 @@ export function indexerAnswers(kit: AdminKit): Answers {
     catalog: {
       indexers: ({ query }, ctx) => {
         const s = ctx.srv.state
-        return s.catalog
-          .filter((d) => query.starter !== 'true' || (d.starter && d.privacy === 'public'))
-          .map((d) => definitionOf(ctx, d))
+        return (
+          s.catalog
+            .filter((d) => query.starter !== 'true' || (d.starter && d.privacy === 'public'))
+            // a retired definition's file leaves the bundle, so the server no longer lists it
+            .filter((d) => CHECKS[d.id]?.status !== 'retired')
+            .map((d) => definitionOf(ctx, d))
+        )
       },
       // the mock never has a version waiting, so installing changes nothing
       install: (_, ctx) => kit.catalogOf(ctx),

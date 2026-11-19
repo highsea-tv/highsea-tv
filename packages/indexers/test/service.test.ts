@@ -3,7 +3,7 @@ import { describe, expect, test } from 'bun:test'
 import { schema } from '@highsea-tv/db'
 import type { Definition } from '@highsea-tv/schemas/indexers'
 import { BACKOFF_STEPS_MS, FAILING_AFTER_MS } from '../src/health.ts'
-import { HEALTH_TOPIC, INDEXERS_TOPIC } from '../src/index.ts'
+import { checkOf, HEALTH_TOPIC, INDEXERS_TOPIC } from '../src/index.ts'
 import type { SearchInput } from '../src/search.ts'
 import {
   FAKE_CREDENTIALS,
@@ -606,5 +606,38 @@ describe('definition versions', () => {
     await t.indexers.add('generic-torznab', { settings: torznabSettings })
     expect(t.indexers.reconcile()).toEqual([])
     expect(t.indexers.reconcile()).toEqual([])
+  })
+})
+
+describe('what A9 is told of a definition’s upkeep', () => {
+  const status = {
+    name: 'Internet Archive',
+    stage: 'beta' as const,
+    status: 'broken' as const,
+    since: '2026-11-09',
+    note: 'A fix is being worked on.',
+    checked: '2026-11-16',
+    result: 'failing' as const,
+    verified: '2026-11-02',
+  }
+  const loaded = (origin: string, privacy: Definition['privacy'] = 'public') => ({
+    definition: { ...catalogDefinition('internet-archive'), privacy } as Definition,
+    origin,
+    status,
+  })
+
+  test('the catalog’s status, less its name', () => {
+    const { name: _, ...check } = status
+    expect(checkOf(loaded('main'), status)).toEqual(check)
+    expect(checkOf(loaded('extra:https://more.example'), status)).toEqual(check)
+    // a retired one: no definition left, the catalog's status by its id
+    expect(checkOf(null, status)).toEqual(check)
+  })
+
+  test('nothing for a Local or private definition, nor when the catalog says nothing', () => {
+    expect(checkOf(loaded('local'), status)).toBeNull()
+    expect(checkOf(loaded('main', 'private'), status)).toBeNull()
+    expect(checkOf(loaded('main'), null)).toBeNull()
+    expect(checkOf(null, undefined)).toBeNull()
   })
 })

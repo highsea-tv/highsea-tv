@@ -3,8 +3,8 @@
 // Installed table (health, backoff, Local, stats with no queries yet, enable, Retry now, Edit with
 // priority), and the Catalog tab (one-click Add, Set up's generated form, a failing test shown in
 // the dialog), Report a problem's prefilled form (what it carries and what it never does), and the
-// drafted upkeep lines (checked working, Beta, broken, retired) the mock serves for the owner's
-// review. The shell is stood in for.
+// catalog's upkeep lines (checked working, Beta, broken, retired) in the server's shape. The shell
+// is stood in for.
 import './dom.ts'
 import { afterEach, beforeEach, describe, expect, mock, spyOn, test } from 'bun:test'
 import type { ReactNode } from 'react'
@@ -454,36 +454,52 @@ describe('Report a problem', () => {
   })
 })
 
-// ---------------------------------------------------------------- drafted upkeep lines
+// ---------------------------------------------------------------- the catalog's upkeep
 
-describe('the catalog’s upkeep, drafted for review', () => {
+describe('the catalog’s upkeep, as the server sends it', () => {
   const day = (daysAgo: number) =>
     new Date(Date.now() - daysAgo * 86_400_000).toISOString().slice(0, 10)
+  /** `DefinitionCheck` as the server passes the bundle's status on. */
   const check = (extra: Record<string, unknown>) => ({
-    verified: day(2),
-    channel: 'stable',
+    stage: 'stable',
     status: 'working',
     since: null,
     note: null,
+    checked: day(2),
+    result: 'working',
+    verified: day(2),
     ...extra,
   })
+  const installed = (extra: Record<string, unknown>) =>
+    indexer({
+      definitionId: 'internet-archive',
+      name: 'Internet Archive',
+      local: false,
+      health: 'healthy',
+      backoffUntil: null,
+      lastError: null,
+      ...extra,
+    })
 
-  test('cards say when each was checked, Beta and Broken; a retired one leaves the list', async () => {
+  test('cards say when each was checked, Beta and Broken; one with no check says nothing', async () => {
+    // the server never lists a retired definition: its file left the bundle
     state.catalog = [
       { ...ARCHIVE, check: check({}) },
-      definition('yts', 'YTS', { check: check({ channel: 'beta', verified: null }) }),
+      definition('yts', 'YTS', {
+        check: check({ stage: 'beta', checked: null, result: null, verified: null }),
+      }),
       definition('knaben', 'Knaben', {
         check: check({
           verified: day(45),
           status: 'broken',
           since: day(3),
           note: 'A fix is coming.',
+          checked: day(3),
+          result: 'failing',
         }),
       }),
-      definition('gone', 'Gone', {
-        check: check({ status: 'retired', since: day(9), note: 'The site closed.' }),
-      }),
       TORZNAB,
+      PRIVATE,
     ]
     const { user, page } = await open()
     await user.click(page.getByRole('tab', { name: 'Catalog' }))
@@ -496,37 +512,72 @@ describe('the catalog’s upkeep, drafted for review', () => {
     expect(card('Knaben').getByText('Broken')).toBeTruthy()
     expect(card('Knaben').getByText(/^Last checked working on /)).toBeTruthy()
     expect(card('Knaben').getByText(/^Broken since .+\. A fix is coming\.$/)).toBeTruthy()
-    expect(page.queryByRole('heading', { name: 'Gone' })).toBeNull()
-    // a definition the catalog says nothing about draws no line, as with the server today
+    // the catalog says nothing (an older bundle) or the server leaves it out (private, Local)
     expect(card('Torznab').queryByText(/checked/i)).toBeNull()
+    expect(card('Bosun').queryByText(/checked/i)).toBeNull()
   })
 
-  test('the Installed row and the Edit dialog say it too', async () => {
-    state.indexers = [
-      indexer({
-        definitionId: 'internet-archive',
-        name: 'Internet Archive',
-        local: false,
-        health: 'healthy',
-        backoffUntil: null,
-        lastError: null,
-      }),
-    ]
-    state.catalog = [
-      {
-        ...ARCHIVE,
-        check: check({ status: 'retired', since: day(9), note: 'The site closed.' }),
-      },
-    ]
+  test('the Installed row reads the indexer’s own check, and the Edit dialog the definition’s', async () => {
+    state.indexers = [installed({ check: check({ stage: 'beta' }) })]
+    state.catalog = [{ ...ARCHIVE, check: check({ stage: 'beta' }) }]
     const { user, page } = await open()
     const row = within(page.getByRole('row', { name: /Internet Archive/ }))
-    expect(row.getByText('Retired')).toBeTruthy()
-    expect(row.getByText(/^Retired on .+\. The site closed\.$/)).toBeTruthy()
+    expect(row.getByText('Beta')).toBeTruthy()
+    expect(row.getByText(/^Checked working on /)).toBeTruthy()
     await user.click(row.getByRole('button', { name: 'More for Internet Archive' }))
     await user.click(await page.findByRole('menuitem', { name: 'Edit' }))
     await settle()
     shown()
     const dialog = within(page.getByRole('dialog'))
     expect(dialog.getByText(/^Definition v1\.0\.0\. Checked working on /)).toBeTruthy()
+  })
+
+  test('an installed indexer whose definition is retired keeps its row, with Retired and why', async () => {
+    // as the server sends it: the definition is gone from the catalog, so the indexer is missing
+    // and needs attention, and its check comes from the catalog's status for the retired id
+    state.indexers = [
+      installed({
+        privacy: null,
+        kind: null,
+        protocol: null,
+        missing: true,
+        needsAttention: true,
+        check: check({
+          status: 'retired',
+          since: day(9),
+          note: 'The site closed.',
+          verified: day(40),
+          checked: day(16),
+          result: 'failing',
+        }),
+      }),
+    ]
+    state.catalog = [TORZNAB]
+    const { user, page } = await open()
+    const row = within(page.getByRole('row', { name: /Internet Archive/ }))
+    expect(row.getByText('Retired')).toBeTruthy()
+    expect(row.getByText(/^Retired on .+\. The site closed\.$/)).toBeTruthy()
+    expect(row.getByText(/^Last checked working on /)).toBeTruthy()
+    // the Retired line says why, in place of "gone from the catalog"
+    expect(row.queryByText('Its definition is gone from the catalog.')).toBeNull()
+    await user.click(row.getByRole('button', { name: 'More for Internet Archive' }))
+    expect(page.queryByRole('menuitem', { name: 'Report a problem' })).toBeNull()
+  })
+
+  test('an indexer the catalog says nothing about draws nothing new', async () => {
+    state.indexers = [installed({})]
+    state.catalog = [ARCHIVE]
+    const { page } = await open()
+    const row = within(page.getByRole('row', { name: /Internet Archive/ }))
+    expect(row.queryByText(/checked/i)).toBeNull()
+    expect(row.queryByText(/^(Beta|Broken|Retired)$/)).toBeNull()
+  })
+
+  test('a gone definition the catalog didn’t retire still says so', async () => {
+    state.indexers = [installed({ privacy: null, missing: true, needsAttention: true })]
+    state.catalog = []
+    const { page } = await open()
+    const row = within(page.getByRole('row', { name: /Internet Archive/ }))
+    expect(row.getByText('Its definition is gone from the catalog.')).toBeTruthy()
   })
 })

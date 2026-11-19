@@ -6,6 +6,20 @@ import type { Db } from '@highsea-tv/db'
 import type { JobQueue } from '@highsea-tv/jobs'
 import type { Definition } from '@highsea-tv/schemas/indexers'
 
+/**
+ * What a definition's catalog says of its upkeep (ADR 0069): @highsea-tv/catalog's
+ * `DefinitionStatus`, the part the indexers pass on.
+ */
+export type SourceStatus = {
+  stage: 'stable' | 'beta'
+  status: 'working' | 'broken' | 'retired'
+  since: string | null
+  note: string | null
+  checked: string | null
+  result: 'working' | 'failing' | 'challenge' | 'skipped' | null
+  verified: string | null
+}
+
 /** A definition as the catalog serves it. */
 export type SourceDefinition = {
   definition: Definition
@@ -13,12 +27,19 @@ export type SourceDefinition = {
   origin: string
   /** A data URL, from the bundle. */
   logo: string | null
+  /** What its catalog says of it; null or absent when it says nothing (a local one, an older bundle). */
+  status?: SourceStatus | null
 }
 
 /** The part of `@highsea-tv/catalog` the indexers read. */
 export type DefinitionSource = {
   definitions(): SourceDefinition[]
   definition(id: string): SourceDefinition | null
+  /**
+   * What the main catalog says of a definition, one it retired included (no longer among
+   * `definitions()`). Optional: a source without stages says nothing.
+   */
+  statusOf?(id: string): SourceStatus | null
   /** Called with the ids whose definition changed or went away. */
   onDefinitionsChanged(
     listener: (changed: { id: string; definition: Definition | null }[]) => void,

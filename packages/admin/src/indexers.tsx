@@ -17,10 +17,12 @@
 // - Report a problem in More (indexer-catalog-upkeep.md, the owner's answer 2) opens the
 //   repository's "An indexer isn't working" form, prefilled (report-problem.ts), for an indexer
 //   from highsea's own catalog;
-// - drafted for the owner's review (the plan's part C, HT-95): when the catalog says when a
-//   definition was last checked working, and whether it's on Beta, broken or retired, the catalog's
-//   cards, the Installed table and the dialogs say so. Only the mock serves it so far
-//   (`DefinitionCheck`); with the server, nothing of it is drawn.
+// - the catalog's upkeep (the plan's part C, prototyped in HT-95 and approved on 2026-11-19): when
+//   the catalog says when a definition was last checked working, and whether it's on Beta, broken
+//   or retired (`DefinitionCheck`, the signed bundle's status passed on by the server), the
+//   catalog's cards, the Installed table and the dialogs say so; when it says nothing (an older
+//   bundle, a Local or private definition), nothing is drawn. An installed indexer whose definition
+//   is retired keeps its row, with the Retired badge and line in place of "definition gone".
 // Since D2 (one-client-platform-d.md) it's drawn with the library's native renderer, on the web
 // through react-native-web, with the same parts, words and behaviour as the web renderer's.
 import type {
@@ -156,7 +158,7 @@ function Failure({ children }: { children: string }) {
   )
 }
 
-// ---------------------------------------------------------------- the catalog's upkeep (drafted)
+// ---------------------------------------------------------------- the catalog's upkeep
 
 const DAY = 86_400_000
 /** Older than this, a check reads "Last checked working on …", nothing stronger (the plan's C). */
@@ -170,7 +172,7 @@ type Upkeep = {
   badges: { tone: BadgeTone; label: string }[]
 }
 
-/** What A9 says about a definition's upkeep, from the catalog's drafted `check`. */
+/** What A9 says about a definition's upkeep, from the catalog's `check`. */
 function useUpkeep(): (check: DefinitionCheck | undefined) => Upkeep | null {
   const t = useT(messages)
   const locale = useLocale()
@@ -206,7 +208,7 @@ function useUpkeep(): (check: DefinitionCheck | undefined) => Upkeep | null {
     const badges: Upkeep['badges'] = []
     if (c.status === 'broken') badges.push({ tone: 'warning', label: t('check.broken') })
     if (c.status === 'retired') badges.push({ tone: 'neutral', label: t('check.retired') })
-    if (c.channel === 'beta') badges.push({ tone: 'info', label: t('check.beta') })
+    if (c.stage === 'beta') badges.push({ tone: 'info', label: t('check.beta') })
     return { line, problem, badges }
   }
 }
@@ -480,7 +482,9 @@ function Installed({ onBrowse }: { onBrowse: () => void }) {
                       priority: ix.priority,
                     })
                     const def = catalog.data?.find((d) => d.id === ix.definitionId)
-                    const upkeep = upkeepOf(def?.check)
+                    // the indexer's own, so a retired definition, gone from the catalog, still says why
+                    const upkeep = upkeepOf(ix.check)
+                    const retired = ix.check?.status === 'retired'
                     const badges = [
                       ...(ix.local ? [{ tone: 'info' as const, label: t('local') }] : []),
                       ...(upkeep?.badges ?? []),
@@ -516,7 +520,7 @@ function Installed({ onBrowse }: { onBrowse: () => void }) {
                                   : ''}
                               </Note>
                             )}
-                            {ix.needsAttention && (
+                            {ix.needsAttention && !retired && (
                               <Note color="warning">
                                 {ix.missing ? t('definitionGone') : t('needsSetting')}
                               </Note>
