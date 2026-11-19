@@ -43,6 +43,8 @@ import {
 } from '@highsea-tv/ui/native'
 import { type ReactNode, useState } from 'react'
 import { View, type ViewStyle } from 'react-native'
+import { WithBrowse } from './folder-picker.tsx'
+import { folderPicker as pickerMessages } from './folder-picker-messages.ts'
 import { migration as messages } from './migration-messages.ts'
 import { AreaPage, Group } from './settings.tsx'
 import { BREAK_ALL, Card, Line, Note } from './settings-card.tsx'
@@ -179,6 +181,7 @@ function Mappings({
   onChange: (next: PathMapping[]) => void
 }) {
   const t = useT(messages)
+  const tp = useT(pickerMessages)
   const regular = useRegularWindow()
   const set = (i: number, patch: Partial<PathMapping>) =>
     onChange(value.map((m, j) => (j === i ? { ...m, ...patch } : m)))
@@ -217,13 +220,15 @@ function Mappings({
             />
           </Field>
           <Field label={t('mappings.to')}>
-            <Input
-              value={m.to}
-              icon="folder"
-              placeholder="/data/media/movies"
-              onChangeText={(to) => set(i, { to })}
-              {...code}
-            />
+            <WithBrowse value={m.to} title={tp('title.mapping')} onPick={(to) => set(i, { to })}>
+              <Input
+                value={m.to}
+                icon="folder"
+                placeholder="/data/media/movies"
+                onChangeText={(to) => set(i, { to })}
+                {...code}
+              />
+            </WithBrowse>
           </Field>
           <Button
             variant="ghost"
