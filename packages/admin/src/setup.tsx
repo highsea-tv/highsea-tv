@@ -24,7 +24,6 @@ import {
   Button,
   Checkbox,
   Chip,
-  Dialog,
   EmptyState,
   Field,
   Icon,
@@ -32,7 +31,6 @@ import {
   Lockup,
   Press,
   RadioMark,
-  ScrollView,
   Select,
   Skeleton,
   Stepper,
@@ -44,8 +42,9 @@ import {
   useRegularWindow,
   useTheme,
 } from '@highsea-tv/ui/native'
-import { type ComponentRef, type ReactNode, useEffect, useRef, useState } from 'react'
+import { type ComponentRef, type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import { View } from 'react-native'
+import { FolderPicker, type FolderSource } from './folder-picker.tsx'
 import { shell } from './messages.ts'
 import { errorReason, keyRejected, metadataLocale, tmdbBusy } from './metadata-locale.ts'
 import { useLoad } from './navigation.tsx'
@@ -62,9 +61,6 @@ const PAGE_WIDTH = admin.setup.pageWidth
 const FORM_WIDTH = admin.measure
 /** A Review line's label column in a regular window (the web's 10rem). */
 const LABEL_WIDTH = admin.setup.labelWidth
-/** The folder picker's list (the web's h-64), and a folder's row (h-9). */
-const LIST_HEIGHT = admin.setup.listHeight
-const ROW_HEIGHT = admin.setup.rowHeight
 /** Words that wrap anywhere (the web's [overflow-wrap:anywhere]), for paths and addresses. */
 const ANYWHERE = { overflowWrap: 'anywhere' } as object
 
@@ -1069,6 +1065,8 @@ function Folders({
   )
   const set = (key: FolderKey, path: string) =>
     update({ folders: { ...draft.folders, [key]: path } })
+  const source = useMemo(() => setupFolders(root), [root])
+  const inside = (p: string) => !!p && (p === root || p.startsWith(`${root}/`))
   const setReadOnly = (key: LibraryKey, readOnly: boolean) =>
     update({
       folders: { ...draft.folders, readOnly: { ...draft.folders.readOnly, [key]: readOnly } },
@@ -1120,11 +1118,11 @@ function Folders({
           {check.data.message}
         </Banner>
       )}
-      <PathPicker
+      <FolderPicker
         open={picking !== null}
         title={t(`picker.${picking ?? 'movies'}`)}
-        root={root}
-        start={picking ? draft.folders[picking] || root : root}
+        source={source}
+        start={picking && inside(draft.folders[picking]) ? draft.folders[picking] : root}
         onClose={() => setPicking(null)}
         onPick={(path) => {
           if (picking) set(picking, path)
@@ -1135,187 +1133,24 @@ function Folders({
   )
 }
 
-/** The folders under the media root: browsing stops there, as the server does. */
-function PathPicker({
-  open,
-  title,
-  root,
-  start,
-  onClose,
-  onPick,
-}: {
-  open: boolean
-  title: string
-  root: string
-  start: string
-  onClose: () => void
-  onPick: (path: string) => void
-}) {
-  const t = useT(messages)
-  const theme = useTheme()
-  const inside = (p: string) => p === root || p.startsWith(`${root}/`)
-  const [path, setPath] = useState(inside(start) ? start : root)
-  // biome-ignore lint/correctness/useExhaustiveDependencies: resets when the picker opens
-  useEffect(() => {
-    if (open) setPath(inside(start) ? start : root)
-  }, [open, start, root])
-  const list = useQuery(`fs:${path}`, (c) => c.setup.listFolders({ query: { path } }))
-  const below = path.slice(root.length).split('/').filter(Boolean)
-  const crumbs = [
-    { label: root, to: root },
-    ...below.map((name, i) => ({ label: name, to: `${root}/${below.slice(0, i + 1).join('/')}` })),
-  ]
-  const up = path === root ? null : path.slice(0, path.lastIndexOf('/')) || root
-  const crumbText = { size: mono.size, leading: mono.leading, mono: true } as const
-  return (
-    <Dialog
-      open={open}
-      onClose={onClose}
-      title={title}
-      description={t('picker.detail')}
-      footer={
-        <>
-          <Button variant="ghost" onPress={onClose}>
-            {t('picker.cancel')}
-          </Button>
-          <Button variant="primary" onPress={() => onPick(path)} disabled={list.status === 'error'}>
-            {t('picker.use')}
-          </Button>
-        </>
-      }
-    >
-      <View style={{ gap: s['4'] }}>
-        <View
-          role="navigation"
-          aria-label={t('picker.path')}
-          style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: s['1'] }}
-        >
-          {crumbs.map((c, i) => {
-            const last = i === crumbs.length - 1
-            return (
-              <View
-                key={c.to}
-                style={{ flexDirection: 'row', alignItems: 'center', gap: s['1'], minWidth: 0 }}
-              >
-                {i > 0 && (
-                  <Text {...crumbText} color="text-3">
-                    /
-                  </Text>
-                )}
-                {last ? (
-                  <Text {...crumbText} aria-current="location" style={ANYWHERE}>
-                    {c.label}
-                  </Text>
-                ) : (
-                  <Press
-                    role="button"
-                    onPress={() => setPath(c.to)}
-                    style={({ hovered }) => ({
-                      borderRadius: tokens.radius['2xs'],
-                      paddingHorizontal: s['0.5'],
-                      backgroundColor: hovered ? theme.colors.s4 : 'transparent',
-                    })}
-                  >
-                    {({ hovered }) => (
-                      <Text {...crumbText} color={hovered ? 'text' : 'text-2'} style={ANYWHERE}>
-                        {c.label}
-                      </Text>
-                    )}
-                  </Press>
-                )}
-              </View>
-            )
-          })}
-        </View>
-        <View
-          style={{
-            height: LIST_HEIGHT,
-            overflow: 'hidden',
-            borderWidth: line.thin,
-            borderColor: theme.colors.line,
-            borderRadius: tokens.radius.md,
-            backgroundColor: theme.colors.s2,
-          }}
-        >
-          {list.status === 'loading' ? (
-            <View style={{ gap: s['1'], padding: s['2'] }}>
-              {[0, 1, 2].map((i) => (
-                <Skeleton key={i} height={ROW_HEIGHT} />
-              ))}
-            </View>
-          ) : list.status === 'error' ? (
-            <EmptyState size="sm" tone="error" icon="error" title={t('picker.error')}>
-              {list.error.message}
-            </EmptyState>
-          ) : (
-            <ScrollView>
-              <View role="list" style={{ padding: s['1'] }}>
-                {up && (
-                  <View role="listitem">
-                    <FolderRow
-                      icon="chevron-up"
-                      label={t('picker.up')}
-                      onPress={() => setPath(up)}
-                    />
-                  </View>
-                )}
-                {list.data.map((f) => (
-                  <View key={f.path} role="listitem">
-                    <FolderRow icon="folder" label={f.name} onPress={() => setPath(f.path)} />
-                  </View>
-                ))}
-                {list.data.length === 0 && (
-                  <View
-                    role="listitem"
-                    style={{ paddingHorizontal: s['3'], paddingVertical: s['6'] }}
-                  >
-                    <Text variant="caption" color="text-3" align="center">
-                      {t('picker.empty')}
-                    </Text>
-                  </View>
-                )}
-              </View>
-            </ScrollView>
-          )}
-        </View>
-      </View>
-    </Dialog>
-  )
-}
-
-function FolderRow({
-  icon,
-  label,
-  onPress,
-}: {
-  icon: 'folder' | 'chevron-up'
-  label: string
-  onPress: () => void
-}) {
-  const theme = useTheme()
-  return (
-    <Press
-      role="button"
-      accessibilityLabel={label}
-      onPress={onPress}
-      style={({ hovered }) => ({
-        height: ROW_HEIGHT,
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: s['2'] + s['0.5'],
-        paddingHorizontal: s['2'] + s['0.5'],
-        borderRadius: tokens.radius.sm,
-        backgroundColor: hovered ? theme.colors.s4 : 'transparent',
-      })}
-    >
-      <Icon name={icon} size={tokens.icon.size.sm} color="text-3" />
-      <Text mono size={mono.size} leading={mono.leading} numberOfLines={1} style={{ flex: 1 }}>
-        {label}
-      </Text>
-      {icon === 'folder' && <Icon name="chevron-right" size={tokens.icon.size.xs} color="text-3" />}
-    </Press>
-  )
-}
+/**
+ * Setup's picker lists through setup's own route, open before there's an owner: the folders under
+ * the media root, where browsing stops, as the server does.
+ */
+const setupFolders =
+  (root: string): FolderSource =>
+  async (c, path) => {
+    const at = path ?? root
+    const folders = await c.setup.listFolders({ query: { path: at } })
+    return {
+      path: at,
+      root,
+      parent: at === root ? null : at.slice(0, at.lastIndexOf('/')) || root,
+      folders: folders.map(({ name, path: p }) => ({ name, path: p })),
+      more: 0,
+      writable: null,
+    }
+  }
 
 // ---------------------------------------------------------------- indexers
 
