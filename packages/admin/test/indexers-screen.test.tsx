@@ -2,9 +2,11 @@
 // A9 Indexers rendered against a fake of the API: the catalog's version and What changed, the
 // Installed table (health, backoff, Local, stats with no queries yet, enable, Retry now, Edit with
 // priority), and the Catalog tab (one-click Add, Set up's generated form, a failing test shown in
-// the dialog). The shell is stood in for.
+// the dialog), Report a problem's prefilled form (what it carries and what it never does), and the
+// drafted upkeep lines (checked working, Beta, broken, retired) the mock serves for the owner's
+// review. The shell is stood in for.
 import './dom.ts'
-import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test'
+import { afterEach, beforeEach, describe, expect, mock, spyOn, test } from 'bun:test'
 import type { ReactNode } from 'react'
 import type { IndexersTab } from '../src/indexers.tsx'
 import { navigation, Routed } from './router.tsx'
@@ -39,6 +41,7 @@ const { ClientProvider } = await import('@highsea-tv/sdk/react')
 const { ThemeProvider, toast } = await import('@highsea-tv/ui/native')
 const { shown } = await import('./modal.ts')
 const { Indexers, isOneClick } = await import('../src/indexers.tsx')
+const { Linking } = await import('react-native')
 
 // ---------------------------------------------------------------- the fake API
 
@@ -118,7 +121,12 @@ const indexer = (extra: Record<string, unknown> = {}) => ({
 })
 
 type Req = { method: string; path: string; body: unknown }
-let state: { indexers: ReturnType<typeof indexer>[]; requests: Req[]; addFails: boolean }
+let state: {
+  indexers: ReturnType<typeof indexer>[]
+  catalog: (ReturnType<typeof definition> & { check?: unknown })[]
+  requests: Req[]
+  addFails: boolean
+}
 
 async function api(url: string, init: RequestInit = {}): Promise<Response> {
   const u = new URL(url, 'http://localhost')
@@ -142,7 +150,18 @@ async function api(url: string, init: RequestInit = {}): Promise<Response> {
         brokenLocal: [],
       })
     case 'GET /api/v1/catalog/indexers':
-      return json([ARCHIVE, PRIVATE, TORZNAB])
+      return json(state.catalog)
+    case 'GET /api/v1/system/server':
+      return json({
+        id: 'srv_1',
+        name: 'Harbor',
+        version: '0.4.7',
+        branding: {},
+        addresses: { local: ['http://192.168.1.20:3000'], public: 'https://harbor.example.net' },
+        setupComplete: true,
+        clientsConnected: 1,
+        catalogVersion: '2026.10.21',
+      })
     case 'GET /api/v1/indexers':
       return json(state.indexers)
     case 'POST /api/v1/indexers': {
@@ -169,7 +188,12 @@ async function api(url: string, init: RequestInit = {}): Promise<Response> {
 }
 
 beforeEach(() => {
-  state = { indexers: [indexer()], requests: [], addFails: false }
+  state = {
+    indexers: [indexer()],
+    catalog: [ARCHIVE, PRIVATE, TORZNAB],
+    requests: [],
+    addFails: false,
+  }
 })
 afterEach(() => {
   cleanup()
@@ -351,5 +375,158 @@ describe('A9’s catalog', () => {
       settings: { baseUrl: 'https://fake.test/torznab', apiKey: 'secret-key' },
     })
     expect(dialog.getByRole('alert').textContent).toBe('The key was refused.')
+  })
+})
+
+// ---------------------------------------------------------------- Report a problem
+
+describe('Report a problem', () => {
+  /** An indexer from highsea's own catalog, with everything the link must never carry. */
+  const archive = () =>
+    indexer({
+      id: 'ix_1',
+      definitionId: 'internet-archive',
+      name: 'My films at home',
+      local: false,
+      health: 'failing',
+      backoffUntil: null,
+      lastError: 'Couldn’t reach https://secret.example.net/search?q=Sintel (timed out).',
+      definitionVersion: '1.0.2',
+      settings: {
+        values: { baseUrl: 'https://private.example.org/feed' },
+        secrets: { apiKey: true },
+      },
+    })
+
+  async function report() {
+    const opened = spyOn(Linking, 'openURL').mockResolvedValue(undefined)
+    const { user, page } = await open()
+    await user.click(page.getByRole('button', { name: 'More for My films at home' }))
+    await user.click(await page.findByRole('menuitem', { name: 'Report a problem' }))
+    const url = opened.mock.calls[0]?.[0] as string
+    opened.mockRestore()
+    return url
+  }
+
+  test('opens the indexer form filled in with the definition and highsea’s versions', async () => {
+    state.indexers = [archive()]
+    const url = new URL(await report())
+    expect(`${url.origin}${url.pathname}`).toBe(
+      'https://github.com/highsea-tv/highsea-tv/issues/new',
+    )
+    expect(Object.fromEntries(url.searchParams)).toEqual({
+      template: 'indexer-broken.yml',
+      title: '[Indexer] Internet Archive',
+      indexer: 'internet-archive',
+      'indexer-version': '1.0.2',
+      'catalog-version': '2026.10.21',
+      'highsea-version': '0.4.7',
+      channel: 'Stable',
+    })
+    // a space is %20, as the catalog README's example has it
+    expect(url.search).toContain('title=%5BIndexer%5D%20Internet%20Archive')
+  })
+
+  test('never carries the owner’s name for it, its settings, an address or the last error', async () => {
+    state.indexers = [archive()]
+    const url = decodeURIComponent(await report())
+    for (const never of [
+      'My films at home',
+      'private.example.org',
+      'secret.example.net',
+      'Sintel',
+      'timed out',
+      '192.168.1.20',
+      'harbor.example.net',
+      'Harbor',
+      'apiKey',
+      'baseUrl',
+    ])
+      expect(url).not.toContain(never)
+  })
+
+  test('only for an indexer from highsea’s own catalog', async () => {
+    // the default indexer is Local: its definition isn't the catalog's to fix
+    const { user, page } = await open()
+    await user.click(page.getByRole('button', { name: 'More for Fake Torznab' }))
+    await page.findByRole('menuitem', { name: 'Edit' })
+    expect(page.queryByRole('menuitem', { name: 'Report a problem' })).toBeNull()
+  })
+})
+
+// ---------------------------------------------------------------- drafted upkeep lines
+
+describe('the catalog’s upkeep, drafted for review', () => {
+  const day = (daysAgo: number) =>
+    new Date(Date.now() - daysAgo * 86_400_000).toISOString().slice(0, 10)
+  const check = (extra: Record<string, unknown>) => ({
+    verified: day(2),
+    channel: 'stable',
+    status: 'working',
+    since: null,
+    note: null,
+    ...extra,
+  })
+
+  test('cards say when each was checked, Beta and Broken; a retired one leaves the list', async () => {
+    state.catalog = [
+      { ...ARCHIVE, check: check({}) },
+      definition('yts', 'YTS', { check: check({ channel: 'beta', verified: null }) }),
+      definition('knaben', 'Knaben', {
+        check: check({
+          verified: day(45),
+          status: 'broken',
+          since: day(3),
+          note: 'A fix is coming.',
+        }),
+      }),
+      definition('gone', 'Gone', {
+        check: check({ status: 'retired', since: day(9), note: 'The site closed.' }),
+      }),
+      TORZNAB,
+    ]
+    const { user, page } = await open()
+    await user.click(page.getByRole('tab', { name: 'Catalog' }))
+    await settle()
+    const card = (name: string) =>
+      within(page.getByRole('heading', { name }).closest('[role="listitem"]') as HTMLElement)
+    expect(card('Internet Archive').getByText(/^Checked working on /)).toBeTruthy()
+    expect(card('YTS').getByText('Beta')).toBeTruthy()
+    expect(card('YTS').getByText('Not checked yet.')).toBeTruthy()
+    expect(card('Knaben').getByText('Broken')).toBeTruthy()
+    expect(card('Knaben').getByText(/^Last checked working on /)).toBeTruthy()
+    expect(card('Knaben').getByText(/^Broken since .+\. A fix is coming\.$/)).toBeTruthy()
+    expect(page.queryByRole('heading', { name: 'Gone' })).toBeNull()
+    // a definition the catalog says nothing about draws no line, as with the server today
+    expect(card('Torznab').queryByText(/checked/i)).toBeNull()
+  })
+
+  test('the Installed row and the Edit dialog say it too', async () => {
+    state.indexers = [
+      indexer({
+        definitionId: 'internet-archive',
+        name: 'Internet Archive',
+        local: false,
+        health: 'healthy',
+        backoffUntil: null,
+        lastError: null,
+      }),
+    ]
+    state.catalog = [
+      {
+        ...ARCHIVE,
+        check: check({ status: 'retired', since: day(9), note: 'The site closed.' }),
+      },
+    ]
+    const { user, page } = await open()
+    const row = within(page.getByRole('row', { name: /Internet Archive/ }))
+    expect(row.getByText('Retired')).toBeTruthy()
+    expect(row.getByText(/^Retired on .+\. The site closed\.$/)).toBeTruthy()
+    await user.click(row.getByRole('button', { name: 'More for Internet Archive' }))
+    await user.click(await page.findByRole('menuitem', { name: 'Edit' }))
+    await settle()
+    shown()
+    const dialog = within(page.getByRole('dialog'))
+    expect(dialog.getByText(/^Definition v1\.0\.0\. Checked working on /)).toBeTruthy()
   })
 })

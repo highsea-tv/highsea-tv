@@ -64,6 +64,18 @@ export const indexers = defineMessages({
   worksDetail: '{message} ({ms} ms)',
   noAnswer: '{name} didn’t answer',
   changeFailed: 'Couldn’t change {name}',
+  reportProblem: 'Report a problem',
+
+  // drafted for the owner's review (indexer-catalog-upkeep.md, part C): the mock only, until then
+  'check.verified': 'Checked working on {date}.',
+  'check.stale': 'Last checked working on {date}.',
+  'check.never': 'Not checked yet.',
+  'check.beta': 'Beta',
+  'check.broken': 'Broken',
+  'check.retired': 'Retired',
+  'check.brokenSince': 'Broken since {date}. {note}',
+  'check.retiredOn': 'Retired on {date}. {note}',
+  'check.definition': 'Definition v{version}.',
 
   'catalog.what': 'the catalog',
   'catalog.search': 'Search the catalog',
