@@ -40,7 +40,10 @@ It is a **Bun monorepo with several apps**:
   - a mobile push relay (APNs/FCM);
   - a metadata proxy, so users need no TMDB/TVDB keys;
   - the catalog CDN.
-- **Media scope**: movies, TV (+ anime), music, **online video** (YouTube and other channels via yt-dlp) and **books, audiobooks and podcasts**. Out of scope: Live TV/DVR, comics/manga, photos.
+- **Media scope** (three tiers; changed 2026-11-19 on the owner's word, which moved comics and manga out of "out of scope"):
+  - **In scope:** movies, TV (+ anime), music, **online video** (YouTube and other channels via yt-dlp) and **books, audiobooks and podcasts**.
+  - **Considered for later:** comics and manga, and games (emulators and ROMs). Considering is not committing: nothing here is scheduled, and [Considered for later](#considered-for-later) lists what is known and what is open.
+  - **Out of scope:** Live TV/DVR and photos.
 - **License: AGPL-3.0.** Every source file gets an SPDX header. GPL-3.0 content is compatible. GPL-2.0-only sources (e.g. Jackett definitions, parts of Jellyfin) are **not** compatible, and content with no licence (e.g. Prowlarr's indexer definitions, checked 2026-10-20) can't be reused at all, so check each source before reusing it. GPL ffmpeg builds (x264/x265) are fine.
 
 The repo directory is currently empty and not a git repo. Toolchain: Bun 1.4.3, Node 24.21.0 (`.nvmrc`; the one version used locally, in CI and in the image), Docker 29.
@@ -517,8 +520,29 @@ Tags: **[M1]** pull into server milestone 1 · **[Arch]** affects architecture n
   - indexer search, ebook formats with conversion and an OPDS feed;
   - audiobook chapters with streaming progress sync;
   - podcast subscriptions.
-- **Out of scope**: Live TV/DVR, comics/manga, photos.
+- **Considered for later** (2026-11-19): comics and manga, and games; see [Considered for later](#considered-for-later).
+- **Out of scope**: Live TV/DVR, photos.
 - **No compatibility APIs.** Private-tracker tooling (cross-seed, IRC announce grabbing, seeding management) is built natively instead.
+
+### Considered for later
+
+Added 2026-11-19 on the owner's direction. These are kinds of media highsea considers, not commitments: none is scheduled, no design exists, and Phase 5 stays films, shows and music. Open questions are listed, not answered.
+
+- **Comics and manga.** The owner's words: "something we should at least consider in the future and not just outright say that it's out of scope".
+  - **Known:** they need a page reader, a different kind of client from the video and audio players. Ebooks need a reader too, so the two could share it once books are scoped. People with large anime libraries often keep manga as well.
+  - **Open:** which formats to read; whether books and comics share one library kind; where metadata and covers come from; reading progress across devices.
+- **Games** (emulators and ROMs). The owner's words: "specifically like emulators and ROMs that can either be played within a web page or something similar".
+  - **Known:** the idea is to play the owner's own ROMs through emulators, in a web page or something like it.
+  - **Open:**
+    - Which clients could run it: the web and desktop app, the phone, the TV.
+    - The licences of emulator cores against AGPL-3.0.
+    - What highsea would and wouldn't provide: the owner's own ROMs only, no BIOS files and no games.
+    - Saves and controllers.
+    - Metadata and artwork sources.
+  - Other servers' games features have not been checked against an official source, so none is described here.
+- **Anime.** Not a new media type but a later part of shows; the owner (2026-11-19): anime "aren't necessarily the primary focus ... but I definitely don't want them to fall by the wayside and get treated as an afterthought."
+  - **Known:** the parser learns absolute episode numbering and fansub naming; titles get alternate names for matching; the community-kept id mapping lists place absolute episodes into TMDB's seasons. An anime-focused source (such as AniList) comes after that, as an optional extra.
+  - **Constraint:** [Phase 5](plans/phase-5-real-use.md)'s part B builds standard seasons and episodes on TMDB and must not make choices that block this.
 
 ### Platform and operations
 - **[M1] Security**:
