@@ -89,4 +89,23 @@ The checks run when the tunnel connects, every 5 minutes after that, after each 
 
 With the built-in VPN, a check that finds a leak stops torrents: an exit address that's your own, names looked up outside the tunnel, or a missing routing rule (which highsea puts back first). In the other modes a failing check warns, since the container has no other route and the interface binding already holds.
 
+## Test
+
+**Test**, under the mode's fields in Connection, tries the settings on the page without saving them. It says **These settings work.**, or **These settings don't work yet.** with the line that failed, and lists one line each:
+
+| Line | What it proves |
+| --- | --- |
+| **Tunnel** | The tunnel comes up with these settings: for the built-in VPN, a WireGuard handshake within 15 seconds; for a container, gluetun reports it running; for an interface, it has an address. |
+| **Exit address** | Traffic through the tunnel leaves from a different address than traffic without it. |
+| **Names** | Names resolve through the tunnel's DNS servers. |
+| **Port forwarding** | Your provider forwards a port, or why there isn't one. |
+
+![Settings › VPN with the built-in VPN chosen and Test pressed: a line saying the settings don't work yet, and the Tunnel line with the reason](/images/admin/settings-vpn/test.png)
+
+Test leaves a working connection alone:
+
+- **The built-in VPN, not connected**: highsea brings its tunnel up for the test and takes it down after. Torrents don't use it, and keep running as they were.
+- **The built-in VPN, connected**: with the saved settings, Test checks the tunnel that's running without touching it. With other settings it says to save them instead: highsea checks them as it connects, and torrents stay stopped if a check fails. While highsea is still connecting, it asks you to try again in a moment.
+- **A VPN container** and **an interface** are only read, never restarted.
+
 When the VPN is down or a check fails, **System › Health** says so too, and a connection that hears **Health** sends it to you. See [Notifications](/settings/notifications/events/). For what a failing status or check means, see [Troubleshooting](/settings/vpn/troubleshooting/).

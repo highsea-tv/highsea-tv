@@ -99,7 +99,11 @@ describe('The VPN providers', () => {
     })
     expect(byId.pia).toMatchObject({ connect: 'pia', portForwarding: { method: 'pia' } })
     expect(byId.mullvad?.portForwarding.method).toBe('none')
-    expect(byId.nordvpn).toMatchObject({ connect: 'config', portForwarding: { method: 'none' }, ipv6: false })
+    expect(byId.nordvpn).toMatchObject({
+      connect: 'config',
+      portForwarding: { method: 'none' },
+      ipv6: false,
+    })
     expect(byId.airvpn?.portForwarding.method).toBe('static')
     for (const p of r.providers()) expect(p.sources.length).toBeGreaterThan(0)
   })
