@@ -27,8 +27,9 @@ description: highsea's own WireGuard tunnel to your VPN provider, what its conta
   - NordVPN: https://support.nordvpn.com/hc/en-us/articles/45535038276753 (the access token),
     https://support.nordvpn.com/hc/en-us/articles/19587726859793 (DNS servers),
     https://support.nordvpn.com/hc/en-us/articles/19483392309649 (port forwarding), and its own
-    clients for the API and tunnel facts: https://github.com/NordSecurity/libtelio (README) and
-    https://github.com/NordSecurity/nordvpn-linux (daemon/vpn/nordlynx/nordlynx.go)
+    clients for the API and tunnel facts: https://github.com/NordSecurity/libtelio (README and
+    clis/tcli/src/nord.rs) and https://github.com/NordSecurity/nordvpn-linux (core/urls.go,
+    core/models.go, daemon/vpn/nordlynx/nordlynx.go). highsea's side: packages/vpn/src/token.ts.
 */}
 
 Written for highsea 0.1.0.
@@ -70,7 +71,7 @@ Choose your provider under **Provider**. highsea shows that provider's own steps
 | IVPN | A WireGuard file from the Client Area's WireGuard configuration generator | None: IVPN stopped offering it |
 | Windscribe | A WireGuard file from My Account › Config Generator › WireGuard (paid accounts) | An ephemeral port with Matching Port from My Account › Port Forwarding, typed into **Forwarded port**. It lasts 7 days, so request a new one and update the field when it runs out. |
 | Surfshark | A WireGuard file from VPN › Manual setup › WireGuard | None |
-| NordVPN | A WireGuard file you write from your access token and a server; see [NordVPN](#nordvpn) | None: only its Dedicated Server add-on forwards ports |
+| NordVPN | Your access token, and a **Country** if you want one. highsea fetches your key and a recommended server with it, so there's no file; see [NordVPN](#nordvpn) | None: only its Dedicated Server add-on forwards ports |
 | Another WireGuard provider | Any WireGuard configuration file | A port typed into **Forwarded port**, if your provider gives you one |
 
 The list of providers comes from highsea's catalog, so new providers can appear without a new version of highsea.
@@ -95,12 +96,26 @@ The built-in VPN carries IPv4 only for now, so torrents use IPv4 while it's on.
 
 ## NordVPN
 
-NordVPN has no WireGuard file to download, so you write one from three things NordVPN gives you: your own key, a server and the server's key. highsea's steps for NordVPN say the same in short.
+NordVPN has no WireGuard file to download. Instead you paste an access token, and highsea asks NordVPN for the WireGuard key that belongs to your account and for a recommended server each time it connects.
 
 1. Sign in to Nord Account and open **NordVPN › Advanced settings › Get access token**. Enter the code NordVPN emails you, and generate a token. Copy it; it's shown once.
-2. Get your key with the token. In a terminal, run `curl -u token:YOUR_TOKEN https://api.nordvpn.com/v1/users/services/credentials` and copy the value of `nordlynx_private_key`.
-3. Find a server. Open `https://api.nordvpn.com/v1/servers/recommendations?filters[servers_technologies][identifier]=wireguard_udp&limit=1` in a browser and note the `hostname`, and the `public_key` under `wireguard_udp`.
-4. Write the file, putting in your key, the server's key and its hostname:
+2. In Settings › VPN, choose **Built-in VPN**, then **NordVPN** under **Provider**, and paste the token into **Access token**.
+3. Leave **Country** at **Any country** for NordVPN to recommend a server anywhere, or pick a country.
+4. Press **Test** to see that it works before you save, then **Save**.
+
+![The built-in VPN with NordVPN chosen: its steps, then Access token and a Country list set to Any country](/images/admin/settings-vpn/connects-nordvpn.png)
+
+Once saved, the field says **Set. Type a new one to replace it.** The token stays on the server, sealed like your other secrets, and the page never shows it again. If NordVPN refuses it, the reason shows under the field: generate a new token and paste it.
+
+To get your key and a server, highsea sends the token to NordVPN's API before the tunnel is up, since there's no tunnel without them. That's the only thing that leaves outside the tunnel; torrents wait until it's up. If a server stops answering, highsea reconnects and asks NordVPN for a fresh recommendation. NordVPN doesn't forward ports, so peers can't connect in: downloads work, and seeding reaches only the peers that accept connections.
+
+### A file written by hand
+
+You can still write the WireGuard file yourself, for example to stay on one server. highsea uses it only while no token is set.
+
+1. Get your key with the token. In a terminal, run `curl -u token:YOUR_TOKEN https://api.nordvpn.com/v1/users/services/credentials` and copy the value of `nordlynx_private_key`.
+2. Find a server. Open `https://api.nordvpn.com/v1/servers/recommendations?filters[servers_technologies][identifier]=wireguard_udp&limit=1` in a browser and note the `hostname`, and the `public_key` under `wireguard_udp`.
+3. Write the file, putting in your key, the server's key and its hostname:
 
    ```ini
    [Interface]
@@ -114,6 +129,6 @@ NordVPN has no WireGuard file to download, so you write one from three things No
    Endpoint = THE_HOSTNAME:51820
    ```
 
-5. Upload it, or choose **Paste instead** and paste it, then press **Test** to see that it works before you save.
+4. Under **Or a WireGuard configuration you wrote**, upload it, or choose **Paste instead** and paste it.
 
-The key belongs to your account, not to one server, so to change servers repeat step 3 and change only the `[Peer]` lines. NordVPN doesn't forward ports, so peers can't connect in: downloads work, and seeding reaches only the peers that accept connections.
+The key belongs to your account, not to one server, so to change servers repeat step 2 and change only the `[Peer]` lines.

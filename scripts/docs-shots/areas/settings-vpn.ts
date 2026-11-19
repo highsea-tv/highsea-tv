@@ -59,6 +59,17 @@ export default {
       height: 1400,
     },
     {
+      // the form only: nothing is saved or tested, so no token leaves the machine
+      name: 'connects-nordvpn',
+      path: '/settings/vpn',
+      act: async (p) => {
+        await provider('NordVPN')(p)
+        await p.getByText('Access token', { exact: true }).first().waitFor()
+      },
+      crop: connection,
+      height: 1400,
+    },
+    {
       name: 'forwarded-port',
       path: '/settings/vpn',
       act: provider('AirVPN'),
@@ -67,7 +78,8 @@ export default {
     },
     {
       // Test on the shot's machine: the seeded server isn't on Linux, so the tunnel line says so
-      // before any command runs or anything leaves the machine
+      // before any command runs or anything leaves the machine. A pasted file, not a token: a
+      // token would be sent to NordVPN before the tunnel is tried
       name: 'test',
       path: '/settings/vpn',
       act: async (p) => {

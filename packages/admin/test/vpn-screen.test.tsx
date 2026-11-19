@@ -287,7 +287,7 @@ describe('Settings › VPN', () => {
     expect(page.getByText('Generate an access token in Nord Account.')).toBeTruthy()
     // the hint says what leaves before the tunnel is up
     expect(page.getByText(/sends it to NordVPN for your WireGuard key and a server/)).toBeTruthy()
-    expect(page.getByText('Any: NordVPN recommends one')).toBeTruthy()
+    expect(page.getByText('Any country')).toBeTruthy()
     // a file written by hand stays as the fallback
     expect(page.getByText('Or a WireGuard configuration you wrote')).toBeTruthy()
 

@@ -816,7 +816,7 @@ function BuiltIn({
                         value={v.tokenCountry}
                         onValueChange={(tokenCountry) => set({ tokenCountry })}
                         options={[
-                          { value: '', label: t('countryAny', { provider: provider.name }) },
+                          { value: '', label: t('countryAny') },
                           ...(provider.regions ?? []).map((r) => ({ value: r, label: r })),
                         ]}
                       />

@@ -84,7 +84,7 @@ export const vpn = defineMessages({
     'highsea sends it to {provider} for your WireGuard key and a server before the tunnel is up. Nothing else leaves outside the tunnel.',
   country: 'Country',
   countryHint: 'highsea asks for a recommended server there each time it connects.',
-  countryAny: 'Any: {provider} recommends one',
+  countryAny: 'Any country',
   configInstead: 'Or a WireGuard configuration you wrote',
   config: 'WireGuard configuration',
   configReplace: 'Replace the file',
