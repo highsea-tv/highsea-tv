@@ -59,6 +59,14 @@ export const DOWNLOADS_STALL_JOB = 'downloads.stall'
 export const STALL_MS = 2 * 60 * 60 * 1000
 export const REPLACE_MS = 3 * 60 * 60 * 1000
 const STALL_CHECK_EVERY_MS = 5 * 60 * 1000
+/**
+ * A downloading torrent with no peers, no seeds and no data this long shows as stalled, and goes
+ * back to downloading when data comes. Transmission's `queue_stalled_minutes` defaults to 30
+ * (docs/Editing-Configuration-Files.md); qBittorrent calls a torrent stalled as soon as its
+ * download rate is 0 (TorrentImpl::updateState), too quick for a swarm that's still being found.
+ * Only the view changes: the replacement above still counts from STALL_MS.
+ */
+export const STALLED_VIEW_MS = 30 * 60 * 1000
 /** The Network widget's sparkline: the last 10 minutes, a sample a second. */
 const SPEED_SAMPLES = 600
 
@@ -79,9 +87,17 @@ export type QueueItem = {
   downRate: number
   upRate: number
   eta: number | null
+  /** As Downloads shows them; none once the torrent has gone. */
+  peers: { connected: number; total: number }
+  seeds: { connected: number; total: number }
   ratio: number
   state: QueueState
   stateReason: string | null
+}
+
+/** A tracker's row in the detail sheet, or a web seed's beside them (BEP 19). */
+export type TrackerView = Omit<TrackerStatus, 'seeders' | 'leechers'> & {
+  kind: 'tracker' | 'web-seed'
 }
 
 export type TorrentFileView = { path: string; size: number; progress: number; priority: Priority }
@@ -113,7 +129,7 @@ export type TorrentView = {
   savePath: string
   private: boolean
   files: TorrentFileView[]
-  trackers: Omit<TrackerStatus, 'seeders' | 'leechers'>[]
+  trackers: TrackerView[]
   seedingRule: SeedRule
 }
 
@@ -563,6 +579,52 @@ export function createDownloads(deps: DownloadsDeps) {
     return snap.seeds.connected === 0 && now - last >= STALL_MS
   }
 
+  /**
+   * How long a downloading torrent has had nothing: no peer or seed connected, no data, not since
+   * it last started. Null while something is connected or data came within STALLED_VIEW_MS.
+   */
+  function idleFor(d: Row | undefined, snap: TorrentSnapshot, now = clock.now()): number | null {
+    if (snap.state !== 'downloading') return null
+    if (snap.peers.connected > 0 || snap.seeds.connected > 0) return null
+    const since = Math.max(
+      snap.downloadingSince ?? now,
+      snap.lastDataAt ?? 0,
+      d?.state === 'downloading' ? d.progressAt : 0,
+    )
+    const idle = now - since
+    return idle >= STALLED_VIEW_MS ? idle : null
+  }
+
+  const spanOf = (ms: number) => {
+    const minutes = Math.floor(ms / 60_000)
+    if (minutes < 120) return `${minutes} minutes`
+    return `${Math.floor(minutes / 60)} hours`
+  }
+
+  /** Why a stalled torrent waits, from what its trackers and web seeds said. */
+  function stalledReason(d: Row | undefined, snap: TorrentSnapshot, idle: number): string {
+    const span = spanOf(idle)
+    const trackers = snap.trackers
+    const web = snap.webSeeds
+    const failing = trackers.filter((t) => t.status === 'error')
+    let why: string
+    if (web.length > 0 && web.every((w) => w.status === 'error'))
+      why = `No peers or data for ${span}, and its web seeds don’t answer: ${web[0]?.message ?? 'no reason given'}`
+    else if (trackers.length > 0 && failing.length === trackers.length && web.length === 0)
+      why = `No peers or data for ${span}. No tracker answers: ${failing[0]?.message ?? 'no reason given'}`
+    else if (trackers.some((t) => t.status === 'working') && web.length === 0)
+      why = `No peers or data for ${span}. The trackers answer but know no one sharing it, and it has no web seeds.`
+    else if (trackers.length === 0 && web.length === 0)
+      why = `No peers or data for ${span}. It has no trackers or web seeds, so peers can only come from the DHT.`
+    else why = `No peers or data for ${span}.`
+    if (!why.endsWith('.')) why += '.'
+    if (d?.state === 'downloading')
+      why += stalled(d, snap)
+        ? ' highsea will search for another release at 3 hours.'
+        : ' If nothing comes, highsea searches for another release at 3 hours.'
+    return why
+  }
+
   function stateOf(
     d: Row | undefined,
     snap: TorrentSnapshot | null,
@@ -574,6 +636,8 @@ export function createDownloads(deps: DownloadsDeps) {
     if (d?.state === 'import-blocked') return { state: 'import-blocked', reason: d.stateReason }
     if (d?.state === 'failed') return { state: 'error', reason: d.stateReason }
     if (!snap) return { state: 'completed', reason: null }
+    const idle = idleFor(d, snap)
+    if (idle !== null) return { state: 'stalled', reason: stalledReason(d, snap, idle) }
     if (d && stalled(d, snap))
       return {
         state: 'stalled',
@@ -599,6 +663,8 @@ export function createDownloads(deps: DownloadsDeps) {
       downRate: snap?.downRate ?? 0,
       upRate: snap?.upRate ?? 0,
       eta: state === 'stalled' ? null : (snap?.eta ?? null),
+      peers: snap ? { ...snap.peers } : { connected: 0, total: 0 },
+      seeds: snap ? { ...snap.seeds } : { connected: 0, total: 0 },
       ratio: snap?.ratio ?? 0,
       state,
       stateReason: reason,
@@ -639,12 +705,22 @@ export function createDownloads(deps: DownloadsDeps) {
         progress: f.progress,
         priority: f.priority,
       })),
-      trackers: snap.trackers.map(({ url, status, peers, message }) => ({
-        url,
-        status,
-        peers,
-        message,
-      })),
+      trackers: [
+        ...snap.trackers.map(({ url, status, peers, message }) => ({
+          url,
+          kind: 'tracker' as const,
+          status,
+          peers,
+          message,
+        })),
+        ...snap.webSeeds.map(({ url, status, message }) => ({
+          url,
+          kind: 'web-seed' as const,
+          status,
+          peers: 0,
+          message,
+        })),
+      ],
       seedingRule: snap.rule,
     }
   }
@@ -716,8 +792,25 @@ export function createDownloads(deps: DownloadsDeps) {
     announce({ queue: [d.id], torrents: [torrentId] })
   }
 
+  /** Torrents last shown as stalled, so the view is pushed when one starts or stops waiting. */
+  let shownStalled = new Set<string>()
+
   async function checkStalls() {
     const now = clock.now()
+    const waiting = new Set(
+      engine
+        .list()
+        .filter((t) => idleFor(byTorrent(t.id), t, now) !== null)
+        .map((t) => t.id),
+    )
+    const changed = [...waiting, ...shownStalled].filter(
+      (id) => waiting.has(id) !== shownStalled.has(id),
+    )
+    shownStalled = waiting
+    if (changed.length > 0) {
+      const queue = changed.map((id) => byTorrent(id)?.id).filter((x): x is string => !!x)
+      announce({ queue, torrents: changed })
+    }
     const active = db
       .select()
       .from(downloads)

@@ -3,7 +3,8 @@
 // (docs/plans/phase-3-checkpoint-6.md › The network binding). With a binding, the TCP listener, each
 // peer connection (`localAddress`, https://nodejs.org/docs/latest-v24.x/api/net.html#socketconnectoptions-connectlistener),
 // the UDP socket (https://nodejs.org/api/dgram.html#socketbindoptions-callback) and tracker
-// requests all leave from the binding's address, and tracker names are looked up with a resolver
+// requests and web seed requests (BEP 19, webseed.ts) all leave from the binding's address, and
+// tracker and web seed names are looked up with a resolver
 // bound to it (`resolver.setLocalAddress`, https://nodejs.org/docs/latest-v24.x/api/dns.html#resolversetlocaladdressipv4-ipv6),
 // never the system's. When the binding goes, every socket is destroyed and nothing new opens.
 //
@@ -80,6 +81,8 @@ export const addressKey = (host: string, port: number) =>
 
 type Closable = { destroy?: () => void; close?: () => void }
 
+const MAX_REDIRECTS = 5
+
 export type SocketFactory = ReturnType<typeof createSocketFactory>
 
 export function createSocketFactory(
@@ -96,6 +99,12 @@ export function createSocketFactory(
   let locals: Local[] = []
   let resolver: Resolver | null = null
   const open = new Set<Closable>()
+  // keep-alive pools of our own, not Node's global ones, so a rebind closes idle connections too
+  const agents = () => ({
+    http: new http.Agent({ keepAlive: true, maxSockets: 4 }),
+    https: new https.Agent({ keepAlive: true, maxSockets: 4 }),
+  })
+  let agent = agents()
 
   const track = <T extends Closable>(s: T, record: SocketRecord, closeEvent = 'close'): T => {
     open.add(s)
@@ -168,6 +177,9 @@ export function createSocketFactory(
     },
 
     closeAll() {
+      agent.http.destroy()
+      agent.https.destroy()
+      agent = agents()
       for (const s of [...open]) {
         try {
           if (s.destroy) s.destroy()
@@ -280,48 +292,100 @@ export function createSocketFactory(
       timeoutMs = 15_000,
       family?: Family,
     ): Promise<{ status: number; body: Uint8Array }> {
-      require()
-      const host = url.hostname.replace(/^\[|\]$/g, '')
-      const address = await factory.resolve(host, isIP(host) ? familyOf(host) : family)
-      const l = localFor(familyOf(address))
-      const lib = url.protocol === 'https:' ? https : http
+      const res = await request(url, {}, timeoutMs, family)
       return new Promise((resolve, reject) => {
-        const req = lib.request(
-          url,
-          {
-            method: 'GET',
-            localAddress: l.address ?? undefined,
-            // the name is already resolved; TLS still checks the certificate against `servername`
-            lookup: (_host, _opts, cb) => cb(null, address, familyOf(address)),
-            servername: isIP(host) ? undefined : url.hostname,
-            headers: { 'user-agent': 'highsea', 'accept-encoding': 'identity' },
-            timeout: timeoutMs,
-          } as https.RequestOptions,
-          (res) => {
-            const chunks: Buffer[] = []
-            let size = 0
-            res.on('data', (c: Buffer) => {
-              size += c.length
-              // a tracker answer is a few kilobytes; anything far bigger isn't one
-              if (size > 4 * 1024 * 1024) req.destroy(new Error('The tracker’s answer is too big.'))
-              else chunks.push(c)
-            })
-            res.on('end', () =>
-              resolve({ status: res.statusCode ?? 0, body: new Uint8Array(Buffer.concat(chunks)) }),
-            )
-            res.on('error', reject)
-          },
-        )
-        track(req as unknown as Closable, {
-          kind: 'http',
-          localAddress: l.address,
-          remote: url.host,
+        const chunks: Buffer[] = []
+        let size = 0
+        res.on('data', (c: Buffer) => {
+          size += c.length
+          // a tracker answer is a few kilobytes; anything far bigger isn't one
+          if (size > 4 * 1024 * 1024) res.destroy(new Error('The tracker’s answer is too big.'))
+          else chunks.push(c)
         })
-        req.once('timeout', () => req.destroy(new Error('The tracker didn’t answer in time.')))
-        req.once('error', reject)
-        req.end()
+        res.on('end', () =>
+          resolve({ status: res.statusCode ?? 0, body: new Uint8Array(Buffer.concat(chunks)) }),
+        )
+        res.on('error', reject)
+        res.on('close', () => {
+          if (!res.complete) reject(new Error('The tracker hung up.'))
+        })
       })
     },
+
+    /**
+     * A GET for a web seed (BEP 19, webseed.ts), with its `Range`: sent like `get`, and redirects
+     * followed, at most 5, each one through the factory again. Resolves once the headers arrive,
+     * with the address that answered; the caller reads the body and destroys it when done.
+     */
+    async fetch(
+      url: URL,
+      headers: Record<string, string>,
+      timeoutMs = 30_000,
+    ): Promise<{ response: http.IncomingMessage; url: URL }> {
+      let at = url
+      for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
+        const res = await request(at, headers, timeoutMs)
+        const status = res.statusCode ?? 0
+        const location = res.headers.location
+        if (status < 300 || status >= 400 || status === 304 || !location)
+          return { response: res, url: at }
+        res.destroy()
+        const next = new URL(location, at)
+        if (next.protocol !== 'http:' && next.protocol !== 'https:')
+          throw new Error(`${at.host} sent highsea to an address it can’t use.`)
+        at = next
+      }
+      throw new Error(`${url.host} redirected too many times.`)
+    },
+  }
+
+  /** One request through the binding: its name resolved by the bound resolver, its socket bound. */
+  async function request(
+    url: URL,
+    headers: Record<string, string>,
+    timeoutMs: number,
+    family?: Family,
+  ): Promise<http.IncomingMessage> {
+    require()
+    const host = url.hostname.replace(/^\[|\]$/g, '')
+    // the blocklist is for peers; trackers and web seeds are named by the torrent, as qBittorrent's
+    // IP filter leaves trackers alone unless "Apply to trackers" is on
+    const address = await factory.resolve(host, isIP(host) ? familyOf(host) : family)
+    const l = localFor(familyOf(address))
+    const https_ = url.protocol === 'https:'
+    const lib = https_ ? https : http
+    return new Promise((resolve, reject) => {
+      const req = lib.request(
+        url,
+        {
+          method: 'GET',
+          agent: https_ ? agent.https : agent.http,
+          localAddress: l.address ?? undefined,
+          family: familyOf(address),
+          // the name is already resolved; TLS still checks the certificate against `servername`
+          lookup: (_host: string, opts: { all?: boolean }, cb: (...a: unknown[]) => void) =>
+            opts?.all
+              ? cb(null, [{ address, family: familyOf(address) }])
+              : cb(null, address, familyOf(address)),
+          servername: isIP(host) ? undefined : url.hostname,
+          headers: { 'user-agent': 'highsea', 'accept-encoding': 'identity', ...headers },
+          timeout: timeoutMs,
+        } as https.RequestOptions,
+        (res) => {
+          // an idle body times out as the request did
+          res.on('error', () => {})
+          resolve(res)
+        },
+      )
+      track(req as unknown as Closable, {
+        kind: 'http',
+        localAddress: l.address,
+        remote: url.host,
+      })
+      req.once('timeout', () => req.destroy(new Error(`${url.host} didn’t answer in time.`)))
+      req.once('error', reject)
+      req.end()
+    })
   }
   return factory
 }

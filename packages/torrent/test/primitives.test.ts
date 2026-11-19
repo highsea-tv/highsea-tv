@@ -69,6 +69,7 @@ describe('metainfo', () => {
       name: 'Sintel',
       trackers: [['udp://t.example:80']],
       peers: [],
+      webSeeds: [],
     })
     expect(parseMagnet(toMagnet(m)).infoHash).toBe(hash)
     expect(() => parseMagnet('http://example.com')).toThrow('That isn’t a magnet link.')

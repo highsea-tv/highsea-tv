@@ -24,7 +24,8 @@ export function tempDir(name = 'torrent') {
   return testFolder(name)
 }
 
-export type TestFile = { path: string; data: Uint8Array }
+/** `attr: 'p'` makes a BEP 47 padding file. */
+export type TestFile = { path: string; data: Uint8Array; attr?: string }
 
 /** A `.torrent` for these files: one file when there's one, else a folder named `name`. */
 export function makeTorrent(options: {
@@ -33,6 +34,8 @@ export function makeTorrent(options: {
   pieceLength?: number
   announce?: string[]
   private?: boolean
+  /** BEP 19's `url-list`: one address or several. */
+  urlList?: string | string[]
 }) {
   const pieceLength = options.pieceLength ?? 32 * 1024
   const all = Buffer.concat(options.files.map((f) => f.data))
@@ -55,12 +58,14 @@ export function makeTorrent(options: {
     info.files = options.files.map((f) => ({
       length: f.data.length,
       path: f.path.split('/').slice(1),
+      ...(f.attr ? { attr: f.attr } : {}),
     }))
   const dict: Record<string, unknown> = { info }
   if (options.announce?.length) {
     dict.announce = options.announce[0]
     dict['announce-list'] = options.announce.map((a) => [a])
   }
+  if (options.urlList) dict['url-list'] = options.urlList
   const torrent = bencode.encode(dict)
   return { torrent, infoHash: sha1(bencode.encode(info)), length: all.length }
 }
@@ -235,6 +240,7 @@ export function testEngine(
     utp?: boolean
     udpWrap?: (send: UdpSend) => UdpSend
     dht?: { enabled: boolean; bootstrap?: string[]; bootstrap6?: string[] }
+    webSeeds?: Parameters<typeof createTorrentEngine>[0]['webSeeds']
   } = {},
 ) {
   const database = options.db ?? openDatabase(':memory:')
@@ -256,6 +262,7 @@ export function testEngine(
     utp: options.utp,
     udpWrap: options.udpWrap,
     dht: options.dht,
+    webSeeds: options.webSeeds,
     audit: (r) => sockets.push(r),
     encryption: options.encryption,
     portMapping: options.portMapping,

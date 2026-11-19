@@ -137,6 +137,8 @@ export function createTorrentEngine(options: {
   dht?: { enabled: boolean; bootstrap?: string[]; bootstrap6?: string[] }
   /** uTP (BEP 29) for peers, beside TCP; on by default. */
   utp?: boolean
+  /** Tests only: web seeds' back-off and timeout (webseed.ts). */
+  webSeeds?: { backoff?: { firstMs: number; maxMs: number }; timeoutMs?: number }
   /** Tests only: what every UDP datagram passes through on its way out (a lossy link). */
   udpWrap?: (send: UdpSend) => UdpSend
   clock?: Clock
@@ -338,7 +340,7 @@ export function createTorrentEngine(options: {
     let m: Metainfo | null = null
     if (r.info) {
       try {
-        m = parseInfo(new Uint8Array(r.info), r.trackers)
+        m = parseInfo(new Uint8Array(r.info), r.trackers, r.webSeeds ?? [])
       } catch (e) {
         log.warn('A stored torrent couldn’t be read.', { id: r.id, error: String(e) })
       }
@@ -378,6 +380,7 @@ export function createTorrentEngine(options: {
         },
         encryption: () => encryption,
         blocked: (host) => blocklist.has(host),
+        webSeedOptions: options.webSeeds,
         dhtLookup: (h) => {
           for (const st of stacks) st.dht?.lookup(h)
         },
@@ -692,16 +695,19 @@ export function createTorrentEngine(options: {
       let magnet: string | null = null
       let name: string
       let trackers: string[][]
+      let webSeeds: string[] = []
       if ('torrent' in input.source) {
         m = parseTorrentFile(input.source.torrent)
         infoHash = m.infoHash
         name = m.name
         trackers = m.trackers
+        webSeeds = m.webSeeds
       } else {
         const mg = parseMagnet(input.source.magnet)
         infoHash = mg.infoHash
         name = mg.name ?? mg.infoHash
         trackers = mg.trackers
+        webSeeds = mg.webSeeds
         magnet = toMagnet(mg)
       }
       const existing = db.select().from(torrents).where(eq(torrents.infoHash, infoHash)).get()
@@ -722,6 +728,7 @@ export function createTorrentEngine(options: {
           name,
           info: m ? Buffer.from(m.info) : null,
           trackers,
+          webSeeds,
           magnet,
           savePath: input.savePath,
           category: input.category,

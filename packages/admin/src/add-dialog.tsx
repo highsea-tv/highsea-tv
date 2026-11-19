@@ -209,7 +209,17 @@ export function AddMovieDialog({
               form && (
                 <View style={{ gap: tokens.space['4'] }}>
                   <View style={{ gap: tokens.space['1'] + tokens.space['0.5'] }}>
-                    <Field label={t('folder')} disabled={noFolders}>
+                    {/* a folder highsea only reads (ADR 0063) takes no imports: say so before the
+                        grab, not after it, when the file would sit in Downloads (HT-76) */}
+                    <Field
+                      label={t('folder')}
+                      disabled={noFolders}
+                      hint={
+                        o.folders.find((f) => f.path === form.rootFolder)?.readOnly
+                          ? t('folder.readOnly')
+                          : undefined
+                      }
+                    >
                       <Select
                         value={form.rootFolder || undefined}
                         disabled={noFolders}
