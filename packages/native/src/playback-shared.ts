@@ -231,6 +231,30 @@ export function useSessionStart(o: {
 }
 
 /**
+ * A stream that failed ends its session at once (HT-64): the server stops its ffmpeg and logs the
+ * end (`play session ended early` when the player gave up within a segment), and the player is
+ * let go, so a picture that never came stops its sound too. Before, a failed session waited for
+ * the person to leave or for the server's 5 minutes without a report, and three failed starts in
+ * a row left no line in the log. Nothing is reported as the place: the last one kept stays.
+ */
+export function useEndOnFailure(
+  client: HighseaClient,
+  phase: PlayerState['phase'],
+  live: RefObject<PlaySession | null>,
+  clearPicture: () => void,
+) {
+  const latest = useRef(clearPicture)
+  latest.current = clearPicture
+  useEffect(() => {
+    if (phase !== 'failed') return
+    const s = live.current
+    live.current = null
+    latest.current()
+    if (s) client.playback.stop({ params: { id: s.id } }).catch(() => {})
+  }, [client, phase, live])
+}
+
+/**
  * What a session burns in, as the server decided, goes into the start's key, so its list
  * arriving doesn't start it again.
  */
@@ -326,6 +350,12 @@ export type PlaybackApi<Player> = {
   seekBy: (by: number) => void
   /** Try again, or Start again: a new session from where it was. */
   retry: () => void
+  /**
+   * The view drew the stream's first frame (HT-64): the phone's and the TV's engine counts it,
+   * so a start that plays without a picture fails (`playsWithoutPicture`). The web's does
+   * nothing: its `<video>` has no such event, and hls.js reports what it can't append.
+   */
+  firstFrame: () => void
   setVersion: (versionId: string) => void
   setAudio: (audioId: string) => void
   setSubtitle: (subtitleId: string | null) => void

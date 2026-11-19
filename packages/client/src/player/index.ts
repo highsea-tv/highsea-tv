@@ -177,6 +177,39 @@ export function streamState(s: PlayerState, now: number, hasNext: boolean): Stre
   return 'normal'
 }
 
+/**
+ * Whether the picture and its subtitle lines are drawn: not under a stream's message (HT-64). A
+ * failed item's picture is the player's own placeholder (AVPlayerViewController draws a play
+ * glyph), which showed through the message's scrim, as did the line showing when it failed.
+ */
+export const pictureShown = (s: Pick<PlayerState, 'phase'>) =>
+  s.phase !== 'failed' && s.phase !== 'stopped'
+
+/**
+ * How long a stream may play, in seconds of the film, without one frame of its picture drawn
+ * before it counts as a start that failed (HT-64). AVPlayer that can't show a stream's picture
+ * may still play its sound, with nothing said, drawing its own placeholder where the film should
+ * be: a start that looks like it worked and never leaves a report. A first frame comes well
+ * within a second of playing; 8 s leaves room for a slow phone.
+ */
+export const NO_PICTURE_SECONDS = 8
+
+/** The failed play's words for the report when the picture never came (`NO_PICTURE_SECONDS`). */
+export const NO_PICTURE = 'Played without a picture: no video frame was drawn'
+
+/**
+ * Whether a start has played `NO_PICTURE_SECONDS` without a frame: from where it began playing to
+ * where it is. Not while it plays on another screen (AirPlay), where this device draws none.
+ */
+export function playsWithoutPicture(o: {
+  from: number | null
+  position: number
+  framed: boolean
+  external: boolean
+}): boolean {
+  return !o.framed && !o.external && o.from !== null && o.position - o.from >= NO_PICTURE_SECONDS
+}
+
 /** When `streamState` may next change on its own: Buffering's delay running out. */
 export function nextChange(s: PlayerState, now: number): number | null {
   if (s.waitingSince === null) return null

@@ -9,7 +9,7 @@
 // sent anywhere.
 import { mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { AppError, type Clock, jsonLine, newId } from '@highsea-tv/core'
+import { AppError, type Clock, jsonLine, type Logger, newId } from '@highsea-tv/core'
 
 const ID = /^client-[0-9A-Za-z-]+$/
 /** How many a server keeps; the oldest goes when a new one arrives. */
@@ -58,6 +58,11 @@ export function createClientReports(deps: {
   keep: number
   /** Called after a report is kept, so System › Logs hears of it. */
   kept?: () => void
+  /**
+   * The playback log, where each failed play is a line of its own beside its session's (HT-64): a
+   * start can fail after its first segments, whose end the session's own lines don't call early.
+   */
+  playbackLog?: Logger
 }) {
   const { dir } = deps
 
@@ -108,6 +113,14 @@ export function createClientReports(deps: {
         for (const old of all.slice(0, Math.max(0, all.length - deps.keep)))
           rmSync(join(dir, old), { force: true })
         deps.kept?.()
+        if (input.kind === 'play')
+          deps.playbackLog?.warn('a player said a play failed', {
+            session: input.play?.sessionId ?? null,
+            app: input.app,
+            version: input.version,
+            report: id,
+            error: input.error.message.slice(0, 300),
+          })
         return id
       } catch {
         return null

@@ -2,8 +2,8 @@
 // What an app tells its own server when something fails (Phase 5's A2a, ADR 0066): an error
 // nothing handled, or a play that failed, sent to `POST /system/client-reports` and nowhere else.
 // A report must never break the app or loop, so sending never throws, a send that fails is
-// dropped and never reported itself, the same failure on the same screen is sent once, and one
-// run of the app sends ten at most. Each field is cut to the length the server holds it to.
+// dropped and never reported itself, the same failure on the same screen is sent once (once a
+// session, for a failed play), and one run of the app sends ten at most. Each field is cut to the length the server holds it to.
 // No React and no platform here: the shell draws the boundary (apps/client/src/shell/reports.tsx).
 import type { ClientReportInput, PlaybackDecision } from '@highsea-tv/api-contract'
 
@@ -48,7 +48,10 @@ export function createReporter(
   function report(body: () => ClientReportInput) {
     try {
       const b = body()
-      const key = `${b.kind}|${b.screen}|${b.error.name}|${b.error.message}`
+      // a failed play is one per session: each start that fails is a report of its own (HT-64:
+      // three failed starts of one film in a row left one), while the same error twice in one
+      // session, or from anywhere else, is still sent once
+      const key = `${b.kind}|${b.screen}|${b.error.name}|${b.error.message}|${b.play?.sessionId ?? ''}`
       if (sent >= REPORTS_MAX || seen.has(key)) return
       seen.add(key)
       sent++
