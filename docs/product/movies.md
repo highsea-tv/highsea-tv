@@ -65,6 +65,7 @@ The anatomy, the Overview's rows (cast, trailers, collection, More like this, Ab
   - History: "Nothing has happened yet".
   - Subtitles, no file: "No file to find subtitles for yet".
   - Interactive search, nothing back: "No indexer returned a release. Check Indexers, or try again later."
+  - Interactive search, answers only for other films (HT-85): "The indexers answered, but with nothing for this film. Try again later.", and under the table, per indexer, "{indexer} answered with {count} releases, none for this film. The site may have ignored the search: try again later." When some were for the film: "{indexer} answered with {found} releases; {count} were for other films and left out."
 - **Error:** each section shows "Couldn't load {section}" with the server's message and **Try again**. An id TMDB doesn't know shows "TMDB has no movie with that id." with **Go to Discover**.
 - **No indexers yet:** the add dialog's Search now is disabled and off, with the hint "Add an indexer to search for releases.", and the button reads **Add movie**. The Search tab shows the same sentence with a link to **Indexers**.
 - **No TMDB key:** Discover and Add say "Add a TMDB key to find movies." with a link to Settings › General › Metadata. The library and its pages still work from the cache.

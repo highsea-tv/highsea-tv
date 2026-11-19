@@ -15,6 +15,8 @@
 //   /dl/{id}.torrent, /json/download/{id}?passkey=, /html/download.php?id= (needs the cookie)
 //                      a release's .torrent: a small made-up one unless a test serves its own,
 //                      or a redirect to a magnet
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { FAKE_CREDENTIALS, FAKE_NOW, type FakeRelease, find, RELEASES } from './fixtures.ts'
 
 export * from './definitions.ts'
@@ -31,6 +33,11 @@ export type Misbehaviour =
   | { kind: 'layout' }
   /** A Newznab-style error document with this code. */
   | { kind: 'error-code'; code: number; description: string }
+  /**
+   * The Archive's scrape API answers as if the query were only the collection: its newest items,
+   * whatever the title and year (HT-85), from a saved answer (sites/archive-query-ignored.json).
+   */
+  | { kind: 'ignores-query' }
 
 export type FakeRequest = { method: string; url: URL; headers: Headers; body: string }
 
@@ -366,6 +373,13 @@ export function createFakeIndexer(options: { origin?: string } = {}): FakeIndexe
     }
 
     if (path === '/archive/services/search/v1/scrape') {
+      if (rule?.kind === 'ignores-query')
+        return new Response(
+          readFileSync(join(import.meta.dir, 'sites/archive-query-ignored.json')),
+          {
+            headers: { 'content-type': 'application/json' },
+          },
+        )
       const q = p.get('q') ?? ''
       const title = /title:\(([^)]*)\)/.exec(q)?.[1]
       const year = /year:(\d{4})/.exec(q)?.[1]
