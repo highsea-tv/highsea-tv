@@ -1166,6 +1166,32 @@ describe('Pager', () => {
     expect(to).toEqual([2])
   })
 
+  test('without dots, only the arrows, and they still page', () => {
+    const to: number[] = []
+    draw(
+      'pointer',
+      <Pager
+        count={50}
+        current={1}
+        onChange={(i) => to.push(i)}
+        previousLabel="Previous"
+        nextLabel="Next"
+        dots={false}
+      />,
+    )
+    expect(screen.getAllByRole('button').map((b) => b.getAttribute('aria-label'))).toEqual([
+      'Previous',
+      'Next',
+    ])
+    act(() => {
+      fireEvent.click(screen.getByRole('button', { name: 'Next' }))
+    })
+    act(() => {
+      fireEvent.click(screen.getByRole('button', { name: 'Previous' }))
+    })
+    expect(to).toEqual([2, 0])
+  })
+
   test('draws nothing for one page, or off a pointer', () => {
     draw('pointer', pager(1))
     expect(screen.queryByRole('button')).toBeNull()
