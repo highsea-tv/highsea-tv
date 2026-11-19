@@ -495,6 +495,53 @@ describe('the spread full refresh', () => {
   })
 })
 
+describe('movies cached before images were asked for (HT-65)', () => {
+  /** The cached row as it was before HT-66: TMDB's answer without `images`. */
+  const imageless = (t: Awaited<ReturnType<typeof open>>, id: number) => {
+    const row = t.db
+      .select({ data: schema.movieMetadata.data })
+      .from(schema.movieMetadata)
+      .where(eq(schema.movieMetadata.tmdbId, id))
+      .get()
+    if (!row) throw new Error(`no cached row for ${id}`)
+    const { images: _, ...data } = row.data as Record<string, unknown>
+    t.db.update(schema.movieMetadata).set({ data }).where(eq(schema.movieMetadata.tmdbId, id)).run()
+  }
+
+  test('the sweep queues every one in the library at once, and the logo comes back', async () => {
+    const t = await open()
+    for (const id of [45745, 19, 653]) {
+      await t.metadata.movie(id)
+      t.addToLibrary(id)
+    }
+    imageless(t, 45745)
+    imageless(t, 19)
+    expect(t.metadata.cachedMovie(45745)?.art.logo).toBeNull()
+    t.metadata.jobs.runSweep()
+    const payloads = t.jobs.list({ type: JOB_TYPES.refresh }).map((j) => j.payload)
+    expect(payloads).toContainEqual({ kind: 'movie', id: 45745 })
+    expect(payloads).toContainEqual({ kind: 'movie', id: 19 })
+    await t.drain()
+    // fetched again, with images: the automatic logo is back, and the sweep has nothing for it
+    expect(t.metadata.cachedMovie(45745)?.art.logo).toBe((await t.metadata.movie(45745)).art.logo)
+    expect(t.metadata.cachedMovie(45745)?.art.logo).not.toBeNull()
+    // its row has images now, so no later sweep queues it for them
+    const row = t.db
+      .select({ data: schema.movieMetadata.data })
+      .from(schema.movieMetadata)
+      .where(eq(schema.movieMetadata.tmdbId, 45745))
+      .get()
+    expect((row?.data as { images?: unknown } | undefined)?.images).toBeDefined()
+  })
+
+  test('reading one fetches it again, though it’s recent', async () => {
+    const t = await open()
+    await t.metadata.movie(45745)
+    imageless(t, 45745)
+    expect((await t.metadata.movie(45745)).art.logo).not.toBeNull()
+  })
+})
+
 describe('the six-month purge', () => {
   test('removes what’s too old, unless the library refers to it, with its images', async () => {
     const t = await open()
