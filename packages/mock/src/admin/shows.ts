@@ -98,7 +98,10 @@ export function showsAnswers(kit: AdminKit): Answers {
         settled.add(body.path)
         return changed(undefined)
       },
-      refresh: () => changed(undefined),
+      refresh: ({ params }, ctx) => {
+        kit.work?.queue(ctx, 'metadata.refresh', { kind: 'show', id: params.id })
+        return changed(undefined)
+      },
       list: (_, ctx) => ctx.api.shows.list().map(showOf),
       add: ({ body }, ctx) => changed(detailOf(ctx.api.shows.add(body))),
       get: ({ params }, ctx) => detailOf(ctx.api.shows.get(params.id)),

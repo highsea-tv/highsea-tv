@@ -7,6 +7,7 @@ import { AppError, type ErrorCode } from '@highsea-tv/core/errors'
 import type { Output } from '@highsea-tv/sdk'
 import type { Answers, Ctx } from '../transport.ts'
 import type { User } from '../types.ts'
+import type { ItemWorkKit } from './item-work.ts'
 
 export type { Answers, Ctx }
 
@@ -29,6 +30,8 @@ export type AdminKit = {
   devicesOf: (ctx: Ctx) => Output<(typeof routes)['devices']['list']>
   /** The appearance as `appearance.get` gives it, the toolbar's theme and sounds included (D3's Appearance). */
   appearanceOf: () => unknown
+  /** What's in hand on a library item (HT-106): adminAnswers gives it to every area. */
+  work?: ItemWorkKit
 }
 
 /** The contract's person, as the transport's mapper makes it. */

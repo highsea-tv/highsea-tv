@@ -1736,6 +1736,149 @@
           "nextRun"
         ]
       },
+      "ItemWork": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/WorkSubject"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "jobs": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ItemJob"
+                }
+              }
+            },
+            "required": [
+              "jobs"
+            ]
+          }
+        ]
+      },
+      "ItemJob": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "running",
+              "succeeded",
+              "failed",
+              "cancelled"
+            ]
+          },
+          "subject": {
+            "$ref": "#/components/schemas/WorkSubject"
+          },
+          "since": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-10-17T20:15:00.000Z"
+          },
+          "retryAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "example": "2026-10-17T20:15:00.000Z"
+          },
+          "progress": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 100
+          },
+          "finishedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "example": "2026-10-17T20:15:00.000Z"
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "state",
+          "subject",
+          "since",
+          "retryAt",
+          "progress",
+          "finishedAt",
+          "error"
+        ]
+      },
+      "WorkSubject": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "movie",
+              "show",
+              "season",
+              "episode",
+              "collection",
+              "artist",
+              "album"
+            ]
+          },
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "id"
+        ]
+      },
+      "ItemWorkDetail": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/WorkSubject"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "active": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ItemJob"
+                }
+              },
+              "finished": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ItemJob"
+                }
+              }
+            },
+            "required": [
+              "active",
+              "finished"
+            ]
+          }
+        ]
+      },
       "Task": {
         "type": "object",
         "properties": {
@@ -19438,6 +19581,136 @@
           },
           "401": {
             "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/system/work": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "summary": "The library items with work in hand",
+        "description": "Every film, show, collection, artist and album a job is queued or running on, with its jobs, oldest first; a show carries its seasons’ and episodes’. One read for a library’s marks; refetch it on `jobs.updated`.",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The items with work in hand",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ItemWork"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/system/work/{kind}/{id}": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "summary": "One item’s work, and how what finished lately went",
+        "description": "What’s queued or running on the item or on what it holds, and what finished on it in the last ten minutes with its outcome and reason. An item with nothing in hand answers empty lists, not 404.",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "movie",
+                "show",
+                "season",
+                "episode",
+                "collection",
+                "artist",
+                "album"
+              ]
+            },
+            "required": true,
+            "name": "kind",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Its work",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItemWorkDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
             "content": {
               "application/json": {
                 "schema": {
