@@ -293,11 +293,14 @@ function MetadataMovie({
           {t('addMovie')}
         </Button>
       }
-    >
-      <View style={{ gap: s['6'] }}>
+      backdrop={m.art.backdrop}
+      hero={
         <MediaSummary item={m} meta={m} badges={<Badge tone="neutral">{tm('notInLibrary')}</Badge>}>
           <ReleaseLine date={m.releaseDate} />
         </MediaSummary>
+      }
+    >
+      <View style={{ gap: s['6'] }}>
         <PageTabs
           label={tm('sections')}
           tab={tab}
@@ -498,7 +501,21 @@ function LibraryMovie({
   ) : undefined
 
   return (
-    <AdminPage title={title} actions={actions}>
+    <AdminPage
+      title={title}
+      actions={actions}
+      backdrop={m ? (meta.data?.art.backdrop ?? m.art.backdrop) : undefined}
+      hero={
+        m ? (
+          <LibrarySummary
+            movie={m}
+            meta={meta}
+            monitored={monitoring ?? m.monitored}
+            onMonitor={onMonitor}
+          />
+        ) : undefined
+      }
+    >
       {movie.status === 'error' && !missing ? (
         <EmptyState
           tone="error"
@@ -531,8 +548,6 @@ function LibraryMovie({
             options={options.data}
             tab={tab}
             onTab={setTab}
-            monitored={monitoring ?? m.monitored}
-            onMonitor={onMonitor}
             onAdd={setAdding}
             onChange={keep}
           />
@@ -592,14 +607,64 @@ function LibraryMovie({
   )
 }
 
+/** A library film's words in its page's hero: its status, versions, path and Monitored. */
+function LibrarySummary({
+  movie: m,
+  meta,
+  monitored,
+  onMonitor,
+}: {
+  movie: Movie
+  meta: MetadataQuery
+  monitored: boolean
+  onMonitor: (on: boolean) => void
+}) {
+  const t = useT(messages)
+  const tl = useT(library)
+  const st = movieStatus[m.status]
+  return (
+    <MediaSummary
+      item={m}
+      meta={meta.data}
+      badges={
+        <>
+          <Badge tone={st.tone}>{tl(st.label)}</Badge>
+          {m.versions.map((v) => (
+            <QualityTag key={v.id} overlay={false}>
+              {v.label}
+            </QualityTag>
+          ))}
+        </>
+      }
+    >
+      <View
+        style={{
+          flexDirection: 'row',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          columnGap: s['6'],
+          rowGap: s['2'],
+        }}
+      >
+        <View style={{ flexShrink: 1, minWidth: 0 }}>
+          <Text variant="caption" color="text-3" mono style={{ wordBreak: 'break-all' } as object}>
+            {m.path}
+          </Text>
+        </View>
+        <View>
+          <Switch label={t('monitored')} checked={monitored} onCheckedChange={onMonitor} />
+        </View>
+      </View>
+    </MediaSummary>
+  )
+}
+
 function LibraryBody({
   movie: m,
   meta,
   options,
   tab,
   onTab,
-  monitored,
-  onMonitor,
   onAdd,
   onChange,
 }: {
@@ -608,89 +673,45 @@ function LibraryBody({
   options: Options | undefined
   tab: Tab
   onTab: (tab: Tab) => void
-  monitored: boolean
-  onMonitor: (on: boolean) => void
   onAdd: (movies: DiscoverMovie[]) => void
   onChange: (movie: Movie) => void
 }) {
   const t = useT(messages)
   const tm = useT(media)
-  const tl = useT(library)
-  const st = movieStatus[m.status]
   return (
-    <>
-      <MediaSummary
-        item={m}
-        meta={meta.data}
-        badges={
-          <>
-            <Badge tone={st.tone}>{tl(st.label)}</Badge>
-            {m.versions.map((v) => (
-              <QualityTag key={v.id} overlay={false}>
-                {v.label}
-              </QualityTag>
-            ))}
-          </>
-        }
-      >
-        <View
-          style={{
-            flexDirection: 'row',
-            flexWrap: 'wrap',
-            alignItems: 'center',
-            columnGap: s['6'],
-            rowGap: s['2'],
-          }}
-        >
-          <View style={{ flexShrink: 1, minWidth: 0 }}>
-            <Text
-              variant="caption"
-              color="text-3"
-              mono
-              style={{ wordBreak: 'break-all' } as object}
-            >
-              {m.path}
-            </Text>
-          </View>
-          <View>
-            <Switch label={t('monitored')} checked={monitored} onCheckedChange={onMonitor} />
-          </View>
-        </View>
-      </MediaSummary>
-      <PageTabs
-        label={tm('sections')}
-        tab={tab}
-        onTab={onTab}
-        options={[
-          { value: 'overview', label: tm('tab.overview') },
-          { value: 'cast', label: tm('tab.cast') },
-          { value: 'files', label: t('tab.files') },
-          { value: 'history', label: t('tab.history') },
-          { value: 'search', label: t('tab.search') },
-          { value: 'subtitles', label: t('tab.subtitles') },
-        ]}
-      >
-        {tab === 'overview' ? (
-          <MediaOverview
-            meta={meta}
-            onAllCast={() => onTab('cast')}
-            onAdd={onAdd}
-            main={<InTheQueue movie={m} />}
-            aside={<InTheLibrary movie={m} options={options} onChange={onChange} />}
-          />
-        ) : tab === 'cast' ? (
-          <CastAndCrew meta={meta} />
-        ) : tab === 'files' ? (
-          <Files movie={m} />
-        ) : tab === 'history' ? (
-          <History id={m.id} />
-        ) : tab === 'search' ? (
-          <SearchTab id={m.id} />
-        ) : (
-          <Subtitles movie={m} />
-        )}
-      </PageTabs>
-    </>
+    <PageTabs
+      label={tm('sections')}
+      tab={tab}
+      onTab={onTab}
+      options={[
+        { value: 'overview', label: tm('tab.overview') },
+        { value: 'cast', label: tm('tab.cast') },
+        { value: 'files', label: t('tab.files') },
+        { value: 'history', label: t('tab.history') },
+        { value: 'search', label: t('tab.search') },
+        { value: 'subtitles', label: t('tab.subtitles') },
+      ]}
+    >
+      {tab === 'overview' ? (
+        <MediaOverview
+          meta={meta}
+          onAllCast={() => onTab('cast')}
+          onAdd={onAdd}
+          main={<InTheQueue movie={m} />}
+          aside={<InTheLibrary movie={m} options={options} onChange={onChange} />}
+        />
+      ) : tab === 'cast' ? (
+        <CastAndCrew meta={meta} />
+      ) : tab === 'files' ? (
+        <Files movie={m} />
+      ) : tab === 'history' ? (
+        <History id={m.id} />
+      ) : tab === 'search' ? (
+        <SearchTab id={m.id} />
+      ) : (
+        <Subtitles movie={m} />
+      )}
+    </PageTabs>
   )
 }
 

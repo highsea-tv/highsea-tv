@@ -82,6 +82,18 @@ export default {
         await p.getByRole('menuitem', { name: 'Refresh metadata' }).waitFor()
       },
     },
+    {
+      name: 'show-artwork',
+      path: '/shows/87108',
+      act: async (p) => {
+        await titled(p)
+        await p.getByRole('button', { name: 'More actions' }).click()
+        await p.getByRole('menuitem', { name: 'Change artwork' }).click()
+        await p.getByRole('dialog', { name: 'Artwork' }).getByRole('radio').first().waitFor()
+        await blurDialog(p)
+      },
+      crop: (p) => p.getByRole('dialog'),
+    },
     { name: 'unmatched', path: '/shows/unmatched', act: listed },
     {
       name: 'match-file',

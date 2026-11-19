@@ -10,14 +10,15 @@ import { AppError } from '@highsea-tv/core/errors'
 export const ARTWORK_KINDS = ['poster', 'backdrop', 'logo'] as const
 export type ArtworkKind = (typeof ARTWORK_KINDS)[number]
 
-/** The owners the picker serves now; shows, seasons and episodes join with Phase 5 part B. */
-export const ARTWORK_OWNERS = ['movie', 'collection'] as const
+/** The owners the picker serves: films, collections and shows (HT-105); seasons and episodes later. */
+export const ARTWORK_OWNERS = ['movie', 'collection', 'show'] as const
 export type ArtworkOwner = (typeof ARTWORK_OWNERS)[number]
 
 /** The kinds each owner has: TMDB keeps no logos for collections, so theirs is upload-only. */
 export const ARTWORK_KINDS_OF: Record<ArtworkOwner, readonly ArtworkKind[]> = {
   movie: ['poster', 'backdrop', 'logo'],
   collection: ['poster', 'backdrop', 'logo'],
+  show: ['poster', 'backdrop', 'logo'],
 }
 
 /** At most 10 MB, as the image cache takes from TMDB (images.ts). */

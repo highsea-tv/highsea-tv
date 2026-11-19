@@ -30,15 +30,18 @@ mock.module('../src/shell.tsx', () => ({
   AdminPage: ({
     title,
     actions,
+    hero,
     children,
   }: {
     title: ReactNode
     actions?: ReactNode
+    hero?: ReactNode
     children?: ReactNode
   }) => (
     <main>
       <h1>{title}</h1>
       <div>{actions}</div>
+      {hero}
       {children}
     </main>
   ),

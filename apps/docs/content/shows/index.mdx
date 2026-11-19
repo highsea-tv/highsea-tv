@@ -14,7 +14,7 @@ description: The shows highsea reads from your Shows folders, a show's page, ref
   - The product spec docs/product/shows.md, for intent.
 */}
 
-Written for highsea 0.4.8.
+Written for highsea 0.4.9.
 
 **Shows** in the admin's sidebar lists the shows in your Shows folders. highsea reads them where they are: it matches each show folder to a show on TMDB, and each file to the episodes it holds by its name (`S01E01`, `S01E01-E02`, `1x01`, or `01 - Title` inside a `Season 01` folder). It doesn't rename, move or download episodes yet.
 
@@ -28,15 +28,23 @@ To add a Shows folder and import what's in it, see [Root folders](/settings/medi
 
 ## A show's page
 
-Open a show to see its seasons, each with its episodes, its air date and its file. **Files** lists every file once, with the episodes it holds.
+Open a show to see its seasons, each with its episodes, its air date and its file. **Files** lists every file once, with the episodes it holds. The top of the page is the show's backdrop, with its logo, its details and **Monitored** over it.
 
-![A show's page with its summary and its first season open](/images/admin/shows/show.png)
+![A show's page: its backdrop with the logo and details over it, and its first season open below](/images/admin/shows/show.png)
+
+The More menu (**More actions**) has the same items as a film's, in the same order: **Edit**, **Change artwork**, **Refresh metadata** and **Remove from library**.
+
+### Change a show's artwork
+
+Open the More menu and choose **Change artwork**. It's the dialog a film has ([Change a film's artwork](/movies/manage-a-film/#change-a-films-artwork)): a tab each for **Poster**, **Backdrop** and **Logo**, with **From TMDB** first and, when fanart.tv is on, **From fanart.tv** after it, or **Upload** your own. Your choice stays through every refresh until you reset it, and every app shows it. A season keeps TMDB's poster for now.
+
+![The Artwork dialog for Chernobyl on the Poster tab, with TMDB's posters](/images/admin/shows/show-artwork.png)
 
 ### Refresh a show's details
 
 Open the More menu (**More actions**) and choose **Refresh metadata**. highsea asks TMDB for the show, its seasons and its episodes again, and says **Refreshing from TMDB**. New episodes and changed details show on the page when TMDB answers. A file kept as unmatched because TMDB didn't list its episode is tried again at the next scan.
 
-![A show's More menu, open, with Refresh metadata and Remove from library](/images/admin/shows/show-more.png)
+![A show's More menu, open, with Edit, Change artwork, Refresh metadata and Remove from library](/images/admin/shows/show-more.png)
 
 ## Subtitles for episodes
 
