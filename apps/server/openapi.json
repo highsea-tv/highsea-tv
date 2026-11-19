@@ -12153,6 +12153,55 @@
           "kind"
         ]
       },
+      "FolderListing": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "root": {
+            "type": "string"
+          },
+          "parent": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "folders": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "path": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "name",
+                "path"
+              ]
+            }
+          },
+          "more": {
+            "type": "integer"
+          },
+          "writable": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "path",
+          "root",
+          "parent",
+          "folders",
+          "more",
+          "writable"
+        ]
+      },
       "ImportCandidate": {
         "type": "object",
         "properties": {
@@ -35154,6 +35203,87 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/FsListing"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/fs/folders": {
+      "get": {
+        "tags": [
+          "Import"
+        ],
+        "summary": "The folders inside a folder, for the admin’s folder picker",
+        "description": "Folders only, sorted by name, inside the data root, a root folder, the downloads folder or a category’s, never the config folder, after `..` and symlinks are resolved. Without `path`, the data root. 403 with `details.reason` `outside` for a path outside those, `unreadable` for a folder highsea may not read; 404 (`missing`) for one that isn’t there.",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 4096
+            },
+            "required": false,
+            "name": "path",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The folders",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FolderListing"
                 }
               }
             }

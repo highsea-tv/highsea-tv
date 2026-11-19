@@ -184,6 +184,10 @@ export function registerDownloads(app: OpenAPIHono<Env>) {
 
   app.openapi(routes.fs.list, (c) => c.json(runtime(c).browse(c.req.valid('query').path), 200))
 
+  app.openapi(routes.fs.folders, (c) =>
+    c.json(runtime(c).browseFolders(c.req.valid('query').path), 200),
+  )
+
   app.openapi(routes.manualImport.scan, async (c) => {
     const found = await runtime(c).movies.manualImport.scan(c.req.valid('json').path)
     return c.json(
