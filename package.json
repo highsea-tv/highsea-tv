@@ -25,7 +25,8 @@
     "pin": "bun scripts/pin.ts",
     "one-place": "bun scripts/one-place.ts",
     "catalog:build": "bun scripts/catalog.ts build",
-    "clean": "bun scripts/clean.ts"
+    "clean": "bun scripts/clean.ts",
+    "flaky": "bun scripts/flaky.ts"
   },
   "engines": {
     "bun": ">=1.4",

@@ -1,0 +1,158 @@
+{
+  "total_count": 17,
+  "jobs": [
+    {
+      "id": 135051637740,
+      "name": "reuse",
+      "conclusion": "success",
+      "run_id": 44371744243,
+      "run_attempt": 2,
+      "head_sha": "02a9c93b8361c4858a169b8018cb9f4661f68d54",
+      "steps": []
+    },
+    {
+      "id": 135051637994,
+      "name": "github-release",
+      "conclusion": "success",
+      "run_id": 44371744243,
+      "run_attempt": 2,
+      "head_sha": "02a9c93b8361c4858a169b8018cb9f4661f68d54",
+      "steps": []
+    },
+    {
+      "id": 135051638122,
+      "name": "e2e",
+      "conclusion": "skipped",
+      "run_id": 44371744243,
+      "run_attempt": 2,
+      "head_sha": "02a9c93b8361c4858a169b8018cb9f4661f68d54",
+      "steps": []
+    },
+    {
+      "id": 135051638939,
+      "name": "ci",
+      "conclusion": "skipped",
+      "run_id": 44371744243,
+      "run_attempt": 2,
+      "head_sha": "02a9c93b8361c4858a169b8018cb9f4661f68d54",
+      "steps": []
+    },
+    {
+      "id": 135051639092,
+      "name": "prepare",
+      "conclusion": "success",
+      "run_id": 44371744243,
+      "run_attempt": 2,
+      "head_sha": "02a9c93b8361c4858a169b8018cb9f4661f68d54",
+      "steps": []
+    },
+    {
+      "id": 135051639142,
+      "name": "desktop (macos-15, universal-apple-darwin)",
+      "conclusion": "success",
+      "run_id": 44371744243,
+      "run_attempt": 2,
+      "head_sha": "02a9c93b8361c4858a169b8018cb9f4661f68d54",
+      "steps": []
+    },
+    {
+      "id": 135051639744,
+      "name": "checks",
+      "conclusion": "success",
+      "run_id": 44371744243,
+      "run_attempt": 2,
+      "head_sha": "02a9c93b8361c4858a169b8018cb9f4661f68d54",
+      "steps": []
+    },
+    {
+      "id": 135051640594,
+      "name": "image (linux/amd64, ubuntu-24.04, amd64)",
+      "conclusion": "success",
+      "run_id": 44371744243,
+      "run_attempt": 2,
+      "head_sha": "02a9c93b8361c4858a169b8018cb9f4661f68d54",
+      "steps": []
+    },
+    {
+      "id": 135051640951,
+      "name": "catalog",
+      "conclusion": "success",
+      "run_id": 44371744243,
+      "run_attempt": 2,
+      "head_sha": "02a9c93b8361c4858a169b8018cb9f4661f68d54",
+      "steps": []
+    },
+    {
+      "id": 135051641225,
+      "name": "desktop (ubuntu-24.04, x86_64-unknown-linux-gnu)",
+      "conclusion": "success",
+      "run_id": 44371744243,
+      "run_attempt": 2,
+      "head_sha": "02a9c93b8361c4858a169b8018cb9f4661f68d54",
+      "steps": []
+    },
+    {
+      "id": 135051641243,
+      "name": "desktop (windows-2025, x86_64-pc-windows-msvc)",
+      "conclusion": "success",
+      "run_id": 44371744243,
+      "run_attempt": 2,
+      "head_sha": "02a9c93b8361c4858a169b8018cb9f4661f68d54",
+      "steps": []
+    },
+    {
+      "id": 135051641619,
+      "name": "image (linux/arm64, ubuntu-24.04-arm, arm64)",
+      "conclusion": "success",
+      "run_id": 44371744243,
+      "run_attempt": 2,
+      "head_sha": "02a9c93b8361c4858a169b8018cb9f4661f68d54",
+      "steps": []
+    },
+    {
+      "id": 135051642426,
+      "name": "merge",
+      "conclusion": "success",
+      "run_id": 44371744243,
+      "run_attempt": 2,
+      "head_sha": "02a9c93b8361c4858a169b8018cb9f4661f68d54",
+      "steps": []
+    },
+    {
+      "id": 135051642923,
+      "name": "pages",
+      "conclusion": "success",
+      "run_id": 44371744243,
+      "run_attempt": 2,
+      "head_sha": "02a9c93b8361c4858a169b8018cb9f4661f68d54",
+      "steps": []
+    },
+    {
+      "id": 135051735298,
+      "name": "spk",
+      "conclusion": "success",
+      "run_id": 44371744243,
+      "run_attempt": 2,
+      "head_sha": "02a9c93b8361c4858a169b8018cb9f4661f68d54",
+      "steps": []
+    },
+    {
+      "id": 135059974259,
+      "name": "desktop-feed",
+      "conclusion": "success",
+      "run_id": 44371744243,
+      "run_attempt": 2,
+      "head_sha": "02a9c93b8361c4858a169b8018cb9f4661f68d54",
+      "steps": []
+    },
+    {
+      "id": 135060769219,
+      "name": "outcome",
+      "conclusion": "success",
+      "run_id": 44371744243,
+      "run_attempt": 2,
+      "head_sha": "02a9c93b8361c4858a169b8018cb9f4661f68d54",
+      "steps": []
+    }
+  ]
+}
