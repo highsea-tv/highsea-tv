@@ -227,7 +227,7 @@ The order is films, then shows, then music: films are already built and only nee
   - The specs: client-home.md, collections.md, client-search.md, client-settings.md; the design language's mobile, TV, desktop-web and spacing-layout pages.
 - **2026-11-19, A1, 0.4.5 published and installed on the NAS:** run 44444822503, tag `v0.4.5` on `8dd310c`, image digest `sha256:aa77cd1d2e7501168d8d856dc6bf2d1fc1bac224e55e7bff8ab419b8ffcb7ab2`, package `0.4.5-0001`. The owner installed it on their NAS the same day. Findings:
   - **Works:** migration `0019_artwork` applied; the web client's heroes, layout setting and resume work against the real library.
-  - **The logo refetch did not start by itself:** the sweep's daily schedule is kept in the database, so its next run was about 16 hours after the update, not 40 minutes after start as #73 said. It was run by hand from System › Tasks; then 1,266 of 1,301 films had a logo, 16 had none on TMDB and 19 were not refetched (cause not yet looked into).
+  - **The logo refetch did not start by itself:** the sweep's daily schedule is kept in the database, so its next run was about 16 hours after the update, not 40 minutes after start as #73 said. It was run by hand from System › Tasks; then 1,266 of 1,301 films had a logo, 16 had none on TMDB and 19 were not refetched (cause not yet looked into). HT-74 starts the refetch within minutes of a boot, and asks again weekly for films TMDB answered 404 for, the likely cause of the 19.
   - **Two more:** the Home hero showed about 50 paging dots (HT-70 removes them, on the owner's word), and the player showed an Ultra HD badge on a 1080p file (HT-70).
 
 - **2026-11-19, B, shows on the server's foundation (HT-67):** the first of B's four tasks, with no routes, import, playback or client change yet.
@@ -236,6 +236,12 @@ The order is films, then shows, then music: films are already built and only nee
   - **TMDB's TV metadata:** one request per show plus one per season, cached, refreshed by the existing jobs, mapped to the drafted shapes, with the automatic logo. `findByTvdb` takes the kind the id is, since TheTVDB's show, season and episode numbers overlap (78107 is The Office and someone's episode). Recordings: Chernobyl and The Office (UK).
   - **`@highsea-tv/media/shows`:** add a show with Sonarr's monitor choices, and rows kept in step with every refresh, safe to repeat.
   - **Next (B's second task):** matching files to episodes, the existing-library import and the scan.
+
+- **2026-11-19, A1, fanart.tv as a second artwork source, and the refetch after an update (HT-74):** what 0.4.5's findings left open, and the owner's choice of fanart.tv as TMDB's fallback (2026-11-18).
+  - **fanart.tv** ([ADR 0070](../adr/0070-fanart-tv-second-artwork-source.md), migration `0021_fanart`): when TMDB has no logo for a film, its automatic logo is fanart.tv's HD logo. The metadata language comes first, then English, then any, the most liked in each. The artwork dialog lists fanart.tv's posters, backgrounds and logos after TMDB's, under a heading of their own. A film's page never waits on fanart.tv; when it's down, highsea leaves it alone for 15 minutes. With no key it's off, with no errors and no empty section. highsea's project key comes with the image, as TMDB's does (`HIGHSEA_FANART_KEY` in the `release` environment, not registered yet). An optional personal key goes in Settings › General › Metadata.
+  - **The refetch after an update:** a boot that finds library films needing a refetch queues one catch-up job three minutes later, deduplicated and safe to repeat, instead of waiting for the daily sweep's stored time. A test builds a database with 0.4.4's migrations (`0018_profiles`) and imageless rows.
+  - **The 19 films not refetched, from the code:** a film TMDB answered 404 for is kept as "gone" with its old data, and the sweep's query for imageless films left gone ones out. So they were never asked again. Library films gone for a week are now asked again, once a week. Not confirmed on the NAS: the pull request has two read-only queries for that.
+  - **Shows and music** fit fanart.tv's source without reshaping (TheTVDB and MusicBrainz ids, one row each in `SUBJECTS`); not built.
 
 ## Running highsea on the NAS (A1)
 
