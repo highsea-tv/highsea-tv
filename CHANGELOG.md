@@ -7,6 +7,21 @@ While highsea is at 0.x, any release may change how something works. When one do
 
 ## [Unreleased]
 
+## [0.4.7] - 2026-11-19
+
+### Changed
+
+- HT-73 Shows on the server: import, files matched to episodes, the scan (B, 2 of 4) ([#79](https://github.com/highsea-tv/highsea-tv/pull/79))
+- HT-74 fanart.tv as a second artwork source, and the refetch after an update ([#84](https://github.com/highsea-tv/highsea-tv/pull/84))
+- Merge the 0.4.6 release into next
+- Say what a release search leaves out, and log every search (HT-85) ([#89](https://github.com/highsea-tv/highsea-tv/pull/89))
+- HT-82 VPN: the built-in VPN, NordVPN, and Test ([#86](https://github.com/highsea-tv/highsea-tv/pull/86))
+- Land TV focus on the page's own stop on arrival and on Back ([#87](https://github.com/highsea-tv/highsea-tv/pull/87))
+- Issue forms for the indexer catalog (HT-84) ([#88](https://github.com/highsea-tv/highsea-tv/pull/88))
+- Import a release whose name gives no quality at the file's quality ([#91](https://github.com/highsea-tv/highsea-tv/pull/91))
+- Serve shows: routes, episode playback and each profile's place ([#90](https://github.com/highsea-tv/highsea-tv/pull/90))
+- HT-87 NordVPN by access token alone ([#92](https://github.com/highsea-tv/highsea-tv/pull/92))
+
 ## [0.4.6] - 2026-11-19
 
 ### Added
@@ -195,7 +210,9 @@ While highsea is at 0.x, any release may change how something works. When one do
 
 
 
-[unreleased]: https://github.com/highsea-tv/highsea-tv/compare/v0.4.6...HEAD
+
+[unreleased]: https://github.com/highsea-tv/highsea-tv/compare/v0.4.7...HEAD
+[0.4.7]: https://github.com/highsea-tv/highsea-tv/compare/v0.4.6...v0.4.7
 [0.4.6]: https://github.com/highsea-tv/highsea-tv/compare/v0.4.5...v0.4.6
 [0.4.5]: https://github.com/highsea-tv/highsea-tv/compare/v0.4.4...v0.4.5
 [0.4.4]: https://github.com/highsea-tv/highsea-tv/compare/v0.4.3...v0.4.4
