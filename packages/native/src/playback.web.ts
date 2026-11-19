@@ -400,6 +400,7 @@ export const usePlayback: Engine<WebPlayer> = (id, fromStart, type = 'movie') =>
     setAudio: c.setAudio,
     setSubtitle: c.setSubtitle,
     nudge: c.nudge,
+    firstFrame: () => {},
   }
 }
 

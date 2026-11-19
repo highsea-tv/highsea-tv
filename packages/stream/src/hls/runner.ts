@@ -585,15 +585,23 @@ function createTranscode(id: string, source: HlsSource, ctx: Context) {
 
   const has = (piece: number) => existsSync(join(dir, pieceName(piece)))
 
-  // The header is ffmpeg's init.mp4, copied once its first piece is out. A copy isn't atomic, so
-  // header.mp4 can exist half written while it's made: init() waits for the copy in flight before
-  // it trusts the file, and callers share that one copy.
+  // The header is ffmpeg's init.mp4, copied once its first piece is out. A copy isn't atomic:
+  // libuv's copy (uv__fs_copyfile in src/unix/fs.c, behind Node's fs.copyFile) opens the
+  // destination with O_CREAT and only then writes the bytes, so a header copied in place exists
+  // empty or half written for a moment. init() once found it so, between the first piece's
+  // arrival and the end of its copy, and the player was sent a header of fewer bytes than the
+  // film's, which AVPlayer refuses as `fmt?`, a format it doesn't know (HT-64, ADR 0051). So the copy goes
+  // to a file of its own and is renamed into place, which is atomic (rename(2), POSIX): header.mp4
+  // exists only whole. Callers share the one copy in flight.
   let headerCopy: Promise<void> | null = null
   function copyHeader(): Promise<void> {
     if (headerCopy) return headerCopy
-    const copy = copyFile(join(dir, INIT_NAME), join(dir, HEADER)).finally(() => {
-      if (headerCopy === copy) headerCopy = null
-    })
+    const part = join(dir, `${HEADER}.part`)
+    const copy = copyFile(join(dir, INIT_NAME), part)
+      .then(() => rename(part, join(dir, HEADER)))
+      .finally(() => {
+        if (headerCopy === copy) headerCopy = null
+      })
     headerCopy = copy
     return copy
   }
@@ -911,6 +919,7 @@ function createTranscode(id: string, source: HlsSource, ctx: Context) {
       await new Promise<void>((resolve, reject) => {
         waiters.push({ piece: r.first, resolve, reject, init: true })
       })
+    // the copy settle() started as the piece came, or one of this call's own
     if (!existsSync(header)) await copyHeader()
     return header
   }

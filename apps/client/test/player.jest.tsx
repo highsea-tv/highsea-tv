@@ -166,6 +166,33 @@ describe('the player on the phone', () => {
     expect(screen.queryByRole('button', { name: 'Pause' })).toBeNull()
   })
 
+  test('a start that plays with no frame drawn didn’t start, with nothing behind its message (HT-64)', async () => {
+    await playing()
+    await act(async () => player().at(1))
+    await act(async () => player().at(5))
+    await flush()
+    expect(screen.queryByText('This film didn’t start')).toBeNull()
+    await act(async () => player().at(9))
+    await flush()
+    expect(screen.getByText('This film didn’t start')).toBeTruthy()
+    // the failed item's picture (AVPlayer's own placeholder) and its line are gone from under it
+    expect(hostOf(screen.toJSON(), 'VideoView')).toBeUndefined()
+    expect(sent(`/playback/sessions/`).some((r) => r.method === 'DELETE')).toBe(true)
+  })
+
+  test('a start whose first frame was drawn plays on', async () => {
+    await playing()
+    await act(async () => {
+      const view = hostOf(screen.toJSON(), 'VideoView')
+      ;(view?.props.onFirstFrameRender as (() => void) | undefined)?.()
+    })
+    await act(async () => player().at(1))
+    await act(async () => player().at(20))
+    await flush()
+    expect(screen.queryByText('This film didn’t start')).toBeNull()
+    expect(hostOf(screen.toJSON(), 'VideoView')).toBeTruthy()
+  })
+
   test('the position is an adjustable that seeks 10 s', async () => {
     await playing()
     await act(async () => player().at(12))
@@ -425,6 +452,7 @@ describe('the web’s picture', () => {
       player: { attach: () => undefined, video: { current: video } },
       subtitle: { id: 'en', language: 'en', label: 'English' },
       detail: { data: null },
+      state: { phase: 'ready' },
       seekBy: () => {},
       seekTo: () => {},
     }

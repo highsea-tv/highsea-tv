@@ -352,9 +352,10 @@ export type PlaybackApi<Player> = {
   retry: () => void
   /**
    * The view drew the stream's first frame (HT-64): the phone's and the TV's engine counts it,
-   * so a start that plays without a picture fails (`playsWithoutPicture`). The web has none.
+   * so a start that plays without a picture fails (`playsWithoutPicture`). The web's does
+   * nothing: its `<video>` has no such event, and hls.js reports what it can't append.
    */
-  firstFrame?: () => void
+  firstFrame: () => void
   setVersion: (versionId: string) => void
   setAudio: (audioId: string) => void
   setSubtitle: (subtitleId: string | null) => void

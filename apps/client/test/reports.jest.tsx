@@ -158,9 +158,11 @@ describe('a play that fails', () => {
       error: { name: 'PlaybackError' },
       play: { type: 'movie', id: FILM, profile: 'ios' },
     })
-    // Try again fails the same way: one report for it
+    // Try again fails the same way: a session of its own, so a report of its own (HT-64)
     await fireEvent.press(screen.getByRole('button', { name: 'Try again' }))
     await flush(500)
-    expect(bodies).toHaveLength(1)
+    expect(bodies).toHaveLength(2)
+    const sessions = bodies.map((b) => (b.play as { sessionId: string }).sessionId)
+    expect(new Set(sessions).size).toBe(2)
   })
 })
