@@ -123,7 +123,7 @@ const indexer = (extra: Record<string, unknown> = {}) => ({
 type Req = { method: string; path: string; body: unknown }
 let state: {
   indexers: ReturnType<typeof indexer>[]
-  catalog: ReturnType<typeof definition>[]
+  catalog: (ReturnType<typeof definition> & { check?: unknown })[]
   requests: Req[]
   addFails: boolean
 }
@@ -399,7 +399,7 @@ describe('Report a problem', () => {
     })
 
   async function report() {
-    const opened = spyOn(Linking, 'openURL').mockResolvedValue(true)
+    const opened = spyOn(Linking, 'openURL').mockResolvedValue(undefined)
     const { user, page } = await open()
     await user.click(page.getByRole('button', { name: 'More for My films at home' }))
     await user.click(await page.findByRole('menuitem', { name: 'Report a problem' }))

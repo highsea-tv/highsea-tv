@@ -80,7 +80,7 @@ describe('A9 with the catalog’s upkeep (drafted)', () => {
   })
 
   test('Edit says it; Report a problem opens the prefilled form', async () => {
-    const opened = spyOn(Linking, 'openURL').mockResolvedValue(true)
+    const opened = spyOn(Linking, 'openURL').mockResolvedValue(undefined)
     const user = await open('/admin/indexers')
     await user.click(page().getByRole('button', { name: 'More for Keel' }))
     await user.click(await page().findByRole('menuitem', { name: 'Report a problem' }))
