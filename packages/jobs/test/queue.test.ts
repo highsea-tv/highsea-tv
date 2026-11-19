@@ -298,10 +298,7 @@ describe('a job’s item', () => {
       [other, { kind: 'collection', id: 'col_1' }, { kind: 'collection', id: 'col_1' }, 'queued'],
     ])
 
-    expect(queue.workOf({ kind: 'show', id: '1396' }).active.map((j) => j.id)).toEqual([
-      show,
-      subs,
-    ])
+    expect(queue.workOf({ kind: 'show', id: '1396' }).active.map((j) => j.id)).toEqual([show, subs])
     // an episode's own read finds its work too
     expect(queue.workOf({ kind: 'episode', id: '62085' }).active.map((j) => j.id)).toEqual([subs])
 

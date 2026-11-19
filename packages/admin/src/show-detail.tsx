@@ -51,6 +51,7 @@ import { type ComponentRef, type ReactNode, useRef, useState } from 'react'
 import { View } from 'react-native'
 import { useShowOptions } from './add-show-dialog.tsx'
 import { FormError } from './collections-rules.tsx'
+import { ItemWorkMark, useItemWork } from './item-work.tsx'
 import { Loadable } from './loadable.tsx'
 import { MediaSummary, SummarySkeleton } from './media-sections.tsx'
 import { useRouter } from './navigation.tsx'
@@ -127,8 +128,11 @@ function Page({ id, tab }: { id: string; tab: ShowTab }) {
       fail(t('searchFailed')),
     )
 
+  // HT-106: what the server is doing to the show and its episodes, by its actions
+  const work = useItemWork('show', id, sh?.title)
   const actions = sh ? (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: s['2'] }}>
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: s['2'], flexShrink: 1 }}>
+      <ItemWorkMark jobs={work.jobs} look="page" item={work.item} />
       <Button
         variant="primary"
         icon="search"
@@ -160,6 +164,7 @@ function Page({ id, tab }: { id: string; tab: ShowTab }) {
           {
             label: t('refresh'),
             icon: 'refresh',
+            disabled: work.busy('metadata.refresh'),
             // TMDB's refresh is queued; the page follows `shows.updated` when it lands
             onSelect: () =>
               refresh

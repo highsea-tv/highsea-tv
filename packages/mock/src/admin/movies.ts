@@ -334,7 +334,8 @@ export function moviesAnswers(kit: AdminKit): Answers {
           case 'search':
             requireIndexers(ctx)
             ctx.api.movies.bulkSearch(mockIds)
-            for (const id of ids) kit.work?.queue(ctx, 'movies.search', { kind: 'movie', id: `${id}` })
+            for (const id of ids)
+              kit.work?.queue(ctx, 'movies.search', { kind: 'movie', id: `${id}` })
             break
           case 'refresh':
             for (const id of ids)

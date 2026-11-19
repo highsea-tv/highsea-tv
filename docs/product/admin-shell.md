@@ -35,6 +35,18 @@ The frame every signed-in admin page sits in: where you are, how to get anywhere
   | regular (≥ 768) | Full, 216px | Title, search, actions |
   | compact (< 768) | Hidden; a **Menu** button in the top row opens it as a left sheet | Menu, title, search (icon only), actions wrapping below |
 
+### Work in hand on an item (HT-106, 2026-11-19)
+
+The owner's note: refreshing metadata, and other jobs that touch media, need a mark on the item itself, on its page and in the library. One part draws it in three places (`ItemWorkMark` and `WithItemWork` in `packages/admin/src/item-work.tsx`):
+
+- **An item's page** (a film, a show, an artist, an album): beside the actions, a small spinner in `text-2` and one line of plain words: "Refreshing metadata", "Refreshing metadata, 40%" while a job says how far it is, "Searching for subtitles, for an episode" on a show's page when the work is on one of its episodes, "Refreshing metadata, waiting to start", "Refreshing metadata: trying again in 2m" after a failed try, and "2 tasks running" when more than one kind is in hand. Nothing is drawn when nothing is in hand. The line is a polite live region; it announces the words once, not each percent.
+- **The action that started the job is off while it runs:** Refresh metadata (in More on a film's and a show's page, the button on an artist's and an album's) and a film's **Search**.
+- **When a job the page saw ends:** a failure is an error toast, "Refreshing metadata didn't finish", with the server's reason under it; a success is a short toast ("Metadata refreshed for Tears of Steel"). What finished before the page was opened isn't toasted.
+- **A card** (Movies', Shows' and Music's grids, a collection's row in Collections): a spinner on the posters' glass at the art's top right, over the art, the words in a tooltip on hover or focus (the mark is a focus stop, an image named by the words).
+- **A table row** (Movies', Shows', Music's artists and albums): the same spinner over the title's thumbnail, centred on it.
+- The card's and the row's marks are drawn over what's there, so nothing moves as work comes and goes. They come within a second or two of the job being queued and go by themselves, following `jobs.updated`.
+- **Which jobs:** metadata refresh of a film or a show, artwork for a film, show or album, a film's release search, subtitle search, download, sync and re-sync of an episode's or a film's file, the subtitle check of an item, and an import into a film or an episode. Not marked: whole-library sweeps (scans, the wanted sweeps, read-ahead, trickplay, imports from other apps), a person's or a TMDB collection's refresh, an artist's artwork, a held film waiting for its date, and a show's release search (not built yet). Music's jobs are marked through the mock until the server's music routes are built.
+
 ## States
 
 - **Populated:** live counts, server card and status bar, updated from the event stream and the mock clock.
@@ -88,6 +100,8 @@ The frame every signed-in admin page sits in: where you are, how to get anywhere
 - `system.status()` → `GET /api/v1/system/status` (owners and admins): CPU, memory, disks. Refetched every few seconds; the server has no `tick` event.
 - `system.jobs()` → `GET /api/v1/system/jobs`: `{ name, state, nextRun }[]`. Refetched on `jobs.updated`.
 - `system.healthChecks()` → `GET /api/v1/system/health` (owners and admins), for the server card's dot. Refetched on `server.updated`.
+- `system.work()` → `GET /api/v1/system/work` (staff): every film, show, collection, artist and album with work in hand, each with its jobs (a show's carry its seasons' and episodes'), for a library's marks in one read. Refetched on `jobs.updated`.
+- `system.itemWork({ kind, id })` → `GET /api/v1/system/work/{kind}/{id}` (staff): one item's active jobs and what finished on it in the last ten minutes, with the outcome and reason, for its page. Refetched on `jobs.updated`; an item with nothing in hand answers empty lists.
 - `auth.session()` → `GET /api/v1/auth/session`: who's signed in, for the account menu.
 - Later, with their packages:
   - `movies.list()` and `queue.list()`, for the sidebar counts and the palette's titles, and `shows.list()` for Shows' count;
@@ -106,6 +120,7 @@ The frame every signed-in admin page sits in: where you are, how to get anywhere
 - **The server card is degraded only at error-level health,** not warnings. Warnings belong to the System page, so the dot doesn't nag.
 - **Health stays in two places**, the server card and the System page, as admin.md says. The status bar shows resources and jobs, not health.
 - **Background toasts** are for things you'd otherwise miss: an import finishing. Routine progress stays in the queue.
+- **A job names the item it works on** (HT-106): a `subject` on the job's row (`movie:603`, `episode:62085`, `season:1396:2`), with the show that holds a season or an episode in `subject_of`, so the whole library's work is one indexed read rather than each job's payload read again. Each job type says its subject when it's queued; a type that doesn't stays unmarked.
 - **Banners render bold only.** The composer (A11) has the full markdown preview. A banner is a sentence or two.
 - **The search trigger's ⌘K hint is hidden from its accessible name,** so the visible label matches what assistive tech reads.
 

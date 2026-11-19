@@ -73,6 +73,7 @@ import { useAddressParam } from './address.ts'
 import { handoff } from './collections-editor.tsx'
 import { ruleId } from './collections-rules.tsx'
 import { useSearchable } from './indexer-state.ts'
+import { useLibraryWork, WithItemWork } from './item-work.tsx'
 import { LibraryPosters, STUCK, useLetters, WithLetters } from './library-grid.tsx'
 import { library as messages } from './library-messages.ts'
 import { Loadable, PosterSkeletons } from './loadable.tsx'
@@ -152,6 +153,8 @@ export function MoviesLibrary() {
   const filterKey = `${tab}:${sort}:${title}:${tag}`
   // every movie for these filters; the page draws only those near the screen
   const movies = useQuery(`movies:${filterKey}`, (c) => loadMovies(c, filters), ['movies.updated'])
+  // HT-106: a mark on each film the server is working on
+  const workOf = useLibraryWork('movie')
   const items = movies.data?.items ?? NONE
   const letters = useLetters(items, sortedOf, sort === 'title')
   const reduced = useMotionReduced()
@@ -465,21 +468,23 @@ export function MoviesLibrary() {
                       keyOf={keyOf}
                       label={t('title')}
                       render={(m) => (
-                        <Poster
-                          title={m.title}
-                          src={m.art.poster ?? undefined}
-                          href={moviePath(m.id)}
-                          status={
-                            m.status !== 'available' ? (
-                              <Badge overlay tone={movieStatus[m.status].tone}>
-                                {t(movieStatus[m.status].label)}
-                              </Badge>
-                            ) : undefined
-                          }
-                          showTitle
-                          titleSize="ui"
-                          caption={m.year === null ? undefined : String(m.year)}
-                        />
+                        <WithItemWork jobs={workOf(m.id)} look="poster">
+                          <Poster
+                            title={m.title}
+                            src={m.art.poster ?? undefined}
+                            href={moviePath(m.id)}
+                            status={
+                              m.status !== 'available' ? (
+                                <Badge overlay tone={movieStatus[m.status].tone}>
+                                  {t(movieStatus[m.status].label)}
+                                </Badge>
+                              ) : undefined
+                            }
+                            showTitle
+                            titleSize="ui"
+                            caption={m.year === null ? undefined : String(m.year)}
+                          />
+                        </WithItemWork>
                       )}
                     />
                   </View>
@@ -521,11 +526,13 @@ export function MoviesLibrary() {
                             />
                           </TableCell>
                           <TableCell tall truncate>
-                            <TitleCell
-                              title={<TitleLink href={moviePath(m.id)}>{m.title}</TitleLink>}
-                              detail={m.path}
-                              art={m.art.poster ?? undefined}
-                            />
+                            <WithItemWork jobs={workOf(m.id)} look="thumb">
+                              <TitleCell
+                                title={<TitleLink href={moviePath(m.id)}>{m.title}</TitleLink>}
+                                detail={m.path}
+                                art={m.art.poster ?? undefined}
+                              />
+                            </WithItemWork>
                           </TableCell>
                           <TableCell tall numeric>
                             {m.year === null ? '' : String(m.year)}
