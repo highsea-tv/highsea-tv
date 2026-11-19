@@ -9,6 +9,8 @@
 // the real engine, in the worker pool, syncs the `.en.srt` it attaches.
 import { afterEach, describe, expect, test } from 'bun:test'
 import { existsSync, mkdirSync, readFileSync, rmSync, statSync } from 'node:fs'
+import http from 'node:http'
+import type { AddressInfo } from 'node:net'
 import { join } from 'node:path'
 import type { Fetch } from '@highsea-tv/core'
 import { createFakeIndexer, FAKE_CREDENTIALS, FAKE_ORIGIN } from '@highsea-tv/indexers/fake'
@@ -219,5 +221,102 @@ describe.skipIf(!hasFfmpeg)('Sintel, from grab to library', () => {
     expect(readFileSync(sidecar, 'utf8')).not.toBe(shiftSrt(sintel.srt(), 2_500))
     const synced = (await api.movies.history({ params: { id: SINTEL }, query: {} })).items
     expect(synced.map((h) => h.type)).toContain('subtitle-synced')
+  }, 90_000)
+
+  // HT-76: an Internet Archive torrent has no peers, only web seeds (BEP 19). The same grab with
+  // no tracker and no seeder: a web server on loopback serves the file by byte ranges
+  test('a release with web seeds and no peers downloads from them alone', async () => {
+    const clipDir = tempDir('clips')
+    closers.push(() => rmSync(clipDir, { recursive: true, force: true }))
+    const clip = new Uint8Array(
+      readFileSync(makeSyncClip(join(clipDir, 'sintel.mkv'), { audio: 'sine', size: '1920x1080' })),
+    )
+    const path = `/items/${RELEASE}/${RELEASE}.mkv`
+    const ranges: string[] = []
+    const web = http.createServer((req, res) => {
+      const m = /^bytes=(\d+)-(\d+)$/.exec(req.headers.range ?? '')
+      if (decodeURIComponent(req.url ?? '') !== path || !m) {
+        res.writeHead(404)
+        res.end()
+        return
+      }
+      ranges.push(m[0])
+      const from = Number(m[1])
+      const to = Math.min(Number(m[2]), clip.length - 1)
+      res.writeHead(206, {
+        'content-range': `bytes ${from}-${to}/${clip.length}`,
+        'content-length': to - from + 1,
+      })
+      res.end(Buffer.from(clip.subarray(from, to + 1)))
+    })
+    await new Promise<void>((r) => web.listen(0, '127.0.0.1', r))
+    closers.push(
+      () =>
+        new Promise<void>((r) => {
+          web.closeAllConnections()
+          web.close(() => r())
+        }),
+    )
+    const { port } = web.address() as AddressInfo
+    const torrent = makeTorrent({
+      name: RELEASE,
+      files: [{ path: `${RELEASE}/${RELEASE}.mkv`, data: clip }],
+      urlList: [`http://127.0.0.1:${port}/items/`],
+    })
+
+    const fake = createFakeIndexer()
+    fake.serve(RELEASE_ID, torrent.torrent)
+    const replay = createReplayFetch()
+    const fetch: Fetch = (input, init) =>
+      String(input instanceof Request ? input.url : input).startsWith(FAKE_ORIGIN)
+        ? fake.fetch(input, init)
+        : replay(input, init)
+    const runtime = await bootRuntime({ fetch, importing: { sampleSeconds: 2 } })
+    await runtime.engine.setBinding(LOOPBACK)
+    const app = createApi(runtime)
+    const { token } = await withOwner(runtime)
+    const api = clientFor(app, { token })
+    await runtime.metadata.settings.setKey('test-tmdb-key')
+    runtime.metadata.settings.update({ region: 'US' })
+    const folder = join(runtime.config.dataDir, 'media', 'movies')
+    mkdirSync(folder, { recursive: true })
+    await api.rootFolders.add({ body: { path: folder } })
+    await api.movies.add({
+      body: {
+        tmdbId: SINTEL,
+        rootFolder: folder,
+        monitored: true,
+        minimumAvailability: 'released',
+        versions: [{ label: '1080p', qualityProfileId: 'qp-hd' }],
+      },
+    })
+    const { indexer } = await api.indexers.add({
+      body: {
+        definitionId: 'generic-torznab',
+        settings: { baseUrl: `${FAKE_ORIGIN}/torznab`, apiKey: FAKE_CREDENTIALS.torznabKey },
+      },
+    })
+    const found = await api.movies.interactiveSearch({ params: { id: SINTEL } })
+    const release = found.releases.find((r) => r.title === RELEASE)
+    await api.movies.grabRelease({
+      params: { id: SINTEL, guid: release?.guid ?? '' },
+      body: { indexerId: indexer.id },
+    })
+
+    // the detail sheet lists the web seed beside the (absent) trackers
+    const [listed] = await api.downloads.list()
+    expect(listed?.trackers).toEqual([
+      expect.objectContaining({ url: `http://127.0.0.1:${port}/items/`, kind: 'web-seed' }),
+    ])
+    const target = join(folder, 'Sintel (2010)', 'Sintel (2010) Bluray-1080p.mkv')
+    const start = Date.now()
+    while (!existsSync(target)) {
+      if (Date.now() - start > 30_000) throw new Error('Timed out waiting for the import.')
+      await runtime.jobs.tick()
+      await runtime.jobs.idle()
+      await new Promise((r) => setTimeout(r, 50))
+    }
+    expect(new Uint8Array(readFileSync(target))).toEqual(clip)
+    expect(ranges.length).toBeGreaterThan(0)
   }, 90_000)
 })

@@ -289,7 +289,12 @@ describe('0018_profiles', () => {
     const file = join(dir, 'highsea.db')
     const first = older(file)
     const result = migrate(first, { backupDir: join(dir, 'backups') })
-    expect(result.applied).toEqual(['0018_profiles', '0019_artwork', '0020_shows'])
+    expect(result.applied).toEqual([
+      '0018_profiles',
+      '0019_artwork',
+      '0020_shows',
+      '0021_web_seeds',
+    ])
     expect(result.backup).not.toBeNull()
     const once = state(first)
     first.close()
@@ -387,7 +392,7 @@ describe('0020_shows', () => {
   test('leaves every film, version, file and watch position as it was', () => {
     const raw = withFilms(':memory:')
     const was = films(raw)
-    expect(migrate(raw).applied).toEqual(['0020_shows'])
+    expect(migrate(raw).applied).toEqual(['0020_shows', '0021_web_seeds'])
     expect(films(raw)).toEqual(was)
     expect(raw.all('SELECT count(*) AS n FROM media_items')).toEqual([{ n: 300 }])
     // the new columns are empty on films

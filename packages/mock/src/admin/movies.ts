@@ -138,6 +138,8 @@ export function moviesAnswers(kit: AdminKit): Answers {
     downRate: x.downRate,
     upRate: x.upRate,
     eta: x.eta,
+    peers: { ...x.peers },
+    seeds: { ...x.seeds },
     ratio: x.ratio,
     state: x.state,
     stateReason: x.stateReason,

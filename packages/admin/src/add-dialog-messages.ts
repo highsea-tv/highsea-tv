@@ -15,6 +15,8 @@ export const addDialog = defineMessages({
   folder: 'Folder',
   'folder.none': 'There’s no folder to file movies under yet.',
   'folder.add': 'Add one in Settings › Media management',
+  'folder.readOnly':
+    'highsea only reads this folder, so a download for this movie stays in Downloads and isn’t imported. Switch the folder to managed in Settings › Media management to import into it.',
   qualityProfile: 'Quality profile',
   languageProfile: 'Subtitle languages',
   'languageProfile.none': 'None',

@@ -48,6 +48,8 @@ export const TorrentFile = z
 export const Tracker = z
   .object({
     url: z.string(),
+    /** A tracker, or a web seed (BEP 19): a web server with the files, listed with the trackers. */
+    kind: z.enum(['tracker', 'web-seed']).default('tracker'),
     status: z.enum(['working', 'updating', 'not-contacted', 'error']),
     peers: z.number().int(),
     message: z.string().nullable(),
@@ -119,6 +121,9 @@ export const QueueItem = z
     downRate: z.number(),
     upRate: z.number(),
     eta: z.number().nullable(),
+    /** As Downloads shows them; none once the torrent has gone. */
+    peers: Count,
+    seeds: Count,
     ratio: z.number(),
     state: z.enum(TORRENT_STATES),
     stateReason: z.string().nullable(),

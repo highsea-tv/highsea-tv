@@ -19,9 +19,16 @@ declare module 'magnet-uri' {
     announce?: string[]
     tr?: string | string[]
     peerAddresses?: string[]
+    /** `as` and `ws` together (BEP 19 web seeds). */
+    urlList?: string[]
   }
   export default function magnet(uri: string): MagnetData
-  export function encode(data: { infoHash: string; name?: string; announce?: string[] }): string
+  export function encode(data: {
+    infoHash: string
+    name?: string
+    announce?: string[]
+    urlList?: string[]
+  }): string
 }
 
 declare module 'bittorrent-protocol' {

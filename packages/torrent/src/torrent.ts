@@ -23,6 +23,8 @@ import type { Priority, Storage } from './storage.ts'
 import { createStorage } from './storage.ts'
 import type { AnnounceEvent, TrackerStatus } from './trackers.ts'
 import { announce, createTrackerSet } from './trackers.ts'
+import type { WebSeedStatus } from './webseed.ts'
+import { createWebSeeds, WEB_KEY } from './webseed.ts'
 
 /** The engine's states, as the prototype's `TorrentState` less what belongs to `downloads`. */
 export type EngineState =
@@ -80,6 +82,8 @@ export type SessionContext = {
   encryption?(): EncryptionPolicy
   /** On the IP blocklist (6b): never connected to, whatever source named it. */
   blocked?(host: string): boolean
+  /** Tests only: web seeds' back-off and timeout (webseed.ts). */
+  webSeedOptions?: { backoff?: { firstMs: number; maxMs: number }; timeoutMs?: number }
 }
 
 export type SessionInit = {
@@ -130,6 +134,10 @@ export type SessionStats = {
   seeds: { connected: number; total: number }
   files: { path: string; size: number; progress: number; priority: Priority }[]
   trackers: TrackerStatus[]
+  /** BEP 19's web seeds and how each is doing. */
+  webSeeds: WebSeedStatus[]
+  /** Since when it's been trying to download, ms since the epoch; null while it isn't. */
+  downloadingSince: number | null
   /** When data last arrived, ms since the epoch; null if never. */
   lastDataAt: number | null
   completedAt: number | null
@@ -239,6 +247,7 @@ export function createSession(init: SessionInit, ctx: SessionContext) {
   let rechokes = 0
   let optimistic: string | null = null
   const trackers = createTrackerSet(metainfo?.trackers ?? init.magnet?.trackers ?? [])
+  let downloadingSince: number | null = null
   let completedAnnounced = init.completedAt !== null
   let fillTimer: ReturnType<typeof setTimeout> | null = null
   const isPrivate = () => metainfo?.private ?? false
@@ -278,6 +287,18 @@ export function createSession(init: SessionInit, ctx: SessionContext) {
   }
 
   if (metainfo) prepare(metainfo, init.have)
+
+  // BEP 19 (webseed.ts): from the `.torrent`, or a magnet's `ws`
+  const webSeeds = createWebSeeds(metainfo?.webSeeds ?? init.magnet?.webSeeds ?? [], {
+    sockets: ctx.sockets,
+    metainfo: () => metainfo,
+    picker: () => picker,
+    down: ctx.down,
+    active: () => running && state === 'downloading' && metainfo !== null,
+    receive: (key, b, data) => void onData(key, b, data),
+    log: (level, message, fields) => ctx.log(level, message, { infoHash, ...fields }),
+    ...ctx.webSeedOptions,
+  })
 
   // --- peers ---------------------------------------------------------------------------------
 
@@ -321,23 +342,28 @@ export function createSession(init: SessionInit, ctx: SessionContext) {
           picker?.release(peer.key, b)
           return
         }
-        void onBlock(peer, b, data)
+        onBlock(peer, b, data)
       })
     }
   }
 
-  const onBlock = async (peer: Peer, b: BlockRef, data: Uint8Array) => {
-    if (!picker || !metainfo || !have || !storage) return
+  const onBlock = (peer: Peer, b: BlockRef, data: Uint8Array) => {
     peer.down.add(data.length)
+    void onData(peer.key, b, data, () => fill(peer))
+  }
+
+  /** A block from a peer or a web seed: counted, put in its piece, and the piece checked. */
+  const onData = async (key: string, b: BlockRef, data: Uint8Array, then?: () => void) => {
+    if (!picker || !metainfo || !have || !storage) return
     down.add(data.length)
     lastDataAt = Date.now()
-    const res = picker.arrived(peer.key, b.piece, b.offset, data)
+    const res = picker.arrived(key, b.piece, b.offset, data)
     if (res)
       for (const k of res.cancel) {
         const other = peers.get(k)
         if (other?.requests.has(blockKey(b))) other.wire.cancel(b.piece, b.offset, b.length)
       }
-    fill(peer)
+    then?.()
     if (!res?.piece) return
     const piece = b.piece
     const bytes = res.piece
@@ -354,6 +380,11 @@ export function createSession(init: SessionInit, ctx: SessionContext) {
     if (!picker || !have || !storage) return
     if (!ok) {
       for (const [k, share] of picker.checked(piece, false)) {
+        // a web seed that sent part of a bad piece is wrong about the torrent: dropped at once
+        if (k.startsWith(WEB_KEY)) {
+          webSeeds.bad(k)
+          continue
+        }
         const total = (badShare.get(k) ?? 0) + share
         badShare.set(k, total)
         const p = peers.get(k)
@@ -381,6 +412,7 @@ export function createSession(init: SessionInit, ctx: SessionContext) {
     }
     ctx.changed()
     if (allWantedIn()) finish()
+    else webSeeds.wake()
   }
 
   const onRequest = (
@@ -664,6 +696,13 @@ export function createSession(init: SessionInit, ctx: SessionContext) {
   // --- trackers ------------------------------------------------------------------------------
 
   let trackerBackoff = 60
+  /** What was last logged about the trackers, so a repeat isn't logged again. */
+  let trackerNote: string | null = null
+  const noteTrackers = (level: 'info' | 'warn', note: string, fields: Record<string, unknown>) => {
+    if (note === trackerNote) return
+    trackerNote = note
+    ctx.log(level, note, { infoHash, ...fields })
+  }
 
   const sendAnnounce = (event: AnnounceEvent, timeoutMs?: number) =>
     trackers.announce((url) =>
@@ -692,6 +731,14 @@ export function createSession(init: SessionInit, ctx: SessionContext) {
     sendAnnounce(event)
       .then((res) => {
         trackerBackoff = 60
+        if (res.peers.length === 0)
+          noteTrackers('info', 'A tracker answered with no peers.', {
+            tracker: res.url,
+            seeders: res.seeders,
+            leechers: res.leechers,
+            webSeeds: webSeeds.usable(),
+          })
+        else trackerNote = null
         addPeers(
           res.peers.map((p) =>
             p.host.includes(':') ? `[${p.host}]:${p.port}` : `${p.host}:${p.port}`,
@@ -702,6 +749,11 @@ export function createSession(init: SessionInit, ctx: SessionContext) {
       })
       .catch((e) => {
         if (e instanceof Unbound) return
+        // every tracker failed: each one's reason is in the detail sheet's Trackers tab
+        noteTrackers('warn', 'No tracker answered.', {
+          trackers: trackers.statuses().map((t) => `${t.url}: ${t.message ?? t.status}`),
+          retryInSeconds: Math.min(trackerBackoff * 2, 30 * 60),
+        })
         trackerBackoff = Math.min(trackerBackoff * 2, 30 * 60)
         schedule(trackerBackoff)
       })
@@ -744,7 +796,10 @@ export function createSession(init: SessionInit, ctx: SessionContext) {
       return
     }
     if (allWantedIn()) finish()
-    else for (const p of peers.values()) fill(p)
+    else {
+      for (const p of peers.values()) fill(p)
+      webSeeds.wake()
+    }
     ctx.changed()
   }
 
@@ -755,6 +810,8 @@ export function createSession(init: SessionInit, ctx: SessionContext) {
     if (completedAt === null) completedAt = Date.now()
     state = 'seeding'
     seedingSince = Date.now()
+    downloadingSince = null
+    webSeeds.stop()
     for (const p of peers.values()) if (p.wire.amInterested) p.wire.uninterested()
     void storage?.close()
     if (!completedAnnounced && running) announceLoop('completed')
@@ -789,6 +846,8 @@ export function createSession(init: SessionInit, ctx: SessionContext) {
     message = null
     if (state !== 'seeding') state = metainfo && allWantedIn() ? 'seeding' : 'downloading'
     if (state === 'seeding') seedingSince = Date.now()
+    else downloadingSince = Date.now()
+    trackerNote = null
     // a fresh start tries everyone again: the binding came back, or the owner resumed
     for (const c of candidates.values()) c.next = 0
     if (init.magnet) addPeers(init.magnet.peers)
@@ -820,6 +879,7 @@ export function createSession(init: SessionInit, ctx: SessionContext) {
         ctx.dhtAnnounce(infoHash)
       })
     connectMore()
+    webSeeds.start()
     ctx.changed()
   }
 
@@ -827,6 +887,8 @@ export function createSession(init: SessionInit, ctx: SessionContext) {
   const halt = (announceStopped: boolean): Promise<void> => {
     if (!running) return Promise.resolve()
     running = false
+    downloadingSince = null
+    webSeeds.stop()
     if (seedingSince) {
       seedingMs += Date.now() - seedingSince
       seedingSince = null
@@ -1039,6 +1101,10 @@ export function createSession(init: SessionInit, ctx: SessionContext) {
       picker?.prune()
       if (state === 'seeding' && !allWantedIn()) {
         state = running ? 'downloading' : 'queued'
+        if (running) {
+          downloadingSince = Date.now()
+          webSeeds.start()
+        }
         if (seedingSince) seedingMs += Date.now() - seedingSince
         seedingSince = null
       } else if (running && state === 'downloading' && allWantedIn()) finish()
@@ -1046,6 +1112,7 @@ export function createSession(init: SessionInit, ctx: SessionContext) {
         updateInterest(p)
         fill(p)
       }
+      webSeeds.wake()
       ctx.changed()
     },
 
@@ -1136,6 +1203,8 @@ export function createSession(init: SessionInit, ctx: SessionContext) {
             }))
           : [],
         trackers: trackers.statuses(),
+        webSeeds: webSeeds.statuses(),
+        downloadingSince,
         lastDataAt,
         completedAt,
         seedingMs: totalSeedingMs(),

@@ -760,7 +760,7 @@ function QueueRows({ items, layout }: { items: QueueItem[]; layout: 'table' | 'm
               />
               <Fig numberOfLines={1}>
                 {q.state === 'downloading'
-                  ? `${rate(q.downRate)} · ${q.eta ? t('activity.left', { duration: duration(q.eta, locale) }) : dash}`
+                  ? `${rate(q.downRate)} · ${t('activity.peersOf', { seeds: q.seeds.connected, peers: q.peers.connected })} · ${q.eta ? t('activity.left', { duration: duration(q.eta, locale) }) : dash}`
                   : (q.stateReason ?? bytes(q.size))}
               </Fig>
             </View>
@@ -781,6 +781,8 @@ function QueueRows({ items, layout }: { items: QueueItem[]; layout: 'table' | 'm
             <TableHead>{t('activity.progress')}</TableHead>
             <TableHead numeric>{t('activity.down')}</TableHead>
             {full ? <TableHead numeric>{t('activity.up')}</TableHead> : null}
+            {/* seeds/peers connected, as Downloads shows them (the owner's ask, 2026-11-19) */}
+            <TableHead numeric>{t('activity.peers')}</TableHead>
             <TableHead numeric>{t('activity.eta')}</TableHead>
             <TableHead>{t('activity.status')}</TableHead>
           </TableRow>
@@ -819,6 +821,7 @@ function QueueRows({ items, layout }: { items: QueueItem[]; layout: 'table' | 'm
                 </TableCell>
                 <TableCell numeric>{q.downRate ? rate(q.downRate) : dash}</TableCell>
                 {full ? <TableCell numeric>{q.upRate ? rate(q.upRate) : dash}</TableCell> : null}
+                <TableCell numeric>{`${q.seeds.connected}/${q.peers.connected}`}</TableCell>
                 <TableCell numeric>
                   {q.state === 'downloading' && q.eta
                     ? duration(q.eta, locale)

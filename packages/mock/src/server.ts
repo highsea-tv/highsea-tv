@@ -1201,6 +1201,8 @@ export function createApi(srv: MockServer, ctx: Ctx) {
       downRate: t.downRate,
       upRate: t.upRate,
       eta: t.eta,
+      peers: { ...t.peers },
+      seeds: { ...t.seeds },
       ratio: t.ratio,
       state: t.state,
       stateReason: t.stateReason,
