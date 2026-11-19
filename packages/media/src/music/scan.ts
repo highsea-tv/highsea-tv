@@ -38,7 +38,7 @@ import {
 import { artistKey, type GroupedAlbum, groupAlbum } from './group.ts'
 import { createTagReader, type TrackRead } from './tags.ts'
 
-const { musicArtists, musicAlbums, musicTracks, musicUnmatched } = schema
+const { musicArtists, musicAlbums, musicMatches, musicTracks, musicUnmatched } = schema
 
 export const MUSIC_SCAN_JOB = 'music.scan'
 
@@ -287,6 +287,35 @@ export function createMusicScan(ctx: MusicDeps, deps: { media: Media; afterScan:
       .run()
 
   /**
+   * The owner's Match for a folder the scan set aside (`music_matches`): its album artist, album
+   * and year laid over every track's tags, so the folder groups as one album, at this scan and every
+   * one after. The files and their tags stay as they are; a year that differs drops the tags' date.
+   */
+  function matched<R extends { read: TrackRead | null }>(path: string, reads: R[]): R[] {
+    const m = db.select().from(musicMatches).where(eq(musicMatches.path, path)).get()
+    if (!m) return reads
+    return reads.map((r) => {
+      if (!r.read) return r
+      const t = r.read.tags
+      const keepDate = m.year !== null && t.date?.startsWith(String(m.year))
+      return {
+        ...r,
+        read: {
+          ...r.read,
+          tags: {
+            ...t,
+            album: m.album,
+            albumArtist: m.artist,
+            year: m.year,
+            date: keepDate ? t.date : null,
+            compilation: false,
+          },
+        },
+      }
+    })
+  }
+
+  /**
    * Scans every Music root folder, or only `folder` (an artist's or album's folder, after a change
    * seen by watching) when it's inside one.
    */
@@ -359,7 +388,7 @@ export function createMusicScan(ctx: MusicDeps, deps: { media: Media; afterScan:
           reads.push({ found: t, read })
         }
         const nfo = await readMusicNfo(f.nfo)
-        const outcome = groupAlbum(reads, nfo)
+        const outcome = groupAlbum(matched(f.path, reads), nfo)
         const artistFolder = artistFolderOf(root, f.path)
         if (outcome.ok && artistFolder && !artistFiles.has(artistFolder))
           artistFiles.set(artistFolder, await artistFolderFiles(artistFolder))

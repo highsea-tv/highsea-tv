@@ -56,3 +56,7 @@ A film TMDB answered 404 for is marked gone (`markGone`): its old row stays, wit
 - fanart.tv's images are cached and resized like TMDB's (`image_cache`). The `bigpreview` keeps the dialog's grid small.
 - The catch-up job and the gone retry mean a boot after an update starts any missing refetch within minutes rather than at the next daily sweep.
 - Left for later: shows and artists (the rows above), local artwork files as a third source (an `owner/id` file read beside the cache, with `source: 'local'`, ranked before both), and a Health line when highsea's project key is refused.
+
+## 2026-11-19: artists' pictures (phase 5 D; HT-101)
+
+An artist with a MusicBrainz id and no picture in their folder gets fanart.tv's `artistthumb` (`/v3/music/{mbid}`, the API's Music section, https://fanarttv.docs.apiary.io/#reference/music), the most liked first: the square picture Kodi and Lidarr show. It goes through the same seam as a film's art (`fanart_images` with the `artist` subject, asked again after a month, a week when it had nothing; `packages/metadata/src/musicbrainz/artist-art.ts`), and the music metadata job asks it, never a request. The image route fetches the picture once and keeps it under `images/music/` (0065's section of this date). With fanart.tv off, an artist shows its initials, as before.

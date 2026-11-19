@@ -475,6 +475,69 @@ export async function seed(
   }
   await api('PATCH', '/settings/subtitles', { minConfidence: settings.minConfidence }, token)
 
+  // music (Phase 5 D, HT-101): an album of three tagged FLAC tones with its folder's cover, and a
+  // folder whose files carry no tags, so Music's pages, its album and Unmatched have something to
+  // show. No MusicBrainz ids in the tags, so nothing is looked up.
+  const musicRoot = join(dataDir, 'music')
+  const albumDir = join(musicRoot, 'The Hollow Pines', 'Quiet Rooms (2021)')
+  const loose = join(musicRoot, 'Loose ends')
+  mkdirSync(albumDir, { recursive: true })
+  mkdirSync(loose, { recursive: true })
+  const tool = (args: string[]) =>
+    execFileSync('ffmpeg', ['-v', 'error', '-y', '-nostdin', ...args], { timeout: 30_000 })
+  // https://ffmpeg.org/ffmpeg-filters.html#sinc (the sine source) and #color
+  tool([
+    '-f',
+    'lavfi',
+    '-i',
+    'color=c=0x2d4a3e:s=600x600',
+    '-frames:v',
+    '1',
+    join(albumDir, 'folder.jpg'),
+  ])
+  for (const [n, title] of ['Low Light', 'Paper Walls', 'The Long Hall'].entries())
+    tool([
+      '-f',
+      'lavfi',
+      '-i',
+      `sine=frequency=${330 + n * 110}:duration=${20 + n * 5}`,
+      '-metadata',
+      `title=${title}`,
+      '-metadata',
+      'artist=The Hollow Pines',
+      '-metadata',
+      'album_artist=The Hollow Pines',
+      '-metadata',
+      'album=Quiet Rooms',
+      '-metadata',
+      'date=2021',
+      '-metadata',
+      `track=${n + 1}/3`,
+      '-metadata',
+      'genre=Folk',
+      join(albumDir, `0${n + 1} ${title}.flac`),
+    ])
+  tool(['-f', 'lavfi', '-i', 'sine=frequency=220:duration=10', join(loose, 'voice memo.flac')])
+  const musicFolder = await api<{ id: string }>(
+    'POST',
+    '/rootfolders',
+    { path: musicRoot, kind: 'music' },
+    token,
+  )
+  await api('POST', `/rootfolders/${musicFolder.id}/scan`, undefined, token)
+  let music = { artist: '', album: '' }
+  for (let i = 0; ; i++) {
+    type Album = { id: string; artist: { id: string } }
+    const albums = await api<Album[]>('GET', '/albums', undefined, token)
+    const waiting = await api<unknown[]>('GET', '/albums/unmatched', undefined, token)
+    if (albums[0] && waiting.length > 0) {
+      music = { artist: albums[0].artist.id, album: albums[0].id }
+      break
+    }
+    if (i > 120) throw new Error('the music scan didn’t find the album and the loose folder')
+    await Bun.sleep(250)
+  }
+
   // 8c: an announcement (its banner shows on every admin page too) and a hand-picked section
   const curated = {
     audience: { kind: 'everyone' },
@@ -606,5 +669,17 @@ export async function seed(
     }
     await importFolders(folders)
   }
-  return { token, invite, reset, pairing, notice, picks, drawsOn, decade, handPicked, nothingYet }
+  return {
+    token,
+    invite,
+    reset,
+    pairing,
+    notice,
+    picks,
+    drawsOn,
+    decade,
+    handPicked,
+    nothingYet,
+    music,
+  }
 }

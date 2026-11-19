@@ -156,7 +156,37 @@ export function createMusicBrainzClient({
     }
   }
 
+  /**
+   * A cover from the Cover Art Archive, at an address its list gave (`frontCover`): only its own
+   * host is asked, and its redirect to the Internet Archive, where the files are, is followed
+   * (https://musicbrainz.org/doc/Cover_Art_Archive/API, "the Cover Art Archive will redirect").
+   * Throws `musicbrainz-unavailable` when it can't be reached; any other answer is the caller's.
+   */
+  async function image(url: string): Promise<Response> {
+    const u = new URL(url)
+    if (u.protocol !== 'https:' || u.hostname !== new URL(COVER_ART_API).hostname)
+      throw new AppError('not-found', 'There’s no image at that address.')
+    if (clock.now() < restingUntil) throw unavailable()
+    try {
+      return await queues.coverart(() =>
+        fetch(u, {
+          headers: { accept: 'image/*', 'user-agent': headers['user-agent'] },
+          redirect: 'follow',
+          signal: AbortSignal.timeout(timeoutMs),
+        }),
+      )
+    } catch (e) {
+      const network =
+        e instanceof TypeError ||
+        (e instanceof DOMException && (e.name === 'TimeoutError' || e.name === 'AbortError'))
+      if (!network) throw e
+      rest((e as Error).name)
+      throw unavailable()
+    }
+  }
+
   return {
+    image,
     lookup: <T>(entity: MusicBrainzEntity, mbid: string) =>
       get<T>('musicbrainz', musicBrainzUrl(entity, mbid)),
     coverArt: <T>(releaseGroupId: string) => get<T>('coverart', coverArtUrl(releaseGroupId)),

@@ -235,6 +235,8 @@ export function createMusicBrainzSource(deps: {
       )
       return r ? frontCover(r) : null
     },
+    /** A cover's bytes from the Cover Art Archive, at an address `cover` gave. */
+    coverImage: client.image,
     /** Whether MusicBrainz is resting after a failure. */
     resting: client.resting,
   }

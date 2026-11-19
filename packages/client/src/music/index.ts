@@ -35,7 +35,8 @@ type Album = {
   id: string
   title: string
   sortTitle: string
-  year: number
+  /** Null when the files and MusicBrainz give none: sorted as the oldest. */
+  year: number | null
   addedAt: string
   genres: string[]
   kind: AlbumKind
@@ -46,6 +47,8 @@ type Artist = { sortName: string; addedAt: string }
 
 /** An artist's name as the index files it: "The Gate" under G, as Apple Music does. */
 const artistKey = (a: Pick<Album, 'artist'>) => a.artist.name.replace(/^(the|a)\s+/i, '')
+/** An album's year for sorting: one without a year counts as the oldest. */
+const yearOf = (a: Pick<Album, 'year'>) => a.year ?? 0
 /** A song's title as the index files it. */
 const titleKey = (s: Pick<Song, 'title'>) => s.title.replace(/^(the|a)\s+/i, '')
 
@@ -59,9 +62,9 @@ export function arrangeAlbums<A extends Album>(albums: A[], genre: string, sort:
     sort === 'added'
       ? Date.parse(b.addedAt) - Date.parse(a.addedAt) || a.sortTitle.localeCompare(b.sortTitle)
       : sort === 'year'
-        ? b.year - a.year || a.sortTitle.localeCompare(b.sortTitle)
+        ? yearOf(b) - yearOf(a) || a.sortTitle.localeCompare(b.sortTitle)
         : sort === 'artist'
-          ? artistKey(a).localeCompare(artistKey(b)) || a.year - b.year
+          ? artistKey(a).localeCompare(artistKey(b)) || yearOf(a) - yearOf(b)
           : a.sortTitle.localeCompare(b.sortTitle),
   )
 }
@@ -82,7 +85,7 @@ export function arrangeSongs<S extends Song>(songs: S[], genre: string, sort: So
         ? b.plays - a.plays || titleKey(a).localeCompare(titleKey(b))
         : sort === 'artist'
           ? artistKey(a.album).localeCompare(artistKey(b.album)) ||
-            a.album.year - b.album.year ||
+            yearOf(a.album) - yearOf(b.album) ||
             inAlbum(a, b)
           : sort === 'album'
             ? inAlbum(a, b)
@@ -219,7 +222,13 @@ export function createMusicText(locale = 'en') {
       songs === 0 ? t('noSongs') : albumSummary(songs, seconds),
     /** "Album · 2019", "EP · 2024": the kind only when it isn't a plain album. */
     albumMeta: (a: Pick<Album, 'kind' | 'year'>) =>
-      a.kind === 'album' ? String(a.year) : t('meta', { kind: albumKind[a.kind], year: a.year }),
+      a.year === null
+        ? a.kind === 'album'
+          ? ''
+          : albumKind[a.kind]
+        : a.kind === 'album'
+          ? String(a.year)
+          : t('meta', { kind: albumKind[a.kind], year: a.year }),
     /** "Album", "EP", "Soundtrack": the eyebrow over an album's title. */
     albumKind,
     /** Each group's heading on an artist's page. */

@@ -99,8 +99,7 @@ export const Disk = z
     total: z.number(),
     /**
      * What uses the disk, in bytes: the movies, the downloads, and everything else. `music` is the
-     * Music folders' tracks, drafted with HT-68 for Phase 5's part D: the server leaves it out (and
-     * counts them in `other`) until it has music.
+     * Music folders' tracks (Phase 5 D, HT-101).
      */
     usedBy: z.object({
       movies: z.number(),

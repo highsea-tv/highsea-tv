@@ -62,6 +62,7 @@ export const musicScreenMessages = defineMessages({
   // an album
   scoreFor: 'The score for {title}',
   copyright: '© {year} {label}',
+  copyrightNoYear: '© {label}',
   moreBy: 'More by {artist}',
   seeAll: 'See all',
   albumMissing: 'This album isn’t here',

@@ -166,7 +166,9 @@ function Rows({
                 src={media(m.cover)}
                 width={widths.album}
                 showTitle
-                caption={kind === 'singles' ? text.albumMeta(m) : String(m.year)}
+                caption={
+                  kind === 'singles' ? text.albumMeta(m) : m.year === null ? '' : String(m.year)
+                }
                 onPress={() => router.push(albumPath(m.id))}
               />
             )}

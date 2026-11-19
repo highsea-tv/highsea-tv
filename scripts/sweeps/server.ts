@@ -289,8 +289,19 @@ try {
   )
 
   // finish setup and seed what the pages show
-  const { token, invite, reset, pairing, notice, picks, drawsOn, decade, handPicked, nothingYet } =
-    await seed(server, OWNER, 'Sweep script')
+  const {
+    token,
+    invite,
+    reset,
+    pairing,
+    notice,
+    picks,
+    drawsOn,
+    decade,
+    handPicked,
+    nothingYet,
+    music,
+  } = await seed(server, OWNER, 'Sweep script')
   // Now playing (4.3a): the owner plays Sintel through the API, as the web player would, and the
   // page is read again with the session on it. Passes run at once against one server, so the page
   // may show another pass's stream beside this one: the first is enough
@@ -687,6 +698,24 @@ try {
             .click(),
       },
       { name: 'discover:shows', path: '/discover/shows' },
+      // music (Phase 5 D, HT-101): the artists, the albums, one artist and its album with the
+      // album's files, and the folder the tags can't place with its Match dialog
+      { name: 'music', path: '/music' },
+      { name: 'music:albums', path: '/music/albums' },
+      { name: 'music:artist', path: `/music/artists/${music.artist}` },
+      { name: 'music:album', path: `/music/albums/${music.album}` },
+      { name: 'music:album:files', path: `/music/albums/${music.album}/files` },
+      { name: 'music:album:missing', path: '/music/albums/al_none' },
+      { name: 'music:unmatched', path: '/music/unmatched' },
+      {
+        name: 'music:unmatched:match',
+        path: '/music/unmatched',
+        act: (p) =>
+          p
+            .getByRole('button', { name: /^Match / })
+            .first()
+            .click(),
+      },
       {
         name: 'import:library:shows',
         path: `/activity/import?mode=library&root=${encodeURIComponent(join(dataDir, 'tv'))}`,

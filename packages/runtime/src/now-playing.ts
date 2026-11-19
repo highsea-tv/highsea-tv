@@ -135,6 +135,15 @@ export function createNowPlaying(deps: {
   device(deviceId: string): { name: string; client: ClientType } | null
   /** A title's poster; an episode's (by its library row) is its show's. */
   poster(tmdbId: number, itemId?: string | null): string | null
+  /**
+   * Music's plays (HT-101): live, with each song's artist and album, the just-stopped ones, and
+   * their history; kept by music's own playback, beside the films' here.
+   */
+  music?: {
+    sessions(): StreamSession[]
+    history(userId?: string): WatchRecord[]
+    prune(): number
+  }
   /** A new watch began: not a restart for another track, which joins the one before. */
   onStarted?(p: {
     sessionId: string
@@ -219,15 +228,19 @@ export function createNowPlaying(deps: {
       const f = facts.get(s.id)
       return f && s.decision.method !== 'unplayable' ? [view(s, f, null)] : []
     })
-    const sessions = [...live, ...[...lingering.values()].map((l) => l.view)].sort(
+    const songs = deps.music?.sessions() ?? []
+    const sessions = [...live, ...songs, ...[...lingering.values()].map((l) => l.view)].sort(
       (a, b) => Date.parse(b.startedAt) - Date.parse(a.startedAt),
     )
-    const sending = live.filter((s) => s.state === 'playing')
+    const sending = [...live, ...songs.filter((s) => !s.stopped)].filter(
+      (s) => s.state === 'playing',
+    )
     const sum = (xs: StreamSession[]) => Math.round(xs.reduce((n, s) => n + s.mbps, 0) * 10) / 10
     return {
       sessions,
       totalMbps: sum(sending),
       remoteMbps: sum(sending.filter((s) => s.network === 'remote')),
+      // a song's AAC is made whole before it plays, so no song counts as a running transcode
       transcodes: live.filter((s) => s.method === 'transcode' && s.state !== 'waiting').length,
     }
   }
@@ -378,8 +391,16 @@ export function createNowPlaying(deps: {
       .run()
   }
 
-  /** The last 30 days, newest first; one person's when asked. */
+  /** The last 30 days, films and songs together, newest first; one person's when asked. */
   function history(userId?: string): WatchRecord[] {
+    const songs = deps.music?.history(userId) ?? []
+    if (songs.length === 0) return films(userId)
+    return [...films(userId), ...songs].sort(
+      (a, b) => Date.parse(b.startedAt) - Date.parse(a.startedAt),
+    )
+  }
+
+  function films(userId?: string): WatchRecord[] {
     const since = clock.now() - KEEP_HISTORY_MS
     const rows = db
       .select({ row: playbackHistory, displayName: users.displayName })
@@ -427,7 +448,7 @@ export function createNowPlaying(deps: {
     type: HISTORY_PRUNE_JOB,
     payload: z.object({}),
     async run() {
-      const n = prune()
+      const n = prune() + (deps.music?.prune() ?? 0)
       if (n) log.info('Pruned the playback history', { removed: n })
     },
   })
