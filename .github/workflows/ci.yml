@@ -59,17 +59,28 @@ on:
   workflow_call:
 
 # A pull request's newer run cancels its older one, which tested a commit that's no longer its
-# head. A push to next or main, and a release, are never cancelled: the group is the run's own
-# (`github.run_id`), so nothing else is ever in it, and `cancel-in-progress` is false for them. One
-# group per branch would still cancel a *pending* run when a third arrives, whatever
-# `cancel-in-progress` says, and next → main reuses next's run for its commit
+# head. Since 2026-11-19 a push to next does too: the group is the branch's, with
+# `cancel-in-progress`, so a newer push cancels the run of the commit it replaces, pending or in
+# progress, and only next's newest commit keeps a run
 # (https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#concurrency,
 # https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-workflow-concurrency).
-# A called workflow's `github` context is its caller's, so a release's run is its own as well
+# Nothing reads a superseded commit's run: the next → main pull request reuses next's run only
+# when its head is next's commit now (.github/scripts/reuse-next.sh), and a release starts from
+# next's commit and reuses next's run for that one alone (.github/scripts/reuse-release.sh). Before,
+# each push to next had a group of its own so that no run of next was ever cancelled; after a night
+# of merges four runs of each workflow were queued, and the 0.4.7 release's macOS job waited 27
+# minutes for a runner (2026-11-19). A merge into next while a release waits on next's run cancels
+# that run, and the release then runs the checks itself; the release fast-forwards next at its
+# end, so nothing should be merged into next while one runs anyway.
+#
+# A push to main and a release are never cancelled: the group is the run's own (`github.run_id`),
+# so nothing else is ever in it, and `cancel-in-progress` is false for them. A called workflow's
+# `github` context is its caller's, so a release's run is its own as well, its event being
+# workflow_dispatch even when it runs from next
 # (https://docs.github.com/en/actions/reference/workflows-and-actions/reusing-workflow-configurations).
 concurrency:
-  group: ci-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  group: ci-${{ (github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/next')) && github.ref || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/next') }}
 
 permissions:
   contents: read
@@ -239,17 +250,15 @@ jobs:
       # used up the step's 3 minutes on every attempt (the jobs' logs, 2026-11-11: "Temporary
       # failure resolving 'azure.archive.ubuntu.com'"). So the name is looked up once first, and
       # when it doesn't resolve its line comes off the list and apt goes straight to the others.
+      # Since 2026-11-19 that and the rest go through .github/scripts/apt.sh, which every
+      # workflow's apt steps share: each download is tried up to three times under its own time
+      # limit, and a slow or failed try takes Azure off the list for the next.
       #
       # Only Bun's tests probe and extract; Jest's render the client's screens.
       - name: The apt index
         if: matrix.runner == 'bun'
-        timeout-minutes: 3
-        run: |
-          if ! timeout 10 getent hosts azure.archive.ubuntu.com > /dev/null; then
-            echo "::warning::azure.archive.ubuntu.com doesn't resolve; using the image's other mirrors"
-            sudo sed -i '/azure\.archive\.ubuntu\.com/d' /etc/apt/apt-mirrors.txt
-          fi
-          sudo apt-get update
+        timeout-minutes: 4
+        run: bash .github/scripts/apt.sh update
       - name: The apt packages' versions
         if: matrix.runner == 'bun'
         id: apt
@@ -264,11 +273,10 @@ jobs:
           restore-keys: apt-${{ runner.os }}-${{ runner.arch }}-ffmpeg-unar-
       - name: ffmpeg and unar
         if: matrix.runner == 'bun'
-        timeout-minutes: 8
+        timeout-minutes: 12
         run: |
           archives="$HOME/apt-archives"
-          mkdir -p "$archives/partial"
-          sudo apt-get install -y --no-install-recommends -o Dir::Cache::Archives="$archives" ffmpeg unar
+          APT_ARCHIVES="$archives" bash .github/scripts/apt.sh install ffmpeg unar
           sudo apt-get autoclean -o Dir::Cache::Archives="$archives"
           # apt's lock and partial downloads are root's; the cache saves the .debs as the runner
           sudo rm -rf "$archives/lock" "$archives/partial"
@@ -445,13 +453,8 @@ jobs:
       # long (https://playwright.dev/docs/ci#caching-browsers).
       - name: The apt index
         if: *build
-        timeout-minutes: 3
-        run: |
-          if ! timeout 10 getent hosts azure.archive.ubuntu.com > /dev/null; then
-            echo "::warning::azure.archive.ubuntu.com doesn't resolve; using the image's other mirrors"
-            sudo sed -i '/azure\.archive\.ubuntu\.com/d' /etc/apt/apt-mirrors.txt
-          fi
-          sudo apt-get update
+        timeout-minutes: 4
+        run: bash .github/scripts/apt.sh update
       - name: The apt packages and their versions
         if: *build
         id: apt
@@ -477,14 +480,13 @@ jobs:
             apt-${{ runner.os }}-${{ runner.arch }}-ffmpeg-unar-
       - name: ffmpeg and the browsers' system packages
         if: *build
-        timeout-minutes: 8
+        timeout-minutes: 12
         env:
           PACKAGES: ${{ steps.apt.outputs.packages }}
         run: |
           archives="$HOME/apt-archives"
-          mkdir -p "$archives/partial"
           # shellcheck disable=SC2086 # one word per package
-          sudo apt-get install -y --no-install-recommends -o Dir::Cache::Archives="$archives" $PACKAGES
+          APT_ARCHIVES="$archives" bash .github/scripts/apt.sh install $PACKAGES
           sudo apt-get autoclean -o Dir::Cache::Archives="$archives"
           sudo rm -rf "$archives/lock" "$archives/partial"
           sudo chown -R "$(id -u):$(id -g)" "$archives"
@@ -536,9 +538,13 @@ jobs:
           restore-keys: bun-${{ runner.os }}-${{ runner.arch }}-
       - if: *build
         run: bun install --frozen-lockfile
+      # through the shared apt steps (.github/scripts/apt.sh), each with its own limit
       - name: Install wireguard-tools and iproute2
         if: *build
-        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends wireguard-tools iproute2
+        timeout-minutes: 8
+        run: |
+          bash .github/scripts/apt.sh update
+          bash .github/scripts/apt.sh install wireguard-tools iproute2
       - name: The leak test
         if: *build
         run: sudo env "PATH=$PATH" HIGHSEA_LEAK_TEST=1 "$(command -v bun)" test packages/vpn/test/leak.test.ts
