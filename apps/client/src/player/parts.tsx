@@ -25,6 +25,7 @@ import {
   playNext,
   SEEK_S,
   SPEEDS,
+  shuffleUpNext,
   streamState,
   titlePage,
   trickplayTile,
@@ -32,6 +33,14 @@ import {
 } from '@highsea-tv/client/player'
 import { usePlaybackPrefs } from '@highsea-tv/client/prefs'
 import { episodePlayPath } from '@highsea-tv/client/shows'
+import {
+  endShuffle,
+  handOn,
+  type Shuffle,
+  shuffleNext,
+  shufflePath,
+  shufflePrevious,
+} from '@highsea-tv/client/shuffle'
 import type { T } from '@highsea-tv/i18n'
 import { useT } from '@highsea-tv/i18n/react'
 import { useMedia } from '@highsea-tv/native/media'
@@ -91,16 +100,30 @@ function episodeUpNext(n: ClientDetail | null, season: number | null): FilmUpNex
   }
 }
 
-/** The next title takes the player's place: an episode's own address, or a film's. */
-const go = (kind: FilmUpNext['kind'], to: number) =>
-  kind === 'episode' ? router.replace(episodePlayPath(to) as Href) : playNext(router, to)
+/**
+ * The next title takes the player's place: an episode's own address, or a film's; a shuffle's
+ * item from its start, still in the shuffle.
+ */
+const go = (kind: FilmUpNext['kind'], to: number, type: TitleType) =>
+  kind === 'shuffle'
+    ? router.replace(shufflePath(type === 'episode' ? 'episode' : 'movie', to) as Href)
+    : kind === 'episode'
+      ? router.replace(episodePlayPath(to) as Href)
+      : playNext(router, to)
 
 /**
  * The player's clock and what it decides: the time the screen draws at, moved on only when
  * something is due (Buffering's delay, or the controls hiding); the stream's state; Next up, its
- * countdown and the next film playing at zero; the trickplay manifest; and leaving.
+ * countdown and the next film playing at zero; the trickplay manifest; and leaving. In a shuffle
+ * (`shuffle`), Next up, Next and Previous follow its order, and leaving ends it.
  */
-export function usePlayerModel(id: number, p: Playback, panel: boolean, type: TitleType = 'movie') {
+export function usePlayerModel(
+  id: number,
+  p: Playback,
+  panel: boolean,
+  type: TitleType = 'movie',
+  shuffle: Shuffle | null = null,
+) {
   const { state, dispatch } = p
   const [now, setNow] = useState(() => Date.now())
 
@@ -110,20 +133,43 @@ export function usePlayerModel(id: number, p: Playback, panel: boolean, type: Ti
       ? c.playback.trickplay({ params: { type, id }, query: { versionId } })
       : Promise.resolve(null),
   )
-  const nextUp = useQuery(`client:next:${type}:${id}`, (c) =>
-    c.playback.next({ params: { type, id } }),
+  // a shuffle asks the server for no next: its own order says what comes next
+  const nextUp = useQuery(`client:next:${type}:${id}:${shuffle ? 'shuffle' : ''}`, (c) =>
+    shuffle ? Promise.resolve(null) : c.playback.next({ params: { type, id } }),
   )
   const d = p.detail.data
+  const shuffleId = shuffle ? shuffleNext(shuffle) : null
+  const previousId = shuffle ? shufflePrevious(shuffle) : null
   // an episode's next is the next episode, read as a title for its place: the card says when a
-  // season starts (the prototype's client/stream-states.tsx). Films read nothing more
-  const nextEpisodeId = type === 'episode' ? (nextUp.data?.item?.id ?? 0) : 0
+  // season starts (the prototype's client/stream-states.tsx). Films read nothing more, but in a
+  // shuffle, whose next is read the same way, an episode or a film
+  const nextEpisodeId = type === 'episode' ? (shuffleId ?? nextUp.data?.item?.id ?? 0) : 0
   const nextEpisode = useQuery(`client:episode:${nextEpisodeId}`, (c) =>
     nextEpisodeId
       ? c.library.item({ params: { type: 'episode', id: nextEpisodeId } })
       : Promise.resolve(null),
   )
-  const next: FilmUpNext | null =
-    type === 'episode'
+  const nextFilmId = type === 'movie' ? (shuffleId ?? 0) : 0
+  const nextFilm = useQuery(`client:shuffle-film:${nextFilmId}`, (c) =>
+    nextFilmId
+      ? c.library.item({ params: { type: 'movie', id: nextFilmId } })
+      : Promise.resolve(null),
+  )
+  const shuffled = shuffle
+    ? ((type === 'episode' ? nextEpisode.data : nextFilm.data) ?? null)
+    : null
+  const next: FilmUpNext | null = shuffle
+    ? shuffleUpNext(
+        shuffled
+          ? {
+              id: shuffled.item.id,
+              title: shuffled.item.title,
+              still: shuffled.item.art.backdrop,
+              episode: shuffled.episode ?? null,
+            }
+          : null,
+      )
+    : type === 'episode'
       ? episodeUpNext(nextEpisode.data ?? null, d?.episode?.season ?? null)
       : nextUp.data
         ? filmUpNext(
@@ -165,8 +211,17 @@ export function usePlayerModel(id: number, p: Playback, panel: boolean, type: Ti
 
   // at zero the next part plays; Cancel lets this one end as before. Choices never count down
   useEffect(() => {
-    if (stream === 'next-up' && left === 0 && counting && next) go(next.kind, next.id)
-  }, [stream, left, counting, next])
+    if (stream === 'next-up' && left === 0 && counting && next) {
+      if (shuffle) handOn(shuffle)
+      go(next.kind, next.id, type)
+    }
+  }, [stream, left, counting, next, type, shuffle])
+
+  const goShuffle = (to: number) => {
+    if (!shuffle) return
+    handOn(shuffle)
+    go('shuffle', to, type)
+  }
 
   const waiting = stream === 'preparing' || stream === 'buffering'
   const message = stream === 'failed' || stream === 'stopped'
@@ -183,9 +238,25 @@ export function usePlayerModel(id: number, p: Playback, panel: boolean, type: Ti
     counting,
     left,
     manifest: (trickplay.data?.manifest ?? null) as TrickplayManifest | null,
-    leave: () => leavePlayer(router, titlePage(d, id)),
+    leave: () => {
+      endShuffle()
+      leavePlayer(router, titlePage(d, id))
+    },
     /** Next up's Play now: the next episode, a collection's next part, or a choice. */
-    play: (to: number) => go(next?.kind ?? 'part', to),
+    play: (to: number) => {
+      if (shuffle) handOn(shuffle)
+      go(next?.kind ?? 'part', to, type)
+    },
+    /**
+     * A shuffle's Next and Previous (player.md › Shuffle), each from its start; null outside a
+     * shuffle. Either is null at its end: the first has no Previous, the last no Next.
+     */
+    shuffle: shuffle
+      ? {
+          next: shuffleId === null ? null : () => goShuffle(shuffleId),
+          previous: previousId === null ? null : () => goShuffle(previousId),
+        }
+      : null,
     cancelNext: () => dispatch({ type: 'cancel-next' }),
   }
 }
@@ -202,6 +273,7 @@ export function Round({
   filled,
   pressed,
   expanded,
+  disabled,
   onPress,
 }: {
   icon: IconName
@@ -214,22 +286,28 @@ export function Round({
   pressed?: boolean
   /** What it opens shows (Audio and subtitles). */
   expanded?: boolean
+  /** Nothing to do now: a shuffle's Previous at its first, its Next at its last. */
+  disabled?: boolean
   onPress: () => void
 }) {
   const theme = useTheme()
   return (
     <Press
       onPress={onPress}
+      disabled={disabled}
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityState={
-        pressed !== undefined
-          ? { checked: pressed }
-          : expanded !== undefined
-            ? { expanded }
-            : undefined
+        disabled
+          ? { disabled }
+          : pressed !== undefined
+            ? { checked: pressed }
+            : expanded !== undefined
+              ? { expanded }
+              : undefined
       }
       style={({ hovered }) => ({
+        opacity: disabled ? tokens.controls.disabledOpacity : 1,
         width: size,
         height: size,
         borderRadius: size / 2,
@@ -237,13 +315,55 @@ export function Round({
         justifyContent: 'center',
         backgroundColor: filled
           ? alpha(theme.colors.text, 0.14)
-          : hovered
+          : hovered && !disabled
             ? alpha(theme.colors.text, 0.12)
             : undefined,
       })}
     >
       <Icon name={icon} size={iconSize} color={tint ?? 'text'} />
     </Press>
+  )
+}
+
+/**
+ * A shuffle's Previous or Next (player.md › Shuffle) as one of the round controls: dimmed and
+ * still in its place at either end, so the controls don't move.
+ */
+export function ShuffleStep({
+  m,
+  step,
+  iconSize,
+  onPress,
+}: {
+  m: PlayerModel
+  step: 'previous' | 'next'
+  iconSize?: number
+  /** Also on pressing: touch wakes the controls. */
+  onPress?: () => void
+}) {
+  const t = useT(messages)
+  const go = m.shuffle?.[step] ?? null
+  return (
+    <Round
+      icon={step}
+      iconSize={iconSize}
+      label={t(step === 'next' ? 'shuffleNext' : 'shufflePrevious')}
+      disabled={!go}
+      onPress={() => {
+        onPress?.()
+        go?.()
+      }}
+    />
+  )
+}
+
+/** A shuffle's Previous and Next side by side, for the pointer's row of controls. */
+export function ShuffleSteps({ m, iconSize }: { m: PlayerModel; iconSize?: number }) {
+  return (
+    <>
+      <ShuffleStep m={m} step="previous" iconSize={iconSize} />
+      <ShuffleStep m={m} step="next" iconSize={iconSize} />
+    </>
   )
 }
 
@@ -766,8 +886,12 @@ export function NextUpCard({
   )
 }
 
-/** Next up's heading: Next episode, or the season it starts, for an episode; Next up otherwise. */
+/**
+ * Next up's heading: Next episode, or the season it starts, for an episode; Next in shuffle in a
+ * shuffle; Next up otherwise.
+ */
 export function nextHeading(t: T<typeof messages>, next: Exclude<FilmUpNext, { kind: 'choices' }>) {
+  if (next.kind === 'shuffle') return t('nextInShuffle')
   if (next.kind !== 'episode') return t('nextUp')
   return next.season !== null ? t('seasonStarts', { season: next.season }) : t('nextEpisode')
 }

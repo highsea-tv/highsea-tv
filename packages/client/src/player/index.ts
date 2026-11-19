@@ -292,12 +292,13 @@ export const titleLines = (d: Titled | undefined) =>
 export const NEXT_CHOICES = 3
 
 /**
- * Next up (player.md › Next up): the next episode or a collection's next part, which counts down;
- * otherwise a few choices that play only when picked (prototype-gaps.md answer 4).
+ * Next up (player.md › Next up): the next episode, a collection's next part or a shuffle's next
+ * item, which counts down; otherwise a few choices that play only when picked (prototype-gaps.md
+ * answer 4).
  */
 export type UpNext<Item, Id = string | number, Still extends string | null = string | null> =
   | {
-      kind: 'episode' | 'part'
+      kind: 'episode' | 'part' | 'shuffle'
       id: Id
       title: string
       /** "S1, E2 · The Long Night", or the collection's name. */
@@ -327,6 +328,30 @@ export function filmUpNext<Item, Id, Still extends string | null>(
       season: null,
     }
   return related.length ? { kind: 'choices', items: related.slice(0, NEXT_CHOICES) } : null
+}
+
+/**
+ * A shuffle's Next up (player.md › Shuffle): its next item, an episode with its place as its line
+ * or a film, and nothing at the end, so the last item ends as any film does. It never falls back
+ * to the show's next episode or More like this.
+ */
+export function shuffleUpNext<Id, Still extends string | null>(
+  item: {
+    id: Id
+    title: string
+    still: Still
+    episode?: { code: string; title: string } | null
+  } | null,
+): UpNext<never, Id, Still> | null {
+  if (!item) return null
+  return {
+    kind: 'shuffle',
+    id: item.id,
+    title: item.episode?.title ?? item.title,
+    line: item.episode?.code ?? '',
+    still: item.still,
+    season: null,
+  }
 }
 
 /** Whether Next up counts down to play by itself: choices wait to be picked. */
