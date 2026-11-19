@@ -1,0 +1,40 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+name: A site moved or shut down
+description: A catalog indexer's site has a new address, or has closed.
+title: "[Moved] "
+labels: ["catalog", "indexer", "indexer-moved"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please never paste API keys, passkeys, cookies, or feed addresses that contain one. If a line has a key in it, remove the key first.
+  - type: input
+    id: indexer
+    attributes:
+      label: Which indexer
+      description: Its catalog id, as shown on the indexer's page in the admin.
+    validations:
+      required: true
+  - type: dropdown
+    id: change
+    attributes:
+      label: What happened
+      options:
+        - It moved to a new address
+        - It shut down
+    validations:
+      required: true
+  - type: input
+    id: new-address
+    attributes:
+      label: The new address
+      description: Leave empty if the site shut down.
+    validations:
+      required: false
+  - type: input
+    id: announcement
+    attributes:
+      label: Where the site announced it
+      description: A link to the site's own notice, such as its home page, social account, or status page.
+    validations:
+      required: true
