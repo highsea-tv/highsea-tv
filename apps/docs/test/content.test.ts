@@ -160,6 +160,8 @@ describe('the guides', () => {
       'settings/vpn/interface',
       'settings/vpn/port-forwarding',
       'settings/vpn/troubleshooting',
+      'shows/index',
+      'shows/unmatched',
       'subtitles/a-films-subtitles',
       'subtitles/index',
       'subtitles/languages',

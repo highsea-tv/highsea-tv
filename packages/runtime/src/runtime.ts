@@ -800,6 +800,9 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
   subtitles.seed()
   subtitles.defineJobs()
   subtitles.schedule()
+  // 0025 gave the shows imported before it their root folder's subtitle profile (HT-92): their
+  // episodes' wanted rows are written once, at the jobs' pace
+  if (applied.includes('0025_unmatched_dismissed')) subtitles.profileChanged()
   const stopSubtitles = subtitles.start()
   // Node's official builds carry full ICU, which decoding subtitles' legacy encodings needs
   // (https://nodejs.org/api/intl.html)

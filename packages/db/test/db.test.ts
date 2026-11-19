@@ -297,6 +297,7 @@ describe('0018_profiles', () => {
       '0022_unmatched_files',
       '0023_fanart',
       '0024_show_dismissals',
+      '0025_unmatched_dismissed',
     ])
     expect(result.backup).not.toBeNull()
     const once = state(first)
@@ -401,6 +402,7 @@ describe('0020_shows', () => {
       '0022_unmatched_files',
       '0023_fanart',
       '0024_show_dismissals',
+      '0025_unmatched_dismissed',
     ])
     expect(films(raw)).toEqual(was)
     expect(raw.all('SELECT count(*) AS n FROM media_items')).toEqual([{ n: 300 }])
@@ -548,6 +550,7 @@ describe('0020_shows', () => {
         '0022_unmatched_files',
         '0023_fanart',
         '0024_show_dismissals',
+        '0025_unmatched_dismissed',
       ])
       expect(all(raw)).toEqual(was)
       expect(raw.all('SELECT count(*) AS n FROM unmatched_files')).toEqual([{ n: 0 }])
@@ -602,12 +605,54 @@ describe('0020_shows', () => {
       test('adds the table and leaves the films, the show and its unmatched files as they were', () => {
         const { raw } = withUnmatched()
         const was = everything(raw)
-        expect(migrate(raw).applied).toEqual(['0024_show_dismissals'])
+        expect(migrate(raw, { all: migrations.filter((m) => m.tag < '0025') }).applied).toEqual([
+          '0024_show_dismissals',
+        ])
         expect(everything(raw)).toEqual(was)
         expect(raw.all('SELECT count(*) AS n FROM show_dismissals')).toEqual([{ n: 0 }])
         expect(raw.all('PRAGMA foreign_key_check')).toEqual([])
         expect(raw.all('PRAGMA integrity_check')).toEqual([{ integrity_check: 'ok' }])
+        expect(migrate(raw).applied).toEqual(['0025_unmatched_dismissed'])
         expect(migrate(raw).applied).toEqual([])
+        raw.close()
+      })
+
+      // HT-92: the owner's Ignore on an unmatched path
+      test('0025_unmatched_dismissed adds dismissed_at, null on the rows there', () => {
+        const { raw } = withUnmatched()
+        migrate(raw, { all: migrations.filter((m) => m.tag < '0025') })
+        const was = everything(raw)
+        expect(migrate(raw).applied).toEqual(['0025_unmatched_dismissed'])
+        const now = everything(raw)
+        expect(now.unmatched).toEqual(
+          (was.unmatched as Record<string, unknown>[]).map((r) => ({ ...r, dismissed_at: null })),
+        )
+        expect({ ...now, unmatched: was.unmatched }).toEqual(was)
+        expect(raw.all('PRAGMA integrity_check')).toEqual([{ integrity_check: 'ok' }])
+        raw.close()
+      })
+
+      test('0025 gives a show without a subtitle profile its root folder’s, and no film', () => {
+        const { raw } = withUnmatched()
+        migrate(raw, { all: migrations.filter((m) => m.tag < '0025') })
+        raw.run(
+          "INSERT INTO language_profiles (id, name, rules, min_score, created_at, updated_at) VALUES ('lp-en', 'English', '[]', 80, 1, 1)",
+        )
+        raw.run(
+          "INSERT INTO root_folders (id, path, created_at, kind, language_profile_id) VALUES ('rf-tv', '/media/shows', 1, 'shows', 'lp-en')",
+        )
+        const films = raw.all(
+          "SELECT id, language_profile_id FROM media_items WHERE type = 'movie'",
+        )
+        migrate(raw)
+        expect(
+          raw.all(
+            "SELECT id, language_profile_id AS p FROM media_items WHERE type != 'movie' ORDER BY id",
+          ),
+        ).toEqual(['itm_e1', 'itm_e2', 'itm_s1', 'itm_show'].map((id) => ({ id, p: 'lp-en' })))
+        expect(
+          raw.all("SELECT id, language_profile_id FROM media_items WHERE type = 'movie'"),
+        ).toEqual(films)
         raw.close()
       })
 
@@ -646,7 +691,10 @@ describe('0023_fanart', () => {
   test('adds fanart.tv’s cache, keyed by subject and id, and the fanart artwork source', () => {
     const { raw } = openDatabase(':memory:')
     migrate(raw, { all: migrations.filter((m) => m.tag < '0023') })
-    expect(migrate(raw).applied).toEqual(['0023_fanart', '0024_show_dismissals'])
+    expect(migrate(raw, { all: migrations.filter((m) => m.tag < '0025') }).applied).toEqual([
+      '0023_fanart',
+      '0024_show_dismissals',
+    ])
     raw.run(
       "INSERT INTO fanart_images (subject, external_id, data, fetched_at) VALUES ('movie', '550', NULL, 1)",
     )

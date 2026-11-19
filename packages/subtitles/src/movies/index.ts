@@ -146,9 +146,13 @@ export function createSubtitles(deps: SubtitlesDeps) {
     ]
   }
 
-  /** Bulk: points movies at a profile, then rewrites their rows. */
-  function profileChanged(itemIds: string[]) {
-    for (const id of itemIds) jobs.queueRefresh(id)
+  /**
+   * Bulk: points movies or episodes at a profile, then rewrites their rows. With none named, every
+   * item's rows (the runtime asks once after the migration that gave older shows a profile).
+   */
+  function profileChanged(itemIds?: string[]) {
+    if (!itemIds) jobs.queueRefresh()
+    else for (const id of itemIds) jobs.queueRefresh(id)
   }
 
   const profileService = {

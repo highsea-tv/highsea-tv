@@ -1,0 +1,48 @@
+---
+title: Unmatched
+description: Show folders and episode files highsea couldn't place, why, and how to match each one to a show or an episode, or ignore it.
+---
+
+{/* SPDX-License-Identifier: AGPL-3.0-only */}
+{/*
+  Sources:
+  - In highsea: Shows' Unmatched tab (packages/admin/src/shows-unmatched.tsx) and its strings
+    (shows-messages.ts).
+  - The behaviour: packages/media/src/shows/files.ts (why a file is kept), index.ts
+    (matchUnmatched, dismissUnmatched) and library-import.ts.
+*/}
+
+Written for highsea 0.4.8.
+
+When highsea can't tell which show a folder is, or which episode a file holds, it leaves it where it is and lists it here. Nothing on disk moves. Open **Shows** and choose **Unmatched**; the tab is there only while something is waiting, with how many.
+
+![Shows' Unmatched tab with a recap file waiting, its size, why, when it was found, and Match and Ignore](/images/admin/shows/unmatched.png)
+
+## Why something is here
+
+Each row says why, with highsea's own explanation under it:
+
+| Reason | What it means |
+| --- | --- |
+| **No match** | TMDB has no show by the folder's name. |
+| **More than one match** | TMDB has several shows by that name, and the folder doesn't say which. |
+| **Show already here** | Another folder already holds this show. |
+| **No episode number** | The file's name gives no season and episode, like `S01E01`. |
+| **Unknown season** | TMDB lists no such season for this show. TMDB sometimes numbers a show's seasons differently from other sites. |
+| **Unknown episode** | TMDB lists no such episode, often because it counts a double episode as one. |
+| **Episode has a file** | Another file already holds that episode, as with a second copy, or the second half of an episode TMDB counts as one. |
+| **Couldn’t open** | highsea couldn't read the file. |
+
+## Match a show folder
+
+Press **Match** on the folder's row. highsea searches TMDB for the folder's name; change the search if the name is misspelled. Pick the show under **Show**. Shows already in the library are listed but can't be picked. Press **Match** and the folder is added as that show, with its episodes, where it is.
+
+## Match an episode file
+
+Press **Match** on the file's row and give its **Season** (0 for specials) and **Episodes**: one number, or several for a file that holds more than one (`3`, `3-4` or `3, 4`). Use TMDB's numbers, as the show's page lists them. Press **Match** and the file is filed under those episodes. An episode another file held moves to this one.
+
+![The Match an episode file dialog, with Season and Episodes](/images/admin/shows/match-file.png)
+
+## Ignore
+
+Press **Ignore** and confirm to take the row off the list. The file or folder stays on disk, and later scans pass it by. Use it for extras, recaps and second halves you don't need in the library.
