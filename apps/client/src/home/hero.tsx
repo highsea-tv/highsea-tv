@@ -192,8 +192,9 @@ export function PointerHomeHero({
   }
   return (
     <View accessibilityRole="region" accessibilityLabel={title} onKeyDown={step}>
+      {/* one hero for every title, not one each: paging keeps the keyboard's focus where it was
+          (Play, More info or an arrow); TitleLogo keys its own state by its source */}
       <PointerHero
-        key={item.id}
         source={media(films.card(item, { wide: true }).src)}
         hero={hero}
         end={
