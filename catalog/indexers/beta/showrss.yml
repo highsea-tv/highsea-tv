@@ -1,0 +1,34 @@
+# SPDX-License-Identifier: CC0-1.0
+# Written for highsea from showRSS's pages (https://showrss.info/help and
+# https://showrss.info/browse/all, which links its feed for all shows) and the feed as it serves
+# it; no definition was copied.
+id: showrss
+version: 1.0.0
+minEngineVersion: 1.2.0
+name: showRSS
+description: New TV episodes from showRSS's feed for all shows, at 720p, 1080p and 4K. The feed can't be searched, so highsea reads only its newest releases.
+kind: rss
+privacy: public
+language: en
+links: [https://showrss.info/]
+logo: showrss.svg
+categories:
+  - { id: tv, standard: 5000, name: TV }
+search:
+  request:
+    # "Feed for all shows" on the browse page
+    path: /other/all.rss
+  # the feed takes no search
+  supports: []
+  # the feed's own elements, in its tv namespace: the release's own name ("Show S11E02 720p HDTV
+  # H264 GROUP") rather than the feed's title ("Show 11x02 Episode 2 720p"), which drops the source
+  elements:
+    title: tv:raw_title
+    infohash: tv:info_hash
+# The feed's <ttl> is 30 minutes; RSS sync's 15 minutes and a test or two fit in six an hour.
+rateLimit: { requests: 6, seconds: 3600 }
+test: { keywords: '' }
+source:
+  author: highsea
+  documentation: https://showrss.info/help
+license: CC0-1.0

@@ -4,7 +4,7 @@
 // `<error code description>` (Torznab 1.3: https://torznab.github.io/spec-1.3-draft/torznab/Specification-v1.3.html;
 // Newznab: https://newznab.readthedocs.io/en/latest/misc/api/). A plain RSS feed is the same items
 // without the attributes.
-import { isMovieCategory, isTvCategory } from '@highsea-tv/schemas/indexers'
+import { type FeedElementField, isMovieCategory, isTvCategory } from '@highsea-tv/schemas/indexers'
 import { XMLParser, XMLValidator } from 'fast-xml-parser'
 import { IndexerError } from './http.ts'
 import { type IndexerRelease, toRelease } from './release.ts'
@@ -149,6 +149,11 @@ function attrsOf(item: Node): Map<string, string[]> {
 export type FeedOptions = {
   /** For a plain RSS feed: the site's category text to standard ids. */
   mapCategory?: (text: string) => number | null
+  /**
+   * For a plain RSS feed: the item's own elements that hold a release field (`nyaa:seeders`), read
+   * before RSS's element for it. Engine 1.2.
+   */
+  elements?: Partial<Record<FeedElementField, string>>
   now: number
 }
 
@@ -162,9 +167,18 @@ export function readItems(text: string, options: FeedOptions): IndexerRelease[] 
   for (const item of asArray(channel.item)) {
     const attrs = attrsOf(item)
     const one = (name: string) => attrs.get(name)?.[0] ?? null
+    /** The feed's own element for a field, when the definition names one and the item has it. */
+    const own = (field: FeedElementField) => {
+      const name = options.elements?.[field]
+      const v = name ? textOf(item[name])?.trim() : null
+      return v || null
+    }
     const enclosure = asArray(item.enclosure)[0]
-    const link = textOf(item.link)
+    const link = own('download') ?? own('magnet') ?? textOf(item.link)
     const enclosureUrl = attr(enclosure, 'url')
+    // a magnet's enclosure has no file to measure: showRSS writes length="0", which isn't a size
+    const length = attr(enclosure, 'length')
+    const enclosureLength = length && Number(length) > 0 ? length : null
     const magnet =
       one('magneturl') ??
       (enclosureUrl?.startsWith('magnet:') ? enclosureUrl : null) ??
@@ -177,8 +191,11 @@ export function readItems(text: string, options: FeedOptions): IndexerRelease[] 
           : null
     const categories = new Set<number>()
     for (const c of attrs.get('category') ?? []) if (/^\d+$/.test(c)) categories.add(Number(c))
-    // RSS's own <category>: a standard id, or the site's text the definition maps
-    for (const c of Array.isArray(item.category) ? item.category : []) {
+    // RSS's own <category>, or the feed's element for it: a standard id, or the site's text the
+    // definition maps
+    const ownCategory = own('category')
+    const texts = ownCategory ? [ownCategory] : Array.isArray(item.category) ? item.category : []
+    for (const c of texts) {
       const t = textOf(c)?.trim()
       if (!t) continue
       const mapped = options.mapCategory?.(t) ?? (/^\d+$/.test(t) ? Number(t) : null)
@@ -186,22 +203,23 @@ export function readItems(text: string, options: FeedOptions): IndexerRelease[] 
     }
     const release = toRelease(
       {
-        title: textOf(item.title),
-        guid: textOf(item.guid) ?? one('guid'),
+        title: own('title') ?? textOf(item.title),
+        guid: own('guid') ?? textOf(item.guid) ?? one('guid'),
         download,
         magnet,
-        infohash: one('infohash'),
-        details: textOf(item.comments) ?? (download && link !== download ? link : null),
-        size: textOf(item.size) ?? one('size') ?? attr(enclosure, 'length'),
-        seeders: one('seeders'),
-        leechers: one('leechers'),
+        infohash: own('infohash') ?? one('infohash'),
+        details:
+          own('details') ?? textOf(item.comments) ?? (download && link !== download ? link : null),
+        size: own('size') ?? textOf(item.size) ?? one('size') ?? enclosureLength,
+        seeders: own('seeders') ?? one('seeders'),
+        leechers: own('leechers') ?? one('leechers'),
         peers: one('peers'),
-        grabs: one('grabs'),
+        grabs: own('grabs') ?? one('grabs'),
         files: one('files'),
-        published: textOf(item.pubDate) ?? one('usenetdate'),
-        imdbId: one('imdb') ?? one('imdbid'),
+        published: own('published') ?? textOf(item.pubDate) ?? one('usenetdate'),
+        imdbId: own('imdbId') ?? one('imdb') ?? one('imdbid'),
         tmdbId: one('tmdbid') ?? one('tmdb'),
-        tvdbId: one('tvdbid'),
+        tvdbId: own('tvdbId') ?? one('tvdbid'),
         downloadVolumeFactor: one('downloadvolumefactor'),
         uploadVolumeFactor: one('uploadvolumefactor'),
         minimumRatio: one('minimumratio'),
