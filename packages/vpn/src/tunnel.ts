@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// highsea connects' tunnel: a WireGuard interface highsea sets up and takes down itself, with the
+// The built-in VPN’s tunnel: a WireGuard interface highsea sets up and takes down itself, with the
 // routing that makes it the kill switch (docs/product/vpn.md › Ways to connect, ADR 0042 › 6b).
 //
 // Routing by source address, as WireGuard's own documentation describes for sending only some

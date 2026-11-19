@@ -65,6 +65,25 @@ async function bodyOf(body: unknown): Promise<Buffer | undefined> {
   throw new TypeError('This fetch takes a string, form or bytes body.')
 }
 
+/**
+ * Looks a name up from an address, asking the given resolvers: Test's DNS line, which proves the
+ * tunnel's resolvers answer through it. The same `dns.Resolver` the bound fetch uses.
+ */
+export function resolveFrom(
+  localAddress: string,
+  servers: readonly string[],
+  hostname: string,
+): Promise<string[]> {
+  const lookup = lookupFrom(localAddress, servers)
+  if (!lookup) return Promise.reject(new Error('No resolvers to ask.'))
+  return new Promise((resolve, reject) =>
+    lookup(hostname, { all: true }, (err, addresses) => {
+      if (err) reject(err)
+      else resolve((addresses as unknown as { address: string }[]).map((a) => a.address))
+    }),
+  )
+}
+
 export function boundFetch(localAddress: string, options: BoundFetchOptions = {}): Fetch {
   const lookup = lookupFrom(localAddress, options.dns ?? [])
 

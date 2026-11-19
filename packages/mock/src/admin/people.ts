@@ -8,18 +8,83 @@
 // `users.list` and `vpn.status` are the dashboard's answers (dashboard.ts); `devices.revoke` and
 // `me.devices` the transport's.
 // `vpn.compose` is `@highsea-tv/vpn`'s own `composeFor` (its `./compose` subpath, which imports
-// nothing), so the text is defined once.
+// nothing), so the text is defined once; `vpn.test` plays the engine's lines from its `./copy`.
 import type { routes } from '@highsea-tv/api-contract'
 import { createT, defineMessages } from '@highsea-tv/i18n'
 import type { Output } from '@highsea-tv/sdk'
 import { composeFor } from '@highsea-tv/vpn/compose'
-import type { VpnSettings } from '../vpn.ts'
+import { labels, testCopy } from '@highsea-tv/vpn/copy'
+import { connectionFailure, type VpnSettings } from '../vpn.ts'
 import { type AdminKit, type Answers, type Ctx, refuse } from './kit.ts'
 
 type Routes = typeof routes
 type SecurityOut = Output<Routes['settings']['security']>
 type NetworkOut = Output<Routes['settings']['network']>
 type VpnOut = Output<Routes['vpn']['settings']>
+type VpnTestOut = Output<Routes['vpn']['test']>
+type TestLine = VpnTestOut['checks'][number]
+
+const line = (
+  id: TestLine['id'],
+  result: TestLine['result'],
+  [title, detail]: readonly string[],
+): TestLine =>
+  detail
+    ? { id, label: labels[id], result, title: title as string, detail }
+    : { id, label: labels[id], result, title: title as string }
+
+/**
+ * Test in Settings › VPN, played: the save's refusal as the tunnel line, else every line passing
+ * as the engine words them (packages/vpn's `testCopy`), with port forwarding by the provider's
+ * method. The mock's exit is the address its status shows.
+ */
+function playTest(s: VpnSettings, providerName: string, forwarding: string): VpnTestOut {
+  const failure = connectionFailure(s)
+  const later = (['exit', 'names', 'portForwarding'] as const).map((id) =>
+    line(id, 'info', [testCopy.notChecked]),
+  )
+  if (failure) return { ok: false, checks: [line('tunnel', 'fail', [failure]), ...later] }
+  if (s.mode === 'container')
+    return {
+      ok: true,
+      checks: [
+        line('tunnel', 'pass', [testCopy.containerUp]),
+        line('exit', 'pass', testCopy.exitContainer('185.159.157.4', 'Switzerland')),
+        line('names', 'pass', testCopy.namesContainer),
+        s.useForwardedPort
+          ? line('portForwarding', 'pass', testCopy.forwarded(51820))
+          : line('portForwarding', 'info', testCopy.notForwarding),
+      ],
+    }
+  if (s.mode === 'interface')
+    return {
+      ok: true,
+      checks: [
+        line('tunnel', 'pass', testCopy.interfaceUp(s.interface, '10.2.0.15')),
+        line('exit', 'pass', testCopy.exitPass('185.159.157.4', 'Netherlands')),
+        line('names', 'info', testCopy.namesSystem),
+        line('portForwarding', 'info', testCopy.listening(6881)),
+      ],
+    }
+  const forward = !s.useForwardedPort
+    ? line('portForwarding', 'info', testCopy.notForwarding)
+    : forwarding === 'none'
+      ? line('portForwarding', 'warn', testCopy.doesntForward(providerName))
+      : forwarding === 'static'
+        ? s.staticPort
+          ? line('portForwarding', 'info', testCopy.staticPort(s.staticPort))
+          : line('portForwarding', 'warn', testCopy.noStaticPort)
+        : line('portForwarding', 'pass', testCopy.forwarded(51820))
+  return {
+    ok: true,
+    checks: [
+      line('tunnel', 'pass', testCopy.tunnelUp(providerName)),
+      line('exit', 'pass', testCopy.exitPass('185.159.157.4', 'Netherlands')),
+      line('names', 'pass', testCopy.namesPass(['10.2.0.1'])),
+      forward,
+    ],
+  }
+}
 
 export const peopleMessages = defineMessages({
   'users.unknown': 'There’s no one with that id.',
@@ -291,6 +356,14 @@ export function peopleAnswers({ wall, emit, userOf, devicesOf }: AdminKit): Answ
         { name: 'wg0', ipv4: '10.2.0.15', ipv6: null },
         { name: 'tun0', ipv4: '10.8.0.6', ipv6: null },
       ],
+      // the save's checks, then the engine's lines, played; nothing is saved
+      test: ({ body }, ctx) => {
+        const { echoUrl: _e, ...input } = body
+        const merged = { ...ctx.api.settings.get('vpn'), ...input } as VpnSettings
+        if (merged.mode === 'off') throw invalid(testCopy.modeOff, 'mode')
+        const p = ctx.api.vpn.providers().find((x) => x.id === merged.provider)
+        return playTest(merged, p?.name ?? 'your provider', p?.portForwarding ?? 'none')
+      },
       check: (_, ctx) => {
         const s = ctx.api.vpn.check()
         return { ...s, checkedAt: s.checkedAt && wall(s.checkedAt) }

@@ -8,7 +8,7 @@
 # folder is often root's, with the user's folders inside). Root alone, or an empty /data, falls
 # back to 1000:1000. A value that's set wins.
 #
-# highsea connects (ADR 0042) needs CAP_NET_ADMIN to make its WireGuard interface and routes. A
+# The built-in VPN (ADR 0042) needs CAP_NET_ADMIN to make its WireGuard interface and routes. A
 # capability given with `cap_add` is lost when gosu switches to a non-root user, so when the
 # container's bounding set holds CAP_NET_ADMIN (bit 12 of CapBnd, capabilities(7)), the switch is
 # made with setpriv(1) instead: it sets PR_SET_KEEPCAPS, changes user, then raises CAP_NET_ADMIN in

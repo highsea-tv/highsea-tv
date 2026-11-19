@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // VPN connections (docs/product/vpn.md): Settings › VPN, gluetun's control server, the interface
-// binding, highsea connects (its tunnel, PIA, NAT-PMP), the checks, and the binding handed to the
+// binding, the built-in VPN (its tunnel, PIA, NAT-PMP), the checks, and the binding handed to the
 // torrent engine.
 export * from './commands.ts'
 export * from './compose.ts'

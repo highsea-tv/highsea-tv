@@ -51,7 +51,7 @@ describe('Compose for your provider', () => {
   })
 })
 
-describe('Compose for highsea connects', () => {
+describe('Compose for the built-in VPN', () => {
   const block = composeFor({ mode: 'builtin' })
 
   test('highsea’s own service, as the prototype shows it', () => {

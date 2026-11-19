@@ -106,7 +106,7 @@ export function mergeSettings(
   if (filled(config)) {
     try {
       const parsed = parseWireGuard(config)
-      // highsea connects builds the tunnel from the file, so it needs what wg-quick would: an
+      // The built-in VPN builds the tunnel from the file, so it needs what wg-quick would: an
       // address to bind torrents to, and an endpoint for each peer
       if (next.mode === 'builtin' && provider.connect === 'config') {
         if (!parsed.addresses.some((a) => !a.includes(':')))

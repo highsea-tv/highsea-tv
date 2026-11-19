@@ -60,6 +60,13 @@ export type VpnCheck = {
   detail?: string
 }
 
+/** Settings › VPN's Test: a line for the tunnel, the exit, names and port forwarding. */
+export type VpnTestResult = {
+  /** No line failed. A warning (no forwarded port, an echo service that didn't answer) passes. */
+  ok: boolean
+  checks: VpnCheck[]
+}
+
 export type VpnStatus = {
   mode: VpnMode
   provider: string | null
@@ -69,8 +76,8 @@ export type VpnStatus = {
   /** Failed for want of NET_ADMIN: the page shows the compose lines to add. */
   needsCapability: boolean
   /**
-   * highsea's container shares the host's network (ADR 0042's 2026-11-07 section). highsea
-   * connects won't start there, since the tunnel's interface and routes would land in the host's
+   * highsea's container shares the host's network (ADR 0042's 2026-11-07 section). The built-in
+   * VPN won't start there, since the tunnel's interface and routes would land in the host's
    * network; the other modes don't mind. False outside a container and on a bridge.
    */
   hostNetwork: boolean
