@@ -49,7 +49,8 @@ export const DRAFT_TOPICS = {
 } as const
 
 /** `movie:603`: a title's id in `item.updated` and `metadata.updated` events. */
-export const topicId = (type: 'movie' | 'person' | 'collection', id: number) => `${type}:${id}`
+export const topicId = (type: 'movie' | 'person' | 'collection' | 'show', id: number) =>
+  `${type}:${id}`
 
 /**
  * Indexers' and the catalog's topics (checkpoint 5):

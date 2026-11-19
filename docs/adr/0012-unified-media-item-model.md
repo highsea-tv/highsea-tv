@@ -14,3 +14,7 @@ The server manages acquisition and will later stream. Media types: movies, TV (+
 ## Consequences
 - New media types add extension tables and domain packages only.
 - A streaming server browses one tree.
+
+## 2026-11-18: shows, seasons and episodes join the tree (Phase 5's B, HT-67)
+
+The tree takes its second kind, as planned. A show, its seasons and its episodes are `media_items` rows (`type` `show`, `season`, `episode`), linked by `parent_id`, with a `show_id` and their numbers on seasons and episodes for one indexed read of a show. Each is addressed by TMDB's own id for its kind, so the unique (`type`, `tmdb_id`) still holds. `show_details` is the shows' extension table (season folders, TheTVDB's and IMDb's ids). A file with several episodes is one `media_files` row, and each episode's version points at it. Rows that aren't titles (`parent_id` set) don't count where the library counts titles. [ADR 0064](0064-shows-on-the-server.md) has the decision.

@@ -8,7 +8,8 @@
 
 export const IMAGE_ROUTE = '/api/v1/images'
 
-export const IMAGE_OWNERS = ['movie', 'person', 'collection'] as const
+/** A show owns its seasons' posters and its episodes' stills too, so they're purged with it. */
+export const IMAGE_OWNERS = ['movie', 'person', 'collection', 'show'] as const
 export type ImageOwner = (typeof IMAGE_OWNERS)[number]
 
 export const IMAGE_KINDS = ['poster', 'backdrop', 'profile', 'still', 'logo'] as const

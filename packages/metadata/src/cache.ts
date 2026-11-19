@@ -3,7 +3,7 @@
 // the time it was fetched. Writing a response replaces the row whole, so writing it twice changes
 // nothing (ADR 0022).
 import { type Db, schema } from '@highsea-tv/db'
-import { eq } from 'drizzle-orm'
+import { and, asc, eq, notInArray } from 'drizzle-orm'
 import { movieColumns, replaceTerms } from './facts.ts'
 import { departmentOf } from './map.ts'
 import type {
@@ -12,15 +12,22 @@ import type {
   TmdbMovieItem,
   TmdbPage,
   TmdbPerson,
+  TmdbSeason,
+  TmdbShow,
 } from './tmdb/types.ts'
 import type { CacheKind } from './types.ts'
 
-const { movieMetadata, people, collections, credits } = schema
+const { movieMetadata, people, collections, credits, showMetadata, seasonMetadata } = schema
 
 const yearOf = (d: string | undefined) => (d && /^\d{4}/.test(d) ? Number(d.slice(0, 4)) : null)
 
 export function createCache(db: Db) {
-  const tables = { movie: movieMetadata, person: people, collection: collections }
+  const tables = {
+    movie: movieMetadata,
+    person: people,
+    collection: collections,
+    show: showMetadata,
+  }
 
   return {
     movie: (id: number) =>
@@ -28,6 +35,73 @@ export function createCache(db: Db) {
     person: (id: number) => db.select().from(people).where(eq(people.tmdbId, id)).get(),
     collection: (id: number) =>
       db.select().from(collections).where(eq(collections.tmdbId, id)).get(),
+    show: (id: number) => db.select().from(showMetadata).where(eq(showMetadata.tmdbId, id)).get(),
+    /** A cached show's seasons, as TMDB sent them, in number order. */
+    seasons: (showId: number) =>
+      db
+        .select({ data: seasonMetadata.data })
+        .from(seasonMetadata)
+        .where(eq(seasonMetadata.showId, showId))
+        .orderBy(asc(seasonMetadata.seasonNumber))
+        .all()
+        .map((r) => r.data as TmdbSeason),
+
+    /**
+     * Writes a show and its seasons in one transaction (ADR 0064): the show's row replaced, each
+     * season's replaced, and a season TMDB no longer lists removed. A season that couldn't be
+     * fetched this time is left as it was. Writing the same answers twice changes nothing.
+     */
+    putShow(show: TmdbShow, seasons: TmdbSeason[], language: string, now: number) {
+      const row = {
+        tmdbId: show.id,
+        name: show.name,
+        originalName: show.original_name ?? show.name,
+        year: yearOf(show.first_air_date ?? undefined),
+        firstAirDate: show.first_air_date || null,
+        voteAverage: show.vote_average ?? 0,
+        voteCount: show.vote_count ?? 0,
+        popularity: show.popularity ?? 0,
+        status: show.status ?? null,
+        tvdbId: show.external_ids?.tvdb_id ?? null,
+        language,
+        data: show,
+        fetchedAt: now,
+        goneAt: null,
+      }
+      const listed = (show.seasons ?? []).map((s) => s.season_number)
+      db.transaction((tx) => {
+        tx.insert(showMetadata)
+          .values(row)
+          .onConflictDoUpdate({ target: showMetadata.tmdbId, set: row })
+          .run()
+        tx.delete(seasonMetadata)
+          .where(
+            and(
+              eq(seasonMetadata.showId, show.id),
+              notInArray(seasonMetadata.seasonNumber, listed),
+            ),
+          )
+          .run()
+        for (const season of seasons) {
+          if (!listed.includes(season.season_number)) continue
+          const seasonRow = {
+            showId: show.id,
+            seasonNumber: season.season_number,
+            tmdbId: season.id,
+            language,
+            data: season,
+            fetchedAt: now,
+          }
+          tx.insert(seasonMetadata)
+            .values(seasonRow)
+            .onConflictDoUpdate({
+              target: [seasonMetadata.showId, seasonMetadata.seasonNumber],
+              set: seasonRow,
+            })
+            .run()
+        }
+      })
+    },
 
     /**
      * Writes a movie and replaces its cast and crew rows and its terms, in one transaction. The

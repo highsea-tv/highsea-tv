@@ -11,7 +11,7 @@
 import { AppError, type Clock, newId } from '@highsea-tv/core'
 import type { Db } from '@highsea-tv/db'
 import { languageProfiles, mediaItems, rootFolders } from '@highsea-tv/db/schema'
-import { asc, count, eq } from 'drizzle-orm'
+import { and, asc, count, eq, isNull } from 'drizzle-orm'
 import { z } from 'zod'
 import { isLanguageCode, languageName, satisfies } from './languages.ts'
 import type { LanguageProfile, LanguageRule } from './types.ts'
@@ -144,8 +144,12 @@ export function createProfiles({ db, clock }: { db: Db; clock: Clock }) {
   /** How many titles use the profile. */
   function uses(id: string): number {
     return (
-      db.select({ n: count() }).from(mediaItems).where(eq(mediaItems.languageProfileId, id)).get()
-        ?.n ?? 0
+      db
+        .select({ n: count() })
+        .from(mediaItems)
+        // titles: a show's seasons and episodes carry its profile (ADR 0064)
+        .where(and(eq(mediaItems.languageProfileId, id), isNull(mediaItems.parentId)))
+        .get()?.n ?? 0
     )
   }
 

@@ -261,7 +261,10 @@ export function createProfiles({ db, clock, logger }: MediaDeps) {
     profile(id)
     const used =
       db
-        .select({ n: sql<number>`count(distinct ${mediaItems.id})` })
+        // a show's seasons and episodes carry its profile: the show counts once (ADR 0064)
+        .select({
+          n: sql<number>`count(distinct coalesce(${mediaItems.showId}, ${mediaItems.id}))`,
+        })
         .from(mediaItems)
         .leftJoin(versions, eq(versions.itemId, mediaItems.id))
         .where(sql`${mediaItems.qualityProfileId} = ${id} or ${versions.qualityProfileId} = ${id}`)

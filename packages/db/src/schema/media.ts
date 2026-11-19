@@ -19,7 +19,11 @@ import {
 } from 'drizzle-orm/sqlite-core'
 import { profiles, users } from './auth.ts'
 
-export const MEDIA_TYPES = ['movie'] as const
+/**
+ * A title's type in the unified tree (ADR 0012, ADR 0064): a film, or a show with its seasons and
+ * episodes as rows of their own, a season's `parent_id` its show's and an episode's its season's.
+ */
+export const MEDIA_TYPES = ['movie', 'show', 'season', 'episode'] as const
 export type MediaType = (typeof MEDIA_TYPES)[number]
 
 export const MINIMUM_AVAILABILITY = ['announced', 'in-cinemas', 'released'] as const
@@ -158,6 +162,57 @@ export const collections = sqliteTable(
 )
 
 /**
+ * A show as TMDB returned it (`/3/tv/{id}` with its appended credits, ratings, external ids, videos,
+ * recommendations, keywords and images; ADR 0064), in the language it was asked for. Its seasons'
+ * episodes are `season_metadata`'s. The columns beside `data` are what lists sort on.
+ */
+export const showMetadata = sqliteTable(
+  'show_metadata',
+  {
+    tmdbId: integer('tmdb_id').primaryKey(),
+    name: text('name').notNull(),
+    originalName: text('original_name').notNull(),
+    /** The year of `first_air_date`. */
+    year: integer('year'),
+    /** `YYYY-MM-DD`, TMDB's `first_air_date`. */
+    firstAirDate: text('first_air_date'),
+    voteAverage: real('vote_average').notNull().default(0),
+    voteCount: integer('vote_count').notNull().default(0),
+    popularity: real('popularity').notNull().default(0),
+    /** TMDB's `status`: Returning Series, Planned, In Production, Ended, Canceled, Pilot. */
+    status: text('status'),
+    /** TheTVDB's id from `external_ids`, for `tvdb-…` folder names and `tvshow.nfo`. */
+    tvdbId: integer('tvdb_id'),
+    language: text('language').notNull(),
+    data: text('data', { mode: 'json' }).notNull(),
+    fetchedAt: integer('fetched_at').notNull(),
+    goneAt: integer('gone_at'),
+  },
+  (t) => [index('show_metadata_fetched').on(t.fetchedAt), index('show_metadata_tvdb').on(t.tvdbId)],
+)
+
+/**
+ * One season of a cached show as TMDB returned it (`/3/tv/{id}/season/{n}` with its external ids),
+ * its episodes inside. Fetched with the show and replaced with it; removed with it.
+ */
+export const seasonMetadata = sqliteTable(
+  'season_metadata',
+  {
+    showId: integer('show_id')
+      .notNull()
+      .references(() => showMetadata.tmdbId, { onDelete: 'cascade' }),
+    /** 0 for specials. */
+    seasonNumber: integer('season_number').notNull(),
+    /** TMDB's own id for the season. */
+    tmdbId: integer('tmdb_id').notNull(),
+    language: text('language').notNull(),
+    data: text('data', { mode: 'json' }).notNull(),
+    fetchedAt: integer('fetched_at').notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.showId, t.seasonNumber] })],
+)
+
+/**
  * Images cached on disk under `/data/images`, at the sizes the screens use (TMDB's
  * `/3/configuration` lists them). Purged with the metadata they belong to.
  */
@@ -169,7 +224,7 @@ export const images = sqliteTable(
     /** TMDB's size name (`w342`, `w780`, `original`). */
     size: text('size').notNull(),
     kind: text('kind', { enum: ['poster', 'backdrop', 'profile', 'still', 'logo'] }).notNull(),
-    ownerType: text('owner_type', { enum: ['movie', 'person', 'collection'] }).notNull(),
+    ownerType: text('owner_type', { enum: ['movie', 'person', 'collection', 'show'] }).notNull(),
     ownerId: integer('owner_id').notNull(),
     /** Relative to the images folder. */
     file: text('file').notNull(),
@@ -235,6 +290,15 @@ export const mediaItems = sqliteTable(
     type: text('type', { enum: MEDIA_TYPES }).notNull(),
     tmdbId: integer('tmdb_id').notNull(),
     parentId: text('parent_id'),
+    /**
+     * A season's or an episode's show (ADR 0064), so a show's episodes are one indexed read, not a
+     * walk through its seasons; null for films and shows.
+     */
+    showId: text('show_id'),
+    /** A season's or an episode's season, 0 for specials; null for films and shows. */
+    seasonNumber: integer('season_number'),
+    /** An episode's place in its season, from 1 (specials from 1 too); null otherwise. */
+    episodeNumber: integer('episode_number'),
     title: text('title').notNull(),
     /** The title lowercased, without a leading article, for sorting. */
     sortTitle: text('sort_title').notNull(),
@@ -265,6 +329,10 @@ export const mediaItems = sqliteTable(
   (t) => [
     uniqueIndex('media_items_provider').on(t.type, t.tmdbId),
     index('media_items_parent').on(t.parentId),
+    // a show's seasons and episodes in order (ADR 0064); films have no show and stay out of it
+    index('media_items_show')
+      .on(t.showId, t.seasonNumber, t.episodeNumber)
+      .where(sql`show_id IS NOT NULL`),
     index('media_items_title').on(t.type, t.sortTitle, t.id),
     index('media_items_year').on(t.type, t.year, t.id),
     index('media_items_added').on(t.type, t.addedAt, t.id),
@@ -288,7 +356,11 @@ export const mediaItems = sqliteTable(
   ],
 )
 
-/** An item's versions (ADR 0012): "4K HDR" and "1080p", each with its own profile and file. */
+/**
+ * An item's versions (ADR 0012): "4K HDR" and "1080p", each with its own profile and file. An
+ * episode has its versions too, and a multi-episode file is one `media_files` row that a version of
+ * each of its episodes points at (ADR 0064).
+ */
 export const versions = sqliteTable(
   'versions',
   {
@@ -306,7 +378,27 @@ export const versions = sqliteTable(
   (t) => [
     index('versions_item').on(t.itemId, t.position),
     index('versions_profile').on(t.qualityProfileId),
+    // a multi-episode file's episodes: each holds a version pointing at the one file (ADR 0064)
+    index('versions_file').on(t.fileId),
   ],
+)
+
+/**
+ * What only a show has in the library (ADR 0012's extension tables, ADR 0064): whether its files go
+ * in season folders, and its TheTVDB and IMDb ids, copied from TMDB's `external_ids` on add and
+ * refresh so a `tvdb-…` folder or a `tvshow.nfo` finds it without asking TMDB.
+ */
+export const showDetails = sqliteTable(
+  'show_details',
+  {
+    itemId: text('item_id')
+      .primaryKey()
+      .references(() => mediaItems.id, { onDelete: 'cascade' }),
+    seasonFolders: integer('season_folders', { mode: 'boolean' }).notNull().default(true),
+    tvdbId: integer('tvdb_id'),
+    imdbId: text('imdb_id'),
+  },
+  (t) => [index('show_details_tvdb').on(t.tvdbId)],
 )
 
 /**
@@ -407,7 +499,11 @@ export const rootFolders = sqliteTable('root_folders', {
   createdAt: integer('created_at').notNull(),
 })
 
-/** A file in the library (ADR 0012): a version's file, with what ffprobe found in it. */
+/**
+ * A file in the library (ADR 0012): a version's file, with what ffprobe found in it. A multi-episode
+ * file's `item_id` is its first episode; the episodes it holds are the versions pointing at it
+ * (ADR 0064).
+ */
 export const mediaFiles = sqliteTable(
   'media_files',
   {

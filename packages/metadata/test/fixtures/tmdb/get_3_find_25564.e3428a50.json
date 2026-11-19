@@ -1,0 +1,50 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "https://api.themoviedb.org/3/find/25564?external_source=tvdb_id&language=en-US",
+    "credential": "valid"
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json;charset=utf-8"
+    },
+    "body": {
+      "movie_results": [],
+      "person_results": [],
+      "tv_results": [],
+      "tv_episode_results": [
+        {
+          "air_date": "1996-10-16",
+          "episode_number": 27,
+          "episode_type": "finale",
+          "id": 703198,
+          "name": "Burn, Island of Terror: The Crimson Pirate Chapter Concludes",
+          "overview": "After her trusted colleagues betray Shura, it's left up to Kenshin to save her life and stop the pirate's opium smuggling scheme.",
+          "production_code": "",
+          "runtime": 25,
+          "season_number": 1,
+          "show_id": 28136,
+          "still_path": "/54hBwN8eDbds1vld0JxkvUGQxsP.jpg",
+          "vote_average": 7.75,
+          "vote_count": 4,
+          "media_type": "tv_episode"
+        }
+      ],
+      "tv_season_results": [
+        {
+          "air_date": "2003-12-26",
+          "id": 9609,
+          "name": "Specials",
+          "overview": "",
+          "season_number": 0,
+          "show_id": 2996,
+          "vote_average": 0,
+          "media_type": "tv_season",
+          "episode_count": 18,
+          "poster_path": "/e9YkHBtADYWI9fWYQoj3ZI1GPLl.jpg"
+        }
+      ]
+    }
+  }
+}

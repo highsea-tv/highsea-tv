@@ -1,0 +1,33 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "https://api.themoviedb.org/3/find/801960?external_source=tvdb_id&language=en-US",
+    "credential": "valid"
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json;charset=utf-8"
+    },
+    "body": {
+      "movie_results": [],
+      "person_results": [],
+      "tv_results": [],
+      "tv_episode_results": [],
+      "tv_season_results": [
+        {
+          "air_date": "2019-05-06",
+          "episode_count": 5,
+          "id": 119454,
+          "name": "Miniseries",
+          "overview": "",
+          "poster_path": "/hlLXt2tOPT6RRnjiUmoxyG1LTFi.jpg",
+          "season_number": 1,
+          "show_id": 87108,
+          "vote_average": 9,
+          "media_type": "tv_season"
+        }
+      ]
+    }
+  }
+}
