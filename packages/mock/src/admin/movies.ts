@@ -305,6 +305,7 @@ export function moviesAnswers(kit: AdminKit): Answers {
       // derived, so it's written at once
       refresh: ({ params }, ctx) => {
         inLibrary(ctx, params.id)
+        kit.work?.queue(ctx, 'metadata.refresh', { kind: 'movie', id: String(params.id) })
         kit.emit(MEDIA_TOPICS.metadata)
         return undefined
       },
@@ -333,8 +334,12 @@ export function moviesAnswers(kit: AdminKit): Answers {
           case 'search':
             requireIndexers(ctx)
             ctx.api.movies.bulkSearch(mockIds)
+            for (const id of ids)
+              kit.work?.queue(ctx, 'movies.search', { kind: 'movie', id: `${id}` })
             break
           case 'refresh':
+            for (const id of ids)
+              kit.work?.queue(ctx, 'metadata.refresh', { kind: 'movie', id: `${id}` })
             kit.emit(MEDIA_TOPICS.metadata)
             break
           case 'setTags':

@@ -16,15 +16,18 @@ mock.module('../src/shell.tsx', () => ({
   AdminPage: ({
     title,
     actions,
+    hero,
     children,
   }: {
     title: ReactNode
     actions?: ReactNode
+    hero?: ReactNode
     children?: ReactNode
   }) => (
     <main>
       <h1>{title}</h1>
       {actions}
+      {hero}
       {children}
     </main>
   ),
@@ -361,6 +364,25 @@ describe('a show’s page', () => {
     await settle()
     expect(router.history).toEqual(['/shows/the-lantern-keepers/files'])
     expect(page.getByText('S01E01.mkv')).toBeTruthy()
+  })
+
+  test('Edit sits in More, as on a film’s page, with Change artwork for the show (HT-105)', async () => {
+    const { user, page } = await open(at('/shows/the-lantern-keepers'))
+    expect(page.queryByRole('button', { name: 'Edit' })).toBeNull()
+    await user.click(page.getByRole('button', { name: 'More actions' }))
+    await settle()
+    expect(page.getAllByRole('menuitem').map((i) => i.textContent)).toEqual([
+      'Edit',
+      'Change artwork',
+      'Refresh metadata',
+      'Remove from library',
+    ])
+    await user.click(page.getByRole('menuitem', { name: 'Change artwork' }))
+    await settle()
+    expect(page.getByRole('dialog', { name: 'Artwork' })).toBeTruthy()
+    expect(requests.some((r) => r.method === 'GET' && r.path === '/api/v1/artwork/show/100')).toBe(
+      true,
+    )
   })
 
   test('Refresh metadata asks the server for TMDB’s refresh', async () => {

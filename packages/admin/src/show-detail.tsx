@@ -14,7 +14,9 @@ import { useAction, useQuery } from '@highsea-tv/sdk/react'
 // with the path and Monitored, then tabs. Seasons is Sonarr's series page: each season with its
 // monitor switch, its episode count and Search, and each episode with its own switch, number,
 // title, air date, state, file and Search. Files lists every file once, a double episode's file
-// noted. Search, Edit, and More (Refresh metadata, Remove) are in the header.
+// noted. Search and More (Edit, Change artwork, Refresh metadata, Remove from library) are in the
+// header, More's items as a film's page has them (HT-105); the summary is the page's hero, over the
+// show's backdrop.
 //
 // Drawn only when the server serves shows (`Served`, serves.tsx), on the drafted `series` routes
 // the mock answers and the server answers 501.
@@ -50,7 +52,10 @@ import {
 import { type ComponentRef, type ReactNode, useRef, useState } from 'react'
 import { View } from 'react-native'
 import { useShowOptions } from './add-show-dialog.tsx'
+import { ArtworkDialog } from './artwork-dialog.tsx'
+import { artwork as artworkMessages } from './artwork-messages.ts'
 import { FormError } from './collections-rules.tsx'
+import { ItemWorkMark, useItemWork } from './item-work.tsx'
 import { Loadable } from './loadable.tsx'
 import { MediaSummary, SummarySkeleton } from './media-sections.tsx'
 import { useRouter } from './navigation.tsx'
@@ -96,6 +101,8 @@ function Page({ id, tab }: { id: string; tab: ShowTab }) {
   const [removing, setRemoving] = useState(false)
   const [deleteFiles, setDeleteFiles] = useState(false)
   const [menu, setMenu] = useState(false)
+  const [changingArt, setChangingArt] = useState(false)
+  const ta = useT(artworkMessages)
   const more = useRef<ComponentRef<typeof View>>(null)
 
   const edit = useAction((c, body: SeriesUpdate) => c.series.update({ params: { id }, body }))
@@ -127,8 +134,11 @@ function Page({ id, tab }: { id: string; tab: ShowTab }) {
       fail(t('searchFailed')),
     )
 
+  // HT-106: what the server is doing to the show and its episodes, by its actions
+  const work = useItemWork('show', id, sh?.title)
   const actions = sh ? (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: s['2'] }}>
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: s['2'], flexShrink: 1 }}>
+      <ItemWorkMark jobs={work.jobs} look="page" item={work.item} />
       <Button
         variant="primary"
         icon="search"
@@ -137,9 +147,6 @@ function Page({ id, tab }: { id: string; tab: ShowTab }) {
         onPress={() => look({}, sh.title)}
       >
         {t('search')}
-      </Button>
-      <Button icon="edit" onPress={() => setEditing(true)}>
-        {t('edit')}
       </Button>
       <Button
         ref={more}
@@ -157,9 +164,12 @@ function Page({ id, tab }: { id: string; tab: ShowTab }) {
         onClose={() => setMenu(false)}
         anchor={more}
         items={[
+          { label: t('edit'), icon: 'edit', onSelect: () => setEditing(true) },
+          { label: ta('open'), icon: 'grid', onSelect: () => setChangingArt(true) },
           {
             label: t('refresh'),
             icon: 'refresh',
+            disabled: work.busy('metadata.refresh'),
             // TMDB's refresh is queued; the page follows `shows.updated` when it lands
             onSelect: () =>
               refresh
@@ -172,6 +182,13 @@ function Page({ id, tab }: { id: string; tab: ShowTab }) {
           { label: t('removeFromLibrary'), icon: 'delete', onSelect: () => setRemoving(true) },
         ]}
       />
+      <ArtworkDialog
+        owner="show"
+        id={sh.tmdbId}
+        title={sh.title}
+        open={changingArt}
+        onOpenChange={setChangingArt}
+      />
     </View>
   ) : undefined
 
@@ -182,7 +199,20 @@ function Page({ id, tab }: { id: string; tab: ShowTab }) {
   }
 
   return (
-    <AdminPage title={sh?.title ?? t('show')} actions={actions}>
+    <AdminPage
+      title={sh?.title ?? t('show')}
+      actions={actions}
+      backdrop={sh?.art.backdrop || null}
+      hero={
+        sh ? (
+          <Summary
+            show={sh}
+            profile={profileName(sh.qualityProfileId)}
+            onMonitor={(monitored) => edit.run({ monitored }).catch(fail(t('saveFailed')))}
+          />
+        ) : undefined
+      }
+    >
       {show.status === 'error' ? (
         <EmptyState
           tone="error"
@@ -195,41 +225,32 @@ function Page({ id, tab }: { id: string; tab: ShowTab }) {
       ) : !sh ? (
         <SummarySkeleton />
       ) : (
-        <>
-          <Summary
-            show={sh}
-            profile={profileName(sh.qualityProfileId)}
-            onMonitor={(monitored) => edit.run({ monitored }).catch(fail(t('saveFailed')))}
+        <View>
+          <Tabs<ShowTab>
+            variant="line"
+            aria-label={t('sections')}
+            value={tab}
+            onValueChange={setTab}
+            options={SHOW_TABS.map((value) => ({ value, label: t(`tab.${value}`) }))}
           />
-          <View>
-            <Tabs<ShowTab>
-              variant="line"
-              aria-label={t('sections')}
-              value={tab}
-              onValueChange={setTab}
-              options={SHOW_TABS.map((value) => ({ value, label: t(`tab.${value}`) }))}
-            />
-            <View
-              role="tabpanel"
-              aria-label={t(`tab.${tab}`)}
-              style={{ paddingTop: s['5'], gap: s['4'], minWidth: 0 }}
-            >
-              {tab === 'seasons' ? (
-                <Seasons
-                  show={sh}
-                  searching={search.pending}
-                  onSearch={look}
-                  onMonitorSeason={(n, on) => monitorSeason.run(n, on).catch(fail(t('saveFailed')))}
-                  onMonitorEpisode={(e, on) =>
-                    monitorEpisode.run(e, on).catch(fail(t('saveFailed')))
-                  }
-                />
-              ) : (
-                <Files show={sh} />
-              )}
-            </View>
+          <View
+            role="tabpanel"
+            aria-label={t(`tab.${tab}`)}
+            style={{ paddingTop: s['5'], gap: s['4'], minWidth: 0 }}
+          >
+            {tab === 'seasons' ? (
+              <Seasons
+                show={sh}
+                searching={search.pending}
+                onSearch={look}
+                onMonitorSeason={(n, on) => monitorSeason.run(n, on).catch(fail(t('saveFailed')))}
+                onMonitorEpisode={(e, on) => monitorEpisode.run(e, on).catch(fail(t('saveFailed')))}
+              />
+            ) : (
+              <Files show={sh} />
+            )}
           </View>
-        </>
+        </View>
       )}
       {sh && editing && <EditShowDialog show={sh} onClose={() => setEditing(false)} />}
       <ConfirmDialog

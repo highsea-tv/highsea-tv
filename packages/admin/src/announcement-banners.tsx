@@ -28,7 +28,8 @@ export function AnnouncementBanners() {
   if (!banners.length) return null
   // one column at the page's width, each banner kept to it
   return (
-    <View style={{ gap: tokens.space['2'], minWidth: 0 }}>
+    // above a media page's hero art, which runs up behind the page's top row into this gap (HT-105)
+    <View style={{ gap: tokens.space['2'], minWidth: 0, zIndex: 1 }}>
       {banners.map((a) => {
         const done = () =>
           seen.run(a.id).catch((e: Error) => toast.error(t('failed'), { description: e.message }))

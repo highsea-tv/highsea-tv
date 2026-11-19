@@ -9,8 +9,9 @@ import {
   systemClock,
 } from '@highsea-tv/core'
 import { type Db, schema } from '@highsea-tv/db'
-import { and, asc, desc, eq, inArray, lte, type SQL } from 'drizzle-orm'
+import { and, asc, desc, eq, gte, inArray, isNotNull, lte, or, type SQL } from 'drizzle-orm'
 import type { z } from 'zod'
+import { parseSubject, type Subject, type SubjectRef, subjectKey } from './subjects.ts'
 
 const { jobs, jobRuns, jobSchedules } = schema
 
@@ -20,6 +21,11 @@ export type JobContext = {
   /** Aborted on timeout and on shutdown: long work should stop when it fires. */
   signal: AbortSignal
   logger: Logger
+  /**
+   * How far through it is, 0 to 1, for the item's page (HT-106). Kept in memory while it runs,
+   * announced as it moves on by a whole percent.
+   */
+  progress(share: number): void
 }
 
 export type JobDefinition<P> = {
@@ -32,6 +38,11 @@ export type JobDefinition<P> = {
   /** Wait before try `attempt + 1`. Default 30s, doubling, at most an hour. */
   backoffMs?: (attempt: number) => number
   timeoutMs?: number
+  /**
+   * The library item a job of this type works on (HT-106), worked out from its payload as it's
+   * queued; null or none for work across the library. An enqueue's own `subject` wins.
+   */
+  subject?: (payload: P) => Subject | null
   run(payload: P, ctx: JobContext): Promise<void>
 }
 
@@ -50,7 +61,33 @@ export type Task = {
   state: 'running' | 'queued' | 'idle' | 'failed'
 }
 
-export type EnqueueOptions = { runAt?: number; dedupeKey?: string; attempts?: number }
+export type EnqueueOptions = {
+  runAt?: number
+  dedupeKey?: string
+  attempts?: number
+  /** The library item it works on, over its type's own `subject`. */
+  subject?: Subject | null
+}
+
+/** A job queued or running on a library item, or one that finished lately (HT-106). */
+export type ItemJob = {
+  id: string
+  type: string
+  status: Job['status']
+  subject: SubjectRef
+  of: SubjectRef
+  /** When it was queued, or started when it's running. */
+  since: number
+  /** When it's due, while it waits: later than now when it waits to try again. */
+  runAt: number
+  /** 0 to 1 while it runs, where its type says. */
+  progress: number | null
+  finishedAt: number | null
+  error: string | null
+}
+
+/** How long a finished job stays in an item's read, so its page can say how it went. */
+export const FINISHED_KEPT_MS = 10 * 60_000
 
 const defaultBackoff = (attempt: number) => Math.min(30_000 * 2 ** (attempt - 1), 3_600_000)
 
@@ -72,7 +109,7 @@ export function createJobQueue({
   const definitions = new Map<string, JobDefinition<any>>()
   const running = new Map<
     string,
-    { type: string; controller: AbortController; done: Promise<void> }
+    { type: string; controller: AbortController; done: Promise<void>; progress: number | null }
   >()
   let timer: ReturnType<typeof setInterval> | null = null
   let accepting = true
@@ -109,6 +146,16 @@ export function createJobQueue({
     }
     const now = clock.now()
     const id = newId('job')
+    let subject: Subject | null | undefined = options.subject
+    if (subject === undefined) {
+      try {
+        subject = definition.subject?.(parsed.data) ?? null
+      } catch (e) {
+        // the mark is a courtesy: a lookup that fails never stops the work being queued
+        log.warn('couldn’t name a job’s item', { type, error: (e as Error).message })
+        subject = null
+      }
+    }
     db.insert(jobs)
       .values({
         id,
@@ -119,6 +166,8 @@ export function createJobQueue({
         maxAttempts: options.attempts ?? definition.attempts ?? 3,
         runAt: options.runAt ?? now,
         createdAt: now,
+        subject: subject ? subjectKey(subject) : null,
+        subjectOf: subject ? subjectKey(subject.of ?? subject) : null,
       })
       .run()
     announce([id])
@@ -192,7 +241,15 @@ export function createJobQueue({
 
     const controller = new AbortController()
     const jobLog = log.child(`jobs:${job.type}`)
-    const work = (async () => {
+    // kept before the job starts: its first steps run at once, and may say how far it is
+    const entry = {
+      type: job.type,
+      controller,
+      done: Promise.resolve(),
+      progress: null as number | null,
+    }
+    running.set(job.id, entry)
+    entry.done = (async () => {
       const timeout = definition.timeoutMs
       let timer: ReturnType<typeof setTimeout> | undefined
       try {
@@ -201,6 +258,15 @@ export function createJobQueue({
           attempt,
           signal: controller.signal,
           logger: jobLog,
+          progress: (share) => {
+            const r = running.get(job.id)
+            if (!r) return
+            const next = Math.min(1, Math.max(0, share))
+            const moved =
+              r.progress === null || Math.floor(next * 100) !== Math.floor(r.progress * 100)
+            r.progress = next
+            if (moved && job.subject) announce([job.id])
+          },
         })
         await (timeout
           ? Promise.race([
@@ -222,7 +288,6 @@ export function createJobQueue({
         running.delete(job.id)
       }
     })()
-    running.set(job.id, { type: job.type, controller, done: work })
   }
 
   function finish(job: Job, runId: string, attempt: number, error: Error | null) {
@@ -383,6 +448,73 @@ export function createJobQueue({
     return enqueue(type, {}, { dedupeKey: 'schedule' })
   }
 
+  const itemJob = (j: Job): ItemJob | null => {
+    const subject = parseSubject(j.subject)
+    const of = parseSubject(j.subjectOf) ?? subject
+    if (!subject || !of) return null
+    return {
+      id: j.id,
+      type: j.type,
+      status: j.status,
+      subject,
+      of,
+      since: j.status === 'running' ? (j.startedAt ?? j.createdAt) : j.createdAt,
+      runAt: j.runAt,
+      progress: j.status === 'running' ? (running.get(j.id)?.progress ?? null) : null,
+      finishedAt: j.finishedAt,
+      error: j.error,
+    }
+  }
+  const itemJobs = (rows: Job[]) => rows.flatMap((j) => itemJob(j) ?? [])
+
+  /**
+   * Every job queued or running on a library item (HT-106), oldest first: one read for a whole
+   * library's marks. A show's carry its seasons' and episodes' (`of`).
+   */
+  const atWork = (): ItemJob[] =>
+    itemJobs(
+      db
+        .select()
+        .from(jobs)
+        .where(and(inArray(jobs.status, ['running', 'queued']), isNotNull(jobs.subjectOf)))
+        .orderBy(asc(jobs.createdAt))
+        .all(),
+    )
+
+  /**
+   * One item's work (HT-106): what's queued or running on it or on what it holds (a show's seasons
+   * and episodes), and what finished in the last ten minutes, newest first, so its page can say how
+   * it went.
+   */
+  function workOf(item: SubjectRef) {
+    const key = subjectKey(item)
+    const mine = or(eq(jobs.subjectOf, key), eq(jobs.subject, key))
+    const active = itemJobs(
+      db
+        .select()
+        .from(jobs)
+        .where(and(mine, inArray(jobs.status, ['running', 'queued'])))
+        .orderBy(asc(jobs.createdAt))
+        .all(),
+    )
+    const finished = itemJobs(
+      db
+        .select()
+        .from(jobs)
+        .where(
+          and(
+            mine,
+            inArray(jobs.status, ['succeeded', 'failed', 'cancelled']),
+            gte(jobs.finishedAt, clock.now() - FINISHED_KEPT_MS),
+          ),
+        )
+        .orderBy(desc(jobs.finishedAt))
+        .limit(20)
+        .all(),
+    )
+    return { active, finished }
+  }
+
   const runsOf = (jobId: string) =>
     db.select().from(jobRuns).where(eq(jobRuns.jobId, jobId)).orderBy(asc(jobRuns.attempt)).all()
 
@@ -397,6 +529,8 @@ export function createJobQueue({
     list,
     get,
     runsOf,
+    atWork,
+    workOf,
     tasks,
     runNow,
     /** Ticks every `intervalMs` until stopped. */

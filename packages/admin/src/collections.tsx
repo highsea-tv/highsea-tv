@@ -5,7 +5,7 @@
 // with its mosaic, what it holds now and who sees it. Each opens the editor. A collection a
 // featured section draws on can't be deleted: the server refuses (409) and the toast names the
 // section, from the list's `usedBy`.
-import { COLLECTION_TOPICS, type CollectionSummary } from '@highsea-tv/api-contract'
+import { COLLECTION_TOPICS, type CollectionSummary, type ItemJob } from '@highsea-tv/api-contract'
 import { useT } from '@highsea-tv/i18n/react'
 import { ApiError } from '@highsea-tv/sdk'
 import { useAction, useQuery } from '@highsea-tv/sdk/react'
@@ -27,6 +27,7 @@ import { View } from 'react-native'
 import { CollectionArt } from './collection-art.tsx'
 import { collections as messages } from './collections-messages.ts'
 import { useAudienceSummary, usePeople } from './curation-shared.tsx'
+import { useLibraryWork, WithItemWork } from './item-work.tsx'
 import { Loadable } from './loadable.tsx'
 import { useRouter } from './navigation.tsx'
 import { AdminPage } from './shell.tsx'
@@ -57,6 +58,8 @@ export function Collections() {
   const t = useT(messages)
   const router = useRouter()
   const list = useQuery('collections', (c) => c.collections.list(), COLLECTION_LIST_TOPICS)
+  // HT-106: a mark on each collection the server is working on
+  const workOf = useLibraryWork('collection')
   return (
     <AdminPage
       title={t('title')}
@@ -84,7 +87,7 @@ export function Collections() {
           ) : (
             <View role="list" aria-label={t('label')} style={{ gap: s['3'] }}>
               {xs.map((c) => (
-                <CollectionRow key={c.id} c={c} />
+                <CollectionRow key={c.id} c={c} work={workOf(c.id)} />
               ))}
             </View>
           )
@@ -97,7 +100,7 @@ export function Collections() {
 /** The poster's width in a row (the web's w-14). */
 const ART = admin.collections.art
 
-function CollectionRow({ c }: { c: CollectionSummary }) {
+function CollectionRow({ c, work }: { c: CollectionSummary; work: ItemJob[] | undefined }) {
   const t = useT(messages)
   const theme = useTheme()
   const people = usePeople()
@@ -148,7 +151,9 @@ function CollectionRow({ c }: { c: CollectionSummary }) {
         backgroundColor: theme.colors.s1,
       }}
     >
-      <CollectionArt poster={c.artwork} mosaic={c.mosaic} width={ART} radius={tokens.radius.xs} />
+      <WithItemWork jobs={work} look="poster">
+        <CollectionArt poster={c.artwork} mosaic={c.mosaic} width={ART} radius={tokens.radius.xs} />
+      </WithItemWork>
       <View style={{ flex: 1, minWidth: 0, gap: s['3'] }}>
         <View style={{ gap: s['1'], minWidth: 0 }}>
           <View

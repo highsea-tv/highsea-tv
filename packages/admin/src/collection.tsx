@@ -4,27 +4,24 @@
 // TMDB ids, and judgement call 5: the route loses `/metadata/`). The prototype has no page of its
 // own for a collection: it shows one as the Collection row on its parts' pages, with the name,
 // "{n} of {total} in the library" and Add {n} missing. This page is the smallest addition around
-// that row: the media page's summary card (backdrop, poster, overview), then the same row.
+// that row: the media page's hero (HT-105, the clients' treatment: the backdrop full bleed behind
+// the top row, the logo when there is one, the count and the overview), then the same row.
 
 import type { DiscoverMovie } from '@highsea-tv/api-contract'
 import { useT } from '@highsea-tv/i18n/react'
-import { admin, line } from '@highsea-tv/tokens'
-import {
-  Button,
-  Image,
-  Poster,
-  Text,
-  tokens,
-  useRegularWindow,
-  useTheme,
-} from '@highsea-tv/ui/native'
-import { type ReactNode, useState } from 'react'
-import { View } from 'react-native'
+import { Button, Text } from '@highsea-tv/ui/native'
+import { useState } from 'react'
 import { AddMovieDialog } from './add-dialog.tsx'
 import { ArtworkDialog } from './artwork-dialog.tsx'
 import { artwork as artworkMessages } from './artwork-messages.ts'
 import { collection as messages } from './collection-messages.ts'
-import { CollectionRow, MetadataError, SummarySkeleton, useCollection } from './media-sections.tsx'
+import {
+  CollectionRow,
+  HeroWords,
+  MetadataError,
+  SummarySkeleton,
+  useCollection,
+} from './media-sections.tsx'
 import { media } from './media-sections-messages.ts'
 import { parseTmdbId } from './movie-detail.tsx'
 import { AdminPage } from './shell.tsx'
@@ -65,6 +62,19 @@ function CollectionById({ id }: { id: number }) {
           </Button>
         ) : undefined
       }
+      backdrop={c?.art.backdrop ?? null}
+      hero={
+        c ? (
+          <HeroWords label={t('summary')} logo={c.art.logo ?? null} title={c.name}>
+            <Text variant="caption" color="text-2">
+              {tm('collection.suffix', { here, total: c.parts.length })}
+            </Text>
+            <Text variant="body" color="text-2">
+              {c.overview || t('noOverview')}
+            </Text>
+          </HeroWords>
+        ) : undefined
+      }
     >
       {collection.status === 'error' ? (
         <MetadataError
@@ -74,24 +84,7 @@ function CollectionById({ id }: { id: number }) {
       ) : !c ? (
         <SummarySkeleton />
       ) : (
-        <>
-          <Summary
-            label={t('summary')}
-            backdrop={c.art.backdrop}
-            poster={c.art.poster}
-            name={c.name}
-          >
-            <Text variant="caption" color="text-2">
-              {tm('collection.suffix', { here, total: c.parts.length })}
-            </Text>
-            <Text variant="body" color="text-2" style={{ maxWidth: MEASURE }}>
-              {c.overview || t('noOverview')}
-            </Text>
-          </Summary>
-          {c.parts.length > 0 && (
-            <CollectionRow collection={c} title={t('parts')} onAdd={setAdding} />
-          )}
-        </>
+        c.parts.length > 0 && <CollectionRow collection={c} title={t('parts')} onAdd={setAdding} />
       )}
       <AddMovieDialog movies={adding} onOpenChange={(o) => !o && setAdding([])} />
       {c ? (
@@ -104,65 +97,5 @@ function CollectionById({ id }: { id: number }) {
         />
       ) : null}
     </AdminPage>
-  )
-}
-
-/** The overview's measure (the web's max-w-[65ch] at the body's 15). */
-const MEASURE = admin.measure
-/** The poster's column in a regular window (the web's 9rem), and its width in a compact window (w-32). */
-const POSTER = { beside: admin.summaryPoster.beside, above: admin.summaryPoster.above }
-const FILL = { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 } as const
-
-/** The media page's summary card: the backdrop faint behind, the poster, and the words beside it. */
-function Summary({
-  label,
-  backdrop,
-  poster,
-  name,
-  children,
-}: {
-  label: string
-  backdrop: string | null
-  poster: string | null
-  name: string
-  children: ReactNode
-}) {
-  const theme = useTheme()
-  const beside = useRegularWindow()
-  const s = tokens.space
-  return (
-    <View
-      role="region"
-      aria-label={label}
-      style={{
-        position: 'relative',
-        overflow: 'hidden',
-        flexDirection: beside ? 'row' : 'column',
-        alignItems: 'flex-start',
-        gap: s['5'],
-        padding: beside ? s['5'] : s['4'],
-        borderWidth: line.thin,
-        borderColor: theme.colors.line,
-        borderRadius: tokens.radius.lg,
-        backgroundColor: theme.colors.s1,
-      }}
-    >
-      {backdrop ? (
-        <Image
-          source={{ uri: backdrop }}
-          alt=""
-          aria-hidden
-          contentFit="cover"
-          style={[FILL, { opacity: 0.15 }]}
-        />
-      ) : null}
-      <Poster
-        title={name}
-        src={poster ?? undefined}
-        showTitle={false}
-        width={beside ? POSTER.beside : POSTER.above}
-      />
-      <View style={{ flex: beside ? 1 : undefined, minWidth: 0, gap: s['3'] }}>{children}</View>
-    </View>
   )
 }

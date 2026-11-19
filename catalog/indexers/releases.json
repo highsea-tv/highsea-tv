@@ -1,5 +1,15 @@
 [
   {
+    "version": "0.4.10",
+    "channel": "stable",
+    "date": "2026-11-19",
+    "notes": [
+      "HT-100 Downloads: show where the data comes from, peers or web seeds (#104)",
+      "HT-107 Let the desktop app's styles load and its top bar drag the window (#105)"
+    ],
+    "url": "https://github.com/highsea-tv/highsea-tv/releases/tag/v0.4.10"
+  },
+  {
     "version": "0.4.9",
     "channel": "stable",
     "date": "2026-11-19",

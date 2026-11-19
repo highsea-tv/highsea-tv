@@ -126,6 +126,7 @@ export function createAutomation(deps: {
   jobs.define({
     type: MOVIE_SEARCH_JOB,
     payload: z.object({ tmdbId: z.number().int(), versionId: z.string().optional() }),
+    subject: ({ tmdbId }) => ({ kind: 'movie', id: String(tmdbId) }),
     attempts: 2,
     async run({ tmdbId, versionId }) {
       if (await searchMovie(tmdbId, versionId)) movies.wanted.found(tmdbId)
