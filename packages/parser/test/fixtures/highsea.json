@@ -5030,5 +5030,176 @@
       "year": 1966
     },
     "from": "highsea, written for the parser: the title ends at the last year before the tags"
+  },
+  {
+    "name": "Sintel 2010 720p BluRay x264 2.0-YTS",
+    "expect": {
+      "title": "Sintel",
+      "year": 2010,
+      "quality": {
+        "source": "bluray",
+        "resolution": 720,
+        "modifier": "none"
+      },
+      "codec": "avc",
+      "releaseGroup": "YTS"
+    },
+    "from": "highsea, written for the parser: the names the YTS definition composes from its API's quality, type, codec, bit depth and channels (catalog/indexers/definitions/yts.yml)"
+  },
+  {
+    "name": "Sintel 2010 1080p WEBRip x264 2.0-YTS",
+    "expect": {
+      "title": "Sintel",
+      "year": 2010,
+      "quality": {
+        "source": "webrip",
+        "resolution": 1080,
+        "modifier": "none"
+      },
+      "codec": "avc",
+      "releaseGroup": "YTS"
+    },
+    "from": "highsea, written for the parser: the names the YTS definition composes from its API's quality, type, codec, bit depth and channels (catalog/indexers/definitions/yts.yml)"
+  },
+  {
+    "name": "Sintel 2010 2160p BluRay x265 10bit 5.1-YTS",
+    "expect": {
+      "title": "Sintel",
+      "year": 2010,
+      "quality": {
+        "source": "bluray",
+        "resolution": 2160,
+        "modifier": "none"
+      },
+      "codec": "hevc",
+      "releaseGroup": "YTS"
+    },
+    "from": "highsea, written for the parser: the names the YTS definition composes from its API's quality, type, codec, bit depth and channels (catalog/indexers/definitions/yts.yml)"
+  },
+  {
+    "name": "Sintel 2010 480p WEBRip x264 2.0-YTS",
+    "expect": {
+      "title": "Sintel",
+      "year": 2010,
+      "quality": {
+        "source": "webrip",
+        "resolution": 480,
+        "modifier": "none"
+      },
+      "releaseGroup": "YTS"
+    },
+    "from": "highsea, written for the parser: the names the YTS definition composes from its API's quality, type, codec, bit depth and channels (catalog/indexers/definitions/yts.yml)"
+  },
+  {
+    "name": "Sintel 2010 1080p BluRay x264 5.1 REPACK-YTS",
+    "expect": {
+      "title": "Sintel",
+      "year": 2010,
+      "quality": {
+        "source": "bluray",
+        "resolution": 1080,
+        "revision": {
+          "version": 2,
+          "real": 0,
+          "proper": false,
+          "repack": true
+        }
+      },
+      "releaseGroup": "YTS"
+    },
+    "from": "highsea, written for the parser: the names the YTS definition composes from its API's quality, type, codec, bit depth and channels (catalog/indexers/definitions/yts.yml)"
+  },
+  {
+    "name": "Sintel 2010 3D BluRay x264 2.0-YTS",
+    "expect": {
+      "title": "Sintel",
+      "year": 2010,
+      "quality": {
+        "source": "bluray"
+      },
+      "threeD": true,
+      "releaseGroup": "YTS"
+    },
+    "from": "highsea, written for the parser: the names the YTS definition composes from its API's quality, type, codec, bit depth and channels (catalog/indexers/definitions/yts.yml)"
+  },
+  {
+    "name": "Mamá para Rato 2022 1080p WEBRip x264 2.0-YTS",
+    "expect": {
+      "title": "Mamá para Rato",
+      "year": 2022,
+      "quality": {
+        "source": "webrip",
+        "resolution": 1080,
+        "modifier": "none"
+      },
+      "releaseGroup": "YTS"
+    },
+    "from": "highsea, written for the parser: the names the YTS definition composes from its API's quality, type, codec, bit depth and channels (catalog/indexers/definitions/yts.yml)"
+  },
+  {
+    "name": "Sintel (2010) 720p BRRip x264 -YTS",
+    "expect": {
+      "title": "Sintel",
+      "year": 2010,
+      "quality": {
+        "source": "bluray",
+        "resolution": 720,
+        "modifier": "none"
+      },
+      "releaseGroup": "YTS"
+    },
+    "from": "highsea, written for the parser: a shape seen in the public indexers' answers (Knaben, BitSearch, Torrents-CSV), 2026-11-19"
+  },
+  {
+    "name": "Sintel (2010) [720p] [BluRay] [YTS.MX]",
+    "expect": {
+      "title": "Sintel",
+      "year": 2010,
+      "quality": {
+        "source": "bluray",
+        "resolution": 720,
+        "modifier": "none"
+      }
+    },
+    "from": "highsea, written for the parser: a shape seen in the public indexers' answers (Knaben, BitSearch, Torrents-CSV), 2026-11-19"
+  },
+  {
+    "name": "www.UIndex.org    -    Sintel.2010.720p.WEB.H264-CLASSiCALHD",
+    "expect": {
+      "title": "Sintel",
+      "year": 2010,
+      "quality": {
+        "source": "webdl",
+        "resolution": 720,
+        "modifier": "none"
+      },
+      "codec": "avc",
+      "releaseGroup": "CLASSiCALHD"
+    },
+    "from": "highsea, written for the parser: a shape seen in the public indexers' answers (Knaben, BitSearch, Torrents-CSV), 2026-11-19"
+  },
+  {
+    "name": "Sintel (2010) (2160p UHD BluRay x265 DV HDR10+ DTS-HD MA 5.1 r00t) [QxR]",
+    "expect": {
+      "title": "Sintel",
+      "year": 2010,
+      "quality": {
+        "source": "bluray",
+        "resolution": 2160,
+        "modifier": "none"
+      },
+      "codec": "hevc",
+      "hdr": ["dv", "hdr10plus"]
+    },
+    "from": "highsea, written for the parser: a shape seen in the public indexers' answers (Knaben, BitSearch, Torrents-CSV), 2026-11-19"
+  },
+  {
+    "name": "Sintel.2010.Theora.Ogv-VODO",
+    "expect": {
+      "title": "Sintel",
+      "year": 2010,
+      "releaseGroup": "VODO"
+    },
+    "from": "highsea, written for the parser: a shape seen in the public indexers' answers (Knaben, BitSearch, Torrents-CSV), 2026-11-19"
   }
 ]

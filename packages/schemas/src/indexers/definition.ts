@@ -185,7 +185,19 @@ const errorRuleSchema = z
   .refine((r) => Boolean(r.path) !== Boolean(r.selector), 'Give a path or a selector.')
 
 const rowsSchema = z.union([
-  z.object({ path: z.string().max(200) }).strict(),
+  z
+    .object({
+      path: z.string().max(200),
+      /**
+       * A list inside each row that holds the releases, as an API that lists films with their
+       * torrents under each: one row per item of it, read as the outer row with this key holding
+       * that one item (`torrents.hash`, beside the film's own `title`). Engine 1.1.
+       */
+      each: z.string().min(1).max(200).optional(),
+      /** The API leaves the list out when nothing matched: a missing list is no results. Engine 1.1. */
+      optional: z.boolean().default(false),
+    })
+    .strict(),
   z
     .object({
       selector: z.string().min(1).max(400),
@@ -263,6 +275,11 @@ const common = {
     })
     .strict()
     .optional(),
+  /**
+   * Whether an empty search lists the site's newest releases. A site whose API needs a query
+   * says false: RSS sync passes it by, and its test must name keywords. Engine 1.1.
+   */
+  latest: z.boolean().default(true),
   /** What a test searches for. Empty keywords ask for the latest releases. */
   test: z
     .object({ keywords: z.string().max(100).default('') })

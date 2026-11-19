@@ -366,7 +366,8 @@ export function createSearch<R extends IndexerRow>(deps: {
       targets: readonly RssTarget[],
       inputFor: (tmdbId: number) => SearchInput | null,
     ): Promise<RssResult> {
-      const candidates = deps.candidates()
+      // a site that can't list its newest releases has no feed to read (`latest: false`)
+      const candidates = deps.candidates().filter((c) => c.definition.latest)
       const settled = await Promise.allSettled(
         candidates.map((c) => deps.run(c.row, c.definition, { keywords: '' })),
       )
