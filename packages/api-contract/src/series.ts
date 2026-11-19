@@ -2,8 +2,8 @@
 // Shows as the admin keeps them (docs/product/shows.md), drafted with D3 of the one client platform
 // (one-client-platform-d.md, the owner's answer 5): Sonarr's series, seasons and episodes,
 // monitored or not, each episode with its file, and Add a show from TMDB. Served since Phase 5 B
-// (@highsea-tv/media/shows) but for `search`, a draft until part C1 searches for episodes; the
-// admin draws Shows when public info's `sources` lists `shows`. The routes are at `/series`,
+// (@highsea-tv/media/shows); Search, the release search for a season or an episode and its grab
+// since part C1; the admin draws Shows when public info's `sources` lists `shows`. The routes are at `/series`,
 // Sonarr's own name for them, beside the apps' `/shows` (shows.ts), as the admin's collections sit beside the apps' (`/curation/collections` and
 // `/library/collections`). A show is addressed by a string id: on the server its TMDB id
 // ("2996", ADR 0064), in the prototypes' mock a slug ("the-lantern-keepers"); an episode's is its
@@ -13,15 +13,15 @@ import {
   API_PREFIX,
   access,
   body,
-  draft,
   errors,
   IdParam,
   IsoDate,
   IsoDay,
   json,
   noContent,
-  notServed,
 } from './common.ts'
+import { QueueItem } from './downloads.ts'
+import { Release, ReleaseSearch } from './indexers.ts'
 
 /**
  * Which episodes a show added watches, as Sonarr's Monitor choice: every one, only those not yet
@@ -99,6 +99,11 @@ export const Series = z
     languageProfileId: z.string(),
     rootFolder: z.string(),
     path: z.string(),
+    /**
+     * Its root folder is one highsea only reads (ADR 0063): nothing is searched for or imported
+     * into it, so the admin hides monitoring and Search.
+     */
+    readOnly: z.boolean(),
     /** Files go in "Season 01" folders. */
     seasonFolders: z.boolean(),
     addedAt: IsoDate,
@@ -178,10 +183,53 @@ export const SeriesUpdate = z
   .partial()
   .openapi('SeriesUpdate')
 
-/** A search for the whole show, a season or one episode. */
+/** A search for the whole show, a season or one episode (its id, as `SeriesEpisode.id`). */
 export const SeriesSearch = z
   .object({ season: z.number().int().min(0).optional(), episode: z.string().optional() })
   .openapi('SeriesSearch')
+
+/** What an interactive search is for: a season, or one episode in it (its id). */
+export const EpisodeScope = z
+  .object({ season: z.number().int().min(0).max(9999), episode: z.string().max(40).optional() })
+  .openapi('EpisodeScope')
+
+/** A show's release: a film's, with the episodes it brings. */
+export const EpisodeRelease = Release.extend({
+  season: z.number().int(),
+  /** Its episode numbers in the season; every one for a season pack. */
+  episodes: z.array(z.number().int()),
+  /** A whole season. */
+  pack: z.boolean(),
+}).openapi('EpisodeRelease')
+
+export const EpisodeReleaseSearch = ReleaseSearch.extend({
+  releases: z.array(EpisodeRelease),
+  /**
+   * What each indexer answered with that isn't in `releases`: `other-show`, `other-episode`
+   * (outside the season or episode asked for), `not-episode` (no season or episode in its name) or
+   * `duplicate`.
+   */
+  leftOut: z.array(
+    z.object({
+      indexerId: z.string(),
+      indexer: z.string(),
+      reason: z.enum(['other-show', 'other-episode', 'not-episode', 'duplicate']),
+      count: z.number().int(),
+      found: z.number().int(),
+    }),
+  ),
+}).openapi('EpisodeReleaseSearch')
+
+export const GrabEpisodeReleaseInput = z
+  .object({
+    indexerId: z.string(),
+    /** The search the release came from. */
+    season: z.number().int().min(0).max(9999),
+    episode: z.string().max(40).optional(),
+    /** Grab anyway: a release the decision engine rejected, or one on the blocklist. */
+    force: z.boolean().optional(),
+  })
+  .openapi('GrabEpisodeReleaseInput')
 
 const Monitored = z.object({ monitored: z.boolean() })
 
@@ -198,8 +246,6 @@ const EpisodeParams = IdParam.extend({
 })
 
 const served = access('staff')
-// searching for episodes is part C1's: it stays a draft until then
-const staff = { ...access('staff'), ...draft() }
 /**
  * A file or folder under a shows root folder that couldn't be placed (Phase 5 B): a show folder
  * TMDB couldn't name surely, or a file whose name gives no episode the show has. Kept with its
@@ -430,15 +476,66 @@ export const series = {
     method: 'post',
     path: `${SERIES}/{id}/search`,
     tags: ['Series'],
-    summary: 'Search for a show’s, a season’s or an episode’s wanted episodes (draft)',
+    summary: 'Search for a show’s, a season’s or an episode’s wanted episodes',
     description:
-      'Looks for monitored, aired episodes with no file or one below the cutoff, and says how many. Drafted: the server answers 501.',
-    ...staff,
+      'Looks for monitored, aired episodes with no file and says how many; the search runs in the background, a season at a time, and grabs what it finds (Activity follows it). 409 `no-indexers` while no indexer is enabled, `read-only` when highsea only reads the show’s root folder.',
+    ...served,
     request: { params: IdParam, ...body(SeriesSearch) },
     responses: {
       200: json(z.object({ found: z.number().int().nonnegative() }), 'How many it looks for'),
+      ...errors('invalid', 'unauthorized', 'forbidden', 'not-found', 'conflict'),
+    },
+  }),
+  interactiveSearch: createRoute({
+    method: 'post',
+    path: `${SERIES}/{id}/releases/search`,
+    tags: ['Series'],
+    summary: 'Search every usable indexer for a season or an episode now',
+    description:
+      'Judged by the show’s profile and the episode sizes, approved releases first; a season pack is approved only when every episode in it is monitored, aired and missing. The results are kept for 30 minutes per season or episode. 409 `no-indexers` while no indexer is enabled.',
+    ...served,
+    request: { params: IdParam, ...body(EpisodeScope) },
+    responses: {
+      200: json(EpisodeReleaseSearch, 'The releases'),
+      ...errors('invalid', 'unauthorized', 'forbidden', 'not-found', 'conflict'),
+    },
+  }),
+  releases: createRoute({
+    method: 'get',
+    path: `${SERIES}/{id}/releases`,
+    tags: ['Series'],
+    summary: 'The last search’s releases for a season or an episode, while they’re fresh',
+    description: 'Best first; empty when there’s been no search in the last 30 minutes.',
+    ...served,
+    request: {
+      params: IdParam,
+      query: z.object({
+        season: z.coerce.number<number>().int().min(0).max(9999),
+        episode: z.string().max(40).optional(),
+      }),
+    },
+    responses: {
+      200: json(z.array(EpisodeRelease), 'The releases'),
       ...errors('invalid', 'unauthorized', 'forbidden', 'not-found'),
-      ...notServed,
+    },
+  }),
+  grabRelease: createRoute({
+    method: 'post',
+    path: `${SERIES}/{id}/releases/{guid}/grab`,
+    tags: ['Series'],
+    summary: 'Grab a release from the last search of a season or an episode',
+    description:
+      'The guid is the release’s, URL-encoded. 409 when the decision engine rejected it, it’s on the blocklist (unless `force`) or its episodes are already downloading; 404 when the search results have expired; 503 when the indexer couldn’t send it.',
+    ...served,
+    request: {
+      params: IdParam.extend({
+        guid: z.string().openapi({ param: { name: 'guid', in: 'path' } }),
+      }),
+      ...body(GrabEpisodeReleaseInput),
+    },
+    responses: {
+      200: json(QueueItem, 'Grabbed'),
+      ...errors('invalid', 'unauthorized', 'forbidden', 'not-found', 'conflict', 'unavailable'),
     },
   }),
 } as const
@@ -452,5 +549,9 @@ export type UnmatchedShowPath = z.infer<typeof UnmatchedShowPath>
 export type UnmatchedShowMatch = z.infer<typeof UnmatchedMatch>
 export type AddSeriesInput = z.infer<typeof AddSeriesInput>
 export type SeriesUpdate = z.infer<typeof SeriesUpdate>
+export type EpisodeScope = z.infer<typeof EpisodeScope>
+export type EpisodeRelease = z.infer<typeof EpisodeRelease>
+export type EpisodeReleaseSearch = z.infer<typeof EpisodeReleaseSearch>
+export type GrabEpisodeReleaseInput = z.infer<typeof GrabEpisodeReleaseInput>
 export type ShowMonitor = (typeof SHOW_MONITOR)[number]
 export type EpisodeStatus = (typeof EPISODE_STATUS)[number]

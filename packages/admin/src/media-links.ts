@@ -6,10 +6,32 @@
 import type { MovieStatus } from '@highsea-tv/api-contract'
 import type { BadgeTone } from '@highsea-tv/ui'
 import type { library } from './library-messages.ts'
+import { episodeCode, showPath } from './show-data.ts'
 
 export const moviePath = (id: number) => `/movies/${id}`
 export const personPath = (id: number) => `/people/${id}`
 export const collectionPath = (id: number) => `/collections/${id}`
+
+/** What a download, a history entry or a blocklist entry is for (Phase 5 C1 adds a show's). */
+type ForTitle = {
+  movieId: number | null
+  show: { id: string; season: number; episodes: number[] } | null
+}
+
+/** Its page: the show's or the film's; none for a manual torrent. */
+export const titlePath = (x: ForTitle): string | null =>
+  x.show ? showPath(x.show.id) : x.movieId === null ? null : moviePath(x.movieId)
+
+/**
+ * Its name as Activity says it: a film's with its year, a show's with its episodes ("Chernobyl
+ * S01E02–E03"), or the show's alone for its blocklist, which is the show's.
+ */
+export const titleOf = (x: ForTitle & { title: string; year: number | null }): string =>
+  x.show
+    ? x.show.episodes.length
+      ? `${x.title} ${episodeCode(x.show.season, x.show.episodes)}`
+      : x.title
+    : `${x.title}${x.year ? ` (${x.year})` : ''}`
 
 /** Each library status: its badge tone and its label in library-messages.ts. */
 export const movieStatus: Record<

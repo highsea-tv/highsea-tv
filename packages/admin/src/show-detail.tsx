@@ -1,5 +1,6 @@
 'use client'
 import type {
+  EpisodeRelease,
   SeriesDetail,
   SeriesEpisode,
   SeriesSeason,
@@ -16,8 +17,11 @@ import { useAction, useQuery } from '@highsea-tv/sdk/react'
 // title, air date, state, file and Search. Files lists every file once, a double episode's file
 // noted. Search, Edit, and More (Refresh metadata, Remove) are in the header.
 //
-// Drawn only when the server serves shows (`Served`, serves.tsx), on the drafted `series` routes
-// the mock answers and the server answers 501.
+// Since Phase 5 C1, beside each season's and episode's Search, Releases opens the interactive
+// release list for it (release-list.tsx, a film's Search tab's table with an Episodes column), and
+// a show in a root folder highsea only reads (ADR 0063) has no monitoring switches and no Search:
+// nothing is searched for or imported there. Drawn only when the server serves shows (`Served`,
+// serves.tsx).
 import { admin } from '@highsea-tv/tokens'
 import {
   Badge,
@@ -51,9 +55,11 @@ import { type ComponentRef, type ReactNode, useRef, useState } from 'react'
 import { View } from 'react-native'
 import { useShowOptions } from './add-show-dialog.tsx'
 import { FormError } from './collections-rules.tsx'
+import { useSearchable } from './indexer-state.ts'
 import { Loadable } from './loadable.tsx'
 import { MediaSummary, SummarySkeleton } from './media-sections.tsx'
 import { useRouter } from './navigation.tsx'
+import { ReleaseList } from './release-list.tsx'
 import { Served } from './serves.tsx'
 import { AdminPage } from './shell.tsx'
 import {
@@ -76,6 +82,8 @@ import { useTabAddress } from './tabs.ts'
 const s = tokens.space
 const FIGURE = tokens.adminText.figure
 type Scope = { season?: number; episode?: string }
+/** What the release dialog lists: a season, or one episode in it, and its name. */
+type Releases = { season: number; episode?: string; what: string }
 
 /** `/shows/{id}`, Files at `/shows/{id}/files`. */
 export function ShowDetail({ id, tab = 'seasons' }: { id: string; tab?: ShowTab }) {
@@ -96,6 +104,7 @@ function Page({ id, tab }: { id: string; tab: ShowTab }) {
   const [removing, setRemoving] = useState(false)
   const [deleteFiles, setDeleteFiles] = useState(false)
   const [menu, setMenu] = useState(false)
+  const [releases, setReleases] = useState<Releases | null>(null)
   const more = useRef<ComponentRef<typeof View>>(null)
 
   const edit = useAction((c, body: SeriesUpdate) => c.series.update({ params: { id }, body }))
@@ -129,15 +138,17 @@ function Page({ id, tab }: { id: string; tab: ShowTab }) {
 
   const actions = sh ? (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: s['2'] }}>
-      <Button
-        variant="primary"
-        icon="search"
-        loading={search.pending}
-        disabled={!sh.monitored || !sh.seasonList.some((x) => x.episodes.some(wanted))}
-        onPress={() => look({}, sh.title)}
-      >
-        {t('search')}
-      </Button>
+      {!sh.readOnly && (
+        <Button
+          variant="primary"
+          icon="search"
+          loading={search.pending}
+          disabled={!sh.monitored || !sh.seasonList.some((x) => x.episodes.some(wanted))}
+          onPress={() => look({}, sh.title)}
+        >
+          {t('search')}
+        </Button>
+      )}
       <Button icon="edit" onPress={() => setEditing(true)}>
         {t('edit')}
       </Button>
@@ -219,6 +230,7 @@ function Page({ id, tab }: { id: string; tab: ShowTab }) {
                   show={sh}
                   searching={search.pending}
                   onSearch={look}
+                  onReleases={setReleases}
                   onMonitorSeason={(n, on) => monitorSeason.run(n, on).catch(fail(t('saveFailed')))}
                   onMonitorEpisode={(e, on) =>
                     monitorEpisode.run(e, on).catch(fail(t('saveFailed')))
@@ -232,6 +244,9 @@ function Page({ id, tab }: { id: string; tab: ShowTab }) {
         </>
       )}
       {sh && editing && <EditShowDialog show={sh} onClose={() => setEditing(false)} />}
+      {sh && releases && (
+        <ReleasesDialog show={sh} scope={releases} onClose={() => setReleases(null)} />
+      )}
       <ConfirmDialog
         open={removing}
         onClose={closeRemove}
@@ -364,9 +379,15 @@ function Summary({
             {sh.path}
           </Text>
         </View>
-        <View>
-          <Switch label={t('monitored')} checked={sh.monitored} onCheckedChange={onMonitor} />
-        </View>
+        {sh.readOnly ? (
+          <Text variant="caption" color="text-3">
+            {t('readOnly')}
+          </Text>
+        ) : (
+          <View>
+            <Switch label={t('monitored')} checked={sh.monitored} onCheckedChange={onMonitor} />
+          </View>
+        )}
       </View>
     </MediaSummary>
   )
@@ -378,12 +399,14 @@ function Seasons({
   show: sh,
   searching,
   onSearch,
+  onReleases,
   onMonitorSeason,
   onMonitorEpisode,
 }: {
   show: SeriesDetail
   searching: boolean
   onSearch: (scope: Scope, what: string) => void
+  onReleases: (scope: Releases) => void
   onMonitorSeason: (season: number, on: boolean) => void
   onMonitorEpisode: (episode: string, on: boolean) => void
 }) {
@@ -412,6 +435,7 @@ function Seasons({
       onToggle={() => toggle(season.number)}
       searching={searching}
       onSearch={onSearch}
+      onReleases={onReleases}
       onMonitor={(on) => onMonitorSeason(season.number, on)}
       onMonitorEpisode={onMonitorEpisode}
     />
@@ -425,6 +449,7 @@ function SeasonSection({
   onToggle,
   searching,
   onSearch,
+  onReleases,
   onMonitor,
   onMonitorEpisode,
 }: {
@@ -434,6 +459,7 @@ function SeasonSection({
   onToggle: () => void
   searching: boolean
   onSearch: (scope: Scope, what: string) => void
+  onReleases: (scope: Releases) => void
   onMonitor: (on: boolean) => void
   onMonitorEpisode: (episode: string, on: boolean) => void
 }) {
@@ -475,17 +501,34 @@ function SeasonSection({
               gap: s['3'],
             }}
           >
-            {/* its name is Monitored inside the season's region, as the prototype's was */}
-            <Switch label={t('monitored')} checked={season.monitored} onCheckedChange={onMonitor} />
-            <Button
-              size="sm"
-              icon="search"
-              accessibilityLabel={t('season.search', { season: season.title })}
-              disabled={searching || !sh.monitored || !season.episodes.some(wanted)}
-              onPress={() => onSearch({ season: season.number }, what)}
-            >
-              {t('search')}
-            </Button>
+            {!sh.readOnly && (
+              <>
+                {/* its name is Monitored inside the season's region, as the prototype's was */}
+                <Switch
+                  label={t('monitored')}
+                  checked={season.monitored}
+                  onCheckedChange={onMonitor}
+                />
+                <Button
+                  size="sm"
+                  icon="search"
+                  accessibilityLabel={t('season.search', { season: season.title })}
+                  disabled={searching || !sh.monitored || !season.episodes.some(wanted)}
+                  onPress={() => onSearch({ season: season.number }, what)}
+                >
+                  {t('search')}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  icon="list"
+                  accessibilityLabel={t('season.releases', { season: season.title })}
+                  onPress={() => onReleases({ season: season.number, what })}
+                >
+                  {t('releases')}
+                </Button>
+              </>
+            )}
           </View>
         </TableToolbar>
         {open &&
@@ -499,9 +542,11 @@ function SeasonSection({
             <Table label={t('episodes.table', { season: season.title })}>
               <TableHeader>
                 <TableRow>
-                  <TableHead width={admin.showDetail.monitoredColumn} hidden>
-                    {t('monitored')}
-                  </TableHead>
+                  {!sh.readOnly && (
+                    <TableHead width={admin.showDetail.monitoredColumn} hidden>
+                      {t('monitored')}
+                    </TableHead>
+                  )}
                   <TableHead numeric width={admin.showDetail.numberColumn}>
                     {t('col.number')}
                   </TableHead>
@@ -509,29 +554,33 @@ function SeasonSection({
                   <TableHead>{t('col.aired')}</TableHead>
                   <TableHead>{t('col.status')}</TableHead>
                   <TableHead>{t('col.file')}</TableHead>
-                  <TableHead width={admin.showDetail.searchColumn} hidden>
-                    {t('col.search')}
-                  </TableHead>
+                  {!sh.readOnly && (
+                    <TableHead width={admin.showDetail.searchColumn * 2} hidden>
+                      {t('col.search')}
+                    </TableHead>
+                  )}
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {episodes.map((e) => (
-                  <EpisodeRow
-                    key={e.id}
-                    episode={e}
-                    searching={searching}
-                    onMonitor={(on) => onMonitorEpisode(e.id, on)}
-                    onSearch={() =>
-                      onSearch(
-                        { episode: e.id },
-                        t('what.episode', {
-                          show: sh.title,
-                          code: episodeCode(e.season, [e.number]),
-                        }),
-                      )
-                    }
-                  />
-                ))}
+                {episodes.map((e) => {
+                  const named = t('what.episode', {
+                    show: sh.title,
+                    code: episodeCode(e.season, [e.number]),
+                  })
+                  return (
+                    <EpisodeRow
+                      key={e.id}
+                      episode={e}
+                      readOnly={sh.readOnly}
+                      searching={searching}
+                      onMonitor={(on) => onMonitorEpisode(e.id, on)}
+                      onSearch={() => onSearch({ episode: e.id }, named)}
+                      onReleases={() =>
+                        onReleases({ season: e.season, episode: e.id, what: named })
+                      }
+                    />
+                  )
+                })}
               </TableBody>
             </Table>
           ))}
@@ -542,14 +591,18 @@ function SeasonSection({
 
 function EpisodeRow({
   episode: e,
+  readOnly,
   searching,
   onMonitor,
   onSearch,
+  onReleases,
 }: {
   episode: SeriesEpisode
+  readOnly: boolean
   searching: boolean
   onMonitor: (on: boolean) => void
   onSearch: () => void
+  onReleases: () => void
 }) {
   const t = useT(messages)
   const locale = useLocale()
@@ -557,14 +610,16 @@ function EpisodeRow({
   const label = `${episodeCode(e.season, [e.number])} ${e.title}`
   return (
     <TableRow>
-      <TableCell>
-        <Switch
-          label={t('episode.monitor', { label })}
-          hideLabel
-          checked={e.monitored}
-          onCheckedChange={onMonitor}
-        />
-      </TableCell>
+      {!readOnly && (
+        <TableCell>
+          <Switch
+            label={t('episode.monitor', { label })}
+            hideLabel
+            checked={e.monitored}
+            onCheckedChange={onMonitor}
+          />
+        </TableCell>
+      )}
       <TableCell numeric>{String(e.number)}</TableCell>
       <TableCell>
         <Text size={tokens.adminText.ui.size} color={e.monitored ? 'text' : 'text-3'}>
@@ -599,19 +654,33 @@ function EpisodeRow({
       <TableCell maxWidth={admin.showDetail.titleMaxWidth}>
         <EpisodeFile episode={e} />
       </TableCell>
-      <TableCell align="end">
-        <Tooltip content={t('episode.searchHint')}>
-          <Button
-            size="sm"
-            variant="ghost"
-            iconOnly
-            icon="search"
-            accessibilityLabel={t('episode.search', { label })}
-            disabled={searching || !wanted(e)}
-            onPress={onSearch}
-          />
-        </Tooltip>
-      </TableCell>
+      {!readOnly && (
+        <TableCell align="end">
+          <View style={{ flexDirection: 'row', justifyContent: 'flex-end' }}>
+            <Tooltip content={t('episode.searchHint')}>
+              <Button
+                size="sm"
+                variant="ghost"
+                iconOnly
+                icon="search"
+                accessibilityLabel={t('episode.search', { label })}
+                disabled={searching || !wanted(e)}
+                onPress={onSearch}
+              />
+            </Tooltip>
+            <Tooltip content={t('episode.releasesHint')}>
+              <Button
+                size="sm"
+                variant="ghost"
+                iconOnly
+                icon="list"
+                accessibilityLabel={t('episode.releases', { label })}
+                onPress={onReleases}
+              />
+            </Tooltip>
+          </View>
+        </TableCell>
+      )}
     </TableRow>
   )
 }
@@ -823,3 +892,73 @@ function EditShowDialog({ show: sh, onClose }: { show: SeriesDetail; onClose: ()
 
 /** A table cell's side padding (the web's px-3.5). */
 const CELL_X = admin.table.cellX
+
+// ---------------------------------------------------------------- releases (Phase 5 C1)
+
+/**
+ * A season's or an episode's releases from every usable indexer, judged by the show's profile and
+ * the episode sizes: the film page's release list with an Episodes column. Opening it shows the
+ * last 30 minutes' results when there are some; Search again always searches.
+ */
+function ReleasesDialog({
+  show: sh,
+  scope,
+  onClose,
+}: {
+  show: SeriesDetail
+  scope: Releases
+  onClose: () => void
+}) {
+  const t = useT(messages)
+  const router = useRouter()
+  const searchable = useSearchable()
+  const id = sh.id
+  const asked = { season: scope.season, ...(scope.episode ? { episode: scope.episode } : {}) }
+  return (
+    <Dialog
+      open
+      onClose={onClose}
+      closable
+      size="lg"
+      title={t('releases.title', { what: scope.what })}
+      description={t('releases.body')}
+    >
+      {!searchable.ready ? null : !searchable.canSearch ? (
+        <EmptyState
+          icon="indexer"
+          title={t('releases.noIndexers')}
+          action={
+            <Button onPress={() => router.push('/indexers')}>{t('releases.indexers')}</Button>
+          }
+        />
+      ) : (
+        <ReleaseList<EpisodeRelease>
+          queryKey={`show-releases:${id}:${scope.season}:${scope.episode ?? ''}`}
+          indexers={searchable.enabled}
+          load={async (c, run) => {
+            if (run === 0) {
+              const cached = await c.series.releases({ params: { id }, query: asked })
+              if (cached.length) return { releases: cached, failed: [], leftOut: [] }
+            }
+            return c.series.interactiveSearch({ params: { id }, body: asked })
+          }}
+          grab={(c, r) =>
+            c.series.grabRelease({
+              params: { id, guid: r.guid },
+              body: { indexerId: r.indexerId, ...asked, ...(r.approved ? {} : { force: true }) },
+            })
+          }
+          noneForThis={t('releases.noneForThis')}
+          leftOutNote={(l) =>
+            l.reason === 'other-show'
+              ? t('releases.leftOut', { indexer: l.indexer, found: l.found, count: l.count })
+              : null
+          }
+          episodes={(r) =>
+            r.pack ? t('releases.pack', { season: r.season }) : episodeCode(r.season, r.episodes)
+          }
+        />
+      )}
+    </Dialog>
+  )
+}

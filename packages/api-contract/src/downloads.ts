@@ -67,6 +67,19 @@ export const SeedingRule = z
 
 const Count = z.object({ connected: z.number().int(), total: z.number().int() })
 
+/**
+ * A show's download, history entry or blocklist entry (Phase 5 C1): the show's id as the admin
+ * addresses it (its TMDB id as a string), the season and the episode numbers; none for the
+ * blocklist's, which is the show's.
+ */
+export const EpisodeRef = z
+  .object({
+    id: z.string(),
+    season: z.number().int(),
+    episodes: z.array(z.number().int()),
+  })
+  .openapi('EpisodeRef')
+
 export const Torrent = z
   .object({
     id: z.string(),
@@ -74,6 +87,8 @@ export const Torrent = z
     infoHash: z.string(),
     /** The movie it was grabbed for (its TMDB id); null for a torrent added by hand. */
     movieId: z.number().int().nullable(),
+    /** The show and episodes it was grabbed for; null for a film's or a manual torrent. */
+    show: EpisodeRef.nullable(),
     category: z.string(),
     /** Added by hand or from the watch folder, not grabbed for the library (6b). */
     manual: z.boolean(),
@@ -105,13 +120,16 @@ export const Torrent = z
   })
   .openapi('Torrent')
 
-/** A row in Activity › Queue: a grab seen from the movie it's for. */
+/** A row in Activity › Queue: a grab seen from the movie or show it's for. */
 export const QueueItem = z
   .object({
     id: z.string(),
     /** Null once the torrent has gone, as after a failed grab. */
     torrentId: z.string().nullable(),
     movieId: z.number().int().nullable(),
+    /** A show's grab: the show, season and episodes it brings; null for a film's. */
+    show: EpisodeRef.nullable(),
+    /** The movie's or the show's. */
     title: z.string(),
     year: z.number().int().nullable(),
     release: z.string(),
@@ -220,7 +238,11 @@ export const HISTORY_TYPES = [
 export const HistoryEvent = z
   .object({
     id: z.string(),
+    /** The film's TMDB id; for a show's entry, the show's (`show` says which). */
     movieId: z.number().int(),
+    /** A show's entry: the show and the episodes it's about; null for a film's. */
+    show: EpisodeRef.nullable(),
+    /** The movie's or the show's. */
     title: z.string(),
     year: z.number().int().nullable(),
     type: z.enum(HISTORY_TYPES),
@@ -246,7 +268,9 @@ export const BlocklistEntry = z
   .object({
     id: z.string(),
     movieId: z.number().int().nullable(),
-    /** The movie's, when it's still in the library. */
+    /** A show's entry (its episodes left empty: the blocklist is the show's). */
+    show: EpisodeRef.nullable(),
+    /** The movie's or the show's, when it's still in the library. */
     title: z.string().nullable(),
     year: z.number().int().nullable(),
     sourceTitle: z.string(),
@@ -938,3 +962,4 @@ export type FolderListing = z.infer<typeof FolderListing>
 export type SpeedSample = z.infer<typeof SpeedSample>
 export type MediaManagementSettings = z.infer<typeof MediaManagementSettings>
 export type DownloadClientSettings = z.infer<typeof DownloadClientSettings>
+export type EpisodeRef = z.infer<typeof EpisodeRef>

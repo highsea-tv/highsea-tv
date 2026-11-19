@@ -7,11 +7,13 @@
 import { AppError, newId } from '@highsea-tv/core'
 import { schema } from '@highsea-tv/db'
 import type { HISTORY_TYPES } from '@highsea-tv/db/schema'
-import { and, desc, eq, sql } from 'drizzle-orm'
+import { and, desc, eq, inArray, sql } from 'drizzle-orm'
+import { alias } from 'drizzle-orm/sqlite-core'
 import type { MediaDeps } from './context.ts'
 import { isoOf } from './map.ts'
 
 const { history, mediaItems } = schema
+const shows = alias(mediaItems, 'history_show')
 
 export type HistoryType = (typeof HISTORY_TYPES)[number]
 
@@ -30,6 +32,11 @@ export type HistoryInput = {
 export type HistoryEvent = {
   id: string
   itemId: number
+  /**
+   * A show's entry (Phase 5 C1), on the show or one of its episodes: the show (its TMDB id as a
+   * string), the season and the episodes. `itemId`, `title` and `year` are then the show's.
+   */
+  show: { id: string; season: number; episodes: number[] } | null
   /** The movie's title and year, so a list names it without loading the library. */
   title: string
   year: number | null
@@ -62,6 +69,12 @@ function decode(cursor: string): Cursor {
     // falls through
   }
   throw badCursor()
+}
+
+/** The episode items a show's entry names (a grab, a refused import). */
+function episodeIdsOf(data: unknown): string[] {
+  const ids = (data as { episodeIds?: unknown } | null)?.episodeIds
+  return Array.isArray(ids) ? ids.filter((x): x is string => typeof x === 'string') : []
 }
 
 export function createHistory({
@@ -115,12 +128,17 @@ export function createHistory({
     const rows = db
       .select({
         row: history,
+        type: mediaItems.type,
         tmdbId: mediaItems.tmdbId,
         title: mediaItems.title,
         year: mediaItems.year,
+        season: mediaItems.seasonNumber,
+        episode: mediaItems.episodeNumber,
+        show: { tmdbId: shows.tmdbId, title: shows.title, year: shows.year },
       })
       .from(history)
       .innerJoin(mediaItems, eq(mediaItems.id, history.itemId))
+      .leftJoin(shows, eq(shows.id, mediaItems.showId))
       .where(
         and(
           itemId ? eq(history.itemId, itemId) : undefined,
@@ -131,19 +149,61 @@ export function createHistory({
       .limit(n + 1)
       .all()
     const more = rows.length > n
-    const items = rows.slice(0, n).map(({ row, tmdbId, title, year }) => ({
-      id: row.id,
-      itemId: tmdbId,
-      title,
-      year,
-      type: row.type,
-      date: isoOf(row.date),
-      sourceTitle: row.sourceTitle,
-      quality: row.quality,
-      indexer: row.indexer,
-      message: row.message,
-      downloadId: row.downloadId,
-    }))
+    const page = rows.slice(0, n)
+    // a show's own entries name their episodes in `data.episodeIds`: their numbers in one read
+    const ids = [
+      ...new Set(page.flatMap((r) => (r.type === 'show' ? episodeIdsOf(r.row.data) : []))),
+    ]
+    const numbers = new Map(
+      ids.length
+        ? db
+            .select({
+              id: mediaItems.id,
+              season: mediaItems.seasonNumber,
+              episode: mediaItems.episodeNumber,
+            })
+            .from(mediaItems)
+            .where(inArray(mediaItems.id, ids))
+            .all()
+            .map((e) => [e.id, e] as const)
+        : [],
+    )
+    const items = page.map((r) => {
+      const { row } = r
+      const showRef = (() => {
+        if (r.type === 'episode' && r.show?.tmdbId != null)
+          return {
+            id: String(r.show.tmdbId),
+            season: r.season ?? 0,
+            episodes: [r.episode ?? 0],
+          }
+        if (r.type !== 'show') return null
+        const eps = episodeIdsOf(row.data)
+          .map((id) => numbers.get(id))
+          .filter((e) => e !== undefined)
+          .sort((a, b) => (a.season ?? 0) - (b.season ?? 0) || (a.episode ?? 0) - (b.episode ?? 0))
+        return {
+          id: String(r.tmdbId),
+          season: eps[0]?.season ?? 0,
+          episodes: eps.map((e) => e.episode ?? 0),
+        }
+      })()
+      const own = r.type === 'episode' && r.show?.tmdbId != null ? r.show : null
+      return {
+        id: row.id,
+        itemId: own?.tmdbId ?? r.tmdbId,
+        show: showRef,
+        title: own?.title ?? r.title,
+        year: own ? own.year : r.year,
+        type: row.type,
+        date: isoOf(row.date),
+        sourceTitle: row.sourceTitle,
+        quality: row.quality,
+        indexer: row.indexer,
+        message: row.message,
+        downloadId: row.downloadId,
+      }
+    })
     const last = rows[n - 1]
     return { items, next: more && last ? encode({ d: last.row.date, i: last.row.id }) : null }
   }

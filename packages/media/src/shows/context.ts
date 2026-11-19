@@ -7,7 +7,9 @@ import type { JobQueue } from '@highsea-tv/jobs'
 import type { Metadata } from '@highsea-tv/metadata'
 import type { ImportHooks } from '../movies/import.ts'
 import type { MediaDeps } from '../shared/context.ts'
+import type { Extract } from '../shared/extract.ts'
 import type { Probe } from '../shared/probe.ts'
+import type { TransferFs } from '../shared/transfer.ts'
 
 /** How shows' files are read; every part has a default, as films' `ImportOptions` do. */
 export type ShowFileOptions = {
@@ -20,6 +22,12 @@ export type ShowFileOptions = {
    * subtitles', which keep the episode's sidecars, hash the file and search for what's wanted.
    */
   hooks?: Pick<ImportHooks, 'afterImport'>
+  /** The downloads folder and the categories', allowed beside the root folders (Phase 5 C1). */
+  downloadDirs?: () => string[]
+  /** The filesystem calls transfers make; a test forces `EXDEV` through it. */
+  fs?: TransferFs
+  /** unar; defaults to `HIGHSEA_UNAR` or `unar` on the PATH. */
+  extract?: Extract
 }
 
 export type ShowsDeps = MediaDeps & {

@@ -129,6 +129,7 @@ export function moviesAnswers(kit: AdminKit): Answers {
     id: x.id,
     torrentId: x.id,
     movieId: m.tmdbId,
+    show: null,
     title: m.title,
     year: m.year || null,
     release: x.name,
@@ -457,6 +458,7 @@ export function moviesAnswers(kit: AdminKit): Answers {
           items: all.slice(from, from + PAGE).map((h) => ({
             id: h.id,
             movieId: m.tmdbId,
+            show: null,
             title: m.title,
             year: m.year || null,
             type: h.type,

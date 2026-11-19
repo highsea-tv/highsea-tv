@@ -908,18 +908,6 @@
           "name"
         ]
       },
-      "SeriesSearch": {
-        "type": "object",
-        "properties": {
-          "season": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "episode": {
-            "type": "string"
-          }
-        }
-      },
       "MusicFolder": {
         "type": "object",
         "properties": {
@@ -7797,6 +7785,9 @@
           "path": {
             "type": "string"
           },
+          "readOnly": {
+            "type": "boolean"
+          },
           "seasonFolders": {
             "type": "boolean"
           },
@@ -7898,6 +7889,7 @@
           "languageProfileId",
           "rootFolder",
           "path",
+          "readOnly",
           "seasonFolders",
           "addedAt",
           "art",
@@ -8128,6 +8120,526 @@
             "type": "boolean"
           }
         }
+      },
+      "SeriesSearch": {
+        "type": "object",
+        "properties": {
+          "season": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "episode": {
+            "type": "string"
+          }
+        }
+      },
+      "EpisodeReleaseSearch": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ReleaseSearch"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "releases": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/EpisodeRelease"
+                }
+              },
+              "leftOut": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "indexerId": {
+                      "type": "string"
+                    },
+                    "indexer": {
+                      "type": "string"
+                    },
+                    "reason": {
+                      "type": "string",
+                      "enum": [
+                        "other-show",
+                        "other-episode",
+                        "not-episode",
+                        "duplicate"
+                      ]
+                    },
+                    "count": {
+                      "type": "integer"
+                    },
+                    "found": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "indexerId",
+                    "indexer",
+                    "reason",
+                    "count",
+                    "found"
+                  ]
+                }
+              }
+            }
+          }
+        ]
+      },
+      "EpisodeRelease": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Release"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "season": {
+                "type": "integer"
+              },
+              "episodes": {
+                "type": "array",
+                "items": {
+                  "type": "integer"
+                }
+              },
+              "pack": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "season",
+              "episodes",
+              "pack"
+            ]
+          }
+        ]
+      },
+      "Release": {
+        "type": "object",
+        "properties": {
+          "guid": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "indexerId": {
+            "type": "string"
+          },
+          "indexer": {
+            "type": "string"
+          },
+          "protocol": {
+            "type": "string",
+            "enum": [
+              "torrent",
+              "usenet"
+            ]
+          },
+          "size": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "seeders": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "leechers": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "grabs": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "publishedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "example": "2026-10-17T20:15:00.000Z"
+          },
+          "ageHours": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "details": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "quality": {
+            "type": "string"
+          },
+          "customFormats": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "formatScore": {
+            "type": "number"
+          },
+          "flags": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "freeleech",
+                "halfleech",
+                "doubleUpload",
+                "golden",
+                "approved",
+                "internal",
+                "scene",
+                "freeleech75",
+                "freeleech25"
+              ]
+            }
+          },
+          "languages": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "approved": {
+            "type": "boolean"
+          },
+          "reasons": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "accepted",
+                    "rejected",
+                    "warning"
+                  ]
+                },
+                "message": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "kind",
+                "message"
+              ]
+            }
+          }
+        },
+        "required": [
+          "guid",
+          "title",
+          "indexerId",
+          "indexer",
+          "protocol",
+          "size",
+          "seeders",
+          "leechers",
+          "grabs",
+          "publishedAt",
+          "ageHours",
+          "details",
+          "quality",
+          "customFormats",
+          "formatScore",
+          "flags",
+          "languages",
+          "approved",
+          "reasons"
+        ]
+      },
+      "ReleaseSearch": {
+        "type": "object",
+        "properties": {
+          "releases": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Release"
+            }
+          },
+          "searched": {
+            "type": "integer"
+          },
+          "failed": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "indexerId": {
+                  "type": "string"
+                },
+                "indexer": {
+                  "type": "string"
+                },
+                "message": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "indexerId",
+                "indexer",
+                "message"
+              ]
+            }
+          },
+          "leftOut": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "indexerId": {
+                  "type": "string"
+                },
+                "indexer": {
+                  "type": "string"
+                },
+                "reason": {
+                  "type": "string",
+                  "enum": [
+                    "other-movie",
+                    "duplicate"
+                  ]
+                },
+                "count": {
+                  "type": "integer"
+                },
+                "found": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "indexerId",
+                "indexer",
+                "reason",
+                "count",
+                "found"
+              ]
+            }
+          }
+        },
+        "required": [
+          "releases",
+          "searched",
+          "failed",
+          "leftOut"
+        ]
+      },
+      "EpisodeScope": {
+        "type": "object",
+        "properties": {
+          "season": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9999
+          },
+          "episode": {
+            "type": "string",
+            "maxLength": 40
+          }
+        },
+        "required": [
+          "season"
+        ]
+      },
+      "QueueItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "torrentId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "movieId": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "show": {
+            "$ref": "#/components/schemas/EpisodeRef"
+          },
+          "title": {
+            "type": "string"
+          },
+          "year": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "release": {
+            "type": "string"
+          },
+          "quality": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "size": {
+            "type": "number"
+          },
+          "progress": {
+            "type": "number"
+          },
+          "downRate": {
+            "type": "number"
+          },
+          "upRate": {
+            "type": "number"
+          },
+          "eta": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "peers": {
+            "type": "object",
+            "properties": {
+              "connected": {
+                "type": "integer"
+              },
+              "total": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "connected",
+              "total"
+            ]
+          },
+          "seeds": {
+            "type": "object",
+            "properties": {
+              "connected": {
+                "type": "integer"
+              },
+              "total": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "connected",
+              "total"
+            ]
+          },
+          "ratio": {
+            "type": "number"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "checking",
+              "downloading",
+              "stalled",
+              "paused",
+              "importing",
+              "import-blocked",
+              "seeding",
+              "completed",
+              "error"
+            ]
+          },
+          "stateReason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "torrentId",
+          "movieId",
+          "show",
+          "title",
+          "year",
+          "release",
+          "quality",
+          "size",
+          "progress",
+          "downRate",
+          "upRate",
+          "eta",
+          "peers",
+          "seeds",
+          "ratio",
+          "state",
+          "stateReason"
+        ]
+      },
+      "EpisodeRef": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "season": {
+            "type": "integer"
+          },
+          "episodes": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "season",
+          "episodes"
+        ]
+      },
+      "GrabEpisodeReleaseInput": {
+        "type": "object",
+        "properties": {
+          "indexerId": {
+            "type": "string"
+          },
+          "season": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9999
+          },
+          "episode": {
+            "type": "string",
+            "maxLength": 40
+          },
+          "force": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "indexerId",
+          "season"
+        ]
       },
       "QualityProfile": {
         "type": "object",
@@ -11307,361 +11819,6 @@
           }
         }
       },
-      "ReleaseSearch": {
-        "type": "object",
-        "properties": {
-          "releases": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Release"
-            }
-          },
-          "searched": {
-            "type": "integer"
-          },
-          "failed": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "indexerId": {
-                  "type": "string"
-                },
-                "indexer": {
-                  "type": "string"
-                },
-                "message": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "indexerId",
-                "indexer",
-                "message"
-              ]
-            }
-          },
-          "leftOut": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "indexerId": {
-                  "type": "string"
-                },
-                "indexer": {
-                  "type": "string"
-                },
-                "reason": {
-                  "type": "string",
-                  "enum": [
-                    "other-movie",
-                    "duplicate"
-                  ]
-                },
-                "count": {
-                  "type": "integer"
-                },
-                "found": {
-                  "type": "integer"
-                }
-              },
-              "required": [
-                "indexerId",
-                "indexer",
-                "reason",
-                "count",
-                "found"
-              ]
-            }
-          }
-        },
-        "required": [
-          "releases",
-          "searched",
-          "failed",
-          "leftOut"
-        ]
-      },
-      "Release": {
-        "type": "object",
-        "properties": {
-          "guid": {
-            "type": "string"
-          },
-          "title": {
-            "type": "string"
-          },
-          "indexerId": {
-            "type": "string"
-          },
-          "indexer": {
-            "type": "string"
-          },
-          "protocol": {
-            "type": "string",
-            "enum": [
-              "torrent",
-              "usenet"
-            ]
-          },
-          "size": {
-            "type": [
-              "number",
-              "null"
-            ]
-          },
-          "seeders": {
-            "type": [
-              "integer",
-              "null"
-            ]
-          },
-          "leechers": {
-            "type": [
-              "integer",
-              "null"
-            ]
-          },
-          "grabs": {
-            "type": [
-              "integer",
-              "null"
-            ]
-          },
-          "publishedAt": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "format": "date-time",
-            "example": "2026-10-17T20:15:00.000Z"
-          },
-          "ageHours": {
-            "type": [
-              "number",
-              "null"
-            ]
-          },
-          "details": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "quality": {
-            "type": "string"
-          },
-          "customFormats": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "formatScore": {
-            "type": "number"
-          },
-          "flags": {
-            "type": "array",
-            "items": {
-              "type": "string",
-              "enum": [
-                "freeleech",
-                "halfleech",
-                "doubleUpload",
-                "golden",
-                "approved",
-                "internal",
-                "scene",
-                "freeleech75",
-                "freeleech25"
-              ]
-            }
-          },
-          "languages": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "approved": {
-            "type": "boolean"
-          },
-          "reasons": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "kind": {
-                  "type": "string",
-                  "enum": [
-                    "accepted",
-                    "rejected",
-                    "warning"
-                  ]
-                },
-                "message": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "kind",
-                "message"
-              ]
-            }
-          }
-        },
-        "required": [
-          "guid",
-          "title",
-          "indexerId",
-          "indexer",
-          "protocol",
-          "size",
-          "seeders",
-          "leechers",
-          "grabs",
-          "publishedAt",
-          "ageHours",
-          "details",
-          "quality",
-          "customFormats",
-          "formatScore",
-          "flags",
-          "languages",
-          "approved",
-          "reasons"
-        ]
-      },
-      "QueueItem": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "torrentId": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "movieId": {
-            "type": [
-              "integer",
-              "null"
-            ]
-          },
-          "title": {
-            "type": "string"
-          },
-          "year": {
-            "type": [
-              "integer",
-              "null"
-            ]
-          },
-          "release": {
-            "type": "string"
-          },
-          "quality": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "size": {
-            "type": "number"
-          },
-          "progress": {
-            "type": "number"
-          },
-          "downRate": {
-            "type": "number"
-          },
-          "upRate": {
-            "type": "number"
-          },
-          "eta": {
-            "type": [
-              "number",
-              "null"
-            ]
-          },
-          "peers": {
-            "type": "object",
-            "properties": {
-              "connected": {
-                "type": "integer"
-              },
-              "total": {
-                "type": "integer"
-              }
-            },
-            "required": [
-              "connected",
-              "total"
-            ]
-          },
-          "seeds": {
-            "type": "object",
-            "properties": {
-              "connected": {
-                "type": "integer"
-              },
-              "total": {
-                "type": "integer"
-              }
-            },
-            "required": [
-              "connected",
-              "total"
-            ]
-          },
-          "ratio": {
-            "type": "number"
-          },
-          "state": {
-            "type": "string",
-            "enum": [
-              "queued",
-              "checking",
-              "downloading",
-              "stalled",
-              "paused",
-              "importing",
-              "import-blocked",
-              "seeding",
-              "completed",
-              "error"
-            ]
-          },
-          "stateReason": {
-            "type": [
-              "string",
-              "null"
-            ]
-          }
-        },
-        "required": [
-          "id",
-          "torrentId",
-          "movieId",
-          "title",
-          "year",
-          "release",
-          "quality",
-          "size",
-          "progress",
-          "downRate",
-          "upRate",
-          "eta",
-          "peers",
-          "seeds",
-          "ratio",
-          "state",
-          "stateReason"
-        ]
-      },
       "SearchAlternativeInput": {
         "type": "object",
         "properties": {
@@ -11713,6 +11870,9 @@
           },
           "movieId": {
             "type": "integer"
+          },
+          "show": {
+            "$ref": "#/components/schemas/EpisodeRef"
           },
           "title": {
             "type": "string"
@@ -11770,6 +11930,7 @@
         "required": [
           "id",
           "movieId",
+          "show",
           "title",
           "year",
           "type",
@@ -11791,6 +11952,9 @@
               "integer",
               "null"
             ]
+          },
+          "show": {
+            "$ref": "#/components/schemas/EpisodeRef"
           },
           "title": {
             "type": [
@@ -11831,6 +11995,7 @@
         "required": [
           "id",
           "movieId",
+          "show",
           "title",
           "year",
           "sourceTitle",
@@ -11857,6 +12022,9 @@
               "integer",
               "null"
             ]
+          },
+          "show": {
+            "$ref": "#/components/schemas/EpisodeRef"
           },
           "category": {
             "type": "string"
@@ -11994,6 +12162,7 @@
           "name",
           "infoHash",
           "movieId",
+          "show",
           "category",
           "manual",
           "size",
@@ -18268,116 +18437,6 @@
           },
           "401": {
             "description": "unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "not-found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "501": {
-            "description": "Drafted: the server doesn’t serve this yet",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/series/{id}/search": {
-      "post": {
-        "tags": [
-          "Series"
-        ],
-        "summary": "Search for a show’s, a season’s or an episode’s wanted episodes (draft)",
-        "description": "Looks for monitored, aired episodes with no file or one below the cutoff, and says how many. Drafted: the server answers 501.",
-        "x-highsea-access": "staff",
-        "security": [
-          {
-            "session": []
-          },
-          {
-            "bearer": []
-          }
-        ],
-        "x-highsea-draft": true,
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "id",
-            "in": "path"
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/SeriesSearch"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "How many it looks for",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "found": {
-                      "type": "integer",
-                      "minimum": 0
-                    }
-                  },
-                  "required": [
-                    "found"
-                  ]
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "invalid",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "forbidden",
             "content": {
               "application/json": {
                 "schema": {
@@ -30271,6 +30330,438 @@
           },
           "404": {
             "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/series/{id}/search": {
+      "post": {
+        "tags": [
+          "Series"
+        ],
+        "summary": "Search for a show’s, a season’s or an episode’s wanted episodes",
+        "description": "Looks for monitored, aired episodes with no file and says how many; the search runs in the background, a season at a time, and grabs what it finds (Activity follows it). 409 `no-indexers` while no indexer is enabled, `read-only` when highsea only reads the show’s root folder.",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SeriesSearch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "How many it looks for",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "found": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  },
+                  "required": [
+                    "found"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/series/{id}/releases/search": {
+      "post": {
+        "tags": [
+          "Series"
+        ],
+        "summary": "Search every usable indexer for a season or an episode now",
+        "description": "Judged by the show’s profile and the episode sizes, approved releases first; a season pack is approved only when every episode in it is monitored, aired and missing. The results are kept for 30 minutes per season or episode. 409 `no-indexers` while no indexer is enabled.",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EpisodeScope"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The releases",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EpisodeReleaseSearch"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/series/{id}/releases": {
+      "get": {
+        "tags": [
+          "Series"
+        ],
+        "summary": "The last search’s releases for a season or an episode, while they’re fresh",
+        "description": "Best first; empty when there’s been no search in the last 30 minutes.",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0,
+              "maximum": 9999
+            },
+            "required": false,
+            "name": "season",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 40
+            },
+            "required": false,
+            "name": "episode",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The releases",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/EpisodeRelease"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/series/{id}/releases/{guid}/grab": {
+      "post": {
+        "tags": [
+          "Series"
+        ],
+        "summary": "Grab a release from the last search of a season or an episode",
+        "description": "The guid is the release’s, URL-encoded. 409 when the decision engine rejected it, it’s on the blocklist (unless `force`) or its episodes are already downloading; 404 when the search results have expired; 503 when the indexer couldn’t send it.",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "guid",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GrabEpisodeReleaseInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Grabbed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueueItem"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "unavailable",
             "content": {
               "application/json": {
                 "schema": {

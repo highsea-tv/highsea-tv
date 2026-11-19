@@ -31,6 +31,7 @@ describe('categories', () => {
     t.downloads.saveCategory({ name: 'books', folder: join(t.downloadsDir, 'reading') })
     expect(t.downloads.categories()).toEqual([
       { name: 'movies', folder: join(t.downloadsDir, 'movies'), fixed: true, torrents: 0 },
+      { name: 'shows', folder: join(t.downloadsDir, 'shows'), fixed: true, torrents: 0 },
       { name: 'manual', folder: join(t.downloadsDir, 'manual'), fixed: true, torrents: 0 },
       { name: 'books', folder: join(t.downloadsDir, 'reading'), fixed: false, torrents: 0 },
       { name: 'linux', folder: join(t.downloadsDir, 'linux'), fixed: false, torrents: 0 },
@@ -50,8 +51,12 @@ describe('categories', () => {
     expect(() => t.downloads.saveCategory({ name: 'movies' })).toThrow(
       'movies is built in. Choose another name.',
     )
+    // shows is built in since Phase 5 C1, where a show's grabs go; music is still kept
     expect(() => t.downloads.saveCategory({ name: 'Shows' })).toThrow(
-      'Shows is kept for the library.',
+      'shows is built in. Choose another name.',
+    )
+    expect(() => t.downloads.saveCategory({ name: 'Music' })).toThrow(
+      'Music is kept for the library.',
     )
     expect(() => t.downloads.saveCategory({ name: '../up' })).toThrow('Use up to 40 letters')
     try {
@@ -115,7 +120,12 @@ describe('categories', () => {
 
     await t.downloads.deleteTorrent(view.id, false)
     t.downloads.removeCategory('books')
-    expect(t.downloads.categories().map((c) => c.name)).toEqual(['movies', 'manual', 'linux'])
+    expect(t.downloads.categories().map((c) => c.name)).toEqual([
+      'movies',
+      'shows',
+      'manual',
+      'linux',
+    ])
   })
 
   test('the watch folder’s settings: an allowed folder and one of the categories', async () => {

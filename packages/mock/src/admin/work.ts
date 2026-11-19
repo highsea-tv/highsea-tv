@@ -39,6 +39,7 @@ export function workAnswers(kit: AdminKit): Answers {
     name: t.name,
     infoHash: t.infoHash,
     movieId: movieOf(s, t.itemId)?.tmdbId ?? null,
+    show: null,
     category: categoryOf(t),
     manual: t.itemId === null,
     size: t.size,
@@ -74,6 +75,7 @@ export function workAnswers(kit: AdminKit): Answers {
       id: `q-${t.id}`,
       torrentId: t.id,
       movieId: m?.tmdbId ?? null,
+      show: null,
       title: m?.title ?? row?.title ?? t.name,
       year: m?.year ?? null,
       release: t.name,
@@ -127,6 +129,7 @@ export function workAnswers(kit: AdminKit): Answers {
             {
               id: h.id,
               movieId: m.tmdbId,
+              show: null,
               title: m.title,
               year: m.year,
               type: h.type,
@@ -146,6 +149,7 @@ export function workAnswers(kit: AdminKit): Answers {
       return {
         id: b.id,
         movieId: m?.tmdbId ?? null,
+        show: null,
         title: m?.title ?? null,
         year: m?.year ?? null,
         sourceTitle: b.sourceTitle,

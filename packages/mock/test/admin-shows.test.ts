@@ -36,9 +36,51 @@ const shaped = (route: { responses: Record<number, unknown> }, value: unknown) =
 
 describe('the admin’s shows', () => {
   // served since Phase 5 B (HT-83), but the episode search, part C1's
-  test('every route is served but the episode search', () => {
+  test('every route is served, the episode search since Phase 5 C1', () => {
     const drafts = Object.entries(routes.series).filter(([, r]) => isDraft(r))
-    expect(drafts.map(([k]) => k)).toEqual(['search'])
+    expect(drafts.map(([k]) => k)).toEqual([])
+  })
+
+  test('lists a season’s releases and an episode’s, and grabs one', async () => {
+    const c = await setup()
+    const id = 'the-lantern-keepers'
+    const show = await c.series.get({ params: { id } })
+    const season = show.seasonList.find((s) => s.number > 0 && s.episodes.length > 0)
+    if (!season) throw new Error('no season')
+    const found = await c.series.interactiveSearch({
+      params: { id },
+      body: { season: season.number },
+    })
+    shaped(routes.series.interactiveSearch, found)
+    // the pack first among its kind, then each episode's
+    expect(found.releases.some((r) => r.pack)).toBe(true)
+    expect(found.releases.filter((r) => !r.pack).length).toBe(season.episodes.length * 2)
+    const kept = await c.series.releases({ params: { id }, query: { season: season.number } })
+    expect(kept.map((r) => r.guid)).toEqual(found.releases.map((r) => r.guid))
+
+    const episode = season.episodes[0]
+    if (!episode) throw new Error('no episode')
+    const one = await c.series.interactiveSearch({
+      params: { id },
+      body: { season: season.number, episode: episode.id },
+    })
+    expect(one.releases.every((r) => !r.pack && r.episodes[0] === episode.number)).toBe(true)
+    const r = one.releases[0]
+    if (!r) throw new Error('no release')
+    const scope = { season: season.number, episode: episode.id }
+    const grabbed = await c.series.grabRelease({
+      params: { id, guid: r.guid },
+      body: { indexerId: r.indexerId, ...scope, ...(r.approved ? {} : { force: true }) },
+    })
+    shaped(routes.series.grabRelease, grabbed)
+    expect(grabbed.show).toEqual({ id, season: season.number, episodes: [episode.number] })
+    const gone = await caught(
+      c.series.grabRelease({
+        params: { id, guid: 'nothing' },
+        body: { indexerId: r.indexerId, ...scope },
+      }),
+    )
+    expect(gone.status).toBe(404)
   })
 
   test('lists the library and opens a show with its seasons', async () => {

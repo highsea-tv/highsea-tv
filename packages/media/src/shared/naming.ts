@@ -301,3 +301,5 @@ export function checkFormat(format: string, kind: 'folder' | 'file'): string | n
     return 'The file format needs the movie’s title, so files can be told apart.'
   return null
 }
+
+export * from './episode-naming.ts'
