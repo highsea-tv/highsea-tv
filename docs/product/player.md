@@ -133,6 +133,18 @@ What stage 2 drew (the bar on the web and desktop, the mini player and Now playi
 - Trickplay frames: `GET /api/v1/items/{id}/trickplay/{n}.jpg` (BIF-style tiles) in the product; the still in the prototype.
 - Events: `watch.updated`.
 
+### Shuffle (HT-96, 2026-11-19)
+
+Shuffle on a show's page or a collection's page plays its episodes or films in a random order, one after another.
+
+- **The order** is a uniform shuffle (Fisher–Yates) made once, when Shuffle is pressed, and kept on the device for that sitting: Next and Previous move through it, and nothing comes twice. After the last item it stops: Next up doesn't show, and the last ends as any film does. It never falls back to the show's next episode or More like this.
+- **What goes in:** a show's episodes with a file, specials left out unless the show has only specials; a collection's films with a file. Watched ones are in, since shuffle is mostly for watching again.
+- **Each item starts from its beginning,** not its resume point (`/play/{id}/start?shuffle=1`, `/play/episode/{id}/start?shuffle=1`); Play elsewhere still resumes. Each is marked watched as normal, for the profile playing.
+- **Next up** says **Next in shuffle**, with the next episode's title and "S2, E4", or the next film's title, and counts down as Next up does when Autoplay is on.
+- **Previous and Next** show only in a shuffle: with a pointer after Forward 10 seconds, on touch either side of the centre controls, on the TV as overlay buttons beside Audio and subtitles. Previous is dimmed at the first item, Next at the last.
+- **Leaving the player ends the shuffle,** however it's left (Back to details, the browser's Back, a swipe). A reload on the web loses it; the item plays on alone.
+- **Where it lives:** on the client, in memory. The video players hold one item at a time (expo-video's `VideoPlayer` swaps sources with `replace()` and has no queue, https://docs.expo.dev/versions/latest/sdk/video/; the web's `<video>` plays one `src`), so each item takes the player's place in the history, as Next up's already does. No server route.
+
 ## Decisions
 
 - **The nudge is 50 ms,** the same step as the admin's subtitle offset ([movies.md](movies.md#decisions)), and it's saved per person and title, not on the track: the admin's offset fixes the file for everyone; this fixes it for you.
