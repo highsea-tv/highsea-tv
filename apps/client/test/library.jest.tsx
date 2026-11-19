@@ -4,11 +4,13 @@
 // Movies and Collections in it, with the sheet's sorts and filters and the A–Z index; a pointer
 // has Movies and Collections as destinations with selects. An empty library says so, and a
 // collection's page lists its films.
+
 import { letterOf, sortTitle } from '@highsea-tv/client/library'
 import { SEED } from '@highsea-tv/mock/films'
 import { act, cleanup, fireEvent, screen, within } from '@testing-library/react-native'
 import { router } from 'expo-router'
 import { StyleSheet } from 'react-native'
+import { currentShuffle, endShuffle } from '../../../packages/client/src/shuffle/index.ts'
 import {
   acknowledge,
   flush,
@@ -347,6 +349,18 @@ describe('the Library on the phone', () => {
     expect(r.getPathname()).toBe(`/collections/${SEED.collection.id}`)
     expect(screen.getByRole('header', { name: SEED.collection.name })).toBeTruthy()
     expect(posters().length).toBeGreaterThan(0)
+  })
+
+  test('a collection’s Shuffle plays its films in a random order, the first from its start', async () => {
+    const r = await at(`/collections/${SEED.collection.id}`)
+    await fireEvent.press(screen.getByRole('button', { name: 'Shuffle the films' }))
+    await flush()
+    const s = currentShuffle()
+    expect(s?.kind).toBe('movie')
+    expect(s?.ids.length).toBeGreaterThan(1)
+    expect(r.getPathname()).toBe(`/play/${s?.ids[0]}/start`)
+    expect(r.getSearchParams()).toMatchObject({ shuffle: '1' })
+    endShuffle()
   })
 
   test('/movies and /collections lead to the Library’s views', async () => {

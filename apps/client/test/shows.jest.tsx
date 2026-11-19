@@ -7,6 +7,7 @@
 // show page goes Home: the client is as it was at B2.
 import { act, cleanup, fireEvent, screen } from '@testing-library/react-native'
 import { router } from 'expo-router'
+import { currentShuffle, endShuffle } from '../../../packages/client/src/shuffle/index.ts'
 import { showNumber } from '../../../packages/mock/src/kinds.ts'
 import { acknowledge, flush, fresh, serve, signedIn, tvSignedIn, words } from './mock.ts'
 
@@ -70,6 +71,20 @@ describe('by touch', () => {
     expect(screen.getByRole('button', { name: /^(Play|Resume) / })).toBeTruthy()
   })
 
+  test('Shuffle plays the show’s episodes in a random order, the first from its start', async () => {
+    const r = await signedIn()
+    await acknowledge()
+    await go(LANTERN)
+    await fireEvent.press(screen.getByRole('button', { name: 'Shuffle' }))
+    await flush()
+    const s = currentShuffle()
+    expect(s?.kind).toBe('episode')
+    expect(s?.ids.length).toBeGreaterThan(1)
+    expect(r.getPathname()).toBe(`/play/episode/${s?.ids[0]}/start`)
+    expect(r.getSearchParams()).toMatchObject({ shuffle: '1' })
+    endShuffle()
+  })
+
   test('a show that isn’t here says so', async () => {
     await signedIn()
     await acknowledge()
@@ -130,6 +145,8 @@ describe('on the TV', () => {
     await go(LANTERN)
     expect(text()).toMatch(/The Lantern Keepers/)
     expect(text()).toMatch(/Episode 1/)
+    // Shuffle sits with Play, named for the reader as the TV shows its name under it
+    expect(screen.getByLabelText('Shuffle episodes')).toBeTruthy()
   })
 })
 
