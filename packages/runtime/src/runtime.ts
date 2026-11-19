@@ -67,6 +67,7 @@ import { createJobQueue, type JobQueue } from '@highsea-tv/jobs'
 import { createLists, type Lists } from '@highsea-tv/lists/service'
 import { createTrakt } from '@highsea-tv/lists/trakt'
 import { createMovies, type Movies } from '@highsea-tv/media/movies'
+import { createMusic, type Music } from '@highsea-tv/media/music'
 import {
   checkPath,
   createLibraryWatch,
@@ -307,6 +308,8 @@ export type Runtime = {
   movies: Movies
   /** The shows (Phase 5 B): the apps' and the admin's, playback and the library's own scan. */
   shows: Shows
+  /** Music read from the Music root folders (Phase 5 D); not served yet. */
+  music: Music
   /** Play sessions, the decision and `/stream` (checkpoint 4.1a). */
   playback: Playback
   /** Now playing (4.3a): the live sessions as the admin shows them, and 30 days of history. */
@@ -673,6 +676,8 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
     imagesDir: join(workDir(config), 'images'),
     builtInKey: config.tmdbKey,
     fanartKey: config.fanartKey,
+    // MusicBrainz's User-Agent: highsea/<version> ( https://highsea.tv ) (ADR 0065)
+    version,
     // uploaded artwork's sizes (HT-66); a failure serves the original
     resizeImage: ffmpegResizer(ffmpegBinary()),
   })
@@ -875,6 +880,10 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
     media,
   )
   shows.jobs.schedule(clock.now())
+  // music (Phase 5 D, ADR 0065): the Music root folders read where they are, grouped by their tags,
+  // MusicBrainz where they carry an id. Read and kept here; served by the next part of D
+  const music = createMusic({ db, jobs, clock, events, logger, metadata }, media)
+  music.jobs.schedule(clock.now())
   scheduleFileFacts({ db, jobs, clock })
   trickplay.start()
   ahead.start()
@@ -1003,14 +1012,19 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
     onChange: (folder) =>
       media.rootFolders.list('shows').some((r) => isWithin(r.path, folder))
         ? shows.libraryScan.queue(folder)
-        : movies.libraryScan.queue(folder),
+        : media.rootFolders.list('music').some((r) => isWithin(r.path, folder))
+          ? music.libraryScan.queue(folder)
+          : movies.libraryScan.queue(folder),
     watch: options.watch,
     log: logger.child('watch'),
   })
-  // music's folders are watched once the server reads them (part D)
   const syncWatch = () =>
     watch.sync(
-      [...media.rootFolders.list('movies'), ...media.rootFolders.list('shows')].map((f) => f.path),
+      [
+        ...media.rootFolders.list('movies'),
+        ...media.rootFolders.list('shows'),
+        ...media.rootFolders.list('music'),
+      ].map((f) => f.path),
     )
   syncWatch()
   // root folders added or removed announce `settings.updated` (the root folder routes)
@@ -1419,6 +1433,7 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
     media,
     movies,
     shows,
+    music,
     playback,
     nowPlaying,
     networkActivity,
@@ -1548,6 +1563,10 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
       const showsFolder = input.folders.shows?.trim() ? resolve(input.folders.shows) : null
       if (showsFolder && media.rootFolders.find(showsFolder, 'shows'))
         shows.libraryScan.queue(showsFolder)
+      // and the music: read where it is, grouped by its tags
+      const musicFolder = input.folders.music?.trim() ? resolve(input.folders.music) : null
+      if (musicFolder && media.rootFolders.find(musicFolder, 'music'))
+        music.libraryScan.queue(musicFolder)
       // the indexer step: added once the owner exists, each tested first. Not awaited, so a slow
       // or unreachable site doesn't hold up Finish for its 30 seconds; they appear on the
       // dashboard as they pass, and one that fails is logged and can be added from Indexers

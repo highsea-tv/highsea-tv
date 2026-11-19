@@ -138,13 +138,8 @@ export function registerMovies(app: OpenAPIHono<Env>) {
     const runtime = c.get('runtime')
     const folder = runtime.media.rootFolders.list().find((f) => f.id === id)
     if (!folder) throw new AppError('not-found', 'That root folder doesn’t exist.')
-    if (folder.kind === 'music')
-      throw new AppError(
-        'conflict',
-        'highsea reads music from a later release. The folder is kept until then.',
-        { reason: 'not-yet' },
-      )
-    if (folder.kind === 'shows') runtime.shows.libraryScan.queue(folder.path)
+    if (folder.kind === 'music') runtime.music.libraryScan.queue(folder.path)
+    else if (folder.kind === 'shows') runtime.shows.libraryScan.queue(folder.path)
     else runtime.movies.libraryScan.queue(folder.path)
     audit(c, 'rootfolder.scanned', { type: 'rootfolder', id })
     return c.body(null, 204)
