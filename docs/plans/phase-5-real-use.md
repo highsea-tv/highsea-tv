@@ -226,6 +226,13 @@ The order is films, then shows, then music: films are already built and only nee
   - **Layout** (Settings › Appearance, web and desktop): Full width (the default) or Contained, per device.
   - The specs: client-home.md, collections.md, client-search.md, client-settings.md; the design language's mobile, TV, desktop-web and spacing-layout pages.
 
+- **2026-11-19, B, shows on the server's foundation (HT-67):** the first of B's four tasks, with no routes, import, playback or client change yet.
+  - **The model** ([ADR 0064](../adr/0064-shows-on-the-server.md), ADR 0012's section, migration `0020_shows`, only additions): shows, seasons and episodes are `media_items` rows linked by `parent_id`, with `show_id` and their numbers on seasons and episodes. Each is addressed by TMDB's own id for its kind, and `show_details` holds season folders and TheTVDB's and IMDb's ids. A file with several episodes is one file, filed under its first episode, with each episode's version pointing at it. A test migrates 300 films with files, versions, watch state and artwork across it unchanged.
+  - **The parser:** `SxxEyy` in Sonarr's five multi-episode styles, `1x01`, specials, season packs, `Season NN`/`Specials` folders and `tvdb-…` show folders (65 cases); daily and absolute names give null.
+  - **TMDB's TV metadata:** one request per show plus one per season, cached, refreshed by the existing jobs, mapped to the drafted shapes, with the automatic logo. `findByTvdb` takes the kind the id is, since TheTVDB's show, season and episode numbers overlap (78107 is The Office and someone's episode). Recordings: Chernobyl and The Office (UK).
+  - **`@highsea-tv/media/shows`:** add a show with Sonarr's monitor choices, and rows kept in step with every refresh, safe to repeat.
+  - **Next (B's second task):** matching files to episodes, the existing-library import and the scan.
+
 ## Running highsea on the NAS (A1)
 
 - **Where:** the DS1520+ (Intel Celeron J4125, VAAPI checked in 4.3b), through the Synology package from Package Center with `packages.highsea.tv` as its source, the way an owner installs it (install-simplicity.md's part D). This Mac stays the development machine; [answer 2](#the-owners-answers) has the alternatives.
