@@ -174,7 +174,8 @@ const trafficLights = () =>
 /** Everything marked as the window's drag region. */
 const dragRegions = () =>
   find(
-    (n) => (n.props as { dataSet?: { tauriDragRegion?: string } }).dataSet?.tauriDragRegion === '',
+    (n) =>
+      (n.props as { dataSet?: { tauriDragRegion?: string } }).dataSet?.tauriDragRegion === 'deep',
   )
 
 describe('outside the desktop app', () => {
