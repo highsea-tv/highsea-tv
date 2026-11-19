@@ -224,6 +224,7 @@ export type MediaFile = {
 // ---------------------------------------------------------------- acquisition
 
 // Profiles, custom formats and the decision engine's reasons are @highsea-tv/quality's (ADR 0031).
+import type { EpisodeMarkers } from '@highsea-tv/api-contract'
 import type { CustomFormat, DecisionReason, QualityProfile } from '@highsea-tv/quality'
 
 export type { CustomFormat, DecisionReason, QualityProfile }
@@ -281,6 +282,8 @@ export type AdminEpisode = {
   } | null
   /** 0–100 while it downloads. */
   progress?: number
+  /** Its file's intro and credits, as the server's `EpisodeMarkers` (Phase 5 C2); null without a file. */
+  markers: EpisodeMarkers | null
 }
 
 export type AdminSeason = {

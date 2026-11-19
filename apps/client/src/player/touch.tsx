@@ -25,6 +25,7 @@ import {
   Round,
   Scrubber,
   ShuffleStep,
+  SkipButton,
   StreamMessage,
   TrackLists,
   Waiting,
@@ -253,15 +254,24 @@ export function TouchPlayer({
       {m.waiting && !m.message ? <Waiting preparing={m.stream === 'preparing'} /> : null}
       {m.message ? <StreamMessage p={p} onBack={m.leave} /> : null}
       {!pip ? (
-        <NextUpCard
-          m={m}
-          place={{
-            right: Math.max(insets.right, 16) + 32,
-            bottom: Math.max(insets.bottom, 16) + 56,
-            part: 300,
-            choices: 420,
-          }}
-        />
+        <>
+          <NextUpCard
+            m={m}
+            place={{
+              right: Math.max(insets.right, 16) + 32,
+              bottom: Math.max(insets.bottom, 16) + 56,
+              part: 300,
+              choices: 420,
+            }}
+          />
+          <SkipButton
+            m={m}
+            place={{
+              right: Math.max(insets.right, 16) + 32,
+              bottom: Math.max(insets.bottom, 16) + 56,
+            }}
+          />
+        </>
       ) : null}
       <Sheet open={panel} onClose={() => setPanel(false)} title={t('tracks')} turns>
         <TrackLists p={p} />

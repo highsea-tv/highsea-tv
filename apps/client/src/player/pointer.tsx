@@ -38,6 +38,7 @@ import {
   Round,
   Scrubber,
   ShuffleSteps,
+  SkipButton,
   StreamMessage,
   TrackLists,
   Waiting,
@@ -399,6 +400,7 @@ export function PointerPlayer({
       {m.waiting && !m.message ? <Waiting preparing={m.stream === 'preparing'} /> : null}
       {m.message ? <StreamMessage p={p} onBack={m.leave} /> : null}
       <NextUpCard m={m} place={{ right: 32, bottom: 112, part: 320, choices: 512 }} />
+      <SkipButton m={m} place={{ right: 32, bottom: 112 }} />
       {/* the desktop app's window chrome over the film: a title bar on Windows and Linux, macOS's
           own buttons there already; nothing outside the app */}
       <WindowChrome overlay />

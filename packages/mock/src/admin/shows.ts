@@ -115,6 +115,14 @@ export function showsAnswers(kit: AdminKit): Answers {
         ctx.api.shows.monitorEpisode(params.id, params.episodeId, body.monitored)
         return changed(undefined)
       },
+      setMarkers: ({ params, body }, ctx) => {
+        ctx.api.shows.setMarkers(params.id, params.episodeId, body)
+        return changed(undefined)
+      },
+      findMarkers: ({ params }, ctx) => {
+        ctx.api.shows.findMarkers(params.id, params.episodeId)
+        return changed(undefined)
+      },
       search: ({ params, body }, ctx) => {
         const { found } = ctx.api.shows.search(params.id, body ?? {})
         return changed({ found })

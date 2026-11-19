@@ -51,6 +51,7 @@ import { type ComponentRef, type ReactNode, useRef, useState } from 'react'
 import { View } from 'react-native'
 import { useShowOptions } from './add-show-dialog.tsx'
 import { FormError } from './collections-rules.tsx'
+import { EpisodeMarks } from './episode-marks.tsx'
 import { Loadable } from './loadable.tsx'
 import { MediaSummary, SummarySkeleton } from './media-sections.tsx'
 import { useRouter } from './navigation.tsx'
@@ -653,6 +654,7 @@ function EpisodeFile({ episode: e }: { episode: SeriesEpisode }) {
           {t('episode.oneFile', { code: episodeCode(e.season, f.episodes) })}
         </Text>
       )}
+      <EpisodeMarks episode={e} label={`${episodeCode(e.season, [e.number])} ${e.title}`} />
     </View>
   )
 }

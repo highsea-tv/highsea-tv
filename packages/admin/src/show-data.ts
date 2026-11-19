@@ -87,3 +87,27 @@ export const dirname = (path: string) => path.slice(0, path.lastIndexOf('/'))
 
 /** Sonarr's Monitor choices, in Add a show's order. */
 export const MONITOR_OPTIONS: ShowMonitor[] = ['all', 'future', 'missing', 'first-season', 'none']
+
+/** A mark's time as the episode row writes it: "1:12", or "1:02:05" past an hour. */
+export function markTime(seconds: number) {
+  const whole = Math.round(seconds)
+  const h = Math.floor(whole / 3600)
+  const m = Math.floor((whole % 3600) / 60)
+  const sec = String(whole % 60).padStart(2, '0')
+  return h ? `${h}:${String(m).padStart(2, '0')}:${sec}` : `${m}:${sec}`
+}
+
+/**
+ * A time typed for a mark: "1:12", "1:02:05", or seconds ("72", "72.5"); empty is no mark (null),
+ * anything else undefined.
+ */
+export function readMarkTime(text: string): number | null | undefined {
+  const v = text.trim()
+  if (!v) return null
+  if (/^\d+(?:\.\d+)?$/.test(v)) return Number(v)
+  const m = /^(?:(\d+):)?(\d{1,2}):(\d{2}(?:\.\d+)?)$/.exec(v)
+  if (!m) return undefined
+  const [, h, min, sec] = m
+  if (Number(sec) >= 60 || (h !== undefined && Number(min) >= 60)) return undefined
+  return Number(h ?? 0) * 3600 + Number(min) * 60 + Number(sec)
+}

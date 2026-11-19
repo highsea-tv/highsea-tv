@@ -271,7 +271,8 @@ export function sharedStretch(
     let end = best.k + best.length - 1
     while (first + EDGE <= end && !dense(first, 1)) first++
     while (end - EDGE >= first && !dense(end, -1)) end--
-    if (end - first + 1 >= shortest) runs.push({ i: i0 + first, j: j0 + first, length: end - first + 1 })
+    if (end - first + 1 >= shortest)
+      runs.push({ i: i0 + first, j: j0 + first, length: end - first + 1 })
   }
   runs.sort((x, y) => y.length - x.length)
   const longest = options.longest / ITEM_SECONDS

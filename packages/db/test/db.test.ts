@@ -731,9 +731,9 @@ describe('0020_shows', () => {
         raw.run(
           "INSERT INTO episode_markers (file_id, size, intro_start, intro_end, intro_source, credits, credits_source, checked_at) VALUES ('fil_e12', 1000, 62.5, 120, 'chapters', 3150.2, 'owner', 1)",
         )
-        expect(raw.all('SELECT intro_start, credits, credits_source FROM episode_markers')).toEqual([
-          { intro_start: 62.5, credits: 3150.2, credits_source: 'owner' },
-        ])
+        expect(raw.all('SELECT intro_start, credits, credits_source FROM episode_markers')).toEqual(
+          [{ intro_start: 62.5, credits: 3150.2, credits_source: 'owner' }],
+        )
         raw.run("DELETE FROM media_files WHERE id = 'fil_e12'")
         expect(raw.all('SELECT count(*) AS n FROM episode_markers')).toEqual([{ n: 0 }])
         expect(raw.all('PRAGMA foreign_key_check')).toEqual([])

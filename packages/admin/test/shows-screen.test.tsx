@@ -60,6 +60,13 @@ const episode = (n: number, over: Record<string, unknown> = {}) => ({
     releaseGroup: 'NTb',
     episodes: [n],
   },
+  markers: {
+    intro: { start: 72, end: 124 },
+    introSource: 'audio',
+    credits: 2850,
+    creditsSource: 'chapters',
+    checked: true,
+  },
   ...over,
 })
 
@@ -100,7 +107,7 @@ const lantern = () => ({
       title: 'Season 1',
       monitored: true,
       poster: '',
-      episodes: [episode(1), episode(2, { status: 'missing', file: null })],
+      episodes: [episode(1), episode(2, { status: 'missing', file: null, markers: null })],
     },
   ],
 })
@@ -188,6 +195,8 @@ async function api(url: string, init: RequestInit = {}): Promise<Response> {
   }
   if (method === 'PATCH' && u.pathname.startsWith('/api/v1/series/')) return json(lantern())
   if (method === 'PUT' && u.pathname.startsWith('/api/v1/series/')) return json(lantern())
+  if (method === 'DELETE' && u.pathname.endsWith('/markers'))
+    return new Response(null, { status: 204 })
   return json({ error: { code: 'not-found', message: `Nothing at ${u.pathname}.` } }, 404)
 }
 
@@ -363,6 +372,38 @@ describe('a show’s page', () => {
     expect(page.getByText('S01E01.mkv')).toBeTruthy()
   })
 
+  test('an episode’s intro and credits are corrected or cleared in its row', async () => {
+    const { user, page } = await open(at('/shows/the-lantern-keepers'))
+    expect(page.getByText('Intro 1:12–2:04 · Credits 47:30')).toBeTruthy()
+    await user.click(page.getByRole('button', { name: 'Intro and credits of S01E01 Episode 1' }))
+    await settle()
+    const dialog = within(page.getByRole('dialog'))
+    expect(dialog.getByText('Found from the sound the season’s episodes share')).toBeTruthy()
+    expect(dialog.getByText('Found from the file’s chapters')).toBeTruthy()
+    /** Empties a field as a person does: everything selected, then deleted. */
+    const empty = async (name: string) => {
+      await user.tripleClick(dialog.getByLabelText(name))
+      await user.keyboard('{Backspace}')
+    }
+    // the intro needs both times
+    await empty('Intro starts')
+    expect(dialog.getByText('Give the intro both times, or neither.')).toBeTruthy()
+    expect(dialog.getByRole('button', { name: 'Save' }).getAttribute('aria-disabled')).toBe('true')
+    await empty('Intro ends')
+    await empty('Credits start')
+    await user.type(dialog.getByLabelText('Credits start'), '47:02')
+    await user.click(dialog.getByRole('button', { name: 'Save' }))
+    await settle()
+    expect(sent('PUT', '/api/v1/series/').map((r) => [r.path, r.body])).toEqual([
+      [
+        '/api/v1/series/the-lantern-keepers/episodes/lk-s01e01/markers',
+        { intro: null, credits: 2822 },
+      ],
+    ])
+    // an episode without a file has no line
+    expect(page.queryByRole('button', { name: 'Intro and credits of S01E02 Episode 2' })).toBeNull()
+  })
+
   test('Refresh metadata asks the server for TMDB’s refresh', async () => {
     const { user, page } = await open(at('/shows/the-lantern-keepers'))
     await user.click(page.getByRole('button', { name: 'More actions' }))
@@ -413,5 +454,19 @@ describe('Discover’s shows', () => {
       },
     ])
     expect(page.getByText('Harbour Lights added')).toBeTruthy()
+  })
+})
+
+describe('a mark’s time', () => {
+  test('is written m:ss, or h:mm:ss past an hour, and read back either way or in seconds', async () => {
+    const { markTime, readMarkTime } = await import('../src/show-data.ts')
+    expect(markTime(72)).toBe('1:12')
+    expect(markTime(3725.4)).toBe('1:02:05')
+    expect(readMarkTime('1:12')).toBe(72)
+    expect(readMarkTime(' 1:02:05 ')).toBe(3725)
+    expect(readMarkTime('72.5')).toBe(72.5)
+    expect(readMarkTime('')).toBeNull()
+    expect(readMarkTime('1:75')).toBeUndefined()
+    expect(readMarkTime('soon')).toBeUndefined()
   })
 })

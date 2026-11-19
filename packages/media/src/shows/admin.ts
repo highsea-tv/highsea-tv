@@ -6,6 +6,7 @@
 // out and leaves the files where they are.
 import type {
   DiscoverSeries,
+  EpisodeMarkersPatch,
   Series,
   SeriesDetail,
   SeriesEpisode,
@@ -26,6 +27,7 @@ import { chunks } from '../shared/sql.ts'
 import { versionQuality } from '../shared/tracks.ts'
 import { announce, type ShowsDeps } from './context.ts'
 import { keepStatus, type ShowTree, statusOf } from './library.ts'
+import { adminMarks, type ShowMarkers } from './markers.ts'
 
 const {
   mediaItems,
@@ -54,6 +56,7 @@ export function showIdOf(id: string): number {
 type Deps = {
   media: Media
   get(tmdbId: number): ShowTree | null
+  markers: ShowMarkers
 }
 
 export function createShowAdmin(ctx: ShowsDeps, deps: Deps) {
@@ -102,6 +105,7 @@ export function createShowAdmin(ctx: ShowsDeps, deps: Deps) {
 
   function seasonsOf(tree: ShowTree, meta: ShowMetadata | null): SeriesSeason[] {
     const { fileOf, files, holds } = filesOf(tree)
+    const marks = deps.markers.forFiles([...files.keys()])
     const posters = new Map((meta?.seasons ?? []).map((s) => [s.number, s.poster]))
     const showPoster = meta ? (artOf(meta.art).poster ?? '') : ''
     return tree.seasons.map((s) => {
@@ -132,6 +136,7 @@ export function createShowAdmin(ctx: ShowsDeps, deps: Deps) {
                   episodes: holds.get(file.id) ?? [e.episodeNumber ?? 0],
                 }
               : null,
+            markers: file ? adminMarks(marks.get(file.id), file.size) : null,
           },
         ]
       })
@@ -363,6 +368,40 @@ export function createShowAdmin(ctx: ShowsDeps, deps: Deps) {
     announce(events, [tree.tmdbId])
   }
 
+  /** An episode's file, by the show's and the episode's ids; not found without one. */
+  function episodeFile(id: string, episodeId: string): string {
+    const tree = treeOf(showIdOf(id))
+    const episode = tree.seasons
+      .flatMap((s) => s.episodes)
+      .find((e) => String(e.tmdbId) === episodeId)
+    if (!episode) throw new AppError('not-found', 'That episode isn’t in this show.')
+    const fileId = fileOfEpisode(episode.id)
+    if (!fileId) throw new AppError('not-found', 'That episode has no file.')
+    return fileId
+  }
+
+  /** An episode's first version's file. */
+  const fileOfEpisode = (itemId: string) =>
+    db
+      .select({ fileId: versionsTable.fileId })
+      .from(versionsTable)
+      .where(eq(versionsTable.itemId, itemId))
+      .orderBy(asc(versionsTable.position))
+      .all()
+      .find((v) => v.fileId)?.fileId ?? null
+
+  /** The owner's intro and credits for an episode (ADR 0067): kept when the season is looked at again. */
+  function setMarkers(id: string, episodeId: string, patch: EpisodeMarkersPatch) {
+    deps.markers.correct(episodeFile(id, episodeId), patch)
+    announce(events, [showIdOf(id)])
+  }
+
+  /** Forgets an episode's marks, the owner's too, and has its season looked at again. */
+  function findMarkers(id: string, episodeId: string) {
+    deps.markers.forget(episodeFile(id, episodeId))
+    announce(events, [showIdOf(id)])
+  }
+
   /** TMDB's shows for a search, those here marked; an empty search finds nothing. */
   async function discover(query = ''): Promise<DiscoverSeries[]> {
     const q = query.trim()
@@ -442,6 +481,8 @@ export function createShowAdmin(ctx: ShowsDeps, deps: Deps) {
     remove,
     monitorSeason,
     monitorEpisode,
+    setMarkers,
+    findMarkers,
     discover,
     rootFolders,
   }

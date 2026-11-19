@@ -38,6 +38,41 @@ export const EPISODE_STATUS = [
   'unaired',
 ] as const
 
+/** Where an episode's intro or credits mark came from (ADR 0067). */
+export const MARKER_SOURCES = ['chapters', 'audio', 'owner'] as const
+
+/**
+ * An episode file's intro and where its credits start, in seconds, as the server found them or
+ * the owner set them (Phase 5 C2, ADR 0067): from its chapters' names, from the sound its season's
+ * episodes share, or the owner's, which the server never changes. A mark that's null with the
+ * owner as its source is one the owner cleared.
+ */
+export const EpisodeMarkers = z
+  .object({
+    intro: z.object({ start: z.number().nonnegative(), end: z.number().nonnegative() }).nullable(),
+    introSource: z.enum(MARKER_SOURCES).nullable(),
+    credits: z.number().nonnegative().nullable(),
+    creditsSource: z.enum(MARKER_SOURCES).nullable(),
+    /** Whether the server has looked at this file yet: false until its season's turn comes. */
+    checked: z.boolean(),
+  })
+  .openapi('EpisodeMarkers')
+
+/**
+ * The owner's intro and credits for an episode; a mark left out stays as it is, null clears it.
+ * The intro ends after it starts.
+ */
+export const EpisodeMarkersPatch = z
+  .object({
+    intro: z
+      .object({ start: z.number().nonnegative(), end: z.number().nonnegative() })
+      .refine((r) => r.end > r.start, { message: 'The intro ends after it starts.' })
+      .nullable()
+      .optional(),
+    credits: z.number().nonnegative().nullable().optional(),
+  })
+  .openapi('EpisodeMarkersPatch')
+
 export const SeriesEpisode = z
   .object({
     id: z.string(),
@@ -62,6 +97,8 @@ export const SeriesEpisode = z
       .nullable(),
     /** 0–100 while it downloads. */
     progress: z.number().min(0).max(100).optional(),
+    /** Its file's intro and credits (Phase 5 C2); null without a file. */
+    markers: EpisodeMarkers.nullable(),
   })
   .openapi('SeriesEpisode')
 
@@ -426,6 +463,34 @@ export const series = {
       ...errors('invalid', 'unauthorized', 'forbidden', 'not-found'),
     },
   }),
+  setMarkers: createRoute({
+    method: 'put',
+    path: `${SERIES}/{id}/episodes/{episodeId}/markers`,
+    tags: ['Series'],
+    summary: 'Set or clear an episode’s intro and credits',
+    description:
+      'The owner’s word on an episode file’s intro and where its credits start (ADR 0067). A mark set or cleared here is kept when the server looks at the season again.',
+    ...served,
+    request: { params: EpisodeParams, ...body(EpisodeMarkersPatch) },
+    responses: {
+      ...noContent,
+      ...errors('invalid', 'unauthorized', 'forbidden', 'not-found'),
+    },
+  }),
+  findMarkers: createRoute({
+    method: 'delete',
+    path: `${SERIES}/{id}/episodes/{episodeId}/markers`,
+    tags: ['Series'],
+    summary: 'Forget an episode’s marks and find them again',
+    description:
+      'Forgets what was set or found for an episode file’s intro and credits, and queues its season to be looked at again, from chapters and then the sound the episodes share.',
+    ...served,
+    request: { params: EpisodeParams },
+    responses: {
+      ...noContent,
+      ...errors('unauthorized', 'forbidden', 'not-found'),
+    },
+  }),
   search: createRoute({
     method: 'post',
     path: `${SERIES}/{id}/search`,
@@ -444,6 +509,9 @@ export const series = {
 } as const
 
 export type SeriesEpisode = z.infer<typeof SeriesEpisode>
+export type EpisodeMarkers = z.infer<typeof EpisodeMarkers>
+export type EpisodeMarkersPatch = z.infer<typeof EpisodeMarkersPatch>
+export type MarkerSource = (typeof MARKER_SOURCES)[number]
 export type SeriesSeason = z.infer<typeof SeriesSeason>
 export type Series = z.infer<typeof Series>
 export type SeriesDetail = z.infer<typeof SeriesDetail>
