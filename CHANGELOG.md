@@ -7,6 +7,22 @@ While highsea is at 0.x, any release may change how something works. When one do
 
 ## [Unreleased]
 
+## [0.4.6] - 2026-11-19
+
+### Added
+
+- Add a live check of each catalog definition against its real site ([#80](https://github.com/highsea-tv/highsea-tv/pull/80))
+
+### Changed
+
+- HT-70 Hero banner without paging dots, the player's wrong Ultra HD badge, and a clipped card in Recently added ([#75](https://github.com/highsea-tv/highsea-tv/pull/75))
+- HT-67 Shows on the server: the model, the episode parser and TMDB's TV metadata (B, 1 of 4) ([#77](https://github.com/highsea-tv/highsea-tv/pull/77))
+- HT-68 Music in the admin, prototyped for the owner's approval (D, stage 7) ([#74](https://github.com/highsea-tv/highsea-tv/pull/74))
+- HT-72 Flaky tests: find and fix the causes, and a way to see the next one ([#78](https://github.com/highsea-tv/highsea-tv/pull/78))
+- HT-77 Indexers: YTS, Knaben, BitSearch and Torrents-CSV in the catalog ([#82](https://github.com/highsea-tv/highsea-tv/pull/82))
+- Record the owner's answers to the indexer catalog plan's questions ([#85](https://github.com/highsea-tv/highsea-tv/pull/85))
+- Download from web seeds, and say why a torrent waits (HT-76) ([#83](https://github.com/highsea-tv/highsea-tv/pull/83))
+
 ## [0.4.5] - 2026-11-19
 
 ### Changed
@@ -178,7 +194,9 @@ While highsea is at 0.x, any release may change how something works. When one do
 
 
 
-[unreleased]: https://github.com/highsea-tv/highsea-tv/compare/v0.4.5...HEAD
+
+[unreleased]: https://github.com/highsea-tv/highsea-tv/compare/v0.4.6...HEAD
+[0.4.6]: https://github.com/highsea-tv/highsea-tv/compare/v0.4.5...v0.4.6
 [0.4.5]: https://github.com/highsea-tv/highsea-tv/compare/v0.4.4...v0.4.5
 [0.4.4]: https://github.com/highsea-tv/highsea-tv/compare/v0.4.3...v0.4.4
 [0.4.3]: https://github.com/highsea-tv/highsea-tv/compare/v0.4.2...v0.4.3
