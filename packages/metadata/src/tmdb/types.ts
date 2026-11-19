@@ -79,7 +79,30 @@ export type TmdbExternalIds = {
   wikidata_id?: string | null
 }
 
-/** `/3/movie/{id}` with `append_to_response=credits,videos,release_dates,external_ids,recommendations,keywords`. */
+/**
+ * One of a title's images ([Movie images](https://developer.themoviedb.org/reference/movie-images),
+ * [Collection images](https://developer.themoviedb.org/reference/collection-images)). `iso_639_1` is
+ * the language of the text on it, null for none.
+ */
+export type TmdbImage = {
+  file_path: string
+  width: number
+  height: number
+  aspect_ratio?: number
+  iso_639_1?: string | null
+  vote_average?: number
+  vote_count?: number
+}
+
+/** `/3/movie/{id}/images`; a collection's has no logos. */
+export type TmdbImages = {
+  id?: number
+  backdrops?: TmdbImage[]
+  posters?: TmdbImage[]
+  logos?: TmdbImage[]
+}
+
+/** `/3/movie/{id}` with `append_to_response=credits,videos,release_dates,external_ids,recommendations,keywords,images`. */
 export type TmdbMovie = {
   id: number
   title: string
@@ -113,6 +136,11 @@ export type TmdbMovie = {
   release_dates?: TmdbReleaseDates
   /** `/3/movie/{id}/keywords`, appended (checkpoint 8d); rows cached before it have none. */
   keywords?: { keywords: { id: number; name: string }[] }
+  /**
+   * `/3/movie/{id}/images` in the metadata language and none (HT-66), for the automatic logo; rows
+   * cached before it have none until their next refresh.
+   */
+  images?: TmdbImages
   external_ids?: TmdbExternalIds
   recommendations?: TmdbPage<TmdbMovieItem>
   /**

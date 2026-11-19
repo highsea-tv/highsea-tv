@@ -21,6 +21,14 @@ export type MetadataDeps = {
    * (install-simplicity.md, answer 7); the owner's key in Settings wins over it.
    */
   builtInKey?: string
+  /**
+   * Scales an uploaded image to a width or height, keeping its type (HT-66); the runtime's uses
+   * ffmpeg. Without it, an upload serves at its own size everywhere.
+   */
+  resizeImage?: (
+    bytes: Uint8Array,
+    to: { width?: number; height?: number; type: 'image/png' | 'image/jpeg' },
+  ) => Promise<Uint8Array>
   /** Waits between retries; tests pass one that moves a fake clock. */
   sleep?: (ms: number) => Promise<void>
 }

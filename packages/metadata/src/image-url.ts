@@ -34,6 +34,8 @@ export const DEFAULT_SIZES = {
   still: 'w780',
   profile: 'w185',
   portrait: 'h632',
+  /** Wide enough for a TV hero's title at 2x. */
+  logo: 'w500',
 } as const
 
 /**

@@ -13,7 +13,7 @@ import type {
   SearchSection,
 } from '@highsea-tv/api-contract'
 import { schema } from '@highsea-tv/db'
-import { DEFAULT_SIZES, imageUrl } from '@highsea-tv/metadata'
+import { collectionArt, DEFAULT_SIZES, imageUrl } from '@highsea-tv/metadata'
 import { and, eq, inArray, isNotNull, sql } from 'drizzle-orm'
 import { probeOf } from '../shared/file-facts.ts'
 import { type ItemRow, toApiCredit, toApiVideo } from '../shared/map.ts'
@@ -257,10 +257,11 @@ export function createClient(ctx: Ctx, { library }: { library: Library }) {
         id,
         name: first.name,
         overview: overview.get(id) ?? '',
-        art: {
-          poster: imageUrl('collection', id, 'poster', DEFAULT_SIZES.poster, first.poster),
-          backdrop: imageUrl('collection', id, 'backdrop', DEFAULT_SIZES.backdrop, first.backdrop),
-        },
+        art: collectionArt(
+          id,
+          { poster: first.poster, backdrop: first.backdrop },
+          metadata.artwork.pick,
+        ),
         count: ps.length,
         years: years.length === 0 ? '' : min === max ? String(min) : `${min}–${max}`,
         score: Math.max(

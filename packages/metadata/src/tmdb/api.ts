@@ -8,6 +8,7 @@ import type {
   TmdbChanges,
   TmdbCollection,
   TmdbConfiguration,
+  TmdbImages,
   TmdbMovie,
   TmdbMovieItem,
   TmdbPage,
@@ -18,9 +19,22 @@ import type {
  * One movie request is the whole movie: `append_to_response` takes up to 20 sub-requests
  * ([Append to response](https://developer.themoviedb.org/docs/append-to-response)). `keywords`
  * ([Movie keywords](https://developer.themoviedb.org/reference/movie-keywords)) came with smart
- * collections' keyword rules (checkpoint 8d).
+ * collections' keyword rules (checkpoint 8d); `images` came with chosen artwork (HT-66), for the
+ * automatic logo.
  */
-export const MOVIE_APPEND = 'credits,videos,release_dates,external_ids,recommendations,keywords'
+export const MOVIE_APPEND =
+  'credits,videos,release_dates,external_ids,recommendations,keywords,images'
+
+/**
+ * The image languages a movie request asks for: the metadata language's, English, and none
+ * (`null`), as TMDB's [Image languages](https://developer.themoviedb.org/docs/image-languages)
+ * guide suggests, since images are filtered by `language` otherwise and a logo's text may be in
+ * English alone.
+ */
+export const imageLanguages = (language: string) => {
+  const lang = language.split('-')[0]?.toLowerCase() || 'en'
+  return [...new Set([lang, 'en']), 'null'].join(',')
+}
 export const PERSON_APPEND = 'movie_credits,external_ids'
 
 /** Discover's lists and their endpoints. Trending takes no region. */
@@ -43,7 +57,18 @@ export function tmdbApi(client: TmdbClient) {
     certifications: (c: Credential) =>
       client.json<TmdbCertifications>(c, '/3/certification/movie/list'),
     movie: (c: Credential, id: number, language: string) =>
-      client.json<TmdbMovie>(c, `/3/movie/${id}`, { append_to_response: MOVIE_APPEND, language }),
+      client.json<TmdbMovie>(c, `/3/movie/${id}`, {
+        append_to_response: MOVIE_APPEND,
+        include_image_language: imageLanguages(language),
+        language,
+      }),
+    /**
+     * Every image TMDB has for a movie, in every language: neither `language` nor
+     * `include_image_language` is sent, so nothing is filtered (the artwork picker, HT-66).
+     */
+    movieImages: (c: Credential, id: number) => client.json<TmdbImages>(c, `/3/movie/${id}/images`),
+    collectionImages: (c: Credential, id: number) =>
+      client.json<TmdbImages>(c, `/3/collection/${id}/images`),
     similar: (c: Credential, id: number, language: string) =>
       client.json<TmdbPage<TmdbMovieItem>>(c, `/3/movie/${id}/similar`, { language, page: 1 }),
     collection: (c: Credential, id: number, language: string) =>

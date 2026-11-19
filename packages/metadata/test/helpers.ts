@@ -12,6 +12,7 @@ import {
 } from '@highsea-tv/core'
 import { migrate, openDatabase, schema } from '@highsea-tv/db'
 import { createJobQueue } from '@highsea-tv/jobs'
+import type { MetadataDeps } from '../src/context.ts'
 import { createMetadata } from '../src/index.ts'
 import { createReplayFetch, type ReplayOptions } from '../src/replay.ts'
 
@@ -24,11 +25,14 @@ export async function setup({
   key = true,
   builtInKey,
   onRequest,
+  resizeImage,
 }: {
   key?: boolean
   /** highsea's own key, as the image carries it. */
   builtInKey?: string
   onRequest?: ReplayOptions['onRequest']
+  /** Uploaded artwork's sizes; none serves the original at every size. */
+  resizeImage?: MetadataDeps['resizeImage']
 } = {}) {
   const { db, raw } = openDatabase(':memory:')
   migrate(raw)
@@ -50,6 +54,7 @@ export async function setup({
     fetch,
     imagesDir,
     builtInKey,
+    resizeImage,
     sleep: async (ms) => {
       waits.push(ms)
       clock.advance(ms)

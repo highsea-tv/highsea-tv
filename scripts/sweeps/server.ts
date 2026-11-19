@@ -707,6 +707,16 @@ try {
             .waitFor()
         },
       },
+      // Change artwork (HT-66): the dialog over TMDB's recorded images
+      {
+        name: 'movie:artwork',
+        path: '/movies/45745',
+        act: async (p) => {
+          await p.getByRole('button', { name: 'More actions' }).click()
+          await p.getByRole('menuitem', { name: 'Change artwork' }).click()
+          await p.getByRole('dialog', { name: 'Artwork' }).getByRole('radio').first().waitFor()
+        },
+      },
       { name: 'movie:upcoming', path: '/movies/1117898' },
       // and from the recorded TMDB fixtures, not in the library
       { name: 'movie:not-added', path: '/movies/19' },
@@ -715,6 +725,14 @@ try {
       { name: 'movie:unknown', path: '/movies/999999999' },
       { name: 'person', path: '/people/68' },
       { name: 'collection', path: '/collections/531241' },
+      {
+        name: 'collection:artwork',
+        path: '/collections/531241',
+        act: async (p) => {
+          await p.getByRole('button', { name: 'Change artwork' }).click()
+          await p.getByRole('dialog', { name: 'Artwork' }).getByRole('radio').first().waitFor()
+        },
+      },
       { name: 'not-found', path: '/wanted' },
       { name: 'pair', path: '/link' },
       { name: 'pair:confirm', path: `/link?code=${pairing.code}` },

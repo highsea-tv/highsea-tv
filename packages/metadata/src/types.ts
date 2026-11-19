@@ -36,8 +36,16 @@ export const VIDEO_KINDS = [
 ] as const
 export type VideoKind = (typeof VIDEO_KINDS)[number]
 
-/** Server URLs for a title's art. `still` is the backdrop at a card's size. */
-export type MovieArt = { poster: string | null; backdrop: string | null; still: string | null }
+/**
+ * Server URLs for a title's art. `still` is the backdrop at a card's size. `logo` is the title's
+ * logo (transparent, the name drawn), from TMDB or chosen; null when there's none.
+ */
+export type MovieArt = {
+  poster: string | null
+  backdrop: string | null
+  still: string | null
+  logo: string | null
+}
 
 /** A title on TMDB, as lists show it: Discover, search, filmographies, collections. */
 export type DiscoverMovie = {
@@ -85,7 +93,8 @@ export type CollectionRef = { id: number; name: string }
 
 export type Collection = CollectionRef & {
   overview: string
-  art: { poster: string | null; backdrop: string | null }
+  /** `logo` only when an admin chose one: TMDB keeps none for collections. */
+  art: { poster: string | null; backdrop: string | null; logo: string | null }
   /** In release order, undated parts last. */
   parts: DiscoverMovie[]
 }

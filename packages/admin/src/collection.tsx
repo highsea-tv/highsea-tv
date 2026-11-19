@@ -9,10 +9,20 @@
 import type { DiscoverMovie } from '@highsea-tv/api-contract'
 import { useT } from '@highsea-tv/i18n/react'
 import { admin, line } from '@highsea-tv/tokens'
-import { Image, Poster, Text, tokens, useRegularWindow, useTheme } from '@highsea-tv/ui/native'
+import {
+  Button,
+  Image,
+  Poster,
+  Text,
+  tokens,
+  useRegularWindow,
+  useTheme,
+} from '@highsea-tv/ui/native'
 import { type ReactNode, useState } from 'react'
 import { View } from 'react-native'
 import { AddMovieDialog } from './add-dialog.tsx'
+import { ArtworkDialog } from './artwork-dialog.tsx'
+import { artwork as artworkMessages } from './artwork-messages.ts'
 import { collection as messages } from './collection-messages.ts'
 import { CollectionRow, MetadataError, SummarySkeleton, useCollection } from './media-sections.tsx'
 import { media } from './media-sections-messages.ts'
@@ -40,11 +50,22 @@ function CollectionById({ id }: { id: number }) {
   // refetched as parts are added, so their badges and the count follow
   const collection = useCollection(id)
   const [adding, setAdding] = useState<DiscoverMovie[]>([])
+  const [changingArt, setChangingArt] = useState(false)
+  const ta = useT(artworkMessages)
   const c = collection.data
   const here = c ? c.parts.filter((p) => p.inLibrary).length : 0
 
   return (
-    <AdminPage title={c?.name ?? t('collection')}>
+    <AdminPage
+      title={c?.name ?? t('collection')}
+      actions={
+        c ? (
+          <Button icon="grid" onPress={() => setChangingArt(true)}>
+            {ta('open')}
+          </Button>
+        ) : undefined
+      }
+    >
       {collection.status === 'error' ? (
         <MetadataError
           error={collection.error}
@@ -73,6 +94,15 @@ function CollectionById({ id }: { id: number }) {
         </>
       )}
       <AddMovieDialog movies={adding} onOpenChange={(o) => !o && setAdding([])} />
+      {c ? (
+        <ArtworkDialog
+          owner="collection"
+          id={id}
+          title={c.name}
+          open={changingArt}
+          onOpenChange={setChangingArt}
+        />
+      ) : null}
     </AdminPage>
   )
 }

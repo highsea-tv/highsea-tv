@@ -134,6 +134,13 @@
       "when": 1795023941702,
       "tag": "0018_profiles",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "6",
+      "when": 1795050123636,
+      "tag": "0019_artwork",
+      "breakpoints": true
     }
   ]
 }

@@ -1,13 +1,15 @@
 ---
 title: Change or remove a film
-description: Change a film's options and quality profile, keep two versions of it, refresh its details from TMDB, or remove it.
+description: Change a film's options, quality profile and artwork, keep two versions of it, refresh its details from TMDB, or remove it.
 ---
 
 {/* SPDX-License-Identifier: AGPL-3.0-only */}
 {/*
   Sources:
   - In highsea: a film's page (packages/admin/src/movie-detail.tsx: the More menu, the edit,
-    version and remove dialogs) and its strings (movie-detail-messages.ts).
+    version and remove dialogs) and its strings (movie-detail-messages.ts); the artwork dialog
+    (artwork-dialog.tsx, artwork-messages.ts) and an upload's checks
+    (packages/metadata/src/artwork-check.ts).
   - The product specs docs/product/movies.md and media-pages.md, for intent.
 */}
 
@@ -19,7 +21,7 @@ Everything here starts on the film's page. See [A film's page](/movies/film/).
 
 Open the More menu (the button beside **Interactive search**) and choose **Edit**.
 
-![A film's More menu, open, with Edit, Refresh metadata and Remove from library](/images/admin/movies/film-more.png)
+![A film's More menu, open, with Edit, Change artwork, Refresh metadata and Remove from library](/images/admin/movies/film-more.png)
 
 You can change:
 
@@ -46,6 +48,28 @@ A film can have more than one version, such as 1080p beside 4K HDR, each with it
 - **Add version** asks for a **Name** (what the library's tags show, such as 4K HDR) and a **Quality profile**. highsea then looks for a release for it as well.
 - The edit button renames a version or gives it another profile.
 - The remove button removes a version, and highsea stops looking for a release for it. A film keeps at least one version.
+
+## Change a film's artwork
+
+The poster, backdrop and logo come from TMDB, and highsea picks them for you. To use others, open the More menu and choose **Change artwork**. The dialog has a tab for each: **Poster**, **Backdrop** and **Logo**.
+
+![The Artwork dialog on the Poster tab: the poster shown now with Upload, then TMDB's other posters, each with its language and size, the current one marked](/images/admin/movies/film-artwork.png)
+
+Each tab shows the image every app shows now, and who chose it and when. Below it, **From TMDB** lists TMDB's other images of that kind, the best voted first, with each one's language (**No text** for an image without words) and size in pixels. The one in use is marked **Current**. Choose another to use it.
+
+**Upload** takes a file of your own. highsea checks the file itself, not its name:
+
+| Kind | Format | Size |
+| --- | --- | --- |
+| Poster | PNG or JPEG, up to 10 MB | at least 500 px wide and close to 2:3, taller than it's wide |
+| Backdrop | PNG or JPEG, up to 10 MB | at least 1280 px wide and close to 16:9 |
+| Logo | PNG only, so its background can be transparent, up to 10 MB | at least 300 px wide, any shape |
+
+The apps fill a poster's or backdrop's frame and crop what falls outside it, so an image far from its shape is refused rather than cut. You can also drop a file onto the dialog.
+
+Your choice stays through **Refresh metadata** and through matching the film again. **Reset** goes back to highsea's own choice. Every change is in the admin's audit log, and every app shows the new image the next time it draws the film.
+
+A logo is the film's title as artwork. TMDB has logos for most films; highsea picks one in your metadata language, then English, then any.
 
 ## Refresh a film's details
 

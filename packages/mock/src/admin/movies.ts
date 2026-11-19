@@ -38,6 +38,7 @@ import type {
   Release as MockRelease,
   Torrent,
 } from '../types.ts'
+import { chosenCollectionArt } from './artwork.ts'
 import { type AdminKit, type Answers, type Ctx, refuse } from './kit.ts'
 import { collectionsAnswers } from './movies-collections.ts'
 import { DAY, type MoviesMemory, moviesKit, pageOf, t, titleMatches } from './movies-shared.ts'
@@ -522,7 +523,10 @@ export function moviesAnswers(kit: AdminKit): Answers {
           name: c.name,
           overview: c.overview,
           // TMDB's collection art, which the mock doesn't draw: its first part's
-          art: { poster: first?.art.poster || null, backdrop: first?.art.backdrop || null },
+          art: chosenCollectionArt(kit, params.id, {
+            poster: first?.art.poster || null,
+            backdrop: first?.art.backdrop || null,
+          }),
           parts: parts.map((x) => discoverOf(x, here.has(x.tmdbId))),
         }
       },

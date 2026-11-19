@@ -417,6 +417,15 @@ export const admin = {
     suggestedAccent: '#8fbfb7',
   },
   authCard: { cardWidth: 384 },
+  /**
+   * Change artwork (HT-66): the image shown now and the grid's tiles by kind, a poster at the
+   * collections editor's 112 in the grid, and the least the words beside the image take.
+   */
+  artwork: {
+    shown: { poster: 120, backdrop: 240, logo: 240 },
+    tile: { poster: 112, backdrop: 220, logo: 220 },
+    wordsMin: 220,
+  },
   collections: { art: 56 },
   collectionsEditor: {
     artwork: { column: 160, poster: 112 },

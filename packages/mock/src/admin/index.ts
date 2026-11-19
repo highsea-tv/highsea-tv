@@ -3,6 +3,7 @@
 // System widgets' sources; movies, metadata and their settings' reads; collections, Wanted and
 // curation; the work (the queue, history, the blocklist, downloads, both imports, Now playing);
 // subtitles and indexers. The transport merges them under the routes it answers itself.
+import { artworkAnswers } from './artwork.ts'
 import { curationAnswers } from './curation.ts'
 import { dashboardAnswers } from './dashboard.ts'
 import { flowsAnswers } from './flows.ts'
@@ -24,6 +25,7 @@ export function adminAnswers(kit: AdminKit): Answers {
   for (const area of [
     dashboardAnswers(kit),
     moviesAnswers(kit),
+    artworkAnswers(kit),
     curationAnswers(kit),
     workAnswers(kit),
     subtitlesAnswers(kit),

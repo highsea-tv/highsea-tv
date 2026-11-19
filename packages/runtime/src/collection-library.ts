@@ -13,7 +13,7 @@ import type { Clock } from '@highsea-tv/core'
 import type { CollectionLibrary, Option, TmdbCollection } from '@highsea-tv/curation/collections'
 import { type Db, schema } from '@highsea-tv/db'
 import type { Movies } from '@highsea-tv/media/movies'
-import { DEFAULT_SIZES, imageUrl } from '@highsea-tv/metadata'
+import { type ArtPick, collectionArt, DEFAULT_SIZES, imageUrl } from '@highsea-tv/metadata'
 import { and, eq, inArray, sql } from 'drizzle-orm'
 import { collectionQuery, IN_LIBRARY, PLAYABLE, PRIMARY_SUBTAG } from './collection-query.ts'
 
@@ -44,6 +44,8 @@ export function createCollectionLibrary(deps: {
   locale?: () => string
   /** The region's certifications from mildest, from `@highsea-tv/metadata`; null until known. */
   certifications?: () => string[] | null
+  /** Artwork an admin chose (HT-66), from `@highsea-tv/metadata`, over TMDB's. */
+  artPick?: ArtPick
 }): CollectionLibrary {
   const { db, clock, movies } = deps
 
@@ -260,16 +262,11 @@ export function createCollectionLibrary(deps: {
             id,
             name: first.name,
             overview: overview.get(id) ?? '',
-            art: {
-              poster: imageUrl('collection', id, 'poster', DEFAULT_SIZES.poster, first.poster),
-              backdrop: imageUrl(
-                'collection',
-                id,
-                'backdrop',
-                DEFAULT_SIZES.backdrop,
-                first.backdrop,
-              ),
-            },
+            art: collectionArt(
+              id,
+              { poster: first.poster, backdrop: first.backdrop },
+              deps.artPick,
+            ),
             tmdbIds: ps.map((p) => p.tmdbId),
             years: ps.flatMap((p) => (p.year === null ? [] : [p.year])),
           },

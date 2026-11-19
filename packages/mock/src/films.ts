@@ -191,6 +191,7 @@ export const art = (a: { poster: string; backdrop: string; logo?: string }) => (
 const collectionArt = (a: { poster: string; backdrop: string }) => ({
   poster: a.poster || null,
   backdrop: a.backdrop || null,
+  logo: null,
 })
 
 /** A title the household can watch: some version has a file (the server's HAS_FILE). */
@@ -592,6 +593,7 @@ export function filmsOf({ srv, api, userId }: FilmsCtx) {
       art: {
         poster: c.artwork ?? (first.art.poster || null),
         backdrop: first.art.backdrop || null,
+        logo: null,
       },
       count: ms.length,
       years: yearsOf(ms.map((m) => m.year)),
