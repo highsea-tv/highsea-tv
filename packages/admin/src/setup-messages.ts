@@ -54,7 +54,7 @@ export const setup = defineMessages({
   'folders.downloads': 'Downloads folder',
   'folders.shows': 'Shows folder',
   'folders.music': 'Music folder',
-  'folders.laterHint': 'Optional. highsea keeps it and reads it once it has shows and music.',
+  'folders.laterHint': 'Optional. highsea keeps it and reads it once it has music.',
   'folders.sameAsOthers': 'Use a folder of its own, not the movies or downloads folder.',
   'folders.browse': 'Browse',
   // as Settings › Media management says them (ADR 0063, 2026-11-17)

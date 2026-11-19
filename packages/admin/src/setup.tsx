@@ -1079,7 +1079,7 @@ function Folders({
         <Field
           key={key}
           label={t(`folders.${key}`)}
-          hint={key === 'shows' || key === 'music' ? t('folders.laterHint') : undefined}
+          hint={key === 'music' ? t('folders.laterHint') : undefined}
           error={errors[key]}
         >
           <View style={{ flexDirection: 'row', gap: s['2'] }}>

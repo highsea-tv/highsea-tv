@@ -28,6 +28,7 @@ import { registerPlayback } from './playback.ts'
 import { registerProfiles } from './profiles.ts'
 import { registerQuality } from './quality.ts'
 import { registerSessions } from './sessions.ts'
+import { registerShows } from './shows.ts'
 import { registerSubtitles } from './subtitles.ts'
 import { registerSystem } from './system.ts'
 import { registerTags } from './tags.ts'
@@ -104,6 +105,7 @@ export function createApi(runtime: Runtime) {
   registerMetadata(app)
   registerArtwork(app)
   registerMovies(app)
+  registerShows(app)
   registerQuality(app)
   registerLibrary(app)
   registerPlayback(app)

@@ -549,13 +549,13 @@ describe('Settings › Media management › root folders', () => {
     })
   })
 
-  test('one kind per section; shows’ and music’s folders wait for those parts', async () => {
+  test('one kind per section; music’s folders wait for its part, shows’ are read (Phase 5 B)', async () => {
     const { page } = await open(<MediaManagement />)
     for (const kind of ['Movies', 'Shows', 'Music'])
       expect(page.getByRole('heading', { name: kind })).toBeTruthy()
     expect(page.getByText('No Shows folders yet. Add the folder your shows live in.')).toBeTruthy()
     expect(page.getByText('No Music folders yet. Add the folder your music lives in.')).toBeTruthy()
-    expect(page.getByText(/reads them once it has shows/)).toBeTruthy()
+    expect(page.queryByText(/reads them once it has shows/)).toBeNull()
     expect(page.getByPlaceholderText('/data/media/tv')).toBeTruthy()
     expect(page.getByPlaceholderText('/data/media/music')).toBeTruthy()
   })

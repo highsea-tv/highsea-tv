@@ -12,6 +12,7 @@ import type { Clock } from '@highsea-tv/core'
 import type { BuiltInRow, CurationLibrary, LibraryPick } from '@highsea-tv/curation/service'
 import { type Db, schema } from '@highsea-tv/db'
 import type { Movies } from '@highsea-tv/media/movies'
+import type { Shows } from '@highsea-tv/media/shows'
 import { and, eq, inArray, type SQL, sql } from 'drizzle-orm'
 import { homeRows } from './home-rows.ts'
 
@@ -55,6 +56,8 @@ export function createCurationLibrary(deps: {
   db: Db
   clock: Clock
   movies: Movies
+  /** Shows' rows (Phase 5 B): their episodes on Continue watching, Next up, New episodes, Recently added shows. */
+  shows?: Pick<Shows, 'client'>
 }): CurationLibrary {
   const { db, clock, movies } = deps
 
@@ -127,22 +130,42 @@ export function createCurationLibrary(deps: {
     },
     items,
     builtIn(profileId) {
-      // Continue watching: the profile's, started and not finished, most recent first (4.1a, ADR 0068)
-      const started = db
-        .all<{ tmdbId: number }>(
-          sql`SELECT mi.tmdb_id AS tmdbId FROM watch_positions w
+      // Continue watching: the profile's, started and not finished, most recent first (4.1a, ADR
+      // 0068); a show's place joins it once, at its episode part way (Phase 5 B)
+      const started = db.all<{ tmdbId: number; at: number }>(
+        sql`SELECT mi.tmdb_id AS tmdbId, w.updated_at AS at FROM watch_positions w
             JOIN media_items mi ON mi.id = w.item_id
             WHERE w.profile_id = ${profileId} AND ${HAS_FILE}
             ORDER BY w.updated_at DESC LIMIT ${ROW_MAX}`,
-        )
-        .map((r) => r.tmdbId)
-      const rows: BuiltInRow[] = [
-        {
-          id: 'continue',
-          title: null,
-          items: items(started, profileId).filter((m) => m.progress !== null),
-        },
-      ]
+      )
+      const atOf = new Map(started.map((r) => [r.tmdbId, r.at]))
+      const films = items(
+        started.map((r) => r.tmdbId),
+        profileId,
+      )
+        .filter((m) => m.progress !== null)
+        .map((item) => ({ at: atOf.get(item.id) ?? 0, item }))
+      const shows = deps.shows?.client.home(profileId)
+      const continuing = [...films, ...(shows?.continuing ?? [])]
+        .sort((a, b) => b.at - a.at)
+        .slice(0, ROW_MAX)
+        .map((x) => x.item)
+      const rows: BuiltInRow[] = [{ id: 'continue', title: null, items: continuing }]
+      if (shows) {
+        rows.push({ id: 'next-up', title: 'Next up', layout: 'episodes', items: shows.nextUp })
+        rows.push({
+          id: 'new-episodes',
+          title: 'New episodes',
+          layout: 'episodes',
+          items: shows.fresh,
+        })
+        rows.push({
+          id: 'recent-shows',
+          title: 'Recently added shows',
+          layout: 'shows',
+          items: shows.recent,
+        })
+      }
       for (const r of homeRows(db)) {
         if (r.id === 'recent')
           rows.push({

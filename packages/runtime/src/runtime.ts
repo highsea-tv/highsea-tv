@@ -81,7 +81,7 @@ import {
   vetFiles,
   type WatchFn,
 } from '@highsea-tv/media/shared'
-import { createShows } from '@highsea-tv/media/shows'
+import { createShows, type Shows } from '@highsea-tv/media/shows'
 import { createMetadata, type Metadata, TMDB_ATTRIBUTION } from '@highsea-tv/metadata'
 import type { MdnsResponder } from '@highsea-tv/network'
 import { createNotifications, type Notifications } from '@highsea-tv/notifications/service'
@@ -303,6 +303,8 @@ export type Runtime = {
   media: Media
   /** The movie library. */
   movies: Movies
+  /** The shows (Phase 5 B): the apps' and the admin's, playback and the library's own scan. */
+  shows: Shows
   /** Play sessions, the decision and `/stream` (checkpoint 4.1a). */
   playback: Playback
   /** Now playing (4.3a): the live sessions as the admin shows them, and 30 days of history. */
@@ -625,8 +627,8 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
       publicUrl: network.externalUrl(),
       setupComplete: isSetupComplete(db),
       auth: auth.methods(origin),
-      // profiles are served since A2b (ADR 0068); shows and music are still drafts
-      sources: [...SOURCES, 'profiles'],
+      // profiles are served since A2b (ADR 0068), shows since Phase 5 B; music is still a draft
+      sources: [...SOURCES, 'profiles', 'shows'],
       attributions: ATTRIBUTIONS,
     }
   }
@@ -851,8 +853,8 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
     media,
   )
   movies.jobs.schedule(clock.now())
-  // shows: added from TMDB, the ones on disk imported in place and scanned (Phase 5 B); their
-  // routes are drafts until part B's third task, and their sidecar subtitles its fourth
+  // shows: added from TMDB, the ones on disk imported in place and scanned, served to the admin
+  // and the apps (Phase 5 B); their sidecar subtitles are part B's fourth task
   const shows = createShows(
     {
       db,
@@ -861,6 +863,7 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
       events,
       logger,
       metadata,
+      subtitles: { forFile: subtitles.clientTracks },
       files: {
         probe: options.importing?.probe,
         sampleSeconds: options.importing?.sampleSeconds,
@@ -923,6 +926,24 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
   })
   await playbackSettings.start()
 
+  /** A title's poster for Now playing: a film's own, an episode's (by its row) its show's. */
+  const posterOf = (tmdbId: number, itemId?: string | null): string | null => {
+    const row = itemId
+      ? db
+          .select({ type: schema.mediaItems.type, showId: schema.mediaItems.showId })
+          .from(schema.mediaItems)
+          .where(eq(schema.mediaItems.id, itemId))
+          .get()
+      : undefined
+    if (row?.type !== 'episode' || !row.showId)
+      return metadata.cachedMovie(tmdbId)?.art.poster ?? null
+    const show = db
+      .select({ tmdbId: schema.mediaItems.tmdbId })
+      .from(schema.mediaItems)
+      .where(eq(schema.mediaItems.id, row.showId))
+      .get()
+    return show ? (metadata.cachedShow(show.tmdbId)?.art.poster ?? null) : null
+  }
   // Now playing (4.3a): hears playback's sessions, and keeps 30 days of what was watched
   const nowPlaying = createNowPlaying({
     db,
@@ -941,7 +962,7 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
     },
     profileName: (profileId) => auth.profiles.nameOf(profileId),
     device: (deviceId) => auth.devices.find(deviceId),
-    poster: (tmdbId) => metadata.cachedMovie(tmdbId)?.art.poster ?? null,
+    poster: (tmdbId, itemId) => posterOf(tmdbId, itemId),
     onStarted: (p) => notify?.playbackStarted(p),
   })
   nowPlaying.schedule(clock.now())
@@ -953,6 +974,7 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
     events,
     logger,
     movies,
+    shows,
     librariesOf: (userId) => {
       try {
         return auth.users.get(userId).libraries
@@ -1272,7 +1294,7 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
     events,
     jobs,
     logger,
-    library: createCurationLibrary({ db, clock, movies }),
+    library: createCurationLibrary({ db, clock, movies, shows }),
     smart: collections,
     arrangement: (who) => personalization.home.layout(who),
   })
@@ -1392,6 +1414,7 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
     metadata,
     media,
     movies,
+    shows,
     playback,
     nowPlaying,
     networkActivity,

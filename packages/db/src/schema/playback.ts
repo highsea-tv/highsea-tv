@@ -138,3 +138,26 @@ export const playbackHistory = sqliteTable(
     index('playback_history_user').on(t.userId, t.endedAt),
   ],
 )
+
+/**
+ * A show taken off a profile's Continue watching and Next up (Phase 5 B, ADR 0064's 2026-11-20
+ * section): the show stays off them until one of its episodes is played after `dismissedAt`, as
+ * Plex's "Remove from Continue Watching" keeps a show off until it's watched again.
+ */
+export const showDismissals = sqliteTable(
+  'show_dismissals',
+  {
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    profileId: text('profile_id')
+      .notNull()
+      .references(() => profiles.id, { onDelete: 'cascade' }),
+    /** The show's row. */
+    itemId: text('item_id')
+      .notNull()
+      .references(() => mediaItems.id, { onDelete: 'cascade' }),
+    dismissedAt: integer('dismissed_at').notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.profileId, t.itemId] })],
+)

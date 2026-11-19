@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Shows as the admin keeps them (docs/product/shows.md), drafted with D3 of the one client platform
 // (one-client-platform-d.md, the owner's answer 5): Sonarr's series, seasons and episodes,
-// monitored or not, each episode with its file, and Add a show from TMDB. Every route here is a
-// draft the prototypes' mock answers and the real server answers 501 until it has shows
-// (`draft()` in common.ts), and the admin draws Shows only when public info's `sources` lists
-// `shows`. The routes are at `/series`, Sonarr's own name for them, beside the apps' `/shows`
-// (shows.ts), as the admin's collections sit beside the apps' (`/curation/collections` and
-// `/library/collections`). A show is addressed by its id in the library, the prototype's slug
-// ("the-lantern-keepers"); the server picks its ids when it builds them.
+// monitored or not, each episode with its file, and Add a show from TMDB. Served since Phase 5 B
+// (@highsea-tv/media/shows) but for `search`, a draft until part C1 searches for episodes; the
+// admin draws Shows when public info's `sources` lists `shows`. The routes are at `/series`,
+// Sonarr's own name for them, beside the apps' `/shows` (shows.ts), as the admin's collections sit beside the apps' (`/curation/collections` and
+// `/library/collections`). A show is addressed by a string id: on the server its TMDB id
+// ("2996", ADR 0064), in the prototypes' mock a slug ("the-lantern-keepers"); an episode's is its
+// TMDB id too.
 import { createRoute, z } from '@hono/zod-openapi'
 import {
   API_PREFIX,
@@ -197,7 +197,30 @@ const EpisodeParams = IdParam.extend({
   episodeId: z.string().openapi({ param: { name: 'episodeId', in: 'path' } }),
 })
 
+const served = access('staff')
+// searching for episodes is part C1's: it stays a draft until then
 const staff = { ...access('staff'), ...draft() }
+/**
+ * A file or folder under a shows root folder that couldn't be placed (Phase 5 B): a show folder
+ * TMDB couldn't name surely, or a file whose name gives no episode the show has. Kept with its
+ * reason, never guessed; resolving one by hand comes later.
+ */
+export const UnmatchedShowPath = z
+  .object({
+    path: z.string(),
+    kind: z.enum(['show-folder', 'episode-file']),
+    rootFolder: z.string(),
+    /** The show whose folder holds the file (its TMDB id as a string); null for a show folder. */
+    show: z.string().nullable(),
+    /** A code: `no-match`, `ambiguous`, `no-episode-number`, `unknown-season` and so on. */
+    reason: z.string(),
+    /** The reason in words. */
+    message: z.string(),
+    size: z.number().int().nonnegative(),
+    foundAt: IsoDate,
+  })
+  .openapi('UnmatchedShowPath')
+
 const refused = errors('unauthorized', 'forbidden')
 
 // Static paths come before `/series/{id}`, which would match them too: register them first.
@@ -206,95 +229,100 @@ export const series = {
     method: 'get',
     path: `${API_PREFIX}/discover/shows`,
     tags: ['Series'],
-    summary: 'Find shows on TMDB (draft)',
-    description:
-      'Library shows are marked `inLibrary`. Drafted: the server answers 501 until it has shows.',
-    ...staff,
+    summary: 'Find shows on TMDB',
+    description: 'Library shows are marked `inLibrary`.',
+    ...served,
     request: { query: z.object({ query: z.string().max(200).optional() }) },
     responses: {
       200: json(z.array(DiscoverSeries), 'The shows found'),
       ...errors('invalid', 'unauthorized', 'forbidden'),
-      ...notServed,
     },
   }),
   rootFolders: createRoute({
     method: 'get',
     path: `${SERIES}/rootfolders`,
     tags: ['Series'],
-    summary: 'The folders shows are filed under (draft)',
+    summary: 'The folders shows are filed under',
     description:
-      'Settings › Media management’s folders for shows, for Add a show and a show’s Edit. Drafted: the server answers 501.',
-    ...staff,
+      'Settings › Media management’s folders for shows, for Add a show and a show’s Edit.',
+    ...served,
     responses: {
       200: json(z.array(z.string()), 'Folders'),
       ...refused,
-      ...notServed,
+    },
+  }),
+  unmatched: createRoute({
+    method: 'get',
+    path: `${SERIES}/unmatched`,
+    tags: ['Series'],
+    summary: 'What under the shows’ folders couldn’t be matched',
+    description:
+      'Show folders and episode files kept unmatched by the library import and the scan, with why, by path. `rootFolder` narrows it to one folder.',
+    ...served,
+    request: { query: z.object({ rootFolder: z.string().min(1).max(4096).optional() }) },
+    responses: {
+      200: json(z.array(UnmatchedShowPath), 'By path'),
+      ...refused,
     },
   }),
   list: createRoute({
     method: 'get',
     path: SERIES,
     tags: ['Series'],
-    summary: 'The shows in the library (draft)',
-    description: 'Drafted: the server answers 501 until it has shows.',
-    ...staff,
+    summary: 'The shows in the library',
+    description: '',
+    ...served,
     responses: {
       200: json(z.array(Series), 'The shows'),
       ...refused,
-      ...notServed,
     },
   }),
   add: createRoute({
     method: 'post',
     path: SERIES,
     tags: ['Series'],
-    summary: 'Add a show (draft)',
-    description:
-      'Adding one already here answers it as it is. Drafted: the server answers 501 until it has shows.',
-    ...staff,
+    summary: 'Add a show',
+    description: 'Adding one already here answers it as it is.',
+    ...served,
     request: { ...body(AddSeriesInput) },
     responses: {
       200: json(SeriesDetail, 'The show added'),
       ...errors('invalid', 'unauthorized', 'forbidden'),
-      ...notServed,
     },
   }),
   get: createRoute({
     method: 'get',
     path: `${SERIES}/{id}`,
     tags: ['Series'],
-    summary: 'A show with its seasons and episodes (draft)',
-    description: '404 when the show isn’t here. Drafted: the server answers 501.',
-    ...staff,
+    summary: 'A show with its seasons and episodes',
+    description: '404 when the show isn’t here.',
+    ...served,
     request: { params: IdParam },
     responses: {
       200: json(SeriesDetail, 'The show'),
       ...errors('unauthorized', 'forbidden', 'not-found'),
-      ...notServed,
     },
   }),
   update: createRoute({
     method: 'patch',
     path: `${SERIES}/{id}`,
     tags: ['Series'],
-    summary: 'Change a show’s monitoring, profiles or folder (draft)',
-    description: 'Drafted: the server answers 501.',
-    ...staff,
+    summary: 'Change a show’s monitoring, profiles or folder',
+    description: '',
+    ...served,
     request: { params: IdParam, ...body(SeriesUpdate) },
     responses: {
       200: json(SeriesDetail, 'The show'),
       ...errors('invalid', 'unauthorized', 'forbidden', 'not-found'),
-      ...notServed,
     },
   }),
   remove: createRoute({
     method: 'delete',
     path: `${SERIES}/{id}`,
     tags: ['Series'],
-    summary: 'Remove a show from the library (draft)',
-    description:
-      'It stops being monitored; its files stay on disk unless `deleteFiles`. Drafted: the server answers 501.',
-    ...staff,
+    summary: 'Remove a show from the library',
+    description: 'It stops being monitored; its files stay on disk unless `deleteFiles`.',
+    ...served,
     request: {
       params: IdParam,
       query: z.object({ deleteFiles: z.enum(['true', 'false']).optional() }),
@@ -302,35 +330,32 @@ export const series = {
     responses: {
       ...noContent,
       ...errors('unauthorized', 'forbidden', 'not-found'),
-      ...notServed,
     },
   }),
   monitorSeason: createRoute({
     method: 'put',
     path: `${SERIES}/{id}/seasons/{season}/monitored`,
     tags: ['Series'],
-    summary: 'Monitor a season, with every episode in it, or stop (draft)',
-    description: 'Drafted: the server answers 501.',
-    ...staff,
+    summary: 'Monitor a season, with every episode in it, or stop',
+    description: '',
+    ...served,
     request: { params: SeasonParams, ...body(Monitored) },
     responses: {
       ...noContent,
       ...errors('invalid', 'unauthorized', 'forbidden', 'not-found'),
-      ...notServed,
     },
   }),
   monitorEpisode: createRoute({
     method: 'put',
     path: `${SERIES}/{id}/episodes/{episodeId}/monitored`,
     tags: ['Series'],
-    summary: 'Monitor one episode, or stop (draft)',
-    description: 'Drafted: the server answers 501.',
-    ...staff,
+    summary: 'Monitor one episode, or stop',
+    description: '',
+    ...served,
     request: { params: EpisodeParams, ...body(Monitored) },
     responses: {
       ...noContent,
       ...errors('invalid', 'unauthorized', 'forbidden', 'not-found'),
-      ...notServed,
     },
   }),
   search: createRoute({
@@ -355,6 +380,7 @@ export type SeriesSeason = z.infer<typeof SeriesSeason>
 export type Series = z.infer<typeof Series>
 export type SeriesDetail = z.infer<typeof SeriesDetail>
 export type DiscoverSeries = z.infer<typeof DiscoverSeries>
+export type UnmatchedShowPath = z.infer<typeof UnmatchedShowPath>
 export type AddSeriesInput = z.infer<typeof AddSeriesInput>
 export type SeriesUpdate = z.infer<typeof SeriesUpdate>
 export type ShowMonitor = (typeof SHOW_MONITOR)[number]

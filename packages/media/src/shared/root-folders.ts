@@ -20,7 +20,7 @@ import type { LibraryKind, MediaType } from '@highsea-tv/db/schema'
 import { and, asc, eq, isNull, sql } from 'drizzle-orm'
 import { invalid, type MediaDeps } from './context.ts'
 
-const { rootFolders, mediaItems, languageProfiles } = schema
+const { rootFolders, mediaItems, languageProfiles, unmatchedFiles } = schema
 
 /** How a refusal names each type: one, then many. A new media type adds its nouns here. */
 const NOUNS: Record<MediaType, [string, string]> = {
@@ -168,6 +168,14 @@ export function createRootFolders({ db, clock }: MediaDeps) {
     return folders.filter((f) => !filed.has(f) && existsSync(f)).length
   }
 
+  /** A shows folder's show folders kept unmatched (Phase 5 B): they wait for Library import. */
+  const showsWaitingIn = (path: string): number =>
+    db
+      .select({ n: sql<number>`count(*)` })
+      .from(unmatchedFiles)
+      .where(and(eq(unmatchedFiles.rootFolder, path), eq(unmatchedFiles.kind, 'show-folder')))
+      .get()?.n ?? 0
+
   const view = (row: Row): RootFolder => ({
     id: row.id,
     path: row.path,
@@ -175,7 +183,7 @@ export function createRootFolders({ db, clock }: MediaDeps) {
     ...probe(row.path, row.readOnly),
     movies: filedIn(row.path).movie ?? 0,
     languageProfileId: row.languageProfileId,
-    waiting: waitingIn(row.path),
+    waiting: row.kind === 'shows' ? showsWaitingIn(row.path) : waitingIn(row.path),
   })
 
   const rows = () => db.select().from(rootFolders).orderBy(asc(rootFolders.path)).all()

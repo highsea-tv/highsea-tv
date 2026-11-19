@@ -670,6 +670,17 @@ try {
         path: '/discover',
         act: (p) => p.getByRole('button', { name: /^Add / }).first().click(),
       },
+      // shows (Phase 5 B): the library, Chernobyl with two episodes on disk, its files, Discover's
+      { name: 'shows', path: '/shows' },
+      { name: 'show', path: '/shows/87108' },
+      { name: 'show:files', path: '/shows/87108/files' },
+      { name: 'show:missing', path: '/shows/999999999' },
+      { name: 'discover:shows', path: '/discover/shows' },
+      {
+        name: 'import:library:shows',
+        path: `/activity/import?mode=library&root=${encodeURIComponent(join(dataDir, 'tv'))}`,
+        act: (p) => p.getByRole('button', { name: 'Look inside' }).click(),
+      },
       { name: 'movies', path: '/movies' },
       { name: 'movies:wanted', path: '/movies?status=wanted&sort=added' },
       { name: 'movies:none', path: '/movies?title=zzz' },
@@ -832,6 +843,14 @@ try {
       { name: 'web:collection:smart', path: `/web/collections/${decade.id}` },
       { name: 'web:collection:missing', path: '/web/collections/nothing-here' },
       { name: 'web:movie', path: '/web/movies/45745' },
+      { name: 'web:shows', path: '/web/shows' },
+      // its seasons drawn, not the skeleton's
+      {
+        name: 'web:show',
+        path: '/web/shows/87108',
+        act: (p) => p.getByRole('heading', { name: 'Episodes' }).waitFor(),
+      },
+      { name: 'web:play:episode', path: '/web/play/episode/1725580' },
       { name: 'web:movie:one-version', path: '/web/movies/653' },
       { name: 'web:movie:missing', path: '/web/movies/19' },
       { name: 'web:search', path: '/web/search' },

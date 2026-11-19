@@ -13,8 +13,9 @@ import { useAction, useClient, useQuery } from '@highsea-tv/sdk/react'
 // already on disk. The same table as Manual import with folders for files and TMDB's match as the
 // movie column. The owner picks a root folder (Settings › Media management's "Import what's
 // already here" opens it with the folder chosen), looks inside, checks the matches, and starts a
-// job that adds each movie where it is; Rename to my format renames them as it goes. The job's
-// progress is live on `import.updated`.
+// job that adds each movie where it is; Rename to my format renames them as it goes. A shows
+// root folder (Phase 5 B) is read the same way, a show to a folder, and its shows are only ever
+// matched where they are, so it has no Rename. The job's progress is live on `import.updated`.
 // Drawn with the library's native renderer since D2 (one-client-platform-d.md).
 import { admin, line, wrapBasis } from '@highsea-tv/tokens'
 import {
@@ -127,7 +128,7 @@ export function LibraryImport({ root: initialRoot = '' }: { root?: string }) {
   const [profileId, setProfileId] = useState('')
   const roots = useQuery(
     'import:library:roots',
-    (c) => c.rootFolders.list({ query: { kind: 'movies' } }),
+    (c) => c.rootFolders.list({ query: {} }).then((rs) => rs.filter((r) => r.kind !== 'music')),
     ['settings.updated'],
   )
   const profiles = useQuery('import:library:profiles', (c) => c.quality.profiles())
@@ -184,7 +185,7 @@ export function LibraryImport({ root: initialRoot = '' }: { root?: string }) {
     run
       .run({
         items: chosen.map((r) => ({ folder: r.folder, tmdbId: r.match?.tmdbId as number })),
-        rename: rename && !readOnly,
+        rename: rename && !keeps,
         ...(profileId ? { qualityProfileId: profileId } : {}),
       })
       .catch((e: Error) => toast.error(t('fail.run'), { description: e.message }))
@@ -192,6 +193,10 @@ export function LibraryImport({ root: initialRoot = '' }: { root?: string }) {
   const rootOptions = (roots.data ?? []).map((r) => ({ value: r.path, label: r.path }))
   // a folder highsea only reads keeps its names (ADR 0063): no Rename to my format
   const readOnly = !!roots.data?.find((r) => r.path === scanned)?.readOnly
+  // shows are matched where they are, never renamed (Phase 5 B)
+  const shows = roots.data?.find((r) => r.path === scanned)?.kind === 'shows'
+  const keeps = readOnly || shows
+  const showsRoot = roots.data?.find((r) => r.path === root)?.kind === 'shows'
   const profileOptions = (profiles.data ?? []).map((p) => ({ value: p.id, label: p.name }))
   const ui = tokens.adminText.ui
 
@@ -211,7 +216,13 @@ export function LibraryImport({ root: initialRoot = '' }: { root?: string }) {
           <Field
             label={t('root')}
             error={error ?? undefined}
-            hint={roots.data && rootOptions.length === 0 ? t('noRoots') : t('rootHint', TAGS)}
+            hint={
+              roots.data && rootOptions.length === 0
+                ? t('noRoots')
+                : showsRoot
+                  ? t('rootHintShows')
+                  : t('rootHint', TAGS)
+            }
           >
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: sp['2'] }}>
               <View style={{ flexGrow: 1, flexShrink: 1, flexBasis: wrapBasis, minWidth: 0 }}>
@@ -270,11 +281,11 @@ export function LibraryImport({ root: initialRoot = '' }: { root?: string }) {
         ) : (
           <TableFrame>
             <TableToolbar>
-              {readOnly ? null : (
+              {keeps ? null : (
                 <Checkbox label={t('rename')} checked={rename} onCheckedChange={setRename} />
               )}
               <Text variant="caption" color="text-3">
-                {readOnly ? t('readOnlyBody') : rename ? t('renameBody') : t('keepBody')}
+                {readOnly ? t('readOnlyBody') : rename && !shows ? t('renameBody') : t('keepBody')}
               </Text>
               <View
                 style={{
@@ -298,7 +309,7 @@ export function LibraryImport({ root: initialRoot = '' }: { root?: string }) {
                   loading={run.pending}
                   onPress={start}
                 >
-                  {t('run', { count: chosen.length })}
+                  {t(shows ? 'runShows' : 'run', { count: chosen.length })}
                 </Button>
               </View>
             </TableToolbar>
@@ -307,7 +318,7 @@ export function LibraryImport({ root: initialRoot = '' }: { root?: string }) {
                 <TableRow>
                   <TableHead hidden>{t('col.import')}</TableHead>
                   <TableHead>{t('col.folder')}</TableHead>
-                  <TableHead>{t('col.movie')}</TableHead>
+                  <TableHead>{t(shows ? 'col.show' : 'col.movie')}</TableHead>
                   <TableHead>{t('col.quality')}</TableHead>
                   <TableHead numeric>{t('col.size')}</TableHead>
                 </TableRow>

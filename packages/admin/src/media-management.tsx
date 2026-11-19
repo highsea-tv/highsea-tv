@@ -671,10 +671,8 @@ function RootFolders() {
                           {t(`folders.kind.${kind}`)}
                         </Text>
                       </View>
-                      {/* shows' folders are kept for part B (Phase 5); music's are read once it's served */}
-                      {kind === 'shows' || (kind === 'music' && !music) ? (
-                        <Note>{t(`folders.later.${kind}`)}</Note>
-                      ) : null}
+                      {/* music's folders are read once it's served; shows' are since Phase 5 B */}
+                      {kind === 'music' && !music ? <Note>{t('folders.later.music')}</Note> : null}
                       {mine.length === 0 ? (
                         <View
                           style={{
@@ -772,6 +770,7 @@ function Folder({
   const t = useT(messages)
   const regular = useRegularWindow()
   const movies = f.kind === 'movies'
+  const shows = f.kind === 'shows'
   const music = f.kind === 'music' && figures !== undefined
   const inUse = f.movies > 0
   const save = useAction((c, languageProfileId: string | null) =>
@@ -894,7 +893,7 @@ function Folder({
         ) : null}
       </View>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: s['2'] }}>
-        {movies || music ? (
+        {movies || shows || music ? (
           <Button
             size="sm"
             variant="ghost"
@@ -907,7 +906,13 @@ function Folder({
                 () =>
                   toast({
                     title: t('folders.scanning', { path: f.path }),
-                    description: t(music ? 'folders.scanningMusic' : 'folders.scanningBody'),
+                    description: t(
+                      music
+                        ? 'folders.scanningMusic'
+                        : shows
+                          ? 'folders.scanningShows'
+                          : 'folders.scanningBody',
+                    ),
                   }),
                 (e: Error) => toast.error(t('folders.scanFailed'), { description: e.message }),
               )
@@ -916,8 +921,8 @@ function Folder({
             {t('folders.scan')}
           </Button>
         ) : null}
-        {/* Library import matches movies only until the server has shows and music */}
-        {movies ? (
+        {/* Library import matches movies and shows; music's comes with part D */}
+        {movies || shows ? (
           <Button
             size="sm"
             variant="ghost"
@@ -979,11 +984,13 @@ function AddFolder({ kind, onAdded }: { kind: LibraryKind; onAdded: () => void }
     setError(null)
     toast.success(t('add.added', { path: p }), {
       description:
-        kind !== 'movies'
-          ? t(`folders.later.${kind}`)
-          : added.readOnly
-            ? t('add.addedReadOnly')
-            : t('add.addedScanning'),
+        kind === 'music'
+          ? t('folders.later.music')
+          : kind === 'shows'
+            ? t('add.addedScanningShows')
+            : added.readOnly
+              ? t('add.addedReadOnly')
+              : t('add.addedScanning'),
     })
     onAdded()
   }

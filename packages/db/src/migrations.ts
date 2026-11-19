@@ -94,5 +94,9 @@ export const migrations: Migration[] = [
   {
     "tag": "0022_unmatched_files",
     "sql": "CREATE TABLE `unmatched_files` (\n\t`path` text PRIMARY KEY NOT NULL,\n\t`kind` text NOT NULL,\n\t`root_folder` text NOT NULL,\n\t`item_id` text,\n\t`reason` text NOT NULL,\n\t`message` text NOT NULL,\n\t`size` integer DEFAULT 0 NOT NULL,\n\t`found_at` integer NOT NULL,\n\tFOREIGN KEY (`item_id`) REFERENCES `media_items`(`id`) ON UPDATE no action ON DELETE cascade\n);\n--> statement-breakpoint\nCREATE INDEX `unmatched_files_root` ON `unmatched_files` (`root_folder`,`kind`);--> statement-breakpoint\nCREATE INDEX `unmatched_files_item` ON `unmatched_files` (`item_id`);"
+  },
+  {
+    "tag": "0023_show_dismissals",
+    "sql": "CREATE TABLE `show_dismissals` (\n\t`user_id` text NOT NULL,\n\t`profile_id` text NOT NULL,\n\t`item_id` text NOT NULL,\n\t`dismissed_at` integer NOT NULL,\n\tPRIMARY KEY(`profile_id`, `item_id`),\n\tFOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE cascade,\n\tFOREIGN KEY (`profile_id`) REFERENCES `profiles`(`id`) ON UPDATE no action ON DELETE cascade,\n\tFOREIGN KEY (`item_id`) REFERENCES `media_items`(`id`) ON UPDATE no action ON DELETE cascade\n);\n"
   }
 ]

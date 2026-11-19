@@ -133,7 +133,8 @@ export function createNowPlaying(deps: {
   /** A profile's name, or null when it's gone (ADR 0068). */
   profileName(profileId: string): string | null
   device(deviceId: string): { name: string; client: ClientType } | null
-  poster(tmdbId: number): string | null
+  /** A title's poster; an episode's (by its library row) is its show's. */
+  poster(tmdbId: number, itemId?: string | null): string | null
   /** A new watch began: not a restart for another track, which joins the one before. */
   onStarted?(p: {
     sessionId: string
@@ -242,7 +243,7 @@ export function createNowPlaying(deps: {
       deviceName: device?.name ?? 'Unknown device',
       client: device?.client ?? 'web',
       year: file.year,
-      poster: deps.poster(s.tmdbId),
+      poster: deps.poster(s.tmdbId, s.itemId),
       version: versionDetail(file.info, s.file.size),
       sent: sentAs(s.decision, file.info),
       mbps: mbpsOf(s.decision),
@@ -401,7 +402,7 @@ export function createNowPlaying(deps: {
         tmdbId: row.itemId ? row.tmdbId : null,
         title: row.title,
         year: row.year,
-        poster: row.itemId ? deps.poster(row.tmdbId) : null,
+        poster: row.itemId ? deps.poster(row.tmdbId, row.itemId) : null,
       },
       version: row.version,
       method: row.method,

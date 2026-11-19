@@ -12,8 +12,8 @@ export const ROLE_DEFAULTS: Record<Role, Permission[]> = {
   user: ['request'],
 }
 
-/** The libraries there are. TV shows, music and books join this list when the server has them. */
-export const LIBRARIES = ['movies'] as const
+/** The libraries there are: shows since Phase 5 B; music and books join when the server has them. */
+export const LIBRARIES = ['movies', 'shows'] as const
 export const ALL_LIBRARIES = '*'
 
 /** Inviting and managing people is the owner's alone (ADR 0032). */
