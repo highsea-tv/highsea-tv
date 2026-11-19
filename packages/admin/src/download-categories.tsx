@@ -26,6 +26,8 @@ import {
 import { useState } from 'react'
 import { View } from 'react-native'
 import { categories as messages } from './download-categories-messages.ts'
+import { WithBrowse } from './folder-picker.tsx'
+import { folderPicker as pickerMessages } from './folder-picker-messages.ts'
 import { Loadable } from './loadable.tsx'
 import { Group } from './settings.tsx'
 import { Card, Cards, WRAP_ANYWHERE } from './settings-card.tsx'
@@ -132,6 +134,7 @@ function Category({ category: c, onRemove }: { category: TorrentCategory; onRemo
 
 function AddCategory({ onSaved }: { onSaved: () => void }) {
   const t = useT(messages)
+  const tp = useT(pickerMessages)
   const [name, setName] = useState('')
   const [folder, setFolder] = useState('')
   const [errors, setErrors] = useState<{ name?: string; folder?: string }>({})
@@ -174,19 +177,29 @@ function AddCategory({ onSaved }: { onSaved: () => void }) {
           />
         </Field>
         <Field label={t('folder')} hint={t('folderHint')} error={errors.folder}>
-          <Input
+          <WithBrowse
             value={folder}
-            icon="folder"
-            mono
-            placeholder={t('folderPlaceholder')}
-            spellCheck={false}
-            autoCapitalize="none"
-            onSubmitEditing={() => void submit()}
-            onChangeText={(v) => {
+            title={tp('title.category')}
+            needsWrite
+            onPick={(v) => {
               setErrors({})
               setFolder(v)
             }}
-          />
+          >
+            <Input
+              value={folder}
+              icon="folder"
+              mono
+              placeholder={t('folderPlaceholder')}
+              spellCheck={false}
+              autoCapitalize="none"
+              onSubmitEditing={() => void submit()}
+              onChangeText={(v) => {
+                setErrors({})
+                setFolder(v)
+              }}
+            />
+          </WithBrowse>
         </Field>
       </Columns>
       <View style={{ alignSelf: 'flex-start' }}>

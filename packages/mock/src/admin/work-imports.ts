@@ -134,6 +134,31 @@ export function importAnswers(kit: AdminKit): Answers {
           entries: ctx.api.fs.list(path),
         }
       },
+      // the admin's folder picker (HT-91): folders only, in the data folder and every root folder
+      // of any kind, never /config; without a path, the data folder
+      folders: ({ query }, ctx) => {
+        const s = ctx.srv.state
+        const path = (query.path || '/data').replace(/(.)\/+$/, '$1')
+        const roots = ['/data', ...s.settings.rootFolders.map((f) => f.path)]
+        const root = roots.filter((r) => inside(path, r)).sort((a, b) => a.length - b.length)[0]
+        if (!root || inside(path, '/config'))
+          throw refuse('forbidden', tw('work.outside', { path }), { reason: 'outside' })
+        if (!s.fs[path])
+          throw refuse('not-found', tw('work.noFolder', { path }), { reason: 'missing' })
+        const up = path.slice(0, path.lastIndexOf('/')) || '/'
+        return {
+          path,
+          root,
+          parent: path !== root && inside(up, root) ? up : null,
+          folders: ctx.api.fs
+            .list(path)
+            .filter((f) => s.fs[f.path])
+            .map(({ name, path: p }) => ({ name, path: p }))
+            .sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true })),
+          more: 0,
+          writable: true,
+        }
+      },
     },
 
     manualImport: {

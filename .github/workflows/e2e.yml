@@ -44,12 +44,14 @@ on:
   # the release runs it before building anything (release.yml)
   workflow_call:
 
-# A pull request's newer run cancels its older one; a push to next and a release are never
-# cancelled, each in a group of its own (ci.yml's note on `concurrency`,
-# https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#concurrency)
+# A pull request's newer run cancels its older one, and since 2026-11-19 so does a push to next:
+# the group is the branch's, so only next's newest commit keeps a run, and nothing reads a
+# superseded commit's run (ci.yml's note on `concurrency`,
+# https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#concurrency).
+# Anything else, a release among them, is in a group of its own and never cancelled.
 concurrency:
-  group: e2e-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  group: e2e-${{ (github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/next')) && github.ref || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/next') }}
 
 permissions:
   contents: read
@@ -92,9 +94,24 @@ jobs:
           bun-version: 1.4.4
       - if: *build
         run: bun install --frozen-lockfile
+      # Chromium's system packages through the shared apt steps, which try another mirror when one
+      # is slow (.github/scripts/apt.sh), rather than `--with-deps`, whose apt-get has no limit of
+      # its own: the ones Playwright reports missing (`install-deps --dry-run`, as ci.yml's
+      # `playback` lists them). The browser's download retries itself
+      # (playwright-core's registry/browserFetcher.ts); the limit is for a stall.
+      - if: *build
+        name: Chromium's system packages
+        timeout-minutes: 12
+        run: |
+          bash .github/scripts/apt.sh update
+          packages=$(bunx playwright-core install-deps --dry-run chromium | sed -n 's/^  \([^ ]*\)$/\1/p' | tr '\n' ' ' || true)
+          echo "Playwright's packages: ${packages:-none missing}"
+          # shellcheck disable=SC2086 # one word per package
+          if [ -n "$packages" ]; then bash .github/scripts/apt.sh install $packages; fi
       - if: *build
         name: Chromium for Playwright
-        run: bunx playwright-core install --with-deps chromium
+        timeout-minutes: 5
+        run: bunx playwright-core install chromium
       - if: *build
         uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
       # from ci.yml's amd64 cache when it's there

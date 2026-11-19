@@ -63,12 +63,14 @@ on:
       - 'scripts/license-audit.ts'
       - '.github/workflows/native.yml'
 
-# A pull request's newer run cancels its older one; a push to next is never cancelled, each in a
-# group of its own (ci.yml's note on `concurrency`,
-# https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#concurrency)
+# A pull request's newer run cancels its older one, and since 2026-11-19 so does a push to next:
+# the group is the branch's, so only next's newest commit keeps a run, and nothing reads a
+# superseded commit's run (ci.yml's note on `concurrency`,
+# https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#concurrency).
+# Anything else, a release among them, is in a group of its own and never cancelled.
 concurrency:
-  group: native-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  group: native-${{ (github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/next')) && github.ref || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/next') }}
 
 permissions:
   contents: read

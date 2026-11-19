@@ -117,7 +117,7 @@ import {
   packBackup,
   takeRestoreFailure,
 } from './backups.ts'
-import { type BrowseListing, browse } from './browse.ts'
+import { type BrowseListing, browse, browseFolders, type FolderListing } from './browse.ts'
 import { createCollectionLibrary } from './collection-library.ts'
 import { type Config, workDir } from './config.ts'
 import { type ContainerNetwork, detectContainerNetwork } from './container-network.ts'
@@ -353,6 +353,11 @@ export type Runtime = {
   folders(): MediaFolders
   /** A folder inside the data root, a root folder or the downloads folder (A17's Browse). */
   browse(path?: string): BrowseListing
+  /**
+   * The folder picker's folders (HT-91): inside the data root, a root folder, the downloads folder
+   * or a category's, never the config folder. Without `path`, the data root.
+   */
+  browseFolders(path?: string): FolderListing
   /** A library movie's row id, from its TMDB id; not-found when it isn't in the library. */
   itemId(tmdbId: number): string
   identity(): ServerIdentity
@@ -1457,6 +1462,17 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
           ...downloads.categoryFolders(),
         ],
         path ?? (existsSync(folders().downloads) ? folders().downloads : undefined),
+      ),
+    browseFolders: (path) =>
+      browseFolders(
+        [
+          resolve(config.dataDir),
+          ...media.rootFolders.list().map((f) => f.path),
+          folders().downloads,
+          ...downloads.categoryFolders(),
+        ],
+        [config.configDir],
+        path,
       ),
     itemId(tmdbId) {
       const row = movieRow(tmdbId)

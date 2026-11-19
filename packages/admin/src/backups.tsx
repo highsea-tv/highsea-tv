@@ -24,6 +24,8 @@ import {
 import { Children, type ReactNode, useState } from 'react'
 import { View } from 'react-native'
 import { backups as messages } from './backups-messages.ts'
+import { WithBrowse } from './folder-picker.tsx'
+import { folderPicker as pickerMessages } from './folder-picker-messages.ts'
 import { Loadable } from './loadable.tsx'
 import { AreaPage, Group, SaveBar } from './settings.tsx'
 
@@ -113,6 +115,7 @@ function Form({
   reload: () => void
 }) {
   const t = useT(messages)
+  const tp = useT(pickerMessages)
   const locale = useLocale()
   const initial: Draft = { ...loaded, keep: String(loaded.keep) }
   const [v, setDraft] = useState(initial)
@@ -199,18 +202,28 @@ function Form({
           hint={t('folderHint')}
           error={show(!pathOk(v.folder), t('folderInvalid')) ?? folderError ?? undefined}
         >
-          <Input
-            mono
+          <WithBrowse
             value={v.folder}
-            autoComplete="off"
-            autoCorrect={false}
-            autoCapitalize="none"
-            spellCheck={false}
-            onChangeText={(folder) => {
+            title={tp('title.backups')}
+            needsWrite
+            onPick={(folder) => {
               setFolderError(null)
               set({ folder })
             }}
-          />
+          >
+            <Input
+              mono
+              value={v.folder}
+              autoComplete="off"
+              autoCorrect={false}
+              autoCapitalize="none"
+              spellCheck={false}
+              onChangeText={(folder) => {
+                setFolderError(null)
+                set({ folder })
+              }}
+            />
+          </WithBrowse>
         </Field>
       </Group>
       <SaveBar

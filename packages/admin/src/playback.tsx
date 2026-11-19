@@ -43,6 +43,8 @@ import {
 } from '@highsea-tv/ui/native'
 import { useState } from 'react'
 import { ActivityIndicator, View } from 'react-native'
+import { WithBrowse } from './folder-picker.tsx'
+import { folderPicker as pickerMessages } from './folder-picker-messages.ts'
 import { Loadable } from './loadable.tsx'
 import { playback as messages } from './playback-messages.ts'
 import { AreaPage, Group, SaveBar } from './settings.tsx'
@@ -94,6 +96,7 @@ function Form({
   reload: () => void
 }) {
   const t = useT(messages)
+  const tp = useT(pickerMessages)
   const initial: Draft = {
     ...loaded,
     maxTranscodes: String(loaded.maxTranscodes),
@@ -184,16 +187,26 @@ function Form({
             hint={t('folderHint')}
             error={show(!pathOk(v.cachePath), t('folderInvalid')) ?? folderError ?? undefined}
           >
-            <Input
+            <WithBrowse
               value={v.cachePath}
-              autoComplete="off"
-              spellCheck={false}
-              mono
-              onChangeText={(cachePath) => {
+              title={tp('title.transcodes')}
+              needsWrite
+              onPick={(cachePath) => {
                 setFolderError(null)
                 set({ cachePath })
               }}
-            />
+            >
+              <Input
+                value={v.cachePath}
+                autoComplete="off"
+                spellCheck={false}
+                mono
+                onChangeText={(cachePath) => {
+                  setFolderError(null)
+                  set({ cachePath })
+                }}
+              />
+            </WithBrowse>
           </Field>
           <Field label={t('limit')} error={show(limit === undefined, t('limitInvalid'))}>
             <Input
