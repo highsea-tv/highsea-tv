@@ -351,6 +351,25 @@ describe('the Library on the phone', () => {
     expect(posters().length).toBeGreaterThan(0)
   })
 
+  test('a collection’s Play plays its films in the page’s order, the first resumed, Shuffle after it', async () => {
+    const r = await at(`/collections/${SEED.collection.id}`)
+    const play = screen.getByRole('button', { name: 'Play the films in order' })
+    const shuffle = screen.getByRole('button', { name: 'Shuffle the films' })
+    // Play comes first, then Shuffle
+    const buttons = screen.getAllByRole('button').filter((b) => b === play || b === shuffle)
+    expect(buttons).toEqual([play, shuffle])
+    await fireEvent.press(play)
+    await flush()
+    const s = currentShuffle()
+    expect(s?.kind).toBe('movie')
+    expect(s?.shuffled).toBe(false)
+    expect(s?.ids.length).toBeGreaterThan(1)
+    // the first film from where it was left, as plain Play opens it
+    expect(r.getPathname()).toBe(`/play/${s?.ids[0]}`)
+    expect(r.getSearchParams()).toMatchObject({ queue: '1' })
+    endShuffle()
+  })
+
   test('a collection’s Shuffle plays its films in a random order, the first from its start', async () => {
     const r = await at(`/collections/${SEED.collection.id}`)
     await fireEvent.press(screen.getByRole('button', { name: 'Shuffle the films' }))
@@ -359,7 +378,7 @@ describe('the Library on the phone', () => {
     expect(s?.kind).toBe('movie')
     expect(s?.ids.length).toBeGreaterThan(1)
     expect(r.getPathname()).toBe(`/play/${s?.ids[0]}/start`)
-    expect(r.getSearchParams()).toMatchObject({ shuffle: '1' })
+    expect(r.getSearchParams()).toMatchObject({ queue: '1' })
     endShuffle()
   })
 

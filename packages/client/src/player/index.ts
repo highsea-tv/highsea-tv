@@ -300,7 +300,7 @@ export type UpNext<
   Item,
   Id = string | number,
   Still extends string | null = string | null,
-  Kind extends 'episode' | 'part' | 'shuffle' = 'episode' | 'part' | 'shuffle',
+  Kind extends 'episode' | 'part' | 'shuffle' | 'queue' = 'episode' | 'part' | 'shuffle' | 'queue',
 > =
   | {
       kind: Kind
@@ -336,21 +336,34 @@ export function filmUpNext<Item, Id, Still extends string | null>(
 }
 
 /**
- * A shuffle's Next up (player.md › Shuffle): its next item, an episode with its place as its line
- * or a film, and nothing at the end, so the last item ends as any film does. It never falls back
- * to the show's next episode or More like this.
+ * A queue's Next up (player.md › Shuffle and Play in order): its next item, `shuffle` in a
+ * shuffle and `queue` in a collection's Play, which reads as plain Next up; an episode with its
+ * place as its line or a film, and nothing at the end, so the last item ends as any film does.
+ * It never falls back to the show's next episode or More like this.
  */
-export function shuffleUpNext<Id, Still extends string | null>(
+export function shuffleUpNext<
+  Id,
+  Still extends string | null,
+  K extends 'shuffle' | 'queue' = 'shuffle',
+>(
   item: {
     id: Id
     title: string
     still: Still
     episode?: { code: string; title: string } | null
   } | null,
-): Exclude<UpNext<never, Id, Still, 'shuffle'>, { kind: 'choices' }> | null {
+  kind: K = 'shuffle' as K,
+): {
+  kind: K
+  id: Id
+  title: string
+  line: string
+  still: Still
+  season: number | null
+} | null {
   if (!item) return null
   return {
-    kind: 'shuffle',
+    kind,
     id: item.id,
     title: item.episode?.title ?? item.title,
     line: item.episode?.code ?? '',

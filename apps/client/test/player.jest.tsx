@@ -15,6 +15,7 @@ import { navigationRef } from 'expo-router/build/global-state/navigationRef'
 import {
   currentShuffle,
   endShuffle,
+  playInOrder,
   startShuffle,
 } from '../../../packages/client/src/shuffle/index.ts'
 import type { FakeVideo } from './mock.ts'
@@ -331,7 +332,7 @@ describe('the player on the phone', () => {
     await fireEvent.press(screen.getByRole('button', { name: 'Next' }))
     await flush()
     expect(r.getPathname()).toBe(`/play/${other}/start`)
-    expect(r.getSearchParams()).toMatchObject({ shuffle: '1' })
+    expect(r.getSearchParams()).toMatchObject({ queue: '1' })
     expect(currentShuffle()?.at).toBe(1)
     // at the last, Next has nowhere to go and Previous goes back
     expect(screen.getByRole('button', { name: 'Next' }).props.accessibilityState).toMatchObject({
@@ -340,6 +341,28 @@ describe('the player on the phone', () => {
     await fireEvent.press(screen.getByRole('button', { name: 'Previous' }))
     await flush()
     expect(r.getPathname()).toBe(`/play/${FILM}/start`)
+    await fireEvent.press(screen.getByRole('button', { name: 'Back to details' }))
+    await flush()
+    expect(currentShuffle()).toBeNull()
+  })
+
+  test('a collection’s Play resumes its first film, then Next takes the next from its start', async () => {
+    const other = FILM + 37
+    const to = playInOrder('movie', [FILM, other])
+    expect(to).toBe(`/play/${FILM}?queue=1`)
+    const r = await signedIn()
+    await act(() => router.navigate(to as never))
+    await flush(2000)
+    expect(player().playing).toBe(true)
+    expect(screen.getByRole('button', { name: 'Previous' }).props.accessibilityState).toMatchObject(
+      { disabled: true },
+    )
+    await fireEvent.press(screen.getByRole('button', { name: 'Next' }))
+    await flush()
+    expect(r.getPathname()).toBe(`/play/${other}/start`)
+    expect(r.getSearchParams()).toMatchObject({ queue: '1' })
+    expect(currentShuffle()?.shuffled).toBe(false)
+    expect(currentShuffle()?.at).toBe(1)
     await fireEvent.press(screen.getByRole('button', { name: 'Back to details' }))
     await flush()
     expect(currentShuffle()).toBeNull()

@@ -81,7 +81,7 @@ describe('by touch', () => {
     expect(s?.kind).toBe('episode')
     expect(s?.ids.length).toBeGreaterThan(1)
     expect(r.getPathname()).toBe(`/play/episode/${s?.ids[0]}/start`)
-    expect(r.getSearchParams()).toMatchObject({ shuffle: '1' })
+    expect(r.getSearchParams()).toMatchObject({ queue: '1' })
     endShuffle()
   })
 

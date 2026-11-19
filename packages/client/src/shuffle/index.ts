@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// Shuffle (player.md › Shuffle; HT-96): a show's episodes or a collection's films played in a
-// random order, one after another. The order is made once, when Shuffle is pressed, and kept on
-// this device for that sitting, so Next and Previous move through it and nothing comes twice;
-// after the last it stops. Leaving the player ends it. It lives on the client, in memory, since
-// the server holds no queues for video; each item is a title the player already plays, at its
-// own address, with `?shuffle=1` so a player opened any other way never follows a stale order.
+// Shuffle and a collection's Play (player.md › Shuffle and Play in order; HT-96): a show's
+// episodes or a collection's films played one after another, in a random order or in the
+// collection's own. The order is made once, when Shuffle or Play is pressed, and kept on this
+// device for that sitting, so Next and Previous move through it and nothing comes twice; after
+// the last it stops. Leaving the player ends it. It lives on the client, in memory, since the
+// server holds no queues for video; each item is a title the player already plays, at its own
+// address, with `?queue=1` so a player opened any other way never follows a stale order.
 //
 // The video players hold one item at a time: expo-video's VideoPlayer swaps its source with
 // `replace()` and has no queue of its own (https://docs.expo.dev/versions/latest/sdk/video/), and
@@ -20,6 +21,8 @@ export type Shuffle = {
   ids: number[]
   /** Where in `ids` the player is. */
   at: number
+  /** Shuffled (Shuffle), or in the order the page lists them (a collection's Play). */
+  shuffled: boolean
 }
 
 /**
@@ -59,12 +62,23 @@ export const collectionFilms = (items: readonly Pick<ClientItem, 'id' | 'playabl
 /** Whether a page offers Shuffle: two or more to play, or there's nothing to shuffle. */
 export const canShuffle = (ids: readonly number[]) => ids.length > 1
 
+/** Whether a collection offers Play: one film or more to play. */
+export const canPlayAll = (ids: readonly number[]) => ids.length > 0
+
 /** A new shuffle of `ids`, at its first. */
 export const makeShuffle = (
   kind: ShuffleKind,
   ids: readonly number[],
   random: () => number = Math.random,
-): Shuffle => ({ kind, ids: shuffled([...new Set(ids)], random), at: 0 })
+): Shuffle => ({ kind, ids: shuffled([...new Set(ids)], random), at: 0, shuffled: true })
+
+/** A queue of `ids` in the order given (a collection's Play), at its first. */
+export const makeQueue = (kind: ShuffleKind, ids: readonly number[]): Shuffle => ({
+  kind,
+  ids: [...new Set(ids)],
+  at: 0,
+  shuffled: false,
+})
 
 /** The item after this one, or null at the end: it stops, it doesn't go round again. */
 export const shuffleNext = (s: Shuffle): number | null => s.ids[s.at + 1] ?? null
@@ -79,9 +93,17 @@ export function shuffleAt(s: Shuffle, id: number): Shuffle | null {
   return at < 0 ? null : { ...s, at }
 }
 
-/** The player at an item of the shuffle: from its start, never its resume point. */
-export const shufflePath = (kind: ShuffleKind, id: number) =>
-  `${kind === 'episode' ? `/play/episode/${id}` : `/play/${id}`}/start?shuffle=1`
+const playPath = (kind: ShuffleKind, id: number) =>
+  kind === 'episode' ? `/play/episode/${id}` : `/play/${id}`
+
+/** The player at an item of the queue: from its start, never its resume point. */
+export const queuePath = (kind: ShuffleKind, id: number) => `${playPath(kind, id)}/start?queue=1`
+
+/**
+ * The player at a queue's first item from where the person left off, as plain Play opens it: a
+ * collection's Play resumes its first film; the films after it start at their beginning.
+ */
+export const queueResumePath = (kind: ShuffleKind, id: number) => `${playPath(kind, id)}?queue=1`
 
 // ---------------------------------------------------------------------------------------------
 // The one shuffle playing on this device, in memory: one person plays at a time on a device, and
@@ -99,15 +121,27 @@ export function startShuffle(
   const first = s.ids[0]
   if (first === undefined) return null
   current = s
-  return shufflePath(kind, first)
+  return queuePath(kind, first)
+}
+
+/**
+ * Starts a queue in the order given (a collection's Play) and returns the player's address for
+ * its first item, resumed where the person left off, or null if empty.
+ */
+export function playInOrder(kind: ShuffleKind, ids: readonly number[]): string | null {
+  const s = makeQueue(kind, ids)
+  const first = s.ids[0]
+  if (first === undefined) return null
+  current = s
+  return queueResumePath(kind, first)
 }
 
 /**
  * The shuffle the player at `id` is part of, moved to it: null when the player wasn't opened from
- * one (`inShuffle` false), none is playing, or `id` isn't in it.
+ * one (`inQueue` false), none is playing, or `id` isn't in it.
  */
-export function shuffleFor(kind: ShuffleKind, id: number, inShuffle: boolean): Shuffle | null {
-  if (!inShuffle || !current || current.kind !== kind) return null
+export function shuffleFor(kind: ShuffleKind, id: number, inQueue: boolean): Shuffle | null {
+  if (!inQueue || !current || current.kind !== kind) return null
   const moved = shuffleAt(current, id)
   if (moved) current = moved
   return moved

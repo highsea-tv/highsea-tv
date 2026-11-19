@@ -7,6 +7,8 @@ import { defineMessages } from '@highsea-tv/i18n'
 
 export const libraryScreenMessages = defineMessages({
   // a collection's Shuffle (collections.md): its films in a random order, each from its start
+  play: 'Play',
+  playFilms: 'Play the films in order',
   shuffle: 'Shuffle',
   shuffleFilms: 'Shuffle the films',
   library: 'Library',

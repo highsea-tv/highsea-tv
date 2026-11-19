@@ -36,9 +36,9 @@ import { episodePlayPath } from '@highsea-tv/client/shows'
 import {
   endShuffle,
   handOn,
+  queuePath,
   type Shuffle,
   shuffleNext,
-  shufflePath,
   shufflePrevious,
 } from '@highsea-tv/client/shuffle'
 import type { T } from '@highsea-tv/i18n'
@@ -101,12 +101,12 @@ function episodeUpNext(n: ClientDetail | null, season: number | null): FilmUpNex
 }
 
 /**
- * The next title takes the player's place: an episode's own address, or a film's; a shuffle's
- * item from its start, still in the shuffle.
+ * The next title takes the player's place: an episode's own address, or a film's; a queue's item
+ * (a shuffle's, or a collection's Play's) from its start, still in the queue.
  */
 const go = (kind: FilmUpNext['kind'], to: number, type: TitleType) =>
-  kind === 'shuffle'
-    ? router.replace(shufflePath(type === 'episode' ? 'episode' : 'movie', to) as Href)
+  kind === 'shuffle' || kind === 'queue'
+    ? router.replace(queuePath(type === 'episode' ? 'episode' : 'movie', to) as Href)
     : kind === 'episode'
       ? router.replace(episodePlayPath(to) as Href)
       : playNext(router, to)
@@ -168,6 +168,7 @@ export function usePlayerModel(
               episode: shuffled.episode ?? null,
             }
           : null,
+        shuffle.shuffled ? 'shuffle' : 'queue',
       )
     : type === 'episode'
       ? episodeUpNext(nextEpisode.data ?? null, d?.episode?.season ?? null)
@@ -220,7 +221,7 @@ export function usePlayerModel(
   const goShuffle = (to: number) => {
     if (!shuffle) return
     handOn(shuffle)
-    go('shuffle', to, type)
+    go(shuffle.shuffled ? 'shuffle' : 'queue', to, type)
   }
 
   const waiting = stream === 'preparing' || stream === 'buffering'
@@ -248,8 +249,8 @@ export function usePlayerModel(
       go(next?.kind ?? 'part', to, type)
     },
     /**
-     * A shuffle's Next and Previous (player.md › Shuffle), each from its start; null outside a
-     * shuffle. Either is null at its end: the first has no Previous, the last no Next.
+     * A queue's Next and Previous (player.md › Shuffle and Play in order), each from its start;
+     * null outside a shuffle or a collection's Play. Either is null at its end: the first has no Previous, the last no Next.
      */
     shuffle: shuffle
       ? {

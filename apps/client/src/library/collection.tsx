@@ -13,7 +13,13 @@
 // which stays clear until the page scrolls under it; sharp across the TV's first screen.
 import { useCollection } from '@highsea-tv/client/data'
 import { playPath } from '@highsea-tv/client/library'
-import { canShuffle, collectionFilms, startShuffle } from '@highsea-tv/client/shuffle'
+import {
+  canPlayAll,
+  canShuffle,
+  collectionFilms,
+  playInOrder,
+  startShuffle,
+} from '@highsea-tv/client/shuffle'
 import { useT } from '@highsea-tv/i18n/react'
 import { useFormat } from '@highsea-tv/native/format'
 import { useMedia } from '@highsea-tv/native/media'
@@ -65,25 +71,57 @@ const errorTitle = (error: Error | null, t: (key: 'notHere') => string) =>
 type Loaded = Extract<Found, { status: 'success' }>['data']
 
 /**
- * Shuffle (collections.md › Shuffle): the films with a file, watched or not, in a new random
- * order, each from its start; offered with two or more. A collection has no Play of its own.
+ * Play and Shuffle (collections.md › Play and Shuffle): the films with a file, watched or not.
+ * Play takes them in the order the page lists them, the first resumed where it was left and the
+ * rest from their start; it's offered with one or more. Shuffle takes them in a new random order,
+ * each from its start; it's offered with two or more.
  */
-function useShuffle(items: Loaded['items']) {
+function usePlayAll(items: Loaded['items']) {
   const ids = collectionFilms(items)
-  if (!canShuffle(ids)) return null
-  return () => {
-    const to = startShuffle('movie', ids)
+  const open = (to: string | null) => {
     if (to) router.push(to as Href)
+  }
+  return {
+    play: canPlayAll(ids) ? () => open(playInOrder('movie', ids)) : null,
+    shuffle: canShuffle(ids) ? () => open(startShuffle('movie', ids)) : null,
   }
 }
 
-/** The collection's Shuffle: a secondary button with the shuffle icon, named in full for the reader. */
-function ShuffleButton({ onPress, block }: { onPress: () => void; block?: boolean }) {
+/**
+ * The collection's Play, the primary action, then Shuffle, a secondary one, each named in full
+ * for the reader: side by side, or stacked full width on the phone.
+ */
+function PlayActions({
+  play,
+  shuffle,
+  block,
+}: ReturnType<typeof usePlayAll> & { block?: boolean }) {
   const t = useT(messages)
+  if (!play && !shuffle) return null
   return (
-    <Button icon="shuffle" block={block} accessibilityLabel={t('shuffleFilms')} onPress={onPress}>
-      {t('shuffle')}
-    </Button>
+    <View style={block ? { gap: space['2'] } : { flexDirection: 'row', gap: space['3'] }}>
+      {play ? (
+        <Button
+          variant="primary"
+          icon="play"
+          block={block}
+          accessibilityLabel={t('playFilms')}
+          onPress={play}
+        >
+          {t('play')}
+        </Button>
+      ) : null}
+      {shuffle ? (
+        <Button
+          icon="shuffle"
+          block={block}
+          accessibilityLabel={t('shuffleFilms')}
+          onPress={shuffle}
+        >
+          {t('shuffle')}
+        </Button>
+      ) : null}
+    </View>
   )
 }
 
@@ -155,7 +193,7 @@ function TouchLoaded({ data, back: backButton }: { data: Loaded; back: ReactNode
   const media = useMedia()
   const words = useWords(data)
   const { collection: c, items } = data
-  const shuffle = useShuffle(items)
+  const actions = usePlayAll(items)
   const f = useFormat()
   const gutter = tokens.mobile.gutter
   const backdrop = media(c.art.backdrop)
@@ -189,7 +227,7 @@ function TouchLoaded({ data, back: backButton }: { data: Loaded; back: ReactNode
               {c.overview}
             </Text>
           ) : null}
-          {shuffle ? <ShuffleButton block onPress={shuffle} /> : null}
+          <PlayActions {...actions} block />
         </TouchHero>
         <View style={{ paddingHorizontal: gutter }}>
           <LibraryGrid
@@ -277,7 +315,7 @@ function PointerLoaded({ data }: { data: Loaded }) {
   const f = useFormat()
   const words = useWords(data)
   const { collection: c, items } = data
-  const shuffle = useShuffle(items)
+  const actions = usePlayAll(items)
   // from medium the art runs under the top bar, which turns to glass as the page scrolls
   const { hero, chrome } = usePointerHero()
   return (
@@ -307,11 +345,7 @@ function PointerLoaded({ data }: { data: Loaded }) {
             </Text>
           ) : null}
         </View>
-        {shuffle ? (
-          <View style={{ flexDirection: 'row' }}>
-            <ShuffleButton onPress={shuffle} />
-          </View>
-        ) : null}
+        <PlayActions {...actions} />
       </PointerHero>
       <View
         style={{ width: '100%', maxWidth: measure, alignSelf: 'center', paddingHorizontal: gutter }}
@@ -411,7 +445,7 @@ function TvLoaded({ data }: { data: Loaded }) {
   const f = useFormat()
   const words = useWords(data)
   const { collection: c, items } = data
-  const shuffle = useShuffle(items)
+  const actions = usePlayAll(items)
   // Down from the head lands on the films (the prototype's down="parts")
   const [down, setDown] = useState<ViewHandle | null>(null)
   const downRef = useCallback((v: ViewHandle | null) => setDown(v), [])
@@ -463,12 +497,8 @@ function TvLoaded({ data }: { data: Loaded }) {
               {c.overview}
             </Text>
           ) : null}
-          {/* Up from the films reaches it; the films keep first focus, as before */}
-          {shuffle ? (
-            <View style={{ flexDirection: 'row' }}>
-              <ShuffleButton onPress={shuffle} />
-            </View>
-          ) : null}
+          {/* Up from the films reaches them; the films keep first focus, as before */}
+          <PlayActions {...actions} />
         </View>
         <FilmRow
           ref={downRef}

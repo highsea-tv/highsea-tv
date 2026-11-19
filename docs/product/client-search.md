@@ -30,7 +30,7 @@ A collection opens a page of its own: "Collection", its name (its logo when it h
 
 A collection holds films and shows in any mix (prototype-gaps stage 4, 2026-11-01). Its line counts both, leaving out a kind it has none of ("4 movies and 1 show here · 2006–2019"), as do the captions wherever a collection is listed, and its row is named by what's in it: **Films**, **Shows**, or **Films and shows**, the films first. A show opens its own page. On the TV, Collections' audio view says "No audio collections yet. When the server’s owner makes them, they show up here."
 
-**Shuffle** (HT-96, 2026-11-19): with two or more films here, a secondary button with the shuffle icon under the collection's words plays its films in a random order, each from its start ([player.md](player.md#shuffle-ht-96-2026-11-19)). A collection has no Play of its own. On the TV the films keep first focus; Up from them reaches Shuffle.
+**Play and Shuffle** (HT-96, 2026-11-19; Play from the owner's review that day): under the collection's words, **Play**, the primary action, then **Shuffle**, a secondary one, side by side (stacked full width on the phone). Play plays the films with a file in the order the page lists them, the first resumed where it was left and the rest from their start, and shows with one such film or more. Shuffle plays them in a random order, each from its start, and shows with two or more. Watched films are in both. On the TV the films keep first focus; Play and Shuffle are one press up. The player's side is in [player.md › Shuffle and Play in order](player.md).
 
 ## States
 

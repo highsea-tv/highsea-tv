@@ -4,19 +4,23 @@
 import { afterEach, describe, expect, test } from 'bun:test'
 import { shuffleUpNext } from '../src/player/index.ts'
 import {
+  canPlayAll,
   canShuffle,
   collectionFilms,
   currentShuffle,
   endShuffle,
   handOn,
+  makeQueue,
   makeShuffle,
+  playInOrder,
+  queuePath,
+  queueResumePath,
   releaseShuffle,
   showEpisodes,
   shuffleAt,
   shuffled,
   shuffleFor,
   shuffleNext,
-  shufflePath,
   shufflePrevious,
   startShuffle,
 } from '../src/shuffle/index.ts'
@@ -90,6 +94,11 @@ describe('what goes in', () => {
     ).toEqual([1, 3])
   })
 
+  test('a collection’s Play is offered with one or more', () => {
+    expect(canPlayAll([])).toBe(false)
+    expect(canPlayAll([7])).toBe(true)
+  })
+
   test('offered with two or more', () => {
     expect(canShuffle([])).toBe(false)
     expect(canShuffle([1])).toBe(false)
@@ -123,8 +132,38 @@ describe('Next and Previous', () => {
   })
 
   test('each item plays from its start, marked as a shuffle’s', () => {
-    expect(shufflePath('episode', 12)).toBe('/play/episode/12/start?shuffle=1')
-    expect(shufflePath('movie', 603)).toBe('/play/603/start?shuffle=1')
+    expect(queuePath('episode', 12)).toBe('/play/episode/12/start?queue=1')
+    expect(queuePath('movie', 603)).toBe('/play/603/start?queue=1')
+  })
+})
+
+describe('a collection’s Play', () => {
+  test('keeps the order the page lists, once each, and isn’t shuffled', () => {
+    const q = makeQueue('movie', [30, 10, 20, 10])
+    expect(q.ids).toEqual([30, 10, 20])
+    expect(q.shuffled).toBe(false)
+    expect(makeShuffle('movie', [1, 2]).shuffled).toBe(true)
+  })
+
+  test('resumes its first film, and the player there finds the queue; the rest start at the beginning', () => {
+    expect(playInOrder('movie', [30, 10, 20])).toBe(queueResumePath('movie', 30))
+    expect(queueResumePath('movie', 30)).toBe('/play/30?queue=1')
+    const at = shuffleFor('movie', 30, true)
+    expect(at?.at).toBe(0)
+    expect(at && shuffleNext(at)).toBe(10)
+    expect(queuePath('movie', 10)).toBe('/play/10/start?queue=1')
+  })
+
+  test('stops after the last film', () => {
+    playInOrder('movie', [30, 10])
+    const last = shuffleFor('movie', 10, true)
+    expect(last && shuffleNext(last)).toBeNull()
+    expect(last && shufflePrevious(last)).toBe(30)
+  })
+
+  test('nothing to play starts nothing', () => {
+    expect(playInOrder('movie', [])).toBeNull()
+    expect(currentShuffle()).toBeNull()
   })
 })
 
@@ -133,7 +172,7 @@ describe('the shuffle on the device', () => {
     const to = startShuffle('episode', [10, 11, 12], seeded(9))
     const s = currentShuffle()
     expect(s).not.toBeNull()
-    expect(to).toBe(shufflePath('episode', s?.ids[0] as number))
+    expect(to).toBe(queuePath('episode', s?.ids[0] as number))
     expect(shuffleFor('episode', s?.ids[0] as number, true)?.at).toBe(0)
   })
 
@@ -189,6 +228,10 @@ describe('Next up in a shuffle', () => {
       still: 's.jpg',
       season: null,
     })
+  })
+
+  test('in a collection’s Play it reads as plain Next up', () => {
+    expect(shuffleUpNext({ id: 1, title: 'Alien', still: null }, 'queue')?.kind).toBe('queue')
   })
 
   test('a film: its title; at the end, nothing', () => {
