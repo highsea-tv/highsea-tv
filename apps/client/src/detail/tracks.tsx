@@ -81,11 +81,11 @@ export function useWatchWith(d: ClientDetail) {
 
 export type WatchWith = ReturnType<typeof useWatchWith>
 
-/** The line under the credits: "4K · English · 5.1 · Subtitles off". */
+/** The line under the credits: "4K HDR · English · 5.1 · Subtitles off". */
 export function picksLine(w: WatchWith, t: (key: 'defaultAudio' | 'subtitlesOff') => string) {
   if (!w.version) return null
   return [
-    w.version.label,
+    w.version.quality ?? w.version.label,
     w.audio?.label ?? t('defaultAudio'),
     w.subtitle?.label ?? t('subtitlesOff'),
   ].join(' · ')

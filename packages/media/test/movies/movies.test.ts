@@ -594,6 +594,7 @@ describe('the client API', () => {
         id: expect.any(String),
         label: '1080p',
         detail: null,
+        quality: null,
         playable: false,
         audio: [],
         subtitles: [],

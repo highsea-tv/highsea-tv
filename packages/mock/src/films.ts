@@ -536,8 +536,23 @@ export function filmsOf({ srv, api, userId }: FilmsCtx) {
     const versions = m.versions.map((v): ClientVersion => {
       const found = own?.versions.find((x) => x.id === v.id)
       return found
-        ? { id: v.id, label: v.label, detail: found.detail, playable: true, ...tracks(m, found) }
-        : { id: v.id, label: v.label, detail: null, playable: false, audio: [], subtitles: [] }
+        ? {
+            id: v.id,
+            label: v.label,
+            detail: found.detail,
+            quality: found.quality,
+            playable: true,
+            ...tracks(m, found),
+          }
+        : {
+            id: v.id,
+            label: v.label,
+            detail: null,
+            quality: null,
+            playable: false,
+            audio: [],
+            subtitles: [],
+          }
     })
     const cast = meta?.cast ?? []
     const crew = meta?.crew ?? []

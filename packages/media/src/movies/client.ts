@@ -27,7 +27,7 @@ import {
   SEARCH_PEOPLE_POOL,
 } from '../shared/search.ts'
 import { chunks, escapeLike } from '../shared/sql.ts'
-import { audioTracks, versionDetail } from '../shared/tracks.ts'
+import { audioTracks, versionDetail, versionQuality } from '../shared/tracks.ts'
 import { playedOf, watchOf } from '../shared/watch.ts'
 import { type Ctx, notInLibrary } from './context.ts'
 import { type Library, titleMatch } from './library.ts'
@@ -164,6 +164,7 @@ export function createClient(ctx: Ctx, { library }: { library: Library }) {
           id: v.id,
           label: v.label,
           detail: file ? versionDetail(info, file.size) : null,
+          quality: file ? versionQuality(info) : null,
           playable: !!file,
           audio: file ? audioTracks(file.id, info) : [],
           subtitles: file ? (ctx.subtitles?.forFile(file.id) ?? []) : [],

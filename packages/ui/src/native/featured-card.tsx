@@ -464,9 +464,19 @@ export type PagerProps = {
   /** "Previous featured title" and "Next featured title". */
   previousLabel: string
   nextLabel: string
-  /** Each dot's name: "Show Inception". */
-  pageLabel: (index: number) => string
-}
+} & (
+  | {
+      /** A dot for each page between the arrows, the default. */
+      dots?: true
+      /** Each dot's name: "Show Inception". */
+      pageLabel: (index: number) => string
+    }
+  | {
+      /** The arrows only, for a long set (Home's hero, the owner's call of 2026-11-19). */
+      dots: false
+      pageLabel?: undefined
+    }
+)
 
 /**
  * The arrows and a dot for each page, paging through a featured section (the web prototype's
@@ -474,7 +484,7 @@ export type PagerProps = {
  * dot is a 24 target with an 8 dot, the current one 20 wide in `text` and marked `aria-current`
  * (a page among a set is the current one, not a selected option:
  * https://www.w3.org/TR/wai-aria-1.2/#aria-current), the others `text` at 40%, 70% under the
- * pointer. Nothing for one page.
+ * pointer. Nothing for one page. With `dots={false}`, the arrows alone.
  */
 export function Pager({
   count,
@@ -482,6 +492,7 @@ export function Pager({
   onChange,
   previousLabel,
   nextLabel,
+  dots = true,
   pageLabel,
 }: PagerProps) {
   const theme = useTheme()
@@ -497,36 +508,38 @@ export function Pager({
         accessibilityLabel={previousLabel}
         onPress={() => step(-1)}
       />
-      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-        {Array.from({ length: count }, (_, i) => (
-          <Press
-            // biome-ignore lint/suspicious/noArrayIndexKey: a page is its index
-            key={i}
-            onPress={() => onChange(i)}
-            accessibilityRole="button"
-            accessibilityLabel={pageLabel(i)}
-            aria-current={i === current ? 'true' : undefined}
-            style={{
-              width: space['6'],
-              height: space['6'],
-              alignItems: 'center',
-              justifyContent: 'center',
-              borderRadius: tokens.radius.pill,
-            }}
-          >
-            {(s) => (
-              <View
-                style={{
-                  width: i === current ? space['5'] : space['2'],
-                  height: space['2'],
-                  borderRadius: tokens.radius.pill,
-                  backgroundColor: i === current ? text : alpha(text, s.hovered ? 0.7 : 0.4),
-                }}
-              />
-            )}
-          </Press>
-        ))}
-      </View>
+      {dots && pageLabel ? (
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          {Array.from({ length: count }, (_, i) => (
+            <Press
+              // biome-ignore lint/suspicious/noArrayIndexKey: a page is its index
+              key={i}
+              onPress={() => onChange(i)}
+              accessibilityRole="button"
+              accessibilityLabel={pageLabel(i)}
+              aria-current={i === current ? 'true' : undefined}
+              style={{
+                width: space['6'],
+                height: space['6'],
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: tokens.radius.pill,
+              }}
+            >
+              {(s) => (
+                <View
+                  style={{
+                    width: i === current ? space['5'] : space['2'],
+                    height: space['2'],
+                    borderRadius: tokens.radius.pill,
+                    backgroundColor: i === current ? text : alpha(text, s.hovered ? 0.7 : 0.4),
+                  }}
+                />
+              )}
+            </Press>
+          ))}
+        </View>
+      ) : null}
       <Button
         variant="overlay"
         iconOnly
