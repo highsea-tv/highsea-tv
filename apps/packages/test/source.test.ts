@@ -14,10 +14,14 @@ const MANIFEST: Manifest = {
   desc: 'highsea finds, downloads and organises your films.',
 }
 
-/** A source reading the manifest from a fake GitHub, and how many times it was asked. */
+/**
+ * A source reading the manifest from a fake GitHub, how many times it was asked, and what it
+ * logged: the fake's failures are said there, not on the console, where they read as GitHub's.
+ */
 function source(answer: () => Response = () => Response.json(MANIFEST)) {
   let now = 0
   const asked: string[] = []
+  const logged: string[] = []
   const handle = createSource({
     manifest: `${RELEASES}/latest/download/highsea-spk.json`,
     downloads: (release) => `${RELEASES}/download/v${release}`,
@@ -26,8 +30,9 @@ function source(answer: () => Response = () => Response.json(MANIFEST)) {
       return answer()
     },
     now: () => now,
+    log: (line) => logged.push(line),
   })
-  return { handle, asked, later: (ms: number) => (now += ms) }
+  return { handle, asked, logged, later: (ms: number) => (now += ms) }
 }
 
 /** What Package Center sends, as a form. */
@@ -103,7 +108,7 @@ describe('the package source', () => {
 
   test('reads the manifest once in five minutes, and keeps the last one when GitHub fails', async () => {
     let up = true
-    const { handle, asked, later } = source(() =>
+    const { handle, asked, logged, later } = source(() =>
       up ? Response.json(MANIFEST) : new Response('', { status: 502 }),
     )
     await handle(post(DSM_741))
@@ -114,10 +119,14 @@ describe('the package source', () => {
     const response = await handle(post(DSM_741))
     expect(asked).toHaveLength(2)
     expect(((await response.json()) as { packages: unknown[] }).packages).toHaveLength(1)
+    expect(logged).toEqual([
+      `highsea's manifest couldn't be read: Error: ${RELEASES}/latest/download/highsea-spk.json answered 502`,
+    ])
   })
 
   test('says so when no release has a package yet', async () => {
-    const { handle } = source(() => new Response('Not Found', { status: 404 }))
+    const { handle, logged } = source(() => new Response('Not Found', { status: 404 }))
     expect((await handle(post(DSM_741))).status).toBe(503)
+    expect(logged).toHaveLength(1)
   })
 })

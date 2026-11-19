@@ -715,9 +715,26 @@ export function createMockFetch(options: TransportOptions = {}): MockTransport {
     bus.emit({ topic: RESET_TOPIC })
   }
   const mockNow = () => mock.clock.now()
+  /**
+   * The real clock's lead on the mock's, read once a turn: read once a date, a millisecond passing
+   * partway through a list moved some of its dates and not others, and a list in the mock's order
+   * came out of order on the real clock (HT-72). It's read again after the turn
+   * (https://developer.mozilla.org/docs/Web/API/Window/queueMicrotask), so the clocks' drift
+   * between answers still shows.
+   */
+  let lead: number | null = null
+  const ahead = () => {
+    if (lead === null) {
+      lead = Date.now() - mockNow()
+      queueMicrotask(() => {
+        lead = null
+      })
+    }
+    return lead
+  }
   /** The mock's time on the real clock, which the apps compare dates against. */
-  const wall = (date: string) => new Date(Date.parse(date) + (Date.now() - mockNow())).toISOString()
-  const wallMs = (ms: number) => new Date(ms + (Date.now() - mockNow())).toISOString()
+  const wall = (date: string) => new Date(Date.parse(date) + ahead()).toISOString()
+  const wallMs = (ms: number) => new Date(ms + ahead()).toISOString()
 
   const apis = new Map<string, Api>()
   const api = () => {

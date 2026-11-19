@@ -598,6 +598,17 @@ describe.skipIf(!hasFfmpeg)('HLS with ffmpeg', () => {
     await set.close()
   })
 
+  test('a session that ends as its first piece comes leaves no folder behind (HT-72)', async () => {
+    // the header's copy starts as the first piece arrives: an end then waits for it, and for the
+    // run's ffmpeg to exit, before it removes the folder, so nothing lands in it after
+    for (let k = 0; k < 5; k++) {
+      const t = transcodes.open(`ends-${k}`, source({}))
+      await t.segment(0)
+      await transcodes.end(`ends-${k}`)
+      expect(existsSync(t.dir)).toBe(false)
+    }
+  })
+
   test('a moved cache is used by streams that start after it', async () => {
     const set = limited({ maxTranscodes: 4 })
     const old = set.open('old', source({}))

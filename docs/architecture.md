@@ -74,6 +74,7 @@ bun run smoke           # the platform under Node, as production runs it
 bun run check:node      # is `node` the version in .nvmrc (26.11.1)?
 bun run clean           # removes what development rebuilds (.next, dist, the Rust target, stale highsea-* temp folders) and says what it freed
 bun run clean --docker  # also Docker's build cache and dangling images; --deps also node_modules; --dry-run removes nothing
+bun run flaky           # CI's jobs and tests that failed and then passed on the same commit, from the last 300 runs through gh (--limit N, --no-logs); read-only
 
 bun run server          # the server in development, http://localhost:3000 (data in .dev/)
 HIGHSEA_TMDB_REPLAY=1 bun run server   # the same, answering TMDB from the recordings: no key, no network

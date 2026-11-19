@@ -1,0 +1,42 @@
+[
+  {
+    "attempt": 2,
+    "conclusion": "success",
+    "createdAt": "2026-11-19T04:30:28Z",
+    "databaseId": 44458790578,
+    "headSha": "4a84d0337d82ce198793298bdeb6453498c7a9c8",
+    "workflowName": "CI"
+  },
+  {
+    "attempt": 1,
+    "conclusion": "failure",
+    "createdAt": "2026-11-18T20:31:25Z",
+    "databaseId": 44391914330,
+    "headSha": "a2f8548a8bbfdbcc1aa7018493ec9f531b34d7e5",
+    "workflowName": "CI"
+  },
+  {
+    "attempt": 2,
+    "conclusion": "success",
+    "createdAt": "2026-11-18T18:37:31Z",
+    "databaseId": 44371744243,
+    "headSha": "02a9c93b8361c4858a169b8018cb9f4661f68d54",
+    "workflowName": "Release"
+  },
+  {
+    "attempt": 1,
+    "conclusion": "failure",
+    "createdAt": "2026-11-18T02:09:06Z",
+    "databaseId": 44221122851,
+    "headSha": "871b2ecb2d9ead1c6da07cd70bb8ad06d86ca04c",
+    "workflowName": "CI"
+  },
+  {
+    "attempt": 1,
+    "conclusion": "success",
+    "createdAt": "2026-11-18T01:54:33Z",
+    "databaseId": 44219341723,
+    "headSha": "871b2ecb2d9ead1c6da07cd70bb8ad06d86ca04c",
+    "workflowName": "CI"
+  }
+]
