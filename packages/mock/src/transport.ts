@@ -1294,7 +1294,9 @@ export function createMockFetch(options: TransportOptions = {}): MockTransport {
             usedBy: {
               movies: d.usedBy.movies,
               downloads: d.usedBy.downloads,
-              other: d.usedBy.other + d.usedBy.tv,
+              other: d.usedBy.other,
+              // the mock's TV share is the shows' files (Phase 5 B serves it as `shows`)
+              shows: d.usedBy.tv,
               music: d.usedBy.music,
             },
           })),

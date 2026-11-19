@@ -34,7 +34,7 @@ const START = '(?<![\\p{L}\\p{N}])'
 const END = '(?![\\p{L}\\p{N}])'
 
 /** `S01E01`, `S01 E01`, `s1e1`; the continuation is read after it. */
-const STANDARD = new RegExp(`${START}S${SEASON}[ ._]?E(\\d{1,4})(?![\\p{N}])`, 'iu')
+const STANDARD = new RegExp(`${START}S${SEASON}[ ._]?EP?(\\d{1,4})(?![\\p{N}])`, 'iu')
 /** `1x01`; never a resolution (`1920x1080`), whose digits run on either side. */
 const CROSS = new RegExp(`${START}(\\d{1,2})x(\\d{2,3})(?![\\p{N}])`, 'iu')
 /** `S01`, `S01-S03`, `S01-03` alone: a pack. */

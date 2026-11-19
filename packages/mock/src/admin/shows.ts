@@ -7,10 +7,18 @@
 //
 // What the mock doesn't keep, and what stands in for it here:
 // - Remove's `deleteFiles`: the mock keeps no files, so the show only leaves the library;
-// - the unmatched list: with no files, nothing is unmatched, so it's empty;
+// - the unmatched list: two made-up paths under the first show's root folder, a show folder TMDB
+//   couldn't name and an episode file without a number in the first show's folder, so Unmatched
+//   draws; Match and Dismiss take them off the list;
 // - the times: `addedAt` is moved to the wall clock, as every answer gives them, and each air
 //   date by the same whole days, so "next airing" stays as far away as the mock has it.
-import type { Series, SeriesDetail, SeriesEpisode, SeriesSeason } from '@highsea-tv/api-contract'
+import type {
+  Series,
+  SeriesDetail,
+  SeriesEpisode,
+  SeriesSeason,
+  UnmatchedShowPath,
+} from '@highsea-tv/api-contract'
 import type { AdminEpisode, AdminSeason, AdminShow, AdminShowDetail } from '../types.ts'
 import type { AdminKit, Answers } from './kit.ts'
 
@@ -43,11 +51,54 @@ export function showsAnswers(kit: AdminKit): Answers {
     return r
   }
 
+  /** The paths matched or dismissed this session. */
+  const settled = new Set<string>()
+  const unmatched = (shows: Series[]): UnmatchedShowPath[] => {
+    const first = shows[0]
+    if (!first) return []
+    const root = first.path.slice(0, first.path.lastIndexOf('/'))
+    const rows: UnmatchedShowPath[] = [
+      {
+        path: `${root}/The Office Holiday Specials`,
+        kind: 'show-folder',
+        rootFolder: root,
+        show: null,
+        reason: 'no-match',
+        message: 'TMDB has no show by this name.',
+        size: 4_831_838_208,
+        foundAt: kit.wall('2026-11-17T09:12:00Z'),
+      },
+      {
+        path: `${first.path}/Season 01/${first.title} - Behind the Scenes.mkv`,
+        kind: 'episode-file',
+        rootFolder: root,
+        show: first.id,
+        reason: 'no-episode-number',
+        message: 'Its name gives no season and episode.',
+        size: 734_003_200,
+        foundAt: kit.wall('2026-11-18T21:40:00Z'),
+      },
+    ]
+    return rows.filter((r) => !settled.has(r.path))
+  }
+
   return {
     series: {
       discover: ({ query }, ctx) => ctx.api.shows.discover(query?.query ?? ''),
       rootFolders: (_, ctx) => ctx.api.shows.rootFolders(),
-      unmatched: () => [],
+      unmatched: ({ query }, ctx) =>
+        unmatched(ctx.api.shows.list().map(showOf)).filter(
+          (r) => !query?.rootFolder || r.rootFolder === query.rootFolder,
+        ),
+      matchUnmatched: ({ body }) => {
+        settled.add(body.path)
+        return changed(undefined)
+      },
+      dismissUnmatched: ({ body }) => {
+        settled.add(body.path)
+        return changed(undefined)
+      },
+      refresh: () => changed(undefined),
       list: (_, ctx) => ctx.api.shows.list().map(showOf),
       add: ({ body }, ctx) => changed(detailOf(ctx.api.shows.add(body))),
       get: ({ params }, ctx) => detailOf(ctx.api.shows.get(params.id)),

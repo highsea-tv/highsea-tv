@@ -55,10 +55,22 @@ import { LibraryPosters, STUCK, useLetters, WithLetters } from './library-grid.t
 import { Loadable, PosterSkeletons } from './loadable.tsx'
 import { Served } from './serves.tsx'
 import { AdminPage } from './shell.tsx'
-import { airDate, episodesShare, episodesTone, missing, showPath, showState } from './show-data.ts'
+import {
+  airDate,
+  episodesShare,
+  episodesTone,
+  missing,
+  SHOWS_SECTIONS,
+  SHOWS_TOPICS,
+  type ShowsSection,
+  showPath,
+  showState,
+} from './show-data.ts'
 import { shows as messages } from './shows-messages.ts'
+import { ShowsUnmatched, useUnmatchedShows } from './shows-unmatched.tsx'
+import { useTabAddress } from './tabs.ts'
 
-export const SHOWS_TOPICS = ['shows.updated']
+export { SHOWS_TOPICS }
 
 const FILTERS = ['all', 'missing', 'airing', 'ended', 'unmonitored'] as const
 type Filter = (typeof FILTERS)[number]
@@ -115,16 +127,64 @@ function useStoredView(): ['grid' | 'table', (v: 'grid' | 'table') => void] {
   ]
 }
 
-/** `/shows`. */
-export function ShowsLibrary() {
+/** `/shows`, and Unmatched at `/shows/unmatched`. */
+export function ShowsLibrary({ tab = 'shows' }: { tab?: ShowsSection }) {
   return (
     <Served source="shows">
-      <Library />
+      <Library tab={SHOWS_SECTIONS.includes(tab) ? tab : 'shows'} />
     </Served>
   )
 }
 
-function Library() {
+/**
+ * The library's sections as Music's are (music-library.tsx): line tabs over the page, Unmatched
+ * counted. Drawn only once something is unmatched, so a library with none looks as it was signed off.
+ */
+function Sections({ tab }: { tab: ShowsSection }) {
+  const t = useT(messages)
+  const setTab = useTabAddress<ShowsSection>('/shows', 'shows')
+  const unmatched = useUnmatchedShows()
+  const count = unmatched.data?.length ?? 0
+  if (count === 0 && tab === 'shows') return null
+  return (
+    <Tabs<ShowsSection>
+      variant="line"
+      aria-label={t('librarySections')}
+      value={tab}
+      onValueChange={setTab}
+      options={SHOWS_SECTIONS.map((value) => ({
+        value,
+        label: t(`section.${value}`),
+        ...(value === 'unmatched' ? { count } : {}),
+      }))}
+    />
+  )
+}
+
+function Library({ tab }: { tab: ShowsSection }) {
+  const t = useT(messages)
+  if (tab === 'unmatched')
+    return (
+      <AdminPage
+        title={t('title')}
+        actions={
+          <Button variant="primary" icon="add" href="/discover/shows">
+            {t('add')}
+          </Button>
+        }
+      >
+        <View style={{ gap: tokens.space['5'], minWidth: 0 }}>
+          <Sections tab="unmatched" />
+          <View role="tabpanel" aria-label={t('section.unmatched')} style={{ minWidth: 0 }}>
+            <ShowsUnmatched />
+          </View>
+        </View>
+      </AdminPage>
+    )
+  return <Shows />
+}
+
+function Shows() {
   const t = useT(messages)
   const locale = useLocale()
   const { colors } = useTheme()
@@ -240,256 +300,268 @@ function Library() {
 
   return (
     <AdminPage title={t('title')} actions={actions}>
-      <Loadable
-        query={shows}
-        what={t('what')}
-        skeleton={view === 'grid' ? <PosterSkeletons /> : undefined}
-      >
-        {() =>
-          all.length === 0 ? (
-            <EmptyState
-              icon="tv"
-              title={t('empty.title')}
-              action={
-                <Button variant="primary" icon="discover" href="/discover/shows">
-                  {t('empty.discover')}
-                </Button>
-              }
-            >
-              {t('empty.body')}
-            </EmptyState>
-          ) : (
-            <TableFrame>
-              <TableToolbar>
-                <Tabs
-                  aria-label={t('filters')}
-                  value={filter}
-                  onValueChange={(v) => setFilter(v as Filter)}
-                  options={FILTERS.map((k) => ({
-                    value: k,
-                    label: t(`filter.${k}`),
-                    count: counts[k],
-                  }))}
-                />
-                <View
-                  style={{
-                    marginStart: 'auto',
-                    minWidth: 0,
-                    flexDirection: 'row',
-                    flexWrap: 'wrap',
-                    alignItems: 'center',
-                    gap: tokens.space['2'],
-                  }}
-                >
-                  <View style={{ width: FILTER_WIDTH }}>
-                    <SearchField
-                      label={t('filter.label')}
-                      icon="filter"
-                      value={text}
-                      onChangeText={setText}
-                      placeholder={t('filter')}
-                    />
-                  </View>
-                  <View style={{ width: SELECT_WIDTH }}>
-                    <Select
-                      value={sort}
-                      onValueChange={(v) => setSort(v as Sort)}
-                      aria-label={t('sortBy')}
-                      options={SORTS.map((k) => ({ value: k, label: t(`sort.${k}`) }))}
-                    />
-                  </View>
-                </View>
-              </TableToolbar>
-              {count > 0 && (
-                <View
-                  role="toolbar"
-                  aria-label={t('bulk')}
-                  style={{
-                    flexDirection: 'row',
-                    flexWrap: 'wrap',
-                    alignItems: 'center',
-                    gap: tokens.space['2'],
-                    borderBottomWidth: line.thin,
-                    borderBottomColor: colors.line,
-                    backgroundColor: colors['accent-soft'],
-                    paddingHorizontal: CELL_X,
-                    paddingVertical: tokens.space['2'],
-                  }}
-                >
-                  <Text size={tokens.adminText.ui.size} weight={500} style={{ marginEnd: 'auto' }}>
-                    {t('selected', { count })}
-                  </Text>
-                  <Button
-                    size="sm"
-                    icon="search"
-                    loading={bulkSearch.pending}
-                    onPress={() => bulk(t('done.search', { count }), () => bulkSearch.run(ids))}
-                  >
-                    {t('search')}
+      <View style={{ gap: tokens.space['5'], minWidth: 0 }}>
+        <Sections tab="shows" />
+        <Loadable
+          query={shows}
+          what={t('what')}
+          skeleton={view === 'grid' ? <PosterSkeletons /> : undefined}
+        >
+          {() =>
+            all.length === 0 ? (
+              <EmptyState
+                icon="tv"
+                title={t('empty.title')}
+                action={
+                  <Button variant="primary" icon="discover" href="/discover/shows">
+                    {t('empty.discover')}
                   </Button>
-                  <Button
-                    ref={editAnchor}
-                    size="sm"
-                    iconEnd="chevron-down"
-                    loading={bulkEdit.pending}
-                    hasPopup="menu"
-                    accessibilityState={{ expanded: editing }}
-                    onPress={() => setEditing(true)}
-                  >
-                    {t('edit')}
-                  </Button>
-                  <Menu
-                    title={t('edit')}
-                    open={editing}
-                    onClose={() => setEditing(false)}
-                    anchor={editAnchor}
-                    items={editItems}
-                  />
-                  <Button size="sm" variant="danger" icon="delete" onPress={() => setConfirm(true)}>
-                    {t('remove')}
-                  </Button>
-                  <Button size="sm" variant="ghost" onPress={() => setSelected(new Set())}>
-                    {t('clear')}
-                  </Button>
-                </View>
-              )}
-              <WithLetters
-                shown={sort === 'title' && shown.length > 0}
-                present={letters.present}
-                label={t('letters')}
-                inset={CELL_X}
-                onLetter={jump}
+                }
               >
-                {shown.length === 0 ? (
-                  <View style={{ paddingHorizontal: CELL_X, paddingVertical: tokens.space['8'] }}>
-                    <Text variant="caption" color="text-3" align="center">
-                      {t('noMatch')}
+                {t('empty.body')}
+              </EmptyState>
+            ) : (
+              <TableFrame>
+                <TableToolbar>
+                  <Tabs
+                    aria-label={t('filters')}
+                    value={filter}
+                    onValueChange={(v) => setFilter(v as Filter)}
+                    options={FILTERS.map((k) => ({
+                      value: k,
+                      label: t(`filter.${k}`),
+                      count: counts[k],
+                    }))}
+                  />
+                  <View
+                    style={{
+                      marginStart: 'auto',
+                      minWidth: 0,
+                      flexDirection: 'row',
+                      flexWrap: 'wrap',
+                      alignItems: 'center',
+                      gap: tokens.space['2'],
+                    }}
+                  >
+                    <View style={{ width: FILTER_WIDTH }}>
+                      <SearchField
+                        label={t('filter.label')}
+                        icon="filter"
+                        value={text}
+                        onChangeText={setText}
+                        placeholder={t('filter')}
+                      />
+                    </View>
+                    <View style={{ width: SELECT_WIDTH }}>
+                      <Select
+                        value={sort}
+                        onValueChange={(v) => setSort(v as Sort)}
+                        aria-label={t('sortBy')}
+                        options={SORTS.map((k) => ({ value: k, label: t(`sort.${k}`) }))}
+                      />
+                    </View>
+                  </View>
+                </TableToolbar>
+                {count > 0 && (
+                  <View
+                    role="toolbar"
+                    aria-label={t('bulk')}
+                    style={{
+                      flexDirection: 'row',
+                      flexWrap: 'wrap',
+                      alignItems: 'center',
+                      gap: tokens.space['2'],
+                      borderBottomWidth: line.thin,
+                      borderBottomColor: colors.line,
+                      backgroundColor: colors['accent-soft'],
+                      paddingHorizontal: CELL_X,
+                      paddingVertical: tokens.space['2'],
+                    }}
+                  >
+                    <Text
+                      size={tokens.adminText.ui.size}
+                      weight={500}
+                      style={{ marginEnd: 'auto' }}
+                    >
+                      {t('selected', { count })}
                     </Text>
-                  </View>
-                ) : view === 'grid' ? (
-                  <View style={{ padding: CELL_X }}>
-                    <LibraryPosters
-                      ref={posters}
-                      items={shown}
-                      keyOf={keyOf}
-                      label={t('title')}
-                      render={(s) => <GridTile show={s} />}
+                    <Button
+                      size="sm"
+                      icon="search"
+                      loading={bulkSearch.pending}
+                      onPress={() => bulk(t('done.search', { count }), () => bulkSearch.run(ids))}
+                    >
+                      {t('search')}
+                    </Button>
+                    <Button
+                      ref={editAnchor}
+                      size="sm"
+                      iconEnd="chevron-down"
+                      loading={bulkEdit.pending}
+                      hasPopup="menu"
+                      accessibilityState={{ expanded: editing }}
+                      onPress={() => setEditing(true)}
+                    >
+                      {t('edit')}
+                    </Button>
+                    <Menu
+                      title={t('edit')}
+                      open={editing}
+                      onClose={() => setEditing(false)}
+                      anchor={editAnchor}
+                      items={editItems}
                     />
+                    <Button
+                      size="sm"
+                      variant="danger"
+                      icon="delete"
+                      onPress={() => setConfirm(true)}
+                    >
+                      {t('remove')}
+                    </Button>
+                    <Button size="sm" variant="ghost" onPress={() => setSelected(new Set())}>
+                      {t('clear')}
+                    </Button>
                   </View>
-                ) : (
-                  <Table label={t('title')}>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead width={admin.table.checkColumn}>
-                          <Checkbox
-                            label={t('col.selectAll')}
-                            hideLabel
-                            checked={everyShown}
-                            onCheckedChange={(on) =>
-                              setSelected(on ? new Set(shown.map((s) => s.id)) : new Set())
-                            }
-                          />
-                        </TableHead>
-                        <TableHead>{t('col.title')}</TableHead>
-                        <TableHead>{t('col.network')}</TableHead>
-                        <TableHead>{t('col.status')}</TableHead>
-                        <TableHead numeric>{t('col.seasons')}</TableHead>
-                        <TableHead width={EPISODES_WIDTH}>{t('col.episodes')}</TableHead>
-                        <TableHead>{t('col.next')}</TableHead>
-                        <TableHead numeric>{t('col.size')}</TableHead>
-                        <TableHead>{t('col.monitored')}</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody ref={rows} virtual={sort === 'title'}>
-                      {shown.map((s) => {
-                        const state = showState(s)
-                        const line = t('episodesLine', s.episodes)
-                        return (
-                          <TableRow key={s.id} selected={selected.has(s.id)}>
-                            <TableCell tall>
-                              <Checkbox
-                                label={t('col.select', { title: s.title })}
-                                hideLabel
-                                checked={selected.has(s.id)}
-                                onCheckedChange={(on) => toggle(s.id, on)}
-                              />
-                            </TableCell>
-                            <TableCell tall truncate>
-                              <TitleCell
-                                title={<TitleLink href={showPath(s.id)}>{s.title}</TitleLink>}
-                                detail={s.path}
-                                art={s.art.poster}
-                              />
-                            </TableCell>
-                            <TableCell tall>
-                              <Text size={tokens.adminText.ui.size} color="text-2">
-                                {s.network || t('none')}
-                              </Text>
-                            </TableCell>
-                            <TableCell tall>
-                              <Badge tone={state.tone}>{t(state.label)}</Badge>
-                            </TableCell>
-                            <TableCell tall numeric>
-                              {String(s.seasons)}
-                            </TableCell>
-                            <TableCell tall>
-                              <View style={{ gap: tokens.space['1'] }}>
-                                <Text
-                                  size={tokens.adminText.figure.size}
-                                  leading={tokens.adminText.figure.leading}
-                                  mono
-                                  color="text-2"
-                                >
-                                  {line}
-                                </Text>
-                                <ProgressBar
-                                  value={episodesShare(s)}
-                                  tone={episodesTone(s)}
-                                  look="panel"
-                                  label={t('episodes.label', { title: s.title, ...s.episodes })}
-                                />
-                              </View>
-                            </TableCell>
-                            <TableCell tall>
-                              {s.nextAiring ? (
-                                <View>
-                                  <Text size={tokens.adminText.ui.size}>
-                                    {airDate(s.nextAiring.aired, locale)}
-                                  </Text>
-                                  <Text
-                                    size={tokens.adminText.release.size}
-                                    leading={tokens.adminText.release.leading}
-                                    mono
-                                    color="text-3"
-                                  >
-                                    {s.nextAiring.code}
-                                  </Text>
-                                </View>
-                              ) : (
-                                <Text size={tokens.adminText.ui.size} color="text-3">
-                                  {t('none')}
-                                </Text>
-                              )}
-                            </TableCell>
-                            <TableCell tall numeric>
-                              {bytes(s.size)}
-                            </TableCell>
-                            <TableCell tall>
-                              <Text size={tokens.adminText.ui.size} color="text-2">
-                                {s.monitored ? t('yes') : t('no')}
-                              </Text>
-                            </TableCell>
-                          </TableRow>
-                        )
-                      })}
-                    </TableBody>
-                  </Table>
                 )}
-              </WithLetters>
-            </TableFrame>
-          )
-        }
-      </Loadable>
+                <WithLetters
+                  shown={sort === 'title' && shown.length > 0}
+                  present={letters.present}
+                  label={t('letters')}
+                  inset={CELL_X}
+                  onLetter={jump}
+                >
+                  {shown.length === 0 ? (
+                    <View style={{ paddingHorizontal: CELL_X, paddingVertical: tokens.space['8'] }}>
+                      <Text variant="caption" color="text-3" align="center">
+                        {t('noMatch')}
+                      </Text>
+                    </View>
+                  ) : view === 'grid' ? (
+                    <View style={{ padding: CELL_X }}>
+                      <LibraryPosters
+                        ref={posters}
+                        items={shown}
+                        keyOf={keyOf}
+                        label={t('title')}
+                        render={(s) => <GridTile show={s} />}
+                      />
+                    </View>
+                  ) : (
+                    <Table label={t('title')}>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead width={admin.table.checkColumn}>
+                            <Checkbox
+                              label={t('col.selectAll')}
+                              hideLabel
+                              checked={everyShown}
+                              onCheckedChange={(on) =>
+                                setSelected(on ? new Set(shown.map((s) => s.id)) : new Set())
+                              }
+                            />
+                          </TableHead>
+                          <TableHead>{t('col.title')}</TableHead>
+                          <TableHead>{t('col.network')}</TableHead>
+                          <TableHead>{t('col.status')}</TableHead>
+                          <TableHead numeric>{t('col.seasons')}</TableHead>
+                          <TableHead width={EPISODES_WIDTH}>{t('col.episodes')}</TableHead>
+                          <TableHead>{t('col.next')}</TableHead>
+                          <TableHead numeric>{t('col.size')}</TableHead>
+                          <TableHead>{t('col.monitored')}</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody ref={rows} virtual={sort === 'title'}>
+                        {shown.map((s) => {
+                          const state = showState(s)
+                          const line = t('episodesLine', s.episodes)
+                          return (
+                            <TableRow key={s.id} selected={selected.has(s.id)}>
+                              <TableCell tall>
+                                <Checkbox
+                                  label={t('col.select', { title: s.title })}
+                                  hideLabel
+                                  checked={selected.has(s.id)}
+                                  onCheckedChange={(on) => toggle(s.id, on)}
+                                />
+                              </TableCell>
+                              <TableCell tall truncate>
+                                <TitleCell
+                                  title={<TitleLink href={showPath(s.id)}>{s.title}</TitleLink>}
+                                  detail={s.path}
+                                  art={s.art.poster}
+                                />
+                              </TableCell>
+                              <TableCell tall>
+                                <Text size={tokens.adminText.ui.size} color="text-2">
+                                  {s.network || t('none')}
+                                </Text>
+                              </TableCell>
+                              <TableCell tall>
+                                <Badge tone={state.tone}>{t(state.label)}</Badge>
+                              </TableCell>
+                              <TableCell tall numeric>
+                                {String(s.seasons)}
+                              </TableCell>
+                              <TableCell tall>
+                                <View style={{ gap: tokens.space['1'] }}>
+                                  <Text
+                                    size={tokens.adminText.figure.size}
+                                    leading={tokens.adminText.figure.leading}
+                                    mono
+                                    color="text-2"
+                                  >
+                                    {line}
+                                  </Text>
+                                  <ProgressBar
+                                    value={episodesShare(s)}
+                                    tone={episodesTone(s)}
+                                    look="panel"
+                                    label={t('episodes.label', { title: s.title, ...s.episodes })}
+                                  />
+                                </View>
+                              </TableCell>
+                              <TableCell tall>
+                                {s.nextAiring ? (
+                                  <View>
+                                    <Text size={tokens.adminText.ui.size}>
+                                      {airDate(s.nextAiring.aired, locale)}
+                                    </Text>
+                                    <Text
+                                      size={tokens.adminText.release.size}
+                                      leading={tokens.adminText.release.leading}
+                                      mono
+                                      color="text-3"
+                                    >
+                                      {s.nextAiring.code}
+                                    </Text>
+                                  </View>
+                                ) : (
+                                  <Text size={tokens.adminText.ui.size} color="text-3">
+                                    {t('none')}
+                                  </Text>
+                                )}
+                              </TableCell>
+                              <TableCell tall numeric>
+                                {bytes(s.size)}
+                              </TableCell>
+                              <TableCell tall>
+                                <Text size={tokens.adminText.ui.size} color="text-2">
+                                  {s.monitored ? t('yes') : t('no')}
+                                </Text>
+                              </TableCell>
+                            </TableRow>
+                          )
+                        })}
+                      </TableBody>
+                    </Table>
+                  )}
+                </WithLetters>
+              </TableFrame>
+            )
+          }
+        </Loadable>
+      </View>
       <ConfirmDialog
         open={confirm}
         onClose={() => setConfirm(false)}

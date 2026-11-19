@@ -203,7 +203,7 @@ const staff = { ...access('staff'), ...draft() }
 /**
  * A file or folder under a shows root folder that couldn't be placed (Phase 5 B): a show folder
  * TMDB couldn't name surely, or a file whose name gives no episode the show has. Kept with its
- * reason, never guessed; resolving one by hand comes later.
+ * reason, never guessed, until the owner matches or dismisses it in the admin.
  */
 export const UnmatchedShowPath = z
   .object({
@@ -220,6 +220,32 @@ export const UnmatchedShowPath = z
     foundAt: IsoDate,
   })
   .openapi('UnmatchedShowPath')
+
+/**
+ * Matches something unmatched by hand: a show folder to the show it holds (`show`, its TMDB id),
+ * imported as the library import does; an episode file to the episodes it holds of the show whose
+ * folder it's in (`episodes`, one or several for a multi-episode file).
+ */
+export const UnmatchedMatch = z
+  .object({
+    path: z.string().min(1).max(4096),
+    show: z
+      .string()
+      .regex(/^\d{1,10}$/)
+      .optional(),
+    episodes: z
+      .array(
+        z.object({
+          season: z.number().int().min(0).max(9999),
+          episode: z.number().int().min(1).max(99999),
+        }),
+      )
+      .max(20)
+      .optional(),
+  })
+  .openapi('UnmatchedShowMatch')
+
+const UnmatchedPath = z.object({ path: z.string().min(1).max(4096) })
 
 const refused = errors('unauthorized', 'forbidden')
 
@@ -263,6 +289,34 @@ export const series = {
     responses: {
       200: json(z.array(UnmatchedShowPath), 'By path'),
       ...refused,
+    },
+  }),
+  matchUnmatched: createRoute({
+    method: 'post',
+    path: `${SERIES}/unmatched/match`,
+    tags: ['Series'],
+    summary: 'Match something unmatched by hand',
+    description:
+      'A show folder is imported as the show picked (409 `running` while a library import runs); an episode file is filed under the episodes picked, an episode another file held taken from it. 404 when the path isn’t unmatched.',
+    ...served,
+    request: { ...body(UnmatchedMatch) },
+    responses: {
+      ...noContent,
+      ...errors('invalid', 'unauthorized', 'forbidden', 'not-found', 'conflict'),
+    },
+  }),
+  dismissUnmatched: createRoute({
+    method: 'post',
+    path: `${SERIES}/unmatched/dismiss`,
+    tags: ['Series'],
+    summary: 'Dismiss something unmatched',
+    description:
+      'It leaves the list and the scan doesn’t offer it again; the file or folder stays where it is.',
+    ...served,
+    request: { ...body(UnmatchedPath) },
+    responses: {
+      ...noContent,
+      ...errors('invalid', 'unauthorized', 'forbidden', 'not-found'),
     },
   }),
   list: createRoute({
@@ -332,6 +386,20 @@ export const series = {
       ...errors('unauthorized', 'forbidden', 'not-found'),
     },
   }),
+  refresh: createRoute({
+    method: 'post',
+    path: `${SERIES}/{id}/refresh`,
+    tags: ['Series'],
+    summary: 'Refresh a show’s details from TMDB',
+    description:
+      'Queues TMDB’s refresh of the show and its seasons; new episodes and changed titles follow when it lands (`shows.updated`).',
+    ...served,
+    request: { params: IdParam },
+    responses: {
+      ...noContent,
+      ...errors('unauthorized', 'forbidden', 'not-found'),
+    },
+  }),
   monitorSeason: createRoute({
     method: 'put',
     path: `${SERIES}/{id}/seasons/{season}/monitored`,
@@ -381,6 +449,7 @@ export type Series = z.infer<typeof Series>
 export type SeriesDetail = z.infer<typeof SeriesDetail>
 export type DiscoverSeries = z.infer<typeof DiscoverSeries>
 export type UnmatchedShowPath = z.infer<typeof UnmatchedShowPath>
+export type UnmatchedShowMatch = z.infer<typeof UnmatchedMatch>
 export type AddSeriesInput = z.infer<typeof AddSeriesInput>
 export type SeriesUpdate = z.infer<typeof SeriesUpdate>
 export type ShowMonitor = (typeof SHOW_MONITOR)[number]

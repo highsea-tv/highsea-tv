@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Shows over HTTP (Phase 5 B, ADR 0064): the apps' `/shows` (client-shows.md) and the admin's
-// `/series` (shows.md) with Shows' settings, thin handlers over @highsea-tv/media/shows. The admin
+// `/series` (shows.md) with Shows' settings and the unmatched files' Match and Dismiss, thin
+// handlers over @highsea-tv/media/shows. The admin
 // addresses a show by its TMDB id as a string. `series.search` stays a draft until part C1 searches
 // for episodes (drafts.ts answers it). Someone who can't see the shows gets none: an empty list and
 // a 404 for a show. Every admin change goes in the audit log, as the films' do.
@@ -78,6 +79,19 @@ export function registerShows(app: OpenAPIHono<Env>) {
     c.json(shows(c).admin.unmatched(c.req.valid('query').rootFolder), 200),
   )
 
+  app.openapi(routes.series.matchUnmatched, async (c) => {
+    const { path, show, episodes } = c.req.valid('json')
+    await shows(c).matchUnmatched({ path, tmdbId: show ? Number(show) : undefined, episodes })
+    audit(c, 'show.unmatched-matched', show)
+    return c.body(null, 204)
+  })
+
+  app.openapi(routes.series.dismissUnmatched, (c) => {
+    shows(c).dismissUnmatched(c.req.valid('json').path)
+    audit(c, 'show.unmatched-dismissed')
+    return c.body(null, 204)
+  })
+
   app.openapi(routes.series.list, (c) => c.json(shows(c).admin.list(), 200))
 
   app.openapi(routes.series.add, async (c) => {
@@ -99,6 +113,14 @@ export function registerShows(app: OpenAPIHono<Env>) {
     const { id } = c.req.valid('param')
     shows(c).admin.remove(id, c.req.valid('query').deleteFiles === 'true')
     audit(c, 'show.removed', id)
+    return c.body(null, 204)
+  })
+
+  app.openapi(routes.series.refresh, async (c) => {
+    const { id } = c.req.valid('param')
+    if (!/^\d+$/.test(id)) throw new AppError('not-found', 'That show isn’t in the library.')
+    await shows(c).refresh(Number(id))
+    audit(c, 'show.refreshed', id)
     return c.body(null, 204)
   })
 

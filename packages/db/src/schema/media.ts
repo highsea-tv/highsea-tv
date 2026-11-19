@@ -447,6 +447,11 @@ export const unmatchedFiles = sqliteTable(
     message: text('message').notNull(),
     size: integer('size').notNull().default(0),
     foundAt: integer('found_at').notNull(),
+    /**
+     * When the owner dismissed it in the admin (Phase 5 B): it stays known, so the scan doesn't
+     * offer it again, and leaves the list. Null while it waits.
+     */
+    dismissedAt: integer('dismissed_at'),
   },
   (t) => [
     index('unmatched_files_root').on(t.rootFolder, t.kind),

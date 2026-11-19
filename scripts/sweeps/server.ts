@@ -675,6 +675,17 @@ try {
       { name: 'show', path: '/shows/87108' },
       { name: 'show:files', path: '/shows/87108/files' },
       { name: 'show:missing', path: '/shows/999999999' },
+      // the recap the names can't place, and its Match dialog
+      { name: 'shows:unmatched', path: '/shows/unmatched' },
+      {
+        name: 'shows:unmatched:match',
+        path: '/shows/unmatched',
+        act: (p) =>
+          p
+            .getByRole('button', { name: /^Match / })
+            .first()
+            .click(),
+      },
       { name: 'discover:shows', path: '/discover/shows' },
       {
         name: 'import:library:shows',

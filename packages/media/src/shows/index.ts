@@ -19,7 +19,10 @@
 //   shows.admin.list() / get(id) / update / remove / monitorSeason / monitorEpisode / discover
 //   shows.settings.naming() / sizes() / profileUsage(ids)
 //   shows.close()                          stops listening for metadata.updated
+import { DRAFT_TOPICS } from '@highsea-tv/api-contract'
 import { AppError } from '@highsea-tv/core'
+import { schema } from '@highsea-tv/db'
+import { eq } from 'drizzle-orm'
 import { z } from 'zod'
 import { SCAN_EVERY_MS } from '../movies/scan.ts'
 import type { Media } from '../shared/index.ts'
@@ -99,6 +102,38 @@ export function createShows(deps: ShowsDeps, media: Media) {
     },
     /** What couldn't be placed, under one root folder or every one, with each reason. */
     unmatched: (rootFolder?: string) => files.unmatched.list(rootFolder),
+    /**
+     * The admin's Match for something unmatched (Phase 5 B): a show folder is imported as the show
+     * picked, by the library import's job (409 `running` while one runs); an episode file is filed
+     * under the episodes picked of the show whose folder holds it.
+     */
+    async matchUnmatched(input: {
+      path: string
+      tmdbId?: number
+      episodes?: { season: number; episode: number }[]
+    }): Promise<void> {
+      const row = files.unmatched.find(input.path)
+      if (!row) throw new AppError('not-found', 'That isn’t unmatched any more.')
+      if (row.kind === 'show-folder') {
+        if (!input.tmdbId)
+          throw new AppError('invalid', 'Pick the show this folder holds.', { reason: 'no-show' })
+        libraryImport.run([{ folder: row.path, tmdbId: input.tmdbId }])
+        return
+      }
+      const show = row.itemId
+        ? deps.db.select().from(schema.mediaItems).where(eq(schema.mediaItems.id, row.itemId)).get()
+        : null
+      if (!show) throw new AppError('not-found', 'The show this file was found in isn’t here.')
+      await files.assign(show, row.path, input.episodes ?? [])
+    },
+    /** The admin's Dismiss: it leaves the list and the scan doesn't offer it again. */
+    dismissUnmatched(path: string): void {
+      if (!files.unmatched.find(path))
+        throw new AppError('not-found', 'That isn’t unmatched any more.')
+      files.unmatched.dismiss(path)
+      // the list is the shows' (the admin follows `shows.updated`)
+      deps.events.emit({ topic: DRAFT_TOPICS.shows })
+    },
     jobs: {
       types: { libraryScan: SHOW_SCAN_JOB },
       /** The 12-hourly scan of the Shows root folders. The runtime calls this once at boot. */

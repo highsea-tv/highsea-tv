@@ -11,7 +11,7 @@ import { createSettings } from '../shared/settings.ts'
 import { sync as syncInProcess } from '../sync/worker.ts'
 import { createAccounts } from './accounts.ts'
 import { createBundled } from './bundled.ts'
-import { announce, type SubtitlesDeps } from './context.ts'
+import { announceItem, type SubtitlesDeps } from './context.ts'
 import { createJobs } from './jobs.ts'
 import { createSearch } from './search.ts'
 import { createSync, type RunSync } from './sync.ts'
@@ -47,6 +47,7 @@ export function createSubtitles(deps: SubtitlesDeps) {
   const bundled = createBundled(deps, tracks, wanted, {
     queueSearch: (fileId) => queueSearch(fileId),
     queueResync: (fileId) => queueResync(fileId),
+    announceItem: (itemId) => announceItem(deps, tracks.item(itemId)),
   })
   const jobs = createJobs(deps, { search, wanted, bundled, settings, sync })
   queueSearch = (fileId) => void jobs.queueSearch(fileId)
@@ -58,7 +59,7 @@ export function createSubtitles(deps: SubtitlesDeps) {
     jobs.queueSync(request)
     const row = tracks.track(trackId)
     const item = tracks.item(row.itemId)
-    if (item) announce(events, [item.tmdbId])
+    announceItem(deps, item)
     return tracks.view(row, item?.tmdbId ?? 0)
   }
 
@@ -112,7 +113,7 @@ export function createSubtitles(deps: SubtitlesDeps) {
         data: { trackId },
       })
       wanted.refresh(item.id)
-      announce(events, [item.tmdbId], { history: true })
+      announceItem(deps, item, { history: true })
     }
   }
 
@@ -145,9 +146,13 @@ export function createSubtitles(deps: SubtitlesDeps) {
     ]
   }
 
-  /** Bulk: points movies at a profile, then rewrites their rows. */
-  function profileChanged(itemIds: string[]) {
-    for (const id of itemIds) jobs.queueRefresh(id)
+  /**
+   * Bulk: points movies or episodes at a profile, then rewrites their rows. With none named, every
+   * item's rows (the runtime asks once after the migration that gave older shows a profile).
+   */
+  function profileChanged(itemIds?: string[]) {
+    if (!itemIds) jobs.queueRefresh()
+    else for (const id of itemIds) jobs.queueRefresh(id)
   }
 
   const profileService = {

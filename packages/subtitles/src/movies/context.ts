@@ -3,8 +3,10 @@
 // queue and events, and the providers' seams.
 import type { promises as fsp } from 'node:fs'
 import type { EventBus } from '@highsea-tv/core'
+import type { schema } from '@highsea-tv/db'
 import type { JobQueue } from '@highsea-tv/jobs'
 import type { Media } from '@highsea-tv/media/shared'
+import { announceShow, showTmdbOf } from '../shows/index.ts'
 import type { SyncOutcome, SyncTask } from '../sync/worker.ts'
 import type { AccountsDeps } from './accounts.ts'
 
@@ -42,6 +44,21 @@ export function announce(events: EventBus, tmdbIds: number[], { history = false 
   if (!ids) return
   events.emit({ topic: TOPICS.item, ids })
   if (history) events.emit({ topic: TOPICS.history, ids })
+}
+
+/**
+ * Says an item's tracks changed: a film by its TMDB id, an episode (Phase 5 B) by its show's, as
+ * each library says its own changes.
+ */
+export function announceItem(
+  deps: { db: SubtitlesDeps['db']; events: EventBus },
+  item: typeof schema.mediaItems.$inferSelect | null | undefined,
+  options: { history?: boolean } = {},
+) {
+  if (!item) return
+  const show = showTmdbOf(deps.db, item)
+  if (show !== null) announceShow(deps.events, show, options)
+  else announce(deps.events, [item.tmdbId], options)
 }
 
 /** How long a provider has to answer a search (ADR 0043). */

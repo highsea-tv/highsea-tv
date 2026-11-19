@@ -310,7 +310,7 @@ function Resources({ s, fill }: { s: SystemStatus; fill: boolean }) {
 }
 
 /** Music's share is drafted with HT-68, so a server without music leaves it out. */
-const USED_BY = ['movies', 'music', 'downloads', 'other'] as const
+const USED_BY = ['movies', 'shows', 'music', 'downloads', 'other'] as const
 
 function Disks({ disks }: { disks: SystemStatus['disks'] }) {
   const t = useT(messages)

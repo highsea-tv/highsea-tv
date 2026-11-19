@@ -261,6 +261,9 @@ export function SharedAdmin() {
         <Route path="/shows">
           <ShowsLibrary />
         </Route>
+        <Route path="/shows/unmatched">
+          <ShowsLibrary tab="unmatched" />
+        </Route>
         <Route path="/shows/:id">{(p) => <ShowDetail id={p.id} />}</Route>
         <Route path="/shows/:id/files">{(p) => <ShowDetail id={p.id} tab="files" />}</Route>
         <Route path="/music">

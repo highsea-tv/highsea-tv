@@ -20,6 +20,8 @@ describe('one episode', () => {
     ['Show Name - S01 E02 - Title', 'Show Name', 1, 2],
     ['Show.Name.S10E100.1080p.WEB.h264-GROUP', 'Show Name', 10, 100],
     ['[Group] Show Name - S01E03 [1080p].mkv', 'Show Name', 1, 3],
+    // the owner's NAS: an EP before the number
+    ['The.Silent.Sea.S01EP01.WEBRip.1080p.x264.mp4', 'The Silent Sea', 1, 1],
   ])('%s', (name, title, season, episode) => {
     expect(parseEpisode(name)).toEqual({
       title,

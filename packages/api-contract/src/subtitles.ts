@@ -39,6 +39,9 @@ export const SUBTITLE_MATCHES = [
   'audioCodec',
   'streamingService',
   'hearingImpaired',
+  // an episode's (Phase 5 B): its season and number, as Bazarr's episode scores have them
+  'season',
+  'episode',
 ] as const
 
 /**
