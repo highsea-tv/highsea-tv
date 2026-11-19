@@ -53,6 +53,8 @@ export const musicArtists = sqliteTable(
     photoFile: text('photo_file'),
     /** From MusicBrainz when known, else every album's genre tags. */
     genres: text('genres', { mode: 'json' }).$type<string[]>().notNull().default(sql`'[]'`),
+    /** Music videos (`.mp4`) in their folder, set aside for a later part (the owner's answer 11). */
+    videos: integer('videos').notNull().default(0),
     source: text('source', { enum: MUSIC_SOURCES }).notNull(),
     addedAt: integer('added_at').notNull(),
     updatedAt: integer('updated_at').notNull(),

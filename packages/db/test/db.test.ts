@@ -297,6 +297,7 @@ describe('0018_profiles', () => {
       '0022_unmatched_files',
       '0023_fanart',
       '0024_show_dismissals',
+      '0025_music',
     ])
     expect(result.backup).not.toBeNull()
     const once = state(first)
@@ -401,6 +402,7 @@ describe('0020_shows', () => {
       '0022_unmatched_files',
       '0023_fanart',
       '0024_show_dismissals',
+      '0025_music',
     ])
     expect(films(raw)).toEqual(was)
     expect(raw.all('SELECT count(*) AS n FROM media_items')).toEqual([{ n: 300 }])
@@ -548,6 +550,7 @@ describe('0020_shows', () => {
         '0022_unmatched_files',
         '0023_fanart',
         '0024_show_dismissals',
+        '0025_music',
       ])
       expect(all(raw)).toEqual(was)
       expect(raw.all('SELECT count(*) AS n FROM unmatched_files')).toEqual([{ n: 0 }])

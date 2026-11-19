@@ -6,6 +6,7 @@
   "type": "module",
   "exports": {
     "./movies": "./src/movies/index.ts",
+    "./music": "./src/music/index.ts",
     "./naming": "./src/shared/naming.ts",
     "./shows": "./src/shows/index.ts",
     "./search": "./src/shared/search.ts",

@@ -37,6 +37,7 @@ CREATE TABLE `music_artists` (
 	`root_folder` text NOT NULL,
 	`photo_file` text,
 	`genres` text DEFAULT '[]' NOT NULL,
+	`videos` integer DEFAULT 0 NOT NULL,
 	`source` text NOT NULL,
 	`added_at` integer NOT NULL,
 	`updated_at` integer NOT NULL

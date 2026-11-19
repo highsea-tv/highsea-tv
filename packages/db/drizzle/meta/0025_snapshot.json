@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "8ffb7979-e9a1-4428-ae0f-a68b7a0abfc5",
+  "id": "a1ae0b30-16c6-4f18-b696-2e557e54b079",
   "prevId": "2e28dc0d-8383-4154-92e3-86103d34cabd",
   "tables": {
     "account_links": {
@@ -5602,6 +5602,14 @@
           "notNull": true,
           "autoincrement": false,
           "default": "'[]'"
+        },
+        "videos": {
+          "name": "videos",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
         },
         "source": {
           "name": "source",
