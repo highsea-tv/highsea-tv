@@ -2,7 +2,7 @@
 
 - **Platforms:** Admin (`apps/server`), compact and regular windows.
 - **Screen:** `packages/admin/src/music-library.tsx` (Artists, Albums, Unmatched), `music-detail.tsx` (an artist's page and an album's), `music-data.ts` and `music-messages.ts`; Music's parts of `media-management.tsx` (with `track-naming.ts`), `widgets.tsx`, `system.tsx` and `now-playing.tsx`. They're drawn only when public info's `sources` lists music (`serves.tsx`), on the drafted `musicLibrary` contract group (`packages/api-contract/src/music-library.ts`), so the prototype's mock shows them; `apps/server` answers that group 501 and has no `/music` page until Phase 5's part D builds it.
-- **Prototype:** `#/admin/music`, `#/admin/music/albums`, `#/admin/music/unmatched`, `#/admin/music/artists/marisol-vega`, `#/admin/music/albums/nocturne-michi-chopin-nocturnes` (and `/files`). Drawn with HT-68 for [Phase 5's part D](../plans/phase-5-real-use.md), the owner's answers 10 and 12, and stage 7 of [prototype-gaps.md](../plans/prototype-gaps.md).
+- **Prototype:** `#/admin/music`, `#/admin/music/albums`, `#/admin/music/unmatched`, `#/admin/music/artists/marisol-vega`, `#/admin/music/albums/nocturne-michi-chopin-nocturnes` (and `/files`). Drawn with HT-68 and approved by the owner on 2026-11-19 ("Approve with recommendations", [the decisions](#decisions-2026-11-19)), for [Phase 5's part D](../plans/phase-5-real-use.md), the owner's answers 10 and 12, and stage 7 of [prototype-gaps.md](../plans/prototype-gaps.md).
 - **Reference:** [shows.md](shows.md) and [movies.md](movies.md), which these pages are laid out as, and Lidarr's artist index, artist page, album page and Unmapped files.
 
 ## Purpose
@@ -94,9 +94,20 @@ The admin's side of the owner's music. Music is **read where it is**: highsea fi
 - Drafted beside them: `system.status()`'s `usedBy.music`, and a session's `item.song` (`{ artist: { id, name }, album: { id, title } }`).
 - Topics: `music.updated`, and `settings.updated` for naming.
 
+## Decisions (2026-11-19)
+
+The owner approved the prototype with the words "Approve with recommendations", so each of HT-68's six questions is settled as recommended:
+
+1. **Albums start as a grid of covers,** as Movies and Shows do; the table is one click away and the choice is remembered.
+2. **Artists is Music's landing page** (`/music`), as Lidarr and the clients' Library start.
+3. **No Remove from library for now.** Music is read where it is, and a remove that left the files would bring them back on the next scan.
+4. **An artist without a photo keeps the empty round placeholder** until MusicBrainz has a picture.
+5. **Track naming is off by default.**
+6. **The dashboard's widgets stay as they are:** at 2 rows a song or the Music folder can sit under "more", and resizing the widget shows them.
+
 ## Not drawn yet
 
-- Removing an artist or an album from the library, and deleting their files. An owner question (see HT-68's PR).
+- Removing an artist or an album from the library, and deleting their files: left out for now (decision 3).
 - Editing an album's details or writing tags back to the files.
 - Music videos, playlists' admin side, and anything per track beyond its file.
 - Searching for or downloading music (answer 12).
