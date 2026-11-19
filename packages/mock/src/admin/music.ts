@@ -115,6 +115,7 @@ export function musicAnswers(kit: AdminKit): Answers {
       },
       refreshArtist: ({ params }, ctx) => {
         if (!libraryOf(ctx).artist(params.id)) throw refuse('not-found', t('artist'))
+        kit.work?.queue(ctx, 'music.metadata', { kind: 'artist', id: params.id })
         return changed(undefined)
       },
       albums: (_, ctx) => libraryOf(ctx).albums.map(dated),
@@ -125,6 +126,7 @@ export function musicAnswers(kit: AdminKit): Answers {
       },
       refreshAlbum: ({ params }, ctx) => {
         if (!libraryOf(ctx).album(params.id)) throw refuse('not-found', t('album'))
+        kit.work?.queue(ctx, 'music.metadata', { kind: 'album', id: params.id })
         return changed(undefined)
       },
       naming: (_, ctx) => naming.get(ctx.srv) ?? DEFAULT_TRACK_NAMING,

@@ -39,6 +39,7 @@ import {
 } from '@highsea-tv/ui/native'
 import { type ComponentRef, type ReactNode, useRef, useState } from 'react'
 import { Linking, View } from 'react-native'
+import { ItemWorkMark, useItemWork } from './item-work.tsx'
 import { LibraryPosters } from './library-grid.tsx'
 import { SummaryCard, SummarySkeleton, useLongDate } from './media-sections.tsx'
 import {
@@ -92,24 +93,34 @@ function useRefresh(kind: 'artist' | 'album', id: string) {
   }
 }
 
-/** Refresh metadata, and MusicBrainz's page when there's an id. */
+/** Refresh metadata, and MusicBrainz's page when there's an id; what's in hand on it beside them. */
 function Actions({
   onRefresh,
   pending,
   musicBrainz,
+  item,
 }: {
   onRefresh: () => void
   pending: boolean
   musicBrainz: string | null
+  /** HT-106: the artist or album, for the mark of what the server is doing to it. */
+  item: { kind: 'artist' | 'album'; id: string; title: string }
 }) {
   const t = useT(messages)
+  const work = useItemWork(item.kind, item.id, item.title)
   const more = useRef<ComponentRef<typeof Button>>(null)
   const [menu, setMenu] = useState(false)
   // Refresh, then a More menu with MusicBrainz's page, as a show's header has Search, Edit and More
   // (show-detail.tsx), so it fits a compact window
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: s['2'] }}>
-      <Button icon="refresh" loading={pending} onPress={onRefresh}>
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: s['2'], flexShrink: 1 }}>
+      <ItemWorkMark jobs={work.jobs} look="page" item={work.item} />
+      <Button
+        icon="refresh"
+        loading={pending}
+        disabled={work.busy('music.metadata')}
+        onPress={onRefresh}
+      >
         {t('refresh')}
       </Button>
       {musicBrainz && (
@@ -191,6 +202,7 @@ function Artist({ id }: { id: string }) {
       pending={refresh.pending}
       onRefresh={() => refresh.start(a.name, a.source === 'musicbrainz')}
       musicBrainz={a.musicBrainzId ? musicBrainzUrl('artist', a.musicBrainzId) : null}
+      item={{ kind: 'artist', id, title: a.name }}
     />
   ) : undefined
   return (
@@ -320,6 +332,7 @@ function Album({ id, tab }: { id: string; tab: AlbumTab }) {
       pending={refresh.pending}
       onRefresh={() => refresh.start(a.title, a.source === 'musicbrainz')}
       musicBrainz={a.musicBrainzId ? musicBrainzUrl('release-group', a.musicBrainzId) : null}
+      item={{ kind: 'album', id, title: a.title }}
     />
   ) : undefined
   return (

@@ -31,7 +31,7 @@ A collection has a name, a summary, artwork, its films and its shows. The films 
 
 - Page header: "Collections", "Films grouped by rules that keep themselves up to date, or films and shows picked by hand. They show in every app’s library.", and **New collection**.
 - One card each, in the order they were made:
-  - the artwork (the uploaded poster, or a mosaic of the first four posters, films then shows, as Plex draws a smart collection's);
+  - the artwork (the uploaded poster, or a mosaic of the first four posters, films then shows, as Plex draws a smart collection's), with a spinner over it while a job works on the collection (HT-106, [admin-shell.md › Work in hand](admin-shell.md#work-in-hand-on-an-item-ht-106-2026-11-19); no server job names a collection yet);
   - the name (a link to the editor), **Smart** or **Picked**, and **Hidden in the apps** when it holds something but nothing the apps can show (no film with a file, no show with an episode);
   - the rules in words ("Released 2010–2020, rated 4.5 or more, in English");
   - what it holds and who sees it, counted as the apps count them: "4 movies, 3 in the apps · Everyone", "6 movies and 1 show, all in the apps", "Nothing matches yet". "In the apps" counts films with a file and shows with an episode;

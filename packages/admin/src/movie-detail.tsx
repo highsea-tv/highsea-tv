@@ -99,6 +99,7 @@ import { artwork as artworkMessages } from './artwork-messages.ts'
 import { useDownloadSource } from './download-source.ts'
 import { torrentTone } from './downloads-status.ts'
 import { useSearchable } from './indexer-state.ts'
+import { ItemWorkMark, useItemWork } from './item-work.tsx'
 import { library } from './library-messages.ts'
 import { Loadable } from './loadable.tsx'
 import { movieStatus } from './media-links.ts'
@@ -426,12 +427,16 @@ function LibraryMovie({
   }
 
   const title = m?.title ?? meta.data?.title ?? t('movie')
+  // HT-106: what the server is doing to the film, by its actions; each action is off while its job runs
+  const work = useItemWork('movie', id, m?.title)
   const actions = m ? (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: s['2'] }}>
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: s['2'], flexShrink: 1 }}>
+      <ItemWorkMark jobs={work.jobs} look="page" item={work.item} />
       {searchable.canSearch ? (
         <Button
           icon="search"
           loading={search.pending}
+          disabled={work.busy('movies.search')}
           onPress={() =>
             search.run().then(
               () =>
@@ -477,6 +482,7 @@ function LibraryMovie({
           {
             label: t('refresh'),
             icon: 'refresh',
+            disabled: work.busy('metadata.refresh'),
             onSelect: () =>
               refresh.run().then(
                 () =>

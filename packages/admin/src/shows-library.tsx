@@ -1,5 +1,5 @@
 'use client'
-import type { Series, SeriesUpdate } from '@highsea-tv/api-contract'
+import type { ItemJob, Series, SeriesUpdate } from '@highsea-tv/api-contract'
 import { bytes } from '@highsea-tv/core/format'
 import { useLocale, useT } from '@highsea-tv/i18n/react'
 import { useAction, useQuery } from '@highsea-tv/sdk/react'
@@ -51,6 +51,7 @@ import {
 } from '@highsea-tv/ui/native'
 import { type ComponentRef, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { View } from 'react-native'
+import { useLibraryWork, WithItemWork } from './item-work.tsx'
 import { LibraryPosters, STUCK, useLetters, WithLetters } from './library-grid.tsx'
 import { Loadable, PosterSkeletons } from './loadable.tsx'
 import { Served } from './serves.tsx'
@@ -189,6 +190,8 @@ function Shows() {
   const locale = useLocale()
   const { colors } = useTheme()
   const shows = useQuery('admin-shows', (c) => c.series.list(), SHOWS_TOPICS)
+  // HT-106: a mark on each show the server is working on, its episodes' work with it
+  const workOf = useLibraryWork('show')
   const profiles = useQuery('quality-profiles', (c) => c.quality.profiles())
   const [view, setView] = useStoredView()
   const [filter, setFilter] = useState<Filter>('all')
@@ -444,7 +447,7 @@ function Shows() {
                         items={shown}
                         keyOf={keyOf}
                         label={t('title')}
-                        render={(s) => <GridTile show={s} />}
+                        render={(s) => <GridTile show={s} work={workOf(s.id)} />}
                       />
                     </View>
                   ) : (
@@ -486,11 +489,13 @@ function Shows() {
                                 />
                               </TableCell>
                               <TableCell tall truncate>
-                                <TitleCell
-                                  title={<TitleLink href={showPath(s.id)}>{s.title}</TitleLink>}
-                                  detail={s.path}
-                                  art={s.art.poster}
-                                />
+                                <WithItemWork jobs={workOf(s.id)} look="thumb">
+                                  <TitleCell
+                                    title={<TitleLink href={showPath(s.id)}>{s.title}</TitleLink>}
+                                    detail={s.path}
+                                    art={s.art.poster}
+                                  />
+                                </WithItemWork>
                               </TableCell>
                               <TableCell tall>
                                 <Text size={tokens.adminText.ui.size} color="text-2">
@@ -576,7 +581,7 @@ function Shows() {
 }
 
 /** A show in the grid: its poster with a badge when it needs a look, its year and episodes, and the bar. */
-function GridTile({ show: s }: { show: Series }) {
+function GridTile({ show: s, work }: { show: Series; work: ItemJob[] | undefined }) {
   const t = useT(messages)
   const n = missing(s)
   const art = !s.monitored
@@ -588,20 +593,22 @@ function GridTile({ show: s }: { show: Series }) {
   return (
     <View style={{ gap: tokens.space['2'] }}>
       <View>
-        <Poster
-          title={s.title}
-          src={s.art.poster}
-          href={showPath(s.id)}
-          status={
-            art ? (
-              <Badge overlay tone={art.tone}>
-                {art.label}
-              </Badge>
-            ) : undefined
-          }
-          showTitle
-          titleSize="ui"
-        />
+        <WithItemWork jobs={work} look="poster">
+          <Poster
+            title={s.title}
+            src={s.art.poster}
+            href={showPath(s.id)}
+            status={
+              art ? (
+                <Badge overlay tone={art.tone}>
+                  {art.label}
+                </Badge>
+              ) : undefined
+            }
+            showTitle
+            titleSize="ui"
+          />
+        </WithItemWork>
         {/* the caption: the year and the episodes in mono, which a Poster's string caption can't hold */}
         <View
           style={{

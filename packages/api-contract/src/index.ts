@@ -13,6 +13,7 @@ export * from './downloads.ts'
 export * from './events.ts'
 export * from './importers.ts'
 export * from './indexers.ts'
+export * from './item-work.ts'
 export * from './kinds.ts'
 export * from './library.ts'
 export * from './library-import.ts'
@@ -58,6 +59,7 @@ import {
 } from './downloads.ts'
 import { importers } from './importers.ts'
 import { catalog, indexers, releaseRoutes } from './indexers.ts'
+import { itemWorkRoutes } from './item-work.ts'
 import { library } from './library.ts'
 import { libraryImport } from './library-import.ts'
 import { importLists } from './lists.ts'
@@ -86,7 +88,7 @@ import { widgets } from './widgets.ts'
 
 /** Every route, by group. The SDK builds its methods from this. */
 export const routes = {
-  system: { ...system, ...speedRoutes },
+  system: { ...system, ...speedRoutes, ...itemWorkRoutes },
   setup,
   auth,
   links,
