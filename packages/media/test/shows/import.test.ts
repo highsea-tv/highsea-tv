@@ -480,7 +480,7 @@ describe('importing the shows on disk', () => {
 })
 
 describe('the shows scan', () => {
-  test('a file added, removed and replaced; a multi-episode file loses one episode and keeps the other', async () => {
+  test('a file added, replaced, removed and changed; a second copy kept unmatched', async () => {
     const t = await setup()
     chernobyl(t)
     const found = await t.shows.libraryImport.scan(t.root)
