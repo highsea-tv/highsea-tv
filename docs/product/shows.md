@@ -1,8 +1,8 @@
 # Shows: the library, a show's page and Add a show
 
 - **Platforms:** Admin (`apps/server`), compact and regular windows.
-- **Screen:** `packages/admin/src/shows-library.tsx`, `show-detail.tsx`, `discover-shows.tsx` and `add-show-dialog.tsx`. They're drawn only when public info's `sources` lists shows (`serves.tsx`), on the drafted `series` contract group (`/api/v1/series`, ADR 0061's D3 section), so the prototype's mock shows them; `apps/server` answers that group 501 and has no `/shows` page until the TV series phase.
-- **Prototype:** `#/admin/shows`, `#/admin/shows/the-lantern-keepers` (and `/files`), `#/admin/discover/shows`. Drawn in stage 6 of [prototype-gaps.md](../plans/prototype-gaps.md#stage-6-shows-in-the-admin) for the TV series phase, which builds it.
+- **Screen:** `packages/admin/src/shows-library.tsx`, `shows-unmatched.tsx`, `show-detail.tsx`, `discover-shows.tsx` and `add-show-dialog.tsx`. They're drawn only when public info's `sources` lists shows (`serves.tsx`), on the `series` contract group (`/api/v1/series`, ADR 0061's D3 section). Since Phase 5 B (HT-83, HT-92) `apps/server` serves the group, all but `series.search`, which stays a draft for C1, and the prototype's mock answers it too.
+- **Prototype:** `#/admin/shows`, `#/admin/shows/unmatched`, `#/admin/shows/the-lantern-keepers` (and `/files`), `#/admin/discover/shows`. Drawn in stage 6 of [prototype-gaps.md](../plans/prototype-gaps.md#stage-6-shows-in-the-admin) for the TV series phase, which builds it.
 - **Reference:** [movies.md](movies.md), which these pages are laid out as, and Sonarr's series index, series page and Add New Series.
 
 ## Purpose
@@ -28,6 +28,17 @@ The admin's side of shows. The **library** shows every show here, which are stil
 - **Bulk bar:** as Movies': "3 shows selected", **Search**, **Edit** (Monitor, Stop monitoring, then each quality profile), **Remove**, **Clear**.
 - **The whole library and the A–Z index** (HT-57): as Movies' ([movies.md › Library](movies.md#library-a5)): the grid and the table draw only what's near the screen, and sorted by Title the clients' A–Z index stands inside the frame along its left edge.
 
+### Unmatched (`/shows/unmatched`, Phase 5 B)
+
+What Library import and the scan found in a Shows folder but couldn't place surely. Laid out as Music's Unmatched ([music.md](music.md), the approved layout), with no drawing of its own before HT-92.
+
+- **Section tabs** (line variant) above the library: **Shows** and **Unmatched** with its count. They're drawn only while something is unmatched (or on `/shows/unmatched` itself), so a library with nothing waiting looks as signed off.
+- **The list:** a line saying what it is, then a table: the path (mono), size, why (a badge for the reason with the import's message under it) and when it was found, with **Match** and **Ignore** on each row. The reasons: No match, More than one match, Show already here, No episode number, Unknown season, Unknown episode, Episode has a file, Couldn’t open.
+- **Match a show folder:** a dialog (`sm`) that searches TMDB by the folder's name, which the owner can change, and offers the results in a Select; a show already in the library is listed but can't be picked. **Match** imports the folder as Library import does, with the root folder's profiles.
+- **Match an episode file:** the same dialog asks for **Season** and **Episodes** (`3`, `3-4` or `3, 4` for a multi-episode file, up to 20) of the show whose folder holds it. **Match** files it as the import files an episode, without renaming or moving it.
+- **Ignore** asks first ("Ignore this?" · It stays on disk, and later scans pass it by.) and sets the row aside (`dismissed_at`); nothing on disk changes.
+- **Empty:** "Everything is matched" · Every folder in your Shows folders is a show, and every file an episode.
+
 ### Show page (`/shows/{id}`)
 
 - `PageHeader`: the title; **Search** (primary: every monitored episode that's missing or below its cutoff), **Edit**, and a More menu (Refresh metadata, Remove from library). Search is disabled when the show isn't monitored or nothing is wanted.
@@ -37,6 +48,16 @@ The admin's side of shows. The **library** shows every show here, which are stil
   - **Files:** "85 files · 66.9 GB", then every file once: the episodes it holds (`S01E01–E02` for a double episode), its name with its folder under it, quality, release group and size.
 - **Edit dialog** (`md`): **Monitored** (switch), **Quality profile**, **Root folder** (with "Its files move to …" once changed) and **Season folders** (switch). Seasons and episodes are monitored on the Seasons tab, as the dialog's description says.
 - **Remove** asks first, with "Also delete its files from disk", as a movie's does.
+- **Refresh metadata** (More) asks the server to fetch the show, its seasons and episodes from TMDB again, then toasts "Refreshing from TMDB".
+
+### Subtitles (Phase 5 B)
+
+An episode's file gets subtitles as a film's does, from the same service and settings, with the show's subtitle language profile (a new show takes its root folder's):
+
+- **Found in place:** embedded tracks, and sidecars named after the episode's file, beside it or in the season folder's `Subs` (as `Subs/<episode file's name>/…` or `Subs/<episode file's name>.en.srt`). A season folder holds many episodes, so a film's rule (every subtitle in `Subs`) isn't used.
+- **Fetched:** OpenSubtitles.com, Subdl and SubSource are asked by the show's ids with the season and episode, scored on Bazarr's episode weights (out of 360). A result for another episode, or a season pack, is skipped. Synced and kept as a film's.
+- **Served:** to the apps with the episode's play decision, as a film's are.
+- **Not drawn:** the admin has no subtitle tab for an episode, and the Subtitles page's Wanted list stays films only (its design has no episode line); episodes' wanted rows are searched all the same.
 
 ### Add a show
 
@@ -74,9 +95,11 @@ A person's page ([media-pages.md](media-pages.md#person-page)) lists their shows
 - `shows.edit(id, patch)`, `shows.monitorSeason(id, season, on)`, `shows.monitorEpisode(id, episodeId, on)`, `shows.search(id, { season?, episode? })` (returns `{ searched, found }`), `shows.remove(id)`.
 - `movies.qualityProfiles()` and `movies.languageProfiles()`, shared with movies until profiles are per kind.
 - `metadata.person(id)` gains `shows`: each show they're in, marked `inLibrary`, with their role.
+- `series.unmatched()`, `series.matchUnmatched({ path, show? , episodes? })`, `series.dismissUnmatched({ path })`, `series.refresh(id)`.
 - Topic: `shows.updated`.
 
 ## Not drawn yet
 
 - A show's page before it's added (movies have one, ADR 0014), its cast and crew, and its history. The TV series phase scopes them.
 - Interactive search for an episode or season, and the delete-files choice on Remove reaching the mock.
+- Deleting one episode's file (C: B's Shows folders are read-only), and an episode's subtitles in the admin.

@@ -329,7 +329,8 @@ export function createShowLibraryImport(
         tmdbId: item.tmdbId,
         rootFolder: root,
         qualityProfileId,
-        languageProfileId: null,
+        // subtitles as the folder's default, as a film imported here takes it (checkpoint 8c)
+        languageProfileId: media.rootFolders.find(root)?.languageProfileId ?? null,
         // monitoring and searching are C1's; a read-only root folder hides both (the plan's B)
         monitor: 'all',
         seasonFolders: await usesSeasonFolders(item.folder),

@@ -19,8 +19,9 @@ import { toLanguageCode } from '../shared/languages.ts'
 import { moviehash } from '../shared/moviehash.ts'
 import { sidecarPath } from '../shared/naming.ts'
 import { MAX_SUBTITLE_BYTES, processSubtitle, renderSubtitle } from '../shared/processing/index.ts'
+import { ownSidecar } from '../shows/index.ts'
 import { applyCorrection } from '../sync/align.ts'
-import { announce, type SubtitlesDeps } from './context.ts'
+import type { SubtitlesDeps } from './context.ts'
 import { correctionOf } from './sync.ts'
 import { providerName, type TrackRow, type Tracks } from './tracks.ts'
 import type { Wanted } from './wanted.ts'
@@ -74,9 +75,15 @@ export function createBundled(
   {
     queueSearch,
     queueResync,
-  }: { queueSearch: (fileId: string) => void; queueResync: (fileId: string) => void },
+    announceItem,
+  }: {
+    queueSearch: (fileId: string) => void
+    queueResync: (fileId: string) => void
+    /** Says the item's tracks changed, a film's or an episode's show's. */
+    announceItem: (itemId: string) => void
+  },
 ) {
-  const { db, clock, events } = deps
+  const { db, clock } = deps
   const fs = tracks.fs
   const log = deps.logger.child('subtitles')
 
@@ -215,6 +222,15 @@ export function createBundled(
   async function besideInPlace(file: ImportedFile): Promise<SubtitleFsEntry[]> {
     const base = basename(file.path, extname(file.path))
     const folder = dirname(file.path)
+    if (tracks.item(file.itemId)?.type === 'episode') {
+      // a season folder holds many episodes: only this one's, beside it or in `Subs` (../shows)
+      const subs = (await fs.readdir(folder, { withFileTypes: true }).catch(() => []))
+        .filter((e) => e.isDirectory() && SUB_FOLDERS.test(e.name))
+        .map((e) => join(folder, e.name, base))
+      const found = [...(await list(folder))]
+      for (const dir of subs) found.push(...(await list(dir)))
+      return found.filter((e) => ownSidecar(e, { folder, base }))
+    }
     return (await list(folder)).filter((e) =>
       dirname(e.path) === folder
         ? e.name.startsWith(`${base}.`)
@@ -328,8 +344,7 @@ export function createBundled(
       if (taken > 0) log.info('kept bundled subtitles', { fileId: file.fileId, count: taken })
       wanted.refresh(file.itemId, { importing: true })
       if (wanted.forFile(file.fileId).length > 0) queueSearch(file.fileId)
-      const item = tracks.item(file.itemId)
-      if (item) announce(events, [item.tmdbId])
+      announceItem(file.itemId)
     },
   }
 

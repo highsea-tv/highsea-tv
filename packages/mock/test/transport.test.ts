@@ -244,11 +244,12 @@ describe('errors', () => {
     const c = await app(LAN, 'theo')
     const status = await c.system.status()
     expect(status.disks.length).toBeGreaterThan(0)
-    // music's share is drafted with HT-68
+    // music's share is drafted with HT-68, the shows' served with Phase 5 B
     expect(Object.keys(status.disks[0]?.usedBy ?? {})).toEqual([
       'movies',
       'downloads',
       'other',
+      'shows',
       'music',
     ])
     expect(status.uptime).toBeGreaterThanOrEqual(0)

@@ -100,6 +100,7 @@ function Page({ id, tab }: { id: string; tab: ShowTab }) {
 
   const edit = useAction((c, body: SeriesUpdate) => c.series.update({ params: { id }, body }))
   const search = useAction((c, body: Scope) => c.series.search({ params: { id }, body }))
+  const refresh = useAction((c) => c.series.refresh({ params: { id } }))
   const monitorSeason = useAction((c, season: number, monitored: boolean) =>
     c.series.monitorSeason({ params: { id, season }, body: { monitored } }),
   )
@@ -159,7 +160,14 @@ function Page({ id, tab }: { id: string; tab: ShowTab }) {
           {
             label: t('refresh'),
             icon: 'refresh',
-            onSelect: () => toast({ title: t('refreshed') }),
+            // TMDB's refresh is queued; the page follows `shows.updated` when it lands
+            onSelect: () =>
+              refresh
+                .run()
+                .then(
+                  () => toast({ title: t('refreshed'), description: t('refreshed.body') }),
+                  fail(t('refresh.failed')),
+                ),
           },
           { label: t('removeFromLibrary'), icon: 'delete', onSelect: () => setRemoving(true) },
         ]}

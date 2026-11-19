@@ -16,8 +16,8 @@ export type ShowFileOptions = {
   /** Overrides DetectSample's minimum runtime in seconds, so tests can use short clips. */
   sampleSeconds?: number
   /**
-   * What another package does as a file is filed, films' import hooks' shape. The runtime wires
-   * none for episodes yet: their sidecar subtitles are part B's fourth task.
+   * What another package does as a file is filed, films' import hooks' shape: the runtime wires
+   * subtitles', which keep the episode's sidecars, hash the file and search for what's wanted.
    */
   hooks?: Pick<ImportHooks, 'afterImport'>
 }
@@ -27,8 +27,14 @@ export type ShowsDeps = MediaDeps & {
   events: EventBus
   metadata: Metadata
   files?: ShowFileOptions
-  /** A file's subtitle tracks for the client API, as films' (the runtime joins subtitles). */
-  subtitles?: { forFile(fileId: string): ClientSubtitle[] }
+  /**
+   * A file's subtitle tracks for the client API, as films' (the runtime joins subtitles), and what
+   * subtitles do when episodes' language profile changes: their wanted rows are rewritten.
+   */
+  subtitles?: {
+    forFile(fileId: string): ClientSubtitle[]
+    profileChanged?(itemIds: string[]): void
+  }
 }
 
 /** Says what changed: the shows (by TMDB id) and each show's library layer (`show:{id}`). */

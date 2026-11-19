@@ -15,7 +15,11 @@
 //                                          hearing_impaired, foreign_parts_only, ai_translated,
 //                                          machine_translated, download_count, ratings,
 //                                          moviehash_match, files: [{ file_id, file_name }],
-//                                          feature_details: { tmdb_id, imdb_id, year, title } } }] }
+//                                          feature_details: { tmdb_id, imdb_id, year, title,
+//                                          parent_tmdb_id, season_number, episode_number } } }] }
+//                                          An episode is searched by its show: `parent_tmdb_id`,
+//                                          `season_number`, `episode_number` and `type=episode`
+//                                          ("For Tvshows", the same OpenAPI document).
 //                                          Parameters sorted, values lowercase, or the API
 //                                          redirects (Best practices).
 //   POST /download {file_id}           → { link, file_name, requests, remaining, message,
@@ -93,17 +97,25 @@ export function apiBase(baseUrl: string | null): string {
 /** The `/subtitles` query string: keys sorted, values lowercase (Best practices). */
 export function searchParams(query: SubtitleQuery): string {
   const languages = [...new Set(query.languages.flatMap(toOpenSubtitlesLanguages))].sort()
+  const episode = query.episode ?? null
   const params: [string, string][] = [
     ['ai_translated', 'exclude'],
     ['foreign_parts_only', 'include'],
     ['hearing_impaired', 'include'],
     ['languages', languages.join(',')],
     ['machine_translated', 'exclude'],
-    ['tmdb_id', String(query.tmdbId)],
-    ['type', 'movie'],
   ]
+  if (episode)
+    params.push(
+      ['parent_tmdb_id', String(query.tmdbId)],
+      ['season_number', String(episode.season)],
+      ['episode_number', String(episode.episode)],
+      ['type', 'episode'],
+    )
+  else params.push(['tmdb_id', String(query.tmdbId)], ['type', 'movie'])
   if (query.moviehash) params.push(['moviehash', query.moviehash])
-  if (query.year) params.push(['year', String(query.year)])
+  // a show's first year isn't its episode's: an episode is found by its numbers
+  if (query.year && !episode) params.push(['year', String(query.year)])
   params.sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
   return params
     .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v.toLowerCase())}`)
@@ -121,6 +133,14 @@ function mapResult(item: unknown, query: SubtitleQuery): ProviderResult | null {
   const language = wantedCode(fromOpenSubtitlesLanguage(str(a.language) ?? ''), query.languages)
   if (!language) return null
   const feature = record(a.feature_details)
+  const episode = query.episode ?? null
+  // an episode's result is for that episode of that show, or it isn't this file's
+  if (
+    episode &&
+    ((num(feature?.season_number) !== null && num(feature?.season_number) !== episode.season) ||
+      (num(feature?.episode_number) !== null && num(feature?.episode_number) !== episode.episode))
+  )
+    return null
   const release = str(a.release) ?? str(file.file_name) ?? ''
   return {
     provider: 'opensubtitles',
@@ -131,7 +151,9 @@ function mapResult(item: unknown, query: SubtitleQuery): ProviderResult | null {
     forced: bool(a.foreign_parts_only),
     hi: bool(a.hearing_impaired),
     hashMatch: bool(a.moviehash_match),
-    idMatch: num(feature?.tmdb_id) === query.tmdbId,
+    idMatch: episode
+      ? num(feature?.parent_tmdb_id) === query.tmdbId
+      : num(feature?.tmdb_id) === query.tmdbId,
     format: formatOf(str(file.file_name)),
     downloads: num(a.download_count) ?? 0,
     rating: num(a.ratings) ?? 0,

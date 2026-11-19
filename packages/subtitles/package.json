@@ -10,6 +10,7 @@
     "./providers": "./src/providers/index.ts",
     "./providers/info": "./src/providers/info.ts",
     "./shared": "./src/shared/index.ts",
+    "./shows": "./src/shows/index.ts",
     "./sync": "./src/sync/index.ts",
     "./testing": "./test/testing/index.ts"
   },

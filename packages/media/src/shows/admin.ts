@@ -16,7 +16,7 @@ import type {
 import { AppError } from '@highsea-tv/core'
 import { schema } from '@highsea-tv/db'
 import type { ShowMetadata } from '@highsea-tv/metadata'
-import { and, asc, eq, inArray, or } from 'drizzle-orm'
+import { and, asc, eq, inArray, isNull, or } from 'drizzle-orm'
 import { invalid } from '../shared/context.ts'
 import { probeOf } from '../shared/file-facts.ts'
 import type { Media } from '../shared/index.ts'
@@ -309,6 +309,9 @@ export function createShowAdmin(ctx: ShowsDeps, deps: Deps) {
           .where(eq(showDetails.itemId, tree.id))
           .run()
     })
+    // the episodes' subtitles follow the show's language profile
+    if (languageProfileId !== undefined && languageProfileId !== (tree.languageProfileId ?? null))
+      ctx.subtitles?.profileChanged?.(tree.seasons.flatMap((s) => s.episodes.map((e) => e.id)))
     log.info('show edited', { tmdbId: tree.tmdbId, fields: Object.keys(patch) })
     announce(events, [tree.tmdbId])
     return detailOf(treeOf(tree.tmdbId))
@@ -414,7 +417,13 @@ export function createShowAdmin(ctx: ShowsDeps, deps: Deps) {
       })
       .from(unmatchedFiles)
       .leftJoin(mediaItems, eq(mediaItems.id, unmatchedFiles.itemId))
-      .where(rootFolder ? eq(unmatchedFiles.rootFolder, rootFolder) : undefined)
+      // what the owner dismissed stays known but leaves the list
+      .where(
+        and(
+          isNull(unmatchedFiles.dismissedAt),
+          rootFolder ? eq(unmatchedFiles.rootFolder, rootFolder) : undefined,
+        ),
+      )
       .orderBy(asc(unmatchedFiles.path))
       .all()
     return rows.map(({ tmdbId, foundAt, ...r }) => ({

@@ -106,6 +106,8 @@ export const Disk = z
       movies: z.number(),
       downloads: z.number(),
       other: z.number(),
+      /** Episodes' files, in the Shows root folders (Phase 5 B). */
+      shows: z.number().optional(),
       music: z.number().optional(),
     }),
   })

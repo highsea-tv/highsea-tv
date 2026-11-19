@@ -7,6 +7,9 @@
 //         subtitles: [{ release_name, name, lang, language, author, url: '/subtitle/….zip',
 //                       hi, releases, … }] }  (the subtitles are for results[0])
 //     → { status: false, error }
+//   An episode: `type=tv` with the show's `tmdb_id`, `season_number`, `episode_number` and
+//   `full_season=0`, since a season pack's zip holds every episode; each subtitle has its `season`
+//   and `episode` ("Request Parameters", read 2026-11-19).
 //   GET https://api.subdl.com/api/v1/me?api_key=…   the key's account status ("Account Status")
 //   GET https://dl.subdl.com{url}                    the zip
 //
@@ -111,8 +114,16 @@ export function createSubdl(deps: ProviderDeps): Provider {
       const url = new URL(`${SUBDL_API}/subtitles`)
       url.searchParams.set('api_key', key)
       url.searchParams.set('tmdb_id', String(query.tmdbId))
-      url.searchParams.set('type', 'movie')
-      if (query.year) url.searchParams.set('year', String(query.year))
+      const episode = query.episode ?? null
+      if (episode) {
+        url.searchParams.set('type', 'tv')
+        url.searchParams.set('season_number', String(episode.season))
+        url.searchParams.set('episode_number', String(episode.episode))
+        url.searchParams.set('full_season', '0')
+      } else {
+        url.searchParams.set('type', 'movie')
+        if (query.year) url.searchParams.set('year', String(query.year))
+      }
       url.searchParams.set('languages', languages.join(','))
       url.searchParams.set('subs_per_page', '30')
       url.searchParams.set('releases', '1')
@@ -130,6 +141,15 @@ export function createSubdl(deps: ProviderDeps): Provider {
         const s = record(item)
         const path = str(s?.url)
         if (!s || !path?.startsWith('/subtitle/')) return []
+        // an episode's search may still answer a pack or a neighbour: only this episode's
+        if (episode) {
+          if (bool(s.full_season)) return []
+          const season = num(s.season)
+          const from = num(s.episode_from) ?? num(s.episode)
+          const to = num(s.episode_end) ?? from
+          if (season !== null && season !== episode.season) return []
+          if (from !== null && (episode.episode < from || episode.episode > (to ?? from))) return []
+        }
         const language = wantedCode(
           fromSubdlLanguage(str(s.language) ?? '') ?? toLanguageCode(str(s.lang)),
           query.languages,

@@ -52,6 +52,23 @@ describe('matching a file to episodes by its name', () => {
     expect(reason('/s/Show/Show.S03E01.mkv')).toBe('unknown-season')
     expect(reason('/s/Show/Show.S01E04.mkv')).toBe('unknown-episode')
     expect(reason('/s/Show/Show.S01E03E04.mkv')).toBe('unknown-episode')
+    // a bare number is an episode only in a season's folder
+    expect(reason('/s/Show/01 - Cooking the Books.mkv')).toBe('no-episode-number')
+    expect(reason('/s/Show/Season 01/2019 - Recap.mkv')).toBe('no-episode-number')
+  })
+
+  test('the owner’s NAS: a bare number in a season’s folder, and S01EP01', () => {
+    expect(
+      episodeMatch('/s/Show/Season 01/01 - Cooking the Books.mkv', '/s/Show', seasons),
+    ).toEqual({ ok: true, season: 1, episodes: [1] })
+    expect(episodeMatch('/s/Show/Season 01/03. Title.mkv', '/s/Show', seasons)).toEqual({
+      ok: true,
+      season: 1,
+      episodes: [3],
+    })
+    expect(
+      episodeMatch('/s/Show/Season 01/Show.2021.S01EP02.WEBRip.1080p.mp4', '/s/Show', seasons),
+    ).toEqual({ ok: true, season: 1, episodes: [2] })
   })
 })
 

@@ -5,7 +5,12 @@
 // What the mock doesn't keep, kept here per transport: each indexer's plain settings, which
 // secrets are set, its seeding rules and its tags. Every catalog definition here is a Torznab
 // torrent indexer, as the mock's are all torrent sites; none is local or from an extra catalog.
-import { type CatalogIndexer, INDEXER_TOPICS, type Indexer } from '@highsea-tv/api-contract'
+import {
+  type CatalogIndexer,
+  type DefinitionCheck,
+  INDEXER_TOPICS,
+  type Indexer,
+} from '@highsea-tv/api-contract'
 import type { ServerState } from '../seed.ts'
 import type { CatalogDefinition, Indexer as MockIndexer } from '../types.ts'
 import { type AdminKit, type Answers, type Ctx, refuse } from './kit.ts'
@@ -16,6 +21,45 @@ type Seeding = Indexer['seeding']
 
 const DAY = 86_400_000
 const NO_SEEDING: Seeding = { ratio: null, minutes: null, minMinutes: null }
+
+/**
+ * What the catalog says of each definition's upkeep (indexer-catalog-upkeep.md, part C; ADR 0069),
+ * as the server passes the bundle's `status` on: days before the mock's now that it was last
+ * checked working (null: never), its stage, a status with the days since and a note, and the last
+ * check's days ago and result (by default the day it was last checked working, and working). One of
+ * each case A9 draws: checked lately, on Beta, checked long ago, broken, never checked, and
+ * retired. Private definitions have none: `catalog:verify` skips them (the plan's part G).
+ */
+const CHECKS: Record<
+  string,
+  {
+    verified: number | null
+    stage?: DefinitionCheck['stage']
+    status?: DefinitionCheck['status']
+    since?: number
+    note?: string
+    checked?: { days: number; result: NonNullable<DefinitionCheck['result']> }
+  }
+> = {
+  lighthouse: { verified: 1 },
+  anchorage: { verified: 3, stage: 'beta' },
+  driftnet: { verified: 41 },
+  keel: {
+    verified: 12,
+    status: 'broken',
+    since: 5,
+    note: 'The site changed how it answers searches. A fix is being worked on.',
+    checked: { days: 5, result: 'failing' },
+  },
+  beacon: { verified: null, stage: 'beta' },
+  tidewater: {
+    verified: 64,
+    status: 'retired',
+    since: 20,
+    note: 'The site closed.',
+    checked: { days: 27, result: 'failing' },
+  },
+}
 
 /** A definition's settings as the mock's test reads them: strings, nulls left out. */
 const asStrings = (settings: Record<string, Value | null> = {}) =>
@@ -72,6 +116,7 @@ export function indexerAnswers(kit: AdminKit): Answers {
     const def = s.catalog.find((d) => d.id === ix.definitionId)
     const k = keptOf(s, ix)
     const check = s.health.find((h) => h.id === `h-${ix.definitionId}`)
+    const upkeep = checkOf(ctx, ix.definitionId)
     return {
       id: ix.id,
       definitionId: ix.definitionId,
@@ -96,40 +141,65 @@ export function indexerAnswers(kit: AdminKit): Answers {
       tags: [...k.tags],
       // the mock keeps no date it was added: two months before the mock's now
       addedAt: wallMs(ctx.srv.clock.now() - 60 * DAY),
+      ...(upkeep ? { check: upkeep } : {}),
     }
   }
 
-  const definitionOf = (s: ServerState, d: CatalogDefinition): CatalogIndexer => ({
-    id: d.id,
-    version: d.version,
-    name: d.name,
-    description: d.description,
-    privacy: d.privacy,
-    language: d.language,
-    kind: 'torznab',
-    protocol: 'torrent',
-    categories: [...d.categories],
-    settings: d.settings.map((f) => ({
-      key: f.key,
-      label: f.label,
-      type: f.type,
-      required: f.required,
-      secret: f.type === 'password',
-      help: f.help,
-      ...(f.options ? { options: f.options.map((o) => ({ ...o })) } : {}),
-    })),
-    // the mock's definitions name their catalog, not an author or the site's API documentation:
-    // the catalog's name, and a documentation address on the reserved example domain (RFC 2606)
-    source: { author: d.source.name, documentation: `https://${d.id}.example/api` },
-    license: d.source.license,
-    minEngineVersion: d.minEngineVersion,
-    starter: d.starter,
-    links: [`https://${d.id}.example`],
-    logo: null,
-    local: false,
-    origin: 'main',
-    installed: s.indexers.filter((i) => i.definitionId === d.id).length,
-  })
+  /** A day `days` before the mock's now, on the wall clock (YYYY-MM-DD). */
+  const dayBefore = (ctx: Ctx, days: number) =>
+    wallMs(ctx.srv.clock.now() - days * DAY).slice(0, 10)
+
+  const checkOf = (ctx: Ctx, id: string): DefinitionCheck | undefined => {
+    const c = CHECKS[id]
+    if (!c) return undefined
+    const checked =
+      c.checked ?? (c.verified === null ? null : { days: c.verified, result: 'working' as const })
+    return {
+      stage: c.stage ?? 'stable',
+      status: c.status ?? 'working',
+      since: c.since === undefined ? null : dayBefore(ctx, c.since),
+      note: c.note ?? null,
+      checked: checked ? dayBefore(ctx, checked.days) : null,
+      result: checked?.result ?? null,
+      verified: c.verified === null ? null : dayBefore(ctx, c.verified),
+    }
+  }
+
+  const definitionOf = (ctx: Ctx, d: CatalogDefinition): CatalogIndexer => {
+    const check = checkOf(ctx, d.id)
+    return {
+      id: d.id,
+      version: d.version,
+      name: d.name,
+      description: d.description,
+      privacy: d.privacy,
+      language: d.language,
+      kind: 'torznab',
+      protocol: 'torrent',
+      categories: [...d.categories],
+      settings: d.settings.map((f) => ({
+        key: f.key,
+        label: f.label,
+        type: f.type,
+        required: f.required,
+        secret: f.type === 'password',
+        help: f.help,
+        ...(f.options ? { options: f.options.map((o) => ({ ...o })) } : {}),
+      })),
+      // the mock's definitions name their catalog, not an author or the site's API documentation:
+      // the catalog's name, and a documentation address on the reserved example domain (RFC 2606)
+      source: { author: d.source.name, documentation: `https://${d.id}.example/api` },
+      license: d.source.license,
+      minEngineVersion: d.minEngineVersion,
+      starter: d.starter,
+      links: [`https://${d.id}.example`],
+      logo: null,
+      local: false,
+      origin: 'main',
+      installed: ctx.srv.state.indexers.filter((i) => i.definitionId === d.id).length,
+      ...(check ? { check } : {}),
+    }
+  }
 
   const installed = (ctx: Ctx, id: string) => {
     const ix = ctx.srv.state.indexers.find((x) => x.id === id)
@@ -141,9 +211,13 @@ export function indexerAnswers(kit: AdminKit): Answers {
     catalog: {
       indexers: ({ query }, ctx) => {
         const s = ctx.srv.state
-        return s.catalog
-          .filter((d) => query.starter !== 'true' || (d.starter && d.privacy === 'public'))
-          .map((d) => definitionOf(s, d))
+        return (
+          s.catalog
+            .filter((d) => query.starter !== 'true' || (d.starter && d.privacy === 'public'))
+            // a retired definition's file leaves the bundle, so the server no longer lists it
+            .filter((d) => CHECKS[d.id]?.status !== 'retired')
+            .map((d) => definitionOf(ctx, d))
+        )
       },
       // the mock never has a version waiting, so installing changes nothing
       install: (_, ctx) => kit.catalogOf(ctx),

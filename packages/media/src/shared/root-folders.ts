@@ -173,7 +173,14 @@ export function createRootFolders({ db, clock }: MediaDeps) {
     db
       .select({ n: sql<number>`count(*)` })
       .from(unmatchedFiles)
-      .where(and(eq(unmatchedFiles.rootFolder, path), eq(unmatchedFiles.kind, 'show-folder')))
+      .where(
+        and(
+          eq(unmatchedFiles.rootFolder, path),
+          eq(unmatchedFiles.kind, 'show-folder'),
+          // one the owner dismissed doesn't wait
+          isNull(unmatchedFiles.dismissedAt),
+        ),
+      )
       .get()?.n ?? 0
 
   const view = (row: Row): RootFolder => ({
@@ -182,6 +189,7 @@ export function createRootFolders({ db, clock }: MediaDeps) {
     kind: row.kind,
     ...probe(row.path, row.readOnly),
     movies: filedIn(row.path).movie ?? 0,
+    ...(row.kind === 'shows' ? { shows: filedIn(row.path).show ?? 0 } : {}),
     languageProfileId: row.languageProfileId,
     waiting: row.kind === 'shows' ? showsWaitingIn(row.path) : waitingIn(row.path),
   })

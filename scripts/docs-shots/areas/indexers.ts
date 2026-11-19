@@ -36,6 +36,16 @@ export default {
     },
     { name: 'catalog', path: '/indexers/catalog' },
     {
+      // the upkeep lines (Indexers › Health and backoff): two cards from the catalog as shipped
+      name: 'catalog-checked',
+      path: '/indexers/catalog',
+      crop: (p) =>
+        p
+          .getByRole('listitem')
+          .filter({ has: p.getByRole('heading', { name: 'Knaben' }) })
+          .locator('..'),
+    },
+    {
       name: 'what-changed',
       path: '/indexers',
       act: (p) => p.getByRole('button', { name: 'What changed' }).click(),

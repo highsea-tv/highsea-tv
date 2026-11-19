@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // C5, the player (docs/product/player.md), once for every client: the web and the desktop app's
 // webview, the phone and the TV, at /play/{id} and /play/{id}/start (from the beginning), and an
-// episode at /play/episode/{id} and /play/episode/{id}/start. The
+// episode at /play/episode/{id} and /play/episode/{id}/start; with `?queue=1`, an item of a
+// shuffle or a collection’s Play (@highsea-tv/client/shuffle). The
 // engine is @highsea-tv/native/playback (expo-video on the phone and the TV, hls.js or the
 // browser's own HLS on the web); what the screen decides is ./parts.tsx's usePlayerModel. It's
 // laid out three ways by the form factor's input, since each is driven differently: a pointer
@@ -9,6 +10,7 @@
 // whatever the person chose, since it's on black, as the prototype's is. In mock mode on the web,
 // the player's own requests on leaving (keepalive fetches outside the SDK) go to the mock too.
 import type { TitleType } from '@highsea-tv/client/data'
+import { releaseShuffle, shuffleFor } from '@highsea-tv/client/shuffle'
 import { usePlayback } from '@highsea-tv/native/playback'
 import { useServers } from '@highsea-tv/native/servers'
 import { type WebHost, WebHostProvider } from '@highsea-tv/native/web-host'
@@ -42,11 +44,27 @@ function MockHost({ children }: { children: ReactNode }) {
   return <WebHostProvider value={host}>{children}</WebHostProvider>
 }
 
-function Player({ id, fromStart, type }: { id: number; fromStart: boolean; type: TitleType }) {
+function Player({
+  id,
+  fromStart,
+  type,
+  inQueue,
+}: {
+  id: number
+  fromStart: boolean
+  type: TitleType
+  inQueue: boolean
+}) {
   const input = useFormFactor().input
   const p = usePlayback(id, fromStart, type)
   const [panel, setPanel] = useState(false)
-  const m = usePlayerModel(id, p, panel, type)
+  // the shuffle this item is part of, read once as it opens: each item is a new player
+  const [shuffle] = useState(() =>
+    shuffleFor(type === 'episode' ? 'episode' : 'movie', id, inQueue),
+  )
+  // closing the player ends the shuffle, unless it handed it on to the next item
+  useEffect(() => () => releaseShuffle(shuffle), [shuffle])
+  const m = usePlayerModel(id, p, panel, type, shuffle)
   // a play that fails is reported to the server with its profile and decision (ADR 0066)
   useReportFailedPlay(p, id, type)
   if (p.detail.status === 'error') return <FilmMissing error={p.detail.error} />
@@ -60,9 +78,15 @@ export function PlayerScreen({
   id,
   fromStart,
   type = 'movie',
+  queue = false,
 }: {
   id: string | undefined
   fromStart: boolean
+  /**
+   * Opened as an item of a shuffle or a collection's Play (`?queue=1`): Next up, Next and Previous
+   * follow its order.
+   */
+  queue?: boolean
   /** An episode plays at /play/episode/{id} (../app/play/episode/), a film at /play/{id}. */
   type?: TitleType
 }) {
@@ -78,7 +102,13 @@ export function PlayerScreen({
       <ThemeProvider theme={tokens.themes.default}>
         <MockHost>
           {/* a new film is a new player: Next up moves from one to the next */}
-          <Player key={`${type}:${id}`} id={Number(id)} fromStart={fromStart} type={type} />
+          <Player
+            key={`${type}:${id}`}
+            id={Number(id)}
+            fromStart={fromStart}
+            type={type}
+            inQueue={queue}
+          />
         </MockHost>
       </ThemeProvider>
     </SafeAreaProvider>

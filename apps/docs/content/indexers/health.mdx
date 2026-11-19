@@ -11,6 +11,12 @@ description: How highsea watches each indexer, rests one that's failing so searc
     packages/indexers/src/service.ts and search.ts.
   - The badges, Retry now and the catalog-update reasons: packages/admin/src/indexers.tsx and
     indexers-messages.ts.
+  - Report a problem and what its form is filled in with: packages/admin/src/report-problem.ts and
+    .github/ISSUE_TEMPLATE/indexer-broken.yml.
+  - Checked working, Beta, Broken and Retired: the lines in packages/admin/src/indexers.tsx (the
+    catalog's upkeep), from each definition's status in the signed catalog
+    (packages/catalog/src/stages.ts: Beta to stable, broken after two failing checks, retired by
+    hand) as packages/indexers/src/service.ts passes it on (checkOf).
 */}
 
 Written for highsea 0.1.0.
@@ -27,3 +33,29 @@ highsea watches each indexer and stops asking one that's having trouble, so a br
 One success makes an indexer healthy again at once. **Retry now**, shown while an indexer is backing off, ends the rest and puts it back in rotation.
 
 An indexer can also need your attention after a catalog update: "Needs a setting its new definition asks for", or "Its definition is gone from the catalog". highsea skips it until it's fixed; open **Edit** to fill in the new setting.
+
+## Checked working, Beta, Broken and Retired
+
+The people who keep highsea's catalog check each public indexer in it once a week, from a home connection, and every catalog update carries what they found. A line under each indexer on the **Catalog** tab, under its health on the **Installed** tab, and at the top of **Set up** and **Edit** says how it stood:
+
+- **Checked working on** a date: the last weekly check found it working.
+- **Last checked working on** a date: no check has found it working for more than 30 days.
+- **Not checked yet**: it's new to the catalog, or this version of its definition hasn't been checked yet.
+
+A badge by the name says more when there's more to say:
+
+- **Beta**: it's on the Beta channel only, on its way to Stable. It moves to Stable after a week on Beta with two passing checks.
+- **Broken**, with "Broken since" a date and a note: the weekly check failed twice in a row. highsea keeps searching it under the usual backoff, so it comes back on its own when the site does. The note says what's known, such as a fix being worked on.
+- **Retired**, with "Retired on" a date and a note: the site closed or stopped working for good, and its definition left the catalog, so it's no longer on the **Catalog** tab. An indexer you added before keeps its row on the **Installed** tab with the note, and highsea no longer searches it. Remove it when you like.
+
+![Three cards on the Catalog tab: BitSearch and Knaben say Not checked yet under their language, version and licence, and Internet Archive, marked Local, says nothing](/images/admin/indexers/catalog-checked.png)
+
+Nothing is shown for an indexer marked **Local**, for a private one (the weekly check has no account to sign in with), or when your server's catalog is from before these checks. The Broken line is the catalog's own finding; your indexer's health above it is your server's.
+
+## Report a problem
+
+If an indexer from highsea's catalog keeps failing, finds nothing, or finds releases that can't be grabbed, you can tell the people who keep the catalog. Open the indexer's **More** menu and choose **Report a problem**. Your browser opens a new issue on highsea's GitHub, with the form already filled in with the indexer's catalog name, its definition's version, the catalog's version and channel, and highsea's version.
+
+Nothing is sent until you read the form and submit it yourself, with your own GitHub account. highsea doesn't send anything on its own. The form doesn't include the name you gave the indexer, its settings or address, your server's address, or what you searched for. Add what happened in your own words, and leave out any key or passkey.
+
+Indexers from `/config/definitions` (marked **Local**) don't have **Report a problem**: their definitions aren't part of highsea's catalog.

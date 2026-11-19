@@ -1,0 +1,53 @@
+---
+title: Shows
+description: The shows highsea reads from your Shows folders, a show's page, refreshing its details from TMDB, its episodes' subtitles and the space it takes.
+---
+
+{/* SPDX-License-Identifier: AGPL-3.0-only */}
+{/*
+  Sources:
+  - In highsea: the admin's Shows (packages/admin/src/shows-library.tsx, show-detail.tsx,
+    shows-unmatched.tsx) and their strings (shows-messages.ts); the dashboard's Storage widget
+    (widgets.tsx) and System › Status (system.tsx).
+  - The behaviour: packages/media/src/shows/ (the import, the scan, matching files to episodes),
+    packages/subtitles/src/shows/ and src/movies/ (one subtitles service for films and episodes).
+  - The product spec docs/product/shows.md, for intent.
+*/}
+
+Written for highsea 0.4.8.
+
+**Shows** in the admin's sidebar lists the shows in your Shows folders. highsea reads them where they are: it matches each show folder to a show on TMDB, and each file to the episodes it holds by its name (`S01E01`, `S01E01-E02`, `1x01`, or `01 - Title` inside a `Season 01` folder). It doesn't rename, move or download episodes yet.
+
+To add a Shows folder and import what's in it, see [Root folders](/settings/media-management/root-folders/). After that, highsea scans the folder every 12 hours and when something in it changes.
+
+![The Shows library as a grid of posters](/images/admin/shows/library.png)
+
+<Cards>
+  <Card title="Unmatched" href="/shows/unmatched/" description="The show folders and episode files highsea couldn't place, and how to match or ignore each one." />
+</Cards>
+
+## A show's page
+
+Open a show to see its seasons, each with its episodes, its air date and its file. **Files** lists every file once, with the episodes it holds.
+
+![A show's page with its summary and its first season open](/images/admin/shows/show.png)
+
+### Refresh a show's details
+
+Open the More menu (**More actions**) and choose **Refresh metadata**. highsea asks TMDB for the show, its seasons and its episodes again, and says **Refreshing from TMDB**. New episodes and changed details show on the page when TMDB answers. A file kept as unmatched because TMDB didn't list its episode is tried again at the next scan.
+
+![A show's More menu, open, with Refresh metadata and Remove from library](/images/admin/shows/show-more.png)
+
+## Subtitles for episodes
+
+Episodes get subtitles the way films do, from the same providers and settings on [Subtitles](/subtitles/):
+
+- **Found in place:** subtitles inside the file, and subtitle files named after the episode's file, beside it or in the season folder's `Subs` folder. A season folder holds many episodes, so highsea uses only the ones named after that episode.
+- **Downloaded:** OpenSubtitles.com, Subdl and SubSource are asked for that show's episode by its season and number. A subtitle for another episode, or for a whole season, isn't used.
+- **Languages:** a show takes the subtitle languages of the root folder it's in, the folder's **Subtitle languages for movies added here** setting. A show that has none gets no subtitles.
+
+The players offer an episode's subtitles as they do a film's. The admin doesn't list an episode's subtitles yet, and the **Wanted** list on Subtitles shows films only.
+
+## The space shows take
+
+The dashboard's **Storage** widget lists your Shows folders beside your films', each with how many shows it holds. **System › Status** shows what uses each disk, with **Shows** counted on its own.

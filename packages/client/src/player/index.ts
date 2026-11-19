@@ -292,12 +292,18 @@ export const titleLines = (d: Titled | undefined) =>
 export const NEXT_CHOICES = 3
 
 /**
- * Next up (player.md › Next up): the next episode or a collection's next part, which counts down;
- * otherwise a few choices that play only when picked (prototype-gaps.md answer 4).
+ * Next up (player.md › Next up): the next episode, a collection's next part or a shuffle's next
+ * item, which counts down; otherwise a few choices that play only when picked (prototype-gaps.md
+ * answer 4).
  */
-export type UpNext<Item, Id = string | number, Still extends string | null = string | null> =
+export type UpNext<
+  Item,
+  Id = string | number,
+  Still extends string | null = string | null,
+  Kind extends 'episode' | 'part' | 'shuffle' | 'queue' = 'episode' | 'part' | 'shuffle' | 'queue',
+> =
   | {
-      kind: 'episode' | 'part'
+      kind: Kind
       id: Id
       title: string
       /** "S1, E2 · The Long Night", or the collection's name. */
@@ -316,7 +322,7 @@ export function filmUpNext<Item, Id, Still extends string | null>(
   part: { id: Id; title: string; still: Still } | null,
   collection: string | null,
   related: Item[],
-): UpNext<Item, Id, Still> | null {
+): UpNext<Item, Id, Still, 'part'> | null {
   if (part)
     return {
       kind: 'part',
@@ -327,6 +333,43 @@ export function filmUpNext<Item, Id, Still extends string | null>(
       season: null,
     }
   return related.length ? { kind: 'choices', items: related.slice(0, NEXT_CHOICES) } : null
+}
+
+/**
+ * A queue's Next up (player.md › Shuffle and Play in order): its next item, `shuffle` in a
+ * shuffle and `queue` in a collection's Play, which reads as plain Next up; an episode with its
+ * place as its line or a film, and nothing at the end, so the last item ends as any film does.
+ * It never falls back to the show's next episode or More like this.
+ */
+export function shuffleUpNext<
+  Id,
+  Still extends string | null,
+  K extends 'shuffle' | 'queue' = 'shuffle',
+>(
+  item: {
+    id: Id
+    title: string
+    still: Still
+    episode?: { code: string; title: string } | null
+  } | null,
+  kind: K = 'shuffle' as K,
+): {
+  kind: K
+  id: Id
+  title: string
+  line: string
+  still: Still
+  season: number | null
+} | null {
+  if (!item) return null
+  return {
+    kind,
+    id: item.id,
+    title: item.episode?.title ?? item.title,
+    line: item.episode?.code ?? '',
+    still: item.still,
+    season: null,
+  }
 }
 
 /** Whether Next up counts down to play by itself: choices wait to be picked. */

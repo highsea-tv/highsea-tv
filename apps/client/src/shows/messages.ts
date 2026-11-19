@@ -30,6 +30,9 @@ export const showMessages = defineMessages({
   markWatched: 'Mark as watched',
   markUnwatched: 'Mark as unwatched',
   fromStart: 'From the start',
+  // Shuffle (client-shows.md): the episodes in a random order, each from its start
+  shuffle: 'Shuffle',
+  shuffleEpisodes: 'Shuffle episodes',
   watched: 'Watched',
   // a show that isn't here (client-detail.md › Errors): the way out is Shows
   missingTitle: 'That show isn’t on this server.',

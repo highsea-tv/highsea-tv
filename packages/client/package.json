@@ -17,7 +17,8 @@
     "./prefs": "./src/prefs/index.ts",
     "./profiles": "./src/profiles/index.ts",
     "./servers": "./src/servers/index.ts",
-    "./shows": "./src/shows/index.ts"
+    "./shows": "./src/shows/index.ts",
+    "./shuffle": "./src/shuffle/index.ts"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json"

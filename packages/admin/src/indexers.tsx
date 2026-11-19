@@ -13,12 +13,22 @@
 //   empty and keeps the saved one unless something is typed;
 // - Edit also has the seeding rule (checkpoint 6a; checkpoint 5's answer 5): a ratio, a time and a
 //   minimum seed time for hit-and-run rules, in hours; an empty field uses Download client's;
-// - Local badges, a line for indexers that need attention, and a dash for stats with no queries.
+// - Local badges, a line for indexers that need attention, and a dash for stats with no queries;
+// - Report a problem in More (indexer-catalog-upkeep.md, the owner's answer 2) opens the
+//   repository's "An indexer isn't working" form, prefilled (report-problem.ts), for an indexer
+//   from highsea's own catalog;
+// - the catalog's upkeep (the plan's part C, prototyped in HT-95 and approved on 2026-11-19): when
+//   the catalog says when a definition was last checked working, and whether it's on Beta, broken
+//   or retired (`DefinitionCheck`, the signed bundle's status passed on by the server), the
+//   catalog's cards, the Installed table and the dialogs say so; when it says nothing (an older
+//   bundle, a Local or private definition), nothing is drawn. An installed indexer whose definition
+//   is retired keeps its row, with the Retired badge and line in place of "definition gone".
 // Since D2 (one-client-platform-d.md) it's drawn with the library's native renderer, on the web
 // through react-native-web, with the same parts, words and behaviour as the web renderer's.
 import type {
   CatalogIndexer,
   CatalogStatus,
+  DefinitionCheck,
   Indexer,
   IndexerTestResult,
   SettingField,
@@ -57,16 +67,17 @@ import {
   useTheme,
 } from '@highsea-tv/ui/native'
 import { type ReactNode, useState } from 'react'
-import { View } from 'react-native'
+import { Linking, View } from 'react-native'
 import { hoursText, minutesOf, ratioOf, ratioText } from './download-client-seeding.ts'
 import { indexers as messages } from './indexers-messages.ts'
 import { Loadable } from './loadable.tsx'
+import { reportable, reportProblemUrl } from './report-problem.ts'
 import { AdminPage } from './shell.tsx'
 import { RowMenu } from './table-parts.tsx'
 import { useTabAddress } from './tabs.ts'
 import { TagPicker } from './tag-picker.tsx'
 import { tagsMessages } from './tags-messages.ts'
-import { useRelative } from './time.ts'
+import { useNow, useRelative } from './time.ts'
 
 type Health = Indexer['health']
 type Privacy = CatalogIndexer['privacy']
@@ -144,6 +155,71 @@ function Failure({ children }: { children: string }) {
         {children}
       </Text>
     </View>
+  )
+}
+
+// ---------------------------------------------------------------- the catalog's upkeep
+
+const DAY = 86_400_000
+/** Older than this, a check reads "Last checked working on …", nothing stronger (the plan's C). */
+const STALE_DAYS = 30
+
+type Upkeep = {
+  /** "Checked working on 18 Nov 2026.", "Last checked …" or "Not checked yet." */
+  line: string
+  /** "Broken since … {note}" or "Retired on … {note}"; null while working. */
+  problem: string | null
+  badges: { tone: BadgeTone; label: string }[]
+}
+
+/** What A9 says about a definition's upkeep, from the catalog's `check`. */
+function useUpkeep(): (check: DefinitionCheck | undefined) => Upkeep | null {
+  const t = useT(messages)
+  const locale = useLocale()
+  const now = useNow(60_000)
+  // a day is a calendar day: read and written in UTC so it never moves a day
+  const day = (iso: string) =>
+    new Intl.DateTimeFormat(locale, {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      timeZone: 'UTC',
+    }).format(new Date(`${iso}T00:00:00Z`))
+  return (c) => {
+    if (!c) return null
+    const line =
+      c.verified === null
+        ? t('check.never')
+        : now - Date.parse(`${c.verified}T00:00:00Z`) > STALE_DAYS * DAY
+          ? t('check.stale', { date: day(c.verified) })
+          : t('check.verified', { date: day(c.verified) })
+    const note = c.note ?? ''
+    const since = c.since ? day(c.since) : null
+    const problem =
+      c.status === 'broken'
+        ? since
+          ? t('check.brokenSince', { date: since, note }).trim()
+          : `${t('check.broken')}. ${note}`.trim()
+        : c.status === 'retired'
+          ? since
+            ? t('check.retiredOn', { date: since, note }).trim()
+            : `${t('check.retired')}. ${note}`.trim()
+          : null
+    const badges: Upkeep['badges'] = []
+    if (c.status === 'broken') badges.push({ tone: 'warning', label: t('check.broken') })
+    if (c.status === 'retired') badges.push({ tone: 'neutral', label: t('check.retired') })
+    if (c.stage === 'beta') badges.push({ tone: 'info', label: t('check.beta') })
+    return { line, problem, badges }
+  }
+}
+
+/** The upkeep's lines: the check in `text-3`, a problem in `warning`. */
+function UpkeepNotes({ upkeep, lead }: { upkeep: Upkeep; lead?: string }) {
+  return (
+    <>
+      <Note>{lead ? `${lead} ${upkeep.line}` : upkeep.line}</Note>
+      {upkeep.problem && <Note color="warning">{upkeep.problem}</Note>}
+    </>
   )
 }
 
@@ -345,6 +421,9 @@ function Installed({ onBrowse }: { onBrowse: () => void }) {
   const { relative } = useRelative()
   const list = useQuery('indexers', (c) => c.indexers.list(), LIVE)
   const catalog = useQuery('catalog:indexers', (c) => c.catalog.indexers(), ['catalog.updated'])
+  const status = useQuery('catalog:status', (c) => c.catalog.status(), ['catalog.updated'])
+  const server = useQuery('server', (c) => c.system.server(), ['server.updated'])
+  const upkeepOf = useUpkeep()
   const toggle = useAction((c, id: string, enabled: boolean) =>
     c.indexers.update({ params: { id }, body: { enabled } }),
   )
@@ -402,11 +481,30 @@ function Installed({ onBrowse }: { onBrowse: () => void }) {
                       privacy: ix.privacy ? t(`privacy.${ix.privacy}`) : '',
                       priority: ix.priority,
                     })
+                    const def = catalog.data?.find((d) => d.id === ix.definitionId)
+                    // the indexer's own, so a retired definition, gone from the catalog, still says why
+                    const upkeep = upkeepOf(ix.check)
+                    const retired = ix.check?.status === 'retired'
+                    const badges = [
+                      ...(ix.local ? [{ tone: 'info' as const, label: t('local') }] : []),
+                      ...(upkeep?.badges ?? []),
+                    ]
+                    const report =
+                      def && reportable(ix, def)
+                        ? reportProblemUrl({
+                            definitionId: def.id,
+                            definitionName: def.name,
+                            definitionVersion: ix.definitionVersion,
+                            catalogVersion: status.data?.version ?? null,
+                            channel: status.data?.channel ?? null,
+                            highseaVersion: server.data?.version ?? null,
+                          })
+                        : null
                     return (
                       <TableRow key={ix.id}>
                         <TableCell tall truncate>
-                          {ix.local ? (
-                            <LocalTitle name={ix.name} detail={detail} />
+                          {badges.length > 0 ? (
+                            <BadgedTitle name={ix.name} detail={detail} badges={badges} />
                           ) : (
                             <TitleCell title={ix.name} detail={detail} />
                           )}
@@ -422,11 +520,12 @@ function Installed({ onBrowse }: { onBrowse: () => void }) {
                                   : ''}
                               </Note>
                             )}
-                            {ix.needsAttention && (
+                            {ix.needsAttention && !retired && (
                               <Note color="warning">
                                 {ix.missing ? t('definitionGone') : t('needsSetting')}
                               </Note>
                             )}
+                            {upkeep && <UpkeepNotes upkeep={upkeep} />}
                           </View>
                         </TableCell>
                         <TableCell numeric>{ix.stats.queries24h}</TableCell>
@@ -476,6 +575,15 @@ function Installed({ onBrowse }: { onBrowse: () => void }) {
                               items={[
                                 { label: t('edit'), icon: 'edit', onSelect: () => setEditing(ix) },
                                 { label: t('test'), icon: 'network', onSelect: () => runTest(ix) },
+                                ...(report
+                                  ? [
+                                      {
+                                        label: t('reportProblem'),
+                                        icon: 'external' as const,
+                                        onSelect: () => void Linking.openURL(report),
+                                      },
+                                    ]
+                                  : []),
                                 {
                                   label: t('remove'),
                                   icon: 'delete',
@@ -515,16 +623,28 @@ function Installed({ onBrowse }: { onBrowse: () => void }) {
   )
 }
 
-/** A title cell with the Local badge after the name, laid out as TitleCell lays out its text. */
-function LocalTitle({ name, detail }: { name: string; detail: string }) {
-  const t = useT(messages)
+/** A title cell with badges after the name (Local; Beta, Broken, Retired), laid out as TitleCell
+ * lays out its text. */
+function BadgedTitle({
+  name,
+  detail,
+  badges,
+}: {
+  name: string
+  detail: string
+  badges: { tone: BadgeTone; label: string }[]
+}) {
   return (
     <View style={{ flex: 1, minWidth: 0 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: sp['2'], minWidth: 0 }}>
         <Text numberOfLines={1} style={{ flexShrink: 1 }}>
           {name}
         </Text>
-        <Badge tone="info">{t('local')}</Badge>
+        {badges.map((b) => (
+          <Badge key={b.label} tone={b.tone}>
+            {b.label}
+          </Badge>
+        ))}
       </View>
       <Text variant="caption" mono color="text-3" numberOfLines={1}>
         {detail}
@@ -588,6 +708,8 @@ function Catalog() {
         const q = text.trim().toLowerCase()
         const shown = defs.filter(
           (d) =>
+            // a retired definition leaves the catalog's list (the plan's part C)
+            d.check?.status !== 'retired' &&
             (privacy === 'all' || d.privacy === privacy) &&
             (language === 'all' || d.language === language) &&
             (!q || d.name.toLowerCase().includes(q) || d.description.toLowerCase().includes(q)),
@@ -687,6 +809,7 @@ function CatalogCard({
   const t = useT(messages)
   const theme = useTheme()
   const languageName = useLanguageName()
+  const upkeep = useUpkeep()(d.check)
   const figure = tokens.adminText.figure
   return (
     <View
@@ -714,6 +837,11 @@ function CatalogCard({
           </Text>
           <Badge tone={privacyTone[d.privacy]}>{t(`privacy.${d.privacy}`)}</Badge>
           {d.local && <Badge tone="info">{t('local')}</Badge>}
+          {upkeep?.badges.map((b) => (
+            <Badge key={b.label} tone={b.tone}>
+              {b.label}
+            </Badge>
+          ))}
         </View>
         <Note color="text-2">{d.description}</Note>
         <Text size={figure.size} leading={figure.leading} mono color="text-3">
@@ -723,6 +851,7 @@ function CatalogCard({
             license: d.license,
           })}
         </Text>
+        {upkeep && <UpkeepNotes upkeep={upkeep} />}
       </View>
       {d.installed > 0 ? (
         <Badge tone="neutral">{t('catalog.installed')}</Badge>
@@ -821,6 +950,7 @@ function SettingsForm({
   const tt = useT(tagsMessages)
   const regular = useRegularWindow()
   const fields = d?.settings ?? []
+  const upkeep = useUpkeep()(d?.check)
   const [initial] = useState(() => initialValues(fields, indexer))
   const [values, setValues] = useState<Record<string, Value>>(initial)
   const [name, setName] = useState(indexer?.name ?? '')
@@ -914,6 +1044,20 @@ function SettingsForm({
       }
     >
       <View style={{ gap: sp['4'] }}>
+        {d && upkeep && (
+          <View style={{ alignItems: 'flex-start', gap: sp['1'] }}>
+            {upkeep.badges.length > 0 && (
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: sp['2'] }}>
+                {upkeep.badges.map((b) => (
+                  <Badge key={b.label} tone={b.tone}>
+                    {b.label}
+                  </Badge>
+                ))}
+              </View>
+            )}
+            <UpkeepNotes upkeep={upkeep} lead={t('check.definition', { version: d.version })} />
+          </View>
+        )}
         {mode === 'edit' && (
           <>
             <Field

@@ -22,7 +22,7 @@ import { AppError, newId } from '@highsea-tv/core'
 import { schema } from '@highsea-tv/db'
 import type { UnmatchedKind } from '@highsea-tv/db/schema'
 import { parse, parseEpisode, parseSeasonFolder } from '@highsea-tv/parser'
-import { and, asc, eq, inArray } from 'drizzle-orm'
+import { and, asc, eq, inArray, isNull } from 'drizzle-orm'
 import type { StoredFileInfo } from '../movies/import.ts'
 import { createProbe } from '../shared/ffprobe.ts'
 import { writeFileFacts } from '../shared/file-facts.ts'
@@ -64,6 +64,15 @@ export type EpisodeMatch =
 const code = (season: number, episode: number) =>
   `S${String(season).padStart(2, '0')}E${String(episode).padStart(2, '0')}`
 
+/** `01 - Title.mkv` or `01. Title.mkv` in a season's folder: one to three digits, then the title. */
+const BARE = /^(\d{1,3})(?:\s*[-.]\s+|\s+-\s+)\S/u
+
+function bareEpisode(name: string, season: number) {
+  const m = BARE.exec(name)
+  const episode = m ? Number(m[1]) : 0
+  return episode > 0 ? { season, episodes: [episode], fullSeason: false } : null
+}
+
 /**
  * Which of a show's episodes a file holds by its name (pure, for the tests and the admin's later
  * preview). `seasons` maps each season number TMDB lists to its episode numbers. A season folder
@@ -75,12 +84,14 @@ export function episodeMatch(
   showFolder: string,
   seasons: ReadonlyMap<number, ReadonlySet<number>>,
 ): EpisodeMatch {
-  const parsed = parseEpisode(basename(path))
+  const folders = relative(showFolder, dirname(path)).split(sep).filter(Boolean)
+  const folderSeason = folders.length ? parseSeasonFolder(folders[folders.length - 1] ?? '') : null
+  // In a season's folder, a name that starts with the episode's number alone (`01 - Cooking the
+  // Books.mkv`, a DVD rip's way, found on the owner's NAS) is that episode of the folder's season
+  const parsed =
+    parseEpisode(basename(path)) ??
+    (folderSeason !== null ? bareEpisode(basename(path), folderSeason) : null)
   if (!parsed || parsed.fullSeason || parsed.episodes.length === 0) {
-    const folders = relative(showFolder, dirname(path)).split(sep).filter(Boolean)
-    const folderSeason = folders.length
-      ? parseSeasonFolder(folders[folders.length - 1] ?? '')
-      : null
     return {
       ok: false,
       reason: 'no-episode-number',
@@ -180,6 +191,16 @@ export function createShowFiles(ctx: ShowsDeps, deps: { media: Media }) {
       return (rootFolder ? q.where(eq(unmatchedFiles.rootFolder, rootFolder)) : q)
         .orderBy(asc(unmatchedFiles.path))
         .all()
+    },
+    /** The owner set it aside: it stays known (the scan won't offer it again) but leaves the list. */
+    dismiss(path: string): void {
+      db.update(unmatchedFiles)
+        .set({ dismissedAt: clock.now() })
+        .where(and(eq(unmatchedFiles.path, path), isNull(unmatchedFiles.dismissedAt)))
+        .run()
+    },
+    find(path: string) {
+      return db.select().from(unmatchedFiles).where(eq(unmatchedFiles.path, path)).get() ?? null
     },
     has(path: string) {
       return !!db

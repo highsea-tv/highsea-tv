@@ -807,6 +807,9 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
   subtitles.seed()
   subtitles.defineJobs()
   subtitles.schedule()
+  // 0026 gave the shows imported before it their root folder's subtitle profile (HT-92): their
+  // episodes' wanted rows are written once, at the jobs' pace
+  if (applied.includes('0026_unmatched_dismissed')) subtitles.profileChanged()
   const stopSubtitles = subtitles.start()
   // Node's official builds carry full ICU, which decoding subtitles' legacy encodings needs
   // (https://nodejs.org/api/intl.html)
@@ -869,7 +872,8 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
   )
   movies.jobs.schedule(clock.now())
   // shows: added from TMDB, the ones on disk imported in place and scanned, served to the admin
-  // and the apps (Phase 5 B); their sidecar subtitles are part B's fourth task
+  // and the apps (Phase 5 B); an episode's subtitles are a film's: its sidecars kept, its file
+  // hashed and what its show's profile wants searched, then the previews, as a film's import does
   const shows = createShows(
     {
       db,
@@ -878,10 +882,17 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
       events,
       logger,
       metadata,
-      subtitles: { forFile: subtitles.clientTracks },
+      subtitles: { forFile: subtitles.clientTracks, profileChanged: subtitles.profileChanged },
       files: {
         probe: options.importing?.probe,
         sampleSeconds: options.importing?.sampleSeconds,
+        hooks: options.importing?.hooks ?? {
+          afterImport: async (file) => {
+            await trickplay.afterImport()
+            await ahead.afterImport()
+            await subtitles.hooks.afterImport?.(file)
+          },
+        },
       },
     },
     media,
@@ -1625,7 +1636,7 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
       }
     },
     status() {
-      const movies = new Map(
+      const filed = new Map(
         database.raw
           .all(
             `SELECT i.root_folder AS root, coalesce(sum(f.size), 0) AS n FROM media_files f
@@ -1645,10 +1656,11 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
         addresses: { local: localAddresses(config.port), public: network.externalUrl() },
         ...resources.now(),
         disks: disks([
+          // a root folder's files are its kind's: films', episodes' or tracks'
           ...media.rootFolders.list().map((f) => ({
             label: f.kind === 'movies' ? 'Movies' : f.kind === 'shows' ? 'Shows' : 'Music',
             path: f.path,
-            movies: movies.get(f.path) ?? 0,
+            [f.kind]: filed.get(f.path) ?? 0,
           })),
           { label: 'Downloads', path: folders().downloads, downloads: downloaded },
           { label: 'Media', path: config.dataDir },

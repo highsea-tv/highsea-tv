@@ -13,6 +13,13 @@ import type { BadgeTone, ProgressBarTone } from '@highsea-tv/ui/native'
 /** A show's page: `/shows/{id}`, Files at `/shows/{id}/files`. */
 export const showPath = (id: string) => `/shows/${id}`
 
+/** What the Shows pages follow: the library's changes. */
+export const SHOWS_TOPICS = ['shows.updated']
+
+/** The library's sections: the shows at `/shows`, Unmatched at `/shows/unmatched` (Phase 5 B). */
+export const SHOWS_SECTIONS = ['shows', 'unmatched'] as const
+export type ShowsSection = (typeof SHOWS_SECTIONS)[number]
+
 /** The tabs, each at its own address (`/shows/{id}/{tab}`, Seasons at `/shows/{id}`). */
 export const SHOW_TABS = ['seasons', 'files'] as const
 export type ShowTab = (typeof SHOW_TABS)[number]

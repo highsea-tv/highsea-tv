@@ -12,6 +12,7 @@ import {
   errors,
   IdParam,
   IsoDate,
+  IsoDay,
   json,
   noContent,
   TmdbIdParam,
@@ -25,6 +26,10 @@ export const INDEXER_KINDS = ['torznab', 'newznab', 'json', 'html', 'rss'] as co
 export const INDEXER_PROTOCOLS = ['torrent', 'usenet'] as const
 export const INDEXER_HEALTH = ['healthy', 'backoff', 'failing', 'disabled'] as const
 export const CATALOG_CHANNELS = ['stable', 'beta'] as const
+/** A definition's status in the catalog (indexer-catalog-upkeep.md, part C; ADR 0069). */
+export const DEFINITION_STATUSES = ['working', 'broken', 'retired'] as const
+/** What a live check of a definition found (@highsea-tv/catalog's `CHECK_RESULTS`). */
+export const DEFINITION_CHECK_RESULTS = ['working', 'failing', 'challenge', 'skipped'] as const
 /** @highsea-tv/quality's `INDEXER_FLAGS`. */
 export const RELEASE_FLAGS = [
   'freeleech',
@@ -61,6 +66,31 @@ export const SettingField = z
   })
   .openapi('IndexerSettingField')
 
+/**
+ * What the catalog says about a definition's upkeep (indexer-catalog-upkeep.md, part C; ADR 0069),
+ * field for field the signed bundle's per-definition `status` (`definitionStatusSchema` in
+ * @highsea-tv/catalog, less its `name`): its stage, its status with since when and a note for
+ * owners, and the last live check of this version from a home connection, its result and the last
+ * day it passed. The server leaves it out when the catalog says nothing: a bundle built before
+ * stages, a Local definition, a private one (the weekly check skips them) or one it never listed.
+ */
+export const DefinitionCheck = z
+  .object({
+    /** `beta` while it ships from `beta/`, on its way to stable (on Beta only). */
+    stage: z.enum(CATALOG_CHANNELS),
+    status: z.enum(DEFINITION_STATUSES),
+    /** The day it was marked broken or retired; null while working. */
+    since: IsoDay.nullable(),
+    /** Why, for owners ("The site changed how it answers searches. A fix is being worked on."). */
+    note: z.string().nullable(),
+    /** The day of the last live check of this version, and what it found; null before the first. */
+    checked: IsoDay.nullable(),
+    result: z.enum(DEFINITION_CHECK_RESULTS).nullable(),
+    /** The last day it was checked working; null when it never has been. */
+    verified: IsoDay.nullable(),
+  })
+  .openapi('DefinitionCheck')
+
 export const CatalogIndexer = z
   .object({
     id: z.string(),
@@ -90,6 +120,8 @@ export const CatalogIndexer = z
     origin: z.string(),
     /** How many installed indexers use it. */
     installed: z.number().int(),
+    /** What the catalog says of its upkeep; absent when it says nothing (`DefinitionCheck`). */
+    check: DefinitionCheck.optional(),
   })
   .openapi('CatalogIndexer')
 
@@ -159,6 +191,11 @@ export const Indexer = z
      */
     tags: z.array(z.string()),
     addedAt: IsoDate,
+    /**
+     * What its catalog says of the definition's upkeep, a retired one's included (its row stays,
+     * with the Retired line); absent when it says nothing (`DefinitionCheck`).
+     */
+    check: DefinitionCheck.optional(),
   })
   .openapi('Indexer')
 
@@ -491,6 +528,7 @@ export const releaseRoutes = {
 }
 
 export type CatalogIndexer = z.infer<typeof CatalogIndexer>
+export type DefinitionCheck = z.infer<typeof DefinitionCheck>
 export type Indexer = z.infer<typeof Indexer>
 export type IndexerStats = z.infer<typeof IndexerStats>
 export type IndexerTestResult = z.infer<typeof IndexerTestResult>
