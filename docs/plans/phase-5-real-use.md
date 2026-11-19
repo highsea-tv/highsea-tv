@@ -210,6 +210,13 @@ The order is films, then shows, then music: films are already built and only nee
   - **Review page:** `#/admin/widgets-next` keeps "every widget at one size" only, with the drafts' file and strings removed.
   - **Guides:** the Dashboard guide's widget table, a Weather section with what is sent and when, and a widget's settings in Arrange your dashboard.
 
+- **2026-11-18, collection pages and Home's hero get the title hero, with logos (HT-65):** by the owner's approval to change the locked layouts.
+  - **Collection pages** draw a film's page's hero (`detail/hero.tsx`) on every app: full bleed, the bar clear until the page scrolls, taller, the collection's own art, the words placed as a film's page places them.
+  - **Home's hero** does the same when the featured section is Home's first section (`leadHeroOf`); otherwise Home is as it was. Touch swipes through the section's titles at 4:5 under the status bar; a pointer pages with the Pager; the TV's Play takes the focus, and Back returns to it.
+  - **Title logos** where a title is the headline over its art: Home's hero, the featured card and carousel, a film row's open card, a film's, show's and collection's page (`TitleLogo` in `@highsea-tv/ui`; `art.logo` in the contract, the mock's films have them). The name stays as the fallback and the logo's label. Real servers show names until HT-66 serves the art.
+  - **Layout** (Settings › Appearance, web and desktop): Full width (the default) or Contained, per device.
+  - The specs: client-home.md, collections.md, client-search.md, client-settings.md; the design language's mobile, TV, desktop-web and spacing-layout pages.
+
 ## Running highsea on the NAS (A1)
 
 - **Where:** the DS1520+ (Intel Celeron J4125, VAAPI checked in 4.3b), through the Synology package from Package Center with `packages.highsea.tv` as its source, the way an owner installs it (install-simplicity.md's part D). This Mac stays the development machine; [answer 2](#the-owners-answers) has the alternatives.

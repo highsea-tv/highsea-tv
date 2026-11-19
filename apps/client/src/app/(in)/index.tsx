@@ -20,9 +20,9 @@
 // destination (../../shell/announcements.tsx), as is what was said after a change (kit's useSay).
 // Rows with nothing in them aren't drawn (rowsOf). While Home loads, each draws it as it will be
 // (../../home/skeleton.tsx).
-import { isFilmRow, type HomeRow as Section } from '@highsea-tv/api-contract'
+import { type HomeItem, isFilmRow, type HomeRow as Section } from '@highsea-tv/api-contract'
 import { useServedHomeRows } from '@highsea-tv/client/data'
-import { heroOf, rowsOf } from '@highsea-tv/client/films'
+import { heroOf, leadHeroOf, rowsOf } from '@highsea-tv/client/films'
 import { shellMessages } from '@highsea-tv/client/gate'
 import { useT } from '@highsea-tv/i18n/react'
 import {
@@ -47,8 +47,10 @@ import {
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useLeaveOnBack } from '../../back.tsx'
+import { usePointerHero } from '../../detail/hero.tsx'
 import { useFilmsText } from '../../films.ts'
 import { bloomColor, HomeCarousel, HomeFeatured } from '../../home/featured.tsx'
+import { PointerHomeHero, TouchHomeHero } from '../../home/hero.tsx'
 import { homeMessages } from '../../home/messages.ts'
 import { HomeRow, POINTER_APART } from '../../home/rows.tsx'
 import { HomeSkeleton } from '../../home/skeleton.tsx'
@@ -130,8 +132,22 @@ function TouchHome() {
     })
   }
   const sections = home.status === 'success' ? home.data : []
-  // the sections in the server's order, a featured one among the rows wherever it put it
+  // the sections in the server's order, a featured one among the rows wherever it put it; one
+  // that leads Home is its hero, full bleed under the status bar, with the header over its art
   const drawn = sections.filter((s) => s.items.length > 0)
+  const led = leadHeroOf(drawn)
+  const lead = led && isFilmRow(led) ? led : undefined
+  const header =
+    a.cards.length > 0 && !lead ? (
+      <View style={{ gap: space['6'] }}>
+        <TouchHeader />
+        <View style={{ paddingHorizontal: gutter }}>
+          <AnnouncementCard />
+        </View>
+      </View>
+    ) : (
+      <TouchHeader />
+    )
   return (
     <View style={{ flex: 1 }}>
       <ScrollView
@@ -143,27 +159,31 @@ function TouchHome() {
           />
         }
         contentContainerStyle={{
-          // the prototype's pt-1 under the status bar
-          paddingTop: insets.top + space['1'],
+          // the prototype's pt-1 under the status bar, or none under a hero that runs under it
+          paddingTop: lead ? 0 : insets.top + space['1'],
           paddingBottom: space['8'],
           gap: tokens.mobile.rowGap,
         }}
       >
-        {a.cards.length > 0 ? (
-          <View style={{ gap: space['6'] }}>
-            <TouchHeader />
-            <View style={{ paddingHorizontal: gutter }}>
-              <AnnouncementCard />
-            </View>
-          </View>
+        {lead ? (
+          <TouchHomeHero
+            title={films.rowTitle(lead) || f('featured')}
+            items={lead.items}
+            header={header}
+          />
         ) : (
-          <TouchHeader />
+          header
         )}
+        {lead && a.cards.length > 0 ? (
+          <View style={{ paddingHorizontal: gutter }}>
+            <AnnouncementCard />
+          </View>
+        ) : null}
         {home.status === 'loading' ? (
           <HomeSkeleton />
         ) : drawn.length > 0 ? (
           drawn.map((s) =>
-            s.layout === 'hero' ? (
+            s === led ? null : s.layout === 'hero' ? (
               <HomeCarousel key={s.id} items={s.items} label={films.rowTitle(s) || f('featured')} />
             ) : (
               <HomeRow key={s.id} section={s} />
@@ -212,6 +232,52 @@ function PointerHome() {
 }
 
 function PointerSections({ sections }: { sections: Section[] }) {
+  const films = useFilmsText()
+  const f = useT(homeMessages)
+  const lead = leadHeroOf(sections)
+  return lead && isFilmRow(lead) ? (
+    <PointerLed
+      title={films.rowTitle(lead) || f('featured')}
+      items={lead.items}
+      sections={sections}
+    />
+  ) : (
+    <PointerCard sections={sections} />
+  )
+}
+
+/** Home led by its hero: the hero full bleed under the clear bar, then the rows. */
+function PointerLed({
+  title,
+  items,
+  sections,
+}: {
+  title: string
+  items: HomeItem[]
+  sections: Section[]
+}) {
+  const measure = usePageMeasure()
+  const theme = useTheme()
+  const { hero, chrome } = usePointerHero()
+  return (
+    <ScrollView
+      onScroll={chrome.onScroll}
+      scrollEventThrottle={chrome.scrollEventThrottle}
+      style={{ flex: 1, backgroundColor: theme.colors.bg }}
+      contentContainerStyle={{ paddingBottom: space['16'], gap: POINTER_APART }}
+    >
+      <PointerHomeHero title={title} items={items} hero={hero} />
+      <View style={{ width: '100%', maxWidth: measure, alignSelf: 'center', gap: POINTER_APART }}>
+        {rowsOf(sections).map((s) => (
+          <HomeRow key={s.id} section={s} />
+        ))}
+      </View>
+    </ScrollView>
+  )
+}
+
+/** Home with its hero further down, or none: the featured card on top, as it was. */
+function PointerCard({ sections }: { sections: Section[] }) {
   const measure = usePageMeasure()
   const hero = heroOf(sections.filter(isFilmRow))
   // the top bar lies over the page, clear until the page scrolls under it, as the prototype's

@@ -41,6 +41,7 @@ import {
   ScrollView,
   Tabs,
   Text,
+  TitleLogo,
   tokens,
   useControl,
   useFormFactor,
@@ -440,10 +441,8 @@ function TouchShow(props: ShowProps) {
       <OverlayBack />
       <ScrollView contentContainerStyle={{ paddingBottom: space['6'], gap: space['5'] }}>
         <TouchHero source={media(s.art.backdrop)}>
-          {/* the title, where the prototype has its logo: no server has logos yet */}
-          <Text variant="largeTitle" accessibilityRole="header">
-            {s.title}
-          </Text>
+          {/* the title's logo, its name when there's none */}
+          <TitleLogo title={s.title} logo={media(s.art.logo)} variant="largeTitle" />
           <MetaLine
             lead={p.lead}
             certification={s.certification}
@@ -531,10 +530,8 @@ function PointerShow(props: ShowProps) {
     >
       <PointerHero source={media(s.art.backdrop)} hero={hero}>
         <View style={{ maxWidth: space['16'] * 10, gap: space['3'] }}>
-          {/* the title, where the prototype has its logo: no server has logos yet */}
-          <Text variant="display" accessibilityRole="header">
-            {s.title}
-          </Text>
+          {/* the title's logo, its name when there's none */}
+          <TitleLogo title={s.title} logo={media(s.art.logo)} variant="display" />
           <MetaLine
             lead={p.lead}
             certification={s.certification}
@@ -634,10 +631,13 @@ function TvShow(props: ShowProps) {
       >
         <Kept rest>
           <TvHero source={media(s.art.backdrop)}>
-            {/* the title, where the prototype has its logo: no server has logos yet */}
-            <Text variant="heroTitle" numberOfLines={2} accessibilityRole="header">
-              {s.title}
-            </Text>
+            {/* the title's logo, its name when there's none */}
+            <TitleLogo
+              title={s.title}
+              logo={media(s.art.logo)}
+              variant="heroTitle"
+              numberOfLines={2}
+            />
             <MetaLine
               lead={p.lead}
               certification={s.certification}

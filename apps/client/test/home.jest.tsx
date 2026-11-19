@@ -172,7 +172,9 @@ describe('Home on the phone', () => {
     expect(screen.getByRole('button', { name: 'Harbor, switch server' })).toBeTruthy()
     expect(screen.getByRole('link', { name: /, settings$/ })).toBeTruthy()
     expect(screen.getByText('Movie night is Friday')).toBeTruthy()
-    expect(screen.getAllByRole('link', { name: 'Sintel' }).length).toBeGreaterThan(0)
+    // the featured section leads Home: its first title's logo, read as its name, and its actions
+    expect(screen.getAllByRole('header', { name: 'Sintel' }).length).toBeGreaterThan(0)
+    expect(screen.getAllByRole('button', { name: 'More info' }).length).toBeGreaterThan(0)
     expect(screen.getByText('Continue watching')).toBeTruthy()
     expect(screen.getAllByText('Recently added').length).toBeGreaterThan(0)
   })
@@ -287,7 +289,7 @@ describe('Home with a pointer', () => {
   test('⋯ on a Continue watching card opens its menu, and Remove takes it off the row', async () => {
     pointer()
     await home()
-    expect(screen.getByLabelText('Featured')).toBeTruthy()
+    expect(screen.getByLabelText('Featured on Harbor')).toBeTruthy()
     const more = screen.getAllByRole('button', { name: /^More for / })[0]
     const label = String(more?.props.accessibilityLabel)
     const title = label.replace(/^More for /, '')
@@ -316,13 +318,19 @@ describe('Home with a pointer', () => {
     expect(screen.queryByText('Continue watching')).toBeNull()
   })
 
-  test('the featured card pages through its titles', async () => {
+  test('the featured hero pages through its titles', async () => {
     pointer()
     await home()
-    expect(screen.getByRole('header', { name: 'Sintel' })).toBeTruthy()
-    await fireEvent.press(screen.getByRole('button', { name: 'Next featured title' }))
+    // the hero leads Home; Sintel's name is its logo's label there and on Staff picks' open card
+    const hero = screen.getByLabelText('Featured on Harbor')
+    expect(within(hero).getByRole('header', { name: 'Sintel' })).toBeTruthy()
+    await fireEvent.press(within(hero).getByRole('button', { name: 'Next featured title' }))
     await flush()
-    expect(screen.getByRole('header', { name: 'Spring' })).toBeTruthy()
+    expect(
+      within(screen.getByLabelText('Featured on Harbor')).getByRole('header', {
+        name: 'Spring',
+      }),
+    ).toBeTruthy()
   })
 })
 

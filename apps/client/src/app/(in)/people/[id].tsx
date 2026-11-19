@@ -345,7 +345,11 @@ function TvPerson({ p }: { p: ClientPerson }) {
         ref={i === 0 && !long ? downRef : undefined}
         title={facts.departmentTitle(department)}
         items={credits.map((c) => c.item)}
-        art={(x) => ({ poster: media(x.art.poster), backdrop: media(x.art.backdrop) })}
+        art={(x) => ({
+          poster: media(x.art.poster),
+          backdrop: media(x.art.backdrop),
+          logo: media(x.art.logo),
+        })}
         meta={films.leadOf}
         noteOf={(x) => roles.get(x.id) ?? ''}
         onOpen={(x) => router.push(filmPath(x.id))}

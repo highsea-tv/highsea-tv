@@ -94,7 +94,11 @@ const back = async () => {
 }
 
 /** The featured card, a link named for its title and line. */
-const featured = () => screen.getAllByRole('link', { name: /^Sintel, 2010 · / })[0] as never
+/** The hero's Play, where focus starts on Home and where Back returns, when the hero leads Home. */
+const heroPlay = () =>
+  screen
+    .getAllByRole('button', { name: /^(Play|Resume)$/ })
+    .find((n) => n.props.hasTVPreferredFocus) as never
 
 /** Continue watching's cards: the wide stills, "Metropolis, 1h 32m left". */
 const continuing = () =>
@@ -114,12 +118,13 @@ const styleOf = (n: { props: { style?: unknown } } | null | undefined) =>
   (StyleSheet.flatten(n?.props.style as never) ?? {}) as Record<string, unknown>
 
 /** The nearest ancestor of this node whose style has `key`. */
-const ancestorWith = (n: unknown, key: string) => {
+const ancestorWith = (n: unknown, key: string, value?: unknown) => {
   let at = (n as { parent?: unknown } | null)?.parent as {
     props: { style?: unknown }
     parent?: unknown
   } | null
-  while (at && styleOf(at)[key] === undefined) at = at.parent as typeof at
+  while (at && (value === undefined ? styleOf(at)[key] === undefined : styleOf(at)[key] !== value))
+    at = at.parent as typeof at
   return at
 }
 
@@ -132,19 +137,19 @@ describe('Home on the TV', () => {
     await fireEvent.press(screen.getByRole('button', { name: 'Got it' }))
     await flush()
     expect(sent('/announcements/an-new-address/seen')).toHaveLength(1)
-    expect(featured()).toBeTruthy()
+    expect(heroPlay()).toBeTruthy()
     expect(screen.getByText('Continue watching')).toBeTruthy()
   })
 
-  test('Back brings focus to the featured card, and from there leaves highsea', async () => {
+  test('Back brings focus to the hero’s Play, and from there leaves highsea', async () => {
     const r = await home()
     // focus on a row: Back is taken, and focus goes back to the featured card
     await fireEvent(continuing()[0] as never, 'focus')
     await flush()
     expect(await back()).toBe(true)
     expect(r.getPathname()).toBe('/')
-    // on the featured card: Back isn't taken, so the platform leaves highsea
-    await fireEvent(featured(), 'focus')
+    // on the hero's Play: Back isn't taken, so the platform leaves highsea
+    await fireEvent(heroPlay(), 'focus')
     await flush()
     expect(await back()).toBe(false)
   })
@@ -200,16 +205,18 @@ describe('Home on the TV', () => {
 })
 
 describe('Home on the TV, as drawn', () => {
-  test('Continue watching’s cards are 22 units wide, the rows 1.6 apart and clear of the head', async () => {
+  test('Continue watching’s cards are 22 units wide, the rows 1.6 apart under the hero', async () => {
     await home()
     const u = unit()
     expect(HOME.tvContinueWidth).toBe(22)
     expect(TV_ROW_GAP).toBe(1.6)
     expect(styleOf(continuing()[0] as never).width).toBe(HOME.tvContinueWidth * u)
-    const page = ancestorWith(featured(), 'gap')
-    expect(styleOf(page).gap).toBe(TV_ROW_GAP * u)
-    // the head lies over the page, which keeps clear of it
-    expect(styleOf(page).paddingTop).toBe((TV_HEAD_HEIGHT + TV_ROW_GAP) * u)
+    expect(heroPlay()).toBeTruthy()
+    const rows = ancestorWith(continuing()[0] as never, 'gap', TV_ROW_GAP * u)
+    expect(styleOf(rows).gap).toBe(TV_ROW_GAP * u)
+    // the hero leads Home under the head, so the rows follow it a row's gap below, not clear of
+    // the head as they are when no hero leads
+    expect(styleOf(rows).paddingTop).toBe(TV_ROW_GAP * u)
   })
 
   test('while Home loads, it’s drawn as it will be, says it’s busy, and Back leaves highsea', async () => {

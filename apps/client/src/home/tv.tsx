@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Home on the TV (client-home.md#tv, the prototype's tv/home.tsx), under the shell's head: the
-// featured section's first title as one large card across the page (OK opens the film), then the
+// featured section's first title as one large card across the page (OK opens the film), or, when
+// the featured section leads Home, its first title's hero full bleed (./hero.tsx), then the
 // rows: Continue watching's wide cards, which resume, with OK held opening their menu, and the
 // others as film rows that loop. The page follows focus (the library's TvPage), resting at its top
 // while focus is on the featured card. Back at the root returns focus to the featured card, and
@@ -11,7 +12,7 @@
 // resuming the episode), Next up's and New episodes' stills, and Recently added shows' posters;
 // music's rows are ../music/home.tsx's.
 import { type HomeItem, type HomeRow, isFilmRow } from '@highsea-tv/api-contract'
-import { heroOf, rowsOf } from '@highsea-tv/client/films'
+import { heroOf, leadHeroOf, rowsOf } from '@highsea-tv/client/films'
 import { LONG_PRESS_MS } from '@highsea-tv/client/library'
 import { useFormat } from '@highsea-tv/native/format'
 import { useMedia } from '@highsea-tv/native/media'
@@ -36,6 +37,7 @@ import { ShowPoster } from '../shows/poster.tsx'
 import { HomeTvContinueMenu, type MenuClose } from './continue.tsx'
 import { bloomColor } from './featured.tsx'
 import { openTitle, playCard, playTitle } from './go.ts'
+import { TvHomeHero } from './hero.tsx'
 import { HOME } from './sizes.ts'
 
 const tv = tokens.tv
@@ -64,7 +66,10 @@ export function HomeTv({ sections }: { sections: HomeRow[] }) {
     setLifted(e.nativeEvent.contentOffset.y > 0)
   }
 
-  const featured = heroOf(sections.filter(isFilmRow))?.items[0]
+  // a hero leading Home is drawn full bleed (./hero.tsx); further down, the card on top as before
+  const led = leadHeroOf(sections)
+  const leadItem = led && isFilmRow(led) ? led.items[0] : undefined
+  const featured = leadItem ? undefined : heroOf(sections.filter(isFilmRow))?.items[0]
   const rows = rowsOf(sections)
   const [menu, setMenu] = useState<HomeItem | null>(null)
   const cards = useRef(new Map<number, ViewHandle | null>())
@@ -113,10 +118,16 @@ export function HomeTv({ sections }: { sections: HomeRow[] }) {
     <View style={{ flex: 1 }}>
       {featured ? <Bloom color={bloomColor(featured)} shown={!lifted} /> : null}
       <TvPage keep={ROW_KEEP} onScroll={onScroll} scrollEventThrottle={chrome.scrollEventThrottle}>
+        {leadItem ? (
+          <Kept rest>
+            <TvHomeHero item={leadItem} first={first} onFocus={setOnFirst} />
+          </Kept>
+        ) : null}
         <View
           style={{
-            // clear of the head laid over the page, then the prototype's pt-[1.6cqw]
-            paddingTop: (TV_HEAD_HEIGHT + TV_ROW_GAP) * u,
+            // clear of the head laid over the page, then the prototype's pt-[1.6cqw]; under a
+            // hero, a row's gap, as a film's page
+            paddingTop: (leadItem ? TV_ROW_GAP : TV_HEAD_HEIGHT + TV_ROW_GAP) * u,
             paddingBottom: tv.safe.y * u,
             gap: TV_ROW_GAP * u,
           }}
@@ -133,13 +144,14 @@ export function HomeTv({ sections }: { sections: HomeRow[] }) {
                 meta={format.meta(featured)}
                 tagline={featured.tagline ?? featured.synopsis}
                 backdrop={media(films.card(featured, { wide: true }).src)}
+                logo={media(featured.art.logo)}
                 onFocus={() => setOnFirst(true)}
                 onPress={() => openTitle(featured)}
               />
             </Kept>
           ) : null}
           {rows.map((section, i) => {
-            const lead = !featured && i === 0
+            const lead = !featured && !leadItem && i === 0
             const title = films.rowTitle(section)
             return (
               <Kept key={section.id}>
@@ -235,6 +247,7 @@ export function HomeTv({ sections }: { sections: HomeRow[] }) {
                     art={(m) => ({
                       poster: media(films.card(m).src),
                       backdrop: media(films.card(m, { wide: true }).src),
+                      logo: media(m.art.logo),
                     })}
                     meta={format.meta}
                     loop

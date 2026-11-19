@@ -86,6 +86,11 @@ export const Art = z
     poster: ImageUrl.nullable(),
     /** 16:9. Null when TMDB has none. */
     backdrop: ImageUrl.nullable(),
+    /**
+     * The title's logo, drawn in place of its name over its art; null or absent when there's
+     * none, and the apps draw the name.
+     */
+    logo: ImageUrl.nullable().optional(),
   })
   .openapi('Art')
 

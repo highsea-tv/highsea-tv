@@ -26,7 +26,7 @@ Results come in a **section per kind**, the best-matching kind first: **Movies**
 
 ### Collections
 
-A collection opens a page of its own: "Collection", its name, "3 movies here · 2013–2016" and its overview over the first part's backdrop (blurred on the TV), then its titles on this server, oldest first (a grid on web and mobile, a row on the TV). Only the parts on this server count; a collection with none here isn't shown.
+A collection opens a page of its own: "Collection", its name (its logo when it has one), "3 movies here · 2013–2016" and its overview over its own backdrop, as a film's page draws its hero ([collections.md](collections.md#in-the-apps), the owner, 2026-11-18), then its titles on this server, oldest first (a grid on web and mobile, a row on the TV). Only the parts on this server count; a collection with none here isn't shown.
 
 A collection holds films and shows in any mix (prototype-gaps stage 4, 2026-11-01). Its line counts both, leaving out a kind it has none of ("4 movies and 1 show here · 2006–2019"), as do the captions wherever a collection is listed, and its row is named by what's in it: **Films**, **Shows**, or **Films and shows**, the films first. A show opens its own page. On the TV, Collections' audio view says "No audio collections yet. When the server’s owner makes them, they show up here."
 

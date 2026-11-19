@@ -10,6 +10,7 @@ export const homeMessages = defineMessages({
   previous: 'Previous featured title',
   next: 'Next featured title',
   show: 'Show {title}',
+  page: 'Featured title {n} of {count}',
   cardMenu: 'More for {title}',
   failed: 'Couldn’t load the home screen',
   emptyTitle: 'Nothing to watch yet',

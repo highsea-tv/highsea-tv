@@ -46,6 +46,16 @@ export type Row<I> = { id: string; title: string | null; layout: string; items: 
 export const heroOf = <R extends Row<unknown>>(sections: R[]) =>
   sections.find((s) => s.layout === 'hero' && s.items.length > 0)
 
+/**
+ * The hero when it leads Home: the first section with something in it is a hero. Only then does
+ * Home open on it full bleed under the bar (the owner's call of 2026-11-18); a hero further down,
+ * or none, leaves Home as it was.
+ */
+export const leadHeroOf = <R extends Row<unknown>>(sections: R[]) => {
+  const first = sections.find((s) => s.items.length > 0)
+  return first?.layout === 'hero' ? first : undefined
+}
+
 /** The rows under the hero, each with something in it, in the server's order. */
 export const rowsOf = <R extends Row<unknown>>(sections: R[]) =>
   sections.filter((s) => s.layout !== 'hero' && s.items.length > 0)

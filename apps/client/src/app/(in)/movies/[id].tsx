@@ -38,6 +38,7 @@ import {
   ScrollView,
   Sheet,
   Text,
+  TitleLogo,
   tokens,
   useControl,
   useFormFactor,
@@ -130,10 +131,8 @@ function TouchFilm({ d, refresh }: FilmProps) {
       <OverlayBack />
       <ScrollView contentContainerStyle={{ paddingBottom: space['6'], gap: space['5'] }}>
         <TouchHero source={media(m.art.backdrop)}>
-          {/* the title, where the prototype has its logo: no server has logos yet */}
-          <Text variant="largeTitle" accessibilityRole="header">
-            {m.title}
-          </Text>
+          {/* the title's logo, its name when there's none */}
+          <TitleLogo title={m.title} logo={media(m.art.logo)} variant="largeTitle" />
           <Meta d={d} />
           {resuming ? (
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: space['3'] }}>
@@ -247,10 +246,8 @@ function PointerFilm({ d, refresh }: FilmProps) {
     >
       <PointerHero source={media(m.art.backdrop)} hero={hero}>
         <View style={{ maxWidth: HERO_WORDS, gap: space['3'] }}>
-          {/* the title, where the prototype has its logo: no server has logos yet */}
-          <Text variant="display" accessibilityRole="header">
-            {m.title}
-          </Text>
+          {/* the title's logo, its name when there's none */}
+          <TitleLogo title={m.title} logo={media(m.art.logo)} variant="display" />
           <Meta d={d} />
           {m.synopsis ? (
             <Text variant="body" numberOfLines={3}>
@@ -456,10 +453,13 @@ function TvFilm({ d, refresh }: FilmProps) {
             title peeks at the foot */}
         <Kept rest>
           <TvHero source={media(m.art.backdrop)}>
-            {/* the title, where the prototype has its logo: no server has logos yet */}
-            <Text variant="heroTitle" numberOfLines={2} accessibilityRole="header">
-              {m.title}
-            </Text>
+            {/* the title's logo, its name when there's none */}
+            <TitleLogo
+              title={m.title}
+              logo={media(m.art.logo)}
+              variant="heroTitle"
+              numberOfLines={2}
+            />
             <Meta d={d} />
             {m.synopsis ? (
               <Text variant="synopsis" numberOfLines={3}>
@@ -537,7 +537,11 @@ function TvFilm({ d, refresh }: FilmProps) {
               <FilmRow
                 title={t('moreLike')}
                 items={d.related}
-                art={(r) => ({ poster: media(r.art.poster), backdrop: media(r.art.backdrop) })}
+                art={(r) => ({
+                  poster: media(r.art.poster),
+                  backdrop: media(r.art.backdrop),
+                  logo: media(r.art.logo),
+                })}
                 meta={f.meta}
                 onFocus={() => inRow(rows.related)}
                 onOpen={(r) => router.push(filmPath(r.id))}

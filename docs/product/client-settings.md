@@ -23,7 +23,7 @@ One screen by the form-factor rule, with the same seven sections in the same ord
 
 | Section | What's in it |
 | --- | --- |
-| **Theme** | "Only this device changes. Everyone else keeps their own." · Harbor's default (and which theme that is), the built-ins, and the server's own themes, each with its swatches · **Use on all my devices** ([below](#use-on-all-my-devices)) |
+| **Theme** | "Only this device changes. Everyone else keeps their own." · Harbor's default (and which theme that is), the built-ins, and the server's own themes, each with its swatches · **Use on all my devices** ([below](#use-on-all-my-devices)) · on the web and the desktop app only, **Layout** ([below](#the-pages-width-layout)) |
 | **Sounds** | Interface sounds (on or off; "Following Harbor: off on phones" until changed), Volume, Listen (Select, Back, Move, Done), **Follow Harbor again** |
 | **Home screen** | "The featured hero stays on top. Your order follows you to every device." · each row with a drag handle (drag it, or Space, Up and Down, Space) and a switch (shown or hidden); **Use the server's order** (TV: OK toggles a row; Up and Down buttons move it) |
 | **Servers** | Each known server (in use, or signed in or out, with how it's reached), **Switch** or **Sign in**, **Add a server**, **Sign out of Harbor** |
@@ -63,6 +63,10 @@ Checkpoint 4.0b filled in what Phase 2 left at reference fidelity. Mobile's Offl
 
 Under the themes, off by default (Phase 4's answer 9). Turned on, the theme this device has becomes the person's, saved to the account, and every device they're signed in on takes it; choosing a theme then changes it everywhere. The legend says "All your devices change." Turned off, each device keeps the theme it has until it's changed there. TV has it as a button under its themes ("Use on all my devices: Off"). In the product it's the user layer of ADR 0027's preferences, with the device layer cleared; the prototype writes all three platforms' choices.
 
+### The page's width: Layout
+
+On the web and in the desktop app (a pointer), under the theme (the owner, 2026-11-18): **Layout**, "How wide pages are in this window. Only this device changes.", with **Full width** (the default) and **Contained**. Full width lets every page's column, hero, grid and row fill the window inside its margins; Contained holds them to `web.maxWidth` (1680px), centred, as before. It's the `layout` key on the device layer of the person's preferences (ADR 0027), as theme and sound are, so a wide desktop and a laptop can differ. The phone and the TV never show it. One measure in the library (`PageMeasure`, `usePageMeasure` in `@highsea-tv/ui`) carries it to every page.
+
 ### Stage 3 of the prototypes' gaps (2026-11-01)
 
 - **Playback** is a section in every app's Settings, the TV's in the same order: **Audio language** and **Subtitle language** (with **Only when the audio isn't in my language**), **Play the next episode automatically** (on), **Skip intros automatically** (off), and **Quality at home** and **Quality away from home** (Original, or a bitrate cap). They're the person's own, in ADR 0027's layers; the server's Settings › Playback is unchanged.
@@ -86,7 +90,7 @@ Under the themes, off by default (Phase 4's answer 9). Turned on, the theme this
 
 ## Interactions
 
-- **Theme and sound** change this device at once and are remembered on it (no save button): they're preferences, not data.
+- **Theme, sound and layout** change this device at once and are remembered on it (no save button): they're preferences, not data.
 - **Home screen** saves to the server as each change is made, so the person's order follows them.
 - **Signing a device out** stops it at once ("It needs a code or password to come back.").
 - **Sign out of Harbor** leaves downloads on the device and returns to Choose a server.
@@ -94,7 +98,7 @@ Under the themes, off by default (Phase 4's answer 9). Turned on, the theme this
 
 ## Data
 
-- Device preferences (theme, sound, volume) are the device layer of the person's preferences, on the server ([ADR 0027](../adr/0027-preferences-in-layers.md)). The prototype keeps them on the device (`highsea-proto:prefs:{platform}`).
+- Device preferences (theme, sound, volume, layout) are the device layer of the person's preferences, on the server ([ADR 0027](../adr/0027-preferences-in-layers.md)). The prototype keeps them on the device (`highsea-proto:prefs:{platform}`).
   - `preferences.get()` → `GET /api/v1/me/preferences`: the resolved `values`, which layer each came from (`from`), and the layers themselves.
   - `preferences.save({ body: { layer: 'device', values } })` → `PATCH /api/v1/me/preferences`. A value sets a key; `null` clears it so the next layer shows through. The `client` and `user` layers take the same call, for when a client offers them.
   - Clients keep a copy to start instantly and offline, and refresh it on `preferences.updated`.

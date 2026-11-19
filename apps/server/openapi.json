@@ -1138,6 +1138,13 @@
               "null"
             ],
             "example": "/api/v1/images/movie/603/poster/w342/f89U3ADr1oiB1s9GkdPOEpXUk5H.jpg"
+          },
+          "logo": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "example": "/api/v1/images/movie/603/poster/w342/f89U3ADr1oiB1s9GkdPOEpXUk5H.jpg"
           }
         },
         "required": [

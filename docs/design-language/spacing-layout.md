@@ -62,7 +62,7 @@ A component may still lay out by what its own content needs. That is a measure o
 | --- | --- | --- |
 | **TV** | Screen units (`1u` = 1% of width) | 4.5u left content inset; see [TV](platforms/tv.md#layout) |
 | **Mobile** | 16pt side gutters | Rows scroll horizontally edge to edge, with the first item aligned to the gutter. See [mobile](platforms/mobile.md) |
-| **Desktop and web clients** | No column grid | Side margins 16px when compact and 64px when regular (`web.margin.wide`); content at most 1680px wide (`web.maxWidth`). A screen lays out by its parts' own measures inside the margins (the owner, 2026-11-15) |
+| **Desktop and web clients** | No column grid | Side margins 16px when compact and 64px when regular (`web.margin.wide`); content the window's width inside them (Full width, the default) or at most 1680px wide (`web.maxWidth`, Contained), as the person's Layout setting chooses ([client-settings.md](../product/client-settings.md#the-pages-width-layout), the owner, 2026-11-18) A screen lays out by its parts' own measures inside the margins (the owner, 2026-11-15) |
 | **Admin** | Sidebar + fluid main | Sidebar 216px from 768, a menu below; main padding 24px; widget grid of 4 columns when regular and 1 when compact, with a 12px gap. See [admin](platforms/admin.md) |
 
 ## Aspect ratios

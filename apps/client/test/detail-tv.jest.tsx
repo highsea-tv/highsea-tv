@@ -177,11 +177,17 @@ async function at(path: string) {
 const stop = (label: string) =>
   screen.getAllByLabelText(label).find((n) => 'hasTVPreferredFocus' in n.props)?.props ?? {}
 
-/** The labels drawn, in order, that are among those given. */
-const order = (labels: string[]) =>
-  (words(screen.toJSON()).match(/\[[^\]]+\]/g) ?? [])
+/**
+ * The labels drawn, in order, that are among those given; with `title`, only those after its
+ * last mention, the page's own (Home stays drawn under the page it opened, its hero's Play among it).
+ */
+const order = (labels: string[], title?: string) => {
+  const tree = words(screen.toJSON())
+  const from = title ? Math.max(0, tree.lastIndexOf(title)) : 0
+  return (tree.slice(from).match(/\[[^\]]+\]/g) ?? [])
     .map((l) => l.slice(1, -1))
     .filter((l, i, all) => labels.includes(l) && all.indexOf(l) === i)
+}
 
 const ACTIONS = [
   'Play',
@@ -199,8 +205,8 @@ describe('a film’s page on the TV', () => {
   test('a film part watched resumes: Resume takes the focus, the actions follow in order', async () => {
     // Tears of Steel is part watched for Ines
     await at(`/movies/${SEED.film.id}`)
-    expect(screen.getByRole('header', { name: 'Tears of Steel' })).toBeTruthy()
-    expect(order(ACTIONS)).toEqual([
+    expect(screen.getAllByRole('header', { name: 'Tears of Steel' }).length).toBeGreaterThan(0)
+    expect(order(ACTIONS, 'Tears of Steel')).toEqual([
       'Resume',
       'From the start',
       'Audio and subtitles',

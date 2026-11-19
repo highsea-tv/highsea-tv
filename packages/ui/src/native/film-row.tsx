@@ -63,6 +63,7 @@ import { SectionHeading } from './section-heading.tsx'
 import { Skeleton, SkeletonText } from './skeleton.tsx'
 import { Text, textStyle } from './text.tsx'
 import { tokens, useMotionReduced, useTheme } from './theme.tsx'
+import { TitleLogo } from './title-logo.tsx'
 import { FocusGuide, useRemote } from './tv/engine'
 import { Focusable, StopScope, type ViewHandle } from './tv/focusable.tsx'
 import { TRACK_SPRING } from './tv/model.ts'
@@ -105,7 +106,12 @@ export type FilmRowProps<T extends RowFilm> = {
   suffix?: string | null
   items: readonly T[]
   /** The film's poster and backdrop as sources the images can load (a server's need its token). */
-  art: (item: T) => { poster: TileSource | undefined; backdrop: TileSource | undefined }
+  art: (item: T) => {
+    poster: TileSource | undefined
+    backdrop: TileSource | undefined
+    /** The open card's logo in place of its title; the title when there's none. */
+    logo?: TileSource | undefined
+  }
   /** The line beside the card's film's title: its year, length and genre. Not by touch. */
   meta: (item: T) => string
   /** The film's quality tags, after its line (4K, HDR). */
@@ -497,7 +503,13 @@ function PointerForm<T extends RowFilm>({
   )
 }
 
-/** The card: its film's backdrop crossfading in as the film changes, and its title over a fade. */
+/**
+ * The open card's logo's largest box (the prototypes' tv/film-row.tsx max-h-[4cqw] max-w-[14cqw];
+ * web/film-row.tsx max-w-[70%] and 26% of the card's height).
+ */
+const LOGO = { width: 0.7, height: 0.26, tv: { width: 14, height: 4 } }
+
+/** The card: its film's backdrop crossfading in as the film changes, and its logo or title over a fade. */
 function Card<T extends RowFilm>({
   item,
   art,
@@ -520,8 +532,8 @@ function Card<T extends RowFilm>({
   // tracking-display)
   const title = textStyle(theme, 'title')
   const display = tokens.text.web.display
-  // the title where the prototypes have its logo, which no server has yet: the TV's at its 1.6,
-  // the web's in the title type, inset as the prototype's inset-x-4 bottom-3.5
+  // the title's logo (../title-logo.tsx), or its name: the TV's at its 1.6, the web's in the title
+  // type; inset as the prototype's inset-x-4 bottom-3.5
   const words = isTv
     ? {
         left: tv.space['6'] * u,
@@ -573,28 +585,39 @@ function Card<T extends RowFilm>({
           ]}
         />
         <View style={{ position: 'absolute', ...words }}>
-          {isTv ? (
-            <Text
-              size={filmRow.tv.title}
-              weight={600}
-              numberOfLines={2}
-              style={{ lineHeight: filmRow.tv.titleLeading * u }}
-            >
-              {item.title}
-            </Text>
-          ) : (
-            <Text
-              variant="title"
-              weight={600}
-              numberOfLines={2}
-              style={{
-                lineHeight: Math.round(display.leading * title.fontSize),
-                letterSpacing: display.tracking * title.fontSize,
-              }}
-            >
-              {item.title}
-            </Text>
-          )}
+          <TitleLogo
+            title={item.title}
+            logo={art(item).logo}
+            box={
+              isTv
+                ? { width: LOGO.tv.width * u, height: LOGO.tv.height * u }
+                : { width: width * LOGO.width, height: height * LOGO.height }
+            }
+            fallback={
+              isTv ? (
+                <Text
+                  size={filmRow.tv.title}
+                  weight={600}
+                  numberOfLines={2}
+                  style={{ lineHeight: filmRow.tv.titleLeading * u }}
+                >
+                  {item.title}
+                </Text>
+              ) : (
+                <Text
+                  variant="title"
+                  weight={600}
+                  numberOfLines={2}
+                  style={{
+                    lineHeight: Math.round(display.leading * title.fontSize),
+                    letterSpacing: display.tracking * title.fontSize,
+                  }}
+                >
+                  {item.title}
+                </Text>
+              )
+            }
+          />
         </View>
       </Animated.View>
     </View>

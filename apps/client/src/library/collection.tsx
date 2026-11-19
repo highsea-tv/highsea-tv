@@ -4,10 +4,13 @@
 // its rules in words. An error says it may have been removed. One composition per form factor:
 // - touch (the prototype's mobile/collection.tsx): the backdrop with Back over it, the words under
 //   it, then three posters a row; its error offers Search;
-// - a pointer (web/collection.tsx): the words over the backdrop, faded, then the grid across the
-//   page; its error offers Collections;
-// - the TV (tv/collection.tsx): the ambient backdrop, the words, then the films as a film row,
-//   which takes focus; Back goes back to wherever it was opened from. Its error offers Collections.
+// - a pointer (web/collection.tsx): the words over the backdrop, then the grid across the page;
+//   its error offers Collections;
+// - the TV (tv/collection.tsx): the backdrop, the words, then the films as a film row, which takes
+//   focus; Back goes back to wherever it was opened from. Its error offers Collections.
+// The backdrop is the title hero a film's page draws (../detail/hero.tsx, the owner's call of
+// 2026-11-18): full bleed, under the status bar by touch and under the top bar with a pointer,
+// which stays clear until the page scrolls under it; sharp across the TV's first screen.
 import { useCollection } from '@highsea-tv/client/data'
 import { playPath } from '@highsea-tv/client/library'
 import { useT } from '@highsea-tv/i18n/react'
@@ -18,21 +21,23 @@ import {
   EmptyState,
   FilmRow,
   FilmRowSkeleton,
-  Image,
   ScrollView,
   Skeleton,
   SkeletonText,
   Text,
+  TitleBackdrop,
+  TitleLogo,
   tokens,
   usePageGutter,
   usePageMeasure,
   useTheme,
 } from '@highsea-tv/ui'
-import { TV_HEAD_HEIGHT, TvAmbient, TvMessage, type ViewHandle } from '@highsea-tv/ui/tv'
+import { TV_HEAD_HEIGHT, TvMessage, type ViewHandle } from '@highsea-tv/ui/tv'
 import { type Href, router } from 'expo-router'
 import { type ReactNode, useCallback, useState } from 'react'
 import { View } from 'react-native'
 import { OverlayBack } from '../detail/back.tsx'
+import { HERO_WORDS, PointerHero, TouchHero, usePointerHero } from '../detail/hero.tsx'
 import { isMissing } from '../detail/parts.tsx'
 import { useFilmsText } from '../films.ts'
 import { useDeviceClient } from '../host'
@@ -43,8 +48,6 @@ import { TV_LIBRARY } from './sizes.ts'
 
 const { space } = tokens
 const tv = tokens.tv
-/** The overview's measure with a pointer, near the prototype's 60ch of body text. */
-const OVERVIEW = space['16'] * 9
 /** The phone's collection name, the prototype's 28. */
 const PHONE_TITLE = space['6'] + space['1']
 
@@ -87,19 +90,12 @@ export function TouchCollection({ id }: { id: string }) {
         aria-busy
         style={{ flex: 1, backgroundColor: theme.colors.bg, gap: space['5'] }}
       >
-        {/* the prototype's still, the name, the count and two lines over the posters */}
-        <View
-          style={{
-            width: '100%',
-            aspectRatio: tokens.aspect.still[0] / tokens.aspect.still[1],
-            backgroundColor: theme.colors.s1,
-          }}
-        />
-        <View style={{ marginTop: -space['12'], paddingHorizontal: gutter, gap: space['2'] }}>
+        {/* the hero's art, the name, the count and two lines over the posters */}
+        <TouchHero source={undefined} gap={space['2']}>
           <Skeleton height={PHONE_TITLE} width="60%" />
           <Skeleton height={space['3'] + space['0.5']} width={space['16'] * 2 + space['8']} />
           <SkeletonText lines={2} />
-        </View>
+        </TouchHero>
         <View style={{ paddingHorizontal: gutter }}>
           <LibraryLoading touch={6} />
         </View>
@@ -141,42 +137,20 @@ function TouchLoaded({ data, back: backButton }: { data: Loaded; back: ReactNode
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.bg }}>
       <ScrollView contentContainerStyle={{ paddingBottom: space['6'], gap: space['5'] }}>
-        <View
-          style={{
-            width: '100%',
-            aspectRatio: tokens.aspect.still[0] / tokens.aspect.still[1],
-            backgroundColor: theme.colors.s1,
-          }}
-        >
-          {backdrop ? (
-            <Image
-              source={backdrop}
-              style={{ position: 'absolute', inset: 0 }}
-              contentFit="cover"
-              accessibilityIgnoresInvertColors
-            />
-          ) : null}
-          <View
-            style={{
-              position: 'absolute',
-              inset: 0,
-              backgroundImage: `linear-gradient(0deg, ${theme.colors.bg}, transparent 60%)`,
-            }}
-          />
-        </View>
-        <View
-          accessibilityRole="summary"
-          style={{ marginTop: -space['12'], paddingHorizontal: gutter, gap: space['2'] }}
-        >
+        <TouchHero source={backdrop} gap={space['2']}>
           {words.smart ? (
             <Text variant="label" color="text-3">
               {words.kind}
             </Text>
           ) : null}
-          {/* the prototype's text-[28px] (mobile/collection.tsx), under the large title's 30 */}
-          <Text variant="largeTitle" size={PHONE_TITLE} accessibilityRole="header" aria-level={1}>
-            {c.name}
-          </Text>
+          {/* its logo, or its name at the prototype's text-[28px] (mobile/collection.tsx) */}
+          <TitleLogo
+            title={c.name}
+            logo={media(c.art.logo)}
+            variant="largeTitle"
+            size={PHONE_TITLE}
+            aria-level={1}
+          />
           <Text variant="callout" color="text-3">
             {words.here}
           </Text>
@@ -190,7 +164,7 @@ function TouchLoaded({ data, back: backButton }: { data: Loaded; back: ReactNode
               {c.overview}
             </Text>
           ) : null}
-        </View>
+        </TouchHero>
         <View style={{ paddingHorizontal: gutter }}>
           <LibraryGrid
             items={items}
@@ -237,41 +211,32 @@ export function PointerCollection({ id }: { id: string }) {
   return <PointerLoaded data={found.data} />
 }
 
-/** A collection's page while it loads, as the web prototype draws it (web/collection.tsx). */
+/** A collection's page while it loads, its hero where the loaded page's stands. */
 function PointerSkeleton() {
-  const measure = usePageMeasure()
   const theme = useTheme()
   const gutter = usePageGutter()
-  const column = {
-    width: '100%' as const,
-    maxWidth: measure,
-    alignSelf: 'center' as const,
-    paddingHorizontal: gutter,
-  }
+  const measure = usePageMeasure()
+  // the hero lies under the top bar as the loaded page's does, so the bar doesn't move as it loads
+  const { hero } = usePointerHero()
   return (
     <View
       accessibilityState={{ busy: true }}
       aria-busy
       style={{ flex: 1, backgroundColor: theme.colors.bg, gap: space['8'] }}
     >
-      <View
-        style={{
-          ...column,
-          gap: space['2'],
-          paddingTop: space['16'] + space['8'],
-          paddingBottom: space['6'],
-        }}
-      >
-        <Skeleton height={space['3']} width={space['16'] + space['8']} />
-        <View style={{ width: '80%', maxWidth: space['16'] * 7 }}>
-          <Skeleton height={space['8'] + space['1']} />
-        </View>
-        <Skeleton height={space['4']} width={space['16'] * 3} />
-        <View style={{ maxWidth: OVERVIEW }}>
+      <PointerHero source={undefined} hero={hero}>
+        <View style={{ maxWidth: HERO_WORDS, gap: space['2'] }}>
+          <Skeleton height={space['3']} width={space['16'] + space['8']} />
+          <View style={{ width: '80%', maxWidth: space['16'] * 7 }}>
+            <Skeleton height={space['8'] + space['1']} />
+          </View>
+          <Skeleton height={space['4']} width={space['16'] * 3} />
           <SkeletonText lines={2} />
         </View>
-      </View>
-      <View style={column}>
+      </PointerHero>
+      <View
+        style={{ width: '100%', maxWidth: measure, alignSelf: 'center', paddingHorizontal: gutter }}
+      >
         <LibraryLoading pointer={7} />
       </View>
     </View>
@@ -279,55 +244,28 @@ function PointerSkeleton() {
 }
 
 function PointerLoaded({ data }: { data: Loaded }) {
-  const measure = usePageMeasure()
   const theme = useTheme()
   const media = useMedia()
   const gutter = usePageGutter()
+  const measure = usePageMeasure()
   const f = useFormat()
   const words = useWords(data)
   const { collection: c, items } = data
-  const backdrop = media(c.art.backdrop)
-  const column = {
-    width: '100%' as const,
-    maxWidth: measure,
-    paddingHorizontal: gutter,
-  }
+  // from medium the art runs under the top bar, which turns to glass as the page scrolls
+  const { hero, chrome } = usePointerHero()
   return (
     <ScrollView
+      onScroll={chrome.onScroll}
+      scrollEventThrottle={chrome.scrollEventThrottle}
       style={{ flex: 1, backgroundColor: theme.colors.bg }}
-      contentContainerStyle={{ alignItems: 'center', gap: space['8'], paddingBottom: space['16'] }}
+      contentContainerStyle={{ gap: space['8'], paddingBottom: space['16'] }}
     >
-      <View style={{ width: '100%', alignItems: 'center' }}>
-        {backdrop ? (
-          <Image
-            source={backdrop}
-            style={{ position: 'absolute', inset: 0, opacity: 0.35 }}
-            contentFit="cover"
-            accessibilityIgnoresInvertColors
-          />
-        ) : null}
-        <View
-          style={{
-            position: 'absolute',
-            inset: 0,
-            backgroundImage: `linear-gradient(0deg, ${theme.colors.bg}, transparent)`,
-          }}
-        />
-        <View
-          accessibilityRole="summary"
-          style={{
-            ...column,
-            gap: space['2'],
-            paddingTop: space['12'] * 2,
-            paddingBottom: space['6'],
-          }}
-        >
+      <PointerHero source={media(c.art.backdrop)} hero={hero}>
+        <View accessibilityRole="summary" style={{ maxWidth: HERO_WORDS, gap: space['2'] }}>
           <Text variant="label" color="text-3">
             {words.kind}
           </Text>
-          <Text variant="display" accessibilityRole="header" aria-level={1}>
-            {c.name}
-          </Text>
+          <TitleLogo title={c.name} logo={media(c.art.logo)} variant="display" aria-level={1} />
           <Text variant="body" color="text-2">
             {words.here}
           </Text>
@@ -337,13 +275,15 @@ function PointerLoaded({ data }: { data: Loaded }) {
             </Text>
           ) : null}
           {c.overview ? (
-            <Text variant="body" color="text-2" style={{ maxWidth: OVERVIEW }}>
+            <Text variant="body" color="text-2" numberOfLines={4}>
               {c.overview}
             </Text>
           ) : null}
         </View>
-      </View>
-      <View style={column}>
+      </PointerHero>
+      <View
+        style={{ width: '100%', maxWidth: measure, alignSelf: 'center', paddingHorizontal: gutter }}
+      >
         <LibraryGrid
           items={items}
           label={f.titlesRow(items.length)}
@@ -403,6 +343,7 @@ function TvSkeleton() {
         paddingTop: (TV_HEAD_HEIGHT + TV_LIBRARY.collectionGap) * u,
       }}
     >
+      <TitleBackdrop source={undefined} />
       <View
         style={{
           maxWidth: TV_LIBRARY.collectionWords * u,
@@ -444,7 +385,7 @@ function TvLoaded({ data }: { data: Loaded }) {
   useHeadDown(down)
   return (
     <View style={{ flex: 1, overflow: 'hidden', backgroundColor: theme.colors.bg }}>
-      <TvAmbient source={media(c.art.backdrop)} />
+      <TitleBackdrop source={media(c.art.backdrop)} />
       <View
         style={{
           gap: TV_LIBRARY.collectionGap * u,
@@ -463,15 +404,14 @@ function TvLoaded({ data }: { data: Loaded }) {
           <Text variant="meta" color="text-3">
             {words.kind}
           </Text>
-          {/* the prototype's 3.6cqw, which the type scale has no step for yet */}
-          <Text
+          {/* its logo, or its name at the prototype's 3.6cqw, which the type scale has no step for */}
+          <TitleLogo
+            title={c.name}
+            logo={media(c.art.logo)}
             variant="heroTitle"
             size={TV_LIBRARY.collectionTitle}
-            accessibilityRole="header"
             aria-level={1}
-          >
-            {c.name}
-          </Text>
+          />
           <Text variant="meta" color="text-2">
             {words.here}
           </Text>
@@ -499,6 +439,7 @@ function TvLoaded({ data }: { data: Loaded }) {
           art={(m) => ({
             poster: media(m.art.poster),
             backdrop: media(m.art.backdrop),
+            logo: media(m.art.logo),
           })}
           meta={f.meta}
           onOpen={(m) => router.push(`/movies/${m.id}` as Href)}

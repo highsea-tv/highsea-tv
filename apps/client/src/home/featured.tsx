@@ -58,6 +58,7 @@ export function HomeCarousel({ items, label }: { items: HomeItem[]; label: strin
           title={m.title}
           kicker={films.kicker(m, at.index === 0, now)}
           poster={media(films.card(m).src)}
+          logo={media(m.art.logo)}
           width={width}
           onPress={() => openTitle(m)}
         />
@@ -105,6 +106,7 @@ export function HomeFeatured({
         meta={format.meta(item)}
         tagline={item.tagline ?? item.synopsis}
         backdrop={media(films.card(item, { wide: true }).src)}
+        logo={media(item.art.logo)}
         accessibilityLabel={t('featured')}
         onPress={() => openTitle(item)}
         actions={
