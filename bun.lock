@@ -24,7 +24,7 @@
     },
     "apps/client": {
       "name": "@highsea-tv/app",
-      "version": "0.4.4",
+      "version": "0.4.5",
       "dependencies": {
         "@expo/metro-runtime": "58.0.14",
         "@formatjs/intl-locale": "5.3.12",
@@ -92,7 +92,7 @@
     },
     "apps/desktop": {
       "name": "@highsea-tv/desktop",
-      "version": "0.4.4",
+      "version": "0.4.5",
       "devDependencies": {
         "@tauri-apps/cli": "2.12.3",
       },
@@ -131,7 +131,7 @@
     },
     "apps/server": {
       "name": "@highsea-tv/server",
-      "version": "0.4.4",
+      "version": "0.4.5",
       "dependencies": {
         "@highsea-tv/admin": "workspace:*",
         "@highsea-tv/api-contract": "workspace:*",
