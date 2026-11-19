@@ -1,5 +1,16 @@
 #!/bin/sh
 # SPDX-License-Identifier: AGPL-3.0-only
 # Container Manager's docker-project worker starts and stops the container with the package, and
-# Docker restarts it if it stops, so there's nothing to do here.
+# Docker restarts it if it stops, so there's little to do here.
+#
+# One thing: preinst points the project at an empty folder for /dev/net when DSM hadn't loaded its
+# tun module at install. Once the owner loads it (Settings › VPN and the VPN guide say how), this
+# points the project at the host's /dev/net, so the built-in VPN finds the TUN device from the next
+# start of the package.
+if [ "$1" = start ]; then
+  env="/var/packages/highsea/target/compose/.env"
+  if [ -d /dev/net ] && [ -w "$env" ] && grep -q '^HIGHSEA_TUN=.*/no-tun$' "$env"; then
+    sed 's|^HIGHSEA_TUN=.*|HIGHSEA_TUN=/dev/net|' "$env" > "$env.new" && mv "$env.new" "$env"
+  fi
+fi
 exit 0

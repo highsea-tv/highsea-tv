@@ -12,9 +12,13 @@ services:
     image: ghcr.io/highsea-tv/highsea:0.1.0@sha256:3f719901fa04769143deb44bcab9c1ba110a3159d8ee1100090f621b232e9a2e
     restart: on-failure
     hostname: "${DEVICE_HOSTNAME}"
+    # the built-in VPN's WireGuard interface and routes, in this container's own network
+    cap_add:
+      - NET_ADMIN
     environment:
       - PUID=1000
       - PGID=1000
+      - HIGHSEA_INSTALL=umbrel
     volumes:
       - ${APP_DATA_DIR}/data/config:/config
       # downloads and the library in one folder, so imports hardlink instead of copying

@@ -3,6 +3,8 @@
 // (packages/mock/src/vpn.ts: `vpnStatus` and `connectionFailure`). Lines the prototype
 // didn't need, because real data forces them, are marked; the checkpoint report lists them.
 
+import type { VpnInstall } from './types.ts'
+
 export const failures = {
   piaUsername: 'Enter your PIA username.',
   piaRefused: 'PIA didn’t accept that username and password.',
@@ -20,7 +22,7 @@ export const failures = {
   linuxOnly:
     'The built-in VPN runs on Linux, as highsea’s Docker image does. Use a VPN container or an interface on this machine here.',
   noDevice:
-    'highsea couldn’t create the WireGuard interface: the kernel has no WireGuard, and /dev/net/tun isn’t there for wireguard-go. Add the /dev/net/tun device to highsea’s service in your compose file, then restart.',
+    'highsea couldn’t create the WireGuard interface: the kernel has no WireGuard, and wireguard-go can’t open /dev/net/tun. Load the host’s tun module (modprobe tun), or add the /dev/net/tun device to highsea’s service in your compose file, then restart.',
   notInstalled:
     'highsea couldn’t find the ip and wg programs. They come with highsea’s Docker image.',
   tunnelFailed: (reason: string) => `highsea couldn’t set up the tunnel: ${reason}`,
@@ -38,6 +40,30 @@ export const failures = {
   provider: 'Choose a provider.',
   mode: 'Choose how torrents reach your VPN.',
 }
+
+/**
+ * The capability and the device on an install a store wrote (ADR 0042, 2026-11-19), where the
+ * answer is the store's update or setting rather than lines in a compose file. Not in the
+ * prototype: real installs forced them (HT-90).
+ */
+export const installFailures = {
+  needsCapability: {
+    synology:
+      'highsea needs the NET_ADMIN capability to run the tunnel, and this install doesn’t have it yet. Update highsea in Package Center: the update recreates its container with it.',
+    truenas:
+      'highsea needs the NET_ADMIN capability to run the tunnel, and this install doesn’t have it yet. Update highsea in TrueNAS’s Apps: the update recreates its container with it.',
+    umbrel:
+      'highsea needs the NET_ADMIN capability to run the tunnel, and this install doesn’t have it yet. Update highsea in the Umbrel App Store: the update recreates its container with it.',
+    casaos:
+      'highsea needs the NET_ADMIN capability to run the tunnel. In CasaOS, open highsea’s settings, add NET_ADMIN under Capabilities, then save.',
+    unraid:
+      'highsea needs the NET_ADMIN capability to run the tunnel. In Unraid’s Docker tab, edit highsea, add --cap-add=NET_ADMIN to Extra Parameters, then apply.',
+  },
+  noDevice: {
+    synology:
+      'highsea couldn’t create the WireGuard interface: DSM’s kernel has no WireGuard, and DSM hasn’t loaded the tun module wireguard-go needs. In Control Panel › Task Scheduler, create a triggered task for root at boot-up that runs insmod /lib/modules/tun.ko, run it once, then stop and start highsea in Package Center.',
+  },
+} as const
 
 /**
  * Connecting with an access token (HT-87), with the provider's name. Not in the prototype. None of
@@ -300,4 +326,22 @@ export const testCopy = {
   connecting: 'highsea is connecting with the saved settings. Test again in a moment.',
   liveDiffers:
     'The built-in VPN is connected with the saved settings. Save these instead: highsea checks them as it connects, and torrents stay stopped if a check fails.',
+}
+
+/** What the capability's failure says on this install. */
+export function needsCapabilityFor(install: VpnInstall | null): string {
+  return install ? installFailures.needsCapability[install] : failures.needsCapability
+}
+
+/** What the missing TUN device says on this install. */
+export function noDeviceFor(install: VpnInstall | null): string {
+  return (install === 'synology' ? installFailures.noDevice.synology : null) ?? failures.noDevice
+}
+
+const INSTALLS: readonly VpnInstall[] = ['synology', 'truenas', 'umbrel', 'casaos', 'unraid']
+
+/** `HIGHSEA_INSTALL`'s value as an install, or null for anything else (a hand-written file). */
+export function installFrom(value: string | undefined): VpnInstall | null {
+  const v = value?.trim().toLowerCase()
+  return INSTALLS.find((i) => i === v) ?? null
 }

@@ -104,7 +104,7 @@ import {
   type SyncOutcome,
 } from '@highsea-tv/subtitles/sync'
 import { createTorrentEngine, HASH_WORKER, type TorrentEngine } from '@highsea-tv/torrent'
-import { CommandFailed, createVpn, type Vpn } from '@highsea-tv/vpn'
+import { CommandFailed, createVpn, installFrom, type Vpn, type VpnInstall } from '@highsea-tv/vpn'
 import { and, eq } from 'drizzle-orm'
 import { createAhead } from './ahead.ts'
 import { type Automation, createAutomation } from './automation.ts'
@@ -431,6 +431,8 @@ export type BootOptions = {
    * the container is recreated. Tests pass one to play host networking or a bridge.
    */
   containerNetwork?: ContainerNetwork
+  /** How highsea was installed; by default from `HIGHSEA_INSTALL`. */
+  install?: VpnInstall | null
   /**
    * The torrent engine's listening port and DHT. By default Settings › Download client's port and
    * the DHT on; an in-memory runtime (tests) takes any free port and no DHT. `offline` never hands
@@ -1061,7 +1063,7 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
     portMapping: {
       wanted: () =>
         readSetting<DownloadClientSettings>(db, DOWNLOAD_CLIENT_KEY, DEFAULT_DOWNLOAD_CLIENT)
-          .upnp && vpn.settings().mode === 'off',
+          .upnp && vpn.direct(),
     },
   })
   await engine.start()
@@ -1204,6 +1206,10 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
 
   const containerNetwork =
     options.containerNetwork !== undefined ? options.containerNetwork : detectContainerNetwork()
+  // the store that wrote highsea's compose file or template sets HIGHSEA_INSTALL; a compose file
+  // the owner wrote doesn't (ADR 0042, 2026-11-19)
+  const installKind =
+    options.install !== undefined ? options.install : installFrom(process.env.HIGHSEA_INSTALL)
   const vpn = createVpn({
     db,
     sealer,
@@ -1213,6 +1219,7 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
     fetch: outside,
     providers: () => vpnProviders.providers(),
     hostNetwork: () => containerNetwork === 'host',
+    install: () => installKind,
     // an in-memory runtime (tests, the sweeps) never changes the host's network
     ...(options.memory
       ? {

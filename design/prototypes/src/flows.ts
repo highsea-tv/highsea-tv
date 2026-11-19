@@ -307,7 +307,7 @@ export const flows: Flow[] = [
       spec: 'docs/product/settings.md',
       hints: [
         'Change anything: a save bar appears. Media management previews file names live.',
-        'VPN: Reconnect plays connecting; a PIA password or gluetun key of “wrong” plays a failure; Drop the tunnel plays the down state. The empty server lacks NET_ADMIN.',
+        'VPN: Reconnect plays connecting; a PIA password or gluetun key of “wrong” plays a failure; Drop the tunnel plays the down state. The empty server plays an install from before 2026-11-19: host networking, without NET_ADMIN.',
       ],
     },
   ),
