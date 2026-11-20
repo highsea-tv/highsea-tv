@@ -2,6 +2,10 @@
 
 Newest first. Each version's notes appear in the server's What changed dialog.
 
+## 2026.11.20
+
+- highsea 0.4.11 is out. System › Updates has its notes.
+
 ## 2026.11.19.9
 
 - Four TV and anime indexers are on the Beta channel: EZTV (a show's episodes by its IMDb id), Nyaa (anime, by its words), and SubsPlease and showRSS (feeds of their newest episodes). They need highsea's indexer engine 1.2; an older server leaves them out until it updates.

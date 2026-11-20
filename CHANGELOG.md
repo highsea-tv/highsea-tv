@@ -7,6 +7,27 @@ While highsea is at 0.x, any release may change how something works. When one do
 
 ## [Unreleased]
 
+## [0.4.11] - 2026-11-20
+
+### Added
+
+- Add TV and anime indexers to the catalog (F2) ([#113](https://github.com/highsea-tv/highsea-tv/pull/113))
+
+### Changed
+
+- HT-102 Two flaky checks: the HLS resume test, and the Firefox subtitle check ([#106](https://github.com/highsea-tv/highsea-tv/pull/106))
+- HT-105 Show artwork, the clients' hero on media pages, toasts clear of the status bar ([#107](https://github.com/highsea-tv/highsea-tv/pull/107))
+- HT-106 Admin: show when a job is working on an item, on its page and in the library ([#108](https://github.com/highsea-tv/highsea-tv/pull/108))
+- Serve music: routes, covers, playback, plays and the admin's Music ([#109](https://github.com/highsea-tv/highsea-tv/pull/109))
+- HT-104 Shows: Skip intro and Skip credits (C2) ([#110](https://github.com/highsea-tv/highsea-tv/pull/110))
+- HT-103 Shows: monitor, search, grab and import episodes (C1, 1) ([#111](https://github.com/highsea-tv/highsea-tv/pull/111))
+- HT-109 Shows run by themselves: RSS, the backlog sweep, upgrades, Wanted, the calendar (C1, 2) ([#115](https://github.com/highsea-tv/highsea-tv/pull/115))
+- HT-112 A Sonarr importer: shows move over with their monitoring and files (C1, 3) ([#116](https://github.com/highsea-tv/highsea-tv/pull/116))
+- Never search for films in a read-only root folder (HT-113) ([#117](https://github.com/highsea-tv/highsea-tv/pull/117))
+- Make the test certificate's serial always valid DER ([#118](https://github.com/highsea-tv/highsea-tv/pull/118))
+- HT-108 Music in the clients: songs play (D, 3) ([#114](https://github.com/highsea-tv/highsea-tv/pull/114))
+- HT-115 Discover's shows filled, Discover paged as the libraries, bigger cards with one-line titles ([#119](https://github.com/highsea-tv/highsea-tv/pull/119))
+
 ## [0.4.10] - 2026-11-19
 
 ### Changed
@@ -243,7 +264,9 @@ While highsea is at 0.x, any release may change how something works. When one do
 
 
 
-[unreleased]: https://github.com/highsea-tv/highsea-tv/compare/v0.4.10...HEAD
+
+[unreleased]: https://github.com/highsea-tv/highsea-tv/compare/v0.4.11...HEAD
+[0.4.11]: https://github.com/highsea-tv/highsea-tv/compare/v0.4.10...v0.4.11
 [0.4.10]: https://github.com/highsea-tv/highsea-tv/compare/v0.4.9...v0.4.10
 [0.4.9]: https://github.com/highsea-tv/highsea-tv/compare/v0.4.8...v0.4.9
 [0.4.8]: https://github.com/highsea-tv/highsea-tv/compare/v0.4.7...v0.4.8

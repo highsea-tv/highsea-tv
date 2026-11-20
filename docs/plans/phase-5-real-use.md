@@ -354,6 +354,7 @@ The order is films, then shows, then music: films are already built and only nee
   - **Screens kept:** a tab already open lower in the stack is gone back to, covered screens are frozen on the phone and TV, and on the web a list keeps its scroll place. A first visit's skeleton shows the title's backdrop and logo.
   - **Measured on the web** (a local server with 350 films and 300 ms added to every request), the second time round: Movies 2 requests and first content at 66 ms (948 ms before), a film 0 requests and 440 ms (980), a show 1 and 809 ms (1,013 first content, 2,416 settled), back to a list 0 requests at about 235 ms with its place kept.
   - **Left:** the owner's devices against the NAS, where the latency is real and the library is 1,289 films.
+- **2026-11-19, C, a bigger mark in the app icons and the favicon as the mark alone (HT-118):** the owner's request outside the parts' list. Every app icon's disc grows from 51% to 80% of its visible shape (Apple's outer keyline), from one number in `packages/brand`; the favicon drops its tile. Waiting for the owner's pick by eye from the pull request's sheets ([logo.md](../brand/logo.md#app-icons)).
 
 ## Running highsea on the NAS (A1)
 

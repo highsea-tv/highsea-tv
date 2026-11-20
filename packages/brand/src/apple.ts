@@ -3,7 +3,15 @@
 // assets (layered image stacks and the top shelf) for an Xcode asset catalog.
 // docs/brand/logo.md#app-icons
 import { defaultTheme } from '@highsea-tv/tokens'
-import { backgroundSvg, bannerSvg, ICON_BG, ICON_MARK, type ImageSpec } from './icons.ts'
+import {
+  backgroundSvg,
+  bannerSvg,
+  ICON_BG,
+  ICON_MARK,
+  ICON_MARK_DROP,
+  type ImageSpec,
+  markBox,
+} from './icons.ts'
 import { MARK_GRID } from './mark.ts'
 import { markOutline } from './mark-outline.ts'
 
@@ -21,17 +29,18 @@ function srgb(hex: string) {
 }
 
 /**
- * The mark as an Icon Composer layer: outlined (no mask), Bone gradient, on a 1024pt canvas at
- * the tile's 58%.
+ * The mark as an Icon Composer layer: outlined (no mask), Bone gradient, on a 1024pt canvas with
+ * its disc at ICON_MARK of the canvas, optically centred as the flat tiles are.
  */
-export function appleMarkSvg(): string {
-  const side = MARK_GRID / ICON_MARK
+export function appleMarkSvg(share = ICON_MARK): string {
+  const side = MARK_GRID / markBox(share)
   const o = -(side - MARK_GRID) / 2
+  const oy = o - ICON_MARK_DROP
   const v = (n: number) => String(Math.round(n * 1000) / 1000)
   const paths = markOutline()
     .map((d) => `<path fill="url(#g)" d="${d}"/>`)
     .join('')
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="${v(o)} ${v(o)} ${v(side)} ${v(side)}"><defs><linearGradient id="g" x1="0" y1="3" x2="0" y2="45" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="${defaultTheme.colors.accent}"/><stop offset="1" stop-color="${defaultTheme.colors['accent-2']}"/></linearGradient></defs>${paths}</svg>\n`
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="${v(o)} ${v(oy)} ${v(side)} ${v(side)}"><defs><linearGradient id="g" x1="0" y1="3" x2="0" y2="45" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="${defaultTheme.colors.accent}"/><stop offset="1" stop-color="${defaultTheme.colors['accent-2']}"/></linearGradient></defs>${paths}</svg>\n`
 }
 
 /**
@@ -65,13 +74,23 @@ export const TVOS_STACKS: Stack[] = [
   { name: 'App Icon - App Store', size: [1280, 768], scales: [1], unscaled: true },
 ]
 
+/**
+ * The Front layer's lockup, as a share of the icon's width: 0.9 of the square icons' disc share, so
+ * the two grow together from one number. At ICON_MARK 0.8 that is 72%, inside the safe zone of
+ * Apple's tvOS figure (87.5% of the width and 84% of the height, measured from
+ * https://developer.apple.com/design/human-interface-guidelines/app-icons#tvOS) with room for the
+ * focused icon's scale and parallax, which the HIG says crop foreground layers more than background
+ * ones. At the full 0.8 the focused lockup reaches the edge. Until 2026-11-19 it was 0.56.
+ */
+export const tvosLockup = (share = ICON_MARK) => share * 0.9
+
+/** Front layer: the lockup, transparent. */
+export const tvosFrontSvg = (w: number, h: number, share = ICON_MARK) =>
+  bannerSvg(w, h, tvosLockup(share), { background: false })
+
 /** Parallax layers, front to back. */
 const LAYERS = [
-  {
-    name: 'Front',
-    opaque: false,
-    svg: (w: number, h: number) => bannerSvg(w, h, 0.56, { background: false }),
-  },
+  { name: 'Front', opaque: false, svg: (w: number, h: number) => tvosFrontSvg(w, h) },
   { name: 'Back', opaque: true, svg: (w: number, h: number) => backgroundSvg(w, h) },
 ]
 

@@ -2,12 +2,15 @@
 import { describe, expect, test } from 'bun:test'
 import { defaultSoundPack, measure, renderEvent, SOUND_EVENTS } from '@highsea-tv/tokens'
 import { Resvg } from '@resvg/resvg-js'
-import { binaryOutputs, textOutputs } from '../scripts/build.ts'
+import { binaryOutputs, COPIES, textOutputs } from '../scripts/build.ts'
 import {
   APPLE_ICON_DIR,
   CONTAINERS,
   type ContainerSpec,
+  FAVICON_INK,
   FONT_FILES,
+  faviconIcoSvg,
+  ICON_MARK,
   IMAGES,
   iconSvg,
   lockupSvg,
@@ -36,6 +39,14 @@ test('generated text files are up to date', async () => {
 test('every binary output exists', async () => {
   for (const path of Object.keys(binaryOutputs()))
     expect(await file(path).exists(), path).toBe(true)
+})
+
+test('apps serve the current copies of brand files', async () => {
+  for (const [target, source] of Object.entries(COPIES))
+    expect(
+      Buffer.compare(await bytes(`../../${target}`), await bytes(`assets/icons/${source}`)),
+      target,
+    ).toBe(0)
 })
 
 describe('icons', () => {
@@ -72,9 +83,32 @@ describe('icons', () => {
   })
 
   test('icons switch to the small mark below 24px', () => {
-    // a 32px favicon draws an 18.6px mark
-    expect(iconSvg('shaped', 32)).toContain(`stroke-width="${markGeometry.cutSmall}"`)
-    expect(iconSvg('shaped', 48)).toContain(`stroke-width="${markGeometry.cut}"`)
+    // a 16px icon draws a 14.6px mark box, a 32px one a 29.3px box
+    expect(iconSvg('shaped', 16)).toContain(`stroke-width="${markGeometry.cutSmall}"`)
+    expect(iconSvg('shaped', 32)).toContain(`stroke-width="${markGeometry.cut}"`)
+    expect(faviconIcoSvg(16)).toContain(`stroke-width="${markGeometry.cutSmall}"`)
+    expect(faviconIcoSvg(32)).toContain(`stroke-width="${markGeometry.cut}"`)
+  })
+
+  test('the mark is sized from ICON_MARK: its disc fills that share of the tile', () => {
+    expect(ICON_MARK).toBe(0.8)
+    // the 48-unit box, scaled so the disc (r 21) is 80% of 1024
+    expect(iconSvg('tile', 1024)).toContain(`scale(${Math.round(((1024 * 0.8) / 42) * 1e4) / 1e4})`)
+    // inside the maskable safe zone (radius 2/5) and Android's 66 dp of the 72 dp viewport
+    expect(ICON_MARK / 2).toBeLessThanOrEqual(0.4)
+    expect(ICON_MARK * 72).toBeGreaterThanOrEqual(48)
+    expect(ICON_MARK * 72).toBeLessThanOrEqual(66)
+  })
+
+  test('the favicon is the mark alone, following the colour scheme', async () => {
+    const svg = await file('assets/icons/web/favicon.svg').text()
+    expect(svg).not.toContain('<rect x')
+    expect(svg).toContain('prefers-color-scheme:light')
+    expect(svg).toContain(FAVICON_INK)
+    expect(svg).toContain(`stroke-width="${markGeometry.cutSmall}"`)
+    // transparent corners: the ico's 16px entry has no ink at its corner
+    const px = new Resvg(faviconIcoSvg(16)).render().pixels
+    expect(px[3]).toBe(0)
   })
 })
 
