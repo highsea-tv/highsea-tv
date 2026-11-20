@@ -77,4 +77,6 @@ export const playerScreenMessages = defineMessages({
   startsIn: 'Starts in {seconds} s',
   playNow: 'Play now',
   cancel: 'Cancel',
+  skipIntro: 'Skip intro',
+  skipCredits: 'Skip credits',
 })

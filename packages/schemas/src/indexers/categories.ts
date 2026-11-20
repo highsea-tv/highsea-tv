@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The standard categories every Newznab and Torznab indexer shares, from the Newznab API's
 // "Predefined categories" table (torznab.github.io/spec-1.3-draft/external/newznab/api.html).
-// Definitions map their site's own categories onto these; search asks for the movie ones.
-// Only the groups highsea searches are listed; checkpoint 9 adds TV.
+// Definitions map their site's own categories onto these; a film's search asks for the movie ones,
+// a show's (Phase 5 C1) for the TV ones. Only the groups highsea searches are listed.
 export const STANDARD_CATEGORIES = {
   2000: 'Movies',
   2010: 'Movies/Foreign',
@@ -31,6 +31,11 @@ export const MOVIE_CATEGORIES: readonly StandardCategory[] = [
   2000, 2010, 2020, 2030, 2040, 2045, 2050, 2060,
 ]
 
+/** The TV group, for a show's search (Phase 5 C1). Anime (5070) waits for anime's own part. */
+export const TV_CATEGORIES: readonly StandardCategory[] = [
+  5000, 5020, 5030, 5040, 5045, 5050, 5060, 5080,
+]
+
 export function isStandardCategory(id: number): id is StandardCategory {
   return id in STANDARD_CATEGORIES
 }
@@ -44,6 +49,10 @@ export function parentCategory(id: number): number | null {
 
 export function isMovieCategory(id: number): boolean {
   return id >= 2000 && id < 3000
+}
+
+export function isTvCategory(id: number): boolean {
+  return id >= 5000 && id < 6000
 }
 
 export function categoryName(id: number): string {

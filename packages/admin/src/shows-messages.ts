@@ -5,6 +5,21 @@
 import { defineMessages } from '@highsea-tv/i18n'
 
 export const shows = defineMessages({
+  // Phase 5 C1: the release list for a season or an episode, and a read-only root folder
+  releases: 'Releases',
+  'season.releases': 'Releases for {season}',
+  'episode.releases': 'Releases for {label}',
+  'episode.releasesHint': 'Releases: pick one yourself',
+  'releases.title': 'Releases for {what}',
+  'releases.body':
+    'From every enabled indexer, judged by the show’s profile. A season pack is accepted only when every episode in it is wanted.',
+  'releases.noIndexers': 'Add an indexer to search for releases.',
+  'releases.indexers': 'Indexers',
+  'releases.noneForThis': 'The indexers answered, but with nothing for this show. Try again later.',
+  'releases.leftOut':
+    '{indexer} answered with {found, plural, one {# release} other {# releases}}; {count, plural, one {# was} other {# were}} for other shows and left out.',
+  'releases.pack': 'Season {season} pack',
+  readOnly: 'highsea only reads this folder, so it doesn’t search for this show.',
   // the library
   title: 'Shows',
   view: 'View',
@@ -116,6 +131,30 @@ export const shows = defineMessages({
   'episode.searchHint': 'Search for this episode',
   'episode.progress': '{label} progress',
   'episode.oneFile': 'One file for {code}',
+  'marks.intro': 'Intro {start}–{end}',
+  'marks.noIntro': 'No intro',
+  'marks.credits': 'Credits {start}',
+  'marks.noCredits': 'No credits',
+  'marks.waiting': 'Intro and credits not looked for yet',
+  'marks.yours': 'set by you',
+  'marks.edit': 'Intro and credits of {label}',
+  'marks.title': 'Intro and credits',
+  'marks.body':
+    'Where {label} skips to. Leave a time empty for none. What you set here stays when highsea looks at the season again.',
+  'marks.introStart': 'Intro starts',
+  'marks.introEnd': 'Intro ends',
+  'marks.creditsStart': 'Credits start',
+  'marks.placeholder': '0:00',
+  'marks.found': 'Found from {source}',
+  'marks.source.chapters': 'the file’s chapters',
+  'marks.source.audio': 'the sound the season’s episodes share',
+  'marks.source.owner': 'you',
+  'marks.badTime': 'Write a time as 1:12, or in seconds.',
+  'marks.introOrder': 'The intro ends after it starts.',
+  'marks.introBoth': 'Give the intro both times, or neither.',
+  'marks.findAgain': 'Find again',
+  'marks.saved': 'Saved the intro and credits of {label}',
+  'marks.finding': 'highsea will look for the intro and credits of {label} again',
   'status.available': 'Available',
   'status.downloading': 'Downloading',
   'status.missing': 'Missing',

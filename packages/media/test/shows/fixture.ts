@@ -75,8 +75,11 @@ export async function setup() {
   const dir = mkdtempSync(join(tmpdir(), 'highsea-shows-import-'))
   const imagesDir = join(dir, 'images')
   const root = join(dir, 'shows')
+  // where the download client saves a show's grabs (Phase 5 C1's import reads from it)
+  const downloads = join(dir, 'downloads', 'shows')
   mkdirSync(imagesDir)
   mkdirSync(root)
+  mkdirSync(downloads, { recursive: true })
   const metadata = createMetadata({
     db,
     jobs,
@@ -93,7 +96,15 @@ export async function setup() {
   media.seed()
   media.rootFolders.add({ path: root, kind: 'shows' })
   const shows = createShows(
-    { db, clock, events, jobs, logger: silentLogger, metadata, files: { probe: fakeProbe } },
+    {
+      db,
+      clock,
+      events,
+      jobs,
+      logger: silentLogger,
+      metadata,
+      files: { probe: fakeProbe, downloadDirs: () => [downloads] },
+    },
     media,
   )
   cleanups.push(() => {
@@ -204,6 +215,7 @@ export async function setup() {
     media,
     shows,
     root,
+    downloads,
     put,
     showRow,
     episodes,

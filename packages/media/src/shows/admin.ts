@@ -6,6 +6,7 @@
 // out and leaves the files where they are.
 import type {
   DiscoverSeries,
+  EpisodeMarkersPatch,
   Series,
   SeriesDetail,
   SeriesEpisode,
@@ -26,6 +27,7 @@ import { chunks } from '../shared/sql.ts'
 import { versionQuality } from '../shared/tracks.ts'
 import { announce, type ShowsDeps } from './context.ts'
 import { keepStatus, type ShowTree, statusOf } from './library.ts'
+import { adminMarks, type ShowMarkers } from './markers.ts'
 
 const {
   mediaItems,
@@ -54,6 +56,7 @@ export function showIdOf(id: string): number {
 type Deps = {
   media: Media
   get(tmdbId: number): ShowTree | null
+  markers: ShowMarkers
 }
 
 export function createShowAdmin(ctx: ShowsDeps, deps: Deps) {
@@ -93,15 +96,37 @@ export function createShowAdmin(ctx: ShowsDeps, deps: Deps) {
   }
 
   /** Sonarr's status: what the library says, with a file below its cutoff called out. */
-  const statusFor = (e: ItemRow, hasFile: boolean): SeriesEpisode['status'] => {
+  /** The episode items a show's downloads in the queue bring (Phase 5 C1). */
+  const downloadingOf = (showId: string) =>
+    new Set(
+      db
+        .select({ episodeIds: schema.downloads.episodeIds })
+        .from(schema.downloads)
+        .where(
+          and(
+            eq(schema.downloads.itemId, showId),
+            inArray(schema.downloads.state, ['downloading', 'importing', 'import-blocked']),
+          ),
+        )
+        .all()
+        .flatMap((d) => d.episodeIds ?? []),
+    )
+
+  const statusFor = (
+    e: ItemRow,
+    hasFile: boolean,
+    downloading: ReadonlySet<string>,
+  ): SeriesEpisode['status'] => {
     if (hasFile) return e.cutoffUnmet ? 'cutoff-unmet' : 'available'
-    if (e.status === 'downloading') return 'downloading'
+    if (e.status === 'downloading' || downloading.has(e.id)) return 'downloading'
     if (e.status === 'not-released' || !e.releaseDate || e.releaseDate > today()) return 'unaired'
     return 'missing'
   }
 
   function seasonsOf(tree: ShowTree, meta: ShowMetadata | null): SeriesSeason[] {
     const { fileOf, files, holds } = filesOf(tree)
+    const downloading = downloadingOf(tree.id)
+    const marks = deps.markers.forFiles([...files.keys()])
     const posters = new Map((meta?.seasons ?? []).map((s) => [s.number, s.poster]))
     const showPoster = meta ? (artOf(meta.art).poster ?? '') : ''
     return tree.seasons.map((s) => {
@@ -122,7 +147,7 @@ export function createShowAdmin(ctx: ShowsDeps, deps: Deps) {
             aired: e.releaseDate ?? dayOf(e.addedAt),
             runtimeMinutes: metaRuntime(meta, e) ?? meta?.runtimeMinutes ?? 0,
             monitored: e.monitored,
-            status: statusFor(e, !!file),
+            status: statusFor(e, !!file, downloading),
             file: file
               ? {
                   path: file.path,
@@ -132,6 +157,7 @@ export function createShowAdmin(ctx: ShowsDeps, deps: Deps) {
                   episodes: holds.get(file.id) ?? [e.episodeNumber ?? 0],
                 }
               : null,
+            markers: file ? adminMarks(marks.get(file.id), file.size) : null,
           },
         ]
       })
@@ -181,6 +207,7 @@ export function createShowAdmin(ctx: ShowsDeps, deps: Deps) {
       languageProfileId: tree.languageProfileId ?? '',
       rootFolder: tree.rootFolder,
       path: tree.path,
+      readOnly: deps.media.rootFolders.readOnlyAt(tree.path) !== null,
       seasonFolders: tree.seasonFolders,
       addedAt: isoOf(tree.addedAt),
       art: { poster: art?.poster ?? '', backdrop: art?.backdrop ?? '', logo: art?.logo ?? null },
@@ -347,6 +374,39 @@ export function createShowAdmin(ctx: ShowsDeps, deps: Deps) {
   }
 
   /** One episode on or off; its season is on while any of its episodes is. */
+  /**
+   * A Search's or an interactive search's scope in the library's numbers (Phase 5 C1): the season,
+   * and the episode the admin names by its id. 404 when the show or the episode isn't here; 409
+   * `read-only` when highsea only reads the show's root folder (ADR 0063).
+   */
+  function scopeOf(
+    id: string,
+    asked: { season?: number; episode?: string },
+  ): { tmdbId: number; scope?: { season: number; episode?: number | null } } {
+    const tree = treeOf(showIdOf(id))
+    if (deps.media.rootFolders.readOnlyAt(tree.path) !== null)
+      throw new AppError(
+        'conflict',
+        'highsea only reads this show’s root folder, so it doesn’t search for it.',
+        { reason: 'read-only' },
+      )
+    if (asked.episode !== undefined) {
+      for (const s of tree.seasons) {
+        const e = s.episodes.find((x) => String(x.tmdbId) === asked.episode)
+        if (e && (asked.season === undefined || asked.season === e.seasonNumber))
+          return {
+            tmdbId: tree.tmdbId,
+            scope: { season: e.seasonNumber ?? 0, episode: e.episodeNumber ?? 0 },
+          }
+      }
+      throw new AppError('not-found', 'That episode isn’t in this show.')
+    }
+    if (asked.season === undefined) return { tmdbId: tree.tmdbId }
+    if (!tree.seasons.some((s) => s.seasonNumber === asked.season))
+      throw new AppError('not-found', `This show has no season ${asked.season}.`)
+    return { tmdbId: tree.tmdbId, scope: { season: asked.season } }
+  }
+
   function monitorEpisode(id: string, episodeId: string, monitored: boolean) {
     const tree = treeOf(showIdOf(id))
     const season = tree.seasons.find((s) => s.episodes.some((e) => String(e.tmdbId) === episodeId))
@@ -361,6 +421,40 @@ export function createShowAdmin(ctx: ShowsDeps, deps: Deps) {
         .run()
     })
     announce(events, [tree.tmdbId])
+  }
+
+  /** An episode's file, by the show's and the episode's ids; not found without one. */
+  function episodeFile(id: string, episodeId: string): string {
+    const tree = treeOf(showIdOf(id))
+    const episode = tree.seasons
+      .flatMap((s) => s.episodes)
+      .find((e) => String(e.tmdbId) === episodeId)
+    if (!episode) throw new AppError('not-found', 'That episode isn’t in this show.')
+    const fileId = fileOfEpisode(episode.id)
+    if (!fileId) throw new AppError('not-found', 'That episode has no file.')
+    return fileId
+  }
+
+  /** An episode's first version's file. */
+  const fileOfEpisode = (itemId: string) =>
+    db
+      .select({ fileId: versionsTable.fileId })
+      .from(versionsTable)
+      .where(eq(versionsTable.itemId, itemId))
+      .orderBy(asc(versionsTable.position))
+      .all()
+      .find((v) => v.fileId)?.fileId ?? null
+
+  /** The owner's intro and credits for an episode (ADR 0067): kept when the season is looked at again. */
+  function setMarkers(id: string, episodeId: string, patch: EpisodeMarkersPatch) {
+    deps.markers.correct(episodeFile(id, episodeId), patch)
+    announce(events, [showIdOf(id)])
+  }
+
+  /** Forgets an episode's marks, the owner's too, and has its season looked at again. */
+  function findMarkers(id: string, episodeId: string) {
+    deps.markers.forget(episodeFile(id, episodeId))
+    announce(events, [showIdOf(id)])
   }
 
   /** TMDB's shows for a search, those here marked; an empty search finds nothing. */
@@ -442,6 +536,9 @@ export function createShowAdmin(ctx: ShowsDeps, deps: Deps) {
     remove,
     monitorSeason,
     monitorEpisode,
+    scopeOf,
+    setMarkers,
+    findMarkers,
     discover,
     rootFolders,
   }

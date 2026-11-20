@@ -100,6 +100,7 @@ export const downloads = defineMessages({
   pause: 'Pause',
   resume: 'Resume',
   openMovie: 'Open the movie',
+  openShow: 'Open the show',
   remove: 'Remove',
   failed: 'That didn’t work',
   details: 'Torrent details',

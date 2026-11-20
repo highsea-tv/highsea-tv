@@ -2,9 +2,10 @@
 // Shows over HTTP (Phase 5 B, ADR 0064): the apps' `/shows` (client-shows.md) and the admin's
 // `/series` (shows.md) with Shows' settings and the unmatched files' Match and Dismiss, thin
 // handlers over @highsea-tv/media/shows. The admin
-// addresses a show by its TMDB id as a string. `series.search` stays a draft until part C1 searches
-// for episodes (drafts.ts answers it). Someone who can't see the shows gets none: an empty list and
-// a 404 for a show. Every admin change goes in the audit log, as the films' do.
+// addresses a show by its TMDB id as a string. Search, the interactive release search for a season
+// or an episode and its grab are part C1's, over the runtime's show search and downloads. Someone
+// who can't see the shows gets none: an empty list and a 404 for a show. Every admin change goes
+// in the audit log, as the films' do.
 import { routes } from '@highsea-tv/api-contract'
 import { AppError } from '@highsea-tv/core'
 import type { OpenAPIHono } from '@hono/zod-openapi'
@@ -95,8 +96,19 @@ export function registerShows(app: OpenAPIHono<Env>) {
   app.openapi(routes.series.list, (c) => c.json(shows(c).admin.list(), 200))
 
   app.openapi(routes.series.add, async (c) => {
-    const { show, created } = await shows(c).add(c.req.valid('json'))
+    const input = c.req.valid('json')
+    const { show, created } = await shows(c).add(input)
     if (created) audit(c, 'show.added', String(show.tmdbId))
+    // Start searching (Phase 5 C1): the missing episodes it monitors, as Search on the show; with
+    // no indexer yet, or a folder highsea only reads, the show is added and nothing is searched
+    const rt = c.get('runtime')
+    if (
+      created &&
+      input.search &&
+      rt.indexers.hasEnabled() &&
+      rt.media.rootFolders.readOnlyAt(show.path) === null
+    )
+      rt.showSearch.queue(show.tmdbId)
     return c.json(shows(c).admin.detailOf(show), 200)
   })
 
@@ -139,4 +151,69 @@ export function registerShows(app: OpenAPIHono<Env>) {
     audit(c, 'show.episode-monitored', id)
     return c.body(null, 204)
   })
+
+  // ---------------------------------------------------------------- searching and grabbing (C1)
+
+  app.openapi(routes.series.search, (c) => {
+    const { id } = c.req.valid('param')
+    const { tmdbId, scope } = shows(c).admin.scopeOf(id, c.req.valid('json'))
+    const found = c.get('runtime').showSearch.queue(tmdbId, scope)
+    audit(c, 'show.searched', id)
+    return c.json({ found }, 200)
+  })
+
+  app.openapi(routes.series.interactiveSearch, async (c) => {
+    const { id } = c.req.valid('param')
+    const { tmdbId, scope } = shows(c).admin.scopeOf(id, c.req.valid('json'))
+    if (!scope) throw new AppError('invalid', 'Pick a season or an episode.')
+    const result = await c.get('runtime').showSearch.interactive(tmdbId, scope)
+    return c.json({ ...result, releases: result.releases.map(release) }, 200)
+  })
+
+  app.openapi(routes.series.releases, (c) => {
+    const { id } = c.req.valid('param')
+    const { tmdbId, scope } = shows(c).admin.scopeOf(id, c.req.valid('query'))
+    if (!scope) throw new AppError('invalid', 'Pick a season or an episode.')
+    return c.json(c.get('runtime').indexers.episodeReleases(tmdbId, scope).map(release), 200)
+  })
+
+  app.openapi(routes.series.grabRelease, async (c) => {
+    const { id, guid } = c.req.valid('param')
+    const { indexerId, season, episode, force } = c.req.valid('json')
+    const rt = c.get('runtime')
+    const { tmdbId, scope } = shows(c).admin.scopeOf(id, { season, episode })
+    const show = rt.showSearch.inputFor(tmdbId, scope ?? { season })
+    if (!show || !scope) throw new AppError('not-found', 'That show isn’t in the library.')
+    const item = await rt.downloads.grabEpisodes({
+      itemId: show.showItemId,
+      scope,
+      indexerId,
+      guid,
+      force,
+    })
+    audit(c, force ? 'release.grabbed-anyway' : 'release.grabbed', id)
+    return c.json(item, 200)
+  })
+
+  // an episode's intro and credits (Phase 5 C2, ADR 0067): the owner's word, or found again
+  app.openapi(routes.series.setMarkers, (c) => {
+    const { id, episodeId } = c.req.valid('param')
+    if (!/^\d+$/.test(episodeId))
+      throw new AppError('not-found', 'That episode isn’t in this show.')
+    shows(c).admin.setMarkers(id, episodeId, c.req.valid('json'))
+    audit(c, 'show.episode-markers', id)
+    return c.body(null, 204)
+  })
+
+  app.openapi(routes.series.findMarkers, (c) => {
+    const { id, episodeId } = c.req.valid('param')
+    if (!/^\d+$/.test(episodeId))
+      throw new AppError('not-found', 'That episode isn’t in this show.')
+    shows(c).admin.findMarkers(id, episodeId)
+    audit(c, 'show.episode-markers-found', id)
+    return c.body(null, 204)
+  })
 }
+
+/** A show's release as the contract has it: the episode items' ids stay on the server. */
+const release = <R extends { episodeIds: string[] }>({ episodeIds: _ids, ...rest }: R) => rest

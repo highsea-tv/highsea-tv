@@ -10,12 +10,14 @@ import {
   clampSeek,
   countsDown,
   createPlayerText,
+  creditsSkip,
   cuesAt,
   cueText,
   deviceReport,
   filmUpNext,
   HIDE_MS,
   initialPlayer,
+  introShown,
   isSubtitlePlaylist,
   leavePlayer,
   mergeCues,
@@ -533,5 +535,58 @@ describe('a player that gave up', () => {
     expect(playerFailure({}, { code: 4, message: '' })).toBe('media error 4')
     expect(playerFailure({})).toBe('media error')
     expect(playerFailure({ details: 'x'.repeat(900) }).length).toBe(500)
+  })
+})
+
+describe('an episode’s intro and credits (ADR 0067)', () => {
+  // a 100 s episode: its intro from 25 s to 55 s, its credits from 70 s
+  const intro = { start: 25, end: 55 }
+  const episode = () => playerReducer(playing(), { type: 'marks', credits: 70 })
+  const at = (s: PlayerState, position: number) => playerReducer(s, { type: 'time', position })
+
+  test('Skip intro shows while the intro plays, until its last second', () => {
+    expect(introShown(intro, at(episode(), 24.9))).toBe(false)
+    expect(introShown(intro, at(episode(), 25))).toBe(true)
+    expect(introShown(intro, at(episode(), 53.9))).toBe(true)
+    expect(introShown(intro, at(episode(), 54))).toBe(false)
+    // none marked, as a pilot's, or before it plays
+    expect(introShown(null, at(episode(), 30))).toBe(false)
+    expect(introShown(intro, { phase: 'starting', position: 30 })).toBe(false)
+  })
+
+  test('Next up shows where the credits start, counting ten seconds from there', () => {
+    expect(streamState(at(episode(), 69), 0, true)).toBe('normal')
+    expect(streamState(at(episode(), 70), 0, true)).toBe('next-up')
+    expect(nextUpIn(at(episode(), 70))).toBe(10)
+    expect(nextUpIn(at(episode(), 76.5))).toBe(4)
+    expect(nextUpIn(at(episode(), 80))).toBe(0)
+    // a credits mark past the end is no mark: a film's last ten seconds
+    const wrong = playerReducer(playing(), { type: 'marks', credits: 140 })
+    expect(streamState(at(wrong, 89), 0, true)).toBe('normal')
+    expect(nextUpIn(at(wrong, 90))).toBe(10)
+  })
+
+  test('Skip credits after Cancel brings Next up back, counting from there', () => {
+    const cancelled = playerReducer(at(episode(), 72), { type: 'cancel-next' })
+    expect(streamState(cancelled, 0, true)).toBe('normal')
+    expect(creditsSkip(at(episode(), 72), true)).toBeNull()
+    expect(creditsSkip(cancelled, true)).toBe('next')
+    const later = at(cancelled, 85)
+    const back = playerReducer(later, { type: 'resume-next' })
+    expect(streamState(back, 0, true)).toBe('next-up')
+    expect(nextUpIn(back)).toBe(10)
+    expect(nextUpIn(at(back, 93))).toBe(2)
+    // seeking back before the credits forgets where it was brought back
+    const before = playerReducer(back, { type: 'seek', position: 40 })
+    expect(before.nextFrom).toBeNull()
+    expect(nextUpIn(at(before, 70))).toBe(10)
+  })
+
+  test('with nothing next, Skip credits shows through the credits and ends the episode', () => {
+    expect(creditsSkip(at(episode(), 69), false)).toBeNull()
+    expect(creditsSkip(at(episode(), 70), false)).toBe('end')
+    expect(creditsSkip(at(episode(), 99.5), false)).toBeNull()
+    // a film has no credits mark, so no button
+    expect(creditsSkip(at(playing(), 95), false)).toBeNull()
   })
 })

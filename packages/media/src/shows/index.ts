@@ -17,6 +17,7 @@
 //   shows.client.list(profileId) / show(tmdbId, profileId) / item(episodeTmdbId, profileId) / home …
 //   shows.playback.source / position / played / … by the episode's TMDB id, as films' playback
 //   shows.admin.list() / get(id) / update / remove / monitorSeason / monitorEpisode / discover
+//   shows.admin.setMarkers / findMarkers   the owner's intro and credits (ADR 0067)
 //   shows.settings.naming() / sizes() / profileUsage(ids)
 //   shows.close()                          stops listening for metadata.updated
 import { DRAFT_TOPICS } from '@highsea-tv/api-contract'
@@ -30,10 +31,13 @@ import { createShowAdmin } from './admin.ts'
 import { createShowClient } from './client.ts'
 import type { ShowsDeps } from './context.ts'
 import { createShowFiles } from './files.ts'
+import { createEpisodeImport } from './import.ts'
 import { createShowLibrary } from './library.ts'
 import { createShowLibraryImport } from './library-import.ts'
+import { createShowMarkers } from './markers.ts'
 import { createShowPlayback } from './playback.ts'
 import { createShowScan, SHOW_SCAN_JOB } from './scan.ts'
+import { createShowSearch } from './search.ts'
 import { createShowSettings } from './settings.ts'
 
 export function createShows(deps: ShowsDeps, media: Media) {
@@ -41,10 +45,13 @@ export function createShows(deps: ShowsDeps, media: Media) {
   const files = createShowFiles(deps, { media })
   const libraryImport = createShowLibraryImport(deps, { media, library, files })
   const libraryScan = createShowScan(deps, { media, files, addNew: libraryImport.addNew })
-  const client = createShowClient(deps)
+  const markers = createShowMarkers(deps)
+  const client = createShowClient(deps, { markers })
   const playback = createShowPlayback(deps, { client })
-  const admin = createShowAdmin(deps, { media, get: library.get })
+  const admin = createShowAdmin(deps, { media, get: library.get, markers })
   const settings = createShowSettings(deps)
+  const episodeImport = createEpisodeImport(deps, { media, files, settings })
+  const search = createShowSearch(deps, { media, settings })
   deps.jobs.define({
     type: SHOW_SCAN_JOB,
     payload: z.object({ folder: z.string().optional() }),
@@ -100,6 +107,10 @@ export function createShows(deps: ShowsDeps, media: Media) {
       assign: (tmdbId: number, path: string, episodes: { season: number; episode: number }[]) =>
         files.assign(showOf(tmdbId), path, episodes),
     },
+    /** What a show's release search is judged by, and what a Search looks for (Phase 5 C1). */
+    search: { input: search.input, plan: search.plan },
+    /** A show's finished download into its episodes (Phase 5 C1). */
+    importDownload: episodeImport.importDownload,
     /** What couldn't be placed, under one root folder or every one, with each reason. */
     unmatched: (rootFolder?: string) => files.unmatched.list(rootFolder),
     /**
@@ -159,6 +170,7 @@ export {
   type ReconcileResult,
   type UnmatchedFileReason,
 } from './files.ts'
+export type { EpisodeImportInput, EpisodeImportResult } from './import.ts'
 export { monitorsEpisode, type ShowTree, seasonFolder } from './library.ts'
 export {
   pickShow,
@@ -169,6 +181,16 @@ export {
   type ShowImportItem,
   type ShowImportState,
 } from './library-import.ts'
+export {
+  adminMarks,
+  clientMarks,
+  createShowMarkers,
+  MARKERS_JOB,
+  type MarkerRow,
+  queueMarkers,
+  type ShowMarkers,
+} from './markers.ts'
 export type { ShowPlayback } from './playback.ts'
 export { SHOW_SCAN_JOB, type ShowScanResult } from './scan.ts'
+export type { ShowScope } from './search.ts'
 export { defaultEpisodeNaming, type ShowSettings } from './settings.ts'

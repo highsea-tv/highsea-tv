@@ -18,8 +18,12 @@ export const CATEGORIES_KEY = 'torrentCategories'
 /** Library grabs go to `{downloads}/movies`; manual torrents without a category to `{downloads}/manual`. */
 export const MOVIES_CATEGORY = 'movies'
 export const MANUAL_CATEGORY = 'manual'
+/** A show's grabs (Phase 5 C1), to `{downloads}/shows`, as answer 5 kept the name for them. */
+export const SHOWS_CATEGORY = 'shows'
+/** Built in: never added, changed or removed. */
+const FIXED = [MOVIES_CATEGORY, SHOWS_CATEGORY, MANUAL_CATEGORY]
 /** Kept back for the library's later media types (answer 5: "later `shows`, `music`"). */
-const RESERVED = [MOVIES_CATEGORY, MANUAL_CATEGORY, 'shows', 'music']
+const RESERVED = [...FIXED, 'music']
 
 /** Letters, digits, spaces, dots, dashes and underscores; no slash, so a name is one folder. */
 const NAME = /^[\p{L}\p{N}][\p{L}\p{N} ._-]*$/u
@@ -31,7 +35,7 @@ export type CategoryView = {
   name: string
   /** Where its torrents save. */
   folder: string
-  /** `movies` and `manual`: built in, never removed. */
+  /** `movies`, `shows` and `manual`: built in, never removed. */
   fixed: boolean
   /** Torrents in Downloads that use it now. */
   torrents: number
@@ -46,7 +50,7 @@ export function readCategories(db: Db): Stored[] {
 
 /** The folder a category saves to, or null when there's no such category. */
 export function categoryFolder(db: Db, downloads: string, name: string): string | null {
-  if (name === MOVIES_CATEGORY || name === MANUAL_CATEGORY) return join(downloads, name)
+  if (FIXED.includes(name)) return join(downloads, name)
   const c = readCategories(db).find((x) => x.name === name)
   return c ? (c.folder ?? join(downloads, c.name)) : null
 }
@@ -81,11 +85,12 @@ export function createCategories(deps: CategoriesDeps) {
   }
 
   return {
-    /** `movies` and `manual` first, then the owner's, by name. */
+    /** `movies`, `shows` and `manual` first, then the owner's, by name. */
     list(): CategoryView[] {
       const own = [...readCategories(db)].sort((a, b) => a.name.localeCompare(b.name))
       return [
         view({ name: MOVIES_CATEGORY, folder: null }, true),
+        view({ name: SHOWS_CATEGORY, folder: null }, true),
         view({ name: MANUAL_CATEGORY, folder: null }, true),
         ...own.map((c) => view(c)),
       ]
@@ -101,7 +106,7 @@ export function createCategories(deps: CategoriesDeps) {
           { field: 'name' },
         )
       const lower = name.toLowerCase()
-      if (lower === MOVIES_CATEGORY || lower === MANUAL_CATEGORY)
+      if (FIXED.includes(lower))
         throw new AppError('invalid', `${lower} is built in. Choose another name.`, {
           field: 'name',
         })
@@ -134,8 +139,7 @@ export function createCategories(deps: CategoriesDeps) {
 
     /** Refused while a torrent or the watch folder still uses it, so nothing is left without a folder. */
     remove(name: string) {
-      if (name === MOVIES_CATEGORY || name === MANUAL_CATEGORY)
-        throw new AppError('conflict', `${name} is built in and stays.`)
+      if (FIXED.includes(name)) throw new AppError('conflict', `${name} is built in and stays.`)
       const list = readCategories(db)
       const c = list.find((x) => x.name === name)
       if (!c) throw new AppError('not-found', `There’s no category named ${name}.`)

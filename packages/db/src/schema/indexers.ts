@@ -122,6 +122,33 @@ export const releases = sqliteTable(
 )
 
 /**
+ * A show's interactive search results (Phase 5 C1), 30 minutes per search: a show by its TMDB id
+ * and what was searched (`scope`: `s1` for season 1, `s1e2` for its second episode). Kept apart from `releases`, whose movie TMDB ids a show's
+ * could share. `episodes` is the episode item ids the release would bring.
+ */
+export const showReleases = sqliteTable(
+  'show_releases',
+  {
+    showTmdbId: integer('show_tmdb_id').notNull(),
+    scope: text('scope').notNull(),
+    indexerId: text('indexer_id')
+      .notNull()
+      .references(() => indexers.id, { onDelete: 'cascade' }),
+    guid: text('guid').notNull(),
+    /** The API's `Release` with its `episodes`, the decision and its reasons. */
+    data: text('data', { mode: 'json' }).notNull(),
+    /** Where the release is fetched from; never sent to clients with a passkey in it. */
+    download: text('download', { mode: 'json' }).notNull(),
+    fetchedAt: integer('fetched_at').notNull(),
+    expiresAt: integer('expires_at').notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.showTmdbId, t.scope, t.indexerId, t.guid] }),
+    index('show_releases_expires').on(t.expiresAt),
+  ],
+)
+
+/**
  * The releases RSS sync has already judged, per indexer (checkpoint 8a): a feed read twice grabs
  * nothing twice. Kept 14 days, longer than any feed keeps an item.
  */

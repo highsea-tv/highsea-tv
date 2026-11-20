@@ -59,6 +59,7 @@ import {
   Preview,
   playerText,
   SCRIM,
+  SkipButton,
   useMessageWords,
   Waiting,
 } from './parts.tsx'
@@ -300,6 +301,19 @@ function TvNextUp({ m }: { m: PlayerModel }) {
   )
 }
 
+/** Skip intro or Skip credits on TV: the focus while it shows (player.md › Skip intro). */
+function TvSkip({ m }: { m: PlayerModel }) {
+  const theme = useTheme()
+  const first = useFirstFocus()
+  return (
+    <SkipButton
+      m={m}
+      focus={first}
+      place={{ right: tv.safe.x * theme.u, bottom: ptv.nextBottom * theme.u }}
+    />
+  )
+}
+
 export function TvPlayer({
   id,
   p,
@@ -323,7 +337,8 @@ export function TvPlayer({
   const seeking = scrubAt > 0
   const [onScrubber, setOnScrubber] = useState(false)
   const scrubber = useRef<ViewHandle>(null)
-  const asking = m.message || m.stream === 'next-up'
+  // Skip intro or Skip credits asks for the focus too, and gives it back to the scrubber after
+  const asking = m.message || m.stream === 'next-up' || !!m.skip
   const chrome = !m.message && m.shown
   const { wake } = m
 
@@ -648,6 +663,7 @@ export function TvPlayer({
       {m.waiting && !m.message ? <Waiting preparing={m.stream === 'preparing'} /> : null}
       {m.message ? <TvStreamMessage p={p} onBack={m.leave} /> : null}
       {m.stream === 'next-up' && m.next ? <TvNextUp m={m} /> : null}
+      {m.skip ? <TvSkip m={m} /> : null}
     </View>
   )
 }

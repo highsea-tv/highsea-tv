@@ -65,7 +65,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { HIDE_MS } from '../../packages/client/src/player/index.ts'
 import { SEED } from '../../packages/mock/src/films.ts'
-import { showNumber } from '../../packages/mock/src/kinds.ts'
+import { episodeNumber, showNumber } from '../../packages/mock/src/kinds.ts'
 import { controlMetrics, TV_REFERENCE } from '../../packages/tokens/src/controls.ts'
 import { atExit, keepLatestRun } from './ending.ts'
 
@@ -759,6 +759,7 @@ export const SCREENS = [
   'now-playing',
   'who',
   'player',
+  'episode',
   'settings',
 ] as const
 export type Screen = (typeof SCREENS)[number]
@@ -786,6 +787,8 @@ export const ROUTES: Partial<Record<Screen, string>> = {
   'link-code': '/link/KQ7-4PM',
   downloads: '/offline',
   player: `/play/${SEED.film.id}`,
+  // an episode from its start, which the mock's clip opens on its titles: Skip intro (ADR 0067)
+  episode: `/play/episode/${episodeNumber('the-lantern-keepers-s1e2')}/start`,
   // B3's, on the routes the mock answers (one-client-platform-b.md › B3): Shows and Saltmarsh by
   // the mock's number for it, Music, its Songs, Sintel's score and The Hollow Pines, Now playing
   // with nothing queued, and Who's watching. On touch, Shows and Music are Library's views
@@ -938,6 +941,8 @@ export const ANCHORS: Record<Screen, (t: Target) => Anchor[]> = {
       ? { kinds: ['field', 'other'], name: /^position$/, says: 'the scrubber' }
       : { kinds: ['action'], name: /^show controls$/, says: 'the stop that shows the controls' },
   ],
+  // Skip intro shows over the picture whether the controls show or not, on every form factor
+  episode: () => [{ kinds: ['action'], name: /^skip intro$/, says: 'Skip intro' }],
   shows: () => [{ kinds: ['action'], name: /^saltmarsh\b/, says: 'Saltmarsh’s poster' }],
   show: () => [
     { kinds: ['text'], name: /^saltmarsh$/, says: 'the show’s title' },
@@ -1137,6 +1142,7 @@ const TITLES: Record<Screen, string> = {
   'link-code': 'Connect a device: approving the TV’s KQ7-4PM (not on the TV)',
   downloads: 'Offline (the phone; the TV keeps none)',
   player: 'C5 The player: Tears of Steel, as Sintel’s clip',
+  episode: 'C5 The player: The Lantern Keepers S1E2 in its intro, with Skip intro',
   shows: 'Shows (the Library tab’s Shows on the phone)',
   show: 'A show: Saltmarsh',
   music: 'Music (the Library tab’s Music on the phone)',
@@ -1577,7 +1583,8 @@ if (import.meta.main) {
   // on the Mac's loopback (EXPO_PUBLIC_HIGHSEA_MOCK_MEDIA, set by `build`), so it serves the same
   // export again, held as the web's was, while they run
   const media =
-    screens.includes('player') && devices.some((d) => plan.targets.includes(d.flag))
+    (screens.includes('player') || screens.includes('episode')) &&
+    devices.some((d) => plan.targets.includes(d.flag))
       ? await (async () => {
           process.env.HIGHSEA_CLIENT_EXPORT = '0'
           const { servePrototypes } = await import('./lib.ts')

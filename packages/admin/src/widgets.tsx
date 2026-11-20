@@ -61,6 +61,7 @@ import { behind, mbps, methodTone, watcher } from './delivery.ts'
 import { downloadSource, useDownloadSource } from './download-source.ts'
 import { type QueueFilter, queueFilters, torrentTone } from './downloads-status.ts'
 import { foldersOnDisk, releasesByDay } from './library-figures.ts'
+import { titleOf, titlePath } from './media-links.ts'
 import { torrentState } from './movie-detail-messages.ts'
 import { useRouter } from './navigation.tsx'
 import { NetworkWidget } from './network-widget.tsx'
@@ -811,8 +812,10 @@ function QueueRows({ items, layout }: { items: QueueItem[]; layout: 'table' | 'm
                   <Tooltip content={q.stateReason ?? ''} disabled={!q.stateReason}>
                     <TitleCell
                       title={
-                        q.movieId ? (
-                          <TitleLink href={`/movies/${q.movieId}`}>{q.title}</TitleLink>
+                        titlePath(q) ? (
+                          <TitleLink href={titlePath(q) ?? ''}>
+                            {titleOf({ ...q, year: null })}
+                          </TitleLink>
                         ) : (
                           q.title
                         )

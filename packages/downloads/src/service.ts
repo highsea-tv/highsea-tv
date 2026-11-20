@@ -5,6 +5,8 @@
 // event handler (parent plan, Known pitfalls): the import, a refused release's replacement, and
 // letting go after seeding. A download that stalls for 2 hours says so; at 3 it is blocklisted and
 // replaced (activity-downloads.md). Every job checks what already happened, so it's safe to repeat.
+// A show's grab (Phase 5 C1) is the same download on the show's item, with the episodes its release
+// brings and the search scope it came from, saved under `shows`; its blocklist is the show's.
 
 import { isAbsolute, join, resolve } from 'node:path'
 import {
@@ -19,6 +21,9 @@ import {
 import { unref } from '@highsea-tv/core/timers'
 import { type Db, readSetting, schema, writeSetting } from '@highsea-tv/db'
 import {
+  chooseReleases,
+  type EpisodeReleaseView,
+  type EpisodeScope,
   fetchRelease,
   type GrabbedRelease,
   type Indexers,
@@ -36,7 +41,13 @@ import type {
 } from '@highsea-tv/torrent'
 import { and, desc, eq, inArray, isNotNull, isNull, lt, or, sql } from 'drizzle-orm'
 import { z } from 'zod'
-import { categoryFolder, createCategories, MANUAL_CATEGORY, MOVIES_CATEGORY } from './categories.ts'
+import {
+  categoryFolder,
+  createCategories,
+  MANUAL_CATEGORY,
+  MOVIES_CATEGORY,
+  SHOWS_CATEGORY,
+} from './categories.ts'
 import {
   DEFAULT_DOWNLOAD_CLIENT,
   DOWNLOAD_CLIENT_KEY,
@@ -79,11 +90,20 @@ const SPEED_SAMPLES = 600
 /** The prototype's `TorrentState`: the engine's states, plus the ones only downloads knows. */
 export type QueueState = EngineState | 'stalled' | 'importing' | 'import-blocked'
 
+/**
+ * A show's download, as the queue names it (Phase 5 C1): the show's id as the admin addresses it
+ * (its TMDB id as a string), the season and the episode numbers.
+ */
+export type EpisodeRef = { id: string; season: number; episodes: number[] }
+
 export type QueueItem = {
   id: string
   torrentId: string | null
   /** The movie's TMDB id, as the API addresses movies; null once it's left the library. */
   movieId: number | null
+  /** A show's download: the show and the episodes it brings; null for a film's. */
+  show: EpisodeRef | null
+  /** The movie's or the show's. */
   title: string
   year: number | null
   release: string
@@ -152,6 +172,7 @@ export type TorrentView = {
   name: string
   infoHash: string
   movieId: number | null
+  show: EpisodeRef | null
   category: string
   /** Added by hand (or from the watch folder), not grabbed for the library. */
   manual: boolean
@@ -182,6 +203,8 @@ export type TorrentView = {
 export type BlocklistEntry = {
   id: string
   movieId: number | null
+  /** A show's entry: the show, its episodes left empty (a show's blocklist is the show's). */
+  show: EpisodeRef | null
   title: string | null
   year: number | null
   sourceTitle: string
@@ -213,6 +236,8 @@ export type ImportInput = {
   downloadId: string
   itemId: string
   versionId: string | null
+  /** A show's download: the episode items its release brings; `itemId` is the show. */
+  episodeIds: string[] | null
   /** The torrent's content: its file, or its folder. */
   path: string
   releaseTitle: string
@@ -239,13 +264,19 @@ export type DownloadsDeps = {
   events: EventBus
   jobs: JobQueue
   engine: TorrentEngine
-  indexers: Pick<Indexers, 'grab' | 'releases'>
+  indexers: Pick<Indexers, 'grab' | 'releases' | 'grabEpisodes' | 'episodeReleases'>
   /** A manual torrent's URL is fetched through it. */
   fetch: Fetch
   /** The movie an item is, for its tmdb id and the queue's title. */
   movie(itemId: string): { tmdbId: number; title: string; year: number | null } | null
   /** A new search for a movie's version, when the last one's releases are gone. */
   search(itemId: string, versionId: string | null): Promise<ReleaseView[]>
+  /** The show an item is (Phase 5 C1), for its TMDB id and the queue's title. */
+  show?(itemId: string): { tmdbId: number; title: string; year: number | null } | null
+  /** The season and episode numbers of a show's episode items, in order. */
+  episodeNumbers?(ids: readonly string[]): { season: number; episodes: number[] } | null
+  /** A new search of a show's season or episode, judged against what it wants now. */
+  searchEpisodes?(showItemId: string, scope: EpisodeScope): Promise<EpisodeReleaseView[]>
   /** The setup's downloads folder. */
   downloadsFolder(): string
   history(entry: HistoryEntry): void
@@ -278,6 +309,16 @@ export type GrabInput = {
   indexerId: string
   guid: string
   /** Grab anyway: take a release the decision engine rejected, or one on the blocklist. */
+  force?: boolean
+}
+
+/** A show's grab (Phase 5 C1): a release from the last search of a season or an episode. */
+export type GrabEpisodesInput = {
+  /** The show's item. */
+  itemId: string
+  scope: EpisodeScope
+  indexerId: string
+  guid: string
   force?: boolean
 }
 
@@ -454,6 +495,70 @@ export function createDownloads(deps: DownloadsDeps) {
         'not-found',
         'That release is no longer in the search results. Search again.',
       )
+    check(input, view)
+    const got = await deps.indexers.grab({
+      tmdbId: movie.tmdbId,
+      indexerId: input.indexerId,
+      guid: input.guid,
+    })
+    return place(input, view, got, { category: MOVIES_CATEGORY, versionId: input.versionId })
+  }
+
+  /** A show's grab: the release brings its episodes, saved under `shows`. */
+  async function grabEpisodes(input: GrabEpisodesInput): Promise<QueueItem> {
+    const show = deps.show?.(input.itemId)
+    if (!show) throw new AppError('not-found', 'That show isn’t in the library.')
+    const view = deps.indexers
+      .episodeReleases(show.tmdbId, input.scope)
+      .find((r) => r.indexerId === input.indexerId && r.guid === input.guid)
+    if (!view)
+      throw new AppError(
+        'not-found',
+        'That release is no longer in the search results. Search again.',
+      )
+    check(input, view)
+    // an episode already on its way isn't grabbed twice, even with Grab anyway
+    const busy = activeEpisodes(input.itemId)
+    const clash = view.episodeIds.filter((id) => busy.has(id))
+    if (clash.length)
+      throw new AppError(
+        'conflict',
+        clash.length === view.episodeIds.length
+          ? 'Those episodes are already downloading.'
+          : 'Some of those episodes are already downloading.',
+      )
+    const got = await deps.indexers.grabEpisodes({
+      tmdbId: show.tmdbId,
+      scope: input.scope,
+      indexerId: input.indexerId,
+      guid: input.guid,
+    })
+    return place(input, view, got, {
+      category: SHOWS_CATEGORY,
+      versionId: null,
+      episodeIds: view.episodeIds,
+      scope: input.scope,
+    })
+  }
+
+  /** The episode items a show's active downloads bring. */
+  function activeEpisodes(showItemId: string): Set<string> {
+    return new Set(
+      db
+        .select({ episodeIds: downloads.episodeIds })
+        .from(downloads)
+        .where(
+          and(
+            eq(downloads.itemId, showItemId),
+            inArray(downloads.state, ['downloading', 'importing', 'import-blocked']),
+          ),
+        )
+        .all()
+        .flatMap((d) => d.episodeIds ?? []),
+    )
+  }
+
+  function check(input: { itemId: string; guid: string; force?: boolean }, view: ReleaseView) {
     if (!input.force && !view.approved) {
       const why = view.reasons.find((r) => r.kind === 'rejected')?.message
       throw new AppError(
@@ -461,17 +566,26 @@ export function createDownloads(deps: DownloadsDeps) {
         `That release was rejected${why ? `: ${why}` : ''}. Grab anyway takes it.`,
       )
     }
-    if (!input.force && isBlocked(input.itemId, { ...input, title: view.title }))
+    if (!input.force && isBlocked(input.itemId, { ...view, title: view.title }))
       throw new AppError('conflict', 'That release is blocklisted. Grab anyway takes it.')
-    const got = await deps.indexers.grab({
-      tmdbId: movie.tmdbId,
-      indexerId: input.indexerId,
-      guid: input.guid,
-    })
+  }
+
+  /** Hands a fetched release to the engine and records the download and its history. */
+  async function place(
+    input: { itemId: string; indexerId: string; guid: string; force?: boolean },
+    view: ReleaseView,
+    got: GrabbedRelease,
+    to: {
+      category: string
+      versionId: string | null
+      episodeIds?: string[]
+      scope?: EpisodeScope
+    },
+  ): Promise<QueueItem> {
     const added = await engine.add({
       source: got.source,
-      savePath: join(deps.downloadsFolder(), MOVIES_CATEGORY),
-      category: MOVIES_CATEGORY,
+      savePath: join(deps.downloadsFolder(), to.category),
+      category: to.category,
       rule: ruleOf(got.seeding),
     })
     if (added.existing)
@@ -493,7 +607,8 @@ export function createDownloads(deps: DownloadsDeps) {
         id,
         torrentId: added.id,
         itemId: input.itemId,
-        versionId: input.versionId,
+        versionId: to.versionId,
+        episodeIds: to.episodeIds ?? null,
         indexerId: input.indexerId,
         indexerName: view.indexer,
         guid: input.guid,
@@ -501,7 +616,11 @@ export function createDownloads(deps: DownloadsDeps) {
         releaseTitle: view.title,
         quality: view.quality,
         size: view.size ?? engine.get(added.id).size,
-        release: { ...got.release, grabbedAnyway: rejected },
+        release: {
+          ...got.release,
+          grabbedAnyway: rejected,
+          ...(to.scope ? { scope: to.scope } : {}),
+        },
         state: 'downloading',
         stateReason: null,
         progressAt: now,
@@ -521,7 +640,12 @@ export function createDownloads(deps: DownloadsDeps) {
           }`
         : null,
       downloadId: id,
-      data: { guid: input.guid, infoHash: added.infoHash, versionId: input.versionId },
+      data: {
+        guid: input.guid,
+        infoHash: added.infoHash,
+        versionId: to.versionId,
+        ...(to.episodeIds ? { episodeIds: to.episodeIds } : {}),
+      },
     })
     logger.info('grabbed a release', { download: id, release: view.title })
     announce({ queue: [id], torrents: [added.id], history: true })
@@ -584,6 +708,56 @@ export function createDownloads(deps: DownloadsDeps) {
     return null
   }
 
+  /**
+   * What an automatic search of a show's season or episode grabs (Phase 5 C1): a new search, then
+   * `chooseReleases` over the wanted episodes not already on their way, leaving out releases tried
+   * or blocklisted. Each chosen release is grabbed; one that fails to grab is passed over.
+   */
+  async function grabBestEpisodes(
+    showItemId: string,
+    scope: EpisodeScope,
+    wanted: readonly string[],
+  ): Promise<QueueItem[]> {
+    if (!deps.searchEpisodes || !deps.show?.(showItemId)) return []
+    const busy = activeEpisodes(showItemId)
+    const left = wanted.filter((id) => !busy.has(id))
+    if (!left.length) return []
+    const tried = new Set(
+      db
+        .select({ indexerId: downloads.indexerId, guid: downloads.guid })
+        .from(downloads)
+        .where(eq(downloads.itemId, showItemId))
+        .all()
+        .map((d) => `${d.indexerId}|${d.guid}`),
+    )
+    const releases = (await deps.searchEpisodes(showItemId, scope)).filter(
+      (r) =>
+        !tried.has(`${r.indexerId}|${r.guid}`) &&
+        !isBlocked(showItemId, r) &&
+        r.episodeIds.every((id) => !busy.has(id)),
+    )
+    const out: QueueItem[] = []
+    for (const r of chooseReleases(releases, left)) {
+      try {
+        out.push(
+          await grabEpisodes({ itemId: showItemId, scope, indexerId: r.indexerId, guid: r.guid }),
+        )
+      } catch (e) {
+        logger.warn('a show’s grab failed; passing over it', {
+          release: r.title,
+          error: (e as Error).message,
+        })
+      }
+    }
+    return out
+  }
+
+  /** The scope a show's download came from, for its replacement's search. */
+  function scopeOf(d: Row): EpisodeScope | null {
+    const s = (d.release as { scope?: EpisodeScope } | null)?.scope
+    return s && typeof s.season === 'number' ? s : null
+  }
+
   /** Blocklists a download's release, drops its torrent and data, and grabs another. */
   async function replace(
     d: Row,
@@ -596,7 +770,12 @@ export function createDownloads(deps: DownloadsDeps) {
     if (torrentId && engine.has(torrentId)) await engine.remove(torrentId, true)
     update(d.id, { state: 'failed', stateReason: reason, torrentId: null })
     announce({ queue: [d.id], torrents: torrentId ? [torrentId] : undefined, history: true })
-    const next = await grabBest(d.itemId, d.versionId)
+    const scope = d.episodeIds ? scopeOf(d) : null
+    const next = d.episodeIds
+      ? scope
+        ? ((await grabBestEpisodes(d.itemId, scope, d.episodeIds))[0] ?? null)
+        : null
+      : await grabBest(d.itemId, d.versionId)
     if (!next)
       deps.history({
         itemId: d.itemId,
@@ -700,16 +879,51 @@ export function createDownloads(deps: DownloadsDeps) {
     return { state: snap.state, reason: snap.message }
   }
 
+  /** The movie or show a download is for, as the queue, Downloads and the blocklist name it. */
+  function titleOf(
+    itemId: string,
+    episodeIds: readonly string[] | null,
+  ): {
+    movieId: number | null
+    show: EpisodeRef | null
+    title: string | null
+    year: number | null
+  } {
+    if (episodeIds) {
+      const show = deps.show?.(itemId)
+      const numbers = deps.episodeNumbers?.(episodeIds)
+      if (!show) return { movieId: null, show: null, title: null, year: null }
+      return {
+        movieId: null,
+        show: {
+          id: String(show.tmdbId),
+          season: numbers?.season ?? 0,
+          episodes: numbers?.episodes ?? [],
+        },
+        title: show.title,
+        year: show.year,
+      }
+    }
+    const movie = deps.movie(itemId)
+    return {
+      movieId: movie?.tmdbId ?? null,
+      show: null,
+      title: movie?.title ?? null,
+      year: movie?.year ?? null,
+    }
+  }
+
   function queueItem(d: Row): QueueItem {
     const snap = snapshot(d.torrentId)
-    const movie = deps.movie(d.itemId)
+    const of = titleOf(d.itemId, d.episodeIds)
     const { state, reason } = stateOf(d, snap)
     return {
       id: d.id,
       torrentId: snap ? d.torrentId : null,
-      movieId: movie?.tmdbId ?? null,
-      title: movie?.title ?? d.releaseTitle,
-      year: movie?.year ?? null,
+      movieId: of.movieId,
+      show: of.show,
+      title: of.title ?? d.releaseTitle,
+      year: of.year,
       release: d.releaseTitle,
       quality: d.quality,
       size: snap?.size || d.size,
@@ -733,7 +947,9 @@ export function createDownloads(deps: DownloadsDeps) {
       id: snap.id,
       name: snap.name,
       infoHash: snap.infoHash,
-      movieId: d ? (deps.movie(d.itemId)?.tmdbId ?? null) : null,
+      ...(d
+        ? (({ movieId, show }) => ({ movieId, show }))(titleOf(d.itemId, d.episodeIds))
+        : { movieId: null, show: null }),
       category: snap.category,
       manual: snap.manual,
       size: snap.size,
@@ -800,6 +1016,7 @@ export function createDownloads(deps: DownloadsDeps) {
         downloadId: d.id,
         itemId: d.itemId,
         versionId: d.versionId,
+        episodeIds: d.episodeIds,
         path: join(snap.savePath, snap.name),
         releaseTitle: d.releaseTitle,
         quality: d.quality,
@@ -1075,6 +1292,10 @@ export function createDownloads(deps: DownloadsDeps) {
     onEngineEvent,
     grab,
     grabBest,
+    grabEpisodes,
+    grabBestEpisodes,
+    /** The episode items a show's downloads in the queue bring. */
+    activeEpisodes,
     isBlocked,
 
     // -------------------------------------------------------------- Activity › Queue
@@ -1391,11 +1612,13 @@ export function createDownloads(deps: DownloadsDeps) {
         .all()
         .map((b) => {
           const movie = deps.movie(b.itemId)
+          const show = movie ? null : deps.show?.(b.itemId)
           return {
             id: b.id,
             movieId: movie?.tmdbId ?? null,
-            title: movie?.title ?? null,
-            year: movie?.year ?? null,
+            show: show ? { id: String(show.tmdbId), season: 0, episodes: [] } : null,
+            title: movie?.title ?? show?.title ?? null,
+            year: movie?.year ?? show?.year ?? null,
             sourceTitle: b.releaseTitle,
             indexer: b.indexerName,
             quality: b.quality,

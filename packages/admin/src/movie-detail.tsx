@@ -68,7 +68,6 @@ import {
   type IconName,
   Input,
   Menu,
-  Press,
   ProgressBar,
   QualityTag,
   Select,
@@ -84,7 +83,6 @@ import {
   TableToolbar,
   Tabs,
   Text,
-  TitleCell,
   Tooltip,
   toast,
   tokens,
@@ -120,6 +118,7 @@ import { AVAILABILITY, loadHistory } from './movie-data.ts'
 import { movieDetail as messages, torrentState } from './movie-detail-messages.ts'
 import { useRouter } from './navigation.tsx'
 import { AdminNotFound } from './not-found.tsx'
+import { Caption, ReleaseList, TableNone, TitleTd, Words } from './release-list.tsx'
 import { AdminPage } from './shell.tsx'
 import { useTabAddress } from './tabs.ts'
 import { TagBadges, TagPicker, useTags } from './tag-picker.tsx'
@@ -151,36 +150,12 @@ function Heading({ children }: { children: string }) {
   )
 }
 
-/** A line in the caption style, `text-3` unless told. */
-function Caption({
-  children,
-  color = 'text-3',
-}: {
-  children: ReactNode
-  color?: 'text-3' | 'badge-danger'
-}) {
-  return (
-    <Text variant="caption" color={color}>
-      {children}
-    </Text>
-  )
-}
-
 /** A dialog's or form's error, read out as it appears. */
 function FormError({ children }: { children: string }) {
   return (
     <Text variant="caption" color="badge-danger" role="alert">
       {children}
     </Text>
-  )
-}
-
-/** The web's TitleCell is a cell of its own: here the library's TitleCell inside a tall cell. */
-function TitleTd({ title, detail }: { title: string; detail?: string | null }) {
-  return (
-    <TableCell tall truncate>
-      <TitleCell title={title} detail={detail ?? undefined} />
-    </TableCell>
   )
 }
 
@@ -1429,265 +1404,40 @@ function SearchTab({ id }: { id: number }) {
   return <InteractiveSearch id={id} indexers={searchable.enabled} />
 }
 
-type Found = {
-  releases: Release[]
-  failed: { indexer: string; message: string }[]
-  /** What the indexers answered with that isn't listed, and why (HT-85). */
-  leftOut: { indexer: string; reason: 'other-movie' | 'duplicate'; count: number; found: number }[]
-}
-
-/** A row's text in the admin's ui type, in `text` or `text-3`. */
-function Words({ children, color }: { children: string; color?: 'text-2' | 'text-3' }) {
-  return (
-    <Text size={UI.size} leading={UI.leading} color={color}>
-      {children}
-    </Text>
-  )
-}
-
-/** A table's empty line (the web's px-3.5 py-8, centred caption). */
-function TableNone({ children }: { children: string }) {
-  return (
-    <View style={{ paddingHorizontal: s['3'] + s['0.5'], paddingVertical: s['8'] }}>
-      <Text variant="caption" color="text-3" align="center">
-        {children}
-      </Text>
-    </View>
-  )
-}
-
 /**
- * The prototype's InteractiveSearch on real results. Opening the tab shows the last 30 minutes'
- * results when there are some, so coming back doesn't cost every indexer a query; Search again
- * always searches.
+ * The prototype's InteractiveSearch on real results (release-list.tsx). Opening the tab shows the
+ * last 30 minutes' results when there are some, so coming back doesn't cost every indexer a query;
+ * Search again always searches. Releases for other films are said, not listed: an indexer whose
+ * whole answer was for other films may have ignored the search (HT-85).
  */
 function InteractiveSearch({ id, indexers }: { id: number; indexers: number }) {
   const t = useT(messages)
-  const locale = useLocale()
-  const [run, setRun] = useState(0)
-  const releases = useQuery(`releases:${id}:${run}`, async (c): Promise<Found> => {
-    if (run === 0) {
-      const cached = await c.movies.releases({ params: { id } })
-      if (cached.length) return { releases: cached, failed: [], leftOut: [] }
-    }
-    return c.movies.interactiveSearch({ params: { id } })
-  })
-  const [open, setOpen] = useState<string | null>(null)
-  const [showRejected, setShowRejected] = useState(true)
-  const dash = t('search.unknown')
-  // a rejected release's button is Grab anyway: it overrides the profile, so it sends `force`
-  const grab = useAction((c, r: Release) =>
-    c.movies.grabRelease({
-      params: { id, guid: r.guid },
-      body: { indexerId: r.indexerId, ...(r.approved ? {} : { force: true }) },
-    }),
-  )
-  const [grabbed, setGrabbed] = useState<string | null>(null)
-  const doGrab = (r: Release) =>
-    grab.run(r).then(
-      () => {
-        setGrabbed(r.guid)
-        toast.success(t('grab.done'), { description: t('grab.doneBody', { title: r.title }) })
-      },
-      (e: Error) => toast.error(t('grab.failed'), { description: e.message }),
-    )
-
   return (
-    <Loadable
-      query={releases}
-      what={t('search.what')}
-      skeleton={
-        <>
-          <Caption>{t('search.searching', { count: indexers })}</Caption>
-          {[0, 1, 2, 3].map((i) => (
-            <Skeleton key={i} height={admin.skeleton.row} />
-          ))}
-        </>
-      }
-    >
-      {({ releases: rs, failed, leftOut }) => {
-        const shown = showRejected ? rs : rs.filter((r) => r.approved)
-        // releases for other films are said, not listed: an indexer whose whole answer was for
-        // other films may have ignored the search (HT-85)
-        const otherFilms = leftOut.filter((l) => l.reason === 'other-movie')
-        return (
-          <View style={{ gap: s['3'] }}>
-            <TableFrame>
-              <TableToolbar>
-                <Words>{t('search.count', { count: rs.length })}</Words>
-                <Words color="text-3">
-                  {t('search.accepted', { count: rs.filter((r) => r.approved).length })}
-                </Words>
-                <View style={{ marginStart: 'auto' }}>
-                  <Switch
-                    label={t('search.showRejected')}
-                    checked={showRejected}
-                    onCheckedChange={setShowRejected}
-                  />
-                </View>
-                <Button size="sm" icon="refresh" onPress={() => setRun(run + 1)}>
-                  {t('search.again')}
-                </Button>
-              </TableToolbar>
-              {rs.length === 0 ? (
-                <TableNone>
-                  {t(otherFilms.length > 0 ? 'search.noneForThis' : 'search.none')}
-                </TableNone>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>{t('search.release')}</TableHead>
-                      <TableHead>{t('search.quality')}</TableHead>
-                      <TableHead numeric>{t('search.score')}</TableHead>
-                      <TableHead numeric>{t('search.size')}</TableHead>
-                      <TableHead numeric>{t('search.peers')}</TableHead>
-                      <TableHead numeric>{t('search.age')}</TableHead>
-                      <TableHead>{t('search.decision')}</TableHead>
-                      <TableHead hidden>{t('search.actions')}</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {shown.flatMap((r) => {
-                      const expanded = open === r.guid
-                      const rejected = r.reasons.filter((x) => x.kind === 'rejected').length
-                      const decision = r.approved
-                        ? t('search.approved')
-                        : t('search.rejected', { count: rejected })
-                      const row = (
-                        <TableRow key={r.guid}>
-                          <TitleTd title={r.indexer} detail={r.title} />
-                          <TableCell>
-                            <QualityTag overlay={false}>{r.quality}</QualityTag>
-                            {r.customFormats.slice(0, 2).map((f) => (
-                              <QualityTag key={f} overlay={false}>
-                                {f}
-                              </QualityTag>
-                            ))}
-                          </TableCell>
-                          <TableCell numeric>{String(r.formatScore)}</TableCell>
-                          <TableCell numeric>{r.size === null ? dash : bytes(r.size)}</TableCell>
-                          <TableCell
-                            numeric
-                          >{`${r.seeders ?? dash}/${r.leechers ?? dash}`}</TableCell>
-                          <TableCell numeric>
-                            {r.ageHours === null ? dash : duration(r.ageHours * 3600, locale)}
-                          </TableCell>
-                          <TableCell>
-                            <Press
-                              aria-expanded={expanded}
-                              accessibilityLabel={`${decision} ${t('search.reasons')}`}
-                              onPress={() => setOpen(expanded ? null : r.guid)}
-                              style={{ borderRadius: tokens.radius.sm }}
-                            >
-                              <Badge tone={r.approved ? 'success' : 'danger'}>{decision}</Badge>
-                            </Press>
-                          </TableCell>
-                          <TableCell align="end">
-                            {grabbed === r.guid ? (
-                              <Badge tone="accent">{t('search.grabbed')}</Badge>
-                            ) : (
-                              <Tooltip
-                                content={t(r.approved ? 'search.grabTip' : 'search.grabAnywayTip')}
-                              >
-                                <Button
-                                  size="sm"
-                                  variant={r.approved ? 'primary' : 'ghost'}
-                                  iconOnly
-                                  icon="download"
-                                  accessibilityLabel={t(
-                                    r.approved ? 'search.grab' : 'search.grabAnyway',
-                                    { title: r.title },
-                                  )}
-                                  onPress={() => doGrab(r)}
-                                  disabled={grab.pending}
-                                />
-                              </Tooltip>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      )
-                      return expanded
-                        ? [
-                            row,
-                            <TableRow key={`${r.guid}-reasons`} selected>
-                              <TableCell span={8}>
-                                <Reasons release={r} />
-                              </TableCell>
-                            </TableRow>,
-                          ]
-                        : [row]
-                    })}
-                  </TableBody>
-                </Table>
-              )}
-            </TableFrame>
-            {failed.length + otherFilms.length > 0 && (
-              <View role="list" style={{ gap: s['1'] }}>
-                {failed.map((f) => (
-                  <View key={f.indexer} role="listitem">
-                    <Caption>
-                      {t('search.failedIndexer', { indexer: f.indexer, message: f.message })}
-                    </Caption>
-                  </View>
-                ))}
-                {otherFilms.map((l) => (
-                  <View key={`${l.indexer}-left-out`} role="listitem">
-                    <Caption>
-                      {l.count === l.found
-                        ? t('search.leftOutAll', { indexer: l.indexer, count: l.count })
-                        : t('search.leftOut', {
-                            indexer: l.indexer,
-                            found: l.found,
-                            count: l.count,
-                          })}
-                    </Caption>
-                  </View>
-                ))}
-              </View>
-            )}
-          </View>
-        )
+    <ReleaseList<Release>
+      queryKey={`releases:${id}`}
+      indexers={indexers}
+      load={async (c, run) => {
+        if (run === 0) {
+          const cached = await c.movies.releases({ params: { id } })
+          if (cached.length) return { releases: cached, failed: [], leftOut: [] }
+        }
+        return c.movies.interactiveSearch({ params: { id } })
       }}
-    </Loadable>
-  )
-}
-
-/** Why a release was accepted or rejected, as the decision engine said it. */
-function Reasons({ release: r }: { release: Release }) {
-  return (
-    <View role="list" style={{ gap: s['1'] }}>
-      {r.reasons.map((reason) => (
-        <View
-          key={reason.message}
-          role="listitem"
-          style={{ flexDirection: 'row', alignItems: 'flex-start', gap: s['1'] + s['0.5'] }}
-        >
-          <View style={{ marginTop: tokens.icon.drop, flexShrink: 0 }}>
-            <Icon
-              name={
-                reason.kind === 'accepted'
-                  ? 'check'
-                  : reason.kind === 'warning'
-                    ? 'warning'
-                    : 'close'
-              }
-              size={tokens.icon.size.xs}
-              color={
-                reason.kind === 'accepted'
-                  ? 'success'
-                  : reason.kind === 'warning'
-                    ? 'warning'
-                    : 'danger'
-              }
-            />
-          </View>
-          <Text variant="caption" color="text-2">
-            {reason.message}
-          </Text>
-        </View>
-      ))}
-    </View>
+      grab={(c, r) =>
+        c.movies.grabRelease({
+          params: { id, guid: r.guid },
+          body: { indexerId: r.indexerId, ...(r.approved ? {} : { force: true }) },
+        })
+      }
+      noneForThis={t('search.noneForThis')}
+      leftOutNote={(l) =>
+        l.reason !== 'other-movie'
+          ? null
+          : l.count === l.found
+            ? t('search.leftOutAll', { indexer: l.indexer, count: l.count })
+            : t('search.leftOut', { indexer: l.indexer, found: l.found, count: l.count })
+      }
+    />
   )
 }
 

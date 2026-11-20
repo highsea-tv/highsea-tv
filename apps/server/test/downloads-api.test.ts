@@ -168,7 +168,11 @@ describe('categories (6b)', () => {
   test('staff list them; the owner adds and removes; a torrent saves to its folder', async () => {
     const { adminApi, ownerApi, runtime } = await started()
     const downloads = runtime.folders().downloads
-    expect((await adminApi.downloads.categories()).map((c) => c.name)).toEqual(['movies', 'manual'])
+    expect((await adminApi.downloads.categories()).map((c) => c.name)).toEqual([
+      'movies',
+      'shows',
+      'manual',
+    ])
 
     expect(
       await failure(adminApi.downloads.saveCategory({ body: { name: 'books' } })),
@@ -207,7 +211,11 @@ describe('categories (6b)', () => {
 
     await adminApi.downloads.delete({ params: { id: added.id }, body: { deleteData: false } })
     await ownerApi.downloads.removeCategory({ params: { name: 'books' } })
-    expect((await adminApi.downloads.categories()).map((c) => c.name)).toEqual(['movies', 'manual'])
+    expect((await adminApi.downloads.categories()).map((c) => c.name)).toEqual([
+      'movies',
+      'shows',
+      'manual',
+    ])
   })
 })
 

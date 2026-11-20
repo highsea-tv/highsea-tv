@@ -21,6 +21,10 @@ export const QUERY_KEYS = [
   /** The IMDb id without its `tt`. */
   'IMDBIDShort',
   'TMDBID',
+  /** A show's season number, for a site that takes it apart from the keywords (Phase 5 C1). */
+  'Season',
+  /** The episode number in that season; empty for a season. */
+  'Episode',
   /** The indexer's own category ids for the search, comma-separated. */
   'Categories',
   'Limit',

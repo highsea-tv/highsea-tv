@@ -17,7 +17,14 @@
 //                      or a redirect to a magnet
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { FAKE_CREDENTIALS, FAKE_NOW, type FakeRelease, find, RELEASES } from './fixtures.ts'
+import {
+  FAKE_CREDENTIALS,
+  FAKE_NOW,
+  type FakeRelease,
+  find,
+  RELEASES,
+  SHOW_RELEASES,
+} from './fixtures.ts'
 
 export * from './definitions.ts'
 export * from './fixtures.ts'
@@ -53,7 +60,7 @@ function capsXml(movieParams: string): string {
   <limits max="100" default="50" />
   <searching>
     <search available="yes" supportedParams="q" />
-    <tv-search available="yes" supportedParams="q,season,ep" />
+    <tv-search available="yes" supportedParams="q,season,ep,tvdbid" />
     <movie-search available="yes" supportedParams="${movieParams}" />
   </searching>
   <categories>
@@ -106,6 +113,7 @@ function feedXml(
       ${a('grabs', r.grabs)}
       ${r.imdbId ? a('imdb', r.imdbId.replace(/^tt/, '')) : ''}
       ${r.tmdbId && ns === 'torznab' ? a('tmdbid', r.tmdbId) : ''}
+      ${r.tvdbId && ns === 'torznab' ? a('tvdbid', r.tvdbId) : ''}
     </item>`
     })
     .join('\n')
@@ -251,7 +259,7 @@ export function createFakeIndexer(options: { origin?: string } = {}): FakeIndexe
   const published: FakeRelease[] = []
 
   const torrentFor = (id: number): Response => {
-    const release = [...published, ...RELEASES].find((r) => r.id === id)
+    const release = [...published, ...RELEASES, ...SHOW_RELEASES].find((r) => r.id === id)
     if (!release) return html('Not found', 404)
     const answer = served.get(id) ?? madeUpTorrent(release.name)
     if (typeof answer === 'string')
@@ -292,14 +300,19 @@ export function createFakeIndexer(options: { origin?: string } = {}): FakeIndexe
       if (p.get('apikey') !== key) return xml(errorXml(100, 'Incorrect user credentials'))
       const t = p.get('t')
       if (t === 'caps') return xml(capsXml(ns === 'torznab' ? 'q,imdbid,tmdbid' : 'q,imdbid'))
-      if (t !== 'movie' && t !== 'search') return xml(errorXml(202, 'No such function'))
+      if (t !== 'movie' && t !== 'search' && t !== 'tvsearch')
+        return xml(errorXml(202, 'No such function'))
       const categories = (p.get('cat') ?? '').split(',').filter(Boolean).map(Number)
       const found = find(
         {
           q: p.get('q'),
           tmdbId: p.get('tmdbid'),
-          imdbId: p.get('imdbid'),
+          imdbId: t === 'tvsearch' ? null : p.get('imdbid'),
           categories,
+          tv:
+            t === 'tvsearch'
+              ? { tvdbId: p.get('tvdbid'), season: p.get('season'), ep: p.get('ep') }
+              : undefined,
         },
         published,
       )
@@ -311,9 +324,11 @@ export function createFakeIndexer(options: { origin?: string } = {}): FakeIndexe
         return json({ error: 'Invalid passkey' }, 200)
       const categories = (p.get('cat') ?? '').split(',').filter(Boolean)
       const map: Record<string, number> = { '11': 2040, '12': 2045, '13': 2030, '20': 5040 }
-      const found = find({ q: p.get('q'), imdbId: p.get('imdb') }, published).filter(
-        (r) => !categories.length || categories.some((c) => map[c] === r.category),
-      )
+      const standard = categories.map((c) => map[c]).filter((c): c is number => c !== undefined)
+      const found = find(
+        { q: p.get('q'), imdbId: p.get('imdb'), categories: standard },
+        published,
+      ).filter((r) => !categories.length || categories.some((c) => map[c] === r.category))
       const rows = (empty ? [] : found).map((r) => ({
         id: r.id,
         name: r.name,
