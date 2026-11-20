@@ -94,13 +94,14 @@ export function usePosterWidth(share: number = formFactorLayouts['compact-touch'
 }
 
 /**
- * A pointer's item widths by the window's, as the web prototype's clamps: a poster near 10.5% of
- * the window between 6.5rem and 12rem (web/film-row.tsx's --poster), a still near 24% between
- * 15rem and 21rem (web/home.tsx's cardWidth).
+ * A pointer's item widths by the window's, after the web prototype's clamps (web/film-row.tsx's
+ * --poster, near 10.5% of the window between 6.5rem and 12rem; web/home.tsx's cardWidth, near 24%
+ * between 15rem and 21rem), each share and end a ninth over since the owner asked for a little
+ * bigger cards everywhere (2026-11-19, HT-115).
  */
 const POINTER_ITEM = {
-  poster: { share: 0.105, min: 104, max: 192 },
-  still: { share: 0.24, min: 240, max: 336 },
+  poster: { share: 0.117, min: 116, max: 212 },
+  still: { share: 0.267, min: 266, max: 372 },
 }
 
 /** A pointer's poster or still width in a window this wide (POINTER_ITEM). */

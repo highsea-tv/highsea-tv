@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // A poster (poster.tsx in ui-web): 2:3 artwork (or a 16:9 still) with a fallback of the title on
 // a gradient, quality pills top left, a status bottom left, the Continue watching bar 7% in from
-// the edges, and the title and caption under it. The poster is its own touch target. Artwork is
+// the edges, and the title (one line since HT-115) and caption under it. The poster is its own touch target. Artwork is
 // decoded at display size by expo-image (tv.md › Performance; https://docs.expo.dev/versions/latest/sdk/image/).
 // By the form factor: only with a pointer the art grows to the web's poster scale while the pointer's
 // over it or the keyboard's on it (./lift.ts), and its quick actions show at its top end while the
@@ -33,6 +33,7 @@ import { Text } from './text.tsx'
 import { tokens, useTheme } from './theme.tsx'
 import type { ViewHandle } from './tv/focusable.tsx'
 import { TvTile } from './tv/tiles.tsx'
+import { webTitle } from './web-title.ts'
 
 /** The admin's `ui` style, a pointer's `titleSize="ui"` (as the banner's). */
 const UI = adminText.ui
@@ -248,10 +249,13 @@ export function Poster({
         alignItems: round ? 'center' : undefined,
       }}
     >
+      {/* one line, cut with an ellipsis, so every card in a row stands as tall (the owner,
+          2026-11-19, HT-115); the poster is read by its whole title, and the web's tooltip shows it */}
       <Text
+        {...({ ref: webTitle(title) } as object)}
         variant="callout"
         weight={600}
-        numberOfLines={2}
+        numberOfLines={1}
         align={round ? 'center' : undefined}
         {...(input === 'pointer' && titleSize === 'ui'
           ? { size: UI.size, style: { lineHeight: Math.round(UI.size * UI.leading) } }

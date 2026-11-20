@@ -50,8 +50,11 @@ import { TV_LIBRARY } from './sizes.ts'
 
 const { space } = tokens
 
-/** A regular width's least poster width, the web prototype's 9rem. */
-const REGULAR_MIN = space['16'] * 2 + space['4']
+/**
+ * A regular width's least poster width: 10rem, a ninth over the web prototype's 9rem, since the
+ * owner asked for a little bigger cards everywhere (2026-11-19, HT-115).
+ */
+const REGULAR_MIN = space['16'] * 2 + space['8']
 
 /** The grid's columns across `span`, and its spacing, by the width class. */
 export function gridOf(widthClass: WidthClass, span: number) {
