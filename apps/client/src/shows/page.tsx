@@ -685,7 +685,7 @@ function TvShow(props: ShowProps) {
                 style={{ flexDirection: 'row', alignItems: 'center', gap: c.rowGap }}
               >
                 {next ? (
-                  <View style={{ minWidth: tv.poster.width * u }}>
+                  <View style={{ minWidth: tv.column * u }}>
                     <Button
                       ref={firstRef}
                       variant="primary"

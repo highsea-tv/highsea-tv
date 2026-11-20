@@ -46,9 +46,10 @@ export function registerShows(app: OpenAPIHono<Env>) {
   // ---------------------------------------------------------------- the admin
   // static paths before `/series/{id}`, in the contract's order
 
-  app.openapi(routes.series.discover, async (c) =>
-    c.json(await shows(c).admin.discover(c.req.valid('query').query), 200),
-  )
+  app.openapi(routes.series.discover, async (c) => {
+    const { query, page } = c.req.valid('query')
+    return c.json(await shows(c).admin.discover(query, page), 200)
+  })
 
   app.openapi(routes.series.rootFolders, (c) => c.json(shows(c).admin.rootFolders(), 200))
 

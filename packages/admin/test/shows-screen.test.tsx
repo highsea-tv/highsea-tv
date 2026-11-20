@@ -115,6 +115,24 @@ const lantern = () => ({
   ],
 })
 
+/** A show TMDB finds that isn't here. */
+const harbour = () => ({
+  id: 'harbour-lights',
+  tmdbId: 200,
+  title: 'Harbour Lights',
+  year: 2025,
+  endYear: null,
+  seasons: 1,
+  network: 'BBC One',
+  genres: [],
+  synopsis: 'A harbour at night.',
+  rating: 3.5,
+  art: { poster: '', backdrop: '' },
+  inLibrary: false,
+})
+/** A title too long for a card's one line. */
+const LONG = 'The Long Quiet of the Northern Harbour Lights After Midnight'
+
 const FOUND = '2026-11-18T10:00:00.000Z'
 const UNMATCHED = [
   {
@@ -175,22 +193,20 @@ async function api(url: string, init: RequestInit = {}): Promise<Response> {
     case 'GET /api/v1/languageprofiles':
       return json([{ id: 'lp-en', name: 'English', languages: [], cutoff: 'en', minScore: 80 }])
     case 'GET /api/v1/discover/shows':
-      return json([
-        {
-          id: 'harbour-lights',
-          tmdbId: 200,
-          title: 'Harbour Lights',
-          year: 2025,
-          endYear: null,
-          seasons: 1,
-          network: 'BBC One',
-          genres: [],
-          synopsis: 'A harbour at night.',
-          rating: 3.5,
-          art: { poster: '', backdrop: '' },
-          inLibrary: false,
-        },
-      ])
+      // two of TMDB's pages with no search: the grid reads the second as it reaches its end
+      if (u.searchParams.get('page') === '2')
+        return json({
+          page: 2,
+          totalPages: 2,
+          totalResults: 2,
+          items: [{ ...harbour(), id: 'quiet', tmdbId: 201, title: LONG }],
+        })
+      return json({
+        page: 1,
+        totalPages: u.searchParams.has('query') ? 1 : 2,
+        totalResults: 1,
+        items: [harbour()],
+      })
     case 'POST /api/v1/series':
       return json({ ...lantern(), id: 'harbour-lights', title: 'Harbour Lights' })
     case 'POST /api/v1/series/the-lantern-keepers/search':
@@ -455,6 +471,19 @@ describe('a show’s page', () => {
 })
 
 describe('Discover’s shows', () => {
+  test('TMDB’s pages come into one grid as it reaches its end, with no Show more (HT-115)', async () => {
+    const { page } = await open(<DiscoverShows />)
+    await settle()
+    expect(page.getByRole('heading', { name: 'Trending this week' })).toBeTruthy()
+    expect(page.getByRole('button', { name: 'Add Harbour Lights' })).toBeTruthy()
+    expect(page.getByRole('button', { name: `Add ${LONG}` })).toBeTruthy()
+    expect(sent('GET', '/api/v1/discover/shows').map((r) => r.path)).toEqual([
+      '/api/v1/discover/shows?page=1',
+      '/api/v1/discover/shows?page=2',
+    ])
+    expect(page.queryByRole('button', { name: /Show more/ })).toBeNull()
+  })
+
   test('Add a show sends the dialog’s choices', async () => {
     const { user, page } = await open(<DiscoverShows />)
     await user.click(page.getByRole('button', { name: 'Add Harbour Lights' }))

@@ -6,6 +6,7 @@
 // out and leaves the files where they are.
 import type {
   DiscoverSeries,
+  DiscoverSeriesPage,
   EpisodeMarkersPatch,
   Series,
   SeriesDetail,
@@ -457,11 +458,16 @@ export function createShowAdmin(ctx: ShowsDeps, deps: Deps) {
     announce(events, [showIdOf(id)])
   }
 
-  /** TMDB's shows for a search, those here marked; an empty search finds nothing. */
-  async function discover(query = ''): Promise<DiscoverSeries[]> {
+  /**
+   * A page of TMDB's shows, those here marked: its search for a query, and with none the shows
+   * trending this week, as Discover's films show TMDB's trending films (HT-115: an empty search
+   * used to answer nothing, so Discover's shows stayed empty on a real server).
+   */
+  async function discover(query = '', pageNumber = 1): Promise<DiscoverSeriesPage> {
     const q = query.trim()
-    if (!q) return []
-    const page = await metadata.discover.searchShows(q, 1)
+    const page = q
+      ? await metadata.discover.searchShows(q, pageNumber)
+      : await metadata.discover.trendingShows(pageNumber)
     const ids = page.results.map((r) => r.id)
     const here = new Set(
       ids.length
@@ -473,7 +479,7 @@ export function createShowAdmin(ctx: ShowsDeps, deps: Deps) {
             .map((r) => r.tmdbId)
         : [],
     )
-    return page.results.map((r) => {
+    const items = page.results.map((r): DiscoverSeries => {
       const cached = metadata.cachedShow(r.id)
       const art = artOf(r.art)
       return {
@@ -491,6 +497,12 @@ export function createShowAdmin(ctx: ShowsDeps, deps: Deps) {
         inLibrary: here.has(r.id),
       }
     })
+    return {
+      items,
+      page: page.page,
+      totalPages: page.totalPages,
+      totalResults: page.totalResults,
+    }
   }
 
   /** Settings › Media management's folders for shows. */

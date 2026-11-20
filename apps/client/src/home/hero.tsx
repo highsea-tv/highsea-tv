@@ -276,7 +276,7 @@ export function TvHomeHero({
       {/* room under the actions for the name a round button shows on focus, as a film's page */}
       <View style={{ paddingBottom: ROUND_ACTION_ROOM * u }}>
         <FocusGuide autoFocus style={{ flexDirection: 'row', alignItems: 'center', gap: c.rowGap }}>
-          <View style={{ minWidth: tokens.tv.poster.width * u }}>
+          <View style={{ minWidth: tokens.tv.column * u }}>
             <Button
               ref={first}
               variant="primary"

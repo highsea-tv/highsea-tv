@@ -231,6 +231,15 @@ describe('TV search', () => {
     expect(page.results[0]?.art.logo).toBeNull()
     expect(await t.metadata.discover.searchShows('  ')).toMatchObject({ totalResults: 0 })
   })
+
+  test('TMDB’s trending shows this week, for Discover with no search (HT-115)', async () => {
+    const t = await open()
+    const page = await t.metadata.discover.trendingShows()
+    expect(page).toMatchObject({ page: 1, totalPages: 1, totalResults: 19 })
+    expect(page.results[0]).toMatchObject({ id: 2996, title: 'The Office', year: 2001 })
+    expect(page.results[0]?.genres).toContain('Comedy')
+    expect(page.results.some((s) => s.id === CHERNOBYL)).toBe(true)
+  })
 })
 
 describe('refresh, the sweep, the changes and the purge', () => {

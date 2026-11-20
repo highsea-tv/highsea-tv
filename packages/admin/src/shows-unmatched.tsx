@@ -228,7 +228,7 @@ function MatchDialog({
   const q = query.trim()
   const found = useQuery(`shows:unmatched-discover:${q}`, (c) =>
     folder && q
-      ? c.series.discover({ query: { query: q } })
+      ? c.series.discover({ query: { query: q } }).then((p) => p.items)
       : Promise.resolve<DiscoverSeries[]>([]),
   )
   const match = useAction(

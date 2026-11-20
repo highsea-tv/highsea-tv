@@ -3,8 +3,8 @@
 // What the admin's Movies and Shows share now that they show the whole library, as the clients'
 // libraries do (the owner, 2026-11-18, HT-57):
 // - the grid draws only the rows near the screen, through the library's VirtualGrid, the clients'
-//   own (ADR 0061's 2026-11-06 section), in the shell's scroller: as many 136-wide columns as fit,
-//   16 apart and 20 between rows, as PosterGrid lays Discover's out;
+//   own (ADR 0061's 2026-11-06 section), in the shell's scroller: as many 156-wide columns as fit
+//   (POSTER_MIN), 16 apart and 20 between rows, Discover's too since HT-115;
 // - sorted by title, the clients' A–Z index (the library's LetterIndex, in its pointer form) stands
 //   inside the surface that holds the grid or table, along its left edge within its padding (the
 //   owner, 2026-11-18: a rail between the sidebar and the page set the list apart from its index),
@@ -42,6 +42,7 @@ export function LibraryPosters<T>({
   label,
   render,
   square = false,
+  onEnd,
   ref,
 }: {
   items: readonly T[]
@@ -50,6 +51,8 @@ export function LibraryPosters<T>({
   render: (item: T, index: number) => ReactNode
   /** Music's square covers and round photos (HT-68), for the rows' estimate: films' are 2:3. */
   square?: boolean
+  /** Its last row is drawn: Discover asks TMDB for its next page (HT-115). */
+  onEnd?: () => void
   ref?: Ref<VirtualGridHandle>
 }) {
   const [width, setWidth] = useState<number | null>(null)
@@ -70,6 +73,7 @@ export function LibraryPosters<T>({
         columns={columns}
         gap={POSTER_GAP}
         estimate={Math.round(cell * (square ? 1 : 1.5) + CAPTION)}
+        onEnd={onEnd}
       />
     </View>
   )

@@ -200,7 +200,7 @@ function pointerStrip(
   measure: number | undefined,
 ) {
   const gap = POINTER_GAP
-  // a pointer's poster, near 10.5% of the window between 6.5rem and 12rem (the prototype's clamp)
+  // a pointer's poster, near 11.7% of the window between 116 and 212 (row.tsx's POINTER_ITEM)
   const target = pointerItemWidth(windowWidth)
   const room = (measured ?? windowWidth) - 2 * gutter
   const count = Math.max(1, Math.round((room - WIDE * target) / (target + gap)))

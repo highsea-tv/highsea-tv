@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "highsea",
-    "version": "0.4.10",
+    "version": "0.4.11",
     "description": "The highsea server API. Every admin capability is here, with admin scope.",
     "license": {
       "name": "AGPL-3.0-only"
@@ -6414,6 +6414,32 @@
         "required": [
           "season",
           "watched"
+        ]
+      },
+      "DiscoverSeriesPage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DiscoverSeries"
+            }
+          },
+          "page": {
+            "type": "integer"
+          },
+          "totalPages": {
+            "type": "integer"
+          },
+          "totalResults": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "page",
+          "totalPages",
+          "totalResults"
         ]
       },
       "DiscoverSeries": {
@@ -28237,7 +28263,7 @@
           "Series"
         ],
         "summary": "Find shows on TMDB",
-        "description": "Library shows are marked `inLibrary`.",
+        "description": "With a query, TMDB’s TV search; without one, the shows trending this week. A page at a time, 20 a page. Library shows are marked `inLibrary`.",
         "x-highsea-access": "staff",
         "security": [
           {
@@ -28256,18 +28282,25 @@
             "required": false,
             "name": "query",
             "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500
+            },
+            "required": false,
+            "name": "page",
+            "in": "query"
           }
         ],
         "responses": {
           "200": {
-            "description": "The shows found",
+            "description": "A page of shows",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/DiscoverSeries"
-                  }
+                  "$ref": "#/components/schemas/DiscoverSeriesPage"
                 }
               }
             }

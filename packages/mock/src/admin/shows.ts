@@ -40,6 +40,8 @@ import { t } from './movies-shared.ts'
 const DAY = 86_400_000
 const TOPIC = 'shows.updated'
 const GB = 1024 ** 3
+/** TMDB's page size, for Discover's shows as for its films. */
+const DISCOVER_PAGE = 20
 /** How long a search's releases stay grabbable (the indexers' service's 30 minutes). */
 const FRESH_MS = 30 * 60_000
 const pad = (n: number) => String(n).padStart(2, '0')
@@ -301,7 +303,17 @@ export function showsAnswers(kit: AdminKit): Answers {
       cutoffEpisodes: ({ query }, ctx) => wanted.cutoff(ctx, query ?? {}),
     },
     series: {
-      discover: ({ query }, ctx) => ctx.api.shows.discover(query?.query ?? ''),
+      discover: ({ query }, ctx) => {
+        // a page at a time, 20 a page, as TMDB answers the server
+        const all = ctx.api.shows.discover(query?.query ?? '')
+        const page = query?.page ?? 1
+        return {
+          items: all.slice((page - 1) * DISCOVER_PAGE, page * DISCOVER_PAGE),
+          page,
+          totalPages: Math.max(1, Math.ceil(all.length / DISCOVER_PAGE)),
+          totalResults: all.length,
+        }
+      },
       rootFolders: (_, ctx) => ctx.api.shows.rootFolders(),
       unmatched: ({ query }, ctx) =>
         unmatched(ctx.api.shows.list().map(showOf)).filter(
