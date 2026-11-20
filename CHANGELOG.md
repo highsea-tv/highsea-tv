@@ -7,6 +7,14 @@ While highsea is at 0.x, any release may change how something works. When one do
 
 ## [Unreleased]
 
+## [0.4.12] - 2026-11-20
+
+### Changed
+
+- Make the mark bigger in the app icons, and the favicon the mark alone ([#120](https://github.com/highsea-tv/highsea-tv/pull/120))
+- Keep one cache of answers so the client's screens open without waiting (HT-116) ([#121](https://github.com/highsea-tv/highsea-tv/pull/121))
+- HT-117 Music: gapless play, even loudness, Next and Previous on the lock screen (D, 4) ([#122](https://github.com/highsea-tv/highsea-tv/pull/122))
+
 ## [0.4.11] - 2026-11-20
 
 ### Added
@@ -265,7 +273,9 @@ While highsea is at 0.x, any release may change how something works. When one do
 
 
 
-[unreleased]: https://github.com/highsea-tv/highsea-tv/compare/v0.4.11...HEAD
+
+[unreleased]: https://github.com/highsea-tv/highsea-tv/compare/v0.4.12...HEAD
+[0.4.12]: https://github.com/highsea-tv/highsea-tv/compare/v0.4.11...v0.4.12
 [0.4.11]: https://github.com/highsea-tv/highsea-tv/compare/v0.4.10...v0.4.11
 [0.4.10]: https://github.com/highsea-tv/highsea-tv/compare/v0.4.9...v0.4.10
 [0.4.9]: https://github.com/highsea-tv/highsea-tv/compare/v0.4.8...v0.4.9

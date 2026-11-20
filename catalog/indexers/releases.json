@@ -1,5 +1,16 @@
 [
   {
+    "version": "0.4.12",
+    "channel": "stable",
+    "date": "2026-11-20",
+    "notes": [
+      "Make the mark bigger in the app icons, and the favicon the mark alone (#120)",
+      "Keep one cache of answers so the client's screens open without waiting (HT-116) (#121)",
+      "HT-117 Music: gapless play, even loudness, Next and Previous on the lock screen (D, 4) (#122)"
+    ],
+    "url": "https://github.com/highsea-tv/highsea-tv/releases/tag/v0.4.12"
+  },
+  {
     "version": "0.4.11",
     "channel": "stable",
     "date": "2026-11-20",

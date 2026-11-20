@@ -2,6 +2,10 @@
 
 Newest first. Each version's notes appear in the server's What changed dialog.
 
+## 2026.11.20.2
+
+- highsea 0.4.12 is out. System › Updates has its notes.
+
 ## 2026.11.20
 
 - highsea 0.4.11 is out. System › Updates has its notes.
