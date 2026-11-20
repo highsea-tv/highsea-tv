@@ -30,6 +30,20 @@ const LOGO_PAINTS: [LogoPaint, string][] = [
   ['ink', '-ink'],
 ]
 
+/**
+ * Copies of brand files that apps serve from their own folders, relative to the repository root.
+ * The build writes them, and `--check` and the tests fail when one differs from its source.
+ */
+export const COPIES: Record<string, string> = {
+  'apps/server/public/favicon.svg': 'web/favicon.svg',
+  'apps/server/public/favicon.ico': 'web/favicon.ico',
+  'apps/docs/public/favicon.svg': 'web/favicon.svg',
+  'templates/synology/spk/PACKAGE_ICON.PNG': 'synology/icon-64.png',
+  'apps/packages/public/icon_72.png': 'synology/icon-72.png',
+  'apps/packages/public/icon_120.png': 'synology/icon-120.png',
+  'apps/packages/public/icon_256.png': 'synology/icon-256.png',
+}
+
 /** Text outputs, compared byte for byte by `--check`. Paths are relative to the package. */
 export function textOutputs(): Record<string, string> {
   const out: Record<string, string> = {
@@ -115,6 +129,24 @@ if (import.meta.main) {
     if (current && Buffer.compare(current, bytes) === 0) continue
     await Bun.write(file, bytes)
     console.log(`wrote ${path}`)
+  }
+  const repo = new URL('../../', root)
+  for (const [target, source] of Object.entries(COPIES)) {
+    const from = new Uint8Array(
+      await Bun.file(new URL(`assets/icons/${source}`, root)).arrayBuffer(),
+    )
+    const file = Bun.file(new URL(target, repo))
+    const current = (await file.exists()) ? new Uint8Array(await file.arrayBuffer()) : null
+    if (current && Buffer.compare(current, from) === 0) continue
+    if (check) {
+      console.error(
+        `${target} differs from the brand's ${source}; run \`bun run build\` in packages/brand`,
+      )
+      stale++
+    } else {
+      await Bun.write(file, from)
+      console.log(`wrote ${target}`)
+    }
   }
   if (stale) process.exit(1)
 }
