@@ -560,8 +560,8 @@ function TvFoot({ children }: { children: ReactNode }) {
   )
 }
 
-/** The QR's side: two posters' width, as the prototype's code beside its words. */
-const QR = tokens.tv.poster.width * 2
+/** The QR's side: two of the TV's columns (a poster's width before HT-115), as the prototype's code beside its words. */
+const QR = tokens.tv.column * 2
 
 /** The code and its QR, polled until a phone approves it. */
 function TvCode({ onPassword }: { onPassword: () => void }) {
@@ -745,8 +745,8 @@ const KEYS = 'abcdefghijklmnopqrstuvwxyz0123456789.-_@'.split('')
 const DIGITS = '1234567890'.split('')
 /** Keys in a row of the on-screen keyboard. */
 const PER_ROW = 10
-/** The keyboard's width: five posters' across. */
-const KEYBOARD = tokens.tv.poster.width * 5
+/** The keyboard's width: five of the TV's columns (posters' before HT-115) across. */
+const KEYBOARD = tokens.tv.column * 5
 
 type TvField = 'username' | 'password' | 'code'
 

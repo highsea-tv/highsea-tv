@@ -34,7 +34,7 @@ import {
   VirtualGrid,
   type VirtualGridHandle,
 } from '@highsea-tv/ui'
-import type { ViewHandle } from '@highsea-tv/ui/tv'
+import { TV_GRID_COLUMNS, type ViewHandle } from '@highsea-tv/ui/tv'
 import { type Href, router } from 'expo-router'
 import { type ReactElement, type ReactNode, type Ref, useEffect, useState } from 'react'
 import {
@@ -350,7 +350,7 @@ export function LibraryCollectionTile({
 
 /**
  * The page's loading mark, where its grid will be: the posters' skeletons, as many as its prototype
- * draws (on the TV two rows of seven, or one), hidden from assistive tech inside a container that
+ * draws (on the TV two rows of six, or one), hidden from assistive tech inside a container that
  * says it's busy.
  */
 export function LibraryLoading({
@@ -369,9 +369,9 @@ export function LibraryLoading({
   const [across, setAcross] = useState<number | null>(null)
   const u = theme.u
   const count = input === 'tv' ? tv : input === 'touch' ? touch : pointer
-  // the TV's seven a row, as TvGrid lays them; elsewhere the grid's own columns
+  // the TV's row, as TvGrid lays them; elsewhere the grid's own columns
   const tvGap = tokens.tv.poster.gap * u
-  const tvColumns = 7
+  const tvColumns = TV_GRID_COLUMNS
   const span = across ?? window
   const { width, gap } =
     input === 'tv'

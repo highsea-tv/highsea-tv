@@ -189,13 +189,14 @@ describe('Movies on the TV', () => {
     expect(tiles().some((t) => t.node === stop)).toBe(false)
   })
 
-  test('the grid is seven posters a row', async () => {
+  // six since the poster grew a ninth (HT-115); seven before
+  test('the grid is six posters a row', async () => {
     await at('/movies')
     const t = tiles()
-    expect(t.length).toBeGreaterThan(7)
-    const row = rowOf(t[0]?.node, t[6]?.node) as { children: unknown[] } | null
-    expect(row?.children).toHaveLength(7)
-    expect(rowOf(t[0]?.node, t[7]?.node)).not.toBe(row)
+    expect(t.length).toBeGreaterThan(6)
+    const row = rowOf(t[0]?.node, t[5]?.node) as { children: unknown[] } | null
+    expect(row?.children).toHaveLength(6)
+    expect(rowOf(t[0]?.node, t[6]?.node)).not.toBe(row)
   })
 
   test('a library that can’t load says so, with Try again', async () => {

@@ -141,7 +141,16 @@ export const tv = {
   safe: { x: 2.4, y: 2.4, overscan: 5 },
   hero: { height: 62, copyTop: 7.5, copyWidth: 38 },
   rows: { height: 47, inset: 4.5 },
-  poster: { width: 10.5, gap: 1.2 },
+  // a ninth wider than tv.md's 10.5u since the owner asked for a little bigger cards on every
+  // client (2026-11-19, HT-115): rows show the poster at this width, and the grids drop to six
+  // across (TV_GRID_COLUMNS), since seven of these no longer fit the safe area
+  poster: { width: 11.7, gap: 1.2 },
+  /**
+   * The width the TV's other parts are measured in, tv.md's poster width before HT-115: the
+   * sign-in's QR and keyboard, Settings' columns and the least width of a page's Play. Kept so that
+   * only the cards grew when the poster did (HT-115).
+   */
+  column: 10.5,
   /** `sm`, `md` and `panel` added with the owner's sign-off of 2026-11-10 (answer 1 on E1's values). */
   radius: { pill: 0.3, sm: 0.4, poster: 0.5, button: 0.5, md: 0.6, panel: 1 },
   /**

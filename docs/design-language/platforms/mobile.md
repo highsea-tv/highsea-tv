@@ -28,7 +28,8 @@ When the featured section is Home's first section (the owner's change of 2026-11
 - **Row gaps:** 8pt between posters (`mobile.posterGap`), and 24pt between rows, title included (`mobile.rowGap`). The form-factor rule's `compact-touch` layout holds these three and the posters' share (`formFactorLayouts` in `form-factor.ts`).
 - **Safe areas:** content respects the platform's safe-area insets. The tab bar sits above the home indicator, and content scrolls under the status bar with a `bg` scrim.
 - **Posters:**
-  - about 30% of the screen width in rows, so about three visible plus a peek;
+  - about 33% of the screen width in rows, so about three visible plus a smaller peek (30% until the owner asked for a little bigger cards on every client, 2026-11-19, HT-115);
+  - three across in the library's grid, at the width three fill (unchanged by HT-115: two across would be a bigger change than asked);
   - about 78% of the width in the featured carousel.
 - **Home's other rows** (the prototype's, kept when B1 moved Home to apps/client): Continue watching cards are 62% of the row, and still rows 46%, so two show with a peek (`HOME` in `apps/client/src/home/sizes.ts`).
 - **A person's page** (B1): the round portrait is centred with the words under it; the biography is 15pt on a 1.45 line, cut at four lines with More (`PHONE_PERSON` in `apps/client/src/detail/layout.ts`). The section headings over its rows, as on a film's page, are iOS's Headline, `mobileText.headline` (17pt semibold, the library's `PHONE_SECTION_TITLE`).
