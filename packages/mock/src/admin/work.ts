@@ -168,14 +168,18 @@ export function workAnswers(kit: AdminKit): Answers {
       }
     })
 
-  /** Movies, manual, then any other a torrent is in, by name; the mock keeps no owner's categories. */
+  /**
+   * Movies, shows (HT-109, as the server has kept it since C1), manual, then any other a torrent
+   * is in, by name; the mock keeps no owner's categories.
+   */
   const categoriesOf = (s: ServerState): TorrentCategory[] => {
     const count = (name: string) => s.torrents.filter((t) => categoryOf(t) === name).length
     const others = [...new Set(s.torrents.map(categoryOf))]
-      .filter((n) => n !== 'movies' && n !== 'manual')
+      .filter((n) => n !== 'movies' && n !== 'shows' && n !== 'manual')
       .sort((a, b) => a.localeCompare(b))
     return [
       { name: 'movies', folder: `${DOWNLOADS}/movies`, fixed: true, torrents: count('movies') },
+      { name: 'shows', folder: `${DOWNLOADS}/shows`, fixed: true, torrents: count('shows') },
       { name: 'manual', folder: `${DOWNLOADS}/manual`, fixed: true, torrents: count('manual') },
       ...others.map((name) => ({
         name,

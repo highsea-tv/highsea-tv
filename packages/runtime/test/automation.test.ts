@@ -3,7 +3,8 @@
 // RSS grabs a release once across two runs and only what's new, a blocklisted release is refused,
 // a file under the cutoff is upgraded by a search, the sweep searches what's due, and a movie
 // deleted with "Don't add it again" is excluded from lists; and a profile's Wait before grabbing
-// (8c) holds RSS's find back until its wait is up.
+// (8c) holds RSS's find back until its wait is up. Shows (HT-109): the sweep takes a show due, and
+// a show it searched without a grab waits a day, then three, as films do.
 import { afterEach, describe, expect, test } from 'bun:test'
 import { mkdirSync, mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -22,6 +23,8 @@ import { boot, getRuntime, hasRuntime, loadConfig } from '../src/index.ts'
 
 const SINTEL = 45745
 const BIG_BUCK_BUNNY = 10378
+const CHERNOBYL = 87108
+const DAY = 24 * 60 * 60 * 1000
 const GB = 1024 ** 3
 const dirs: string[] = []
 
@@ -71,7 +74,7 @@ async function start({ clock }: { clock?: FakeClock } = {}) {
       versions: [{ label: '1080p', qualityProfileId: 'qp-hd' }],
     })
   const grabs = () => rt.downloads.queue().map((q) => q.release)
-  return { rt, fake, indexer, root, add, grabs }
+  return { rt, fake, indexer, root, add, grabs, dir }
 }
 
 describe('RSS', () => {
@@ -238,6 +241,33 @@ describe('upgrades and the sweep', () => {
     expect(grabs()).toEqual(['Sintel.2010.1080p.BluRay.x264-GRP'])
     // searched just now: not due again yet
     expect(await rt.automation.sweep()).toEqual([])
+  })
+  test('a show the sweep searched waits a day, then three, before it’s due again', async () => {
+    const clock = createFakeClock()
+    const { rt, fake, dir } = await start({ clock })
+    const root = join(dir, 'data', 'media', 'shows')
+    mkdirSync(root, { recursive: true })
+    rt.media.rootFolders.add({ path: root, kind: 'shows' })
+    await rt.shows.add({
+      tmdbId: CHERNOBYL,
+      qualityProfileId: 'qp-hd',
+      rootFolder: root,
+      monitor: 'all',
+      seasonFolders: true,
+      search: false,
+    })
+    // the indexer finds nothing, so nothing is grabbed and the backoff grows
+    fake.misbehave({ kind: 'empty' })
+    expect(await rt.showSearch.sweep()).toEqual([CHERNOBYL])
+    expect(rt.downloads.queue()).toHaveLength(0)
+    expect(await rt.showSearch.sweep()).toEqual([])
+    clock.advance(DAY + 1000)
+    expect(await rt.showSearch.sweep()).toEqual([CHERNOBYL])
+    // the second wait is three days
+    clock.advance(DAY + 1000)
+    expect(await rt.showSearch.sweep()).toEqual([])
+    clock.advance(2 * DAY)
+    expect(await rt.showSearch.sweep()).toEqual([CHERNOBYL])
   })
 })
 

@@ -194,7 +194,38 @@ const FIELDS: Record<Exclude<Kind, 'browser'>, Spec[]> = {
 }
 
 /** What a new connection hears until it's changed: the things worth a message. */
-const DEFAULT_EVENTS: Event[] = ['imported', 'upgraded', 'download-failed', 'health', 'update']
+const DEFAULT_EVENTS: Event[] = [
+  'imported',
+  'upgraded',
+  // stage 6: new connections hear episodes imported and upgraded too (HT-109)
+  'episode-imported',
+  'episode-upgraded',
+  'download-failed',
+  'health',
+  'update',
+]
+
+/**
+ * The dialog's sets, as stage 6 drew them: Movies, Shows and Every kind. A season pack's grab,
+ * import or upgrade sends one message for the season. Show added and Episode playback started,
+ * drawn there too, come with the work that sends them.
+ */
+const EVENT_SETS: {
+  title: 'set.movies' | 'set.shows' | 'set.every'
+  hint?: 'set.showsHint'
+  events: Event[]
+}[] = [
+  {
+    title: 'set.movies',
+    events: ['grabbed', 'imported', 'upgraded', 'movie-added', 'playback-started'],
+  },
+  {
+    title: 'set.shows',
+    hint: 'set.showsHint',
+    events: ['episode-grabbed', 'episode-imported', 'episode-upgraded'],
+  },
+  { title: 'set.every', events: ['download-failed', 'subtitle-added', 'health', 'update'] },
+]
 
 const isMasked = (v: unknown) => typeof v === 'string' && v.startsWith('••••')
 
@@ -211,6 +242,7 @@ const inputOf = (c: Connection): ConnectionInput => ({
 // ---------------------------------------------------------------- the page
 
 const s = tokens.space
+const ui = tokens.adminText.ui
 
 /**
  * The kinds' grid, by its own width: as many columns as fit at `admin.connections.kindMin` each,
@@ -629,22 +661,34 @@ function ConnectionForm({
           </View>
         </Cell>
         <Cell>
-          <CheckGroup legend={t('form.events')} hint={t('form.eventsHint')}>
-            {NOTIFICATION_EVENTS.map((e) => (
-              <Checkbox
-                key={e}
-                label={t(`event.${e}`)}
-                checked={events.includes(e)}
-                onCheckedChange={(on) =>
-                  setEvents((old) =>
-                    on
-                      ? NOTIFICATION_EVENTS.filter((x) => x === e || old.includes(x))
-                      : old.filter((x) => x !== e),
-                  )
-                }
-              />
+          <View role="group" aria-label={t('form.events')} style={{ gap: s['2'] }}>
+            <Text size={ui.size} leading={ui.leading} weight={500} aria-hidden>
+              {t('form.events')}
+            </Text>
+            <Note>{t('form.eventsHint')}</Note>
+            {EVENT_SETS.map((set) => (
+              <CheckGroup
+                key={set.title}
+                legend={t(set.title)}
+                hint={set.hint ? t(set.hint) : undefined}
+              >
+                {set.events.map((e) => (
+                  <Checkbox
+                    key={e}
+                    label={t(`event.${e}`)}
+                    checked={events.includes(e)}
+                    onCheckedChange={(on) =>
+                      setEvents((old) =>
+                        on
+                          ? NOTIFICATION_EVENTS.filter((x) => x === e || old.includes(x))
+                          : old.filter((x) => x !== e),
+                      )
+                    }
+                  />
+                ))}
+              </CheckGroup>
             ))}
-          </CheckGroup>
+          </View>
         </Cell>
         {kind === 'email' && (
           <Cell>

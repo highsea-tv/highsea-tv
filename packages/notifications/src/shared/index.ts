@@ -24,6 +24,15 @@ export type MovieRef = {
   url?: string | null
 }
 
+/** A show, as a movie is named: "Severance (2022)". */
+export type ShowRef = MovieRef
+
+/**
+ * The episodes an event is about (HT-109): one, several of a season, or a whole season, which a
+ * season pack's grab and import name once.
+ */
+export type EpisodesRef = { season: number; episodes: number[]; pack: boolean }
+
 export type EventPayloads = {
   grabbed: { movie: MovieRef; release: string; indexer: string; size: number }
   imported: { movie: MovieRef; quality: string; size: number; upgradedFrom: string | null }
@@ -52,6 +61,28 @@ export type EventPayloads = {
     method: 'direct-play' | 'direct-stream' | 'transcode'
     sent: string
     away: boolean
+  }
+  /** Phase 5 C1 (HT-109), as stage 6 drew: a show's grab, import and upgrade, one per download. */
+  'episode-grabbed': {
+    show: ShowRef
+    episodes: EpisodesRef
+    release: string
+    indexer: string
+    size: number
+  }
+  'episode-imported': {
+    show: ShowRef
+    episodes: EpisodesRef
+    quality: string
+    size: number
+    upgradedFrom: string | null
+  }
+  'episode-upgraded': {
+    show: ShowRef
+    episodes: EpisodesRef
+    quality: string
+    size: number
+    upgradedFrom: string
   }
   test: Record<string, never>
 }
@@ -107,6 +138,11 @@ export const notificationMessages = defineMessages({
   'playing.transcode': 'Transcoded',
   'playing.body': '{how} on {device}. {sent}.',
   'playing.bodyAway': '{how} on {device}, away from home. {sent}.',
+  'episodes.one': '{show} · {code}',
+  'episodes.season': '{show} · Season {season}',
+  'episode.grabbed.title': 'Grabbed {episodes}',
+  'episode.imported.title': '{episodes} is in the library',
+  'episode.upgraded.title': '{episodes} was upgraded',
   'test.title': 'A test from highsea',
   'test.body': 'This connection works. Messages you choose will arrive here.',
   text: '{title}. {body}',
@@ -122,6 +158,24 @@ export const movieName = (t: NotificationT, m: MovieRef) =>
   m.year ? t('movie', { title: m.title, year: String(m.year) }) : m.title
 
 const NAMED = 3
+
+const pad = (n: number) => String(n).padStart(2, '0')
+
+/** "S03E05", "S03E05–E06" for a multi-episode file, as the admin writes an episode's place. */
+export function episodeCode(e: EpisodesRef): string {
+  const [first] = e.episodes
+  const last = e.episodes[e.episodes.length - 1]
+  if (first == null) return `S${pad(e.season)}`
+  return first === last
+    ? `S${pad(e.season)}E${pad(first)}`
+    : `S${pad(e.season)}E${pad(first)}–E${pad(last ?? first)}`
+}
+
+/** "Severance (2022) · S01E05", or "· Season 1" for a pack. */
+export const episodesName = (t: NotificationT, show: ShowRef, e: EpisodesRef) =>
+  e.pack
+    ? t('episodes.season', { show: movieName(t, show), season: String(e.season) })
+    : t('episodes.one', { show: movieName(t, show), code: episodeCode(e) })
 
 /** The payload as words, in the server's language. */
 export function render<E extends MessageEvent>(
@@ -195,6 +249,36 @@ function parts_(
           replaced: p.replaced ? 'yes' : 'no',
         }),
         ...of(p.movie),
+      }
+    }
+    case 'episode-grabbed': {
+      const p = payload as EventPayloads['episode-grabbed']
+      return {
+        level: 'info',
+        title: t('episode.grabbed.title', { episodes: episodesName(t, p.show, p.episodes) }),
+        body: t('grabbed.body', { release: p.release, indexer: p.indexer, size: bytes(p.size) }),
+        ...of(p.show),
+      }
+    }
+    case 'episode-imported': {
+      const p = payload as EventPayloads['episode-imported']
+      const size = bytes(p.size)
+      return {
+        level: 'success',
+        title: t('episode.imported.title', { episodes: episodesName(t, p.show, p.episodes) }),
+        body: p.upgradedFrom
+          ? t('imported.bodyUpgrade', { quality: p.quality, size, from: p.upgradedFrom })
+          : t('imported.body', { quality: p.quality, size }),
+        ...of(p.show),
+      }
+    }
+    case 'episode-upgraded': {
+      const p = payload as EventPayloads['episode-upgraded']
+      return {
+        level: 'success',
+        title: t('episode.upgraded.title', { episodes: episodesName(t, p.show, p.episodes) }),
+        body: t('upgraded.body', { from: p.upgradedFrom, quality: p.quality, size: bytes(p.size) }),
+        ...of(p.show),
       }
     }
     case 'subtitle-added': {

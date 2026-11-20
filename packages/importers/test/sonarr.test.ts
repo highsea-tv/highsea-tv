@@ -218,6 +218,23 @@ describe('the Sonarr importer', () => {
     // Chernobyl had no TMDB id in Sonarr: found by TheTVDB's, on the Remux profile's nearest
     expect(s.shows.get(CHERNOBYL)).toMatchObject({ monitored: true, qualityProfileId: 'qp-uhd' })
     expect(episodes(s, CHERNOBYL)?.S01E01).toEqual([true, true])
+    // what was filed is weighed against its profile's cutoff, as an import's is (HT-109): every
+    // file is a 1080p WEB-DL, under HD's cutoff (Bluray-1080p) and Ultra HD's alike, so each
+    // episode with a file is wanted for an upgrade: The Office's four and Chernobyl's one
+    const unmet = s.db
+      .select({ showId: schema.mediaItems.showId, unmet: schema.mediaItems.cutoffUnmet })
+      .from(schema.mediaItems)
+      .all()
+      .filter((r) => r.unmet)
+    const showIdOf = (tmdbId: number) =>
+      s.db
+        .select()
+        .from(schema.mediaItems)
+        .all()
+        .find((r) => r.type === 'show' && r.tmdbId === tmdbId)?.id
+    expect(unmet.filter((r) => r.showId === showIdOf(OFFICE))).toHaveLength(4)
+    expect(unmet.filter((r) => r.showId === showIdOf(CHERNOBYL))).toHaveLength(1)
+    expect(unmet).toHaveLength(5)
 
     // safe to repeat, and a second run changes nothing
     const before = JSON.stringify({

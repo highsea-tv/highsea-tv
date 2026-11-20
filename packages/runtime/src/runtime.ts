@@ -1227,7 +1227,15 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
           downloadId: input.downloadId,
           grabbedAnyway: input.grabbedAnyway,
         })
-        if (shown.status === 'imported') return { ok: true, transfer: shown.transfer }
+        if (shown.status === 'imported') {
+          // one message for the download, a season pack's for its season (HT-109)
+          notify?.episodesImported({
+            downloadId: input.downloadId,
+            showItemId: input.itemId,
+            files: shown.files,
+          })
+          return { ok: true, transfer: shown.transfer }
+        }
         return { ok: false, reason: shown.reason, ...(shown.replace ? { replace: true } : {}) }
       }
       const result = await movies.importDownload({
@@ -1250,6 +1258,17 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
     checkFolder: (path) => checkPath(path, [resolve(config.dataDir), folders().downloads]),
   })
   onEngineEvent = downloads.onEngineEvent
+  // shows' searches, their sweep and RSS's grabs for them (Phase 5 C1, HT-109)
+  const showSearch = createShowSearchJobs({
+    jobs,
+    events,
+    logger,
+    shows,
+    indexers,
+    downloads,
+    now: () => clock.now(),
+  })
+  showSearch.schedule(clock.now())
   // RSS, the backlog sweep and each movie's search (checkpoint 8a)
   const automation = createAutomation({
     jobs,
@@ -1260,9 +1279,9 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
     downloads,
     itemId: (tmdbId) => movieRow(tmdbId)?.id ?? null,
     now: () => clock.now(),
+    shows: showSearch,
   })
   automation.schedule(clock.now())
-  const showSearch = createShowSearchJobs({ jobs, logger, shows, indexers, downloads })
   // import lists (checkpoint 8a): through the fetch seam, Trakt's account sealed in a setting
   const listFetch = options.lists?.fetch ?? outside
   const listLibrary = createListLibrary({
@@ -1524,6 +1543,8 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
     }),
     // a connection with tags hears only movies sharing one (checkpoint 8c)
     movieTags: (tmdbId) => media.tags.ofMovie(tmdbId),
+    // and an episode's event only shows sharing one (HT-109)
+    showTags: (tmdbId) => media.tags.ofShow(tmdbId),
     vapidSubject: () => {
       if (options.notifications?.vapidSubject !== undefined)
         return options.notifications.vapidSubject
@@ -1540,6 +1561,7 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
     sealer,
     notifications,
     poster: (tmdbId) => metadata.cachedMovie(tmdbId)?.art.poster ?? null,
+    showPoster: (tmdbId) => metadata.cachedShow(tmdbId)?.art.poster ?? null,
     externalUrl: () => network.externalUrl(),
     issues: () => runtime.issues(),
     general: () => operations.general.get(),

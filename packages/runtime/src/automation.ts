@@ -9,6 +9,8 @@
 //   https://wiki.servarr.com/radarr/settings);
 // - `movies.wanted`, every 6 hours: the backlog sweep, the 20 movies searched longest ago, each
 //   pushed back 1, 3, 7, then 14 days (the owner's answer 3).
+// RSS reads each feed once for films and shows (HT-109): a release that numbers an episode goes to
+// the shows' side (show-search.ts), since a release read is marked seen and not read again.
 // Every search judges releases with the movie's blocklist and its version's file, so a release
 // that's blocklisted or isn't an upgrade is never grabbed.
 //
@@ -20,7 +22,13 @@
 // `movies.held`, which grabs the best release found by then.
 import { AppError, type EventBus, type Logger } from '@highsea-tv/core'
 import type { Downloads } from '@highsea-tv/downloads'
-import type { Indexers, SearchInput } from '@highsea-tv/indexers'
+import type {
+  EpisodeScope,
+  Indexers,
+  SearchInput,
+  ShowRssTarget,
+  ShowSearchInput,
+} from '@highsea-tv/indexers'
 import type { JobQueue } from '@highsea-tv/jobs'
 import { type Movies, WANTED_TOPIC } from '@highsea-tv/media/movies'
 import { holdUntil } from '@highsea-tv/quality'
@@ -47,6 +55,14 @@ export function createAutomation(deps: {
   /** A library movie's row id, or null when it isn't in the library. */
   itemId: (tmdbId: number) => string | null
   now: () => number
+  /** The shows' side of RSS (HT-109): their targets, and the grab for what matched. */
+  shows?: {
+    rssInput(): {
+      targets: ShowRssTarget[]
+      inputFor: (tmdbId: number, scope: EpisodeScope) => ShowSearchInput | null
+    }
+    grabFromRss(found: readonly { tmdbId: number; scope: EpisodeScope }[]): Promise<number>
+  }
 }) {
   const { jobs, events, movies, indexers, downloads } = deps
   const log = deps.logger.child('automation')
@@ -133,13 +149,21 @@ export function createAutomation(deps: {
     },
   })
 
-  /** RSS: the indexers' newest releases against every movie still wanted. */
+  /** RSS: the indexers' newest releases against every movie and show still wanted. */
   async function rss() {
     const targets = movies.wanted.rssTargets()
-    if (!targets.length || !indexers.hasEnabled()) return { read: 0, matched: [] as number[] }
+    const showSide = deps.shows?.rssInput() ?? { targets: [], inputFor: () => null }
+    if ((!targets.length && !showSide.targets.length) || !indexers.hasEnabled())
+      return {
+        read: 0,
+        matched: [] as number[],
+        shows: [] as { tmdbId: number; scope: EpisodeScope }[],
+      }
     // each movie is judged by the first version that wants something, as the sweep searches it
-    const result = await indexers.rss(targets, (tmdbId) =>
-      inputFor(tmdbId, movies.wanted.wants(tmdbId)[0]?.versionId),
+    const result = await indexers.rssAll(
+      targets,
+      (tmdbId) => inputFor(tmdbId, movies.wanted.wants(tmdbId)[0]?.versionId),
+      showSide,
     )
     for (const f of result.failed)
       log.warn('couldn’t read an indexer’s newest releases', {
@@ -156,15 +180,18 @@ export function createAutomation(deps: {
           movies.wanted.found(tmdbId)
         }
     }
+    const episodes = result.shows.length ? await (deps.shows?.grabFromRss(result.shows) ?? 0) : 0
     log.info('read the indexers’ newest releases', {
       indexers: result.read,
       releases: result.fetched,
       new: result.fresh,
       matched: result.matched.length,
       grabbed,
+      seasons: result.shows.length,
+      episodeGrabs: episodes,
     })
     if (result.matched.length) events.emit({ topic: WANTED_TOPIC })
-    return { read: result.read, matched: result.matched }
+    return { read: result.read, matched: result.matched, shows: result.shows }
   }
 
   jobs.define({

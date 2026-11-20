@@ -51,6 +51,9 @@ export type EventKind =
   | 'update'
   | 'movie-added'
   | 'playback-started'
+  | 'episode-grabbed'
+  | 'episode-imported'
+  | 'episode-upgraded'
   | 'test'
 
 export type Detail = {

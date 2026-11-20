@@ -196,6 +196,8 @@ export function createNotifications(deps: {
    * over, so notifications never import media (ADR 0036).
    */
   movieTags?: (tmdbId: number) => readonly string[]
+  /** A library show's tag ids, by its TMDB id (HT-109), for the episode events. */
+  showTags?: (tmdbId: number) => readonly string[]
 }) {
   const { db, clock, events, jobs, sealer } = deps
   const log = deps.logger.child('notifications')
@@ -212,7 +214,11 @@ export function createNotifications(deps: {
    * (a list's additions) reaches it when any of them matches.
    */
   function hearsMovies(tags: readonly string[], payload: unknown): boolean {
-    if (!tags.length || !deps.movieTags) return true
+    if (!tags.length) return true
+    // an episode's event is heard by the show's tags, as Sonarr's are by the series'
+    const show = (payload as { show?: { tmdbId: number } }).show
+    if (show) return !deps.showTags || deps.showTags(show.tmdbId).some((t) => tags.includes(t))
+    if (!deps.movieTags) return true
     const p = payload as { movie?: { tmdbId: number }; movies?: { tmdbId: number }[] }
     const movies = p.movie ? [p.movie] : (p.movies ?? [])
     if (!movies.length) return true
