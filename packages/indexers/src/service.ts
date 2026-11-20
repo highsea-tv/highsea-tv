@@ -32,6 +32,7 @@ import {
   createEpisodeSearch,
   type EpisodeReleaseView,
   type EpisodeScope,
+  type ShowRssTarget,
   type ShowSearchInput,
 } from './episode-search.ts'
 import type { Caps } from './feed.ts'
@@ -46,7 +47,13 @@ import {
 } from './health.ts'
 import { IndexerError, redact } from './http.ts'
 import { createRateLimiter } from './rate-limit.ts'
-import { createSearch, type ReleaseView, type RssTarget, type SearchInput } from './search.ts'
+import {
+  createSearch,
+  type ReleaseView,
+  type RssResult,
+  type RssTarget,
+  type SearchInput,
+} from './search.ts'
 import {
   migrateSettings,
   openSettings,
@@ -739,6 +746,24 @@ export function createIndexers(deps: IndexersDeps) {
      */
     rss: (targets: readonly RssTarget[], inputFor: (tmdbId: number) => SearchInput | null) =>
       search.rss(targets, inputFor),
+
+    /**
+     * RSS for films and shows in one read of the feeds (HT-109): a release numbered as an episode
+     * or a season is matched to the shows, the rest to the films. `shows` lists each show's season
+     * with a new approved release, kept as that season's results for `episodeReleases`.
+     */
+    async rssAll(
+      targets: readonly RssTarget[],
+      inputFor: (tmdbId: number) => SearchInput | null,
+      shows: {
+        targets: readonly ShowRssTarget[]
+        inputFor: (tmdbId: number, scope: EpisodeScope) => ShowSearchInput | null
+      },
+    ): Promise<RssResult & { shows: { tmdbId: number; scope: EpisodeScope }[] }> {
+      const episodes = episodeSearch.rss(shows.targets, shows.inputFor)
+      const result = await search.rss(targets, inputFor, episodes)
+      return { ...result, shows: episodes.finish(clock.now()) }
+    },
 
     /**
      * Fetches a release from the last search by its indexer and guid: its `.torrent` through the

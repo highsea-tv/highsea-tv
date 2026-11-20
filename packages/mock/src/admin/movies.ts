@@ -21,6 +21,7 @@ import {
   type ImportList,
   MEDIA_TOPICS,
   type Movie,
+  type MovieCalendarEntry,
   type MovieMetadata,
   type QueueItem,
   type Release,
@@ -43,6 +44,7 @@ import { chosenCollectionArt } from './artwork.ts'
 import { type AdminKit, type Answers, type Ctx, refuse } from './kit.ts'
 import { collectionsAnswers } from './movies-collections.ts'
 import { DAY, type MoviesMemory, moviesKit, pageOf, t, titleMatches } from './movies-shared.ts'
+import { episodeWanted } from './shows.ts'
 
 /** How long a search's releases stay grabbable (the indexers' service's 30 minutes). */
 const FRESH_MS = 30 * 60_000
@@ -67,6 +69,7 @@ export function moviesAnswers(kit: AdminKit): Answers {
   const memory: MoviesMemory = { tags: new Map(), searches: new Map(), feed: new Map() }
   const k = moviesKit(kit, memory)
   const { inLibrary, movieOf, discoverOf, libraryOf } = k
+  const episodes_ = episodeWanted(kit)
 
   const movies = (ctx: Ctx) => libraryOf(ctx.srv.state).map(movieOf)
   const enabledIndexers = (ctx: Ctx) => ctx.srv.state.indexers.filter((i) => i.enabled)
@@ -554,13 +557,17 @@ export function moviesAnswers(kit: AdminKit): Answers {
       },
       search: ({ body }, ctx) => {
         requireIndexers(ctx)
+        // episodes (HT-109): the shows' side answers for them
+        const episodes = episodes_.search(ctx, body)
+        if (body.kind === 'episodes' || (!body.all && !body.ids?.length))
+          return { queued: 0, episodes }
         const lists = body.all
           ? wantedOf(ctx, body.all === 'missing' ? 'missing' : 'cutoff-unmet').map((m) => m.id)
           : (body.ids ?? [])
         const found = libraryOf(ctx.srv.state).filter((m) => lists.includes(m.tmdbId))
         // the mock's search grabs what's missing at once; a cutoff search queues without a grab
         ctx.api.movies.bulkSearch(found.map((m) => m.id))
-        return { queued: found.length }
+        return { queued: found.length, ...(body.all || episodes ? { episodes } : {}) }
       },
       calendar: ({ query }, ctx) => {
         const from = Date.parse(`${query.from}T00:00:00Z`)
@@ -573,7 +580,7 @@ export function moviesAnswers(kit: AdminKit): Answers {
             reason: 'range',
           })
         const [cinema, digital] = CALENDAR_KINDS
-        const entries: CalendarEntry[] = libraryOf(ctx.srv.state)
+        const entries: MovieCalendarEntry[] = libraryOf(ctx.srv.state)
           .filter((m) => m.monitored)
           .flatMap((m) => {
             const movie: Movie = movieOf(m)
@@ -587,9 +594,11 @@ export function moviesAnswers(kit: AdminKit): Answers {
               },
             ]
           })
-        return entries
-          .filter((e) => e.date >= query.from && e.date <= query.to)
-          .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : a.movie.id - b.movie.id))
+        const titleOf = (e: CalendarEntry) => ('movie' in e ? e.movie.title : e.episode.show.title)
+        return [
+          ...entries.filter((e) => e.date >= query.from && e.date <= query.to),
+          ...episodes_.calendar(ctx, query.from, query.to),
+        ].sort((a, b) => a.date.localeCompare(b.date) || titleOf(a).localeCompare(titleOf(b)))
       },
       feedKey: (_, ctx) => feedOf(ctx),
       makeFeedKey: (_, ctx) => {

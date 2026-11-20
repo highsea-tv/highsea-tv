@@ -15315,10 +15315,132 @@
           "preferReleaseMatch"
         ]
       },
+      "WantedEpisodePage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WantedEpisode"
+            }
+          },
+          "total": {
+            "type": "integer"
+          },
+          "next": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "next"
+        ]
+      },
+      "WantedEpisode": {
+        "type": "object",
+        "properties": {
+          "show": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "year": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "poster": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "qualityProfileId": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "title",
+              "year",
+              "poster",
+              "qualityProfileId"
+            ]
+          },
+          "episode": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "season": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "number": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "title": {
+                "type": "string"
+              },
+              "aired": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date",
+                "example": "1999-03-30"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "available",
+                  "missing",
+                  "downloading",
+                  "cutoff-unmet",
+                  "unaired"
+                ]
+              },
+              "quality": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "season",
+              "number",
+              "title",
+              "aired",
+              "status",
+              "quality"
+            ]
+          }
+        },
+        "required": [
+          "show",
+          "episode"
+        ]
+      },
       "WantedSearchResult": {
         "type": "object",
         "properties": {
           "queued": {
+            "type": "integer"
+          },
+          "episodes": {
             "type": "integer"
           }
         },
@@ -15336,16 +15458,59 @@
             },
             "maxItems": 10000
           },
+          "episodes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "show": {
+                  "type": "string",
+                  "maxLength": 20
+                },
+                "season": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "episode": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "show",
+                "season",
+                "episode"
+              ]
+            },
+            "maxItems": 10000
+          },
           "all": {
             "type": "string",
             "enum": [
               "missing",
               "cutoff"
             ]
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "movies",
+              "episodes"
+            ]
           }
         }
       },
       "CalendarEntry": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/MovieCalendarEntry"
+          },
+          {
+            "$ref": "#/components/schemas/EpisodeCalendarEntry"
+          }
+        ]
+      },
+      "MovieCalendarEntry": {
         "type": "object",
         "properties": {
           "date": {
@@ -15369,6 +15534,30 @@
           "date",
           "kind",
           "movie"
+        ]
+      },
+      "EpisodeCalendarEntry": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date",
+            "example": "1999-03-30"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "episode"
+            ]
+          },
+          "episode": {
+            "$ref": "#/components/schemas/WantedEpisode"
+          }
+        },
+        "required": [
+          "date",
+          "kind",
+          "episode"
         ]
       },
       "CalendarFeed": {
@@ -15828,7 +16017,10 @@
           "health",
           "update",
           "movie-added",
-          "playback-started"
+          "playback-started",
+          "episode-grabbed",
+          "episode-imported",
+          "episode-upgraded"
         ]
       },
       "ConnectionInput": {
@@ -40792,6 +40984,148 @@
         }
       }
     },
+    "/api/v1/wanted/missing/episodes": {
+      "get": {
+        "tags": [
+          "Wanted"
+        ],
+        "summary": "Monitored, aired episodes of monitored shows without a file",
+        "description": "Most recently aired first (HT-109).",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 500
+            },
+            "required": false,
+            "name": "cursor",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of episodes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WantedEpisodePage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/wanted/cutoff/episodes": {
+      "get": {
+        "tags": [
+          "Wanted"
+        ],
+        "summary": "Monitored episodes with a file under their show’s profile’s cutoff",
+        "description": "Most recently aired first (HT-109).",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 500
+            },
+            "required": false,
+            "name": "cursor",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of episodes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WantedEpisodePage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/wanted/search": {
       "post": {
         "tags": [
@@ -40877,8 +41211,8 @@
         "tags": [
           "Wanted"
         ],
-        "summary": "Monitored movies’ release dates between two days",
-        "description": "Each of a movie’s dates (in cinemas, digital, physical) is its own entry.",
+        "summary": "Monitored movies’ release dates and episodes’ air dates between two days",
+        "description": "Each of a movie’s dates (in cinemas, digital, physical) is its own entry; each monitored episode of a monitored show is one on its air date (`kind: episode`).",
         "x-highsea-access": "staff",
         "security": [
           {

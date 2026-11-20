@@ -2,7 +2,9 @@
 // Wanted and the calendar over HTTP (wanted.md, A14; checkpoint 8a): thin handlers over
 // `movies.wanted` and the runtime's automation, the person's calendar key, and the iCal feed, which
 // authenticates by the `calendar` key in its address since calendar apps can't send headers.
-import { routes } from '@highsea-tv/api-contract'
+// Episodes (HT-109) have their own lists, join the calendar and the feed, and are searched by the
+// show's Search: a whole show for Search all, an episode for its own row.
+import { type CalendarEntry, routes } from '@highsea-tv/api-contract'
 import { AppError } from '@highsea-tv/core'
 import { CALENDAR_MAX_DAYS } from '@highsea-tv/media/movies'
 import { noIndexers } from '@highsea-tv/media/shared'
@@ -18,6 +20,8 @@ const FEED_AHEAD_DAYS = 365
 /** The most movies one Search all queues. */
 const SEARCH_ALL_MAX = 10_000
 
+const titleOf = (e: CalendarEntry) => ('movie' in e ? e.movie.title : e.episode.show.title)
+
 const dayOf = (ms: number) => new Date(ms).toISOString().slice(0, 10)
 const daysBetween = (from: string, to: string) =>
   Math.round((Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / DAY)
@@ -25,14 +29,47 @@ const daysBetween = (from: string, to: string) =>
 export function registerWanted(app: OpenAPIHono<Env>) {
   const rt = (c: Context<Env>) => c.get('runtime')
   const wanted = (c: Context<Env>) => rt(c).movies.wanted
+  /** Films' dates and episodes' air dates together, soonest first. */
+  const calendar = (c: Context<Env>, from: string, to: string): CalendarEntry[] =>
+    [...wanted(c).calendar(from, to), ...rt(c).shows.wanted.calendar(from, to)].sort(
+      (a, b) => a.date.localeCompare(b.date) || titleOf(a).localeCompare(titleOf(b)),
+    )
 
   app.openapi(routes.wanted.missing, (c) => c.json(wanted(c).missing(c.req.valid('query')), 200))
 
   app.openapi(routes.wanted.cutoff, (c) => c.json(wanted(c).cutoff(c.req.valid('query')), 200))
 
+  app.openapi(routes.wanted.missingEpisodes, (c) =>
+    c.json(rt(c).shows.wanted.missing(c.req.valid('query')), 200),
+  )
+
+  app.openapi(routes.wanted.cutoffEpisodes, (c) =>
+    c.json(rt(c).shows.wanted.cutoff(c.req.valid('query')), 200),
+  )
+
   app.openapi(routes.wanted.search, (c) => {
     const input = c.req.valid('json')
     if (!rt(c).indexers.hasEnabled()) throw noIndexers()
+    // episodes: each row's own Search, or every show on the list for Search all
+    let episodes = 0
+    if (input.all && input.kind !== 'movies') {
+      const found = rt(c).shows.wanted.all(input.all)
+      for (const tmdbId of new Set(found.map((e) => e.tmdbId))) rt(c).showSearch.queue(tmdbId)
+      episodes += found.length
+    }
+    for (const e of input.episodes ?? []) {
+      const tmdbId = Number(e.show)
+      if (!Number.isSafeInteger(tmdbId)) continue
+      episodes += rt(c).showSearch.queue(tmdbId, { season: e.season, episode: e.episode })
+    }
+    if (input.kind === 'episodes' || (!input.all && !input.ids?.length && input.episodes?.length)) {
+      if (!input.all && !episodes && !input.episodes?.length)
+        throw new AppError('invalid', 'Pick the episodes to search for.', {
+          field: 'episodes',
+          reason: 'required',
+        })
+      return c.json({ queued: 0, episodes }, 200)
+    }
     let ids = input.ids ?? []
     if (input.all) {
       const list = input.all === 'missing' ? wanted(c).missing : wanted(c).cutoff
@@ -50,7 +87,7 @@ export function registerWanted(app: OpenAPIHono<Env>) {
         reason: 'required',
       })
     rt(c).automation.queue(ids)
-    return c.json({ queued: ids.length }, 200)
+    return c.json({ queued: ids.length, ...(input.all || episodes ? { episodes } : {}) }, 200)
   })
 
   app.openapi(routes.wanted.calendar, (c) => {
@@ -66,7 +103,7 @@ export function registerWanted(app: OpenAPIHono<Env>) {
         field: 'to',
         reason: 'range',
       })
-    return c.json(wanted(c).calendar(from, to), 200)
+    return c.json(calendar(c, from, to), 200)
   })
 
   app.openapi(routes.wanted.feed, (c) => {
@@ -83,10 +120,7 @@ export function registerWanted(app: OpenAPIHono<Env>) {
       serverName: server.name,
       version: server.version,
       now,
-      entries: wanted(c).calendar(
-        dayOf(now - FEED_BACK_DAYS * DAY),
-        dayOf(now + FEED_AHEAD_DAYS * DAY),
-      ),
+      entries: calendar(c, dayOf(now - FEED_BACK_DAYS * DAY), dayOf(now + FEED_AHEAD_DAYS * DAY)),
     })
     // RFC 5545 § 8.1 registers text/calendar; the key in the address mustn't be cached by proxies
     return c.body(body, 200, {

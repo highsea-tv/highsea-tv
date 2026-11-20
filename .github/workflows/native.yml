@@ -8,9 +8,8 @@
 # scripts/sweeps/phone.ts found. The Apple TV's is built the same way for the tvOS simulator, its
 # project from `EXPO_TV=1 expo prebuild` (`prebuild:tv`, https://docs.expo.dev/guides/building-for-tv/).
 # Nothing is signed with a certificate or uploaded here, and there are no EAS builds
-# (phase-4-checkpoint-5.md's answer 10). Android joins in 4.5c. The paths are the client and every
-# workspace package, since it reaches most of them through @highsea-tv/sdk and @highsea-tv/client;
-# a pull request is filtered by them, and a push to next builds whatever it changed (below).
+# (phase-4-checkpoint-5.md's answer 10). Android joins in 4.5c. A push to next builds whatever it
+# changed, and a pull request into next only what touches the native side (below).
 #
 # The client's types and Jest tests ran here too until 2026-11-17, on top of CI's fast tier, which
 # runs both on every pull request and push (`bun run typecheck` takes in every workspace, and the
@@ -36,32 +35,35 @@
 name: Native
 
 # The heavy tier (ADR 0062, next-branch.md › CI by branch): it runs on a push to next, a pull
-# request into main, and a pull request with the `full-ci` label. The pull request trigger has no
-# branch filter, so a pull request into next with the label gets here, and `labeled` joins the
-# default types so adding the label starts it
+# request into main, and a pull request with the `full-ci` label. A push to main runs
+# only ci.yml's fast tier (the owner's answer 3). A push to next runs it whatever it changed
+# (2026-11-17): the next → main pull request reuses next's result only for its exact commit, so
+# next needs one for every commit it may stand at.
+#
+# A pull request into next runs it without the label only when it touches the client's native
+# side (the `changes` job below has the list, since 2026-11-19, HT-111). Before HT-111 any change to the client or the packages started the workflow, since the app reaches
+# most packages through @highsea-tv/sdk and @highsea-tv/client. A break that a change
+# elsewhere (the packages, the server, the client's screens) brings here is found on next after
+# the merge, by the owner's choice (next-branch.md's 2026-11-19 section); `full-ci` runs it before.
+#
+# So the pull request trigger has no paths. A path filter is matched against the pull request's
+# changed files for every activity type, `labeled` included, so with a narrow list adding
+# `full-ci` to a pull request outside it would start nothing
+# (https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#onpushpull_requestpull_request_targetpathspaths-ignore).
+# It has no branch filter either, so a pull request into next with the label gets here, and
+# `labeled` joins the default types so adding the label starts it
 # (https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#pull_request).
-# A push to main runs only ci.yml's fast tier (the owner's answer 3). A push to next builds whatever
-# it changed (2026-11-17): the next → main pull request reuses next's result only for its exact
-# commit, so next needs one for every commit it may stand at; a pull request keeps the paths that
-# could reach it. The jobs' `if:` holds the rest:
-# a pull request into another branch without the label skips them, and a job its `if:` skips
-# reports success rather than leaving a check pending
+# The jobs' `if:` holds the rest: a pull request into another branch without the label skips
+# them, and a job its `if:` skips reports success rather than leaving a check pending
 # (https://docs.github.com/en/pull-requests/how-tos/merge-and-close-pull-requests/troubleshooting-required-status-checks#handling-skipped-but-required-checks).
-# `github.base_ref` is the base branch, and `contains()` looks for the label among
-# `github.event.pull_request.labels`' names
-# (https://docs.github.com/en/actions/reference/workflows-and-actions/expressions#contains).
+# None of them is a required check (the rulesets require ci.yml's jobs only). `github.base_ref` is
+# the base branch, and `contains()` looks for the label among `github.event.pull_request.labels`'
+# names (https://docs.github.com/en/actions/reference/workflows-and-actions/expressions#contains).
 on:
   push:
     branches: [next]
   pull_request:
     types: [opened, synchronize, reopened, labeled]
-    paths:
-      - 'apps/client/**'
-      - 'packages/**'
-      - 'bun.lock'
-      - 'package.json'
-      - 'scripts/license-audit.ts'
-      - '.github/workflows/native.yml'
 
 # A pull request's newer run cancels its older one, and since 2026-11-19 so does a push to next:
 # the group is the branch's, so only next's newest commit keeps a run, and nothing reads a
@@ -76,13 +78,64 @@ permissions:
   contents: read
 
 jobs:
+  # What a pull request into next must touch to run Native without `full-ci`: the client's native
+  # configuration (the Expo config, its plugins in packages/native/plugins, autolinking's
+  # react-native.config.js, Metro's config, the client's manifest), the Swift module
+  # (packages/native/ios and its expo-module.config.json and manifest), the generated project
+  # should it ever be committed (apps/client/ios, which `expo prebuild` makes and git ignores
+  # today), the lockfile (pods follow the installed native modules), the bundle check
+  # (scripts/bundles.ts) and the licence audit over the pods (scripts/license-audit.ts), and this
+  # file.
+  # The files come from `git diff --name-only` between where the pull request branched and its
+  # head (ci.yml's `changes` lists them the same way); a path filter can't be read in a job's
+  # `if:`. Any other event, or another base branch, skips this job, and the heavy jobs' own
+  # condition decides.
+  changes:
+    if: github.event_name == 'pull_request' && github.base_ref == 'next'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      run: ${{ steps.files.outputs.run }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+      - name: Does it touch the native side?
+        id: files
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          run=false
+          while IFS= read -r file; do
+            case "$file" in
+              apps/client/app.config.ts | apps/client/package.json | apps/client/react-native.config.js \
+                | apps/client/metro.config.js | apps/client/ios/* | packages/native/ios/* \
+                | packages/native/plugins/* | packages/native/expo-module.config.json \
+                | packages/native/package.json | scripts/bundles.ts | scripts/license-audit.ts | bun.lock \
+                | .github/workflows/native.yml) run=true ;;
+            esac
+          done <<< "$(git diff --name-only --no-renames "$BASE...$HEAD")"
+          echo "run=$run" >> "$GITHUB_OUTPUT"
+          if [ "$run" = true ]; then
+            echo "::notice::It touches the native side, so the iOS and tvOS builds run"
+          fi
+
   ios:
-    # the heavy tier's condition (the comment above `on:`)
+    needs: changes
+    # The heavy tier's condition (the comment above `on:`), and a pull request into next that
+    # touches what this workflow is about (`changes`). `changes` is skipped on every other event,
+    # and a job whose `needs` was skipped is skipped too unless its `if:` has a status check
+    # function, so `!cancelled()` keeps the rest running
+    # (https://docs.github.com/en/actions/reference/workflows-and-actions/expressions#status-check-functions).
     if: &heavy >-
-      (github.event_name == 'pull_request'
-        && (github.base_ref == 'main' || contains(github.event.pull_request.labels.*.name, 'full-ci')))
-      || (github.event_name == 'push' && github.ref == 'refs/heads/next')
-      || (github.event_name != 'pull_request' && github.event_name != 'push')
+      !cancelled() && (
+        (github.event_name == 'pull_request'
+          && (github.base_ref == 'main' || contains(github.event.pull_request.labels.*.name, 'full-ci')
+            || needs.changes.outputs.run == 'true'))
+        || (github.event_name == 'push' && github.ref == 'refs/heads/next')
+        || (github.event_name != 'pull_request' && github.event_name != 'push'))
     runs-on: macos-26
     # Without a limit a job may run for 360 minutes, GitHub's default
     # (https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#jobsjob_idtimeout-minutes);
@@ -145,6 +198,7 @@ jobs:
             -derivedDataPath build CODE_SIGN_IDENTITY=- CODE_SIGNING_REQUIRED=NO build
 
   tvos:
+    needs: changes
     if: *heavy
     runs-on: macos-26
     # the last 8 builds took 30 minutes on average, 37 at most (the limit's note on ios), and it

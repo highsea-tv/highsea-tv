@@ -51,6 +51,27 @@ const PAYLOADS: { [E in MessageEvent]: EventPayloads[E] } = {
     sent: '1080p · H.264 · AAC stereo',
     away: true,
   },
+  'episode-grabbed': {
+    show: { title: 'Pioneer One', year: 2010, tmdbId: 31910 },
+    episodes: { season: 1, episodes: [1, 2, 3, 4, 5, 6], pack: true },
+    release: 'Pioneer.One.S01.720p.WEB-DL-GRP',
+    indexer: 'Nyaa',
+    size: 4_200_000_000,
+  },
+  'episode-imported': {
+    show: { title: 'Pioneer One', year: 2010, tmdbId: 31910 },
+    episodes: { season: 1, episodes: [3], pack: false },
+    quality: 'WEBDL-720p',
+    size: 700_000_000,
+    upgradedFrom: null,
+  },
+  'episode-upgraded': {
+    show: { title: 'Pioneer One', year: 2010, tmdbId: 31910 },
+    episodes: { season: 1, episodes: [3, 4], pack: false },
+    quality: 'WEBDL-1080p',
+    size: 1_400_000_000,
+    upgradedFrom: 'WEBDL-720p',
+  },
   test: {},
 }
 

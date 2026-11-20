@@ -212,6 +212,8 @@ describe('Settings › Connections', () => {
     })
     await user.click(dialog.getByRole('checkbox', { name: 'Grabbed' }))
     await user.click(dialog.getByRole('checkbox', { name: 'Update' }))
+    // the shows' events (HT-109): imported and upgraded are on by default, grabbed is the owner's
+    await user.click(dialog.getByRole('checkbox', { name: 'Episode grabbed' }))
     await user.click(dialog.getByRole('button', { name: 'Save' }))
     await settle()
     const [post] = requested('POST', '/api/v1/connections')
@@ -219,7 +221,16 @@ describe('Settings › Connections', () => {
       kind: 'discord',
       name: 'Discord',
       enabled: true,
-      events: ['grabbed', 'imported', 'upgraded', 'download-failed', 'health'],
+      events: [
+        'grabbed',
+        'imported',
+        'upgraded',
+        'download-failed',
+        'health',
+        'episode-grabbed',
+        'episode-imported',
+        'episode-upgraded',
+      ],
       settings: { webhookUrl: 'https://discord.com/api/webhooks/1/abcwxyz' },
       tags: [],
     })

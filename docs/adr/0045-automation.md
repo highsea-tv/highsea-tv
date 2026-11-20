@@ -74,15 +74,31 @@ Registering highsea's Trakt application on Trakt's new portal changed three thin
 
 Refresh tokens are now single-use. highsea already replaces both tokens on every refresh.
 
+## 2026-11-19: Episodes run by themselves (Phase 5 C1, HT-109)
+
+Shows get the films' automation, judged by the season-pack rule of ADR 0064's section of the same day. The rules follow Sonarr's documented behaviour: RSS sync and the delay profiles ([Servarr wiki: Sonarr settings](https://wiki.servarr.com/sonarr/settings), [delay profiles](https://wiki.servarr.com/sonarr/settings#delay-profiles)), and a release that brings several episodes being an upgrade only when it upgrades every existing one ([Servarr wiki: Sonarr FAQ](https://wiki.servarr.com/sonarr/faq)).
+
+- **RSS is one read for both kinds.** `indexers.rssAll` asks each feed for the film and TV categories once (Torznab's `cat`, a site's mapped categories) and keeps either kind. A release with a season and episode number goes to the shows' side: it is matched to a monitored show with wanted episodes by its ids or title, judged against its season, and kept for that season. Each season with an approved release is then grabbed from what RSS kept (`grabBestEpisodes` with `cached`), falling back to a live search only when nothing kept is approved. An episode airing by tomorrow counts as wanted, since a feed's release can come before the air date reaches this server's day.
+- **The backlog sweep is per show.** `shows.wanted` runs every 6 hours, first 30 minutes after boot. It takes up to 10 shows due (never searched first, then the ones searched longest ago) and pushes each back 1, 3, 7, then 14 days on the show's row, as films are. One run makes at most 20 indexer searches between its shows; a season counts as one search, and each episode searched on its own after it counts as one more. A show the budget doesn't reach is due again at the next run, with its count unchanged.
+- **Cutoff unmet is kept on each episode's row** (`cutoff_unmet`), as on a film's. It is weighed after an import, after the scan, when a show's profile changes, and once at boot (`shows.wanted-backfill`). An episode is wanted when it is monitored and either aired without a file or has a file under its cutoff.
+- **Upgrades.** A release is approved only when it upgrades every distinct file it would replace (one decision for each). So a season pack replaces single-episode files only when it is better than all of them, and is otherwise turned down as a whole while singles are judged on their own. On import, a file that no episode holds any more goes to the recycle bin, and one still holding another episode stays.
+- **Delay profiles.** RSS and the sweep wait as films' do. A season whose best release is held is looked at again by `shows.held` when the wait is up, grabbing from the releases kept. Search someone asked for never waits.
+- **Notifications.** `episode-grabbed`, `episode-imported` and `episode-upgraded` carry the show and its episodes (one, several, or the season). One download's import sends one message, so a pack is one message and not five. A connection's tags filter by the show's tags.
+- **Wanted and the calendar.** `wanted.missingEpisodes` and `wanted.cutoffEpisodes` page each list, newest aired first. The calendar and its feed put each monitored episode on its air date. A feed event's UID is made from the show and the episode's numbers, so a moved air date moves the event.
+- **Shows in a root folder highsea only reads ([ADR 0063](0063-libraries-highsea-only-reads.md)) are left alone.** Someone else keeps their files (on the owner's NAS, Sonarr does). RSS doesn't target them, the sweep doesn't take them, `shows.held` and Search all find nothing for them, and Wanted leaves their episodes out. One check covers every automatic path: the show's search input. The calendar still shows their air dates. Turning the folder to managed brings them in at once.
+
+### Alternatives considered
+- **Sweep episodes one at a time, as films are:** with 8,000 episodes this would take months to get through, and it would search a season's episodes one by one when a single season search would find the pack.
+- **A separate RSS read for shows:** this doubles the feed traffic for no gain, since one read already returns both kinds.
+
 ## 2026-11-19: films in a root folder highsea only reads are never searched for (HT-113)
 
 On the owner's NAS the films folder Radarr keeps is read-only in highsea (ADR 0063), and the sweep had searched 179 of its 1,282 wanted or cutoff-unmet films; only an empty indexer kept it from grabbing upgrades highsea may not import. The rule is the one HT-109 sets for shows:
 
 - **Nothing automatic searches, grabs or upgrades such a film.** `movies.wanted.wants` is empty for it, and every automatic path grabs only what `wants` names: RSS, the sweep, `movies.held` and the `movies.search` job behind Search all. `searchMovie` also returns before searching, so a search queued before the folder was switched does nothing.
-- **It uses up no run.** RSS's targets and the sweep's due films leave it out (a prefix compare on the film's path against the read-only folders, `notUnderRoots` in `packages/media/src/shared/sql.ts`), so it takes none of the sweep's 20.
+- **It uses up no run.** RSS's targets and the sweep's due films leave it out (a prefix compare on the film's path against the read-only folders, `notUnderRoots` in `packages/media/src/shared/sql.ts`, which shows' check now uses too), so it takes none of the sweep's 20.
 - **Wanted leaves it out.** Missing and Cutoff unmet and their counts don't list it, so Search all has nothing to queue for it. The calendar keeps its dates: they're useful whoever fetches the file.
 - **A Search someone asks for is refused,** as a show's is (HT-103): `POST /movies/bulk` with `search` answers 409 `read-only` when every film asked for is in such a folder and leaves them out of a selection, and the interactive search answers 409 `read-only`. The film's page hides Search and Interactive search and says why, as a show's page does.
 - **The folders are read on each call,** so switching one to managed in Settings brings its films back at once.
 
 No migration: the root folders' `read_only` and the films' paths are already stored.
-

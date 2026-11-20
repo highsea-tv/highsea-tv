@@ -11,7 +11,7 @@
 // (RSS, the sweep, `movies.held`, Search all's `movies.search`) grabs only what `wants` names. It's
 // also left out of the sweep's due movies, RSS's targets and Wanted's lists, but the calendar keeps
 // its dates. The folders are read on each call, so switching one to managed brings its movies back.
-import type { CalendarEntry, MoviePage } from '@highsea-tv/api-contract'
+import type { MovieCalendarEntry as CalendarEntry, MoviePage } from '@highsea-tv/api-contract'
 import { schema } from '@highsea-tv/db'
 import { and, asc, eq, gte, inArray, lte, sql } from 'drizzle-orm'
 import type { Media } from '../shared/index.ts'
