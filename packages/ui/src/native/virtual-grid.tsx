@@ -13,7 +13,15 @@
 // - A row is keyed by its first item, which no other row holds, so a row keeps its state as the
 //   window moves.
 // - Outside a scroller (a test's bare page) it draws every row, as a short TableBody does.
-import { Fragment, type ReactNode, type Ref, useImperativeHandle, useMemo, useRef } from 'react'
+import {
+  Fragment,
+  type ReactNode,
+  type Ref,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+} from 'react'
 import { Animated, type LayoutChangeEvent, View } from 'react-native'
 import { useScrollSourceOrNull, Virtual, type VirtualList } from './virtual.tsx'
 
@@ -38,6 +46,8 @@ export type VirtualGridProps<T> = {
   lead?: Animated.Value
   /** Rows drawn past each end of the screen: the TV's focus moves onto them before they show. */
   overscan?: number
+  /** Its last row is drawn: a grid read a page at a time asks for the next (Virtual's `onEnd`). */
+  onEnd?: () => void
   ref?: Ref<VirtualGridHandle>
 }
 
@@ -55,6 +65,7 @@ export function VirtualGrid<T>({
   estimate,
   lead,
   overscan = 3,
+  onEnd,
   ref,
 }: VirtualGridProps<T>) {
   const list = useRef<VirtualList>(null)
@@ -103,6 +114,10 @@ export function VirtualGrid<T>({
       </View>
     )
   }
+  // outside a scroller every row is drawn, the last one with them
+  useEffect(() => {
+    if (!scroller && rows.length > 0) onEnd?.()
+  }, [scroller, rows.length, onEnd])
   const rowKey = (r: number) => {
     const first = rows[r]?.[0]
     return first === undefined ? String(r) : keyOf(first)
@@ -124,6 +139,7 @@ export function VirtualGrid<T>({
       gap={gap.row}
       overscan={overscan}
       render={drawRow}
+      onEnd={onEnd}
     />
   )
 }
