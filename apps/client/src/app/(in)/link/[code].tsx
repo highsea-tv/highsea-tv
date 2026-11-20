@@ -8,7 +8,7 @@
 import type { ClientType } from '@highsea-tv/api-contract'
 import { normalCode, showCode } from '@highsea-tv/client/servers'
 import { useT } from '@highsea-tv/i18n/react'
-import { useAction, useQuery } from '@highsea-tv/sdk/react'
+import { useAction, useQuery, useQueryCache } from '@highsea-tv/sdk/react'
 import {
   Button,
   EmptyState,
@@ -20,7 +20,7 @@ import {
   useTheme,
 } from '@highsea-tv/ui'
 import { type Href, router, useLocalSearchParams } from 'expo-router'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { View } from 'react-native'
 import { LinkFrame, LinkText, LinkTitle, withMono } from '../../../account/link-parts.tsx'
 import { pairMessages } from '../../../account/messages.ts'
@@ -44,15 +44,45 @@ export default function LinkConfirm() {
   const touch = useFormFactor().input === 'touch'
   const phone = useDevice() === 'phone'
   const code = normalCode(useLocalSearchParams<{ code: string }>().code ?? '')
-  const request = useQuery(`client:pairing:${code}`, (c) =>
-    c.auth.pairingRequest({ params: { code } }),
-  )
+  const key = `client:pairing:${code}`
+  const request = useQuery(key, (c) => c.auth.pairingRequest({ params: { code } }))
+  // a code is asked about once: using it or leaving forgets the answer, so a code used or gone by
+  // the next visit is never shown as waiting from the app's cache (HT-116)
+  const cache = useQueryCache()
+  useEffect(() => () => cache?.forget(key), [cache, key])
   const approve = useAction((c) => c.auth.approvePairing({ params: { code } }))
-  const [done, setDone] = useState(false)
+  // the device signed in, by name: the code's answer is forgotten once it's used
+  const [done, setDone] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   // the phone goes back to Servers, where Sign in a TV is; a browser to Home (the prototypes')
   const leave = () => router.replace((touch ? '/settings?section=servers' : '/') as Href)
   const back = { label: t('title'), onPress: again }
+
+  if (done !== null)
+    return (
+      <LinkFrame centred>
+        <View style={{ gap: space['6'], paddingVertical: space['8'] }}>
+          <EmptyState
+            icon="success"
+            title={t('doneTitle', { device: done })}
+            action={
+              touch ? undefined : (
+                <Button variant="primary" onPress={leave}>
+                  {t('done')}
+                </Button>
+              )
+            }
+          >
+            {t(phone ? 'doneBodyPhone' : 'doneBody')}
+          </EmptyState>
+          {touch ? (
+            <Button variant="primary" block onPress={leave}>
+              {t('done')}
+            </Button>
+          ) : null}
+        </View>
+      </LinkFrame>
+    )
 
   if (request.status === 'loading') return <Centered />
   if (request.status === 'error')
@@ -76,32 +106,6 @@ export default function LinkConfirm() {
     )
 
   const r = request.data
-  if (done)
-    return (
-      <LinkFrame centred>
-        <View style={{ gap: space['6'], paddingVertical: space['8'] }}>
-          <EmptyState
-            icon="success"
-            title={t('doneTitle', { device: r.device.name })}
-            action={
-              touch ? undefined : (
-                <Button variant="primary" onPress={leave}>
-                  {t('done')}
-                </Button>
-              )
-            }
-          >
-            {t(phone ? 'doneBodyPhone' : 'doneBody')}
-          </EmptyState>
-          {touch ? (
-            <Button variant="primary" block onPress={leave}>
-              {t('done')}
-            </Button>
-          ) : null}
-        </View>
-      </LinkFrame>
-    )
-
   const minutes = Math.max(1, Math.round((Date.parse(r.expiresAt) - Date.now()) / 60_000))
   return (
     <LinkFrame back={back}>
@@ -153,7 +157,8 @@ export default function LinkConfirm() {
             approve.run().then(
               () => {
                 successHaptic()
-                setDone(true)
+                setDone(r.device.name)
+                cache?.forget(key)
               },
               (e: Error) => setError(e.message),
             )

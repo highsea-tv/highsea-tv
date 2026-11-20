@@ -1,9 +1,13 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+import type { KnownTitle } from '@highsea-tv/client/data'
+import { useMedia } from '@highsea-tv/native/media'
 import {
   FilmRowSkeleton,
   PosterSkeleton,
   ROUND_ACTION_ROOM,
   Skeleton,
   SkeletonText,
+  TitleLogo,
   tokens,
   useControl,
   useFormFactor,
@@ -40,21 +44,33 @@ function StillsSkeleton({ count }: { count: number }) {
   )
 }
 
-export function FilmSkeleton() {
+/**
+ * A film's or a show's page while it's read. What the card pressed to open it already said (its
+ * art and its name, `known`: @highsea-tv/client/data's useKnownTitle) is drawn at once in its place
+ * on the page, the rest as placeholders (HT-116).
+ */
+export function FilmSkeleton({ known = null }: { known?: KnownTitle | null }) {
   const input = useFormFactor().input
-  if (input === 'tv') return <TvFilmSkeleton />
-  if (input === 'pointer') return <PointerFilmSkeleton />
-  return <TouchFilmSkeleton />
+  if (input === 'tv') return <TvFilmSkeleton known={known} />
+  if (input === 'pointer') return <PointerFilmSkeleton known={known} />
+  return <TouchFilmSkeleton known={known} />
 }
 
-function TouchFilmSkeleton() {
+type Known = { known: KnownTitle | null }
+
+function TouchFilmSkeleton({ known }: Known) {
   const theme = useTheme()
   const m = useControl()
+  const media = useMedia()
   return (
     <View aria-busy style={{ flex: 1, gap: space['5'], backgroundColor: theme.colors.bg }}>
       <OverlayBack />
-      <TouchHero source={undefined}>
-        <Skeleton height={space['12']} width="60%" />
+      <TouchHero source={media(known?.art.backdrop)}>
+        {known ? (
+          <TitleLogo title={known.title} logo={media(known.art.logo)} variant="largeTitle" />
+        ) : (
+          <Skeleton height={space['12']} width="60%" />
+        )}
         <Skeleton height={space['3'] + space['0.5']} width={space['12'] * 4} />
         <Skeleton height={space['12']} radius={radius.md} />
         <SkeletonText lines={3} />
@@ -72,10 +88,11 @@ function TouchFilmSkeleton() {
   )
 }
 
-function PointerFilmSkeleton() {
+function PointerFilmSkeleton({ known }: Known) {
   const measure = usePageMeasure()
   const theme = useTheme()
   const m = useControl()
+  const media = useMedia()
   const { hero } = usePointerHero()
   return (
     <View
@@ -87,9 +104,13 @@ function PointerFilmSkeleton() {
         backgroundColor: theme.colors.bg,
       }}
     >
-      <PointerHero source={undefined} hero={hero}>
+      <PointerHero source={media(known?.art.backdrop)} hero={hero}>
         <View style={{ maxWidth: space['16'] * 10, gap: space['3'] }}>
-          <Skeleton height={space['12']} width="80%" />
+          {known ? (
+            <TitleLogo title={known.title} logo={media(known.art.logo)} variant="display" />
+          ) : (
+            <Skeleton height={space['12']} width="80%" />
+          )}
           <Skeleton height={space['4']} width={space['16'] * 4 + space['8']} />
           <SkeletonText lines={3} />
           <Skeleton height={space['3']} width={space['16'] * 3 + space['4']} />
@@ -113,9 +134,10 @@ function PointerFilmSkeleton() {
  * head, the words' block at the loaded page's height with the title, the meta line, three lines,
  * the credits, the picks' line and the buttons, then the film row's.
  */
-function TvFilmSkeleton() {
+function TvFilmSkeleton({ known }: Known) {
   const theme = useTheme()
   const c = useControl()
+  const media = useMedia()
   const u = theme.u
   useChromeOverlay()
   const s = FILM_TV
@@ -123,8 +145,17 @@ function TvFilmSkeleton() {
     <View aria-busy style={{ flex: 1, overflow: 'hidden' }}>
       {/* as the page: the art behind, the words under the head, the row a row's gap below */}
       <View>
-        <TvHero source={undefined}>
-          <Skeleton height={s.title} width={s.titleWidth * u} radius={tv.radius.button * u} />
+        <TvHero source={media(known?.art.backdrop)}>
+          {known ? (
+            <TitleLogo
+              title={known.title}
+              logo={media(known.art.logo)}
+              variant="heroTitle"
+              numberOfLines={2}
+            />
+          ) : (
+            <Skeleton height={s.title} width={s.titleWidth * u} radius={tv.radius.button * u} />
+          )}
           <Skeleton height={s.line} width={s.metaWidth * u} />
           <SkeletonText lines={3} />
           <View style={{ gap: s.creditsGap * u }}>

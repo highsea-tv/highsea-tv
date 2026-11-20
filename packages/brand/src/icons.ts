@@ -3,13 +3,30 @@
 // docs/brand/logo.md#app-icons
 import { defaultTheme } from '@highsea-tv/tokens'
 import { lockupBox, lockupElements } from './logo.ts'
-import { MARK_GRID, MARK_SMALL_BELOW, type MarkPaint, markElements } from './mark.ts'
+import { MARK_GRID, MARK_SMALL_BELOW, type MarkPaint, markElements, markGeometry } from './mark.ts'
 import { taglineOutline } from './wordmark-data.ts'
 
 /** The reference board's `--icon-bg`: `radial-gradient(circle at 50% 28%, #2c2c30, #0f0f11 72%)`. */
 export const ICON_BG = { from: '#2c2c30', to: '#0f0f11', cx: 0.5, cy: 0.28, stop: 0.72 } as const
-/** Mark size as a share of the icon's visible shape. */
-export const ICON_MARK = 0.58
+/**
+ * The mark's disc as a share of the icon's visible shape: **the one number** every app icon takes
+ * its size from (docs/brand/logo.md#app-icons). 0.8 puts the disc on the outer keyline circle of
+ * Apple's app icon grid (80% of the 1024 canvas, measured from the grid figure in
+ * https://developer.apple.com/design/human-interface-guidelines/app-icons#Icon-shape; the HIG gives
+ * no number in its text and points to the production templates' grids), which is also the edge of
+ * a maskable icon's safe zone (a circle of radius 2/5, https://www.w3.org/TR/appmanifest/#icon-masks)
+ * and inside Android's 48–66 dp logo range of the 72 dp viewport (57.6 dp,
+ * https://developer.android.com/develop/ui/views/launch/icon_design_adaptive). Until 2026-11-19 the
+ * mark's 48-unit box was 58% of the shape, so the disc was 50.75%.
+ */
+export const ICON_MARK = 0.8
+/**
+ * Optical centring: the mark sits this many of its 48 grid units below the tile's centre. The cut
+ * swells take ink from the lower half, so the ink's centroid is 1.81 units above the disc's centre
+ * (measured from the rendered mark); the disc's silhouette still reads as a circle, so the mark
+ * moves down by a third of that rather than all of it, which would leave a visibly lower disc.
+ */
+export const ICON_MARK_DROP = 0.6
 /** Corner radius of shaped icons, as a share of their side. */
 export const ICON_RADIUS = 0.225
 const HAIRLINE = 'rgb(255 255 255 / 0.07)'
@@ -27,11 +44,22 @@ function background(w: number, h: number, id: string, x = 0, y = 0, rx = 0) {
   }
 }
 
-/** The mark centered at (cx, cy) with box side `d`. Switches to the small cut below 24px. */
-function mark(cx: number, cy: number, d: number, paint: MarkPaint = 'bone', id = 'm') {
+/** The side of the mark's 48-unit box for a disc of diameter `disc`. */
+export const markBox = (disc: number) => (disc * MARK_GRID) / (2 * markGeometry.disc.r)
+
+/**
+ * The mark centered at (cx, cy) with box side `d`, dropped by `drop` grid units for optical
+ * centring. Switches to the small cut below 24px.
+ */
+function mark(cx: number, cy: number, d: number, paint: MarkPaint = 'bone', drop = 0, id = 'm') {
   const small = d < MARK_SMALL_BELOW
-  return `<g transform="translate(${n4(cx - d / 2)} ${n4(cy - d / 2)}) scale(${n4(d / MARK_GRID)})">${markElements({ paint, small, id })}</g>`
+  const y = cy - d / 2 + (d * drop) / MARK_GRID
+  return `<g transform="translate(${n4(cx - d / 2)} ${n4(y)}) scale(${n4(d / MARK_GRID)})">${markElements({ paint, small, id })}</g>`
 }
+
+/** The icon mark: a disc of `share` of the visible side `side`, optically centred. */
+const iconMark = (cx: number, cy: number, side: number, share: number, paint?: MarkPaint) =>
+  mark(cx, cy, markBox(side * share), paint, ICON_MARK_DROP)
 
 function doc(w: number, h: number, body: string) {
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">${body}</svg>`
@@ -47,12 +75,12 @@ export type IconKind =
   /** Apple's macOS template: an 824/1024 rounded square with a drop shadow. */
   | 'macos'
 
-/** A square app icon at `size` px. */
-export function iconSvg(kind: IconKind, size: number): string {
+/** A square app icon at `size` px. `share` overrides ICON_MARK (for comparison sheets). */
+export function iconSvg(kind: IconKind, size: number, share = ICON_MARK): string {
   const s = size
   if (kind === 'tile') {
     const bg = background(s, s, 'bg')
-    return doc(s, s, `<defs>${bg.defs}</defs>${bg.shape}${mark(s / 2, s / 2, s * ICON_MARK)}`)
+    return doc(s, s, `<defs>${bg.defs}</defs>${bg.shape}${iconMark(s / 2, s / 2, s, share)}`)
   }
   if (kind === 'macos') {
     const k = s / 1024
@@ -66,7 +94,7 @@ export function iconSvg(kind: IconKind, size: number): string {
     return doc(
       s,
       s,
-      `<defs>${bg.defs}${shadow}</defs>${under}${bg.shape}${mark(s / 2, s / 2, side * ICON_MARK)}`,
+      `<defs>${bg.defs}${shadow}</defs>${under}${bg.shape}${iconMark(s / 2, s / 2, side, share)}`,
     )
   }
   const inset = kind === 'desktop' ? s / 16 : 0
@@ -77,13 +105,50 @@ export function iconSvg(kind: IconKind, size: number): string {
   return doc(
     s,
     s,
-    `<defs>${bg.defs}</defs>${bg.shape}${line}${mark(s / 2, s / 2, side * ICON_MARK)}`,
+    `<defs>${bg.defs}</defs>${bg.shape}${line}${iconMark(s / 2, s / 2, side, share)}`,
   )
 }
 
-/** The mark alone on a transparent square, at `scale` of the canvas. */
+/** The mark alone on a transparent square, its 48-unit box at `scale` of the canvas. */
 export function markOnlySvg(size: number, scale: number, paint: MarkPaint = 'bone'): string {
   return doc(size, size, mark(size / 2, size / 2, size * scale, paint))
+}
+
+/** The icon mark alone on a transparent square whose visible side is `visible` of the canvas. */
+export function iconMarkSvg(size: number, visible = 1, paint?: MarkPaint, share = ICON_MARK) {
+  return doc(size, size, iconMark(size / 2, size / 2, size * visible, share, paint))
+}
+
+/**
+ * The favicon: the mark on its own, no tile, its disc filling the square. The SVG follows the
+ * browser's colour scheme with the logo's two paints (docs/brand/logo.md#variants): Bone on dark,
+ * ink on light, through `prefers-color-scheme`
+ * (https://developer.mozilla.org/en-US/docs/Web/CSS/@media/prefers-color-scheme), which an SVG
+ * favicon honours. It always draws the small cut, since tabs show it at 16–32px.
+ */
+export function faviconSvg(): string {
+  const g = markGeometry
+  const { accent, 'accent-2': accent2 } = defaultTheme.colors
+  const swells = g.swells
+    .map(
+      (d) =>
+        `<path d="${d}" stroke="#000" stroke-width="${g.cutSmall}" fill="none" stroke-linecap="round"/>`,
+    )
+    .join('')
+  // the disc (r 21) fills the 42-unit square
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="3 3 42 42"><style>.d{fill:url(#g)}@media (prefers-color-scheme:light){.d{fill:${FAVICON_INK}}}</style><defs><linearGradient id="g" x1="0" y1="3" x2="0" y2="45" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="${accent}"/><stop offset="1" stop-color="${accent2}"/></linearGradient><mask id="m" maskUnits="userSpaceOnUse" x="0" y="0" width="${MARK_GRID}" height="${MARK_GRID}"><rect width="${MARK_GRID}" height="${MARK_GRID}" fill="#fff"/>${swells}</mask></defs><circle class="d" cx="${g.disc.cx}" cy="${g.disc.cy}" r="${g.disc.r}" mask="url(#m)"/></svg>`
+}
+
+/** The logo's ink, for light backgrounds (docs/brand/logo.md#variants). */
+export const FAVICON_INK = '#0b0b0c'
+
+/**
+ * The favicon.ico's mark at `size`: the disc fills the square. An .ico can't follow the colour
+ * scheme, so it carries the Bone gradient, which keeps more contrast than ink across light and dark
+ * tab strips (docs/brand/logo.md#favicon).
+ */
+export function faviconIcoSvg(size: number): string {
+  return markOnlySvg(size, markBox(1))
 }
 
 /** Background only, for layered icons. */
@@ -151,26 +216,26 @@ const img = (
 const sq = (file: string, size: number, opaque: boolean, svg: (s: number) => string) =>
   img(file, size, size, opaque, () => svg(size))
 
-/** Adaptive icons show the middle 72 of 108 dp; the mark keeps the board's 58% of that. */
-const ADAPTIVE_MARK = (ICON_MARK * 72) / 108
+/** Adaptive icons show the middle 72 of 108 dp; the mark keeps ICON_MARK of that. */
+const ADAPTIVE_VISIBLE = 72 / 108
 
 /** Every raster the build writes, under `assets/icons/`. */
 export const IMAGES: ImageSpec[] = [
   // iOS / iPadOS (Expo `ios.icon`): one 1024 image per appearance
   sq('ios/icon.png', 1024, true, (s) => iconSvg('tile', s)),
-  sq('ios/icon-dark.png', 1024, false, (s) => markOnlySvg(s, ICON_MARK)),
+  sq('ios/icon-dark.png', 1024, false, (s) => iconMarkSvg(s)),
   img('ios/icon-tinted.png', 1024, 1024, true, () =>
     doc(
       1024,
       1024,
-      `<rect width="1024" height="1024"/>${mark(512, 512, 1024 * ICON_MARK, { solid: '#fff' })}`,
+      `<rect width="1024" height="1024"/>${iconMark(512, 512, 1024, ICON_MARK, { solid: '#fff' })}`,
     ),
   ),
   // Android (Expo `android.adaptiveIcon`)
-  sq('android/adaptive-foreground.png', 1024, false, (s) => markOnlySvg(s, ADAPTIVE_MARK)),
+  sq('android/adaptive-foreground.png', 1024, false, (s) => iconMarkSvg(s, ADAPTIVE_VISIBLE)),
   sq('android/adaptive-background.png', 1024, true, (s) => backgroundSvg(s, s)),
   sq('android/adaptive-monochrome.png', 1024, false, (s) =>
-    markOnlySvg(s, ADAPTIVE_MARK, { solid: '#fff' }),
+    iconMarkSvg(s, ADAPTIVE_VISIBLE, { solid: '#fff' }),
   ),
   sq('android/play-store.png', 512, true, (s) => iconSvg('tile', s)),
   // macOS
@@ -185,6 +250,8 @@ export const IMAGES: ImageSpec[] = [
   sq('web/icon-192.png', 192, false, (s) => iconSvg('shaped', s)),
   sq('web/icon-512.png', 512, false, (s) => iconSvg('shaped', s)),
   sq('web/icon-maskable-512.png', 512, true, (s) => iconSvg('tile', s)),
+  // the web client's favicon: Expo makes its favicon.ico from one PNG (apps/client's app.config.ts)
+  sq('web/favicon-192.png', 192, false, (s) => faviconIcoSvg(s)),
   // tvOS lives in the asset catalog: see apple.ts
   // Android TV / Google TV launcher banner
   img('android-tv/banner.png', 320, 180, true, () => bannerSvg(320, 180, 0.64)),
@@ -195,8 +262,17 @@ export const IMAGES: ImageSpec[] = [
   // Samsung Tizen
   img('tizen/icon.png', 512, 423, true, () => {
     const bg = background(512, 423, 'bg')
-    return doc(512, 423, `<defs>${bg.defs}</defs>${bg.shape}${mark(256, 211.5, 423 * ICON_MARK)}`)
+    return doc(
+      512,
+      423,
+      `<defs>${bg.defs}</defs>${bg.shape}${iconMark(256, 211.5, 423, ICON_MARK)}`,
+    )
   }),
+  // Synology Package Center (PACKAGE_ICON.PNG and PACKAGE_ICON_256.PNG in the .spk; the package
+  // source's thumbnails): the desktop tile, as Package Center lists icons beside others
+  ...[64, 72, 120, 256].map((n) =>
+    sq(`synology/icon-${n}.png`, n, false, (s) => iconSvg('desktop', s)),
+  ),
   // Link previews
   img('social/og.png', 1200, 630, true, () => bannerSvg(1200, 630, 0.42, { tagline: true })),
   // Splash (Expo `splash.image` on `bg`)
@@ -208,7 +284,7 @@ export const CONTAINERS: ContainerSpec[] = [
     file: 'web/favicon.ico',
     format: 'ico',
     entries: [16, 32, 48],
-    svg: (s) => iconSvg('shaped', s),
+    svg: (s) => faviconIcoSvg(s),
   },
   {
     file: 'desktop/icon.ico',
@@ -238,7 +314,7 @@ export const CONTAINERS: ContainerSpec[] = [
 
 /** SVG files written under `assets/icons/`. */
 export const ICON_SVGS: Record<string, () => string> = {
-  'web/favicon.svg': () => iconSvg('shaped', 32),
+  'web/favicon.svg': () => faviconSvg(),
 }
 
 export const SPLASH_BACKGROUND = defaultTheme.colors.bg

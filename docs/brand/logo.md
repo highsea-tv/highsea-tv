@@ -56,7 +56,7 @@ A disc over the horizon, cut by two swells. It is drawn on a 48-unit grid:
 
 **The tile.** All app icons share one tile:
 - **Background:** the board's `radial-gradient(circle at 50% 28%, #2c2c30, #0f0f11 72%)`.
-- **Mark:** the default mark at **58%** of the tile's visible shape.
+- **Mark:** the default mark, its **disc at 80%** of the tile's visible shape, optically centred (see [Mark size](#mark-size)).
 - **Shaped icons** (with transparent corners) also have:
   - a corner radius of 22.5%;
   - a `rgb(255 255 255 / 0.07)` hairline, so they hold their edge on dark docks.
@@ -65,14 +65,15 @@ A disc over the horizon, cut by two swells. It is drawn on a 48-unit grid:
 | --- | --- | --- |
 | iOS, iPadOS, macOS (Xcode 26+) | `apple/AppIcon.icon` | **The primary Apple icon.** An Icon Composer document: the tile gradient as the fill and the outlined mark as one Liquid Glass layer. The system derives the dark, clear and tinted appearances. Add it to the Xcode target as is. |
 | iOS, iPadOS (flat) | `ios/icon.png`, `icon-dark.png`, `icon-tinted.png` (1024) | For tools that take flat images (Expo `ios.icon`, older Xcode). Opaque, full-bleed tile; the system applies the mask. Dark is the mark on transparent. Tinted is a white mark on black, which the system tints. |
-| Android | `android/adaptive-{foreground,background,monochrome}.png` (1024), `play-store.png` (512) | The adaptive foreground keeps the mark at 58% of the visible 72/108 area (38.7% of the canvas). Monochrome is for themed icons. |
+| Android | `android/adaptive-{foreground,background,monochrome}.png` (1024), `play-store.png` (512) | The adaptive foreground keeps the disc at 80% of the visible 72 dp (57.6 dp, 53.3% of the 108 dp canvas). Monochrome is for themed icons. |
 | macOS (flat) | `macos/icon-1024.png`, `desktop/icon.icns` | For macOS 15 and earlier, and Tauri. Apple's template: an 824/1024 rounded square (radius 185.4) with a drop shadow. |
 | Windows, Linux (Tauri) | `desktop/32x32.png`, `128x128.png`, `128x128@2x.png`, `icon.png` (512), `icon.ico` (16–256) | The shaped tile, inset by 1/16 so it sits evenly beside other desktop icons |
-| Web | `web/favicon.svg`, `favicon.ico` (16/32/48), `apple-touch-icon.png` (180), `icon-192.png`, `icon-512.png`, `icon-maskable-512.png`, `manifest.webmanifest` | Favicons draw the small mark |
-| tvOS | `tvos/App Icon & Top Shelf Image.brandassets` | Drop into an Xcode asset catalog. Two image stacks (the Home screen icon at 400×240 @1x/@2x and the App Store icon at 1280×768), each with a **Back** layer (the tile) and a **Front** layer (the lockup at 56% of the width, transparent), so the icon gets the system's parallax. Xcode compiles them to the runtime `.lsr` format. The top shelf images (1920×720 and the wide 2320×720, @1x/@2x) carry the lockup at a fixed 30% of the 1920 shelf. |
+| Web | `web/favicon.svg`, `favicon.ico` (16/32/48), `favicon-192.png`, `apple-touch-icon.png` (180), `icon-192.png`, `icon-512.png`, `icon-maskable-512.png`, `manifest.webmanifest` | The favicons are the mark alone ([Favicon](#favicon)); `favicon-192.png` is the web client's, which Expo turns into its `favicon.ico`. The touch icon and the manifest's icons stay tiles. |
+| tvOS | `tvos/App Icon & Top Shelf Image.brandassets` | Drop into an Xcode asset catalog. Two image stacks (the Home screen icon at 400×240 @1x/@2x and the App Store icon at 1280×768), each with a **Back** layer (the tile) and a **Front** layer (the lockup at 72% of the width, 0.9 of the disc's share, transparent), so the icon gets the system's parallax. Xcode compiles them to the runtime `.lsr` format. The top shelf images (1920×720 and the wide 2320×720, @1x/@2x) carry the lockup at a fixed 30% of the 1920 shelf. |
 | Android TV, Google TV | `android-tv/banner.png` (320×180), `banner-xhdpi.png` (1280×720) | The lockup at 64% of the width |
 | LG webOS | `webos/icon-80.png`, `icon-130.png` | `icon` and `largeIcon` in `appinfo.json` |
 | Samsung Tizen | `tizen/icon.png` (512×423) | |
+| Synology | `synology/icon-64.png`, `icon-72.png`, `icon-120.png`, `icon-256.png` | The desktop tile. The build copies them to the package (`PACKAGE_ICON.PNG`, `PACKAGE_ICON_256.PNG`) and to the package source's thumbnails (`apps/packages/public`). |
 | Link previews | `social/og.png` (1200×630) | The lockup and the one-line positioning from the [brief](brief.md#1-positioning) |
 | Splash (Expo) | `splash/mark.png` (1024, transparent) | Shown on `bg` (`#0b0b0c`) |
 
@@ -84,6 +85,27 @@ PNGs that platforms require to be opaque (the App Store icon and the full-bleed 
 - `actool` compiles the tvOS brand assets for Apple TV without warnings: both icons become layered image stacks, and the top shelf images register as the primary and wide shelf images.
 
 **Not yet covered:** Windows Store tile logos. They are produced from the same builders when the desktop app is set up (Phase 4).
+
+**Copies.** Apps that serve a brand file from their own folder (the server's and the docs' favicons, the Synology icons) get it from the build, which writes each copy; `bun run check` and the tests fail when a copy differs.
+
+### Mark size
+
+**The one number** is `ICON_MARK` in `packages/brand/src/icons.ts`: the disc's diameter as a share of the icon's visible shape. Every app icon takes its size from it. It is **0.8**, set 2026-11-19 at the owner's request (it was the mark's 48-unit box at 58%, so a disc of 50.75%).
+
+- **Apple.** The [HIG's App icons page](https://developer.apple.com/design/human-interface-guidelines/app-icons) gives no number for how much of the canvas the artwork fills. It says to keep primary content centred so masking doesn't truncate it, that "you don't need to fill the entire icon canvas", and to place the icon with the grids in the production templates ([Apple Design Resources](https://developer.apple.com/design/resources/)). Its own grid figure (the Settings icon, `app-icons-settings-app-grid-square@2x.png`) has three keyline circles, measured at **20%, 50% and 80%** of the canvas, on an 8×8 grid. The old disc sat on the middle circle; it now sits on the outer one, where Apple's own round icons put their primary shape.
+- **What the system does.** The layers are square and unmasked; the system applies the rounded mask, the Liquid Glass highlights, shadows and translucency, and derives dark, clear and tinted appearances ([Creating your app icon using Icon Composer](https://developer.apple.com/documentation/xcode/creating-your-app-icon-using-icon-composer): 1024×1024 canvas, don't export the canvas mask, remove shadows and backgrounds from the layers). So the mark is one glass layer and the tile adds no effects of its own.
+- **Android.** Adaptive icons are 108 dp with the inner 72 dp visible; the logo is "at least 48x48 dp" and "must not exceed 66x66 dp" ([Adaptive icons](https://developer.android.com/develop/ui/views/launch/icon_design_adaptive)). The disc is 57.6 dp. The old one, 36.6 dp, was under the minimum.
+- **Maskable web icons.** The safe zone is a centred circle of radius 2/5 of the icon ([W3C Web App Manifest, icon masks](https://www.w3.org/TR/appmanifest/#icon-masks)). The 80% disc is exactly that circle, so 0.8 is the largest share no mask can cut.
+- **tvOS.** The HIG asks for a safe zone because the focused icon scales and moves and "the system crops foreground layers more than background layers"; its figure's safe zone is 87.5% of the width and 84% of the height. The Front layer's lockup is 0.9 of `ICON_MARK` (72% of the width), so it stays inside it when focused.
+- **Optical centring.** The swells take ink from the lower half, so the ink's centroid is 1.81 grid units above the disc's centre. The disc's outline still reads as a circle, so the mark moves down by 0.6 units (`ICON_MARK_DROP`), a third of that: enough to stop it looking high, not so much that the disc looks low.
+
+### Favicon
+
+The favicon is **the mark on its own**: no tile, transparent, the disc filling the square, with the small cut (4.2) that keeps the swells open at 16px.
+
+- **`favicon.svg`** follows the browser's colour scheme with `prefers-color-scheme`: the Bone gradient on dark, ink (`#0b0b0c`) on light, the logo's two paints from [Variants](#variants). Chrome evaluates it against the system's appearance rather than its own theme, so a light-themed Chrome on a dark Mac shows Bone.
+- **`favicon.ico`** (16, 32, 48) can't follow the scheme, so it carries **Bone**, the paint whose worst case is better. Taking the gradient's middle (`#b1ab9d`) against Chrome's tabs, Bone is 2.3:1 on a light active tab (white) and 1.75:1 on the light strip, and 5.3:1 on the dark tab (`#35363a`). Ink is 1.6:1 on the dark tab and 1.2:1 on the dark strip (`#202124`). Browsers that take the SVG favicon use the SVG; the `.ico` is the fallback.
+- **The touch icon and the manifest's icons stay tiles,** because the platforms using them expect a filled square: iOS puts the apple-touch icon on the Home Screen as an app icon, square artwork it masks itself, like the App Store icon ([HIG, App icons § Icon shape](https://developer.apple.com/design/human-interface-guidelines/app-icons#Icon-shape)), and a maskable icon must fill its canvas, since any pixel outside the safe zone may or may not show ([W3C, icon masks](https://www.w3.org/TR/appmanifest/#icon-masks)).
 
 **The outlined mark.** Icon Composer and the tvOS layers use `markOutline()`: the mark as three filled pieces with the swells as real gaps rather than a mask. It matches the masked mark to within anti-aliasing at 1024px.
 

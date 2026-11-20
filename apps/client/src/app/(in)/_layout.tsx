@@ -49,8 +49,15 @@ import {
   useTheme,
 } from '@highsea-tv/ui'
 import { TvHead, TvHeadStop, TvMessage, type ViewHandle } from '@highsea-tv/ui/tv'
-import { type Href, Redirect, router, Stack, usePathname } from 'expo-router'
-import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
+import {
+  type Href,
+  Redirect,
+  router,
+  Stack,
+  useNavigationContainerRef,
+  usePathname,
+} from 'expo-router'
+import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Animated, Platform, ScrollView, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { AccountMenu } from '../../account/menu.tsx'
@@ -58,6 +65,7 @@ import { useLeaveOnBack } from '../../back.tsx'
 import { HistoryButtons, useDesktopTopBar } from '../../desktop/window.tsx'
 import { useForget } from '../../forget.tsx'
 import { useKeepsServers } from '../../host'
+import { type ScreenNavigation, useKeepScroll } from '../../keep-scroll'
 import {
   COMPACT_NAV_HEIGHT,
   HeadGoal,
@@ -160,7 +168,48 @@ const isHere = (path: string, pathname: string) =>
 const isMarked = (d: Destination, pathname: string) =>
   isHere(d.path, pathname) || (d.owns ?? []).some((p) => isHere(p, pathname))
 
-const go = (path: string) => router.navigate(path as Href)
+/**
+ * Goes to a destination (a tab, the top bar's or the TV head's). One already open lower in the
+ * stack is gone back to, as React Navigation's `popTo` does
+ * (https://reactnavigation.org/docs/stack-actions/#popto; Expo Router's `dismissTo`,
+ * https://docs.expo.dev/versions/latest/sdk/router/#imperativerouter), so it shows as it was
+ * left, scrolled where it was and without being drawn again, and the stack doesn't grow with every
+ * visit (HT-116).
+ * One not open is pushed, as before.
+ */
+/**
+ * A stack screen, kept where it was scrolled while another covers it (../../keep-scroll.tsx). Where
+ * the platform keeps the place itself the screen is drawn as it is, with nothing around it.
+ */
+function KeepScroll({
+  children,
+  navigation,
+}: {
+  children: ReactNode
+  navigation: ScreenNavigation
+}) {
+  const ref = useKeepScroll(navigation)
+  if (!ref) return children
+  return (
+    <View ref={ref as never} style={{ flex: 1 }}>
+      {children}
+    </View>
+  )
+}
+
+function useGo() {
+  const ref = useNavigationContainerRef()
+  return useCallback(
+    (path: string) => {
+      const shell = ref.getRootState()?.routes.find((r) => r.name === '(in)')?.state
+      const name = path === '/' ? 'index' : path.replace(/^\//, '')
+      const open = shell?.routes.slice(0, -1).some((r) => r.name === name) ?? false
+      if (open) router.dismissTo(path as Href)
+      else router.navigate(path as Href)
+    },
+    [ref],
+  )
+}
 
 // the account's profiles, when the server serves them (B3): who's watching for the avatar and the
 // account menu, and the TV's opening
@@ -212,11 +261,20 @@ function ShellBody() {
         headerShown: false,
         animation: input === 'touch' ? undefined : 'fade',
         contentStyle: { backgroundColor: theme.colors.bg },
+        // the screens under the one on view stay mounted, so going back finds them as they were,
+        // and don't draw again while hidden (react-native-screens' freeze, documented for iOS and
+        // Android, which the Apple TV shares as iOS:
+        // https://reactnavigation.org/docs/native-stack-navigator/#freezeonblur); a change to what
+        // they show while hidden is drawn when they're back on view
+        freezeOnBlur: true,
       }}
-      // on the TV, each screen keeps where focus was in it and lands it there (../../tv-focus.tsx)
-      screenLayout={
-        input === 'tv' ? ({ children }) => <TvFocusScope>{children}</TvFocusScope> : undefined
-      }
+      // each screen keeps its scroll place under another (../../keep-scroll.tsx), and on the TV
+      // where focus was in it, landing it there (../../tv-focus.tsx)
+      screenLayout={({ children, navigation }) => (
+        <KeepScroll navigation={navigation}>
+          {input === 'tv' ? <TvFocusScope>{children}</TvFocusScope> : children}
+        </KeepScroll>
+      )}
     />
   )
   // the phone has no Alerts: its owner's announcements are Home's card
@@ -326,6 +384,7 @@ const OVER_BAR = { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 1 } 
 
 /** The phone's tab bar, as the prototype draws it: s1, a line above, the accent on the current tab. */
 function TabBar() {
+  const go = useGo()
   const t = useT(shellMessages)
   const theme = useTheme()
   const insets = useSafeAreaInsets()
@@ -392,6 +451,7 @@ function Head({
   /** Where Down from the head goes, as the page asked (kit's useHeadDown). */
   down: ViewHandle | null
 }) {
+  const go = useGo()
   const t = useT(shellMessages)
   const pathname = usePathname()
   const destinations = useDestinations()
@@ -471,6 +531,7 @@ const pageMark = (here: boolean) =>
  * blur's opacity with the blur behind it where the web has one, else the solid fallback's.
  */
 function TopBar({ over = false, glass = false }: { over?: boolean; glass?: boolean }) {
+  const go = useGo()
   const measure = usePageMeasure()
   const t = useT(shellMessages)
   const theme = useTheme()
@@ -675,6 +736,7 @@ function TopBar({ over = false, glass = false }: { over?: boolean; glass?: boole
 
 /** A destination in the top bar: its icon (Search) or its name. */
 function BarLink({ d, pathname }: { d: Destination; pathname: string }) {
+  const go = useGo()
   const t = useT(shellMessages)
   const m = useControl()
   const here = isHere(d.path, pathname)

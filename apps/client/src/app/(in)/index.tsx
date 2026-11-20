@@ -46,6 +46,7 @@ import {
   View,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { useTabsAhead } from '../../ahead.ts'
 import { useLeaveOnBack } from '../../back.tsx'
 import { usePointerHero } from '../../detail/hero.tsx'
 import { useFilmsText } from '../../films.ts'
@@ -66,6 +67,10 @@ const PULL_TIMEOUT_MS = 10_000
 
 export default function Home() {
   const input = useFormFactor().input
+  // the same query as the page's own (one request, the cache's): once it's in, the tabs' first
+  // pages are fetched ahead
+  const home = useServedHomeRows(useDeviceClient())
+  useTabsAhead(home.status === 'success')
   if (input === 'tv') return <TvHome />
   return input === 'pointer' ? <PointerHome /> : <TouchHome />
 }

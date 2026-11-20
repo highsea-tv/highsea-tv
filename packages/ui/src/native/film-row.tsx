@@ -119,6 +119,11 @@ export type FilmRowProps<T extends RowFilm> = {
   /** A line about the film for this row, under its title: a person's role in it. */
   noteOf?: (item: T) => string
   onOpen: (item: T) => void
+  /**
+   * A card is likely to be opened: a pointer over it, a touch beginning, the TV's focus resting on
+   * it. Its page can be fetched ahead (HT-116); nothing is drawn for it.
+   */
+  onIntent?: (item: T) => void
   /** What Play/Pause does on the TV's card: plays its film. */
   onPlay?: (item: T) => void
   /** Past the last film comes the first again, either way. */
@@ -223,7 +228,14 @@ function pointerStrip(
   return { gap, poster, height: poster * 1.5, wide: poster * WIDE, inset, fade }
 }
 
-function TouchForm<T extends RowFilm>({ title, suffix, items, art, onOpen }: FilmRowProps<T>) {
+function TouchForm<T extends RowFilm>({
+  title,
+  suffix,
+  items,
+  art,
+  onOpen,
+  onIntent,
+}: FilmRowProps<T>) {
   const width = usePosterWidth()
   return (
     <Row
@@ -240,6 +252,7 @@ function TouchForm<T extends RowFilm>({ title, suffix, items, art, onOpen }: Fil
           caption={item.year ? String(item.year) : undefined}
           width={width}
           onPress={() => onOpen(item)}
+          onPressIntent={onIntent ? () => onIntent(item) : undefined}
         />
       )}
     />
@@ -255,6 +268,7 @@ function TvForm<T extends RowFilm>({
   quality,
   noteOf,
   onOpen,
+  onIntent,
   onPlay,
   loop = false,
   onMove,
@@ -347,6 +361,7 @@ function TvForm<T extends RowFilm>({
                 onFocus={() => {
                   setFocused(true)
                   if (onPlay) focusedPlay.current = mine.current
+                  onIntent?.(item)
                   onFocus?.()
                 }}
                 onBlur={() => {
@@ -383,6 +398,7 @@ function PointerForm<T extends RowFilm>({
   quality,
   noteOf,
   onOpen,
+  onIntent,
   loop = false,
   onMove,
 }: FilmRowProps<T>) {
@@ -434,6 +450,8 @@ function PointerForm<T extends RowFilm>({
               accessibilityRole="link"
               accessibilityLabel={[item.title, note, line].filter(Boolean).join(', ')}
               onPress={() => onOpen(item)}
+              onPressIn={onIntent ? () => onIntent(item) : undefined}
+              onHoverIn={onIntent ? () => onIntent(item) : undefined}
               // the arrows show for the keyboard's focus, not a click's (`:focus-visible`, ./dom)
               onFocus={(e) => setFocused(focusVisible(e.nativeEvent.target ?? e.target))}
               onBlur={() => setFocused(false)}

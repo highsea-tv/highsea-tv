@@ -63,8 +63,8 @@ const shared = {
   backgroundColor: background,
   web: {
     output: 'single',
-    // Expo makes favicon.ico's sizes from one image, which can't be an .ico itself
-    favicon: `${brand}/web/icon-192.png`,
+    // Expo makes favicon.ico's sizes from one image, which can't be an .ico itself: the mark alone
+    favicon: `${brand}/web/favicon-192.png`,
     backgroundColor: background,
     themeColor: background,
   },
