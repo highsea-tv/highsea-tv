@@ -17,12 +17,42 @@ import { migrate, openDatabase } from '@highsea-tv/db'
 import { createDownloads } from '@highsea-tv/downloads'
 import { createJobQueue } from '@highsea-tv/jobs'
 import { createMovies } from '@highsea-tv/media/movies'
-import { checkPath, createMedia } from '@highsea-tv/media/shared'
+import { checkPath, createMedia, type MediaInfo, type Probe } from '@highsea-tv/media/shared'
+import { createShows } from '@highsea-tv/media/shows'
 import { createMetadata } from '@highsea-tv/metadata'
 import { createReplayFetch } from '@highsea-tv/metadata/replay'
 import { testEngine } from '@highsea-tv/torrent/testing'
 import { createQbittorrentImporter } from '../src/qbittorrent/index.ts'
 import { createRadarrImporter } from '../src/radarr/index.ts'
+import { createSonarrImporter } from '../src/sonarr/index.ts'
+
+const mediaInfo = (seconds: number): MediaInfo => ({
+  duration: seconds,
+  container: 'matroska,webm',
+  video: {
+    index: 0,
+    codec: 'h264',
+    codecTag: null,
+    profile: null,
+    width: 1920,
+    height: 1080,
+    bitDepth: 8,
+    bitrate: 0,
+    colorPrimaries: null,
+    colorTransfer: null,
+    hdr: 'none',
+    dolbyVision: null,
+  },
+  audio: [],
+  subtitles: [],
+})
+
+/** Episode files are a few bytes: `episode` reads as an hour of video, anything else fails. */
+const fakeProbe: Probe = async (path) => {
+  const { readFileSync } = await import('node:fs')
+  if (readFileSync(path, 'utf8').startsWith('episode')) return mediaInfo(3600)
+  throw new Error('ffprobe couldn’t read the file.')
+}
 
 export async function setup() {
   const database = openDatabase(':memory:')
@@ -35,8 +65,10 @@ export async function setup() {
   const dir = mkdtempSync(join(tmpdir(), 'highsea-importers-'))
   const data = join(dir, 'data')
   const library = join(data, 'media', 'movies')
+  const showsFolder = join(data, 'media', 'shows')
   const downloadsFolder = join(data, 'downloads')
   mkdirSync(library, { recursive: true })
+  mkdirSync(showsFolder, { recursive: true })
   mkdirSync(downloadsFolder, { recursive: true })
   mkdirSync(join(dir, 'images'))
 
@@ -66,6 +98,10 @@ export async function setup() {
       metadata,
       importing: { downloadDirs: () => [downloadsFolder], sampleSeconds: 2 },
     },
+    media,
+  )
+  const shows = createShows(
+    { db, clock, events, jobs, logger: silentLogger, metadata, files: { probe: fakeProbe } },
     media,
   )
   const { engine } = testEngine({ db: database })
@@ -126,6 +162,18 @@ export async function setup() {
     checkFolder,
     grabs: radarr.grabs,
   })
+  const sonarr = createSonarrImporter({
+    db,
+    jobs,
+    clock,
+    events,
+    logger: silentLogger,
+    fetch,
+    sealer,
+    media,
+    shows,
+    allowedRoots: () => [data],
+  })
   const runJobs = async () => {
     await jobs.tick()
     await jobs.idle()
@@ -141,6 +189,9 @@ export async function setup() {
     downloads,
     radarr,
     qbittorrent,
+    shows,
+    sonarr,
+    showsFolder,
     dir,
     data,
     library,
@@ -148,6 +199,7 @@ export async function setup() {
     runJobs,
     cleanup: async () => {
       movies.close()
+      shows.close()
       // the jobs still running finish first, as at the runtime's shutdown: one that wrote into the
       // folder after it was removed made it again and left it in the temp folder
       await jobs.drain()

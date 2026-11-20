@@ -19,6 +19,7 @@
 //   shows.admin.list() / get(id) / update / remove / monitorSeason / monitorEpisode / discover
 //   shows.admin.setMarkers / findMarkers   the owner's intro and credits (ADR 0067)
 //   shows.settings.naming() / sizes() / profileUsage(ids)
+//   await shows.migrate.addInPlace(ShowInPlaceInput) → { added, changed, files, unmatched }  (Sonarr)
 //   shows.close()                          stops listening for metadata.updated
 import { DRAFT_TOPICS } from '@highsea-tv/api-contract'
 import { AppError } from '@highsea-tv/core'
@@ -35,6 +36,7 @@ import { createEpisodeImport } from './import.ts'
 import { createShowLibrary } from './library.ts'
 import { createShowLibraryImport } from './library-import.ts'
 import { createShowMarkers } from './markers.ts'
+import { createShowMigrate } from './migrate.ts'
 import { createShowPlayback } from './playback.ts'
 import { createShowScan, SHOW_SCAN_JOB } from './scan.ts'
 import { createShowSearch } from './search.ts'
@@ -52,6 +54,7 @@ export function createShows(deps: ShowsDeps, media: Media) {
   const settings = createShowSettings(deps)
   const episodeImport = createEpisodeImport(deps, { media, files, settings })
   const search = createShowSearch(deps, { media, settings })
+  const migrate = createShowMigrate(deps, { media, library, files })
   deps.jobs.define({
     type: SHOW_SCAN_JOB,
     payload: z.object({ folder: z.string().optional() }),
@@ -109,6 +112,8 @@ export function createShows(deps: ShowsDeps, media: Media) {
     },
     /** What a show's release search is judged by, and what a Search looks for (Phase 5 C1). */
     search: { input: search.input, plan: search.plan },
+    /** A show another program manages, added where it is (the Sonarr importer, Phase 5 C1). */
+    migrate,
     /** A show's finished download into its episodes (Phase 5 C1). */
     importDownload: episodeImport.importDownload,
     /** What couldn't be placed, under one root folder or every one, with each reason. */
@@ -190,6 +195,12 @@ export {
   queueMarkers,
   type ShowMarkers,
 } from './markers.ts'
+export type {
+  EpisodeRef,
+  ShowInPlaceInput,
+  ShowInPlaceResult,
+  ShowMigrate,
+} from './migrate.ts'
 export type { ShowPlayback } from './playback.ts'
 export { SHOW_SCAN_JOB, type ShowScanResult } from './scan.ts'
 export type { ShowScope } from './search.ts'

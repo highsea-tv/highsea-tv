@@ -31,6 +31,33 @@ const exists = (label: string) =>
 export const tagsMatch = (scope: readonly string[], carried: readonly string[]) =>
   scope.length === 0 || scope.some((t) => carried.includes(t))
 
+/**
+ * The ids of tags with these labels, each made when it's missing (the importers bring another
+ * program's tags across). Tidied as Settings › Tags keeps them (checkpoint 8c): 40 characters, one
+ * per label ignoring case, so Radarr's "kids" finds a "Kids" made here.
+ */
+export function tagIdsFor({ db, clock }: MediaDeps, labels: readonly string[]): string[] {
+  const out: string[] = []
+  for (const raw of labels) {
+    const label = raw.trim().replace(/\s+/g, ' ').slice(0, 40)
+    if (!label) continue
+    const same = () =>
+      db
+        .select({ id: tags.id })
+        .from(tags)
+        .where(sql`${tags.label} = ${label} COLLATE NOCASE`)
+        .get()
+    if (!same())
+      db.insert(tags)
+        .values({ id: newId('tag'), label, createdAt: clock.now() })
+        .onConflictDoNothing({ target: tags.label })
+        .run()
+    const row = same()
+    if (row && !out.includes(row.id)) out.push(row.id)
+  }
+  return out
+}
+
 export function createTags({ db, clock }: MediaDeps) {
   type Row = typeof tags.$inferSelect
 

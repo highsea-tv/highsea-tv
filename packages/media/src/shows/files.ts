@@ -657,13 +657,18 @@ export function createShowFiles(ctx: ShowsDeps, deps: { media: Media }) {
   /**
    * Files a video under the episodes the owner picks (the admin's resolve, part B's fourth task;
    * anime's absolute numbers until their mapping): it's probed, and an episode another file holds
-   * is taken from it, that file keeping its others.
+   * is taken from it, that file keeping its others. The Sonarr importer files each of Sonarr's
+   * files this way too, with the release's name Sonarr kept and its own history message.
    */
   async function assign(
     show: ItemRow,
     path: string,
     picks: readonly { season: number; episode: number }[],
-  ): Promise<{ fileId: string }> {
+    {
+      sceneName,
+      message = 'Matched by hand.',
+    }: { sceneName?: string | null; message?: string } = {},
+  ): Promise<{ fileId: string; already: boolean }> {
     if (!isWithin(show.path, path) || path === show.path)
       throw new AppError('invalid', 'The file isn’t in the show’s folder.', {
         reason: 'outside-show',
@@ -688,7 +693,7 @@ export function createShowFiles(ctx: ShowsDeps, deps: { media: Media }) {
       throw new AppError('invalid', probed.skip ?? 'The file can’t be read.', {
         reason: 'unreadable',
       })
-    const own = basename(path, extname(path))
+    const own = sceneName?.trim() || basename(path, extname(path))
     const release = parse(own)
     const quality = qualityFor(release, probed.info, null)
     const done = record({
@@ -709,8 +714,9 @@ export function createShowFiles(ctx: ShowsDeps, deps: { media: Media }) {
     })
     if ('conflict' in done)
       throw new AppError('conflict', done.conflict, { reason: 'episode-has-file' })
-    await afterFiling(show, episodes[0] as ItemRow, done.fileId, found, quality, 'Matched by hand.')
-    return { fileId: done.fileId }
+    if (!done.already)
+      await afterFiling(show, episodes[0] as ItemRow, done.fileId, found, quality, message)
+    return { fileId: done.fileId, already: done.already }
   }
 
   return {
@@ -720,6 +726,7 @@ export function createShowFiles(ctx: ShowsDeps, deps: { media: Media }) {
     remove,
     unmatched,
     episodesOf,
+    versionsOf,
     /** For the episode import (import.ts): it records and announces as the scan does. */
     record,
     afterFiling,
