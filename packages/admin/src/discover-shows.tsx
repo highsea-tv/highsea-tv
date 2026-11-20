@@ -1,13 +1,14 @@
 'use client'
 import type { DiscoverSeries } from '@highsea-tv/api-contract'
 import { useT } from '@highsea-tv/i18n/react'
-import { useQuery } from '@highsea-tv/sdk/react'
+import type { HighseaClient } from '@highsea-tv/sdk'
 // SPDX-License-Identifier: AGPL-3.0-only
 // Discover's shows (docs/product/shows.md#discover), moved from the prototype with D3 of the one
 // client platform (one-client-platform-d.md, answer 5): a Movies and Shows choice beside the
 // search, and `/discover/shows` with TMDB's trending shows until you type, then results. A show in
 // the library opens its page; Add a show for the rest. Drawn only when the server serves shows
-// (serves.tsx): the routes are drafts the mock answers and the server answers 501.
+// (serves.tsx). TMDB's pages come one at a time into the libraries' windowed grid, as films' do
+// (HT-115, ./discover-grid.tsx).
 import { admin } from '@highsea-tv/tokens'
 import {
   Button,
@@ -23,8 +24,10 @@ import { type ReactNode, useDeferredValue, useState } from 'react'
 import { View } from 'react-native'
 import { AddShowDialog } from './add-show-dialog.tsx'
 import { useAddressParam } from './address.ts'
+import { DiscoverGrid } from './discover-grid.tsx'
+import { useDiscoverPages } from './discover-pages.ts'
 import { Loadable, PosterSkeletons } from './loadable.tsx'
-import { GridItem, InLibraryLink, PosterGrid } from './media-sections.tsx'
+import { InLibraryLink } from './media-sections.tsx'
 import { useRouter } from './navigation.tsx'
 import { Served, useServes } from './serves.tsx'
 import { AdminPage } from './shell.tsx'
@@ -80,13 +83,19 @@ export function DiscoverShows() {
   )
 }
 
+const fetchPage = (query: string) => (c: HighseaClient, page: number) =>
+  c.series.discover({ query: query ? { query, page } : { page } })
+
+const idOf = (s: DiscoverSeries) => s.id
+
 function Page() {
   const t = useT(messages)
   const [query, setQuery] = useAddressParam<string>('q', '')
   const deferred = useDeferredValue(query.trim())
-  const results = useQuery(
+  const pages = useDiscoverPages(
     `discover-shows:${deferred}`,
-    (c) => c.series.discover({ query: deferred ? { query: deferred } : {} }),
+    fetchPage(deferred),
+    idOf,
     SHOWS_TOPICS,
   )
   const [adding, setAdding] = useState<DiscoverSeries | null>(null)
@@ -109,7 +118,7 @@ function Page() {
       <Text variant="title" role="heading" aria-level={2}>
         {deferred ? t('discover.results', { query: deferred }) : t('discover.trending')}
       </Text>
-      <Loadable query={results} what={t('discover.what')} skeleton={<PosterSkeletons />}>
+      <Loadable query={pages.query} what={t('discover.what')} skeleton={<PosterSkeletons />}>
         {(shows) =>
           shows.length === 0 ? (
             deferred ? (
@@ -122,11 +131,13 @@ function Page() {
               </EmptyState>
             )
           ) : (
-            <PosterGrid>
-              {shows.map((s) => (
-                <Result key={s.id} show={s} onAdd={setAdding} />
-              ))}
-            </PosterGrid>
+            <DiscoverGrid
+              items={shows}
+              pages={pages}
+              keyOf={idOf}
+              label={deferred ? t('discover.results', { query: deferred }) : t('discover.trending')}
+              render={(s) => <Result show={s} onAdd={setAdding} />}
+            />
           )
         }
       </Loadable>
@@ -138,7 +149,7 @@ function Page() {
 function Result({ show: s, onAdd }: { show: DiscoverSeries; onAdd: (s: DiscoverSeries) => void }) {
   const t = useT(messages)
   return (
-    <GridItem gap={tokens.space['2']}>
+    <View style={{ gap: tokens.space['2'] }}>
       <View>
         <Poster
           title={s.title}
@@ -179,7 +190,7 @@ function Result({ show: s, onAdd }: { show: DiscoverSeries; onAdd: (s: DiscoverS
           {t('discover.add')}
         </Button>
       )}
-    </GridItem>
+    </View>
   )
 }
 

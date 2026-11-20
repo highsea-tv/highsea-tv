@@ -8,20 +8,19 @@
 // - with no query, four tabs (Trending, Popular, Now playing, Upcoming) replace "Trending this
 //   week" (checkpoint 4 plan, decision 7);
 // - the query and the tab live in the address (`?q=`, `?list=`), so Back returns to them;
-// - TMDB answers a page at a time: Show more under the grid loads the next;
+// - TMDB answers a page at a time: the grid is the libraries' windowed one and reads the next page
+//   as it draws its last row, with no Show more (the owner, 2026-11-19, HT-115; ./discover-grid.tsx);
 // - no TMDB key says so, and links to Settings › General (decision 1).
 // Drawn with the library's native renderer since D2 (one-client-platform-d.md).
 import { DISCOVER_LISTS, type DiscoverMovie } from '@highsea-tv/api-contract'
 import { useT } from '@highsea-tv/i18n/react'
 import type { HighseaClient } from '@highsea-tv/sdk'
-import { useQuery } from '@highsea-tv/sdk/react'
 import {
   Button,
   EmptyState,
   Poster,
   Rating,
   SearchField,
-  Skeleton,
   Tabs,
   Text,
   tokens,
@@ -30,11 +29,13 @@ import { useDeferredValue, useState } from 'react'
 import { View } from 'react-native'
 import { AddMovieDialog, isNoMetadataKey, METADATA_SETTINGS } from './add-dialog.tsx'
 import { useAddressParam } from './address.ts'
+import { DiscoverGrid } from './discover-grid.tsx'
 import { discover as messages } from './discover-messages.ts'
+import { useDiscoverPages } from './discover-pages.ts'
 import { FindKind, FindRow, SEARCH } from './discover-shows.tsx'
 import { Loadable, PosterSkeletons } from './loadable.tsx'
 import { moviePath } from './media-links.ts'
-import { GridItem, InLibraryLink, PosterGrid } from './media-sections.tsx'
+import { InLibraryLink } from './media-sections.tsx'
 import { AdminPage } from './shell.tsx'
 
 type List = (typeof DISCOVER_LISTS)[number]
@@ -42,16 +43,17 @@ type List = (typeof DISCOVER_LISTS)[number]
 /** Library changes flip a result's In library badge in place. */
 const LIVE = ['movies.updated']
 
-const pageKey = (list: List, query: string, page: number) =>
-  `discover:${query ? `q:${query}` : list}:${page}`
+const viewKey = (list: List, query: string) => `discover:${query ? `q:${query}` : list}`
 
-const fetchPage = (list: List, query: string, page: number) => (c: HighseaClient) =>
+const fetchPage = (list: List, query: string) => (c: HighseaClient, page: number) =>
   c.movies.discover({ query: query ? { query, page } : { list, page } })
+
+const idOf = (m: DiscoverMovie) => String(m.id)
 
 function Result({ movie: m, onAdd }: { movie: DiscoverMovie; onAdd: (m: DiscoverMovie) => void }) {
   const t = useT(messages)
   return (
-    <GridItem gap={tokens.space['2']}>
+    <View style={{ gap: tokens.space['2'] }}>
       <View>
         <Poster
           title={m.title}
@@ -93,45 +95,8 @@ function Result({ movie: m, onAdd }: { movie: DiscoverMovie; onAdd: (m: Discover
           {t('add')}
         </Button>
       )}
-    </GridItem>
+    </View>
   )
-}
-
-/** Pages after the first: their results join the same grid, placeholders while they load. */
-function MoreResults({
-  list,
-  query,
-  page,
-  onAdd,
-}: {
-  list: List
-  query: string
-  page: number
-  onAdd: (m: DiscoverMovie) => void
-}) {
-  const t = useT(messages)
-  const results = useQuery(pageKey(list, query, page), fetchPage(list, query, page), LIVE)
-  if (results.status === 'loading')
-    return Array.from({ length: 6 }, (_, i) => (
-      // biome-ignore lint/suspicious/noArrayIndexKey: placeholders have no identity
-      <GridItem key={i} busy>
-        <View style={{ aspectRatio: 2 / 3 }}>
-          <Skeleton height="100%" radius={tokens.radius.poster} />
-        </View>
-      </GridItem>
-    ))
-  if (results.status === 'error')
-    return (
-      <GridItem full gap={tokens.space['2']}>
-        <Text variant="caption" color="text-3">
-          {results.error.message}
-        </Text>
-        <Button size="sm" onPress={results.refetch}>
-          {t('more')}
-        </Button>
-      </GridItem>
-    )
-  return results.data.items.map((m) => <Result key={m.id} movie={m} onAdd={onAdd} />)
 }
 
 export function Discover() {
@@ -139,11 +104,9 @@ export function Discover() {
   const [query, setQuery] = useAddressParam<string>('q', '')
   const [list, setList] = useAddressParam<List>('list', 'trending', DISCOVER_LISTS)
   const deferred = useDeferredValue(query.trim())
-  const first = useQuery(pageKey(list, deferred, 1), fetchPage(list, deferred, 1), LIVE)
-  // how many pages are shown, for this search or list; another starts again from its first
-  const view = pageKey(list, deferred, 1)
-  const [more, setMore] = useState({ view, pages: 1 })
-  const pages = more.view === view ? more.pages : 1
+  // TMDB's pages for this search or list; another starts again from its first
+  const pages = useDiscoverPages(viewKey(list, deferred), fetchPage(list, deferred), idOf, LIVE)
+  const first = pages.query
   const [adding, setAdding] = useState<DiscoverMovie[]>([])
   const onAdd = (m: DiscoverMovie) => setAdding([m])
 
@@ -157,8 +120,8 @@ export function Discover() {
     />
   ) : (
     <Loadable query={first} what={t('what')} skeleton={<PosterSkeletons />}>
-      {(page) =>
-        page.items.length === 0 ? (
+      {(items) =>
+        items.length === 0 ? (
           deferred ? (
             <EmptyState icon="search" title={t('empty.query', { query: deferred })}>
               {t('empty.queryBody')}
@@ -169,27 +132,13 @@ export function Discover() {
             </EmptyState>
           )
         ) : (
-          <View style={{ gap: tokens.space['5'] }}>
-            <PosterGrid>
-              {page.items.map((m) => (
-                <Result key={m.id} movie={m} onAdd={onAdd} />
-              ))}
-              {Array.from({ length: pages - 1 }, (_, i) => (
-                <MoreResults
-                  key={pageKey(list, deferred, i + 2)}
-                  list={list}
-                  query={deferred}
-                  page={i + 2}
-                  onAdd={onAdd}
-                />
-              ))}
-            </PosterGrid>
-            {pages < Math.min(page.totalPages, 500) && (
-              <View style={{ alignItems: 'center' }}>
-                <Button onPress={() => setMore({ view, pages: pages + 1 })}>{t('more')}</Button>
-              </View>
-            )}
-          </View>
+          <DiscoverGrid
+            items={items}
+            pages={pages}
+            keyOf={idOf}
+            label={deferred ? t('results', { query: deferred }) : t(`list.${list}`)}
+            render={(m) => <Result movie={m} onAdd={onAdd} />}
+          />
         )
       }
     </Loadable>

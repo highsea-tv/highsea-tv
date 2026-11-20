@@ -347,6 +347,28 @@ export async function acknowledge() {
 export const sent = (path: string) => requests().filter((q) => q.url.includes(path))
 
 /**
+ * expo-audio for `jest.mock`, which Jest has no native side for: the calls the app makes
+ * (`createAudioPlayer`, `setAudioModeAsync`, https://docs.expo.dev/versions/latest/sdk/audio/),
+ * answered by a player that does nothing.
+ */
+export function audioModule() {
+  const player = () => ({
+    playing: false,
+    volume: 1,
+    muted: false,
+    addListener: () => ({ remove() {} }),
+    replace() {},
+    play() {},
+    pause() {},
+    seekTo: async () => {},
+    setActiveForLockScreen() {},
+    clearLockScreenControls() {},
+    remove() {},
+  })
+  return { createAudioPlayer: player, setAudioModeAsync: async () => {} }
+}
+
+/**
  * expo-video for `jest.mock`, which Jest has no native side for: a player that keeps its state
  * and sends expo-video's events (https://docs.expo.dev/versions/latest/sdk/video/#videoplayerevents)
  * as AVPlayer would, a source loading to ready at once, with `duration` seconds; and the views as

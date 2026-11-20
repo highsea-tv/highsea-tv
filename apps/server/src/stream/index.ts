@@ -45,9 +45,12 @@ const SECURITY = {
   'cache-control': 'private, no-store',
 } as const
 
-function fail(res: ServerResponse, status: number, message: string) {
+function fail(res: ServerResponse, status: number, message: string, details?: unknown) {
+  const code = status === 404 ? 'not-found' : status === 503 ? 'unavailable' : 'invalid'
   res.writeHead(status, { 'content-type': 'application/json', ...SECURITY })
-  res.end(JSON.stringify({ error: { code: status === 404 ? 'not-found' : 'invalid', message } }))
+  res.end(
+    JSON.stringify({ error: { code, message, ...(details === undefined ? {} : { details }) } }),
+  )
 }
 
 /** Counts the bytes handed to a player, for the dashboard's Network (HT-60). */
@@ -125,7 +128,9 @@ export function createStream(
     try {
       target = (await runtime.musicPlayback?.open(token)) ?? null
     } catch (e) {
-      if (e instanceof AppError) return fail(res, 503, e.message)
+      // with its reason (`no-ffmpeg`, `transcode-failed`), which the app reads before it plays
+      // a transcode (HT-108), since an audio element's error never carries the body
+      if (e instanceof AppError) return fail(res, 503, e.message, e.details)
       throw e
     }
     if (!target) return fail(res, 404, 'That stream has ended.')

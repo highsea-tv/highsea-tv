@@ -38,6 +38,16 @@ const background = defaultTheme.colors.bg
  *  (src/fonts.web.ts). */
 const fonts: Plugin = ['expo-font', { fonts: nativeFontPaths() }]
 
+/**
+ * expo-audio's plugin (https://docs.expo.dev/versions/latest/sdk/audio/#configuration-in-app-config):
+ * `enableBackgroundPlayback` adds the `audio` background mode, so music goes on with the screen
+ * locked or the app in the background (HT-108); the music player never records, so no microphone.
+ */
+const audio: Plugin = [
+  'expo-audio',
+  { microphonePermission: false, recordAudioAndroid: false, enableBackgroundPlayback: true },
+]
+
 const splash = (imageWidth: number): Plugin => [
   'expo-splash-screen',
   { image: `${brand}/splash/mark.png`, imageWidth, backgroundColor: background },
@@ -104,6 +114,7 @@ const phone: ExpoConfig = {
       },
     ],
     ['expo-video', { supportsBackgroundPlayback: true, supportsPictureInPicture: true }],
+    audio,
     splash(96),
   ],
 }
@@ -125,6 +136,7 @@ const appleTV: ExpoConfig = {
     'expo-secure-store',
     fonts,
     'expo-video',
+    audio,
     splash(160),
   ],
 }

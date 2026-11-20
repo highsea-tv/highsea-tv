@@ -25,5 +25,6 @@ export const discover = defineMessages({
   'add.label': 'Add {title}',
   noKey: 'Add a TMDB key to find movies.',
   'noKey.link': 'Go to Settings › General',
-  more: 'Show more',
+  /** The next page failed: “Couldn’t load more results”. */
+  'more.what': 'more results',
 })

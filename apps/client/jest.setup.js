@@ -35,3 +35,13 @@ jest.mock('expo-video', () => {
   globalThis.__video ??= require('./test/mock.ts').videoModule()
   return globalThis.__video
 })
+// expo-audio's native module isn't in Jest: a player that does nothing stands in, for the copy
+// @highsea-tv/native's sound resolves and the app's music player (HT-108). The music's engine is
+// tested against its own fake output (test/music-audio.jest.tsx); here it's only imported
+jest.mock(
+  require.resolve('expo-audio', {
+    paths: [require('node:path').resolve(__dirname, '../../packages/native')],
+  }),
+  () => require('./test/mock.ts').audioModule(),
+)
+jest.mock('expo-audio', () => require('./test/mock.ts').audioModule())

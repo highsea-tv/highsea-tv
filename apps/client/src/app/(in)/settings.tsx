@@ -367,7 +367,7 @@ function TvSettings({ chosen }: { chosen: SettingsSectionId }) {
           collapsable={false}
           accessibilityRole={TAB_ROW}
           accessibilityLabel={t('sections')}
-          style={{ width: tokens.tv.poster.width * 2 * u, gap: m.gap }}
+          style={{ width: tokens.tv.column * 2 * u, gap: m.gap }}
         >
           {sections.map((s) => {
             const here = s.id === section
@@ -1276,7 +1276,7 @@ function Choices({
   const m = useControl()
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: m.gap }}>
-      <Text variant="meta" color="text-2" style={{ width: tokens.tv.poster.width * u }}>
+      <Text variant="meta" color="text-2" style={{ width: tokens.tv.column * u }}>
         {label}
       </Text>
       <View

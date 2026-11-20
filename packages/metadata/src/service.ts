@@ -476,6 +476,15 @@ export function createMetadataCore(deps: MetadataDeps) {
       return toPage(result, (s) => toDiscoverShow(s, pick))
     },
     /**
+     * TMDB's shows trending this week, paged: Discover's shows before anything is typed, as
+     * `list('trending')` is for films. Writes nothing.
+     */
+    async trendingShows(pageNumber?: number): Promise<Page<DiscoverShow>> {
+      const credential = requireKey()
+      const result = await api.trendingShows(credential, page(pageNumber), settings.language())
+      return toPage(result, (s) => toDiscoverShow(s, pick))
+    },
+    /**
      * What a TheTVDB id is on TMDB, through Find by ID with `external_source=tvdb_id`
      * ([Find by ID](https://developer.themoviedb.org/reference/find-by-id)); null when TMDB has none.
      * TheTVDB numbers shows, seasons and episodes apart, so one number can be a show and an

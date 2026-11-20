@@ -67,7 +67,7 @@ export function TvTile({
   progress?: number | null
   /** The bar between the art and the title rather than on the art: Continue watching's. */
   progressBelow?: boolean
-  /** In units; a poster's is 10.5u, a wide tile's 17u. */
+  /** In units; a poster's is 11.7u, a wide tile's 17u. */
   width?: number
   onPress?: () => void
   onLongPress?: () => void

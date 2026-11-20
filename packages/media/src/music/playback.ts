@@ -239,6 +239,15 @@ export function createMusicPlayback(
           await fsp.rename(temp, file)
         } catch (e) {
           await fsp.rm(temp, { force: true })
+          // ffmpeg not there at all: Node's spawn fails with ENOENT
+          // (https://nodejs.org/api/child_process.html#event-error), which the player says as
+          // "no ffmpeg" rather than a file it couldn't read (HT-108)
+          if ((e as NodeJS.ErrnoException).code === 'ENOENT')
+            throw new AppError(
+              'unavailable',
+              'ffmpeg isn’t installed, so this song can’t be made playable here.',
+              { reason: 'no-ffmpeg' },
+            )
           log.warn('couldn’t make a song playable', {
             path: track.path,
             error: (e as Error).message,

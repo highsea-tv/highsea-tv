@@ -304,6 +304,27 @@ describe('hover', () => {
 })
 
 describe('Poster', () => {
+  // the owner, 2026-11-19 (HT-115): a card's title on one line, cut with an ellipsis, the whole
+  // title its name and, on the web, its tooltip
+  test('a long title is one line with an ellipsis, named and titled in full', () => {
+    const long = 'The Long Quiet of the Northern Harbour Lights After Midnight'
+    for (const form of ['pointer', 'touch'] as const) {
+      // the caption under the art, as the grids and rows draw it
+      const { getByRole, container } = draw(
+        form,
+        <Poster title={long} showTitle onPress={() => {}} />,
+      )
+      expect(getByRole('link', { name: long })).toBeTruthy()
+      const title = textEl(container, long) as HTMLElement
+      expect(title.getAttribute('title')).toBe(long)
+      // react-native-web's numberOfLines={1}: one line, cut with an ellipsis (Text's numberOfLines)
+      const drawn = getComputedStyle(title)
+      expect(drawn.textOverflow).toBe('ellipsis')
+      expect(drawn.whiteSpace).toBe('nowrap')
+      cleanup()
+    }
+  })
+
   test('on the TV it is the TV’s tile, named by its title and caption', () => {
     draw('tv', <Poster title="Sintel" caption="2010" onPress={() => {}} />)
     expect(screen.getByLabelText('Sintel, 2010')).toBeTruthy()

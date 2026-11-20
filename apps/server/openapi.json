@@ -6416,6 +6416,32 @@
           "watched"
         ]
       },
+      "DiscoverSeriesPage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DiscoverSeries"
+            }
+          },
+          "page": {
+            "type": "integer"
+          },
+          "totalPages": {
+            "type": "integer"
+          },
+          "totalResults": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "page",
+          "totalPages",
+          "totalResults"
+        ]
+      },
       "DiscoverSeries": {
         "type": "object",
         "properties": {
@@ -28200,7 +28226,7 @@
           "Series"
         ],
         "summary": "Find shows on TMDB",
-        "description": "Library shows are marked `inLibrary`.",
+        "description": "With a query, TMDB’s TV search; without one, the shows trending this week. A page at a time, 20 a page. Library shows are marked `inLibrary`.",
         "x-highsea-access": "staff",
         "security": [
           {
@@ -28219,18 +28245,25 @@
             "required": false,
             "name": "query",
             "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500
+            },
+            "required": false,
+            "name": "page",
+            "in": "query"
           }
         ],
         "responses": {
           "200": {
-            "description": "The shows found",
+            "description": "A page of shows",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/DiscoverSeries"
-                  }
+                  "$ref": "#/components/schemas/DiscoverSeriesPage"
                 }
               }
             }

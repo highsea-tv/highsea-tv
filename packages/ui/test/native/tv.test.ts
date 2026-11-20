@@ -10,6 +10,7 @@ import {
   KEEP,
   keptAt,
   remoteKey,
+  TV_GRID_COLUMNS,
   unit,
 } from '../../src/native/tv/model.ts'
 
@@ -20,8 +21,20 @@ describe('screen units', () => {
     expect(unit(3840)).toBe(38.4)
   })
 
-  test('a poster is 10.5u, about 202px at 1080p', () => {
-    expect(inUnits(10.5, 1920)).toBeCloseTo(201.6)
+  // a ninth wider since HT-115 (the owner, 2026-11-19); the other parts keep tv.column's 10.5u
+  test('a poster is 11.7u, about 225px at 1080p, and the TV’s column stays 10.5u', () => {
+    expect(tv.poster.width).toBe(11.7)
+    expect(inUnits(tv.poster.width, 1920)).toBeCloseTo(224.64)
+    expect(tv.column).toBe(10.5)
+  })
+
+  test('a grid is six across: seven tiles a ninth wider than before don’t fit the safe area', () => {
+    const across = 100 - 2 * tv.safe.x
+    const fill = (n: number) => (across - (n - 1) * tv.poster.gap) / n
+    expect(TV_GRID_COLUMNS).toBe(6)
+    // seven filled 12.6u; a ninth wider is 14u, and seven of those overrun the 95.2u across
+    expect(7 * fill(7) * (10 / 9) + 6 * tv.poster.gap).toBeGreaterThan(across)
+    expect(fill(6)).toBeCloseTo(14.87)
   })
 })
 

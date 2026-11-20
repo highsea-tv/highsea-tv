@@ -12,7 +12,7 @@
 //   index in a column of its own at the left, which stays under the top bar as the page scrolls,
 //   opening and closing with spring.quick; at a compact width there's no index;
 // - the TV (tv/library.tsx): the title with the sorts, Unwatched and the genre as chips on its
-//   right, seven posters a row, and the rail at the safe area's left. Focus starts on the first
+//   right, six posters a row (seven before HT-115), and the rail at the safe area's left. Focus starts on the first
 //   title; after that, picking a sort or a view keeps focus on the choice (the owner, 2026-10-31).
 // An empty library says so; choices that match nothing say why, and with a pointer and on the TV
 // offer Show everything. The grids draw only the rows near the screen (./parts.tsx), so a letter
@@ -61,6 +61,7 @@ import {
   alpha,
   focusOn,
   Kept,
+  TV_GRID_COLUMNS,
   TV_HEAD_HEIGHT,
   TvGrid,
   TvMessage,
@@ -828,8 +829,8 @@ export function TvLibraryGrid<T extends { id: number }>({ kind }: { kind: GridKi
   )
 }
 
-/** TvGrid's posters a row (tv.md's seven), so the first row's are known by their place. */
-const TV_COLUMNS = 7
+/** TvGrid's posters a row, so the first row's are known by their place. */
+const TV_COLUMNS = TV_GRID_COLUMNS
 
 /**
  * The genre, the last of the choices, as the web and phone have it: OK opens the genres over the

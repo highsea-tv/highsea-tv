@@ -63,6 +63,23 @@ describe('Refresh', () => {
       code: 'not-found',
     })
   })
+
+  test('the look-up after it is a job naming the album or the artist, for their pages’ marks', async () => {
+    const t = await setup()
+    t.put('Blur/Parklife (1994)/01.flac', parklife(1, 'Girls & Boys'))
+    await t.music.libraryScan.scan()
+    const [album] = t.music.admin.albums()
+    const albumId = album?.id as string
+    const artistId = album?.artist.id as string
+    await t.music.manage.refreshAlbum(albumId)
+    await t.music.manage.refreshArtist(artistId)
+    const albumWork = t.jobs.workOf({ kind: 'album', id: albumId }).active
+    expect(albumWork.map((j) => j.type)).toEqual(['music.metadata'])
+    expect(t.jobs.workOf({ kind: 'artist', id: artistId }).active).toHaveLength(1)
+    // asked again while one waits, it isn't queued twice
+    await t.music.manage.refreshAlbum(albumId)
+    expect(t.jobs.workOf({ kind: 'album', id: albumId }).active).toHaveLength(1)
+  })
 })
 
 describe('track naming', () => {

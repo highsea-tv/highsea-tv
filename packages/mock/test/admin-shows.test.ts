@@ -132,7 +132,7 @@ describe('the admin’s shows', () => {
     const c = await setup()
     const found = await c.series.discover({ query: {} })
     shaped(routes.series.discover, found)
-    const there = found.find((s) => !s.inLibrary)
+    const there = found.items.find((s) => !s.inLibrary)
     if (!there) throw new Error('nothing to add')
     const [folder] = await c.series.rootFolders()
     if (!folder) throw new Error('no folder')
@@ -150,7 +150,9 @@ describe('the admin’s shows', () => {
       },
     })
     shaped(routes.series.add, added)
-    expect((await c.series.discover({ query: { query: there.title } }))[0]?.inLibrary).toBe(true)
+    expect((await c.series.discover({ query: { query: there.title } })).items[0]?.inLibrary).toBe(
+      true,
+    )
     await c.series.remove({ params: { id: added.id }, query: {} })
     expect((await c.series.list()).some((s) => s.id === added.id)).toBe(false)
   })

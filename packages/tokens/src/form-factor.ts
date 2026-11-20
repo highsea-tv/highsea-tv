@@ -112,8 +112,10 @@ export const formFactorLayouts = {
     gutter: mobile.gutter,
     itemGap: mobile.posterGap,
     rowGap: mobile.rowGap,
-    // "about 30% of the screen width in rows, so about three visible plus a peek"
-    itemShare: 0.3,
+    // mobile.md's "about 30% of the screen width in rows, so about three visible plus a peek", a
+    // ninth wider since the owner asked for a little bigger cards on every client (2026-11-19,
+    // HT-115): about three visible still, with a smaller peek
+    itemShare: 0.33,
   },
   'regular-pointer': { unit: 'px', navigation: 'top-bar', maxWidth: web.maxWidth },
   // the safe area as the owner tightened it on 2026-10-30 (scales.ts, tv.md)

@@ -12,7 +12,7 @@ import { Image } from '../image.tsx'
 import { Text } from '../text.tsx'
 import { tokens, useTheme } from '../theme.tsx'
 import { FocusGuide, keptProps, TvScroll, type TvScrollProps } from './engine'
-import { keptAt } from './model.ts'
+import { keptAt, TV_GRID_COLUMNS } from './model.ts'
 import type { TileSource } from './tiles.tsx'
 
 const tv = tokens.tv
@@ -109,14 +109,15 @@ export function TvPage({
 }
 
 /**
- * A grid of tiles, seven a row across the safe area (the prototype's grid-cols-7), or `columns`
+ * A grid of tiles, TV_GRID_COLUMNS a row across the safe area (the prototype's grid-cols-7 until
+ * HT-115), or `columns`
  * across `span` units, each row Kept as focus reaches it. `render` gets the tile's width in units.
  */
 export function TvGrid<T>({
   items,
   keyOf,
   render,
-  columns = 7,
+  columns = TV_GRID_COLUMNS,
   span,
 }: {
   items: T[]

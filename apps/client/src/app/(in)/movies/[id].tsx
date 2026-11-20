@@ -496,7 +496,7 @@ function TvFilm({ d, refresh }: FilmProps) {
                 style={{ flexDirection: 'row', alignItems: 'center', gap: c.rowGap }}
               >
                 {w.version ? (
-                  <View style={{ minWidth: tv.poster.width * u }}>
+                  <View style={{ minWidth: tv.column * u }}>
                     <Button
                       ref={firstRef}
                       onFocus={() => inRow(-1)}
