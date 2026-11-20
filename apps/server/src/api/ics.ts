@@ -6,11 +6,17 @@
 // - each event's UID (stable, so a changed date moves the event rather than adding one), DTSTAMP,
 //   DTSTART as a DATE (its duration is then one day, § 3.6.1, so no DTEND), SUMMARY and DESCRIPTION;
 // - TEXT escaped (§ 3.3.11), lines ending CRLF and folded at 75 octets (§ 3.1).
-import type { CalendarEntry, CalendarKind } from '@highsea-tv/api-contract'
+// An episode (HT-109) is one event on its air date, "Severance · S01E05", its title the description.
+import type {
+  CalendarEntry,
+  EpisodeCalendarEntry,
+  MovieCalendarEntry,
+} from '@highsea-tv/api-contract'
 import { createT, defineMessages } from '@highsea-tv/i18n'
 
 export const icsMessages = defineMessages({
-  'ics.name': '{server}: movies',
+  'ics.name': '{server}: movies and shows',
+  'ics.episode': '{show} · {code}',
   'ics.cinema': '{title} in cinemas',
   'ics.digital': '{title} digital release',
   'ics.physical': '{title} on disc',
@@ -51,7 +57,7 @@ const stamp = (ms: number) =>
     .replace(/[-:]/g, '')
     .replace(/\.\d{3}/, '')
 
-const SUMMARY: Record<CalendarKind, 'ics.cinema' | 'ics.digital' | 'ics.physical'> = {
+const SUMMARY: Record<MovieCalendarEntry['kind'], 'ics.cinema' | 'ics.digital' | 'ics.physical'> = {
   cinema: 'ics.cinema',
   digital: 'ics.digital',
   physical: 'ics.physical',
@@ -72,7 +78,12 @@ export function calendarIcs(input: {
     `X-WR-CALNAME:${escapeText(t('ics.name', { server: input.serverName }))}`,
   ]
   const dtstamp = stamp(input.now)
-  for (const e of input.entries) {
+  for (const entry of input.entries) {
+    if (entry.kind === 'episode') {
+      lines.push(...episodeEvent(entry, input.serverId, dtstamp))
+      continue
+    }
+    const e = entry as MovieCalendarEntry
     lines.push(
       'BEGIN:VEVENT',
       `UID:${e.movie.id}-${e.kind}@${input.serverId}`,
@@ -86,4 +97,22 @@ export function calendarIcs(input: {
   }
   lines.push('END:VCALENDAR')
   return `${lines.map(fold).join('\r\n')}\r\n`
+}
+
+const pad = (n: number) => String(n).padStart(2, '0')
+
+/** An episode's event: its UID by the show and its numbers, so a moved air date moves it. */
+function episodeEvent(entry: EpisodeCalendarEntry, serverId: string, dtstamp: string): string[] {
+  const { show, episode } = entry.episode
+  const code = `S${pad(episode.season)}E${pad(episode.number)}`
+  return [
+    'BEGIN:VEVENT',
+    `UID:show-${show.id}-s${episode.season}e${episode.number}@${serverId}`,
+    `DTSTAMP:${dtstamp}`,
+    `DTSTART;VALUE=DATE:${entry.date.replace(/-/g, '')}`,
+    `SUMMARY:${escapeText(t('ics.episode', { show: show.title, code }))}`,
+    ...(episode.title ? [`DESCRIPTION:${escapeText(episode.title)}`] : []),
+    'TRANSP:TRANSPARENT',
+    'END:VEVENT',
+  ]
 }

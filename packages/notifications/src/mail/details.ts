@@ -22,6 +22,21 @@ const DETAILS: { [E in MessageEvent]?: (p: EventPayloads[E]) => Detail[] } = {
     { label: 'size', value: bytes(p.size) },
     { label: 'replaced', value: p.upgradedFrom },
   ],
+  'episode-grabbed': (p) => [
+    { label: 'release', value: p.release },
+    { label: 'indexer', value: p.indexer },
+    { label: 'size', value: bytes(p.size) },
+  ],
+  'episode-imported': (p) => [
+    { label: 'quality', value: p.quality },
+    { label: 'size', value: bytes(p.size) },
+    ...(p.upgradedFrom ? [{ label: 'replaced' as const, value: p.upgradedFrom }] : []),
+  ],
+  'episode-upgraded': (p) => [
+    { label: 'quality', value: p.quality },
+    { label: 'size', value: bytes(p.size) },
+    { label: 'replaced', value: p.upgradedFrom },
+  ],
 }
 
 export function emailDetails(event: MessageEvent, payload: EventPayload): Detail[] {

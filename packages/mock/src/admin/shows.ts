@@ -15,8 +15,12 @@
 //   episode in two qualities, judged only by whether the episodes are monitored and missing;
 //   a grab marks its episodes downloading and answers with a queue row that has no torrent;
 // - the times: `addedAt` is moved to the wall clock, as every answer gives them, and each air
-//   date by the same whole days, so "next airing" stays as far away as the mock has it.
+//   date by the same whole days, so "next airing" stays as far away as the mock has it;
+// - Wanted's episodes (HT-109): the mock's own statuses, `missing` (aired) and `cutoff-unmet`, of
+//   monitored episodes of monitored shows; the calendar's are every monitored one by its air date,
+//   and Wanted's Search marks them downloading as a show's Search does.
 import type {
+  EpisodeCalendarEntry,
   EpisodeRelease,
   QueueItem,
   Series,
@@ -24,6 +28,9 @@ import type {
   SeriesEpisode,
   SeriesSeason,
   UnmatchedShowPath,
+  WantedEpisode,
+  WantedEpisodePage,
+  WantedSearchInput,
 } from '@highsea-tv/api-contract'
 import type { AdminEpisode, AdminSeason, AdminShow, AdminShowDetail } from '../types.ts'
 import { chosenShowArt } from './artwork.ts'
@@ -37,7 +44,100 @@ const GB = 1024 ** 3
 const FRESH_MS = 30 * 60_000
 const pad = (n: number) => String(n).padStart(2, '0')
 
+/** A mock day ("2026-11-05") on the wall clock's calendar: moved by whole days only. */
+const dayOn = (kit: AdminKit, d: string) => {
+  const noon = Date.parse(`${d}T12:00:00Z`)
+  const offset = Date.parse(kit.wallMs(noon)) - noon
+  return new Date(noon + Math.round(offset / DAY) * DAY).toISOString().slice(0, 10)
+}
+
+/**
+ * Wanted's episodes from the mock's shows (HT-109): Missing, Cutoff unmet, the calendar's air
+ * dates and Wanted's Search. Movies' Wanted answers (movies.ts) take the calendar and Search from
+ * here, so the two kinds answer as the server's one route does.
+ */
+export function episodeWanted(kit: AdminKit) {
+  const rows = (ctx: Ctx) =>
+    ctx.api.shows.list().flatMap((s) => {
+      if (!s.monitored) return []
+      const detail = ctx.api.shows.get(s.id)
+      const art = chosenShowArt(kit, s.tmdbId, s.art)
+      return detail.seasonList.flatMap((season) =>
+        season.episodes
+          .filter((e) => e.monitored)
+          .map(
+            (e): WantedEpisode => ({
+              show: {
+                id: s.id,
+                title: s.title,
+                year: s.year,
+                poster: art.poster || null,
+                qualityProfileId: s.qualityProfileId,
+              },
+              episode: {
+                id: e.id,
+                season: e.season,
+                number: e.number,
+                title: e.title,
+                aired: dayOn(kit, e.aired),
+                status: e.status,
+                quality: e.file?.quality ?? null,
+              },
+            }),
+          ),
+      )
+    })
+  const newest = (a: WantedEpisode, b: WantedEpisode) =>
+    (b.episode.aired ?? '').localeCompare(a.episode.aired ?? '') ||
+    a.show.title.localeCompare(b.show.title) ||
+    a.episode.number - b.episode.number
+  const page = (all: WantedEpisode[], query: { cursor?: string; limit?: number }) => {
+    const at = Number(query.cursor ?? 0) || 0
+    const limit = query.limit ?? 50
+    const items = all.sort(newest).slice(at, at + limit)
+    const next = at + items.length < all.length ? String(at + items.length) : null
+    return { items, total: all.length, next } satisfies WantedEpisodePage
+  }
+  const of = (ctx: Ctx, list: 'missing' | 'cutoff') =>
+    rows(ctx).filter((r) =>
+      list === 'missing' ? r.episode.status === 'missing' : r.episode.status === 'cutoff-unmet',
+    )
+  return {
+    missing: (ctx: Ctx, query: { cursor?: string; limit?: number }) =>
+      page(of(ctx, 'missing'), query),
+    cutoff: (ctx: Ctx, query: { cursor?: string; limit?: number }) =>
+      page(of(ctx, 'cutoff'), query),
+    calendar: (ctx: Ctx, from: string, to: string): EpisodeCalendarEntry[] =>
+      rows(ctx)
+        .filter((r) => r.episode.aired && r.episode.aired >= from && r.episode.aired <= to)
+        .map((episode) => ({
+          date: episode.episode.aired ?? '',
+          kind: 'episode' as const,
+          episode,
+        })),
+    /** Wanted's Search for episodes: how many it looks for. */
+    search: (ctx: Ctx, body: WantedSearchInput): number => {
+      let found = 0
+      if (body.all && body.kind !== 'movies') {
+        const eps = of(ctx, body.all)
+        for (const show of new Set(eps.map((e) => e.show.id))) ctx.api.shows.search(show, {})
+        found += eps.length
+      }
+      for (const e of body.episodes ?? []) {
+        const hit = rows(ctx).find(
+          (r) =>
+            r.show.id === e.show && r.episode.season === e.season && r.episode.number === e.episode,
+        )
+        if (hit) found += ctx.api.shows.search(e.show, { episode: hit.episode.id }).found
+      }
+      if (found) kit.emit(TOPIC)
+      return found
+    },
+  }
+}
+
 export function showsAnswers(kit: AdminKit): Answers {
+  const wanted = episodeWanted(kit)
   /** A mock day ("2026-11-05") on the wall clock's calendar: moved by whole days only. */
   const day = (d: string) => {
     const noon = Date.parse(`${d}T12:00:00Z`)
@@ -196,6 +296,10 @@ export function showsAnswers(kit: AdminKit): Answers {
   }
 
   return {
+    wanted: {
+      missingEpisodes: ({ query }, ctx) => wanted.missing(ctx, query ?? {}),
+      cutoffEpisodes: ({ query }, ctx) => wanted.cutoff(ctx, query ?? {}),
+    },
     series: {
       discover: ({ query }, ctx) => ctx.api.shows.discover(query?.query ?? ''),
       rootFolders: (_, ctx) => ctx.api.shows.rootFolders(),
