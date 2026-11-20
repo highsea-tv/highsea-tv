@@ -72,6 +72,7 @@ import {
   createMusic,
   createMusicPlayback,
   ffmpegCoverExtractor,
+  ffmpegLoudnessMeter,
   ffmpegMusicTranscoder,
   type Music,
   type MusicPlayback,
@@ -956,10 +957,13 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
       metadata,
       imagesDir: join(workDir(config), 'images', 'music'),
       extractCover: ffmpegCoverExtractor(ffmpegBinary()),
+      measureLoudness: ffmpegLoudnessMeter(ffmpegBinary()),
     },
     media,
   )
   music.jobs.schedule(clock.now())
+  // the loudness of tracks a scan before HT-117 found, or a stopped job left (one job per album)
+  music.loudness.queuePending()
   scheduleFileFacts({ db, jobs, clock })
   trickplay.start()
   ahead.start()
@@ -1102,6 +1106,7 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
     {
       dir: join(workDir(config), 'transcodes-music'),
       transcode: ffmpegMusicTranscoder(ffmpegBinary()),
+      level: (trackId) => music.loudness.levelOf(trackId),
       profileFor: (deviceId, named) => playback.profileFor(deviceId, named),
       away: (address) => playback.away(address),
       displayName: (userId) => userOf(userId)?.displayName ?? null,

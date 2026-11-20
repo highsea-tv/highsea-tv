@@ -8877,6 +8877,21 @@
             "type": "string",
             "format": "date-time",
             "example": "2026-10-17T20:15:00.000Z"
+          },
+          "level": {
+            "type": "object",
+            "properties": {
+              "track": {
+                "$ref": "#/components/schemas/MusicLevel"
+              },
+              "album": {
+                "$ref": "#/components/schemas/MusicLevel"
+              }
+            },
+            "required": [
+              "track",
+              "album"
+            ]
           }
         },
         "required": [
@@ -8886,7 +8901,26 @@
           "contentType",
           "reasons",
           "duration",
-          "expiresAt"
+          "expiresAt",
+          "level"
+        ]
+      },
+      "MusicLevel": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "lufs": {
+            "type": "number"
+          },
+          "peak": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "lufs",
+          "peak"
         ]
       },
       "MusicPlayRequest": {
@@ -8895,6 +8929,9 @@
           "profile": {
             "type": "string",
             "maxLength": 64
+          },
+          "ahead": {
+            "type": "boolean"
           }
         }
       },

@@ -348,8 +348,10 @@ export const sent = (path: string) => requests().filter((q) => q.url.includes(pa
 
 /**
  * expo-audio for `jest.mock`, which Jest has no native side for: the calls the app makes
- * (`createAudioPlayer`, `setAudioModeAsync`, https://docs.expo.dev/versions/latest/sdk/audio/),
- * answered by a player that does nothing.
+ * (`createAudioPlayer`, `createAudioPlaylist`, `setAudioModeAsync`,
+ * https://docs.expo.dev/versions/latest/sdk/audio/), answered by a player that does nothing, and a
+ * playlist that keeps its sources and calls (`playlists`, the last the app's) and says its status
+ * when a test calls `status`, as AudioPlaylist.swift's `playlistStatusUpdate` does.
  */
 export function audioModule() {
   const player = () => ({
@@ -365,7 +367,89 @@ export function audioModule() {
     clearLockScreenControls() {},
     remove() {},
   })
-  return { createAudioPlayer: player, setAudioModeAsync: async () => {} }
+  const playlists: FakePlaylist[] = []
+  class FakePlaylist {
+    sources: unknown[] = []
+    calls: string[] = []
+    currentIndex = 0
+    volume = 1
+    muted = false
+    isLoaded = true
+    lockScreen: { metadata?: unknown; options?: unknown } | null = null
+    listener: ((s: unknown) => void) | null = null
+    addListener(_name: string, fn: (s: unknown) => void) {
+      this.listener = fn
+      return { remove() {} }
+    }
+    /** Says a status, as the native side does: where it is and what it's doing. */
+    status(s: {
+      currentIndex?: number
+      currentTime?: number
+      playing?: boolean
+      didJustFinish?: boolean
+    }) {
+      if (s.currentIndex !== undefined) this.currentIndex = s.currentIndex
+      this.listener?.({
+        currentIndex: this.currentIndex,
+        trackCount: this.sources.length,
+        currentTime: s.currentTime ?? 0,
+        playing: s.playing ?? false,
+        didJustFinish: s.didJustFinish ?? false,
+        isLoaded: true,
+      })
+    }
+    add(src: unknown) {
+      this.sources.push(src)
+      this.calls.push('add')
+    }
+    remove(i: number) {
+      this.sources.splice(i, 1)
+      this.calls.push(`remove ${i}`)
+    }
+    clear() {
+      this.sources = []
+      this.currentIndex = 0
+      this.calls.push('clear')
+    }
+    skipTo(i: number) {
+      this.currentIndex = i
+      this.calls.push(`skipTo ${i}`)
+    }
+    next() {
+      this.currentIndex += 1
+      this.calls.push('next')
+    }
+    previous() {
+      this.currentIndex -= 1
+      this.calls.push('previous')
+    }
+    play() {
+      this.calls.push('play')
+    }
+    pause() {
+      this.calls.push('pause')
+    }
+    async seekTo(s: number) {
+      this.calls.push(`seek ${s}`)
+    }
+    setActiveForLockScreen(_on: boolean, metadata: unknown, options: unknown) {
+      this.lockScreen = { metadata, options }
+    }
+    clearLockScreenControls() {}
+    destroy() {
+      this.calls.push('destroy')
+    }
+  }
+  return {
+    createAudioPlayer: player,
+    createAudioPlaylist: () => {
+      const p = new FakePlaylist()
+      playlists.push(p)
+      return p
+    },
+    setAudioModeAsync: async () => {},
+    playlists,
+  }
 }
 
 /**

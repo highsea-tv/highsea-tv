@@ -67,7 +67,10 @@ const newestFirst = (a: AlbumRow, b: AlbumRow) =>
 const byPlace = (a: TrackRow, b: TrackRow) =>
   a.disc - b.disc || a.number - b.number || a.path.localeCompare(b.path)
 
-export function createMusicClient(ctx: MusicDeps) {
+export function createMusicClient(
+  ctx: MusicDeps,
+  loudness?: { envelopes(ids: readonly string[]): Map<string, number[]> },
+) {
   const { db, clock } = ctx
 
   // ---------------------------------------------------------------- reading
@@ -299,9 +302,18 @@ export function createMusicClient(ctx: MusicDeps) {
     const l = lookup(albums)
     const albumById = new Map(albums.map((a) => [a.id, l.album(a)]))
     const place = placesOf(tracksOf(albumIds))
+    const envelopes = loudness?.envelopes(tracks.map((t) => t.id))
     return tracks.flatMap((t) => {
       const album = albumById.get(t.albumId)
-      return album ? [{ ...song(t, place.get(t.id) ?? t.number), album, loudness: [] }] : []
+      return album
+        ? [
+            {
+              ...song(t, place.get(t.id) ?? t.number),
+              album,
+              loudness: envelopes?.get(t.id) ?? [],
+            },
+          ]
+        : []
     })
   }
 

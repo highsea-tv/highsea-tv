@@ -66,7 +66,48 @@ export type TrackAudio = {
   embeddedCover: boolean
 }
 
-export type TrackRead = { tags: TrackTags; audio: TrackAudio }
+/**
+ * The loudness a file's tags already say (HT-117): ReplayGain's `REPLAYGAIN_{TRACK,ALBUM}_{GAIN,PEAK}`
+ * (FLAC's and Ogg's comments, MP3's `TXXX`, M4A's `----` atoms, each as ffprobe names it), or Opus's
+ * `R128_{TRACK,ALBUM}_GAIN`. ReplayGain 2.0 gives a gain to its reference of -18 LUFS and a peak as
+ * a linear sample value (https://wiki.hydrogenaud.io/index.php?title=ReplayGain_2.0_specification,
+ * "Reference level" and "Metadata format"); RFC 7845 § 5.2.1 gives R128's gain as a Q7.8 number of
+ * dB to -23 LUFS, with no peak (taken as full scale, so it's never raised).
+ */
+export type TagLoudness = {
+  /** LUFS and dBFS, worked out from the gains and peaks. */
+  track: { lufs: number; peak: number } | null
+  album: { lufs: number; peak: number } | null
+}
+
+export type TrackRead = { tags: TrackTags; audio: TrackAudio; loudness?: TagLoudness }
+
+/** ReplayGain 2.0's reference loudness, which its gains are to. */
+export const REPLAYGAIN_REFERENCE_LUFS = -18
+/** EBU R128's target, which Opus's R128 gains are to (RFC 7845 § 5.2.1). */
+const R128_REFERENCE_LUFS = -23
+
+/** `-6.48 dB` → -6.48. */
+const decibels = (v: string | null) => {
+  const m = /^\s*([+-]?\d+(?:\.\d+)?)\s*(?:db)?\s*$/i.exec(v ?? '')
+  return m ? Number(m[1]) : null
+}
+
+/** The tags' loudness, or nulls; pure, for tests. */
+export function tagLoudness(tag: (...names: string[]) => string | null): TagLoudness {
+  const level = (kind: 'track' | 'album') => {
+    const gain = decibels(tag(`replaygain${kind}gain`))
+    const peakLinear = num(tag(`replaygain${kind}peak`))
+    const peak = peakLinear && peakLinear > 0 ? 20 * Math.log10(peakLinear) : 0
+    if (gain !== null && Math.abs(gain) < 60)
+      return { lufs: REPLAYGAIN_REFERENCE_LUFS - gain, peak }
+    const q78 = num(tag(`r128${kind}gain`))
+    if (q78 !== null && Number.isInteger(q78) && Math.abs(q78) <= 32767)
+      return { lufs: R128_REFERENCE_LUFS - q78 / 256, peak: 0 }
+    return null
+  }
+  return { track: level('track'), album: level('album') }
+}
 
 /** Reads a track; throws `ProbeError` when it can't be read as audio. */
 export type TagReader = (path: string) => Promise<TrackRead>
@@ -81,6 +122,7 @@ type RawStream = {
   bit_rate?: string
   duration?: string
   disposition?: Record<string, number>
+  tags?: Record<string, string>
 }
 type RawProbe = {
   streams?: RawStream[]
@@ -150,6 +192,11 @@ export function parseMusicProbe(json: unknown): TrackRead {
   const tags = new Map<string, string>()
   for (const [k, v] of Object.entries(raw.format?.tags ?? {}))
     if (typeof v === 'string' && v.trim() && !tags.has(fold(k))) tags.set(fold(k), v.trim())
+  // Ogg keeps its comments on the stream (FFmpeg's oggdec), where Opus's R128 gains are: read for
+  // the loudness alone, so the scan's other tags stay as they were
+  const streamTags = new Map<string, string>()
+  for (const [k, v] of Object.entries(audio.tags ?? {}))
+    if (typeof v === 'string' && v.trim()) streamTags.set(fold(k), v.trim())
   const tag = (...names: string[]) => {
     for (const n of names) {
       const v = tags.get(n)
@@ -206,6 +253,7 @@ export function parseMusicProbe(json: unknown): TrackRead {
       channels: audio.channels ?? 2,
       embeddedCover: streams.some((s) => s.codec_type === 'video' && s.disposition?.attached_pic),
     },
+    loudness: tagLoudness((n) => tag(n) ?? streamTags.get(n) ?? null),
   }
 }
 

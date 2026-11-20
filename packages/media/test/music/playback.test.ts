@@ -160,6 +160,53 @@ describe('a play', () => {
     expect(t.db.select().from(schema.musicPlays).all()).toHaveLength(1)
   })
 
+  test('a song asked for ahead: open at once, off Now playing and counted only once it starts', async () => {
+    const { t, who, playback, tracks } = await playing()
+    const [one, two] = tracks
+    const now = playback.play(who, one?.id as string, {}, { address: '10.0.0.2' })
+    t.seen.length = 0
+    const next = playback.play(who, two?.id as string, { ahead: true }, { address: '10.0.0.2' })
+    // its address works already, so the player can open it before the hand-over
+    expect(await playback.open(next.url.slice('/stream/music/'.length))).not.toBeNull()
+    expect(playback.sessions().map((s) => s.id)).toEqual([now.id])
+    expect(t.seen.filter((e) => e.topic === 'sessions.updated')).toHaveLength(0)
+    // a quiet ahead play isn't swept as a left one is (the song before may be long)
+    for (const at of [100, 200]) {
+      t.clock.advance(MUSIC_IDLE_MS / 2 + 1)
+      playback.progress(who, now.id, { position: at, paused: false })
+    }
+    expect(await playback.open(next.url.slice('/stream/music/'.length))).not.toBeNull()
+    // the hand-over: the first ends, the next's first report starts it
+    playback.stop(who, now.id)
+    const startedAt = t.clock.now()
+    playback.progress(who, next.id, { position: 0, paused: false })
+    expect(playback.sessions().map((s) => [s.id, s.startedAt])).toEqual([
+      [next.id, new Date(startedAt).toISOString()],
+    ])
+    playback.progress(who, next.id, { position: 120, paused: false })
+    playback.stop(who, next.id)
+    expect(
+      t.db
+        .select()
+        .from(schema.musicPlays)
+        .all()
+        .map((r) => r.trackId),
+    ).toEqual([one?.id, two?.id])
+  })
+
+  test('a song asked for ahead and let go unheard leaves nothing', async () => {
+    const { t, who, playback, tracks } = await playing()
+    const next = playback.play(
+      who,
+      tracks[1]?.id as string,
+      { ahead: true },
+      { address: '10.0.0.2' },
+    )
+    playback.stop(who, next.id)
+    expect(t.db.select().from(schema.musicPlays).all()).toEqual([])
+    expect(playback.sessions()).toEqual([])
+  })
+
   test('losing the music library ends the play', async () => {
     const { who, playback, tracks, allowed } = await playing()
     const play = playback.play(who, tracks[0]?.id as string, {}, { address: '10.0.0.2' })
