@@ -14,7 +14,7 @@
 //   of square covers, round artists and playlists' mosaics, Songs as a list, and the index at the
 //   left from a regular width;
 // - the TV (tv/music.tsx): the title with the views as chips beside it and the sorts on the right,
-//   seven tiles a row, Songs as one list, and the rail at the safe area's left when sorted by name.
+//   six tiles a row (seven before HT-115), Songs as one list, and the rail at the safe area's left when sorted by name.
 //   Picking a view or a sort keeps focus on it (the owner, 2026-10-31), so the TV keeps its view
 //   in the page rather than its address. It has no genre, as the prototype's.
 // Every list is the page's own scroller, drawing only the rows near the screen (LibraryGridList)
@@ -68,6 +68,7 @@ import {
 import {
   focusOn,
   Kept,
+  TV_GRID_COLUMNS,
   TV_HEAD_HEIGHT,
   TvGrid,
   TvMessage,
@@ -924,8 +925,8 @@ function indexedBy(
 
 // ---------------------------------------------------------------- the TV
 
-/** TvGrid's tiles a row (tv.md's seven). */
-const TV_COLUMNS = 7
+/** TvGrid's tiles a row. */
+const TV_COLUMNS = TV_GRID_COLUMNS
 
 export function TvMusic({ initial }: { initial: Which }) {
   const t = useT(messages)

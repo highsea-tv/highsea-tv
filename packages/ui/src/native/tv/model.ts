@@ -97,3 +97,10 @@ export function remoteKey(event: string): { action: string; sound: RemoteSound }
 export function homeBack(focusOnFirst: boolean): 'focus-first' | 'exit' {
   return focusOnFirst ? 'exit' : 'focus-first'
 }
+
+/**
+ * A TV grid's tiles a row: six since the poster grew a ninth (HT-115), where tv.md had seven. A
+ * tile a ninth wider than seven's fill (12.6u) is 14u, and seven of those with the poster's gaps
+ * don't fit the safe area's 95.2u; six fill it at 14.9u.
+ */
+export const TV_GRID_COLUMNS = 6

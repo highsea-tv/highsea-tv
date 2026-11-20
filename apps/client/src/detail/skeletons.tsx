@@ -140,7 +140,7 @@ function TvFilmSkeleton() {
               paddingBottom: ROUND_ACTION_ROOM * u,
             }}
           >
-            <Skeleton height={c.height / u} width={tv.poster.width * u} radius={c.radius} />
+            <Skeleton height={c.height / u} width={tv.column * u} radius={c.radius} />
             {[0, 1, 2].map((i) => (
               <Skeleton key={i} height={c.height / u} width={c.height} radius={radius.pill} />
             ))}

@@ -64,7 +64,7 @@ describe('the layouts', () => {
       gutter: mobile.gutter,
       itemGap: mobile.posterGap,
       rowGap: mobile.rowGap,
-      itemShare: 0.3,
+      itemShare: 0.33,
     })
   })
 

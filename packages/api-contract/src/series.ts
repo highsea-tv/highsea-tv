@@ -193,6 +193,16 @@ export const DiscoverSeries = z
   })
   .openapi('DiscoverSeries')
 
+/** A page of TMDB's shows, as `DiscoverPage` is for films: 1-based, 20 a page, at most 500. */
+export const DiscoverSeriesPage = z
+  .object({
+    items: z.array(DiscoverSeries),
+    page: z.number().int(),
+    totalPages: z.number().int(),
+    totalResults: z.number().int(),
+  })
+  .openapi('DiscoverSeriesPage')
+
 /**
  * What Add a show sends. The server needs only the show's TMDB id; `title` and `year` are what the
  * dialog shows and the server reads TMDB's own. No language profile is `null`, left out, or the
@@ -344,11 +354,17 @@ export const series = {
     path: `${API_PREFIX}/discover/shows`,
     tags: ['Series'],
     summary: 'Find shows on TMDB',
-    description: 'Library shows are marked `inLibrary`.',
+    description:
+      'With a query, TMDB’s TV search; without one, the shows trending this week. A page at a time, 20 a page. Library shows are marked `inLibrary`.',
     ...served,
-    request: { query: z.object({ query: z.string().max(200).optional() }) },
+    request: {
+      query: z.object({
+        query: z.string().max(200).optional(),
+        page: z.coerce.number<number>().int().min(1).max(500).optional(),
+      }),
+    },
     responses: {
-      200: json(z.array(DiscoverSeries), 'The shows found'),
+      200: json(DiscoverSeriesPage, 'A page of shows'),
       ...errors('invalid', 'unauthorized', 'forbidden'),
     },
   }),
@@ -618,6 +634,7 @@ export type SeriesSeason = z.infer<typeof SeriesSeason>
 export type Series = z.infer<typeof Series>
 export type SeriesDetail = z.infer<typeof SeriesDetail>
 export type DiscoverSeries = z.infer<typeof DiscoverSeries>
+export type DiscoverSeriesPage = z.infer<typeof DiscoverSeriesPage>
 export type UnmatchedShowPath = z.infer<typeof UnmatchedShowPath>
 export type UnmatchedShowMatch = z.infer<typeof UnmatchedMatch>
 export type AddSeriesInput = z.infer<typeof AddSeriesInput>

@@ -25,7 +25,7 @@ The home screen uses the **Hero + rows** layout, locked in [direction.md](../../
 | The head | One line across the top inside the safe area: the server's mark and name at the left, Search as its icon, then Home, Collections and Movies centred (Shows and Music where the server has them), Alerts and the account at the right (`tv.head`); it scrolls away with the page |
 | Featured card | Across the page inside the safe area, 40.5u high with a 1.4u corner (`featuredCard.tv`), 1u above and below it; the title (5.2u), meta and tagline low on the left, 2.8u in, no wider than 34u |
 | Rows | Under the featured card, left inset 2.4u, bleeding off the right edge, continuing down the page |
-| Poster | 10.5u wide (2:3), with a 1.2u gap; the title (1.05u, 600) and the year (0.95u, `text-3`) under the art |
+| Poster | 11.7u wide in rows (2:3), with a 1.2u gap; the title (1.05u, 600) and the year (0.95u, `text-3`) under the art, on one line. A grid is six across the safe area (`TV_GRID_COLUMNS`), each tile filling its share (14.9u). Until the owner asked for a little bigger cards on every client (2026-11-19, HT-115) a poster was 10.5u and a grid seven across; the parts measured in that width (the sign-in's QR and keyboard, Settings' columns, a page's Play) keep it as `tv.column` |
 | Wide tile (continue watching) | 16:9 with a progress bar 7% in from the edges |
 | Continue watching | Cards 22u wide, larger than a poster row's (the owner, 2026-10-30) |
 | Alerts | A list up to 60u wide, 1.2u between announcements; with none, 1.4u between the words and the button back to Home |

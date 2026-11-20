@@ -436,51 +436,15 @@ export function ReleaseLine({ date }: { date: string | null }) {
 
 // ---------------------------------------------------------------- grids
 
-/** A poster grid's least column width, and its gaps: the libraries' windowed grid shares them. */
-export const POSTER_MIN = 136
+/**
+ * A poster grid's least column width, and its gaps: the libraries' windowed grid (Movies, Shows,
+ * Music, Discover) and its placeholders share them. 156 (9.75rem), 15% over the prototype's 136
+ * (8.5rem), since the owner asked for a little bigger cards (2026-11-19, HT-115). The grid fills
+ * whole columns (CSS grid's auto-fill), so a card grows only where a column drops: 152 still fit
+ * seven across a 1440 window's 1176, and 156 fits six, each 183 wide where they were 154.
+ */
+export const POSTER_MIN = 156
 export const POSTER_GAP = { column: tokens.space['4'], row: tokens.space['5'] }
-
-/** A grid of posters, as many 136-wide columns as fit (Discover's, a person's Known for). */
-export function PosterGrid({ children, min = POSTER_MIN }: { children: ReactNode; min?: number }) {
-  return (
-    <View
-      role="list"
-      style={grid({
-        gridTemplateColumns: `repeat(auto-fill, minmax(${min}px, 1fr))`,
-        columnGap: POSTER_GAP.column,
-        rowGap: POSTER_GAP.row,
-      })}
-    >
-      {children}
-    </View>
-  )
-}
-
-/** One of a PosterGrid's items: `full` spans every column, `busy` is a placeholder. */
-export function GridItem({
-  children,
-  gap,
-  full,
-  busy,
-}: {
-  children: ReactNode
-  gap?: number
-  full?: boolean
-  busy?: boolean
-}) {
-  return (
-    <View
-      role="listitem"
-      aria-busy={busy || undefined}
-      style={[
-        { gap, alignItems: full ? 'flex-start' : undefined },
-        full ? grid({ gridColumn: '1 / -1' }) : null,
-      ]}
-    >
-      {children}
-    </View>
-  )
-}
 
 /** In library as a badge that links to the movie's page (Discover's results, a filmography). */
 export function InLibraryLink({
@@ -575,9 +539,11 @@ const useClamped = (min: number, share: number, max: number) =>
 const usePersonWidth = () => useClamped(96, 0.09, 120)
 /**
  * Titles in the admin's rows: smaller than the clients' default, since the column is narrower
- * (the web's clamp(7rem, 11vw, 8.5rem)).
+ * (the web's clamp(7rem, 11vw, 8.5rem)), each end and the share a ninth over since the owner asked
+ * for a little bigger cards (2026-11-19, HT-115): a row isn't cut into whole columns, so a ninth
+ * shows as a ninth.
  */
-export const useTitleWidth = () => useClamped(112, 0.11, 136)
+export const useTitleWidth = () => useClamped(125, 0.123, 152)
 /** Trailers' stills: the web's clamp(12rem, 22vw, 16rem). */
 const useStillWidth = () => useClamped(192, 0.22, 256)
 

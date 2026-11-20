@@ -9,6 +9,8 @@ import { admin } from '@highsea-tv/tokens'
 import { Button, EmptyState, Skeleton, tokens } from '@highsea-tv/ui/native'
 import type { ReactNode } from 'react'
 import { View, type ViewStyle } from 'react-native'
+// read while drawing, so the two files' import of each other is safe
+import { POSTER_MIN } from './media-sections.tsx'
 import { shell } from './messages.ts'
 
 export function Loadable<T>({
@@ -46,7 +48,8 @@ export function Loadable<T>({
 
 /**
  * A poster grid's placeholders (the prototype's loadable.tsx), for Discover and the library: as
- * many 136-wide columns as fit (CSS grid's `auto-fill`, https://drafts.csswg.org/css-grid-2/#auto-repeat).
+ * many columns as fit at the grids' least width, 156 since HT-115 (POSTER_MIN in
+ * media-sections.tsx; CSS grid's `auto-fill`, https://drafts.csswg.org/css-grid-2/#auto-repeat).
  */
 export function PosterSkeletons({ count = 12 }: { count?: number }) {
   return (
@@ -54,7 +57,7 @@ export function PosterSkeletons({ count = 12 }: { count?: number }) {
       style={
         {
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(136px, 1fr))',
+          gridTemplateColumns: `repeat(auto-fill, minmax(${POSTER_MIN}px, 1fr))`,
           gap: tokens.space['4'],
         } as unknown as ViewStyle
       }

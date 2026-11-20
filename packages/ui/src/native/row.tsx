@@ -12,7 +12,7 @@
 // - the TV (tv.md › Scrolling): the title at the safe area's inset, and the items in a sideways
 //   scroll view that lands each focused item with its centre 30% in (react-native-tvos's
 //   `snapToAlignment="item"` with each item's `scrollSnapOffset`). Item widths are known
-//   (posters 10.5u, wide tiles 17u), so where they land is worked out, not measured; the row is a
+//   (posters 11.7u, wide tiles 17u), so where they land is worked out, not measured; the row is a
 //   focus guide with `autoFocus`, so coming back to it lands on the item left
 //   (react-native-tvos's TVFocusGuideView). In a browser the engine pair does the same.
 // Only the touch form is virtual: a pointer's and the TV's rows draw every item, since their keys
@@ -94,13 +94,14 @@ export function usePosterWidth(share: number = formFactorLayouts['compact-touch'
 }
 
 /**
- * A pointer's item widths by the window's, as the web prototype's clamps: a poster near 10.5% of
- * the window between 6.5rem and 12rem (web/film-row.tsx's --poster), a still near 24% between
- * 15rem and 21rem (web/home.tsx's cardWidth).
+ * A pointer's item widths by the window's, after the web prototype's clamps (web/film-row.tsx's
+ * --poster, near 10.5% of the window between 6.5rem and 12rem; web/home.tsx's cardWidth, near 24%
+ * between 15rem and 21rem), each share and end a ninth over since the owner asked for a little
+ * bigger cards everywhere (2026-11-19, HT-115).
  */
 const POINTER_ITEM = {
-  poster: { share: 0.105, min: 104, max: 192 },
-  still: { share: 0.24, min: 240, max: 336 },
+  poster: { share: 0.117, min: 116, max: 212 },
+  still: { share: 0.267, min: 266, max: 372 },
 }
 
 /** A pointer's poster or still width in a window this wide (POINTER_ITEM). */
@@ -427,7 +428,7 @@ export type RowSkeletonProps = {
   /**
    * Each item's width: in points by touch and with a pointer, in units on the TV, as Row's. By
    * default touch's poster share (usePosterWidth), a pointer's clamp (pointerItemWidth) and the
-   * TV's tile (10.5u, or 17u for a still).
+   * TV's tile (11.7u, or 17u for a still).
    */
   itemWidth?: number
   /** How many items: as many as show, three by touch, six with a pointer and seven on the TV. */

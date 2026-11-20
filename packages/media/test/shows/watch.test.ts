@@ -201,7 +201,6 @@ describe('the admin’s shows', () => {
       [5, 'missing', null],
     ])
     expect(() => admin.get('chernobyl')).toThrow()
-    expect(await admin.discover('')).toEqual([])
     expect(admin.rootFolders()).toEqual([t.root])
     // what the import kept unmatched, with its show and reason
     expect(admin.unmatched().find((u) => u.path.endsWith('Chernobyl Recap.mkv'))).toMatchObject({

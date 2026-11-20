@@ -474,6 +474,32 @@ describe('the Library on the phone', () => {
   })
 })
 
+// a ninth bigger than the prototype's cards, from each grid's and row's own sizing (the owner,
+// 2026-11-19, HT-115); the phone's three a row and the TV's tile are the tokens', unchanged
+describe('the cards’ sizes with a pointer', () => {
+  test('a library or search grid’s columns are at least 160 wide, 16 apart', () => {
+    const { gridOf } = require('../src/library/parts.tsx')
+    // 1,200 across: six of 186, where 144 wide made seven of 157
+    expect(gridOf('regular', 1200)).toEqual({
+      columns: 6,
+      width: 186,
+      gap: { column: 16, row: 24 },
+    })
+    expect(gridOf('regular', 160).columns).toBe(1)
+    expect(gridOf('compact', 390).columns).toBe(3)
+  })
+
+  test('a row’s poster is near 11.7% of the window, between 116 and 212', () => {
+    const { pointerItemWidth } = require('@highsea-tv/ui')
+    expect(pointerItemWidth(1440)).toBeCloseTo(168.48)
+    expect(pointerItemWidth(800)).toBe(116)
+    expect(pointerItemWidth(2560)).toBe(212)
+    // and a still (Continue watching) near 26.7%, between 266 and 372
+    expect(pointerItemWidth(1200, 'still')).toBeCloseTo(320.4)
+    expect(pointerItemWidth(1440, 'still')).toBe(372)
+  })
+})
+
 describe('Movies and Collections with a pointer', () => {
   beforeEach(pointerWindow)
 

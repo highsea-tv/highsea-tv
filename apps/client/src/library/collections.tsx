@@ -5,7 +5,7 @@
 //   Movies and Collections (./library.tsx): the count, then three a row;
 // - a pointer (web/collections.tsx): the title and count, then the grid across the page;
 // - the TV (tv/collections.tsx): the title with All, Video and Audio beside it, and a section for
-//   each family, seven a row. Until the owner can make collections of music every collection is
+//   each family, six a row (seven before HT-115). Until the owner can make collections of music every collection is
 //   video, so Audio says there are none. Focus starts on the first collection, once.
 import type { LibraryCollection } from '@highsea-tv/api-contract'
 import { useCollections } from '@highsea-tv/client/data'

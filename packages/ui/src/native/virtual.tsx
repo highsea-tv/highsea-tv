@@ -349,6 +349,13 @@ export type VirtualProps = VirtualOptions & {
   render: (index: number, onLayout: (e: LayoutChangeEvent) => void) => ReactNode
   /** The room before and after the drawn items (a table draws it as a row). */
   spacer?: (size: number, ref?: Ref<ViewNode>) => ReactNode
+  /**
+   * The last item is drawn (it's on the screen or within the overscan): a list read a page at a
+   * time asks for the next, as FlatList's `onEndReached` does
+   * (https://reactnative.dev/docs/flatlist#onendreached). Called after each render while it holds,
+   * so the caller ignores it while a page is on its way.
+   */
+  onEnd?: () => void
   ref?: Ref<VirtualList>
 }
 
@@ -365,13 +372,19 @@ const defaultSpacer = (horizontal: boolean) => (size: number, ref?: Ref<ViewNode
  * A long list in its scroller that draws only the items near the screen, each keyed by its key so
  * it keeps its state as the window moves, with the gap drawn between them.
  */
-export function Virtual({ render, spacer, ref, ...options }: VirtualProps) {
+export function Virtual({ render, spacer, onEnd, ref, ...options }: VirtualProps) {
   const list = useVirtual(options)
   const horizontal = useContext(SourceContext)?.horizontal ?? false
   const draw = spacer ?? defaultSpacer(horizontal)
   const gap = options.gap ?? 0
   // biome-ignore lint/correctness/useExhaustiveDependencies: the handle is this render's list
   useImperativeHandle(ref, () => list)
+  const last = list.items[list.items.length - 1]?.index
+  const atEnd = last !== undefined && last >= options.count - 1
+  // again whenever the caller's handler changes, so one that was busy is asked again once it isn't
+  useEffect(() => {
+    if (atEnd) onEnd?.()
+  }, [atEnd, onEnd])
   return (
     <>
       {draw(list.before, list.anchor)}
