@@ -149,7 +149,7 @@ describe('downloads', () => {
     })
     expect((await c.downloads.limits()).downloadRate).toBe(5_000_000)
     const cats = await c.downloads.categories()
-    expect(cats.slice(0, 2).map((x) => x.name)).toEqual(['movies', 'manual'])
+    expect(cats.slice(0, 3).map((x) => x.name)).toEqual(['movies', 'shows', 'manual'])
     await c.downloads.pauseAll()
     expect((await c.downloads.list()).some((x) => x.state === 'downloading')).toBe(false)
   })

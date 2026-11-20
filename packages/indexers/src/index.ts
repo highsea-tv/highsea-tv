@@ -20,8 +20,10 @@ export {
   episodesOf,
   matchesShow,
   runtimeOf,
+  type ShowRssTarget,
   type ShowSearchInput,
   scopeKey,
+  showMatcher,
 } from './episode-search.ts'
 export { type Caps, readCaps, readItems, tvCategoryIds } from './feed.ts'
 export { type Fetched, fetchRelease, MAX_TORRENT_BYTES } from './grab.ts'

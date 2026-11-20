@@ -427,11 +427,16 @@ export function createSearch<R extends IndexerRow>(deps: {
     async rss(
       targets: readonly RssTarget[],
       inputFor: (tmdbId: number) => SearchInput | null,
+      /** Shows' RSS (HT-109): a release it takes is an episode's, and no film's. */
+      episodes?: { take(c: Candidate<R>, r: IndexerRelease, now: number): boolean },
     ): Promise<RssResult> {
       // a site that can't list its newest releases has no feed to read (`latest: false`)
       const candidates = deps.candidates().filter((c) => c.definition.latest)
       const settled = await Promise.allSettled(
-        candidates.map((c) => deps.run(c.row, c.definition, { keywords: '' })),
+        // with shows' targets, the feed's TV releases too (HT-109)
+        candidates.map((c) =>
+          deps.run(c.row, c.definition, { keywords: '', ...(episodes ? { both: true } : {}) }),
+        ),
       )
       const now = clock.now()
       const match = rssMatcher(targets)
@@ -469,6 +474,7 @@ export function createSearch<R extends IndexerRow>(deps: {
           if (seen.has(r.guid)) continue
           seen.add(r.guid)
           fresh.push(r.guid)
+          if (episodes?.take(c, r, now)) continue
           const parsed = parse(r.title)
           const target = match(r, parsed)
           if (!target) continue

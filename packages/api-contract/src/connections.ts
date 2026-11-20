@@ -37,6 +37,11 @@ export const NOTIFICATION_EVENTS = [
   'update',
   'movie-added',
   'playback-started',
+  // Phase 5 C1 (HT-109), as stage 6 drew: a show's grab and import, one message per download, so a
+  // season pack sends one for its season
+  'episode-grabbed',
+  'episode-imported',
+  'episode-upgraded',
 ] as const
 
 export const ConnectionKind = z.enum(CONNECTION_KINDS).openapi('ConnectionKind')

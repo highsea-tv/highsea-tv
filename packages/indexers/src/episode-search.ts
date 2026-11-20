@@ -7,14 +7,17 @@
 //
 // The season-pack rule is Sonarr's documented one (wiki.servarr.com/sonarr/troubleshooting: "Season
 // Packs will only be grabbed if all episodes in the season are monitored and the season pack
-// upgrades all existing episodes or all episodes are missing"), with upgrades left for later: a
-// release is approved only when every episode it brings is monitored and has no file. A pack also
-// needs every episode in it aired, so a season still airing is fetched an episode at a time. The
-// same rule holds for a multi-episode release. Where both an approved pack and single episodes are
-// found, the automatic search takes the pack (`chooseReleases`).
+// upgrades all existing episodes or all episodes are missing"): a release is approved only when
+// every episode it brings is monitored and either has no file or has one the release upgrades
+// (HT-109: the decision engine's upgrade checks against each file it would replace, so one file at
+// its cutoff, or one the release isn't better than, rejects it). A pack also needs every episode in
+// it aired, so a season still airing is fetched an episode at a time. The same rule holds for a
+// multi-episode release. Where both an approved pack and single episodes are found, the automatic
+// search takes the pack (`chooseReleases`).
 //
 // The results are kept for 30 minutes per show and scope, apart from the films', so a grab can take
-// one by its guid without searching again.
+// one by its guid without searching again. RSS (HT-109, ADR 0045 § C1) judges the feeds' new
+// episode releases the same way, per show and season, and keeps them as that season's results.
 import type { Clock, Logger } from '@highsea-tv/core'
 import { type Db, schema } from '@highsea-tv/db'
 import { type ParsedEpisode, parse, parseEpisode } from '@highsea-tv/parser'
@@ -23,6 +26,7 @@ import {
   compareReleases,
   type DecisionReason,
   decide,
+  type ExistingFile,
   type IndexerRankable,
   indexerTiebreakers,
   type QualityProfile,
@@ -59,6 +63,11 @@ export type EpisodeFacts = {
   hasFile: boolean
   /** Its air date has come. */
   aired: boolean
+  /**
+   * Its file as the decision engine weighs an upgrade (HT-109): the quality, revision and format
+   * score. Null with a file means it can't be judged, so nothing replaces it.
+   */
+  existing?: ExistingFile | null
 }
 
 /** What a show's search is for: a season, or one episode in it. */
@@ -139,6 +148,43 @@ export function matchesShow(
   return parsed.year === null || show.year === null || Math.abs(parsed.year - show.year) <= 1
 }
 
+/** A show RSS matches releases against (HT-109): one still wanting an episode or an upgrade. */
+export type ShowRssTarget = {
+  tmdbId: number
+  tvdbId: number | null
+  imdbId: string | null
+  title: string
+  year: number | null
+}
+
+/** Finds the show a release is for among many, as `matchesShow` would for each. Built once a run. */
+export function showMatcher(targets: readonly ShowRssTarget[]) {
+  const byTvdb = new Map<number, ShowRssTarget>()
+  const byImdb = new Map<string, ShowRssTarget>()
+  const byTitle = new Map<string, ShowRssTarget[]>()
+  for (const t of targets) {
+    if (t.tvdbId) byTvdb.set(t.tvdbId, t)
+    if (t.imdbId) byImdb.set(t.imdbId, t)
+    const title = norm(t.title)
+    if (title) byTitle.set(title, [...(byTitle.get(title) ?? []), t])
+  }
+  return (
+    release: Pick<IndexerRelease, 'tvdbId' | 'imdbId'>,
+    parsed: Pick<ParsedEpisode, 'title' | 'year'>,
+  ): ShowRssTarget | null => {
+    if (release.tvdbId !== null) {
+      const t = byTvdb.get(release.tvdbId)
+      if (t) return t
+    }
+    if (release.imdbId !== null) {
+      const t = byImdb.get(release.imdbId)
+      if (t) return t
+    }
+    const same = byTitle.get(norm(parsed.title)) ?? []
+    return same.find((t) => matchesShow(release, parsed, t)) ?? null
+  }
+}
+
 const code = (season: number, episode: number) =>
   `S${String(season).padStart(2, '0')}E${String(episode).padStart(2, '0')}`
 
@@ -190,7 +236,8 @@ export function episodeReasons(
       kind: 'rejected',
       message: t('episodes.notMonitored', { episodes: list(unmonitored) }),
     })
-  const filed = covered.filter((e) => e.hasFile)
+  // a file the decision engine can weigh is judged as an upgrade; one it can't is left alone
+  const filed = covered.filter((e) => e.hasFile && !e.existing)
   if (filed.length)
     out.push({ kind: 'rejected', message: t('episodes.hasFile', { episodes: list(filed) }) })
   if (parsed.fullSeason) {
@@ -217,8 +264,8 @@ export const runtimeOf = (covered: readonly EpisodeFacts[]) =>
 /**
  * What an automatic search grabs from a scope's results, best first: the best approved pack, when
  * there is one; otherwise, for each wanted episode in turn, the best approved release that brings
- * it and nothing already taken. A release is approved only when everything it brings is wanted, so
- * a pack approved is the whole season wanted.
+ * it and nothing already taken. A release is approved only when everything it brings is missing or
+ * upgraded by it, so a pack approved is the whole season wanted.
  */
 export function chooseReleases(
   releases: readonly EpisodeReleaseView[],
@@ -271,35 +318,55 @@ export function createEpisodeSearch<R extends IndexerRow>(deps: {
         infoHash: r.infohash,
         title: r.title,
       }) ?? false
-    const decision = decide(
-      {
-        release: parsed,
-        size: r.size,
-        movie: {
-          title: input.title,
-          year: input.year,
-          runtimeMinutes: runtime,
-          originalLanguage: input.originalLanguage,
+    // one decision per file the release would replace (Sonarr's "upgrades all existing episodes"),
+    // or one with nothing to replace; every one must approve
+    const replaced = [
+      ...new Map(
+        covered
+          .flatMap((e) => (e.hasFile && e.existing ? [e.existing] : []))
+          .map((x) => [
+            `${x.quality}|${x.formatScore}|${x.revision.version}|${x.revision.real}`,
+            x,
+          ]),
+      ).values(),
+    ]
+    const decisions = (replaced.length ? replaced : [null]).map((existing) =>
+      decide(
+        {
+          release: parsed,
+          size: r.size,
+          movie: {
+            title: input.title,
+            year: input.year,
+            runtimeMinutes: runtime,
+            originalLanguage: input.originalLanguage,
+          },
+          profile: input.profile,
+          formats: input.formats,
+          sizes: input.sizes,
+          existing,
+          blocklisted: false,
+          indexer: {
+            indexerId: c.row.id,
+            indexerName: c.row.name,
+            protocol: 'torrent',
+            flags,
+            seeders: r.seeders,
+            ageMinutes,
+            minimumSeeders: DEFAULT_MINIMUM_SEEDERS,
+            blocked: deps.isFailing(c.row.id),
+          },
         },
-        profile: input.profile,
-        formats: input.formats,
-        sizes: input.sizes,
-        // upgrades of an episode with a file wait for a later task: such episodes aren't wanted
-        existing: null,
-        blocklisted: false,
-        indexer: {
-          indexerId: c.row.id,
-          indexerName: c.row.name,
-          protocol: 'torrent',
-          flags,
-          seeders: r.seeders,
-          ageMinutes,
-          minimumSeeders: DEFAULT_MINIMUM_SEEDERS,
-          blocked: deps.isFailing(c.row.id),
-        },
-      },
-      { locale: input.locale },
+        { locale: input.locale },
+      ),
     )
+    const decision = {
+      ...(decisions[0] as (typeof decisions)[number]),
+      approved: decisions.every((d) => d.approved),
+      reasons: [
+        ...new Map(decisions.flatMap((d) => d.reasons).map((x) => [x.message, x])).values(),
+      ],
+    }
     const episodes = episodeReasons(numbered, covered, unknown, input.locale)
     if (blocked)
       episodes.unshift({
@@ -351,7 +418,81 @@ export function createEpisodeSearch<R extends IndexerRow>(deps: {
 
   type Judged = Exclude<ReturnType<typeof judge>, string>
 
+  /** Ranks a scope's judged releases and keeps them as its results, replacing the last ones. */
+  function keep(input: ShowSearchInput, judged: Judged[], now: number): string {
+    const byRank = compareReleases<IndexerRankable>(input.profile, indexerTiebreakers())
+    judged.sort(
+      (a, b) => Number(b.view.approved) - Number(a.view.approved) || byRank(a.rank, b.rank),
+    )
+    const scope = scopeKey(input.scope)
+    db.transaction((tx) => {
+      tx.delete(showReleases)
+        .where(and(eq(showReleases.showTmdbId, input.tmdbId), eq(showReleases.scope, scope)))
+        .run()
+      judged.forEach((j, rank) => {
+        tx.insert(showReleases)
+          .values({
+            showTmdbId: input.tmdbId,
+            scope,
+            indexerId: j.view.indexerId,
+            guid: j.view.guid,
+            data: { ...j.view, rank },
+            download: j.download,
+            fetchedAt: now,
+            expiresAt: now + RELEASES_TTL_MS,
+          })
+          .onConflictDoNothing()
+          .run()
+      })
+    })
+    return scope
+  }
+
   return {
+    /**
+     * RSS for shows (HT-109): the films' RSS hands each new release from a feed here first. One
+     * that's numbered as an episode or a season is taken (a film never matches it), matched to a
+     * show still wanting something, and judged against that show's season; `finish` keeps each
+     * season's releases as its results and returns the seasons with an approved one, for the
+     * caller to grab from.
+     */
+    rss(
+      targets: readonly ShowRssTarget[],
+      inputFor: (tmdbId: number, scope: EpisodeScope) => ShowSearchInput | null,
+    ) {
+      const match = showMatcher(targets)
+      const inputs = new Map<string, ShowSearchInput | null>()
+      const bySeason = new Map<string, Judged[]>()
+      return {
+        /** Whether the release was an episode's: the films' matching skips it then. */
+        take(c: Candidate<R>, r: IndexerRelease, now: number): boolean {
+          const numbered = parseEpisode(r.title)
+          if (!numbered) return false
+          const target = match(r, numbered)
+          if (!target) return true
+          const key = `${target.tmdbId}|${numbered.season}`
+          if (!inputs.has(key))
+            inputs.set(key, inputFor(target.tmdbId, { season: numbered.season }))
+          const input = inputs.get(key)
+          // an indexer's tags scope RSS too, as they do a film's
+          if (!input || !servesMovie(c.row, input.tags)) return true
+          const j = judge(input, c, r, now)
+          if (typeof j !== 'string') bySeason.set(key, [...(bySeason.get(key) ?? []), j])
+          return true
+        },
+        finish(now: number): { tmdbId: number; scope: EpisodeScope }[] {
+          const out: { tmdbId: number; scope: EpisodeScope }[] = []
+          for (const [key, judged] of bySeason) {
+            const input = inputs.get(key)
+            if (!input || !judged.some((j) => j.view.approved)) continue
+            keep(input, judged, now)
+            out.push({ tmdbId: input.tmdbId, scope: input.scope })
+          }
+          return out
+        },
+      }
+    },
+
     async search(input: ShowSearchInput): Promise<EpisodeSearchResult> {
       const candidates = deps.candidates().filter((c) => servesMovie(c.row, input.tags))
       const query: SearchQuery = {
@@ -399,31 +540,7 @@ export function createEpisodeSearch<R extends IndexerRow>(deps: {
             leftOut.push({ indexerId: c.row.id, indexer: c.row.name, reason, count, found })
         asked.push({ indexer: c.row.name, by: s.value.by, found, ...dropped })
       })
-      const byRank = compareReleases<IndexerRankable>(input.profile, indexerTiebreakers())
-      judged.sort(
-        (a, b) => Number(b.view.approved) - Number(a.view.approved) || byRank(a.rank, b.rank),
-      )
-      const scope = scopeKey(input.scope)
-      db.transaction((tx) => {
-        tx.delete(showReleases)
-          .where(and(eq(showReleases.showTmdbId, input.tmdbId), eq(showReleases.scope, scope)))
-          .run()
-        judged.forEach((j, rank) => {
-          tx.insert(showReleases)
-            .values({
-              showTmdbId: input.tmdbId,
-              scope,
-              indexerId: j.view.indexerId,
-              guid: j.view.guid,
-              data: { ...j.view, rank },
-              download: j.download,
-              fetchedAt: now,
-              expiresAt: now + RELEASES_TTL_MS,
-            })
-            .onConflictDoNothing()
-            .run()
-        })
-      })
+      const scope = keep(input, judged, now)
       deps.logger.info('searched for episodes', {
         tmdbId: input.tmdbId,
         title: input.title,

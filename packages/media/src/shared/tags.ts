@@ -206,6 +206,17 @@ export function createTags({ db, clock }: MediaDeps) {
         .all()
         .map((r) => r.id)
     },
+
+    /** A library show's tag ids by its TMDB id (HT-109); empty when it isn't in the library. */
+    ofShow(tmdbId: number): string[] {
+      return db
+        .select({ id: mediaItemTags.tagId })
+        .from(mediaItemTags)
+        .innerJoin(mediaItems, eq(mediaItems.id, mediaItemTags.itemId))
+        .where(and(eq(mediaItems.type, 'show'), eq(mediaItems.tmdbId, tmdbId)))
+        .all()
+        .map((r) => r.id)
+    },
   }
 }
 

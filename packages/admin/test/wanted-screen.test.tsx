@@ -2,6 +2,8 @@
 // A14 Wanted (wanted.md), rendered against a fake of the API: Missing and Cutoff unmet with their
 // counts in the tabs, Search for one and Search all, the tabs in the address, the calendar's month
 // with its entries linking to their movies, and the feed's address turned off with a confirmation.
+// Episodes (HT-109): their rows beside the films', the kind filter, an episode's Search, and its
+// chip on the calendar linking to its show.
 // The shell and the host's router are stood in for.
 import './dom.ts'
 import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test'
@@ -41,6 +43,25 @@ const movie = (id: number, title: string, status = 'wanted') => ({
   versions: [],
 })
 
+const episode = (number: number, status: string, quality: string | null = null) => ({
+  show: {
+    id: '1396',
+    title: 'Pioneer One',
+    year: 2010,
+    poster: null,
+    qualityProfileId: 1,
+  },
+  episode: {
+    id: String(62000 + number),
+    season: 1,
+    number,
+    title: `Episode ${number}`,
+    aired: '2010-06-16',
+    status,
+    quality,
+  },
+})
+
 const pad = (n: number) => String(n).padStart(2, '0')
 const now = new Date()
 const today = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`
@@ -66,12 +87,22 @@ async function api(url: string, init: RequestInit = {}): Promise<Response> {
         total: 2,
         counts: {},
       })
+    case 'GET /api/v1/wanted/missing/episodes':
+      return json({ items: [episode(3, 'missing')], next: null, total: 1 })
+    case 'GET /api/v1/wanted/cutoff/episodes':
+      return json({ items: [episode(2, 'cutoff-unmet', 'WEB 720p')], next: null, total: 1 })
     case 'GET /api/v1/qualityprofiles':
       return json([{ id: 1, name: 'HD', cutoff: 'Bluray-1080p' }])
     case 'POST /api/v1/wanted/search':
-      return json({ queued: (body as { ids?: number[] }).ids?.length ?? 1 })
+      return json({
+        queued: (body as { ids?: number[] }).ids?.length ?? 1,
+        episodes: (body as { episodes?: unknown[] }).episodes?.length ?? 1,
+      })
     case 'GET /api/v1/calendar':
-      return json([{ date: today, kind: 'digital', movie: movie(45745, 'Sintel') }])
+      return json([
+        { date: today, kind: 'digital', movie: movie(45745, 'Sintel') },
+        { date: today, kind: 'episode', episode: { ...episode(4, 'missing'), aired: today } },
+      ])
     case 'GET /api/v1/me/calendar-key':
       return json({ url: state.feed })
     case 'DELETE /api/v1/me/calendar-key':
@@ -116,12 +147,14 @@ describe('Wanted', () => {
     const { user, page } = await open()
     const tabs = within(page.getByRole('tablist', { name: 'Wanted sections' }))
     expect(tabs.getByRole('tab', { name: /Missing/ }).getAttribute('aria-selected')).toBe('true')
-    expect(tabs.getByRole('tab', { name: /Cutoff unmet/ }).textContent).toContain('2')
+    // a tab counts its movies and its episodes
+    expect(tabs.getByRole('tab', { name: /Cutoff unmet/ }).textContent).toContain('3')
     const table = within(page.getByRole('table', { name: 'Missing' }))
     expect(table.getByRole('link', { name: 'Sintel (2010)' }).getAttribute('href')).toBe(
       '/movies/45745',
     )
-    expect(table.getByText('HD')).toBeTruthy()
+    // Sintel's profile, and the episode's
+    expect(table.getAllByText('HD')).toHaveLength(2)
     await user.click(table.getByRole('button', { name: 'Search for Sintel' }))
     await settle()
     expect(requested('POST', '/api/v1/wanted/search')[0]?.body).toEqual({ ids: [45745] })
@@ -134,9 +167,38 @@ describe('Wanted', () => {
     expect(router.history).toEqual(['/wanted/cutoff'])
     const table = within(page.getByRole('table', { name: 'Cutoff unmet' }))
     expect(table.getAllByText('HD · Bluray-1080p')).toHaveLength(2)
-    await user.click(page.getByRole('button', { name: 'Search all 2' }))
+    // an episode's row says what its file is and what the profile wants
+    expect(table.getByText('WEB 720p · Bluray-1080p')).toBeTruthy()
+    await user.click(page.getByRole('button', { name: 'Search all 3' }))
     await settle()
     expect(requested('POST', '/api/v1/wanted/search')[0]?.body).toEqual({ all: 'cutoff' })
+  })
+
+  test('episodes share the table: the kind filter, the show’s link and an episode’s Search', async () => {
+    const { user, page } = await open()
+    const table = () => within(page.getByRole('table', { name: 'Missing' }))
+    const show = table().getByRole('link', { name: 'Pioneer One' })
+    expect(show.getAttribute('href')).toBe('/shows/1396')
+    expect(table().getByText('· S01E03 · Episode 3')).toBeTruthy()
+    // the filter: episodes alone, then Search all asks for the episodes only
+    await user.click(page.getByRole('radio', { name: 'Episodes · 1' }))
+    await settle()
+    expect(table().queryByRole('link', { name: 'Sintel (2010)' })).toBeNull()
+    await user.click(page.getByRole('button', { name: 'Search all 1' }))
+    await settle()
+    expect(requested('POST', '/api/v1/wanted/search')[0]?.body).toEqual({
+      all: 'missing',
+      kind: 'episodes',
+    })
+    await user.click(table().getByRole('button', { name: 'Search for Pioneer One · S01E03' }))
+    await settle()
+    expect(requested('POST', '/api/v1/wanted/search')[1]?.body).toEqual({
+      episodes: [{ show: '1396', season: 1, episode: 3 }],
+    })
+    // movies alone, and nothing left of that kind says so
+    await user.click(page.getByRole('radio', { name: 'Movies · 1' }))
+    await settle()
+    expect(table().queryByRole('link', { name: 'Pioneer One' })).toBeNull()
   })
 
   test('the calendar shows this month’s releases, linking to each movie', async () => {
@@ -145,10 +207,13 @@ describe('Wanted', () => {
     expect(page.getByRole('heading', { name: month })).toBeTruthy()
     expect(requested('GET', '/api/v1/calendar')[0]?.path).toContain(`from=${today.slice(0, 8)}01`)
     // happy-dom lays nothing out, so the window reads as compact and the month is a list.
-    const list = within(page.getByRole('list', { name: `Releases in ${month}` }))
+    const list = within(page.getByRole('list', { name: `Releases and episodes in ${month}` }))
     const entry = list.getByRole('link', { name: /Sintel/ })
     expect(entry.getAttribute('href')).toBe('/movies/45745')
     expect(entry.textContent).toContain('Digital')
+    // an episode on its air date, linking to its show
+    const aired = list.getByRole('link', { name: /Pioneer One · S01E04/ })
+    expect(aired.getAttribute('href')).toBe('/shows/1396')
   })
 
   test('the feed’s address is turned off after a confirmation', async () => {

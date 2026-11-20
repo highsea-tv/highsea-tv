@@ -6,7 +6,7 @@
 //   (1, 3, 7, then 14 days), written before the search runs so a repeated job searches nothing twice.
 // - RSS's targets: the monitored movies a new release could be for.
 // - The calendar: each monitored movie's cinema, digital and physical dates in a range.
-import type { CalendarEntry, MoviePage } from '@highsea-tv/api-contract'
+import type { MovieCalendarEntry as CalendarEntry, MoviePage } from '@highsea-tv/api-contract'
 import { schema } from '@highsea-tv/db'
 import { and, asc, eq, gte, inArray, lte, sql } from 'drizzle-orm'
 import type { Media } from '../shared/index.ts'

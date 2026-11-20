@@ -49,6 +49,11 @@ export type SearchQuery = {
    * and `year` isn't sent: a show's releases don't carry it.
    */
   tv?: { season: number; episode?: number | null; tvdbId?: number | null }
+  /**
+   * RSS's read of the newest releases (HT-109): the films' and the shows' categories both, keeping
+   * either kind, since one feed serves the films' RSS and the shows'.
+   */
+  both?: boolean
 }
 
 export type RunResult = {
@@ -163,9 +168,13 @@ function tvTiers(
 }
 
 /** Drops repeats, and what the categories say is neither the kind searched nor unknown. */
-const keepKind = (releases: IndexerRelease[], tv: boolean) => {
+const keepKind = (releases: IndexerRelease[], tv: boolean, both = false) => {
   const seen = new Set<string>()
-  const wanted = tv ? isTvCategory : isMovieCategory
+  const wanted = both
+    ? (c: number) => isTvCategory(c) || isMovieCategory(c)
+    : tv
+      ? isTvCategory
+      : isMovieCategory
   return releases.filter((r) => {
     if (seen.has(r.guid)) return false
     seen.add(r.guid)
@@ -211,8 +220,18 @@ async function feedSearch(
     : caps.movie.available && query.keywords === undefined
   const mode = special ? (tv ? caps.tv : caps.movie) : caps.search
   const supports = mode.params.length ? mode.params : ['q']
-  const cats = tv ? tvCategoryIds(caps) : movieCategoryIds(caps)
-  const cat = (cats.length ? cats : [tv ? TV_CATEGORIES[0] : MOVIE_CATEGORIES[0]]).join(',')
+  const cats = tv
+    ? tvCategoryIds(caps)
+    : query.both
+      ? [...movieCategoryIds(caps), ...tvCategoryIds(caps)]
+      : movieCategoryIds(caps)
+  const cat = (
+    cats.length
+      ? cats
+      : query.both
+        ? [MOVIE_CATEGORIES[0], TV_CATEGORIES[0]]
+        : [tv ? TV_CATEGORIES[0] : MOVIE_CATEGORIES[0]]
+  ).join(',')
   const t = special ? (tv ? 'tvsearch' : 'movie') : 'search'
   let by = 'none'
   let releases: IndexerRelease[] = []
@@ -222,7 +241,11 @@ async function feedSearch(
     // Newznab takes the IMDb id without its "tt" (e.g. 0058935); Torznab follows Newznab
     if (params.imdbid) params.imdbid = params.imdbid.replace(/^tt/i, '')
     if (query.keywords === '') delete params.q
-    releases = keepKind(readItems((await get(params)).body, { now: ctx.now() }), tv !== null)
+    releases = keepKind(
+      readItems((await get(params)).body, { now: ctx.now() }),
+      tv !== null,
+      query.both,
+    )
     by = tier.by
     if (releases.length) break
   }
@@ -305,7 +328,11 @@ async function siteSearch(
   const base = baseUrlOf(def, config)
   const mapper = categoryMapper(def)
   const tv = query.tv && query.keywords === undefined ? query.tv : null
-  const categories = mapper.siteIds(tv ? TV_CATEGORIES : MOVIE_CATEGORIES).join(',')
+  const categories = mapper
+    .siteIds(
+      tv ? TV_CATEGORIES : query.both ? [...MOVIE_CATEGORIES, ...TV_CATEGORIES] : MOVIE_CATEGORIES,
+    )
+    .join(',')
   let session = def.login.method === 'form' ? ctx.session : null
   let signedIn = false
   let ms = 0
@@ -389,7 +416,7 @@ async function siteSearch(
       if (sessionExpired(answer))
         throw new IndexerError('auth', 'The site didn’t keep highsea signed in.')
     }
-    releases = keepKind(read(answer), tv !== null)
+    releases = keepKind(read(answer), tv !== null, query.both)
     by = tier.by
     if (releases.length) break
   }

@@ -3,7 +3,9 @@
 // seams the domain packages already have, and turns it into the notification service's events. No
 // domain package imports notifications (ADR 0036):
 // - the history (media's `onHistory`): a grab, an import (and an upgrade), a subtitle downloaded
-//   and then synced, or kept as it came;
+//   and then synced, or kept as it came; a show's grab is an episode's event (HT-109);
+// - a show's import (HT-109), from the runtime's import callback: one message per download, so a
+//   season pack's import sends one for its season, as stage 6 drew;
 // - downloads' `failed`: a download blocklisted and given up on, and whether another took its place;
 // - a list run's `onAdded`, once per run; a person adding a movie, from the API;
 // - `updates.available` on the event bus;
@@ -23,8 +25,8 @@ import type { DownloadFailure } from '@highsea-tv/downloads'
 import type { HistoryInput } from '@highsea-tv/media/shared'
 import { IMAGE_ROUTE } from '@highsea-tv/metadata'
 import type { Notifications } from '@highsea-tv/notifications/service'
-import type { MovieRef } from '@highsea-tv/notifications/shared'
-import { and, eq } from 'drizzle-orm'
+import type { EpisodesRef, MovieRef } from '@highsea-tv/notifications/shared'
+import { and, eq, inArray } from 'drizzle-orm'
 import type { HealthIssue } from './system.ts'
 
 const { mediaItems, downloads, subtitleFiles, users } = schema
@@ -44,6 +46,8 @@ export type NotifyDeps = {
   notifications: Notifications
   /** A movie's cached poster: the server's image path. */
   poster(tmdbId: number): string | null
+  /** A show's cached poster, by its TMDB id (HT-109). */
+  showPoster?(tmdbId: number): string | null
   externalUrl(): string | null
   issues(): HealthIssue[]
   /** The server's language and time zone, from General. */
@@ -102,13 +106,67 @@ export function createNotify(deps: NotifyDeps) {
     }
   }
 
+  function showRef(row: { tmdbId: number; title: string; year: number | null }): MovieRef {
+    const b = base()
+    const poster = b ? (deps.showPoster?.(row.tmdbId) ?? null) : null
+    return {
+      title: row.title,
+      year: row.year,
+      tmdbId: row.tmdbId,
+      url: b ? `${b}/shows/${row.tmdbId}` : null,
+      posterUrl: b && poster ? `${b}${poster}?sig=${mac(poster)}` : null,
+    }
+  }
+
+  /** A movie's ref; null for anything else (a show's events are their own, HT-109). */
   function item(itemId: string) {
     const row = db
-      .select({ tmdbId: mediaItems.tmdbId, title: mediaItems.title, year: mediaItems.year })
+      .select({
+        type: mediaItems.type,
+        tmdbId: mediaItems.tmdbId,
+        title: mediaItems.title,
+        year: mediaItems.year,
+      })
       .from(mediaItems)
       .where(eq(mediaItems.id, itemId))
       .get()
-    return row?.tmdbId != null ? movieRef(row) : null
+    return row?.type === 'movie' && row.tmdbId != null ? movieRef(row) : null
+  }
+
+  /**
+   * A show's ref and the episodes an event names, from the episode items it brings: a whole
+   * season (every episode of it) is named as the season.
+   */
+  function episodesOf(showItemId: string, episodeIds: readonly string[]) {
+    const show = db.select().from(mediaItems).where(eq(mediaItems.id, showItemId)).get()
+    if (show?.type !== 'show' || !episodeIds.length) return null
+    const rows = db
+      .select({ season: mediaItems.seasonNumber, number: mediaItems.episodeNumber })
+      .from(mediaItems)
+      .where(inArray(mediaItems.id, [...episodeIds]))
+      .all()
+    const season = rows[0]?.season ?? 0
+    const numbers = rows
+      .filter((r) => r.season === season)
+      .map((r) => r.number ?? 0)
+      .sort((a, b) => a - b)
+    const inSeason = db
+      .select({ id: mediaItems.id })
+      .from(mediaItems)
+      .where(
+        and(
+          eq(mediaItems.showId, show.id),
+          eq(mediaItems.type, 'episode'),
+          eq(mediaItems.seasonNumber, season),
+        ),
+      )
+      .all().length
+    const episodes: EpisodesRef = {
+      season,
+      episodes: numbers,
+      pack: numbers.length > 1 && numbers.length >= inSeason,
+    }
+    return { show: showRef(show), episodes }
   }
 
   function byTmdb(tmdbId: number) {
@@ -166,8 +224,6 @@ export function createNotify(deps: NotifyDeps) {
     const data = entry.data ?? {}
     switch (entry.type) {
       case 'grabbed': {
-        const movie = item(entry.itemId)
-        if (!movie) return
         const size = entry.downloadId
           ? (db
               .select({ size: downloads.size })
@@ -175,6 +231,21 @@ export function createNotify(deps: NotifyDeps) {
               .where(eq(downloads.id, entry.downloadId))
               .get()?.size ?? 0)
           : 0
+        const episodeIds = Array.isArray(data.episodeIds)
+          ? data.episodeIds.filter((x): x is string => typeof x === 'string')
+          : null
+        if (episodeIds) {
+          const of = episodesOf(entry.itemId, episodeIds)
+          if (of)
+            notifications.notify(
+              'episode-grabbed',
+              { ...of, release: entry.sourceTitle, indexer: entry.indexer ?? '', size },
+              `grabbed:${entry.downloadId ?? id}`,
+            )
+          return
+        }
+        const movie = item(entry.itemId)
+        if (!movie) return
         notifications.notify(
           'grabbed',
           { movie, release: entry.sourceTitle, indexer: entry.indexer ?? '', size },
@@ -208,6 +279,39 @@ export function createNotify(deps: NotifyDeps) {
         subtitle(data.trackId, false)
         return
     }
+  }
+
+  /**
+   * A show's download imported (HT-109): one message for everything it filed, so a season pack
+   * sends one for its season. An upgrade sends Upgraded too, under the same id, as a film's does.
+   */
+  function episodesImported(input: {
+    downloadId: string
+    showItemId: string
+    files: readonly {
+      episodeIds: readonly string[]
+      quality: string
+      size: number
+      upgradedFrom: string | null
+    }[]
+  }) {
+    if (!input.files.length) return
+    const of = episodesOf(
+      input.showItemId,
+      input.files.flatMap((f) => f.episodeIds),
+    )
+    if (!of) return
+    const quality = input.files[0]?.quality ?? ''
+    const size = input.files.reduce((n, f) => n + f.size, 0)
+    const from = input.files.find((f) => f.upgradedFrom)?.upgradedFrom ?? null
+    const eventId = `episode-import:${input.downloadId}`
+    if (from)
+      notifications.notify(
+        'episode-upgraded',
+        { ...of, quality, size, upgradedFrom: from },
+        eventId,
+      )
+    notifications.notify('episode-imported', { ...of, quality, size, upgradedFrom: from }, eventId)
   }
 
   // ------------------------------------------------------------ downloads, lists, people
@@ -363,6 +467,7 @@ export function createNotify(deps: NotifyDeps) {
   return {
     onHistory: guarded('the history', onHistory),
     onFailed: guarded('a failed download', onFailed),
+    episodesImported: guarded('a show’s import', episodesImported),
     onListAdded: guarded('a list', onListAdded),
     movieAdded: guarded('a movie added', movieAdded),
     playbackStarted: guarded('a stream started', playbackStarted),
