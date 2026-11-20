@@ -184,6 +184,28 @@ export function createShowWanted(ctx: ShowsDeps, deps: { media: Media }) {
     return changed
   }
 
+  /**
+   * Shows highsea looks after: not in a root folder it only reads (ADR 0063), whose files someone
+   * else (Sonarr, the owner) keeps. Such a show is never searched, grabbed or upgraded on its own,
+   * and its episodes stay off Wanted. `show` is the column holding the show's id. The folders are
+   * read each call, so turning a folder to managed takes effect at once.
+   */
+  function looksAfter(show: typeof mediaItems.id | typeof mediaItems.showId) {
+    const roots = media.rootFolders
+      .list()
+      .map((r) => media.rootFolders.readOnlyAt(r.path))
+      .filter((r): r is string => r !== null)
+    if (!roots.length) return sql`1 = 1`
+    // a prefix compare, not LIKE, so a folder name's `_` or `%` matches only itself
+    const inside = sql.join(
+      roots.map(
+        (root) => sql`(s.path = ${root} OR substr(s.path, 1, ${root.length + 1}) = ${`${root}/`})`,
+      ),
+      sql` OR `,
+    )
+    return sql`NOT EXISTS (SELECT 1 FROM media_items s WHERE s.id = ${show} AND s.path IS NOT NULL AND (${inside}))`
+  }
+
   // ------------------------------------------------------------ the sweep and RSS
 
   /** A show still wanting something: an aired, missing episode, or one under its cutoff. */
@@ -206,6 +228,7 @@ export function createShowWanted(ctx: ShowsDeps, deps: { media: Media }) {
           eq(mediaItems.monitored, true),
           sql`(${mediaItems.nextSearchAt} IS NULL OR ${mediaItems.nextSearchAt} <= ${now})`,
           wantsSomething(today()),
+          looksAfter(mediaItems.id),
         ),
       )
       .orderBy(asc(mediaItems.nextSearchAt), asc(mediaItems.id))
@@ -258,7 +281,12 @@ export function createShowWanted(ctx: ShowsDeps, deps: { media: Media }) {
       .from(mediaItems)
       .leftJoin(showDetails, eq(showDetails.itemId, mediaItems.id))
       .where(
-        and(eq(mediaItems.type, 'show'), eq(mediaItems.monitored, true), wantsSomething(tomorrow)),
+        and(
+          eq(mediaItems.type, 'show'),
+          eq(mediaItems.monitored, true),
+          wantsSomething(tomorrow),
+          looksAfter(mediaItems.id),
+        ),
       )
       .all()
     return rows.map((r) => {
@@ -366,7 +394,10 @@ export function createShowWanted(ctx: ShowsDeps, deps: { media: Media }) {
     return { items: toWanted(rows), total, next } satisfies WantedEpisodePage
   }
 
-  /** Wanted › Missing's episodes: monitored, aired, of a monitored show, with no file. */
+  /**
+   * Wanted › Missing's episodes: monitored, aired, of a monitored show highsea looks after, with no
+   * file.
+   */
   const missing = (query: { cursor?: string; limit?: number } = {}): WantedEpisodePage =>
     page(
       and(
@@ -374,13 +405,22 @@ export function createShowWanted(ctx: ShowsDeps, deps: { media: Media }) {
         MONITORED,
         sql`${mediaItems.releaseDate} IS NOT NULL AND ${mediaItems.releaseDate} <= ${today()}`,
         NO_FILE,
+        looksAfter(mediaItems.showId),
       ),
       query,
     )
 
-  /** Wanted › Cutoff unmet's episodes: monitored, with a file under the show's profile's cutoff. */
+  /** Wanted › Cutoff unmet's episodes: monitored, of a show highsea looks after, under the cutoff. */
   const cutoff = (query: { cursor?: string; limit?: number } = {}): WantedEpisodePage =>
-    page(and(eq(mediaItems.type, 'episode'), MONITORED, eq(mediaItems.cutoffUnmet, true)), query)
+    page(
+      and(
+        eq(mediaItems.type, 'episode'),
+        MONITORED,
+        eq(mediaItems.cutoffUnmet, true),
+        looksAfter(mediaItems.showId),
+      ),
+      query,
+    )
 
   /** Every episode on one of the lists, for Search all: its show and its numbers. */
   function all(list: 'missing' | 'cutoff') {
@@ -428,6 +468,7 @@ export function createShowWanted(ctx: ShowsDeps, deps: { media: Media }) {
     reschedule,
     found,
     rssTargets,
+    looksAfterShow: (path: string | null) => !path || media.rootFolders.readOnlyAt(path) === null,
     missing,
     cutoff,
     all,

@@ -65,11 +65,13 @@ export function createShowSearch(
 
   /**
    * Null when the show isn't in the library. `airedBy` (RSS) counts an episode airing by that day
-   * as wanted, since a feed's release may come before the air date reaches this server's day.
+   * as wanted, since a feed's release may come before the air date reaches this server's day. Null
+   * too when the show is in a root folder highsea only reads (ADR 0063): RSS, the sweep,
+   * `shows.held` and Search all come through here, so none of them searches or grabs for it.
    */
   function input(tmdbId: number, scope: ShowScope, { airedBy }: { airedBy?: string } = {}) {
     const show = showRow(tmdbId)
-    if (!show) return null
+    if (!show || !showWanted.looksAfterShow(show.path)) return null
     const meta = metadata.cachedShow(tmdbId)
     const details = db.select().from(showDetails).where(eq(showDetails.itemId, show.id)).get()
     const today = dayOf(clock.now())
@@ -121,11 +123,11 @@ export function createShowSearch(
   /**
    * What a Search on the show, a season or an episode looks for: the scopes to search, a season at
    * a time (its pack may bring it all), and the wanted episodes in each, missing or under their
-   * cutoff (HT-109).
+   * cutoff (HT-109). Nothing for a show in a root folder highsea only reads (ADR 0063).
    */
   function plan(tmdbId: number, within?: ShowScope) {
     const show = showRow(tmdbId)
-    if (!show) return []
+    if (!show || !showWanted.looksAfterShow(show.path)) return []
     const today = dayOf(clock.now())
     const { rows, withFile } = episodeRows(show.id)
     const wanted = rows.filter(

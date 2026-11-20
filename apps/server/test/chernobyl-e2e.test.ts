@@ -55,7 +55,10 @@ function clip(): Uint8Array {
 }
 
 /** The runtime with Chernobyl added, the fake indexer enabled, and a seeder for `releases`. */
-async function setup(releases: { id: number; name: string; files: string[] }[]) {
+async function setup(
+  releases: { id: number; name: string; files: string[] }[],
+  { readOnly = false }: { readOnly?: boolean } = {},
+) {
   const tracker = await startTracker()
   closers.push(() => tracker.close())
   const seeder = testEngine()
@@ -92,7 +95,7 @@ async function setup(releases: { id: number; name: string; files: string[] }[]) 
 
   const root = join(runtime.config.dataDir, 'media', 'shows')
   mkdirSync(root, { recursive: true })
-  runtime.media.rootFolders.add({ path: root, kind: 'shows' })
+  runtime.media.rootFolders.add({ path: root, kind: 'shows', readOnly })
   await api.series.add({
     body: {
       tmdbId: Number(CHERNOBYL),
@@ -334,4 +337,48 @@ describe.skipIf(!hasFfmpeg)('Chernobyl’s episodes, from grab to library', () =
       'episode-upgraded',
     ])
   }, 180_000)
+})
+
+// The owner's NAS keeps its shows on a folder highsea only reads, where Sonarr still looks after
+// them (ADR 0063): nothing there is searched, grabbed or upgraded on its own, and Wanted leaves it out.
+describe('a show in a root folder highsea only reads', () => {
+  test('RSS and the sweep leave its monitored, missing episodes alone, and Wanted lists none', async () => {
+    const files = [1, 2, 3, 4, 5].map((n) => `Chernobyl.S01E0${n}.1080p.BluRay.x264-GRP.mkv`)
+    const { runtime, api, season } = await setup(
+      [
+        { ...SINGLE, files: [`${SINGLE.name}.mkv`] },
+        { ...PACK, files },
+      ],
+      { readOnly: true },
+    )
+    // monitored and missing: on a managed folder, every one of these would be searched for
+    const show = await api.series.get({ params: { id: CHERNOBYL } })
+    const episodes = show.seasonList.find((s) => s.number === 1)?.episodes ?? []
+    expect(episodes.length).toBe(5)
+    expect(episodes.every((e) => e.monitored && e.file === null)).toBe(true)
+
+    // RSS reads the feed (the films' side runs) but has no show to grab for
+    const read = await runtime.automation.rss()
+    expect(read.shows).toEqual([])
+    // the sweep takes no show, so it spends none of its searches
+    expect(await runtime.showSearch.sweep()).toEqual([])
+    // Search all on Wanted finds no episode to queue
+    const searched = await api.wanted.search({ body: { all: 'missing', kind: 'episodes' } })
+    expect(searched.episodes ?? 0).toBe(0)
+    await runtime.jobs.tick()
+    await runtime.jobs.idle()
+    expect(runtime.downloads.queue()).toEqual([])
+    expect(existsSync(season)).toBe(false)
+
+    // Wanted leaves its episodes out; the calendar still shows their air dates
+    expect((await api.wanted.missingEpisodes({ query: {} })).total).toBe(0)
+    expect((await api.wanted.cutoffEpisodes({ query: {} })).total).toBe(0)
+    const month = await api.wanted.calendar({ query: { from: '2019-05-01', to: '2019-06-30' } })
+    expect(month.filter((e) => e.kind === 'episode')).toHaveLength(5)
+
+    // the episodes are still monitored and missing: left alone, not changed
+    const after = await api.series.get({ params: { id: CHERNOBYL } })
+    const still = after.seasonList.find((s) => s.number === 1)?.episodes ?? []
+    expect(still.every((e) => e.monitored && e.file === null)).toBe(true)
+  })
 })
