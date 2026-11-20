@@ -1,6 +1,6 @@
 ---
-title: Move from Radarr and qBittorrent
-description: Bring your films, profiles, tags and torrents into highsea, without moving a file.
+title: Move from Radarr, Sonarr and qBittorrent
+description: Bring your films, shows, profiles, tags and torrents into highsea, without moving a file.
 ---
 
 {/* SPDX-License-Identifier: AGPL-3.0-only */}
@@ -8,17 +8,19 @@ description: Bring your films, profiles, tags and torrents into highsea, without
   Sources:
   - Radarr's API v3, and where its API key is (Settings › General › Security):
     https://wiki.servarr.com/radarr/settings#security
+  - Sonarr's API v3, which serves Sonarr v3 and v4: https://sonarr.tv/docs/api/
+    Its API key: https://wiki.servarr.com/sonarr/settings#security
   - qBittorrent's WebUI API (v2, from 4.1; highsea needs 4.5.0 or later):
     https://github.com/qbittorrent/qBittorrent/wiki/WebUI-API-(qBittorrent-4.1)
   - In highsea: Settings › Migration (packages/admin/src/migration.tsx and its messages), and
-    the importers in packages/importers/src/radarr and qbittorrent.
+    the importers in packages/importers/src/radarr, sonarr and qbittorrent.
 */}
 
-Written for highsea 0.1.0, Radarr 3 or later (its API v3), and qBittorrent 4.5.0 or later.
+Written for highsea 0.1.0, Radarr 3 or later (its API v3), Sonarr 3 or later (its API v3), and qBittorrent 4.5.0 or later.
 
-**Settings › Migration** reads Radarr and qBittorrent through their own APIs and changes nothing in either. Your films and downloads stay where they are on disk; highsea adopts them in place. Only the owner sees Migration.
+**Settings › Migration** reads Radarr, Sonarr and qBittorrent through their own APIs and changes nothing in any of them. Your films, shows and downloads stay where they are on disk; highsea adopts them in place. Only the owner sees Migration.
 
-Do Radarr first, then qBittorrent. highsea uses Radarr's grab history to link each torrent to its film.
+Do Radarr and Sonarr first, then qBittorrent. highsea uses Radarr's grab history to link each torrent to its film.
 
 ## Before you start
 
@@ -33,6 +35,7 @@ Each card on the Migration page has **Path mappings**. Add one when the other pr
 | Their path | highsea's path |
 | --- | --- |
 | `/movies` | `/data/media/movies` |
+| `/tv` | `/data/media/shows` |
 | `/downloads` | `/data/downloads` |
 
 When more than one mapping fits a path, the longest one wins. With no mappings, the paths are taken to be the same for both.
@@ -79,6 +82,45 @@ If it stops, choose **Import again**. It carries on where it left off and skips 
 
 ![Settings › Migration's Radarr card after Preview: the address, a path mapping from /movies to /data/movies, the counts, each root folder and whether highsea can use it, Radarr's quality profiles with highsea's nearest beside each, and what can't come across](/images/admin/settings-migration/radarr-preview.png)
 
+## Bring Sonarr across
+
+<Steps>
+<Step>
+
+### Connect
+
+In the **Sonarr** card, enter Sonarr's address with its port, such as `http://192.168.1.20:8989`, and its **API key**, from Sonarr's **Settings › General › Security**. Choose **Test**: highsea says which version of Sonarr it reached and how many series it has.
+
+</Step>
+<Step>
+
+### Preview
+
+Choose **Preview**. It reads Sonarr and TMDB only, so nothing is written yet:
+
+- How many series Sonarr has, how many have files, how many episodes and files they hold, how many are already in highsea and how many are ready to come across.
+- **Root folders**: each of Sonarr's, and whether highsea can use it. Add a path mapping for one that shows **Can't use**.
+- **Quality profiles**: each of Sonarr's becomes the nearest of highsea's by its cutoff. Change any of them, or bring one across as it is.
+- **Series that can't come across as things stand**: a series is matched to TMDB by the TMDB id Sonarr keeps, or by its TheTVDB id. One TMDB has nothing for is listed here, with the reason.
+
+Daily and anime series come across as shows, by Sonarr's season and episode numbers. Sonarr's naming format, history, blocklist, indexers and download clients stay behind.
+
+</Step>
+<Step>
+
+### Import
+
+Choose **Import**. Each series becomes a show where it is, with its monitoring for each season and episode, its profile and its tags. Each episode file is checked again by highsea and kept where it is, and a file holding two episodes stays one file.
+
+When it's done, the card says how many episode files were filed. Episodes and files highsea couldn't place are listed, usually because TMDB numbers that show's episodes differently. Those files wait in **Shows › Unmatched**, where you can match each one to its episodes.
+
+Running it again is safe. It changes only what differs in Sonarr since the last run.
+
+</Step>
+</Steps>
+
+![Settings › Migration's Sonarr card after Preview: the address, a path mapping from /tv to /data/tv, the counts of series, episodes and files, the root folder, Sonarr's quality profiles with highsea's nearest beside each, the daily and anime series, and what can't come across](/images/admin/settings-migration/sonarr-preview.png)
+
 ## Bring qBittorrent across
 
 <Steps>
@@ -121,5 +163,5 @@ Two clients writing to the same files can damage them, which is why highsea wait
 ## Afterwards
 
 - Add your indexers in **Indexers**, from the catalog or as Torznab feeds. Prowlarr's and Jackett's feeds work as they are.
-- Look through **Movies**. Any film that couldn't come across is listed in the Radarr card, with the reason.
-- When you're happy with highsea, stop Radarr too. Keep both programs' config folders for a while, in case you want to look something up.
+- Look through **Movies** and **Shows**. Any film or series that couldn't come across is listed in its card, with the reason.
+- When you're happy with highsea, stop Radarr and Sonarr too. Keep both programs' config folders for a while, in case you want to look something up.
