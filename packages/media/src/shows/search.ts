@@ -2,7 +2,8 @@
 // What a show's release search is judged by (Phase 5 C1), as `movies.searchInput` is a film's: the
 // show's ids and title, every episode's facts (monitored, with a file, aired, its runtime), the
 // show's profile, the custom formats and Settings › Quality's episode sizes. The indexers package
-// takes it as its `ShowSearchInput`; `wanted` is the scope's episodes a search looks for.
+// takes it as its `ShowSearchInput`; `wanted` is the scope's episodes a search looks for: missing
+// and aired, or (HT-109) with a file under the profile's cutoff, which a release may upgrade.
 import { schema } from '@highsea-tv/db'
 import { and, asc, eq, isNotNull } from 'drizzle-orm'
 import type { Media } from '../shared/index.ts'
@@ -10,14 +11,18 @@ import { dayOf } from '../shared/names.ts'
 import type { ShowsDeps } from './context.ts'
 import { aired } from './library.ts'
 import type { ShowSettings } from './settings.ts'
+import type { ShowWanted } from './wanted.ts'
 
 const { mediaItems, showDetails, versions } = schema
 
 export type ShowScope = { season: number; episode?: number | null }
 
-export function createShowSearch(ctx: ShowsDeps, deps: { media: Media; settings: ShowSettings }) {
+export function createShowSearch(
+  ctx: ShowsDeps,
+  deps: { media: Media; settings: ShowSettings; wanted: ShowWanted },
+) {
   const { db, clock, metadata } = ctx
-  const { media, settings } = deps
+  const { media, settings, wanted: showWanted } = deps
 
   const showRow = (tmdbId: number) =>
     db
@@ -51,14 +56,27 @@ export function createShowSearch(ctx: ShowsDeps, deps: { media: Media; settings:
     s: ShowScope,
   ) => e.seasonNumber === s.season && (s.episode == null || e.episodeNumber === s.episode)
 
-  /** Null when the show isn't in the library. */
-  function input(tmdbId: number, scope: ShowScope) {
+  /** Whether an episode is looked for: monitored and missing by a day, or under its cutoff. */
+  const wants = (
+    e: { monitored: boolean; releaseDate: string | null; cutoffUnmet: boolean },
+    hasFile: boolean,
+    by: string,
+  ) => e.monitored && (hasFile ? e.cutoffUnmet : aired({ aired: e.releaseDate }, by))
+
+  /**
+   * Null when the show isn't in the library. `airedBy` (RSS) counts an episode airing by that day
+   * as wanted, since a feed's release may come before the air date reaches this server's day. Null
+   * too when the show is in a root folder highsea only reads (ADR 0063): RSS, the sweep,
+   * `shows.held` and Search all come through here, so none of them searches or grabs for it.
+   */
+  function input(tmdbId: number, scope: ShowScope, { airedBy }: { airedBy?: string } = {}) {
     const show = showRow(tmdbId)
-    if (!show) return null
+    if (!show || !showWanted.looksAfterShow(show.path)) return null
     const meta = metadata.cachedShow(tmdbId)
     const details = db.select().from(showDetails).where(eq(showDetails.itemId, show.id)).get()
     const today = dayOf(clock.now())
     const { rows, withFile } = episodeRows(show.id)
+    const files = showWanted.existingFiles(show)
     const runtime = (season: number, n: number) =>
       meta?.seasons.find((s) => s.number === season)?.episodes.find((e) => e.number === n)
         ?.runtimeMinutes ??
@@ -72,14 +90,13 @@ export function createShowSearch(ctx: ShowsDeps, deps: { media: Media; settings:
       monitored: e.monitored,
       hasFile: withFile.has(e.id),
       aired: aired({ aired: e.releaseDate }, today),
+      existing: files.get(e.id) ?? null,
     }))
-    const wanted = episodes
+    const wanted = rows
       .filter(
         (e) =>
-          e.monitored &&
-          !e.hasFile &&
-          e.aired &&
-          inScope({ seasonNumber: e.season, episodeNumber: e.episode }, scope),
+          wants(e, withFile.has(e.id), airedBy ?? today) &&
+          inScope({ seasonNumber: e.seasonNumber, episodeNumber: e.episodeNumber }, scope),
       )
       .map((e) => e.id)
     return {
@@ -105,19 +122,16 @@ export function createShowSearch(ctx: ShowsDeps, deps: { media: Media; settings:
 
   /**
    * What a Search on the show, a season or an episode looks for: the scopes to search, a season at
-   * a time (its pack may bring it all), and the wanted episodes in each.
+   * a time (its pack may bring it all), and the wanted episodes in each, missing or under their
+   * cutoff (HT-109). Nothing for a show in a root folder highsea only reads (ADR 0063).
    */
   function plan(tmdbId: number, within?: ShowScope) {
     const show = showRow(tmdbId)
-    if (!show) return []
+    if (!show || !showWanted.looksAfterShow(show.path)) return []
     const today = dayOf(clock.now())
     const { rows, withFile } = episodeRows(show.id)
     const wanted = rows.filter(
-      (e) =>
-        e.monitored &&
-        !withFile.has(e.id) &&
-        aired({ aired: e.releaseDate }, today) &&
-        (!within || inScope(e, within)),
+      (e) => wants(e, withFile.has(e.id), today) && (!within || inScope(e, within)),
     )
     const seasons = [...new Set(wanted.map((e) => e.seasonNumber ?? 0))]
     return seasons.map((season) => {

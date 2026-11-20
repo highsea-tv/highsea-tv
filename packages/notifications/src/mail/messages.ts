@@ -41,5 +41,8 @@ export const emailMessages = defineMessages({
   'event.update': 'Update',
   'event.movie-added': 'Movie added',
   'event.playback-started': 'Playback started',
+  'event.episode-grabbed': 'Episode grabbed',
+  'event.episode-imported': 'Episode imported',
+  'event.episode-upgraded': 'Episode upgraded',
   'event.test': 'Test',
 })

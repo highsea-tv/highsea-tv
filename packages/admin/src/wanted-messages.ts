@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // A14 Wanted (ADR 0021): the prototype's copy, with what real data changes: the cutoff list shows
 // the profile and the quality it wants, each calendar entry says which date it is, and the feed's
-// address is made, replaced and turned off here.
+// address is made, replaced and turned off here. Episodes (stage 6, built with HT-109) share each
+// table, with a filter for the kind, and the calendar.
 import { defineMessages } from '@highsea-tv/i18n'
 
 export const wanted = defineMessages({
   title: 'Wanted',
-  description: 'Monitored movies highsea is still looking for, and what’s coming out.',
+  description: 'Monitored movies and episodes highsea is still looking for, and what’s coming out.',
   sections: 'Wanted sections',
   'tab.missing': 'Missing',
   'tab.cutoff': 'Cutoff unmet',
@@ -14,16 +15,25 @@ export const wanted = defineMessages({
 
   'list.what': 'the wanted list',
   'missing.empty': 'Nothing missing',
-  'missing.emptyBody': 'Every released, monitored movie has a file.',
+  'missing.emptyBody': 'Every released movie and aired episode that’s monitored has a file.',
   'missing.hint': 'highsea checks RSS every 15 minutes. Search now to look through every indexer.',
   'cutoff.empty': 'Everything meets its cutoff',
-  'cutoff.emptyBody': 'Every movie is at the quality its profile asks for.',
+  'cutoff.emptyBody': 'Every movie and episode is at the quality its profile asks for.',
   'cutoff.hint': 'highsea upgrades these when a better release turns up. Search now to look today.',
   searchAll: 'Search all {count}',
-  'col.movie': 'Movie',
-  'col.released': 'Released',
+  kinds: 'Show',
+  'kind.all': 'All',
+  'kind.movies': 'Movies · {count}',
+  'kind.episodes': 'Episodes · {count}',
+  'kind.noMovies': 'No movies are missing.',
+  'kind.noEpisodes': 'No episodes are missing.',
+  'kind.moviesMet': 'Every movie meets its cutoff.',
+  'kind.episodesMet': 'Every episode meets its cutoff.',
+  'col.movie': 'Title',
+  'col.released': 'Released or aired',
   'col.profile': 'Profile',
-  'col.wants': 'Profile · wants',
+  'col.wants': 'Has · wants',
+  episode: '{show} · {code}',
   'col.actions': 'Actions',
   search: 'Search',
   searchFor: 'Search for {title}',
@@ -31,6 +41,10 @@ export const wanted = defineMessages({
   more: 'Show more',
   'searching.one': 'Searching for {title}',
   'searching.all': '{count, plural, one {Searching for # movie} other {Searching for # movies}}',
+  'searching.episodes':
+    '{count, plural, one {Searching for # episode} other {Searching for # episodes}}',
+  'searching.both':
+    'Searching for {movies, plural, one {# movie} other {# movies}} and {episodes, plural, one {# episode} other {# episodes}}',
   'searching.body': 'Results land in Activity.',
   'searching.failed': 'Couldn’t search',
 
@@ -42,16 +56,17 @@ export const wanted = defineMessages({
   'calendar.downloading': 'Downloading',
   'calendar.wanted': 'Wanted',
   'calendar.dayWith': '{date}: {titles}',
-  'calendar.releases': 'Releases in {month}',
-  'calendar.none': 'Nothing monitored comes out this month.',
+  'calendar.releases': 'Releases and episodes in {month}',
+  'calendar.none': 'Nothing monitored comes out or airs this month.',
   'kind.cinema': 'In cinemas',
   'kind.digital': 'Digital',
   'kind.physical': 'Physical',
+  'kind.episode': 'Episode',
   'entry.label': '{title}, {kind}',
 
   'feed.label': 'Subscribe in your calendar app',
   'feed.hint':
-    'An iCal feed of monitored releases. Its address carries a key that opens the feed and nothing else. Turn it off here.',
+    'An iCal feed of monitored releases and episodes’ air dates. Its address carries a key that opens the feed and nothing else. Turn it off here.',
   'feed.what': 'the calendar feed',
   'feed.none': 'There’s no feed address yet.',
   'feed.make': 'Make a feed address',

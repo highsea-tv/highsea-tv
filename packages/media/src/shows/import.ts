@@ -11,13 +11,18 @@
 // Only what the download was grabbed for is filed: a video whose episodes aren't all among the
 // download's (another show's, another season's, an episode not monitored) is left where it is, and
 // the show's history says so. A file that's already been imported is the import done (ADR 0022).
+//
+// An upgrade (HT-109) is judged as a film's is, against each file it would replace (Sonarr's
+// UpgradeSpecification checks every episode's file): the new file takes its episodes over, and an
+// old file that no longer holds any episode goes to the recycle bin, as a film's replaced file does
+// (shared/housekeeping.ts's `recycle`); one still holding another episode stays.
 import { promises as fsp } from 'node:fs'
 import { basename, dirname, extname, join } from 'node:path'
 import { AppError } from '@highsea-tv/core'
 import { schema } from '@highsea-tv/db'
 import { parse, parseEpisode } from '@highsea-tv/parser'
-import { decide, type QualityName } from '@highsea-tv/quality'
-import { eq } from 'drizzle-orm'
+import { decide, type ExistingFile, type QualityName } from '@highsea-tv/quality'
+import { eq, inArray } from 'drizzle-orm'
 import { FORCED_IMPORT_SPECS, IMPORT_SPECS, parsedQuality } from '../movies/import.ts'
 import { buildEpisodeName, type NamingEpisode } from '../shared/episode-naming.ts'
 import {
@@ -34,7 +39,7 @@ import {
   listFiles,
   skipBeforeProbe,
 } from '../shared/files.ts'
-import { applyPermissions } from '../shared/housekeeping.ts'
+import { applyPermissions, recycle } from '../shared/housekeeping.ts'
 import type { Media } from '../shared/index.ts'
 import { fileErrorMessage, probeFile, qualityFor } from '../shared/inspect.ts'
 import { checkPath } from '../shared/paths.ts'
@@ -42,6 +47,7 @@ import { nodeFs, type TransferMethod, transfer, transferMessage } from '../share
 import type { ShowsDeps } from './context.ts'
 import type { ShowFiles } from './files.ts'
 import type { ShowSettings } from './settings.ts'
+import type { ShowWanted } from './wanted.ts'
 
 const { mediaItems, showDetails, versions } = schema
 
@@ -65,8 +71,19 @@ export type EpisodeImportResult =
   | {
       status: 'imported'
       transfer: TransferMethod
-      /** The files filed, each with the episode items it holds. */
-      files: { fileId: string; path: string; episodes: string[] }[]
+      /**
+       * The files filed, each with the episode items it holds, its quality and size, and the
+       * quality of the file it replaced, for an upgrade.
+       */
+      files: {
+        fileId: string
+        path: string
+        episodes: string[]
+        episodeIds: string[]
+        quality: string
+        size: number
+        upgradedFrom: string | null
+      }[]
       /** Videos left where they are, with why. */
       left: { path: string; why: string }[]
     }
@@ -77,10 +94,10 @@ const code = (e: ItemRow) =>
 
 export function createEpisodeImport(
   ctx: ShowsDeps,
-  deps: { media: Media; files: ShowFiles; settings: ShowSettings },
+  deps: { media: Media; files: ShowFiles; settings: ShowSettings; wanted: ShowWanted },
 ) {
-  const { db, events } = ctx
-  const { media, files, settings } = deps
+  const { db, events, clock } = ctx
+  const { media, files, settings, wanted } = deps
   const log = ctx.logger.child('episode-import')
   const options = ctx.files ?? {}
   const fs = options.fs ?? nodeFs
@@ -164,7 +181,17 @@ export function createEpisodeImport(
     input: EpisodeImportInput,
     lone: boolean,
   ): Promise<
-    | { ok: true; fileId: string; path: string; episodes: string[]; transfer: TransferMethod }
+    | {
+        ok: true
+        fileId: string
+        path: string
+        episodes: string[]
+        episodeIds: string[]
+        quality: string
+        size: number
+        upgradedFrom: string | null
+        transfer: TransferMethod
+      }
     | { ok: false; why: string; failed?: boolean }
   > {
     const early = skipBeforeProbe(found.path, root)
@@ -185,8 +212,8 @@ export function createEpisodeImport(
       .join(', ')
     if (episodes.some((e) => !e)) return { ok: false, why: `TMDB doesn’t list ${tag}.` }
     const held = episodes as ItemRow[]
-    const wanted = new Set(input.episodeIds)
-    const other = held.filter((e) => !wanted.has(e.id))
+    const grabbedFor = new Set(input.episodeIds)
+    const other = held.filter((e) => !grabbedFor.has(e.id))
     if (other.length)
       return {
         ok: false,
@@ -205,35 +232,15 @@ export function createEpisodeImport(
     const release = parse(own)
     const quality = qualityFor(release, probed.info, input.quality ?? null) as QualityName
 
-    // decide: the show's profile must allow its quality (an episode with a file isn't wanted, so
-    // there's no upgrade to weigh: Phase 5 C1 leaves upgrades for later)
+    // decide: the show's profile must allow its quality, and an episode with a file is replaced
+    // only by an upgrade over that file (one decision per file it would replace)
     const version = db
       .select()
       .from(versions)
       .where(eq(versions.itemId, held[0]?.id ?? ''))
       .get()
     const profile = media.profiles.get(version?.qualityProfileId ?? show.qualityProfileId)
-    const decision = decide(
-      {
-        release: { ...release, quality: parsedQuality(quality, release) },
-        size: found.size,
-        movie: { title: show.title, year: show.year, runtimeMinutes: null, originalLanguage: null },
-        profile,
-        formats: media.customFormats(),
-        sizes: settings.sizes(),
-        existing: null,
-      },
-      { specifications: input.grabbedAnyway ? FORCED_IMPORT_SPECS : IMPORT_SPECS },
-    )
-    if (!decision.approved)
-      return {
-        ok: false,
-        why:
-          decision.reasons.find((r) => r.kind === 'rejected')?.message ??
-          'The profile doesn’t want it.',
-      }
-
-    // name and transfer
+    // the name first: a file already at it from this same release is this import done before
     const allowed = roots()
     let dest: string
     try {
@@ -245,10 +252,62 @@ export function createEpisodeImport(
     } catch (e) {
       return { ok: false, why: fileErrorMessage(e), failed: true }
     }
+    const existingByEpisode = wanted.existingFiles(show)
+    const replacing = replaced(held, found.path).filter(
+      (r) => !(r.path === dest && r.sceneName === input.releaseTitle),
+    )
+    const weighed = [
+      ...new Map(
+        replacing
+          .map((r) => existingByEpisode.get(r.itemId))
+          .filter((x): x is ExistingFile => !!x)
+          .map((x) => [
+            `${x.quality}|${x.formatScore}|${x.revision.version}|${x.revision.real}`,
+            x,
+          ]),
+      ).values(),
+    ]
+    const decisions = (weighed.length ? weighed : [null]).map((existing) =>
+      decide(
+        {
+          release: { ...release, quality: parsedQuality(quality, release) },
+          size: found.size,
+          movie: {
+            title: show.title,
+            year: show.year,
+            runtimeMinutes: null,
+            originalLanguage: null,
+          },
+          profile,
+          formats: media.customFormats(),
+          sizes: settings.sizes(),
+          existing,
+        },
+        { specifications: input.grabbedAnyway ? FORCED_IMPORT_SPECS : IMPORT_SPECS },
+      ),
+    )
+    const decision = {
+      ...(decisions[0] as (typeof decisions)[number]),
+      approved: decisions.every((d) => d.approved),
+      reasons: decisions.flatMap((d) => d.reasons),
+    }
+    if (!decision.approved)
+      return {
+        ok: false,
+        why:
+          decision.reasons.find((r) => r.kind === 'rejected')?.message ??
+          'The profile doesn’t want it.',
+      }
+
+    // transfer
     const management = media.mediaManagement.get()
     let method: TransferMethod
     let message: string
     try {
+      // an old file with the new one's name goes first, as a film's does
+      const same = replacing.find((r) => r.path === dest)
+      if (same && !(await sameFile(same.path, found.path)))
+        await recycle(same.path, management.recycleBin, clock.now(), fs)
       const moved = await transfer(found.path, dest, management.hardlinks ? 'hardlink' : 'copy', fs)
       method = moved.method
       message = transferMessage(moved)
@@ -278,9 +337,29 @@ export function createEpisodeImport(
       quality,
       releaseGroup: release.releaseGroup,
       sceneName: input.releaseTitle,
-      take: false,
+      // the decision above approved replacing each file these episodes had
+      take: replacing.length > 0,
     })
     if ('conflict' in done) return { ok: false, why: done.conflict }
+    // an old file no episode holds any more goes to the recycle bin; one still holding another
+    // episode (a multi-episode file partly replaced) stays
+    for (const old of new Map(replacing.map((r) => [r.fileId, r])).values()) {
+      if (old.path === dest) continue
+      const still = db
+        .select({ id: schema.mediaFiles.id })
+        .from(schema.mediaFiles)
+        .where(eq(schema.mediaFiles.id, old.fileId))
+        .get()
+      if (still) continue
+      await recycle(old.path, management.recycleBin, clock.now(), fs).catch((e) =>
+        log.warn('couldn’t recycle the replaced file', {
+          path: old.path,
+          error: (e as Error).message,
+        }),
+      )
+    }
+    wanted.refreshCutoff(show.id)
+    const upgradedFrom = replacing[0]?.quality ?? null
     db.update(schema.mediaFiles)
       .set({ transfer: method })
       .where(eq(schema.mediaFiles.id, done.fileId))
@@ -291,6 +370,7 @@ export function createEpisodeImport(
       downloadId: input.downloadId ?? null,
       transfer: method,
       sourceFolder,
+      upgradedFrom,
     })
     log.info('imported an episode file', {
       tmdbId: show.tmdbId,
@@ -303,8 +383,40 @@ export function createEpisodeImport(
       fileId: done.fileId,
       path: dest,
       episodes: tag.split(', '),
+      episodeIds: held.map((e) => e.id),
+      quality,
+      size: stats.size,
+      upgradedFrom,
       transfer: method,
     }
+  }
+
+  /** The files a video for these episodes would replace: each episode's file, but its own path. */
+  function replaced(episodes: readonly ItemRow[], path: string) {
+    if (!episodes.length) return []
+    return db
+      .select({
+        itemId: versions.itemId,
+        fileId: schema.mediaFiles.id,
+        path: schema.mediaFiles.path,
+        quality: schema.mediaFiles.quality,
+        sceneName: schema.mediaFiles.sceneName,
+      })
+      .from(versions)
+      .innerJoin(schema.mediaFiles, eq(schema.mediaFiles.id, versions.fileId))
+      .where(
+        inArray(
+          versions.itemId,
+          episodes.map((e) => e.id),
+        ),
+      )
+      .all()
+      .filter((r) => r.path !== path)
+  }
+
+  async function sameFile(a: string, b: string) {
+    const [x, y] = await Promise.all([fsp.stat(a).catch(() => null), fsp.stat(b).catch(() => null)])
+    return !!x && !!y && x.dev === y.dev && x.ino === y.ino
   }
 
   async function importDownload(input: EpisodeImportInput): Promise<EpisodeImportResult> {
@@ -356,7 +468,7 @@ export function createEpisodeImport(
       ...found.map((file) => ({ file, root })),
       ...extracted.map((file) => ({ file, root: unpacked as string })),
     ].filter((v) => isVideo(v.file.path))
-    const filed: { fileId: string; path: string; episodes: string[] }[] = []
+    const filed: Extract<EpisodeImportResult, { status: 'imported' }>['files'] = []
     const left: { path: string; why: string }[] = []
     let method: TransferMethod | null = null
     let failure: string | null = null
@@ -370,7 +482,8 @@ export function createEpisodeImport(
         videos.length === 1,
       )
       if (r.ok) {
-        filed.push({ fileId: r.fileId, path: r.path, episodes: r.episodes })
+        const { ok: _ok, transfer: _transfer, ...file } = r
+        filed.push(file)
         method ??= r.transfer
       } else {
         left.push({ path: v.file.path, why: r.why })

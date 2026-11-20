@@ -214,10 +214,10 @@ export type BlocklistEntry = {
   date: string
 }
 
-export type GrabBestOptions = {
+export type GrabBestOptions<R = ReleaseView> = {
   /** When a release must wait until, or null when it may go now. */
-  hold?: (release: ReleaseView) => number | null
-  onHold?: (until: number, release: ReleaseView) => void
+  hold?: (release: R) => number | null
+  onHold?: (until: number, release: R) => void
 }
 
 /** What downloads records in an item's history; the runtime writes it with the media package. */
@@ -712,11 +712,17 @@ export function createDownloads(deps: DownloadsDeps) {
    * What an automatic search of a show's season or episode grabs (Phase 5 C1): a new search, then
    * `chooseReleases` over the wanted episodes not already on their way, leaving out releases tried
    * or blocklisted. Each chosen release is grabbed; one that fails to grab is passed over.
+   *
+   * RSS and the sweep (HT-109): with `cached`, the scope's kept releases are used while they're
+   * fresh (RSS keeps what it judged), and a new search only when there are none. With `hold`, a
+   * chosen release still inside its profile's wait isn't grabbed and `onHold` hears when to look
+   * again, as a film's is (8c's Wait before grabbing).
    */
   async function grabBestEpisodes(
     showItemId: string,
     scope: EpisodeScope,
     wanted: readonly string[],
+    options: GrabBestOptions<EpisodeReleaseView> & { cached?: boolean } = {},
   ): Promise<QueueItem[]> {
     if (!deps.searchEpisodes || !deps.show?.(showItemId)) return []
     const busy = activeEpisodes(showItemId)
@@ -730,14 +736,23 @@ export function createDownloads(deps: DownloadsDeps) {
         .all()
         .map((d) => `${d.indexerId}|${d.guid}`),
     )
-    const releases = (await deps.searchEpisodes(showItemId, scope)).filter(
-      (r) =>
-        !tried.has(`${r.indexerId}|${r.guid}`) &&
-        !isBlocked(showItemId, r) &&
-        r.episodeIds.every((id) => !busy.has(id)),
-    )
+    const usable = (r: EpisodeReleaseView) =>
+      !tried.has(`${r.indexerId}|${r.guid}`) &&
+      !isBlocked(showItemId, r) &&
+      r.episodeIds.every((id) => !busy.has(id))
+    const show = deps.show(showItemId)
+    let releases =
+      options.cached && show ? deps.indexers.episodeReleases(show.tmdbId, scope).filter(usable) : []
+    if (!releases.some((r) => r.approved))
+      releases = (await deps.searchEpisodes(showItemId, scope)).filter(usable)
     const out: QueueItem[] = []
     for (const r of chooseReleases(releases, left)) {
+      const until = options.hold ? options.hold(r) : null
+      if (until) {
+        logger.info('holding a show’s release back', { release: r.title, until })
+        options.onHold?.(until, r)
+        continue
+      }
       try {
         out.push(
           await grabEpisodes({ itemId: showItemId, scope, indexerId: r.indexerId, guid: r.guid }),

@@ -331,6 +331,14 @@ The order is films, then shows, then music: films are already built and only nee
   - **The admin:** **Releases** beside each season's and episode's Search opens the interactive release list (the film's Search tab's table, now shared, each release named with its episodes); Activity's queue, history and blocklist, Downloads and the dashboard name the show and episodes and link to the show.
   - **Left for the next task:** RSS and the backlog sweep for episodes, Wanted, the calendar and its feed, episode notifications, the TV and anime indexers (F2), the Sonarr importer, and upgrades of an episode that has a file.
 
+- **2026-11-19, C1's second task, shows run by themselves (HT-109):** built and waiting for the owner's review (ADR 0045's section of that day).
+  - **RSS:** one read of each feed for films and shows, the TV categories included; a release for a monitored show's wanted episode is judged against its season and the season's best grabbed, a pack where it's better; an episode airing by tomorrow counts.
+  - **The backlog sweep:** every 6 hours, up to 10 shows due, 20 indexer searches between them, each show pushed back 1, 3, 7, then 14 days; delay profiles hold RSS's and the sweep's grabs (`shows.held`).
+  - **Upgrades:** an episode under its cutoff is searched for; a release must upgrade every file it would replace, so a pack beats singles only when it's better than all of them; the replaced file goes to the recycle bin.
+  - **Wanted, the calendar and the feed:** Missing and Cutoff unmet list episodes beside films with the kind filter, and the calendar and its iCal feed show episodes on their air dates, as stage 6 drew them.
+  - **Notifications:** Episode grabbed, Episode imported and Episode upgraded, one message per download; Settings › Connections groups the events by Movies and Shows.
+  - **Left for the next task:** the TV and anime indexers, the Sonarr importer, daily and absolute numbering.
+
 ## Running highsea on the NAS (A1)
 
 - **2026-11-19, A1, fanart.tv as a second artwork source, and the refetch after an update (HT-74):** what 0.4.5's findings left open, and the owner's choice of fanart.tv as TMDB's fallback (2026-11-18).
@@ -468,7 +476,7 @@ No longer waiting: on 2026-11-19 the owner signed off part B (released as 0.4.9)
   - **0066, client error reports** (A2): what the clients send, only to their own server, and where the owner sees it.
   - **0067, intro and credits markers** (C2): chapters, then chromaprint across a season, and the owner's corrections.
   - **0068, profiles** (A2b): profiles under an account, watch state per profile, the profile watching now kept per device on the session, PINs hashed and rested.
-- **Dated sections:** 0012 (shows and music in the item model, B and D), 0036 (the `shows` and `music` subpaths), 0039 (reading NFOs, A1; episodes and tracks imported, B and D; a show's download imported, C1, HT-103), 0064 (searching, judging and grabbing episodes, C1, HT-103), 0041 (the Sonarr importer, C1), 0045 (automation for episodes, C1), 0023 (the profile on a session and device token, A2b), 0027 (Home per profile, A2b), 0047 (client reports beside crash reports, A2), 0049 (watch rules per profile, A2b), 0050 (releases at each part, A1; TestFlight uploads, A2), 0051 and 0052 (audio, D), 0054 (per profile, A2b; episodes, B), 0057 (the package's read-only media, A1; the shared folder from a list, asked again on an update, and nothing assumed inside it, HT-31), 0063 (the package's read-only mount removed, HT-31), 0059 (TestFlight, A2) and 0061 (the drafts served, A2b, B and D).
+- **Dated sections:** 0012 (shows and music in the item model, B and D), 0036 (the `shows` and `music` subpaths), 0039 (reading NFOs, A1; episodes and tracks imported, B and D; a show's download imported, C1, HT-103), 0064 (searching, judging and grabbing episodes, C1, HT-103), 0041 (the Sonarr importer, C1), 0045 (automation for episodes, C1, HT-109), 0023 (the profile on a session and device token, A2b), 0027 (Home per profile, A2b), 0047 (client reports beside crash reports, A2), 0049 (watch rules per profile, A2b), 0050 (releases at each part, A1; TestFlight uploads, A2), 0051 and 0052 (audio, D), 0054 (per profile, A2b; episodes, B), 0057 (the package's read-only media, A1; the shared folder from a list, asked again on an update, and nothing assumed inside it, HT-31), 0063 (the package's read-only mount removed, HT-31), 0059 (TestFlight, A2) and 0061 (the drafts served, A2b, B and D).
 
 ## Risks
 

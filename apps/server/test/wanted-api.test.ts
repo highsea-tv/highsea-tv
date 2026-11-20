@@ -2,11 +2,12 @@
 // Checkpoint 8a's routes through the SDK: Wanted's lists and searches, the calendar and its iCal
 // feed (checked against RFC 5545's grammar for the properties it uses), the calendar key refused
 // everywhere but the feed, System › Tasks, import lists against the fakes of Trakt and the generic
-// format, and a delete that excludes the movie from lists.
+// format, and a delete that excludes the movie from lists. Episodes (HT-109): Chernobyl's on their
+// air dates, in the calendar beside the films and in the feed, and in Wanted's Missing.
 import { afterEach, describe, expect, test } from 'bun:test'
 import { mkdirSync } from 'node:fs'
 import { join } from 'node:path'
-import type { Fetch } from '@highsea-tv/core'
+import { createFakeClock, type Fetch } from '@highsea-tv/core'
 import { createFakeIndexer, FAKE_CREDENTIALS, FAKE_ORIGIN } from '@highsea-tv/indexers/fake'
 import {
   createFakeLists,
@@ -34,7 +35,7 @@ const CAT_IN_THE_HAT = 1117898
 const BIG_BUCK_BUNNY = 10378
 const GENERIC_URL = 'https://lists.example/blender.json'
 
-async function started() {
+async function started({ clock }: { clock?: ReturnType<typeof createFakeClock> } = {}) {
   const indexer = createFakeIndexer()
   const replay = createReplayFetch()
   const fetch: Fetch = (input, init) =>
@@ -45,6 +46,7 @@ async function started() {
   lists.generic.set(GENERIC_URL, { body: GENERIC_LIST })
   const runtime = await bootRuntime({
     fetch,
+    clock,
     lists: {
       fetch: lists.fetch,
       traktClientId: FAKE_TRAKT_CLIENT_ID,
@@ -100,7 +102,10 @@ describe('Wanted', () => {
         settings: { baseUrl: `${FAKE_ORIGIN}/torznab`, apiKey: FAKE_CREDENTIALS.torznabKey },
       },
     })
-    expect(await api.wanted.search({ body: { all: 'missing' } })).toEqual({ queued: 1 })
+    expect(await api.wanted.search({ body: { all: 'missing' } })).toEqual({
+      queued: 1,
+      episodes: 0,
+    })
     expect(runtime.jobs.list({ type: 'movies.search' })).toHaveLength(1)
     expect(await api.wanted.search({ body: { ids: [SINTEL] } })).toEqual({ queued: 1 })
     expect(await failure(memberApi.wanted.missing())).toMatchObject({ code: 'forbidden' })
@@ -110,7 +115,7 @@ describe('Wanted', () => {
     const { api, add } = await started()
     await add(CAT_IN_THE_HAT)
     const entries = await api.wanted.calendar({ query: { from: '2026-10-01', to: '2026-12-31' } })
-    expect(entries.map((e) => [e.date, e.kind, e.movie.id])).toEqual([
+    expect(entries.map((e) => [e.date, e.kind, 'movie' in e ? e.movie.id : null])).toEqual([
       ['2026-11-06', 'cinema', CAT_IN_THE_HAT],
     ])
     expect(
@@ -119,6 +124,69 @@ describe('Wanted', () => {
     expect(
       await failure(api.wanted.calendar({ query: { from: '2026-10-02', to: '2026-10-01' } })),
     ).toMatchObject({ code: 'invalid' })
+  })
+})
+
+describe('episodes (HT-109)', () => {
+  test('on their air dates in the calendar and the feed, and in Missing once aired', async () => {
+    // a week after Chernobyl's third episode aired (2019-05-20)
+    const clock = createFakeClock(Date.UTC(2019, 4, 27, 12))
+    const { api, app, runtime, add } = await started({ clock })
+    await add(CAT_IN_THE_HAT)
+    const root = join(runtime.config.dataDir, 'shows')
+    mkdirSync(root, { recursive: true })
+    runtime.media.rootFolders.add({ path: root, kind: 'shows' })
+    await api.series.add({
+      body: {
+        tmdbId: 87108,
+        qualityProfileId: 'qp-hd',
+        rootFolder: root,
+        monitor: 'all',
+        seasonFolders: true,
+        search: false,
+      },
+    })
+    const may = await api.wanted.calendar({ query: { from: '2019-05-01', to: '2019-06-30' } })
+    const episodes = may.flatMap((e) => (e.kind === 'episode' ? [e] : []))
+    expect(episodes.map((e) => [e.date, e.episode.episode.number])).toEqual([
+      ['2019-05-06', 1],
+      ['2019-05-13', 2],
+      ['2019-05-20', 3],
+      ['2019-05-27', 4],
+      ['2019-06-03', 5],
+    ])
+    expect(episodes[0]?.episode).toMatchObject({
+      show: { id: '87108', title: 'Chernobyl', year: 2019 },
+      episode: { season: 1, number: 1, status: 'missing', quality: null },
+    })
+    // aired by today and monitored: Missing has them, newest first; the fifth hasn't aired
+    const missing = await api.wanted.missingEpisodes({ query: {} })
+    expect(missing.items.map((i) => i.episode.number)).toEqual([4, 3, 2, 1])
+    expect(episodes.at(-1)?.episode.episode.status).toBe('unaired')
+    // a page at a time
+    const two = await api.wanted.missingEpisodes({ query: { limit: 2 } })
+    expect(two).toMatchObject({ total: 4, next: '2' })
+    const rest = await api.wanted.missingEpisodes({ query: { limit: 2, cursor: two.next ?? '' } })
+    expect(rest.items.map((i) => i.episode.number)).toEqual([2, 1])
+
+    // the feed: each episode its own event, by the show and its numbers
+    const made = await api.wanted.makeFeedKey()
+    const url = new URL(made.url ?? '')
+    const body = await (await app.request(`${ORIGIN}${url.pathname}${url.search}`)).text()
+    const lines = body
+      .replace(/\r\n[ \t]/g, '')
+      .slice(0, -2)
+      .split('\r\n')
+    const server = runtime.server().id
+    expect(lines).toContain(`UID:show-87108-s1e1@${server}`)
+    expect(lines).toContain('DTSTART;VALUE=DATE:20190506')
+    expect(lines).toContain('SUMMARY:Chernobyl · S01E01')
+    expect(lines.filter((l) => l.startsWith('UID:show-87108-'))).toHaveLength(5)
+    expect(lines.some((l) => l.startsWith('X-WR-CALNAME:') && l.includes('movies and shows'))).toBe(
+      true,
+    )
+    for (const line of body.slice(0, -2).split('\r\n'))
+      expect(new TextEncoder().encode(line).length).toBeLessThanOrEqual(75)
   })
 })
 

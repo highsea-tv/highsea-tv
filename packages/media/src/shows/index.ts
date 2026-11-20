@@ -27,7 +27,7 @@ import { eq } from 'drizzle-orm'
 import { z } from 'zod'
 import { SCAN_EVERY_MS } from '../movies/scan.ts'
 import type { Media } from '../shared/index.ts'
-import { createShowAdmin } from './admin.ts'
+import { createShowAdmin, showIdOf } from './admin.ts'
 import { createShowClient } from './client.ts'
 import type { ShowsDeps } from './context.ts'
 import { createShowFiles } from './files.ts'
@@ -39,6 +39,10 @@ import { createShowPlayback } from './playback.ts'
 import { createShowScan, SHOW_SCAN_JOB } from './scan.ts'
 import { createShowSearch } from './search.ts'
 import { createShowSettings } from './settings.ts'
+import { createShowWanted, SHOW_SWEEP_SIZE } from './wanted.ts'
+
+/** Weighs every episode's file against its cutoff once at boot (HT-109). */
+export const SHOW_WANTED_BACKFILL_JOB = 'shows.wanted-backfill'
 
 export function createShows(deps: ShowsDeps, media: Media) {
   const library = createShowLibrary(deps, media)
@@ -50,8 +54,9 @@ export function createShows(deps: ShowsDeps, media: Media) {
   const playback = createShowPlayback(deps, { client })
   const admin = createShowAdmin(deps, { media, get: library.get, markers })
   const settings = createShowSettings(deps)
-  const episodeImport = createEpisodeImport(deps, { media, files, settings })
-  const search = createShowSearch(deps, { media, settings })
+  const wanted = createShowWanted(deps, { media })
+  const episodeImport = createEpisodeImport(deps, { media, files, settings, wanted })
+  const search = createShowSearch(deps, { media, settings, wanted })
   deps.jobs.define({
     type: SHOW_SCAN_JOB,
     payload: z.object({ folder: z.string().optional() }),
@@ -60,6 +65,18 @@ export function createShows(deps: ShowsDeps, media: Media) {
     timeoutMs: 12 * 60 * 60 * 1000,
     async run({ folder }) {
       await libraryScan.scan({ folder })
+      // what the scan filed may be under its cutoff (HT-109)
+      wanted.backfill()
+    },
+  })
+  /** Each episode's cutoff, once at boot: the shows filed before HT-109 never had it weighed. */
+  deps.jobs.define({
+    type: SHOW_WANTED_BACKFILL_JOB,
+    payload: z.object({}),
+    attempts: 2,
+    timeoutMs: 60 * 60_000,
+    async run() {
+      wanted.backfill()
     },
   })
   /** Asks for a scan of a show's folder, or of every Shows root folder; one waits per folder. */
@@ -94,7 +111,18 @@ export function createShows(deps: ShowsDeps, media: Media) {
     /** An episode's side of playback, the films' interface by the episode's TMDB id. */
     playback,
     /** The admin's series (ADR 0064: a show's id is its TMDB id as a string). */
-    admin,
+    admin: {
+      ...admin,
+      /** A show's Edit; a new profile weighs its episodes' cutoff again (HT-109). */
+      update: (id: string, patch: Parameters<typeof admin.update>[1]) => {
+        const out = admin.update(id, patch)
+        if (patch.qualityProfileId !== undefined) {
+          const row = library.internal.showRow(showIdOf(id))
+          if (row) wanted.refreshCutoff(row.id)
+        }
+        return out
+      },
+    },
     settings,
     refresh: library.refresh,
     sync: library.sync,
@@ -109,6 +137,23 @@ export function createShows(deps: ShowsDeps, media: Media) {
     },
     /** What a show's release search is judged by, and what a Search looks for (Phase 5 C1). */
     search: { input: search.input, plan: search.plan },
+    /**
+     * Shows' Wanted (HT-109): Missing and Cutoff unmet's episodes, the calendar's, the sweep's
+     * shows and RSS's, and each episode's cutoff kept on its row.
+     */
+    wanted: {
+      missing: wanted.missing,
+      cutoff: wanted.cutoff,
+      all: wanted.all,
+      calendar: wanted.calendar,
+      takeDue: wanted.takeDue,
+      reschedule: wanted.reschedule,
+      found: wanted.found,
+      rssTargets: wanted.rssTargets,
+      refreshCutoff: wanted.refreshCutoff,
+      backfill: wanted.backfill,
+      sweepSize: SHOW_SWEEP_SIZE,
+    },
     /** A show's finished download into its episodes (Phase 5 C1). */
     importDownload: episodeImport.importDownload,
     /** What couldn't be placed, under one root folder or every one, with each reason. */
@@ -150,6 +195,11 @@ export function createShows(deps: ShowsDeps, media: Media) {
       /** The 12-hourly scan of the Shows root folders. The runtime calls this once at boot. */
       schedule: (now: number) => {
         deps.jobs.schedule(SHOW_SCAN_JOB, SCAN_EVERY_MS, { firstRunAt: now + 15 * 60_000 })
+        deps.jobs.enqueue(
+          SHOW_WANTED_BACKFILL_JOB,
+          {},
+          { runAt: now + 60_000, dedupeKey: 'shows-wanted-backfill' },
+        )
       },
     },
     /** Stops following `metadata.updated`, for shutdown and tests. */
@@ -194,3 +244,4 @@ export type { ShowPlayback } from './playback.ts'
 export { SHOW_SCAN_JOB, type ShowScanResult } from './scan.ts'
 export type { ShowScope } from './search.ts'
 export { defaultEpisodeNaming, type ShowSettings } from './settings.ts'
+export { SHOW_SWEEP_SIZE, type ShowRssTarget, type ShowWanted } from './wanted.ts'

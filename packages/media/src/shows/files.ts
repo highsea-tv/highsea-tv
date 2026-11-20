@@ -523,6 +523,8 @@ export function createShowFiles(ctx: ShowsDeps, deps: { media: Media }) {
       transfer: string
       /** The release's folder, for the files that came with the video; null for a lone file. */
       sourceFolder: string | null
+      /** The quality of the file it replaced, for an upgrade (HT-109). */
+      upgradedFrom?: string | null
     },
   ) {
     const key = `${found.path}|${found.size}`
@@ -537,7 +539,14 @@ export function createShowFiles(ctx: ShowsDeps, deps: { media: Media }) {
         downloadId: download?.downloadId ?? null,
         // in place: the notifications leave it out, as they do a film the scan found
         data: download
-          ? { key, fileId, path: found.path, size: found.size, transfer: download.transfer }
+          ? {
+              key,
+              fileId,
+              path: found.path,
+              size: found.size,
+              transfer: download.transfer,
+              ...(download.upgradedFrom ? { upgradedFrom: download.upgradedFrom } : {}),
+            }
           : { key, fileId, path: found.path, size: found.size, inPlace: true },
       })
     try {

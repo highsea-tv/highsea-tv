@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // A show's search (Phase 5 C1): releases matched to the show and its episodes, the season-pack rule,
-// what an automatic search takes, and the cache a grab reads.
+// what an automatic search takes, and the cache a grab reads. Upgrades (HT-109): a pack against
+// single episodes when files are in, approved only when it upgrades every file it would replace.
 import { describe, expect, test } from 'bun:test'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { parseEpisode } from '@highsea-tv/parser'
-import { defaultEpisodeSizes, seedFormats } from '@highsea-tv/quality'
+import { defaultEpisodeSizes, type ExistingFile, seedFormats } from '@highsea-tv/quality'
 import {
   chooseReleases,
   type EpisodeFacts,
@@ -234,6 +235,42 @@ describe('searching the indexers for a show', () => {
     expect(
       chooseReleases(result.releases, ['ep2', 'ep3', 'ep4', 'ep5']).map((r) => r.title),
     ).toEqual(['Chernobyl.S01E02E03.1080p.WEB-DL.DDP5.1.H.264-GRP'])
+  })
+
+  test('an upgrade: the pack over WEB files, taken whole; one Bluray file already in turns it down', async () => {
+    const t = await withTorznab()
+    const web: ExistingFile = {
+      quality: 'WEBDL-1080p',
+      revision: { version: 1, real: 0, proper: false, repack: false },
+      formatScore: 0,
+    }
+    const bluray: ExistingFile = { ...web, quality: 'Bluray-1080p' }
+    // every episode in as WEBDL-1080p, under HD 1080p's Bluray-1080p cutoff
+    const allWeb = await t.indexers.searchEpisodes(
+      input(
+        { season: 1 },
+        chernobyl(() => ({ hasFile: true, existing: web })),
+      ),
+    )
+    const pack = allWeb.releases.find((r) => r.pack)
+    expect(pack?.approved).toBe(true)
+    // the singles are the same quality as the files: no upgrade
+    expect(allWeb.releases.filter((r) => !r.pack).every((r) => !r.approved)).toBe(true)
+    expect(
+      chooseReleases(allWeb.releases, ['ep1', 'ep2', 'ep3', 'ep4', 'ep5']).map((r) => r.title),
+    ).toEqual(['Chernobyl.S01.1080p.BluRay.x264-GRP'])
+
+    // S01E01 already Bluray: the pack doesn't upgrade that file, so it's turned down as a whole
+    const oneBluray = await t.indexers.searchEpisodes(
+      input(
+        { season: 1 },
+        chernobyl((e) => ({ hasFile: true, existing: e.episode === 1 ? bluray : web })),
+      ),
+    )
+    const turned = oneBluray.releases.find((r) => r.pack)
+    expect(turned?.approved).toBe(false)
+    expect(turned?.reasons.some((r) => r.kind === 'rejected')).toBe(true)
+    expect(chooseReleases(oneBluray.releases, ['ep2', 'ep3', 'ep4', 'ep5'])).toEqual([])
   })
 
   test('an episode, the blocklist per release, and a grab from the cache', async () => {

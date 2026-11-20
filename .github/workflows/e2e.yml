@@ -3,44 +3,43 @@
 # image beside the fixtures service on a network with no way out (scripts/e2e/compose.yaml), driven by
 # Playwright through setup, a one-click indexer, adding and grabbing Sintel, Activity, the import,
 # the synced subtitle, a theme and a layout across sessions, and an announcement for Admins.
-# In the heavy tier (on a pull request, when it touches the server), amd64 only; arm64 boots healthy
-# in ci.yml.
+# In the heavy tier (on a pull request into next, when it touches the image or the run's own
+# stack), amd64 only; arm64 boots healthy in ci.yml.
 name: End to end
 
 # The heavy tier (ADR 0062, next-branch.md › CI by branch): it runs on a push to next, a pull
-# request into main, a pull request with the `full-ci` label, and a release (release.yml calls it; a called
-# workflow's `github` context is its caller's, whose event is workflow_dispatch). The pull request trigger has no
-# branch filter, so a pull request into next with the label gets here, and `labeled` joins the
-# default types so adding the label starts it
+# request into main, a pull request with the `full-ci` label, and a release (release.yml calls it;
+# a called workflow's `github` context is its caller's, whose event is workflow_dispatch). A push to main runs only
+# ci.yml's fast tier (the owner's answer 3). A push to next runs it whatever it changed
+# (2026-11-17): the next → main pull request reuses next's result only for its exact commit, so
+# next needs one for every commit it may stand at.
+#
+# A pull request into next runs it without the label only when it touches what the image and
+# this run are built from (the `changes` job below has the list, since 2026-11-19, HT-111).
+# Since HT-97 that
+# included the catalog and the fixtures, after #95 broke the fixtures' catalog unseen; before
+# HT-111 any change to the server or the packages started the workflow. A break that a change
+# elsewhere (the packages, the server, the client's screens) brings here is found on next after
+# the merge, by the owner's choice (next-branch.md's 2026-11-19 section); `full-ci` runs it before.
+#
+# So the pull request trigger has no paths. A path filter is matched against the pull request's
+# changed files for every activity type, `labeled` included, so with a narrow list adding
+# `full-ci` to a pull request outside it would start nothing
+# (https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#onpushpull_requestpull_request_targetpathspaths-ignore).
+# It has no branch filter either, so a pull request into next with the label gets here, and
+# `labeled` joins the default types so adding the label starts it
 # (https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#pull_request).
-# A push to main runs only ci.yml's fast tier (the owner's answer 3). A push to next runs it whatever
-# it changed (2026-11-17): the next → main pull request reuses next's result only for its exact
-# commit, so next needs one for every commit it may stand at; a pull request keeps the paths that
-# could reach it. The job's `if:` holds the rest:
-# a pull request into another branch without the label skips them, and a job its `if:` skips
-# reports success rather than leaving a check pending
+# The jobs' `if:` holds the rest: a pull request into another branch without the label skips
+# them, and a job its `if:` skips reports success rather than leaving a check pending
 # (https://docs.github.com/en/pull-requests/how-tos/merge-and-close-pull-requests/troubleshooting-required-status-checks#handling-skipped-but-required-checks).
-# `github.base_ref` is the base branch, and `contains()` looks for the label among
-# `github.event.pull_request.labels`' names
-# (https://docs.github.com/en/actions/reference/workflows-and-actions/expressions#contains).
+# None of them is a required check (the rulesets require ci.yml's jobs only). `github.base_ref` is
+# the base branch, and `contains()` looks for the label among `github.event.pull_request.labels`'
+# names (https://docs.github.com/en/actions/reference/workflows-and-actions/expressions#contains).
 on:
   push:
     branches: [next]
   pull_request:
     types: [opened, synchronize, reopened, labeled]
-    paths:
-      - 'apps/server/**'
-      - 'packages/**'
-      - 'catalog/**'
-      - 'docker/**'
-      - 'Dockerfile'
-      - '.dockerignore'
-      - 'scripts/e2e/**'
-      - 'scripts/image.ts'
-      - 'package.json'
-      - 'bun.lock'
-      - '.nvmrc'
-      - '.github/workflows/e2e.yml'
   # the release runs it before building anything (release.yml)
   workflow_call:
 
@@ -57,51 +56,56 @@ permissions:
   contents: read
 
 jobs:
-  # Since 2026-11-19 (HT-97): a pull request into next that touches what the run's own stack is
-  # built from (the catalog and its build, the fixtures, the Dockerfile) runs it without the label,
-  # since only this workflow builds the fixtures' catalog and #95 broke it unseen. The files come
-  # from `git diff --name-only`, as ci.yml's `changes` lists them; a path filter can't be read in a
-  # job's `if:`. Anything else answers false and leaves the job's own condition to decide.
+  # What a pull request into next must touch to run End to end without `full-ci`: the image's
+  # build (the Dockerfile, its ignore list, docker/, scripts/image.ts, Node's version, the root
+  # manifest and the lockfile), the run itself (scripts/e2e/) and the fixtures' catalog
+  # (catalog/, packages/catalog/, HT-97), and this file.
+  # The files come from `git diff --name-only` between where the pull request branched and its
+  # head (ci.yml's `changes` lists them the same way); a path filter can't be read in a job's
+  # `if:`. Any other event, or another base branch, skips this job, and the heavy jobs' own
+  # condition decides.
   changes:
     if: github.event_name == 'pull_request' && github.base_ref == 'next'
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     outputs:
-      stack: ${{ steps.files.outputs.stack }}
+      run: ${{ steps.files.outputs.run }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           fetch-depth: 0
-      - name: Does it touch the run's own stack?
+      - name: Does it touch the image or the run's own stack?
         id: files
         env:
           BASE: ${{ github.event.pull_request.base.sha }}
           HEAD: ${{ github.event.pull_request.head.sha }}
         run: |
           set -euo pipefail
-          stack=false
+          run=false
           while IFS= read -r file; do
             case "$file" in
-              catalog/* | packages/catalog/* | scripts/e2e/* | Dockerfile | .dockerignore) stack=true ;;
+              Dockerfile | .dockerignore | .nvmrc | package.json | bun.lock | docker/* \
+                | scripts/e2e/* | scripts/image.ts | catalog/* | packages/catalog/* \
+                | .github/workflows/e2e.yml) run=true ;;
             esac
           done <<< "$(git diff --name-only --no-renames "$BASE...$HEAD")"
-          echo "stack=$stack" >> "$GITHUB_OUTPUT"
-          if [ "$stack" = true ]; then
-            echo "::notice::It touches the catalog, the fixtures or the Dockerfile, so the end-to-end run runs"
+          echo "run=$run" >> "$GITHUB_OUTPUT"
+          if [ "$run" = true ]; then
+            echo "::notice::It touches the image or the run's own stack, so the end-to-end run runs"
           fi
 
   e2e:
-    # the heavy tier's condition (the comment above `on:`), and a pull request into next that
-    # touches the run's own stack (`changes`). `changes` is skipped on every other event, and a job
-    # whose `needs` was skipped is skipped too unless its `if:` has a status check function, so
-    # `!cancelled()` keeps the rest running
+    # The heavy tier's condition (the comment above `on:`), and a pull request into next that
+    # touches what this workflow is about (`changes`). `changes` is skipped on every other event,
+    # and a job whose `needs` was skipped is skipped too unless its `if:` has a status check
+    # function, so `!cancelled()` keeps the rest running
     # (https://docs.github.com/en/actions/reference/workflows-and-actions/expressions#status-check-functions).
     needs: changes
     if: >-
       !cancelled() && (
         (github.event_name == 'pull_request'
           && (github.base_ref == 'main' || contains(github.event.pull_request.labels.*.name, 'full-ci')
-            || needs.changes.outputs.stack == 'true'))
+            || needs.changes.outputs.run == 'true'))
         || (github.event_name == 'push' && github.ref == 'refs/heads/next')
         || (github.event_name != 'pull_request' && github.event_name != 'push'))
     runs-on: ubuntu-24.04
