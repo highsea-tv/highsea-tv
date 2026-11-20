@@ -19,7 +19,13 @@
 // B1's review). Download, on the phone under Play and in the desktop app after the actions, is
 // ../../../downloads/button.tsx's (none in a browser or on the TV). Play goes to the player (B2).
 import type { ClientDetail } from '@highsea-tv/api-contract'
-import { useItem } from '@highsea-tv/client/data'
+import {
+  collectionsQuery,
+  picksQuery,
+  useItem,
+  useKnownTitle,
+  usePrefetch,
+} from '@highsea-tv/client/data'
 import { filmsMessages } from '@highsea-tv/client/films'
 import { peopleOf, playPath } from '@highsea-tv/client/library'
 import { useT } from '@highsea-tv/i18n/react'
@@ -56,7 +62,7 @@ import {
   type ViewHandle,
 } from '@highsea-tv/ui/tv'
 import { type Href, router, useLocalSearchParams } from 'expo-router'
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { View } from 'react-native'
 import { OverlayBack } from '../../../detail/back.tsx'
 import {
@@ -84,6 +90,7 @@ import { FilmSkeleton } from '../../../detail/skeletons.tsx'
 import { picksLine, TvTracks, useWatchWith, WatchWithFields } from '../../../detail/tracks.tsx'
 import { type Trailer, TrailerDialog, trailerOf } from '../../../detail/trailer.tsx'
 import { DownloadButton } from '../../../downloads/button.tsx'
+import { useDeviceClient } from '../../../host'
 import { ROW_KEEP } from '../../../keep.ts'
 import { Notice, SaidNote, useChromeOverlay, useHeadDown } from '../../../kit.tsx'
 
@@ -100,7 +107,16 @@ export default function Film() {
 function Load({ id }: { id: number }) {
   const input = useFormFactor().input
   const detail = useItem(id)
-  if (detail.status === 'loading') return <FilmSkeleton />
+  const known = useKnownTitle(id)
+  // what the page reads once the film is in (its picks, the collections its tile is found in),
+  // asked beside the film rather than after it (HT-116)
+  const ahead = usePrefetch()
+  const device = useDeviceClient()
+  useEffect(() => {
+    ahead.now(picksQuery(id))
+    ahead.now(collectionsQuery(device))
+  }, [ahead, id, device])
+  if (detail.status === 'loading') return <FilmSkeleton known={known} />
   if (detail.status === 'error') return <FilmMissing error={detail.error} />
   const props = { d: detail.data, refresh: detail.refresh }
   if (input === 'tv') return <TvFilm {...props} />

@@ -17,7 +17,12 @@
 // has no show-wide picks yet), Download for episodes and seasons (4.6), and the logo where the
 // title is (no server has logos yet, as on a film's page).
 import type { ClientEpisode, ClientShowDetail } from '@highsea-tv/api-contract'
-import { useEpisodeActions, useMarkShowWatched, useShow } from '@highsea-tv/client/data'
+import {
+  useEpisodeActions,
+  useKnownTitle,
+  useMarkShowWatched,
+  useShow,
+} from '@highsea-tv/client/data'
 import { episodeSource, seasonGroup } from '@highsea-tv/client/downloads'
 import { peopleOf } from '@highsea-tv/client/library'
 import { episodePlayPath, seasonOf } from '@highsea-tv/client/shows'
@@ -101,7 +106,8 @@ export function ShowScreen() {
 function Load({ id, episode }: { id: number; episode?: number }) {
   const input = useFormFactor().input
   const detail = useShow(id)
-  if (detail.status === 'loading') return <FilmSkeleton />
+  const known = useKnownTitle(id, 'show')
+  if (detail.status === 'loading') return <FilmSkeleton known={known} />
   if (detail.status === 'error') return <ShowMissing error={detail.error} />
   const props = { d: detail.data, refresh: detail.refresh, episode }
   if (input === 'tv') return <TvShow {...props} />

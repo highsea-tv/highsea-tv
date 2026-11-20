@@ -124,9 +124,10 @@ function Root() {
   }, [ready])
   if (!ready) return null
   if (!current) return <Nav phase="connect" />
-  // a new client per server and per sign-in or sign-out
+  // a new client per server and per sign-in or sign-out, each with its own cache of answers, so
+  // a screen opened again draws at once (@highsea-tv/sdk's cache.ts) and signing out forgets them
   return (
-    <ClientProvider key={`${current.server.id}:${current.round}`} client={current.client}>
+    <ClientProvider key={`${current.server.id}:${current.round}`} client={current.client} cache>
       {current.signedIn ? <SignedInGate /> : <Nav phase="signIn" />}
     </ClientProvider>
   )

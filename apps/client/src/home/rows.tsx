@@ -22,6 +22,7 @@ import {
   usePosterWidth,
 } from '@highsea-tv/ui'
 import { useWindowDimensions } from 'react-native'
+import { useAhead } from '../ahead.ts'
 import { useFilmsText } from '../films.ts'
 import { MusicHomeRow } from '../music/home.tsx'
 import { ShowPoster } from '../shows/poster.tsx'
@@ -37,6 +38,7 @@ export const POINTER_APART = space['16'] + space['4']
 
 /** One of Home's rows below the featured section, at this form factor (not the TV's). */
 export function HomeRow({ section }: { section: Section }) {
+  const ahead = useAhead()
   const films = useFilmsText()
   const format = useFormat()
   const media = useMedia()
@@ -89,6 +91,7 @@ export function HomeRow({ section }: { section: Section }) {
         meta={format.meta}
         loop
         onOpen={openTitle}
+        onIntent={ahead.card}
         onPlay={(m) => playTitle(m.id)}
       />
     )
@@ -109,6 +112,7 @@ export function HomeRow({ section }: { section: Section }) {
             width={stillWidth}
             showTitle
             caption={card.caption}
+            onPressIntent={() => ahead.card(m)}
             onPress={() => openTitle(m)}
           />
         )

@@ -339,6 +339,12 @@ The order is films, then shows, then music: films are already built and only nee
   - **Left:** a real run on the NAS (per-series episode reads, probing the files and the time it takes), and how the anime series' numbering meets TMDB's.
 
 - **2026-11-19, the TLS test's certificate (HT-114):** the server's TLS test failed about 1 run in 512 (pull request #117's CI) because the throwaway test certificate's random serial sometimes began with 0x00, which DER forbids unless the next byte’s high bit is set. The test helper now encodes integers minimally (X.690 § 8.3.2) and makes serials positive with a first byte of 0x40 to 0x7f (RFC 5280 § 4.1.2.2); a new test builds 4,096 certificates over every first byte. It was the only certificate maker in the repository.
+- **2026-11-19, C, moving between the client's screens is immediate (HT-116):** the owner found every screen waited to load, one seen a moment before included. Built and waiting for the owner's review (ADR 0055's section of that day).
+  - **One cache of answers** in the client's existing hooks (`@highsea-tv/sdk`'s `cache.ts`, no new dependency): a screen seen before draws at once and is asked again behind it; server events make what they name stale; Mark as watched shows everywhere at once; another profile or sign-in starts empty. The admin doesn't use it yet and has the same fault.
+  - **Ahead of time:** a poster pressed, hovered or focused (300 ms on the TV) fetches its page's answers; Movies and Shows are fetched a second after Home settles; a film page asks for its picks and collections with the film, not after it.
+  - **Screens kept:** a tab already open lower in the stack is gone back to, covered screens are frozen on the phone and TV, and on the web a list keeps its scroll place. A first visit's skeleton shows the title's backdrop and logo.
+  - **Measured on the web** (a local server with 350 films and 300 ms added to every request), the second time round: Movies 2 requests and first content at 66 ms (948 ms before), a film 0 requests and 440 ms (980), a show 1 and 809 ms (1,013 first content, 2,416 settled), back to a list 0 requests at about 235 ms with its place kept.
+  - **Left:** the owner's devices against the NAS, where the latency is real and the library is 1,289 films.
 
 ## Running highsea on the NAS (A1)
 

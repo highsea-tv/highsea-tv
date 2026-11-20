@@ -20,7 +20,14 @@ import {
   type TITLE_TYPES,
 } from '@highsea-tv/api-contract'
 import type { HighseaClient } from '@highsea-tv/sdk'
-import { type Query, useAction, useClient, useQuery } from '@highsea-tv/sdk/react'
+import {
+  type Query,
+  type QueryCache,
+  useAction,
+  useClient,
+  useQuery,
+  useQueryCache,
+} from '@highsea-tv/sdk/react'
 import { useEffect, useMemo, useState } from 'react'
 
 export * from './reports.ts'
@@ -145,26 +152,56 @@ export async function readLibrary(c: HighseaClient): Promise<ClientItem[]> {
   return items
 }
 
-export const useLibrary = () => useQuery('client:library', readLibrary, LIBRARY)
+/**
+ * A query as a hook reads it and a prefetch asks for it ahead (HT-116): its key, its fetch and the
+ * topics that make it stale, in one place so both ask the same.
+ */
+export type QueryDef<T> = {
+  key: string
+  fetch: (c: HighseaClient) => Promise<T>
+  topics: string[]
+}
+
+const LIBRARY_KEY = 'client:library'
+
+export const libraryQuery: QueryDef<ClientItem[]> = {
+  key: LIBRARY_KEY,
+  fetch: readLibrary,
+  topics: LIBRARY,
+}
+
+export const useLibrary = () => useQuery(libraryQuery.key, libraryQuery.fetch, libraryQuery.topics)
 
 /** What a title's address names: a film, or (B3, drafted) an episode, which plays as a film does. */
 export type TitleType = (typeof TITLE_TYPES)[number]
 
+const itemKey = (id: number, type: TitleType) =>
+  type === 'movie' ? `client:item:${id}` : `client:episode:${id}`
+
+/** A title's page and the player's read: a film, or an episode. */
+export const itemQuery = (id: number, type: TitleType = 'movie') => ({
+  key: itemKey(id, type),
+  fetch: (c: HighseaClient) => c.library.item({ params: { type, id } }),
+  topics: type === 'movie' ? LIBRARY : SHOWS,
+})
+
 /** A title's page and the player's read: a film, or an episode (the same key as useEpisode's). */
-export const useItem = (id: number, type: TitleType = 'movie') =>
-  useQuery(
-    type === 'movie' ? `client:item:${id}` : `client:episode:${id}`,
-    (c) => c.library.item({ params: { type, id } }),
-    type === 'movie' ? LIBRARY : SHOWS,
-  )
+export const useItem = (id: number, type: TitleType = 'movie') => {
+  const q = itemQuery(id, type)
+  return useQuery(q.key, q.fetch, q.topics)
+}
+
+/** This person's picks for a title, as usePicks reads them. */
+export const picksQuery = (id: number, type: TitleType = 'movie') => ({
+  key: type === 'movie' ? `client:picks:${id}` : `client:picks:${type}:${id}`,
+  fetch: (c: HighseaClient) => c.playback.prefs({ params: { type, id } }),
+  topics: [PLAYBACK_TOPICS.watch],
+})
 
 /** This person's picks for a title: version, audio, subtitles and the subtitles' timing. */
 export function usePicks(id: number, type: TitleType = 'movie') {
-  const picks = useQuery(
-    type === 'movie' ? `client:picks:${id}` : `client:picks:${type}:${id}`,
-    (c) => c.playback.prefs({ params: { type, id } }),
-    [PLAYBACK_TOPICS.watch],
-  )
+  const q = picksQuery(id, type)
+  const picks = useQuery(q.key, q.fetch, q.topics)
   const save = useAction(
     (
       c,
@@ -179,22 +216,172 @@ export function usePicks(id: number, type: TitleType = 'movie') {
   return { picks, save }
 }
 
-/** Mark as watched, or unwatched (client-detail.md#mark-as-watched). */
-export const useMarkWatched = (id: number) =>
-  useAction((c, watched: boolean) =>
-    watched
-      ? c.playback.played({ params: { type: 'movie', id } })
-      : c.playback.unplayed({ params: { type: 'movie', id } }),
+/**
+ * Mark as watched, or unwatched (client-detail.md#mark-as-watched). Once the server has it, the
+ * film's page, the library and Home's rows say so at once (markTitle), before its event comes.
+ */
+export function useMarkWatched(id: number) {
+  const cache = useQueryCache()
+  return useAction(async (c, watched: boolean) => {
+    const done = watched
+      ? await c.playback.played({ params: { type: 'movie', id } })
+      : await c.playback.unplayed({ params: { type: 'movie', id } })
+    if (cache) markTitle(cache, id, 'movie', watched)
+    return done
+  })
+}
+
+/**
+ * A title marked watched or not, in every answer the cache holds it in: its page, the library,
+ * Home's rows and a collection's titles. Watched to the end, its place is gone; marked unwatched,
+ * it starts from the beginning (ADR 0054). The answers are asked again quietly too, for what only
+ * the server works out (Continue watching, Next up, a show's counts).
+ */
+export function markTitle(cache: QueryCache, id: number, type: TitleType, watched: boolean) {
+  const mark = (i: ClientItem): ClientItem =>
+    i.id === id && i.type === type ? { ...i, watched, progress: null, position: 0 } : i
+  for (const [key, data] of [...cache.answers()]) {
+    if (key === itemKey(id, type))
+      cache.update<{ item: ClientItem }>(key, (d) => ({ ...d, item: mark(d.item) }))
+    else if (key === LIBRARY_KEY) cache.update<ClientItem[]>(key, (all) => all.map(mark))
+    else if (isRowsKey(key))
+      cache.update<{ items: ClientItem[] }[]>(key, (rows) =>
+        rows.map((r) => ({ ...r, items: r.items.map(mark) })),
+      )
+    else if (key.startsWith('client:collection:') && hasItems(data))
+      cache.update<{ items: ClientItem[] }>(key, (d) => ({ ...d, items: d.items.map(mark) }))
+  }
+  cache.invalidate(
+    (key) =>
+      key === itemKey(id, type) ||
+      key === LIBRARY_KEY ||
+      isRowsKey(key) ||
+      key.startsWith('client:collection') ||
+      key.startsWith('client:show'),
   )
+}
+
+const isRowsKey = (key: string) =>
+  key.startsWith('client:home:') || key.startsWith('client:home-rows:')
+
+const hasItems = (d: unknown): d is { items: ClientItem[] } =>
+  typeof d === 'object' && d !== null && Array.isArray((d as { items?: unknown }).items)
+
+/** What a card already said about a title: enough for its page to draw before the page's own read. */
+export type KnownTitle = {
+  title: string
+  year: number | null
+  art: { backdrop: string | null; logo: string | null; poster: string | null }
+}
+
+/**
+ * What the app already knows of a title or a show from the cards it has drawn (the library, Home's
+ * rows, a collection, Shows), so its page shows the art and the name at once on a first visit
+ * while the page itself is read (HT-116). Null when no card has had it.
+ */
+export function useKnownTitle(id: number, kind: 'movie' | 'show' = 'movie'): KnownTitle | null {
+  const cache = useQueryCache()
+  return useMemo(() => (cache ? knownTitle(cache, id, kind) : null), [cache, id, kind])
+}
+
+export function knownTitle(
+  cache: QueryCache,
+  id: number,
+  kind: 'movie' | 'show',
+): KnownTitle | null {
+  const pick = (i: {
+    id: number
+    type?: string
+    title: string
+    year: number | null
+    art: KnownTitle['art']
+  }) => ({ title: i.title, year: i.year, art: i.art }) satisfies KnownTitle
+  const fits = (i: ClientItem) => i.id === id && i.type === kind
+  for (const [key, data] of cache.answers()) {
+    if (kind === 'show' && key === 'client:shows' && Array.isArray(data)) {
+      const s = (
+        data as { id: number; title: string; year: number; art: KnownTitle['art'] }[]
+      ).find((x) => x.id === id)
+      if (s) return pick(s)
+    }
+    if (key === LIBRARY_KEY && Array.isArray(data)) {
+      const i = (data as ClientItem[]).find(fits)
+      if (i) return pick(i)
+    }
+    if (isRowsKey(key) && Array.isArray(data)) {
+      for (const r of data as { items: ClientItem[] }[]) {
+        const i = r.items.find(fits)
+        if (i) return pick(i)
+      }
+    }
+    if (key.startsWith('client:collection:') && hasItems(data)) {
+      const i = data.items.find(fits)
+      if (i) return pick(i)
+    }
+  }
+  return null
+}
+
+/** What the person cares about stays per profile; these answers are the server's or the account's. */
+const ACROSS_PROFILES = new Set([
+  'client:session',
+  'client:public-info',
+  'client:server',
+  'client:appearance',
+  'client:profiles',
+  'client:devices',
+])
+
+/**
+ * Another profile is watching: every answer that was the last profile's is forgotten, so nothing of
+ * theirs is shown, and the server's and the account's are asked again quietly (ADR 0068's profiles
+ * are per device, so only this device's own switch changes who's watching here).
+ */
+export const forgetProfile = (cache: QueryCache) => cache.clear((key) => ACROSS_PROFILES.has(key))
+
+/**
+ * Fetches ahead what a press or a focus is likely to open (HT-116): a film's page and its picks, a
+ * show's page. Bounded by the cache (two at a time, the newest first); without a shared cache it
+ * does nothing.
+ */
+export function usePrefetch() {
+  const cache = useQueryCache()
+  return useMemo(() => {
+    const ahead = <T>(q: QueryDef<T>) => cache?.prefetch(q.key, q.fetch, q.topics)
+    return {
+      title: (id: number, type: TitleType = 'movie') => {
+        ahead(itemQuery(id, type))
+        if (type === 'movie') ahead(picksQuery(id, type))
+      },
+      show: (id: number) => ahead(showQuery(id)),
+      query: ahead,
+      /** A query the screen on view reads next: fetched now, not queued (QueryCache.warm). */
+      now: <T>(q: QueryDef<T>) => cache?.warm(q.key, q.fetch, q.topics),
+      /** Whether the cache has any answer for a query yet, fresh or not. */
+      has: <T>(q: QueryDef<T>) => cache?.data(q.key) !== undefined,
+    }
+  }, [cache])
+}
 
 /**
  * Continue watching's menu (prototype-gaps.md › 2.4): Mark as watched, or Remove from Continue
  * watching, which forgets the place and keeps what's been watched (ADR 0054's 2026-11-01 section).
  */
-export const useContinueActions = (id: number, type: TitleType = 'movie') => ({
-  markWatched: useAction((c) => c.playback.played({ params: { type, id } })),
-  remove: useAction((c) => c.playback.dismiss({ params: { type, id } })),
-})
+export function useContinueActions(id: number, type: TitleType = 'movie') {
+  const cache = useQueryCache()
+  return {
+    markWatched: useAction(async (c) => {
+      const done = await c.playback.played({ params: { type, id } })
+      if (cache) markTitle(cache, id, type, true)
+      return done
+    }),
+    remove: useAction(async (c) => {
+      const done = await c.playback.dismiss({ params: { type, id } })
+      cache?.invalidate(isRowsKey)
+      return done
+    }),
+  }
+}
 
 /** How long typing pauses before a search goes to the server. */
 export const SEARCH_SETTLE_MS = 150
@@ -216,11 +403,16 @@ export function useSearch(query: string) {
 }
 
 /** Library › Collections: the server's own this person sees, then TMDB's. */
-export const useCollections = (client: ClientType) =>
-  useQuery(`client:collections:${client}`, (c) => c.library.collections({ query: { client } }), [
-    ...LIBRARY,
-    CURATION_TOPICS.home,
-  ])
+export const collectionsQuery = (client: ClientType) => ({
+  key: `client:collections:${client}`,
+  fetch: (c: HighseaClient) => c.library.collections({ query: { client } }),
+  topics: [...LIBRARY, CURATION_TOPICS.home],
+})
+
+export const useCollections = (client: ClientType) => {
+  const q = collectionsQuery(client)
+  return useQuery(q.key, q.fetch, q.topics)
+}
 
 export const useCollection = (id: string, client: ClientType) =>
   useQuery(
@@ -327,30 +519,60 @@ const SHOWS = [DRAFT_TOPICS.shows, PLAYBACK_TOPICS.watch]
 const MUSIC = [DRAFT_TOPICS.music, DRAFT_TOPICS.playlists]
 
 /** Library › Shows: every show this person may watch, with their place in each. */
-export const useShows = () => useQuery('client:shows', (c) => c.shows.list(), SHOWS)
+export const showsQuery = {
+  key: 'client:shows',
+  fetch: (c: HighseaClient) => c.shows.list(),
+  topics: SHOWS,
+}
+
+export const useShows = () => useQuery(showsQuery.key, showsQuery.fetch, showsQuery.topics)
+
+export const showQuery = (id: number) => ({
+  key: `client:show:${id}`,
+  fetch: (c: HighseaClient) => c.shows.show({ params: { id } }),
+  topics: SHOWS,
+})
 
 /** A show's page: its seasons and episodes, people, like shows and picks. */
-export const useShow = (id: number) =>
-  useQuery(`client:show:${id}`, (c) => c.shows.show({ params: { id } }), SHOWS)
+export const useShow = (id: number) => {
+  const q = showQuery(id)
+  return useQuery(q.key, q.fetch, q.topics)
+}
 
-/** Mark a season, or the whole show (`season` null, specials left out), watched or not. */
-export const useMarkShowWatched = (id: number) =>
-  useAction((c, body: { season: number | null; watched: boolean }) =>
-    c.shows.watched({ params: { id }, body }),
-  )
+/**
+ * Mark a season, or the whole show (`season` null, specials left out), watched or not. The show's
+ * page, Shows and Home are asked again at once rather than when the server's event comes.
+ */
+export function useMarkShowWatched(id: number) {
+  const cache = useQueryCache()
+  return useAction(async (c, body: { season: number | null; watched: boolean }) => {
+    const done = await c.shows.watched({ params: { id }, body })
+    cache?.invalidate((key) => key.startsWith('client:show') || isRowsKey(key))
+    return done
+  })
+}
 
 /** An episode as a title: its versions, tracks and place, as a film's page reads its own. */
 export const useEpisode = (id: number) => useItem(id, 'episode')
 
 /** Mark an episode watched or not; Remove from Continue watching for its show. */
-export const useEpisodeActions = (id: number) => ({
-  mark: useAction((c, watched: boolean) =>
-    watched
-      ? c.playback.played({ params: { type: 'episode', id } })
-      : c.playback.unplayed({ params: { type: 'episode', id } }),
-  ),
-  remove: useAction((c) => c.playback.dismiss({ params: { type: 'episode', id } })),
-})
+export function useEpisodeActions(id: number) {
+  const cache = useQueryCache()
+  return {
+    mark: useAction(async (c, watched: boolean) => {
+      const done = watched
+        ? await c.playback.played({ params: { type: 'episode', id } })
+        : await c.playback.unplayed({ params: { type: 'episode', id } })
+      if (cache) markTitle(cache, id, 'episode', watched)
+      return done
+    }),
+    remove: useAction(async (c) => {
+      const done = await c.playback.dismiss({ params: { type: 'episode', id } })
+      cache?.invalidate(isRowsKey)
+      return done
+    }),
+  }
+}
 
 /** Library › Music: artists and albums. */
 export const useMusic = () => useQuery('client:music', (c) => c.music.library(), MUSIC)

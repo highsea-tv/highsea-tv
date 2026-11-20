@@ -12,7 +12,7 @@ import { BackHandler, Dimensions, StyleSheet } from 'react-native'
 import { TV_ALERTS } from '../src/alerts/sizes.ts'
 import { HOME } from '../src/home/sizes.ts'
 import { TV_LIBRARY } from '../src/library/sizes.ts'
-import { flush, fresh, open, rewrite, sent, server } from './mock.ts'
+import { acknowledge, flush, fresh, open, rewrite, sent, server } from './mock.ts'
 
 jest.mock('../src/form-factor', () => ({ formFactorOverride: () => 'tv' }))
 // the library's focusOn, watched: where Home sends focus once its menu closes
@@ -329,16 +329,19 @@ describe('Alerts on the TV', () => {
   })
 
   test('a list that can’t load says so, and Try again loads it', async () => {
-    let down = false
+    // down from the start: Home's own read of them would otherwise be the list Alerts draws at
+    // once from the app's cache (HT-116), so there's no announcement to acknowledge either
+    let down = true
     refuse(/\/api\/v1\/announcements(?=\?|$)/, () => down)
-    await home()
-    down = true
+    await signedIn()
     await act(() => router.push('/alerts'))
     await flush()
     expect(screen.getByText('Couldn’t load the announcements')).toBeTruthy()
     down = false
     await fireEvent.press(screen.getByRole('button', { name: 'Try again' }))
     await flush()
+    // the one to acknowledge comes up over the list now that they've answered
+    await acknowledge()
     expect(screen.getByText('Movie night is Friday')).toBeTruthy()
   })
 })

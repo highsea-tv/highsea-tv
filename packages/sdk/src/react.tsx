@@ -2,29 +2,53 @@
 // React bindings with the prototype's shapes (ADR 0018): `useQuery(key, call, topics)` keeps a
 // result and refetches it in place when an event names one of its topics; `useAction(call)`
 // wraps a change. A `reset` event (the stream fell behind) refetches every live query.
-import { RESET_TOPIC } from '@highsea-tv/api-contract'
+//
+// Under a `ClientProvider` with `cache`, every query shares the client's one cache (./cache.ts,
+// HT-116): a screen opened again draws at once from the answer the app has and fetches again
+// quietly behind it, and the same key asked by two screens is one request. Without it (the admin,
+// for now) each component keeps its own answer, as before.
 import {
   createContext,
   type ReactNode,
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
 } from 'react'
+import { cacheFor, QueryCache } from './cache.ts'
 import type { HighseaClient } from './client.ts'
 
-const ClientContext = createContext<HighseaClient | null>(null)
+export { QueryCache } from './cache.ts'
 
+const ClientContext = createContext<HighseaClient | null>(null)
+const CacheContext = createContext<QueryCache | null>(null)
+
+/**
+ * The client every hook below uses. With `cache`, its queries share the client's one cache; a new
+ * client (another server, a sign-in or a sign-out) starts with an empty one.
+ */
 export function ClientProvider({
   client,
+  cache = false,
   children,
 }: {
   client: HighseaClient
+  cache?: boolean
   children: ReactNode
 }) {
-  return <ClientContext.Provider value={client}>{children}</ClientContext.Provider>
+  const shared = cache ? cacheFor(client) : null
+  return (
+    <ClientContext.Provider value={client}>
+      <CacheContext.Provider value={shared}>{children}</CacheContext.Provider>
+    </ClientContext.Provider>
+  )
 }
+
+/** The client's shared cache, or null when the provider keeps none. */
+export const useQueryCache = (): QueryCache | null => useContext(CacheContext)
 
 export function useClient(): HighseaClient {
   const client = useContext(ClientContext)
@@ -57,72 +81,42 @@ export function useQuery<T>(
   options: QueryOptions = {},
 ): Query<T> {
   const client = useClient()
-  const [state, setState] = useState<{ status: Query<T>['status']; data?: T; error?: Error }>({
-    status: 'loading',
-  })
+  const shared = useContext(CacheContext)
+  // without a shared cache, a cache of the component's own that keeps nothing it doesn't show
+  const own = useMemo(
+    () => (shared ? null : new QueryCache(client, { staleMs: 0, gcMs: 0 })),
+    [shared, client],
+  )
+  const cache = shared ?? (own as QueryCache)
   const fetchRef = useRef(fetch)
   fetchRef.current = fetch
-  const run = useRef(0)
+  const call = useCallback((c: HighseaClient) => fetchRef.current(c), [])
+  const subscribe = useCallback((l: () => void) => cache.subscribe(key, l), [cache, key])
+  const read = () => cache.read<T>(key)
+  const state = useSyncExternalStore(subscribe, read, read)
   const liveKey = live.join(',')
 
-  const load = useCallback(
-    (silent: boolean): Promise<T> => {
-      const id = ++run.current
-      if (!silent) setState({ status: 'loading' })
-      const answer = fetchRef.current(client)
-      answer.then(
-        (data) => {
-          if (id === run.current) setState({ status: 'success', data })
-        },
-        (error: Error) => {
-          // a silent refetch that fails keeps what's on screen
-          if (id === run.current && !silent) setState({ status: 'error', error })
-        },
-      )
-      // handled here, so a caller that doesn't wait leaves no unhandled rejection; one that
-      // awaits `answer` still sees it reject
-      answer.catch(() => {})
-      return answer
-    },
-    [client],
+  useEffect(
+    () => cache.show(key, call, liveKey ? liveKey.split(',') : []),
+    [cache, key, call, liveKey],
   )
-
-  // biome-ignore lint/correctness/useExhaustiveDependencies: `key` restarts the query on purpose
-  useEffect(() => {
-    load(false)
-    return () => {
-      run.current++
-    }
-  }, [load, key])
-
-  useEffect(() => {
-    if (!liveKey) return
-    const topics = new Set(liveKey.split(','))
-    let queued = false
-    return client.events.subscribe((e) => {
-      if ((!topics.has(e.topic) && e.topic !== RESET_TOPIC) || queued) return
-      // several events in one tick refetch once
-      queued = true
-      queueMicrotask(() => {
-        queued = false
-        load(true)
-      })
-    })
-  }, [client, liveKey, load])
 
   const { interval } = options
   useEffect(() => {
     if (!interval) return
-    const timer = setInterval(() => load(true), interval)
+    const timer = setInterval(
+      () => void cache.fetch(key, call, { silent: true, fresh: true }).catch(() => {}),
+      interval,
+    )
     return () => clearInterval(timer)
-  }, [interval, load])
+  }, [interval, cache, key, call])
 
   return {
     ...state,
     refetch: () => {
-      load(false)
+      void cache.fetch(key, call, { silent: false, fresh: true })
     },
-    refresh: () => load(true),
+    refresh: () => cache.fetch(key, call, { silent: true, fresh: true }),
   } as Query<T>
 }
 
