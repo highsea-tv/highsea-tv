@@ -346,6 +346,8 @@ The order is films, then shows, then music: films are already built and only nee
   - **Against the owner's Sonarr (4.0.20), preview only, on a local dev server:** 251 series, 237 with files, 8,631 episodes and 7,920 files. One profile, one tag, 17 anime series, none daily. Without a mapping every series is outside highsea's folders. With one mapping for its one root folder, 250 are ready. One has no TMDB id in Sonarr and needs TMDB's Find, which the dev server couldn't ask without a TMDB key. The preview took 0.3 s.
   - **Left:** a real run on the NAS (per-series episode reads, probing the files and the time it takes), and how the anime series' numbering meets TMDB's.
 
+- **2026-11-19, the TLS test's certificate (HT-114):** the server's TLS test failed about 1 run in 512 (pull request #117's CI) because the throwaway test certificate's random serial sometimes began with 0x00, which DER forbids unless the next byte’s high bit is set. The test helper now encodes integers minimally (X.690 § 8.3.2) and makes serials positive with a first byte of 0x40 to 0x7f (RFC 5280 § 4.1.2.2); a new test builds 4,096 certificates over every first byte. It was the only certificate maker in the repository.
+
 ## Running highsea on the NAS (A1)
 
 - **2026-11-19, A1, fanart.tv as a second artwork source, and the refetch after an update (HT-74):** what 0.4.5's findings left open, and the owner's choice of fanart.tv as TMDB's fallback (2026-11-18).

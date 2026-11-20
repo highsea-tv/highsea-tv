@@ -29,10 +29,33 @@ const oid = (dotted: string) => {
 const utf8 = (s: string) => tlv(0x0c, Buffer.from(s, 'utf8'))
 const time = (d: Date) =>
   tlv(0x17, Buffer.from(`${d.toISOString().replace(/[-:T]/g, '').slice(2, 14)}Z`))
-const integer = (b: Buffer) =>
-  tlv(0x02, (b[0] as number) & 0x80 ? Buffer.concat([Buffer.from([0]), b]) : b)
+/**
+ * A non-negative INTEGER from big-endian bytes, in the minimal two's-complement form DER requires
+ * (X.690 § 8.3.2): the first nine bits are never all 0 nor all 1, so redundant leading 0x00 bytes
+ * go and a 0x00 goes in front when the high bit is set (else it would read as negative).
+ */
+export const integer = (b: Buffer) => {
+  let start = 0
+  while (start < b.length - 1 && b[start] === 0 && !((b[start + 1] as number) & 0x80)) start++
+  const body = b.subarray(start)
+  return tlv(0x02, (body[0] as number) & 0x80 ? Buffer.concat([Buffer.from([0]), body]) : body)
+}
 
-export function selfSigned(commonName = 'localhost'): { cert: string; key: string } {
+/**
+ * A certificate serial number from random bytes: RFC 5280 § 4.1.2.2 wants a positive integer of
+ * at most 20 octets, so the first byte is forced into 0x40–0x7f (positive, never zero, and never
+ * needing a sign or padding byte), leaving 63 random bits of 8 bytes.
+ */
+export const serialNumber = (random: Buffer = randomBytes(8)) => {
+  const serial = Buffer.from(random)
+  serial[0] = ((serial[0] as number) & 0x3f) | 0x40
+  return serial
+}
+
+export function selfSigned(
+  commonName = 'localhost',
+  serial: Buffer = serialNumber(),
+): { cert: string; key: string } {
   const { privateKey, publicKey } = generateKeyPairSync('ec', { namedCurve: 'P-256' })
   const ecdsaSha256 = seq(oid('1.2.840.10045.4.3.2'))
   const name = seq(set(seq(oid('2.5.4.3'), utf8(commonName))))
@@ -43,7 +66,7 @@ export function selfSigned(commonName = 'localhost'): { cert: string; key: strin
   )
   const tbs = seq(
     tlv(0xa0, integer(Buffer.from([2]))),
-    integer(randomBytes(8)),
+    integer(serial),
     ecdsaSha256,
     name,
     seq(time(new Date(now - 60_000)), time(new Date(now + 86_400_000))),
