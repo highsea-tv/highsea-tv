@@ -191,7 +191,7 @@ describe('a play', () => {
         .from(schema.musicPlays)
         .all()
         .map((r) => r.trackId),
-    ).toEqual([one?.id, two?.id])
+    ).toEqual([one?.id ?? null, two?.id ?? null])
   })
 
   test('a song asked for ahead and let go unheard leaves nothing', async () => {

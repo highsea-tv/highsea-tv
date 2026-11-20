@@ -15,6 +15,7 @@ export const itemWork = defineMessages({
   'type.subtitles.wanted.refresh': 'Checking subtitles',
   'type.downloads.import': 'Importing',
   'type.music.metadata': 'Reading tags',
+  'type.music.loudness': 'Measuring loudness',
   other: 'Working on it',
   several: '{count, plural, one {# task running} other {# tasks running}}',
   /** One job, waiting its turn. */
