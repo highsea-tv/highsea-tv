@@ -5,7 +5,9 @@
 // 2026-10-20); version and root folder ids are the server's own row ids.
 //
 // Searching for releases waits for indexers (checkpoint 5, decision 2): `searchNow` on add and the
-// bulk `search` action answer 409 with `details.reason` `no-indexers` until then.
+// bulk `search` action answer 409 with `details.reason` `no-indexers` until then. The bulk `search`
+// skips movies in a root folder highsea only reads, and answers 409 `read-only` when that's all of
+// them (ADR 0063, HT-113).
 import { createRoute, z } from '@hono/zod-openapi'
 import {
   API_PREFIX,
@@ -353,6 +355,8 @@ export const movies = {
     path: `${MOVIES}/bulk`,
     tags: ['Movies'],
     summary: 'Monitor, stop monitoring, change the profile, search, refresh or remove many',
+    description:
+      '`search` answers 409 `no-indexers` while no indexer is enabled. It leaves out movies in a root folder highsea only reads (ADR 0063), and answers 409 `read-only` when every movie asked for is in one.',
     ...access('staff'),
     request: { ...body(BulkInput) },
     responses: {

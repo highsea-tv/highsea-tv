@@ -53,3 +53,8 @@ So setup asks instead, as the owner asked on 2026-11-17 before merging. Each lib
 - **The server.** `SetupInput.folders.readOnly` carries the choice per kind. A kind left out is read-only when its folder held something before setup made any folder (`libraryReadOnly`), so a client that doesn't send it, or the API used directly, gets the same safe default. A folder mounted read-only stays read-only whatever was chosen, as before.
 
 Consequences: an owner whose folders hold films highsea should manage, such as a library moved from another server, turns the switch off on Review or in Settings; until then imports go nowhere for that kind, and Health says which folders highsea only reads, as a notice.
+
+## 2026-11-19: nothing is searched for in a folder highsea only reads (HT-113)
+
+Writes weren't the only thing to switch off. A film in such a folder is now never searched, grabbed or upgraded on its own, is left off Wanted, and a Search on it is refused with `read-only`, as HT-109 does for a show; ADR 0045's section of this day has the details. The calendar still shows its dates.
+

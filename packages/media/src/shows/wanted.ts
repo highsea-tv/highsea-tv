@@ -33,7 +33,7 @@ import { SWEEP_BACKOFF_DAYS } from '../movies/wanted.ts'
 import type { Media } from '../shared/index.ts'
 import { artOf, type ItemRow } from '../shared/map.ts'
 import { dayOf } from '../shared/names.ts'
-import { chunks } from '../shared/sql.ts'
+import { chunks, notUnderRoots } from '../shared/sql.ts'
 import type { ShowsDeps } from './context.ts'
 
 const { mediaItems, mediaFiles, versions, showDetails, downloads } = schema
@@ -191,19 +191,9 @@ export function createShowWanted(ctx: ShowsDeps, deps: { media: Media }) {
    * read each call, so turning a folder to managed takes effect at once.
    */
   function looksAfter(show: typeof mediaItems.id | typeof mediaItems.showId) {
-    const roots = media.rootFolders
-      .list()
-      .map((r) => media.rootFolders.readOnlyAt(r.path))
-      .filter((r): r is string => r !== null)
-    if (!roots.length) return sql`1 = 1`
-    // a prefix compare, not LIKE, so a folder name's `_` or `%` matches only itself
-    const inside = sql.join(
-      roots.map(
-        (root) => sql`(s.path = ${root} OR substr(s.path, 1, ${root.length + 1}) = ${`${root}/`})`,
-      ),
-      sql` OR `,
-    )
-    return sql`NOT EXISTS (SELECT 1 FROM media_items s WHERE s.id = ${show} AND s.path IS NOT NULL AND (${inside}))`
+    // the films' check (HT-113): a show is left out when its folder is under a read-only root
+    const outside = notUnderRoots(media.rootFolders.readOnlyRoots(), sql`s.path`)
+    return sql`NOT EXISTS (SELECT 1 FROM media_items s WHERE s.id = ${show} AND NOT ${outside})`
   }
 
   // ------------------------------------------------------------ the sweep and RSS
