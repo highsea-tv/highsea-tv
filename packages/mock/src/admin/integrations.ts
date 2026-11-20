@@ -20,6 +20,7 @@ import {
   NOTIFICATION_EVENTS,
   type NotificationEvent,
   type QbittorrentImportStatus,
+  type SonarrImportStatus,
   TMDB_LIST_SOURCES,
   TRAKT_LIST_SOURCES,
 } from '@highsea-tv/api-contract'
@@ -200,6 +201,20 @@ export function integrationsAnswers(kit: AdminKit): Answers {
       },
       radarrStatus: (_, ctx) => {
         const st = statusOf(ctx.api.importers.radarrStatus())
+        follow(st.state)
+        return st
+      },
+      sonarrTest: ({ body }, ctx) => ctx.api.importers.sonarrTest(body),
+      sonarrPreview: ({ body }, ctx) => ctx.api.importers.sonarrPreview(body),
+      sonarrRun: ({ body }, ctx) => {
+        ctx.api.importers.sonarrRun(body)
+        emit(MIGRATION_TOPIC)
+        const st: SonarrImportStatus = statusOf(ctx.api.importers.sonarrStatus())
+        follow(st.state)
+        return st
+      },
+      sonarrStatus: (_, ctx) => {
+        const st: SonarrImportStatus = statusOf(ctx.api.importers.sonarrStatus())
         follow(st.state)
         return st
       },
