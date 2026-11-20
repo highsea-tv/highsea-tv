@@ -25,7 +25,7 @@ import {
   type QualitySize,
   sizeLimits,
 } from '@highsea-tv/quality'
-import type { Definition } from '@highsea-tv/schemas/indexers'
+import { type Definition, isMovieCategory, isTvCategory } from '@highsea-tv/schemas/indexers'
 import { and, asc, eq, gt, inArray, lte } from 'drizzle-orm'
 import type { RunResult, SearchQuery } from './engine.ts'
 import type { IndexerRelease } from './release.ts'
@@ -151,6 +151,40 @@ type IndexerRow = { id: string; name: string; priority: number; tags: string[] }
 /** Whether an indexer may be used for a movie: it has no tags, or shares one with the movie. */
 export const servesMovie = (indexer: Pick<IndexerRow, 'tags'>, movieTags: readonly string[] = []) =>
   indexer.tags.length === 0 || indexer.tags.some((t) => movieTags.includes(t))
+
+/** A Torznab or Newznab feed says what it serves in its caps, not its definition. */
+const isFeed = (d: Definition) => d.kind === 'torznab' || d.kind === 'newznab'
+
+/**
+ * Whether a definition lists films: a feed does when its caps do, a site when one of its categories
+ * is a film's. A site with no film category (EZTV, Nyaa) is passed by in a film's search and in its
+ * RSS sync, so a show's site isn't asked about every film.
+ */
+export const servesFilms = (d: Definition) =>
+  isFeed(d) || d.categories.some((c) => isMovieCategory(c.standard))
+
+/**
+ * Whether a site can be searched at all. One whose definition lists no search inputs (a feed of its
+ * newest releases, as SubsPlease's and showRSS's are) is only read for those (ADR 0033, engine 1.2).
+ */
+export const searchable = (d: Definition) => isFeed(d) || d.search.supports.length > 0
+
+/** TV/Anime, the standard category of anime (Newznab API, "Predefined categories"). */
+const ANIME = 5070
+
+/**
+ * Whether a site lists only anime: its one TV category is TV/Anime, and none is a film's. Anime's
+ * own numbering (absolute episodes, a cour as a season) waits for anime's part of shows, so the
+ * automatic search passes such a site by: a release numbered `- 13` can't yet be placed, and one
+ * numbered `S2 - 01` may count seasons differently from TMDB. Interactive search still lists what
+ * it finds, each release with its reasons.
+ */
+export const onlyAnime = (d: Definition) =>
+  !isFeed(d) &&
+  d.categories.some((c) => c.standard === ANIME) &&
+  d.categories.every(
+    (c) => c.standard === ANIME || !(isTvCategory(c.standard) || isMovieCategory(c.standard)),
+  )
 
 /**
  * Indexer flags from Torznab's volume factors: what share of the download counts against the
@@ -342,7 +376,12 @@ export function createSearch<R extends IndexerRow>(deps: {
     count: () => deps.candidates().length,
 
     async search(input: SearchInput): Promise<SearchResult> {
-      const candidates = deps.candidates().filter((c) => servesMovie(c.row, input.tags))
+      const candidates = deps
+        .candidates()
+        .filter(
+          (c) =>
+            servesMovie(c.row, input.tags) && servesFilms(c.definition) && searchable(c.definition),
+        )
       const query: SearchQuery = {
         title: input.title,
         year: input.year,
@@ -428,8 +467,11 @@ export function createSearch<R extends IndexerRow>(deps: {
       targets: readonly RssTarget[],
       inputFor: (tmdbId: number) => SearchInput | null,
     ): Promise<RssResult> {
-      // a site that can't list its newest releases has no feed to read (`latest: false`)
-      const candidates = deps.candidates().filter((c) => c.definition.latest)
+      // a site that can't list its newest releases has no feed to read (`latest: false`), and a
+      // show's site has no films in it
+      const candidates = deps
+        .candidates()
+        .filter((c) => c.definition.latest && servesFilms(c.definition))
       const settled = await Promise.allSettled(
         candidates.map((c) => deps.run(c.row, c.definition, { keywords: '' })),
       )

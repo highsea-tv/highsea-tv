@@ -240,3 +240,63 @@ describe('show folders', () => {
     })
   })
 })
+
+// HT-110: fresh names in the shapes the TV and anime indexers write, each seen in that site's own
+// answer on 2026-11-19 (EZTV's API, showRSS's and SubsPlease's feeds, Nyaa's search feed). The show
+// names are made up.
+describe('the TV and anime sites’ shapes', () => {
+  test.each([
+    // EZTV's `title`, after the definition drops its trailing " EZTV"
+    ['Harbour Lights S03E07 1080p HEVC x265-GROUP', 'Harbour Lights', 3, [7]],
+    ['Harbour Lights S03E07 480p x264-mSD', 'Harbour Lights', 3, [7]],
+    // showRSS's `tv:raw_title`, and its own title
+    ['Harbour Lights S03E07 720p HDTV H264 GROUP', 'Harbour Lights', 3, [7]],
+    ['Harbour Lights 3x07 Episode 7 720p', 'Harbour Lights', 3, [7]],
+    // SubsPlease and Nyaa: an episode after the season
+    ['[SubsPlease] Kumo no Michi S2 - 07 (1080p) [0A1B2C3D].mkv', 'Kumo no Michi', 2, [7]],
+    ['[SubsPlease] Kumo no Michi S2 - 07v2 (720p) [0A1B2C3D].mkv', 'Kumo no Michi', 2, [7]],
+    [
+      '[Group] Kumo no Michi 2nd Season - 05 [1080p WEBRip HEVC AAC][ABCD1234]',
+      'Kumo no Michi',
+      2,
+      [5],
+    ],
+    ['[Group] Kumo no Michi Season 3 - 11 [1080p]', 'Kumo no Michi', 3, [11]],
+    ['[Group] Kumo no Michi S01E05 [1080p] [HEVC WEBRip]', 'Kumo no Michi', 1, [5]],
+  ])('%s', (name, title, season, episodes) => {
+    expect(parseEpisode(name)).toMatchObject({ title, season, episodes, fullSeason: false })
+  })
+
+  test.each([
+    [
+      '[Group] Kumo no Michi 2nd Season [1080p WEBRip HEVC AAC][MultiSub] (Batch)',
+      'Kumo no Michi',
+      2,
+    ],
+    ['[Group] Kumo no Michi (Season 1) [1080p][HEVC x265 10bit] (Batch)', 'Kumo no Michi', 1],
+    [
+      'Road of Clouds (Kumo no Michi) - S01 (WEB-DL 720p) (English dub)',
+      'Road of Clouds (Kumo no Michi)',
+      1,
+    ],
+  ])('a season pack: %s', (name, title, season) => {
+    expect(parseEpisode(name)).toMatchObject({ title, season, episodes: [], fullSeason: true })
+  })
+
+  // a bare number may count from the show's first episode or the season's: anime's own part
+  test.each([
+    ['[SubsPlease] Kumo no Michi - 07 (1080p) [0A1B2C3D].mkv'],
+    ['[Group] Kumo no Michi - 1100 [1080p HEVC x265 10Bit][AAC]'],
+    ['[Group] Kumo no Michi - 01 ~ 12 [1080p][Multiple Subtitle]'],
+  ])('an absolute number gives null: %s', (name) => {
+    expect(parseEpisode(name)).toBeNull()
+  })
+
+  test('a resolution after a season’s hyphen isn’t an episode', () => {
+    expect(numbering('Kumo no Michi S2 - 1080p')).toEqual({
+      season: 2,
+      episodes: [],
+      fullSeason: true,
+    })
+  })
+})

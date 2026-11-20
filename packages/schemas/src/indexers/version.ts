@@ -5,7 +5,9 @@
 // the major only when an old definition would no longer mean the same thing.
 // 1.1.0 (2026-11-19): rows inside rows (`rows.each`), a list that's left out when empty
 // (`rows.optional`), and `latest: false` for a site that can't list its newest releases.
-export const ENGINE_VERSION = '1.1.0'
+// 1.2.0 (2026-11-19): `search.supports` may be empty, for a feed that only lists its newest
+// releases, and a feed's own item elements by name (`search.elements`, such as `nyaa:seeders`).
+export const ENGINE_VERSION = '1.2.0'
 
 const SEMVER = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/
 
