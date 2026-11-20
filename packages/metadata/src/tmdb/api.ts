@@ -110,6 +110,13 @@ export function tmdbApi(client: TmdbClient) {
         include_adult: false,
       }),
     /**
+     * `GET /3/trending/tv/week`: the shows trending this week, 20 a page, for Discover's shows with
+     * no search, as `/3/trending/movie/week` is for films
+     * ([Trending TV](https://developer.themoviedb.org/reference/trending-tv)). It takes no region.
+     */
+    trendingShows: (c: Credential, page: number, language: string) =>
+      client.json<TmdbPage<TmdbShowItem>>(c, '/3/trending/tv/week', { language, page }),
+    /**
      * `GET /3/find/{id}?external_source=tvdb_id`: the show, season or episode a TheTVDB id is
      * ([Find by ID](https://developer.themoviedb.org/reference/find-by-id)).
      */

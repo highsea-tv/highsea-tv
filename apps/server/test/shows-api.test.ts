@@ -172,6 +172,23 @@ describe('the admin’s shows', () => {
     ).toEqual({ code: 'conflict', reason: 'delete-files' })
   })
 
+  test('Discover’s shows: TMDB’s trending with no search, its search with one, a page at a time (HT-115)', async () => {
+    const { api } = await served()
+    // no search: the shows trending this week, as Discover's films show TMDB's trending films
+    // (an empty search used to answer nothing, so the page stayed empty)
+    const trending = await api.series.discover({ query: {} })
+    expect(trending).toMatchObject({ page: 1, totalPages: 1, totalResults: 19 })
+    expect(trending.items[0]).toMatchObject({ id: '2996', title: 'The Office', inLibrary: false })
+    expect(trending.items.find((s) => s.tmdbId === CHERNOBYL)?.inLibrary).toBe(true)
+    // a search, paged as TMDB pages it
+    const found = await api.series.discover({ query: { query: 'Chernobyl', page: 1 } })
+    expect(found.page).toBe(1)
+    expect(found.items[0]).toMatchObject({ id: '87108', inLibrary: true })
+    expect(
+      (await failure(api.series.discover({ query: { page: 501 } as { page: number } }))).code,
+    ).toBe('invalid')
+  })
+
   test('a show in a root folder highsea only reads is never searched for (Phase 5 C1)', async () => {
     const { runtime, api } = await served()
     const id = '87108'
