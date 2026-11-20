@@ -23,6 +23,8 @@ export const movieDetail = defineMessages({
   'monitored.failed': 'Couldn’t save that',
   // decision 2
   noIndexers: 'Add an indexer to search for releases.',
+  // HT-113: a root folder highsea only reads, as a show's (shows-messages' readOnly)
+  readOnly: 'highsea only reads this folder, so it doesn’t search for this film.',
   goToIndexers: 'Indexers',
   'search.toast': 'Searching for {title}',
   'search.toastBody': 'Follow it in Activity.',

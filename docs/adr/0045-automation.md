@@ -90,3 +90,15 @@ Shows get the films' automation, judged by the season-pack rule of ADR 0064's se
 ### Alternatives considered
 - **Sweep episodes one at a time, as films are:** with 8,000 episodes this would take months to get through, and it would search a season's episodes one by one when a single season search would find the pack.
 - **A separate RSS read for shows:** this doubles the feed traffic for no gain, since one read already returns both kinds.
+
+## 2026-11-19: films in a root folder highsea only reads are never searched for (HT-113)
+
+On the owner's NAS the films folder Radarr keeps is read-only in highsea (ADR 0063), and the sweep had searched 179 of its 1,282 wanted or cutoff-unmet films; only an empty indexer kept it from grabbing upgrades highsea may not import. The rule is the one HT-109 sets for shows:
+
+- **Nothing automatic searches, grabs or upgrades such a film.** `movies.wanted.wants` is empty for it, and every automatic path grabs only what `wants` names: RSS, the sweep, `movies.held` and the `movies.search` job behind Search all. `searchMovie` also returns before searching, so a search queued before the folder was switched does nothing.
+- **It uses up no run.** RSS's targets and the sweep's due films leave it out (a prefix compare on the film's path against the read-only folders, `notUnderRoots` in `packages/media/src/shared/sql.ts`, which shows' check now uses too), so it takes none of the sweep's 20.
+- **Wanted leaves it out.** Missing and Cutoff unmet and their counts don't list it, so Search all has nothing to queue for it. The calendar keeps its dates: they're useful whoever fetches the file.
+- **A Search someone asks for is refused,** as a show's is (HT-103): `POST /movies/bulk` with `search` answers 409 `read-only` when every film asked for is in such a folder and leaves them out of a selection, and the interactive search answers 409 `read-only`. The film's page hides Search and Interactive search and says why, as a show's page does.
+- **The folders are read on each call,** so switching one to managed in Settings brings its films back at once.
+
+No migration: the root folders' `read_only` and the films' paths are already stored.

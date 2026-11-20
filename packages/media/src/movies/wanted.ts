@@ -6,12 +6,17 @@
 //   (1, 3, 7, then 14 days), written before the search runs so a repeated job searches nothing twice.
 // - RSS's targets: the monitored movies a new release could be for.
 // - The calendar: each monitored movie's cinema, digital and physical dates in a range.
+// A movie in a root folder highsea only reads (ADR 0063; HT-113, as HT-109 does for shows) is never
+// searched, grabbed or upgraded on its own: `wants` is empty for it, and every automatic path
+// (RSS, the sweep, `movies.held`, Search all's `movies.search`) grabs only what `wants` names. It's
+// also left out of the sweep's due movies, RSS's targets and Wanted's lists, but the calendar keeps
+// its dates. The folders are read on each call, so switching one to managed brings its movies back.
 import type { MovieCalendarEntry as CalendarEntry, MoviePage } from '@highsea-tv/api-contract'
 import { schema } from '@highsea-tv/db'
 import { and, asc, eq, gte, inArray, lte, sql } from 'drizzle-orm'
 import type { Media } from '../shared/index.ts'
 import type { ItemRow } from '../shared/map.ts'
-import { CHUNK } from '../shared/sql.ts'
+import { CHUNK, notUnderRoots } from '../shared/sql.ts'
 import type { Ctx } from './context.ts'
 import type { Library, ListQuery } from './library.ts'
 
@@ -48,13 +53,23 @@ export type Want = { versionId: string; upgrade: boolean }
 
 export function createWanted(ctx: Ctx, deps: { media: Media; library: Library }) {
   const { db, clock } = ctx
-  const { library } = deps
+  const { library, media } = deps
   const log = ctx.logger.child('wanted')
 
-  /** The versions a movie needs a release for: nothing while it isn't monitored. */
+  /** Movies highsea looks after: none filed under a root folder it only reads (ADR 0063). */
+  const looksAfter = () => notUnderRoots(media.rootFolders.readOnlyRoots(), sql`${mediaItems.path}`)
+
+  /** Whether highsea looks after a movie: false when it's in a root folder highsea only reads. */
+  const looksAfterPath = (path: string | null) =>
+    !path || media.rootFolders.readOnlyAt(path) === null
+
+  /**
+   * The versions a movie needs a release for: nothing while it isn't monitored, or while it's in a
+   * root folder highsea only reads (ADR 0063), so nothing automatic grabs for it.
+   */
   function wants(tmdbId: number): Want[] {
     const row = library.internal.rowOf(tmdbId)
-    if (!row?.monitored) return []
+    if (!row?.monitored || !looksAfterPath(row.path)) return []
     const all = library.internal.versionsOf([row.id]).get(row.id) ?? []
     if (row.status === 'wanted')
       return all.filter((v) => !v.fileId).map((v) => ({ versionId: v.id, upgrade: false }))
@@ -77,6 +92,7 @@ export function createWanted(ctx: Ctx, deps: { media: Media; library: Library })
           eq(mediaItems.type, 'movie'),
           WANTED,
           sql`(${mediaItems.nextSearchAt} IS NULL OR ${mediaItems.nextSearchAt} <= ${now})`,
+          looksAfter(),
         ),
       )
       .orderBy(asc(mediaItems.nextSearchAt), asc(mediaItems.id))
@@ -119,7 +135,9 @@ export function createWanted(ctx: Ctx, deps: { media: Media; library: Library })
         })
         .from(mediaItems)
         .leftJoin(movieMetadata, eq(movieMetadata.tmdbId, mediaItems.tmdbId))
-        .where(and(eq(mediaItems.type, 'movie'), WANTED, sql`${mediaItems.id} > ${after}`))
+        .where(
+          and(eq(mediaItems.type, 'movie'), WANTED, looksAfter(), sql`${mediaItems.id} > ${after}`),
+        )
         .orderBy(asc(mediaItems.id))
         .limit(CHUNK)
         .all()
@@ -138,13 +156,28 @@ export function createWanted(ctx: Ctx, deps: { media: Media; library: Library })
     return out
   }
 
-  /** Wanted › Missing: monitored movies past their minimum availability with nothing yet. */
+  /**
+   * Wanted › Missing: monitored movies past their minimum availability with nothing yet, of those
+   * highsea looks after.
+   */
   const missing = (query: ListQuery = {}): MoviePage =>
-    library.list({ ...query, status: 'wanted', monitored: true, cutoffUnmet: undefined })
+    library.list({
+      ...query,
+      status: 'wanted',
+      monitored: true,
+      cutoffUnmet: undefined,
+      also: looksAfter(),
+    })
 
-  /** Wanted › Cutoff unmet: monitored movies with a file under its profile's cutoff. */
+  /** Wanted › Cutoff unmet: monitored movies highsea looks after with a file under the cutoff. */
   const cutoff = (query: ListQuery = {}): MoviePage =>
-    library.list({ ...query, status: undefined, monitored: true, cutoffUnmet: true })
+    library.list({
+      ...query,
+      status: undefined,
+      monitored: true,
+      cutoffUnmet: true,
+      also: looksAfter(),
+    })
 
   /**
    * The calendar: each monitored movie's dates between `from` and `to` (days, inclusive), each date
@@ -240,7 +273,19 @@ export function createWanted(ctx: Ctx, deps: { media: Media; library: Library })
     return changed
   }
 
-  return { wants, takeDue, found, rssTargets, missing, cutoff, calendar, backfill }
+  return {
+    wants,
+    takeDue,
+    found,
+    rssTargets,
+    /** Whether highsea looks after the movie: not when it's in a read-only root folder. */
+    looksAfter: (tmdbId: number) => looksAfterPath(library.internal.rowOf(tmdbId)?.path ?? null),
+    looksAfterPath,
+    missing,
+    cutoff,
+    calendar,
+    backfill,
+  }
 }
 
 export type Wanted = ReturnType<typeof createWanted>
