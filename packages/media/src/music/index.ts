@@ -35,7 +35,14 @@ export function createMusic(deps: MusicDeps, media: Media) {
   const admin = createMusicAdmin(deps, { media })
   const manage = createMusicManage(deps, {
     scan: libraryScan.scan,
-    refreshMetadata: libraryMetadata.refresh,
+    // an artist's or an album's Refresh looks up as a job naming it, so Music's pages mark it
+    // while it runs (HT-106's work marks, HT-108); one waits per item
+    queueRefresh: (only, subject) =>
+      deps.jobs.enqueue(
+        MUSIC_METADATA_JOB,
+        { force: true, only },
+        { subject, dedupeKey: `music-metadata:${subject.kind}:${subject.id}` },
+      ),
   })
   const client = createMusicClient(deps)
   const playlists = createMusicPlaylists(deps, client)
@@ -56,12 +63,16 @@ export function createMusic(deps: MusicDeps, media: Media) {
   })
   deps.jobs.define({
     type: MUSIC_METADATA_JOB,
-    payload: z.object({}),
+    // the whole library after a scan; one artist's or album's, looked up again, after its Refresh
+    payload: z.object({
+      force: z.boolean().optional(),
+      only: z.object({ albums: z.array(z.string()), artists: z.array(z.string()) }).optional(),
+    }),
     attempts: 1,
     // a first look-up of a large library at one request a second takes hours
     timeoutMs: 12 * 60 * 60 * 1000,
-    async run() {
-      await libraryMetadata.refresh()
+    async run({ force, only }) {
+      await libraryMetadata.refresh({ force, only })
     },
   })
 
