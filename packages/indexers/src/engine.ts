@@ -133,7 +133,8 @@ export function episodeTag(tv: { season: number; episode?: number | null }): str
  * spec-1.3-draft): the show's strongest id the indexer takes, with `season` and `ep`; then the
  * title with `season` and `ep`; and where the indexer doesn't take `season`, the title with
  * `S01E02` (or `S01`) in the keywords, as a release names it. An id without a season would bring
- * every episode, so ids go only with `season`.
+ * every episode, so an id goes alone only to a site that takes nothing else (EZTV's API looks a
+ * show up by its IMDb id alone): the parser picks the episodes out of what it lists.
  */
 function tvTiers(
   query: SearchQuery & { tv: NonNullable<SearchQuery['tv']> },
@@ -154,6 +155,8 @@ function tvTiers(
       out.push({ by: 'tmdbid', query: { tmdbid: String(query.tmdbId), ...numbered } })
     else if (query.imdbId && supports.includes('imdbid'))
       out.push({ by: 'imdbid', query: { imdbid: query.imdbId, ...numbered } })
+  } else if (query.imdbId && supports.includes('imdbid') && !supports.includes('q')) {
+    out.push({ by: 'imdbid', query: { imdbid: query.imdbId } })
   }
   if (query.title) {
     // `ep` without a season isn't asked: the episode then goes in the keywords
@@ -167,8 +170,13 @@ function tvTiers(
   return out
 }
 
-/** Drops repeats, and what the categories say is neither the kind searched nor unknown. */
-const keepKind = (releases: IndexerRelease[], tv: boolean, both = false) => {
+/**
+ * Drops repeats, and what the categories say is neither the kind searched nor unknown. `both` keeps
+ * films and TV alike (RSS read once for both). `all` keeps every kind: a test or a read of the
+ * newest releases on a site that lists no films (Nyaa's are all TV/Anime), where a film's filter
+ * would leave nothing.
+ */
+const keepKind = (releases: IndexerRelease[], tv: boolean, both = false, all = false) => {
   const seen = new Set<string>()
   const wanted = both
     ? (c: number) => isTvCategory(c) || isMovieCategory(c)
@@ -178,7 +186,7 @@ const keepKind = (releases: IndexerRelease[], tv: boolean, both = false) => {
   return releases.filter((r) => {
     if (seen.has(r.guid)) return false
     seen.add(r.guid)
-    return r.categories.length === 0 || r.categories.some(wanted)
+    return all || r.categories.length === 0 || r.categories.some(wanted)
   })
 }
 
@@ -368,7 +376,12 @@ async function siteSearch(
 
   const read = (answer: Answer): IndexerRelease[] => {
     const now = ctx.now()
-    if (def.kind === 'rss') return readItems(answer.body, { mapCategory: mapper.toStandard, now })
+    if (def.kind === 'rss')
+      return readItems(answer.body, {
+        mapCategory: mapper.toStandard,
+        elements: def.search.elements,
+        now,
+      })
     const sctx = {
       definition: def,
       config,
@@ -386,8 +399,15 @@ async function siteSearch(
   const list = tv
     ? tvTiers({ ...query, tv }, def.search.supports)
     : tiers(query, def.search.supports)
+  const everyKind =
+    tv === null &&
+    query.keywords !== undefined &&
+    !def.categories.some((c) => isMovieCategory(c.standard))
+  // keywords go only to a site that takes them; an empty search asks for the newest releases
+  const takesKeywords = def.search.supports.includes('q')
   for (const tier of list) {
     const q = tier.query
+    if (q.q && !takesKeywords) continue
     const inputs: TemplateInputs = {
       Config: config,
       Query: {
@@ -416,7 +436,7 @@ async function siteSearch(
       if (sessionExpired(answer))
         throw new IndexerError('auth', 'The site didn’t keep highsea signed in.')
     }
-    releases = keepKind(read(answer), tv !== null, query.both)
+    releases = keepKind(read(answer), tv !== null, query.both, everyKind)
     by = tier.by
     if (releases.length) break
   }

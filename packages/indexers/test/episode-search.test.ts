@@ -3,6 +3,8 @@
 // what an automatic search takes, and the cache a grab reads. Upgrades (HT-109): a pack against
 // single episodes when files are in, approved only when it upgrades every file it would replace.
 import { describe, expect, test } from 'bun:test'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { parseEpisode } from '@highsea-tv/parser'
 import { defaultEpisodeSizes, type ExistingFile, seedFormats } from '@highsea-tv/quality'
 import {
@@ -301,6 +303,35 @@ describe('searching the indexers for a show', () => {
         guid: 'fake-201',
       }),
     ).rejects.toThrow('That release is no longer in the search results.')
+  })
+
+  test('an automatic search passes anime-only sites by; no show’s search asks a feed of newest releases', async () => {
+    const asked: string[] = []
+    const site = (file: string) => (url: URL) => {
+      asked.push(url.hostname)
+      return readFileSync(join(import.meta.dir, 'fake/sites', file), 'utf8')
+    }
+    const t = setup({
+      definitions: [
+        catalogDefinition('generic-torznab'),
+        catalogDefinition('nyaa'),
+        catalogDefinition('subsplease'),
+      ],
+      sites: { 'nyaa.si': site('nyaa-search.xml'), 'subsplease.org': site('subsplease-rss.xml') },
+    })
+    await t.indexers.add('generic-torznab', { settings: torznabSettings })
+    await t.indexers.add('nyaa', { settings: {} })
+    await t.indexers.add('subsplease', { settings: {} })
+    // each was tested once as it was added
+    expect(asked).toEqual(['nyaa.si', 'subsplease.org'])
+    const automatic = await t.indexers.searchEpisodes({ ...input({ season: 1 }), automatic: true })
+    expect(automatic.searched).toBe(1)
+    expect(asked).toHaveLength(2)
+    // interactive search asks Nyaa too, whose answer has no Chernobyl in it
+    const interactive = await t.indexers.searchEpisodes(input({ season: 1 }))
+    expect(interactive.searched).toBe(2)
+    expect(asked).toEqual(['nyaa.si', 'subsplease.org', 'nyaa.si'])
+    expect(interactive.releases).toHaveLength(automatic.releases.length)
   })
 
   test('another show’s release in the answer is left out, and says so', async () => {

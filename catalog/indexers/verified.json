@@ -1,6 +1,51 @@
 {
   "about": "Written by bun run catalog:verify: each definition checked against its real site, with the date. Don’t edit by hand.",
   "definitions": {
+    "beta/eztv": {
+      "name": "EZTV",
+      "version": "1.0.0",
+      "channel": "beta",
+      "result": "working",
+      "reason": null,
+      "checked": "2026-11-19",
+      "verified": "2026-11-19",
+      "counts": {
+        "probes": 1,
+        "working": 1,
+        "releases": 100,
+        "withSize": 100
+      }
+    },
+    "beta/showrss": {
+      "name": "showRSS",
+      "version": "1.0.0",
+      "channel": "beta",
+      "result": "working",
+      "reason": null,
+      "checked": "2026-11-19",
+      "verified": "2026-11-19",
+      "counts": {
+        "probes": 1,
+        "working": 1,
+        "releases": 100,
+        "withSize": 0
+      }
+    },
+    "beta/subsplease": {
+      "name": "SubsPlease",
+      "version": "1.0.0",
+      "channel": "beta",
+      "result": "working",
+      "reason": null,
+      "checked": "2026-11-19",
+      "verified": "2026-11-19",
+      "counts": {
+        "probes": 1,
+        "working": 1,
+        "releases": 50,
+        "withSize": 50
+      }
+    },
     "generic-rss": {
       "name": "Torrent feed",
       "version": "1.0.0",

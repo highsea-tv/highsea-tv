@@ -1,0 +1,50 @@
+{
+  "imdb_id": "9900001",
+  "torrents_count": 3,
+  "limit": 100,
+  "page": 1,
+  "torrents": [
+    {
+      "id": 4100003,
+      "hash": "3a5f0c1e9b7d2a4c6e8f0a1b3c5d7e9f1a2b3c4d",
+      "filename": "Harbour.Lights.S03E07.1080p.HEVC.x265-GROUP[eztv].mkv",
+      "magnet_url": "magnet:?xt=urn:btih:3a5f0c1e9b7d2a4c6e8f0a1b3c5d7e9f1a2b3c4d&dn=Harbour.Lights.S03E07.1080p.HEVC.x265-GROUP",
+      "title": "Harbour Lights S03E07 1080p HEVC x265-GROUP EZTV",
+      "imdb_id": "9900001",
+      "season": "3",
+      "episode": "7",
+      "seeds": 214,
+      "peers": 31,
+      "date_released_unix": 1795500000,
+      "size_bytes": "812345678"
+    },
+    {
+      "id": 4100002,
+      "hash": "5b7d9f1a3c5e7a9b1d3f5a7c9e1b3d5f7a9c1e3b",
+      "filename": "Harbour.Lights.S03E07.480p.x264-mSD[eztv].mkv",
+      "magnet_url": "magnet:?xt=urn:btih:5b7d9f1a3c5e7a9b1d3f5a7c9e1b3d5f7a9c1e3b&dn=Harbour.Lights.S03E07.480p.x264-mSD",
+      "title": "Harbour Lights S03E07 480p x264-mSD EZTV",
+      "imdb_id": "9900001",
+      "season": "3",
+      "episode": "7",
+      "seeds": 40,
+      "peers": 2,
+      "date_released_unix": 1795499000,
+      "size_bytes": "201234567"
+    },
+    {
+      "id": 4100001,
+      "hash": "7c9e1b3d5f7a9c1e3b5d7f9a1c3e5b7d9f1a3c5e",
+      "filename": "Harbour.Lights.S03E06.1080p.HEVC.x265-GROUP[eztv].mkv",
+      "magnet_url": "magnet:?xt=urn:btih:7c9e1b3d5f7a9c1e3b5d7f9a1c3e5b7d9f1a3c5e&dn=Harbour.Lights.S03E06.1080p.HEVC.x265-GROUP",
+      "title": "Harbour Lights S03E06 1080p HEVC x265-GROUP EZTV",
+      "imdb_id": "9900001",
+      "season": "3",
+      "episode": "6",
+      "seeds": 120,
+      "peers": 8,
+      "date_released_unix": 1794900000,
+      "size_bytes": "798765432"
+    }
+  ]
+}

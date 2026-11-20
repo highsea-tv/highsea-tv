@@ -122,6 +122,33 @@ describe('validateDefinition', () => {
     ).toContain('settings.0.options: A select needs options.')
   })
 
+  test('a feed of newest releases, and a feed’s own elements (engine 1.2)', () => {
+    // a site with no search inputs must list its newest releases
+    const newest = bend(rss, (d) => {
+      d.search = { request: { path: '/rss' }, supports: [] }
+    })
+    expect(newest.ok).toBe(true)
+    expect(errors(bend(rss, (d) => (d.search.supports = []))).length).toBe(0)
+    expect(
+      errors(
+        bend(rss, (d) => {
+          d.search.supports = []
+          d.latest = false
+        }),
+      ),
+    ).toContain('search.supports: A site that can’t be searched must list its newest releases.')
+    // a release field from the item's own element, by its qualified name
+    const own = bend(rss, (d) => (d.search.elements = { seeders: 'nyaa:seeders', title: 'raw' }))
+    expect(own.ok && own.definition.kind === 'rss' && own.definition.search.elements).toEqual({
+      seeders: 'nyaa:seeders',
+      title: 'raw',
+    })
+    expect(errors(bend(rss, (d) => (d.search.elements = { seeders: 'a b' })))[0]).toContain(
+      'Use an element name like nyaa:seeders.',
+    )
+    expect(errors(bend(rss, (d) => (d.search.elements = { quality: 'x' }))).length).toBe(1)
+  })
+
   test('every problem is reported, one per line', () => {
     const r = bend(json, (d) => {
       d.starter = true

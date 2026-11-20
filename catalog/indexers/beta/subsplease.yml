@@ -1,0 +1,32 @@
+# SPDX-License-Identifier: CC0-1.0
+# Written for highsea from SubsPlease's RSS page (https://subsplease.org/rss-feeds/) and the feed
+# as it serves it; no definition was copied.
+id: subsplease
+version: 1.0.0
+minEngineVersion: 1.2.0
+name: SubsPlease
+description: New anime episodes as SubsPlease releases them, from its public feed. The feed can't be searched, so highsea reads only its newest releases.
+kind: rss
+privacy: public
+language: en
+links: [https://subsplease.org/]
+logo: subsplease.svg
+# The feed's category is the show and resolution ("Show S2 - 1080"), never a kind: everything on
+# it is anime.
+categories:
+  - { id: anime, standard: 5070, name: Anime }
+search:
+  request:
+    # "Magnet feeds … All resolutions: https://subsplease.org/rss"
+    path: /rss/
+  # the feed takes no search
+  supports: []
+  elements:
+    size: subsplease:size
+# The page names no limit.
+rateLimit: { requests: 10, seconds: 60, minGapMs: 2000 }
+test: { keywords: '' }
+source:
+  author: highsea
+  documentation: https://subsplease.org/rss-feeds/
+license: CC0-1.0

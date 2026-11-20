@@ -1,0 +1,59 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" xmlns:nyaa="https://nyaa.si/xmlns/nyaa" version="2.0">
+	<channel>
+		<title>Nyaa - "Kumo no Michi" - Torrent File RSS</title>
+		<description>RSS Feed for "Kumo no Michi"</description>
+		<link>https://nyaa.si/</link>
+		<atom:link href="https://nyaa.si/?page=rss" rel="self" type="application/rss+xml" />
+		<item>
+			<title>[SubsPlease] Kumo no Michi S2 - 07 (1080p) [0A1B2C3D].mkv</title>
+			<link>https://nyaa.si/download/9000003.torrent</link>
+			<guid isPermaLink="true">https://nyaa.si/view/9000003</guid>
+			<pubDate>Wed, 18 Nov 2026 17:31:00 -0000</pubDate>
+			<nyaa:seeders>812</nyaa:seeders>
+			<nyaa:leechers>37</nyaa:leechers>
+			<nyaa:downloads>5120</nyaa:downloads>
+			<nyaa:infoHash>0a1b2c3d4e5f60718293a4b5c6d7e8f901234567</nyaa:infoHash>
+			<nyaa:categoryId>1_2</nyaa:categoryId>
+			<nyaa:category>Anime - English-translated</nyaa:category>
+			<nyaa:size>1.4 GiB</nyaa:size>
+			<nyaa:comments>0</nyaa:comments>
+			<nyaa:trusted>Yes</nyaa:trusted>
+			<nyaa:remake>No</nyaa:remake>
+			<description><![CDATA[<a href="https://nyaa.si/view/9000003">#9000003 | [SubsPlease] Kumo no Michi S2 - 07 (1080p) [0A1B2C3D].mkv</a> | 1.4 GiB | Anime - English-translated | 0a1b2c3d4e5f60718293a4b5c6d7e8f901234567]]></description>
+		</item>
+		<item>
+			<title>[Group] Kumo no Michi - 19 [1080p HEVC]</title>
+			<link>https://nyaa.si/download/9000002.torrent</link>
+			<guid isPermaLink="true">https://nyaa.si/view/9000002</guid>
+			<pubDate>Wed, 18 Nov 2026 18:02:00 -0000</pubDate>
+			<nyaa:seeders>95</nyaa:seeders>
+			<nyaa:leechers>4</nyaa:leechers>
+			<nyaa:downloads>640</nyaa:downloads>
+			<nyaa:infoHash>1b2c3d4e5f60718293a4b5c6d7e8f9012345678a</nyaa:infoHash>
+			<nyaa:categoryId>1_2</nyaa:categoryId>
+			<nyaa:category>Anime - English-translated</nyaa:category>
+			<nyaa:size>702.3 MiB</nyaa:size>
+			<nyaa:comments>0</nyaa:comments>
+			<nyaa:trusted>No</nyaa:trusted>
+			<nyaa:remake>No</nyaa:remake>
+			<description><![CDATA[#9000002]]></description>
+		</item>
+		<item>
+			<title>[Group] Kumo no Michi Opening AMV [1080p]</title>
+			<link>https://nyaa.si/download/9000001.torrent</link>
+			<guid isPermaLink="true">https://nyaa.si/view/9000001</guid>
+			<pubDate>Tue, 17 Nov 2026 09:12:00 -0000</pubDate>
+			<nyaa:seeders>3</nyaa:seeders>
+			<nyaa:leechers>0</nyaa:leechers>
+			<nyaa:downloads>12</nyaa:downloads>
+			<nyaa:infoHash>2c3d4e5f60718293a4b5c6d7e8f9012345678a9b</nyaa:infoHash>
+			<nyaa:categoryId>1_1</nyaa:categoryId>
+			<nyaa:category>Anime - Anime Music Video</nyaa:category>
+			<nyaa:size>45.0 MiB</nyaa:size>
+			<nyaa:comments>0</nyaa:comments>
+			<nyaa:trusted>No</nyaa:trusted>
+			<nyaa:remake>No</nyaa:remake>
+			<description><![CDATA[#9000001]]></description>
+		</item>
+	</channel>
+</rss>

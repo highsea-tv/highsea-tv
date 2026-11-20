@@ -118,6 +118,15 @@ function check(def: Definition): ValidationIssue[] {
     )
   }
 
+  if (
+    def.kind !== 'torznab' &&
+    def.kind !== 'newznab' &&
+    def.search.supports.length === 0 &&
+    !def.latest
+  ) {
+    issue('search.supports', 'A site that can’t be searched must list its newest releases.')
+  }
+
   if (def.starter && def.privacy !== 'public') {
     issue('starter', 'Only public indexers can be in the starter pack.')
   }
