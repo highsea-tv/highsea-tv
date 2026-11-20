@@ -62,6 +62,7 @@ import {
   type QbittorrentImporter,
 } from '@highsea-tv/importers/qbittorrent'
 import { createRadarrImporter, type RadarrImporter } from '@highsea-tv/importers/radarr'
+import { createSonarrImporter, type SonarrImporter } from '@highsea-tv/importers/sonarr'
 import { createIndexers, type Indexers } from '@highsea-tv/indexers'
 import { createJobQueue, type JobQueue } from '@highsea-tv/jobs'
 import { createLists, type Lists } from '@highsea-tv/lists/service'
@@ -357,8 +358,8 @@ export type Runtime = {
   watchFolder: WatchFolder
   /** VPN connections: the mode, the tunnel, the checks and the binding (ADR 0040). */
   vpn: Vpn
-  /** The one-time importers from Radarr and qBittorrent: Settings › Migration (ADR 0041). */
-  importers: { radarr: RadarrImporter; qbittorrent: QbittorrentImporter }
+  /** The one-time importers from Radarr, Sonarr and qBittorrent: Settings › Migration (ADR 0041). */
+  importers: { radarr: RadarrImporter; sonarr: SonarrImporter; qbittorrent: QbittorrentImporter }
   /**
    * Watching the root folders (6b): a change asks for a scan of its title folder. `sync()` after
    * root folders change; a root that can't be watched is a health note, and the 12-hourly scan
@@ -1381,7 +1382,7 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
   vpnRef = vpn
   vpn.start()
 
-  // the one-time importers (ADR 0041): Radarr and qBittorrent through the fetch seam, credentials
+  // the one-time importers (ADR 0041): Radarr, Sonarr and qBittorrent through the fetch seam, credentials
   // sealed in the job's payload, root folders added only inside the data root
   const migrationLog = logger.child('migration')
   const radarr = createRadarrImporter({
@@ -1395,6 +1396,18 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
     media,
     movies,
     downloads,
+    allowedRoots: () => [resolve(config.dataDir)],
+  })
+  const sonarr = createSonarrImporter({
+    db,
+    jobs,
+    clock,
+    events,
+    logger: migrationLog,
+    fetch: outside,
+    sealer,
+    media,
+    shows,
     allowedRoots: () => [resolve(config.dataDir)],
   })
   const qbittorrent = createQbittorrentImporter({
@@ -1589,7 +1602,7 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
     downloads,
     watchFolder,
     vpn,
-    importers: { radarr, qbittorrent },
+    importers: { radarr, sonarr, qbittorrent },
     libraryWatch: { sync: syncWatch, problems: watch.problems, watching: watch.watching },
     folders,
     // starts in the downloads folder, where stray files usually are (A17), else the data root

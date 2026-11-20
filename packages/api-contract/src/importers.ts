@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The one-time importers (checkpoint 6b; ADR 0041; the owner's answer 10): Settings › Migration.
-// For Radarr and for qBittorrent: test a connection, preview what comes across, run the import as
+// For Radarr, Sonarr (Phase 5 C1) and qBittorrent: test a connection, preview what comes across, run the import as
 // a job, read its progress (which changes on `migration.updated`). qBittorrent's torrents come
 // across paused; Resume starts them once the owner has stopped qBittorrent. All the owner's: an
 // importer takes another program's credentials (checkpoint 6's access table).
@@ -88,6 +88,64 @@ export const RadarrPreview = z
   })
   .openapi('RadarrPreview')
 
+export const SonarrConnection = z
+  .object({
+    url: Url.openapi({ example: 'http://sonarr:8989' }),
+    apiKey: z.string().trim().min(1).max(200),
+  })
+  .openapi('SonarrConnection')
+
+export const SonarrPreviewInput = SonarrConnection.extend({ pathMappings: PathMappings }).openapi(
+  'SonarrPreviewInput',
+)
+
+export const SonarrRunInput = SonarrPreviewInput.extend({
+  /** Sonarr's profile id → highsea's, or `copy` to bring it across as it is; one left out takes the nearest. */
+  profiles: z.record(z.string(), z.string().min(1).max(64)).optional(),
+}).openapi('SonarrRunInput')
+
+export const SonarrTest = z
+  .object({ version: z.string(), series: z.number().int().nonnegative() })
+  .openapi('SonarrTest')
+
+export const SonarrPreview = z
+  .object({
+    version: z.string(),
+    series: z.object({
+      total: z.number().int(),
+      withFiles: z.number().int(),
+      inLibrary: z.number().int(),
+      /** Not in highsea yet, with a TMDB id and a folder highsea may use. */
+      ready: z.number().int(),
+      /** Episodes Sonarr lists, and how many have files, across every series. */
+      episodes: z.number().int(),
+      files: z.number().int(),
+    }),
+    profiles: z.array(
+      z.object({
+        sonarrId: z.number().int(),
+        name: z.string(),
+        cutoff: z.string(),
+        series: z.number().int(),
+        /** highsea's profile ids, nearest by cutoff first; `copy`, last, brings Sonarr's across. */
+        options: z.array(z.string()),
+      }),
+    ),
+    rootFolders: z.array(
+      z.object({
+        sonarr: z.string(),
+        path: z.string(),
+        status: z.enum(['root-folder', 'add', 'outside']),
+        series: z.number().int(),
+      }),
+    ),
+    tags: z.number().int(),
+    /** Series Sonarr numbers by air date (daily) or absolute number (anime). */
+    numbering: z.object({ daily: z.number().int(), anime: z.number().int() }),
+    problems: z.array(z.object({ title: z.string(), message: z.string() })),
+  })
+  .openapi('SonarrPreview')
+
 export const QbittorrentConnection = z
   .object({
     url: Url.openapi({ example: 'http://qbittorrent:8080' }),
@@ -155,6 +213,16 @@ const statusFields = {
 
 export const ImportStatus = z.object(statusFields).openapi('ImportStatus')
 
+export const SonarrImportStatus = z
+  .object({
+    ...statusFields,
+    /** Episode files filed in place by the run. */
+    files: z.number().int().nonnegative(),
+    /** Episodes and files of shows that came across which couldn't be placed, with why. */
+    unmatched: z.array(z.object({ name: z.string(), message: z.string() })),
+  })
+  .openapi('SonarrImportStatus')
+
 export const QbittorrentImportStatus = z
   .object({
     ...statusFields,
@@ -210,6 +278,52 @@ export const importers = {
     ...access('owner'),
     responses: {
       200: json(ImportStatus, 'The last or current run'),
+      ...errors('unauthorized', 'forbidden'),
+    },
+  }),
+  sonarrTest: createRoute({
+    method: 'post',
+    path: `${API_PREFIX}/importers/sonarr/test`,
+    tags: ['Migration'],
+    summary: 'Check Sonarr’s address and API key',
+    description:
+      'A wrong key is 400 with `bad-credentials`; an address that doesn’t answer is 503 with `unreachable`.',
+    ...access('owner'),
+    request: { ...body(SonarrConnection) },
+    responses: { 200: json(SonarrTest, 'Sonarr answered'), ...failuresOf },
+  }),
+  sonarrPreview: createRoute({
+    method: 'post',
+    path: `${API_PREFIX}/importers/sonarr/preview`,
+    tags: ['Migration'],
+    summary: 'What would come across from Sonarr, with the profile mapping',
+    description: 'Reads Sonarr and TMDB only: nothing is written in highsea or in Sonarr.',
+    ...access('owner'),
+    request: { ...body(SonarrPreviewInput) },
+    responses: { 200: json(SonarrPreview, 'The preview'), ...failuresOf },
+  }),
+  sonarrRun: createRoute({
+    method: 'post',
+    path: `${API_PREFIX}/importers/sonarr/run`,
+    tags: ['Migration'],
+    summary: 'Import from Sonarr, as a job',
+    description:
+      'One run at a time (409 `running`). Safe to run again: a second run changes only what differs.',
+    ...access('owner'),
+    request: { ...body(SonarrRunInput) },
+    responses: {
+      200: json(SonarrImportStatus, 'The job started'),
+      ...errors('invalid', 'unauthorized', 'forbidden', 'not-found', 'conflict'),
+    },
+  }),
+  sonarrStatus: createRoute({
+    method: 'get',
+    path: `${API_PREFIX}/importers/sonarr`,
+    tags: ['Migration'],
+    summary: 'The Sonarr import’s progress',
+    ...access('owner'),
+    responses: {
+      200: json(SonarrImportStatus, 'The last or current run'),
       ...errors('unauthorized', 'forbidden'),
     },
   }),
@@ -271,6 +385,8 @@ export const importers = {
 
 export type PathMapping = z.infer<typeof PathMapping>
 export type RadarrPreview = z.infer<typeof RadarrPreview>
+export type SonarrPreview = z.infer<typeof SonarrPreview>
+export type SonarrImportStatus = z.infer<typeof SonarrImportStatus>
 export type QbittorrentPreview = z.infer<typeof QbittorrentPreview>
 export type ImportStatus = z.infer<typeof ImportStatus>
 export type QbittorrentImportStatus = z.infer<typeof QbittorrentImportStatus>

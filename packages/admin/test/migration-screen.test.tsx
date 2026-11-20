@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Settings › Migration (6b; ADR 0041), rendered against a fake of the API: Radarr's card tests the
 // connection, previews (counts, root folders, the profile mapping nearest first and editable, what
-// can't come across with the way to Indexers) and imports with the mapping chosen; qBittorrent's
+// can't come across with the way to Indexers) and imports with the mapping chosen; Sonarr's does
+// the same with shows' counts, and its progress adds the files filed and what's left to place; qBittorrent's
 // shows torrents waiting paused, and Resume asks first that qBittorrent is stopped. The area is the
 // owner's alone. The shell and Next's router are stood in for.
 import './dom.ts'
@@ -83,9 +84,40 @@ const preview = {
   problems: [{ title: 'Tears of Steel (2012)', message: 'Add a path mapping for /srv/4k.' }],
 }
 
+const sonarrPreview = {
+  version: '4.0.14.2939',
+  series: { total: 3, withFiles: 2, inLibrary: 0, ready: 2, episodes: 13, files: 5 },
+  profiles: [
+    {
+      sonarrId: 4,
+      name: 'HD-1080p',
+      cutoff: 'Bluray-1080p',
+      series: 2,
+      options: ['qp-hd', 'qp-uhd', 'qp-any', 'copy'],
+    },
+    {
+      sonarrId: 6,
+      name: 'Remux',
+      cutoff: 'Remux-2160p',
+      series: 1,
+      options: ['qp-uhd', 'qp-hd', 'qp-any', 'copy'],
+    },
+  ],
+  rootFolders: [{ sonarr: '/tv', path: '/data/media/shows', status: 'add', series: 3 }],
+  tags: 2,
+  numbering: { daily: 1, anime: 0 },
+  problems: [
+    {
+      title: 'A Daily Show (1964)',
+      message: 'TMDB has no show for TheTVDB’s id 14296, and Sonarr has no TMDB id.',
+    },
+  ],
+}
+
 type Req = { method: string; path: string; body: unknown }
 let state: {
   radarr: typeof idle
+  sonarr: typeof idle & { files: number; unmatched: { name: string; message: string }[] }
   qbt: typeof idle & { paused: number; checking: number; resumedAt: string | null }
   requests: Req[]
 }
@@ -132,6 +164,15 @@ async function api(url: string, init: RequestInit = {}): Promise<Response> {
         startedAt: new Date(0).toISOString(),
       } as never
       return json(state.radarr)
+    case 'GET /api/v1/importers/sonarr':
+      return json(state.sonarr)
+    case 'POST /api/v1/importers/sonarr/test':
+      return json({ version: '4.0.14.2939', series: 3 })
+    case 'POST /api/v1/importers/sonarr/preview':
+      return json(sonarrPreview)
+    case 'POST /api/v1/importers/sonarr/run':
+      state.sonarr = { ...state.sonarr, state: 'running', total: 3 } as never
+      return json(state.sonarr)
     case 'GET /api/v1/importers/qbittorrent':
       return json(state.qbt)
     case 'POST /api/v1/importers/qbittorrent/resume':
@@ -144,6 +185,7 @@ async function api(url: string, init: RequestInit = {}): Promise<Response> {
 beforeEach(() => {
   state = {
     radarr: { ...idle },
+    sonarr: { ...idle, files: 0, unmatched: [] },
     qbt: { ...idle, paused: 0, checking: 0, resumedAt: null },
     requests: [],
   }
@@ -272,6 +314,75 @@ describe('Settings › Migration', () => {
     // the failures are a disclosure, closed until asked for
     await user.click(progress.getByRole('button', { name: '1 couldn’t come across' }))
     expect(progress.getByText('Tears of Steel (2012)')).toBeTruthy()
+  })
+
+  test('Sonarr: the preview with shows’ counts, the profile mapping, and the import with it', async () => {
+    const { user, page } = await open()
+    const sonarr = within(page.getByRole('region', { name: 'Sonarr' }))
+    await user.type(sonarr.getByLabelText('Address'), 'http://sonarr:8989')
+    await user.type(sonarr.getByLabelText('API key'), 'secret')
+    await user.click(sonarr.getByRole('button', { name: 'Test' }))
+    await settle()
+    expect(sonarr.getByRole('status').textContent).toBe(
+      'Connected to Sonarr 4.0.14.2939, with 3 series.',
+    )
+    await user.click(sonarr.getByRole('button', { name: 'Add a mapping' }))
+    expect(sonarr.getByPlaceholderText('/tv')).toBeTruthy()
+    await user.type(sonarr.getByLabelText('Their path'), '/tv')
+    await user.type(sonarr.getByLabelText('highsea’s path'), '/data/media/shows')
+    await user.click(sonarr.getByRole('button', { name: 'Preview' }))
+    await settle()
+    expect(
+      sonarr.getByText(
+        '3 series, 2 with files: 13 episodes and 5 files. 0 already in highsea, 2 ready to come across.',
+      ),
+    ).toBeTruthy()
+    const roots = within(sonarr.getByRole('region', { name: 'Root folders' }))
+    expect(roots.getByText('Added')).toBeTruthy()
+    expect(roots.getByText('3 series')).toBeTruthy()
+    expect(
+      sonarr.getByRole('button', { name: 'highsea’s profile for HD-1080p' }).textContent,
+    ).toContain('HD 1080p')
+    expect(sonarr.getByText(/1 daily and 0 anime series come across/)).toBeTruthy()
+    const kept = within(sonarr.getByRole('region', { name: 'What can’t come across' }))
+    expect(kept.getByRole('link', { name: 'Go to Indexers' })).toBeTruthy()
+    await user.click(
+      sonarr.getByRole('button', { name: 'Series that can’t come across as things stand' }),
+    )
+    expect(sonarr.getByText('A Daily Show (1964)')).toBeTruthy()
+
+    await user.click(sonarr.getByRole('button', { name: 'Import' }))
+    await settle()
+    expect(requested('POST', '/api/v1/importers/sonarr/run')[0]?.body).toEqual({
+      url: 'http://sonarr:8989',
+      apiKey: 'secret',
+      pathMappings: [{ from: '/tv', to: '/data/media/shows' }],
+      profiles: { '4': 'qp-hd', '6': 'qp-uhd' },
+    })
+  })
+
+  test('Sonarr: the files filed and what’s left to place, after an import', async () => {
+    state.sonarr = {
+      ...idle,
+      state: 'done',
+      total: 3,
+      done: 3,
+      imported: 2,
+      files: 4,
+      unmatched: [
+        {
+          name: 'The Office (UK) (2001): S01E07',
+          message: 'TMDB lists no S01E07 for this show, so its monitoring stays behind.',
+        },
+      ],
+    } as never
+    const { user, page } = await open()
+    const sonarr = within(page.getByRole('region', { name: 'Sonarr' }))
+    const progress = within(sonarr.getByRole('region', { name: 'Import progress' }))
+    expect(progress.getByText('Imported 2 items, skipped 0 already here.')).toBeTruthy()
+    expect(progress.getByText('4 episode files filed where they are.')).toBeTruthy()
+    await user.click(progress.getByRole('button', { name: '1 episode or file to place by hand' }))
+    expect(progress.getByText('The Office (UK) (2001): S01E07')).toBeTruthy()
   })
 
   test('qBittorrent: torrents waiting paused; Resume asks that qBittorrent is stopped', async () => {

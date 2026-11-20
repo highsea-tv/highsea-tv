@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The importers' routes through the SDK (6b; ADR 0041): Radarr and qBittorrent's test, preview,
+// The importers' routes through the SDK (6b; ADR 0041): Radarr's, Sonarr's and qBittorrent's test, preview,
 // run and status, and qBittorrent's resume, against the fakes on loopback. The owner's only: an
 // admin and a user are refused every route. Starting an import is in the audit log, and the key
 // isn't. The importers' own behaviour is tested in packages/importers.
@@ -9,10 +9,13 @@ import {
   FAKE_QBT_PASSWORD,
   FAKE_QBT_USER,
   FAKE_RADARR_KEY,
+  FAKE_SONARR_KEY,
   qbtState,
   radarrLibrary,
+  sonarrLibrary,
   startFakeQbittorrent,
   startFakeRadarr,
+  startFakeSonarr,
 } from '@highsea-tv/importers/fake'
 import { createReplayFetch } from '@highsea-tv/metadata/replay'
 import { createApi } from '../src/api/app.ts'
@@ -40,10 +43,13 @@ async function started() {
   const user = await addMember(runtime, owner.id, 'Sam', 'user')
   const radarr = await startFakeRadarr(radarrLibrary('/movies', '/movies-4k'))
   const qbt = await startFakeQbittorrent(qbtState())
-  closers.push(radarr.close, qbt.close)
+  const sonarr = await startFakeSonarr(sonarrLibrary('/tv'))
+  closers.push(radarr.close, qbt.close, sonarr.close)
   return {
     runtime,
     radarr: { url: radarr.url, apiKey: FAKE_RADARR_KEY },
+    sonarr: { url: sonarr.url, apiKey: FAKE_SONARR_KEY },
+    sonarrRequests: sonarr.requests,
     qbt: { url: qbt.url, username: FAKE_QBT_USER, password: FAKE_QBT_PASSWORD },
     ownerApi: clientFor(app, { token }),
     adminApi: clientFor(app, { token: admin.token }),
@@ -98,6 +104,50 @@ describe('the importers over the API', () => {
     expect(JSON.stringify(log)).not.toContain(FAKE_RADARR_KEY)
   })
 
+  test('Sonarr: test, preview, run and status as the owner, in the audit log', async () => {
+    const { runtime, sonarr, sonarrRequests, ownerApi } = await started()
+    expect(await ownerApi.importers.sonarrTest({ body: sonarr })).toEqual({
+      version: '4.0.14.2939',
+      series: 3,
+    })
+    expect(
+      await failure(ownerApi.importers.sonarrTest({ body: { ...sonarr, apiKey: 'wrong' } })),
+    ).toEqual({ code: 'invalid', reason: 'bad-credentials' })
+
+    const preview = await ownerApi.importers.sonarrPreview({
+      body: { ...sonarr, pathMappings: [] },
+    })
+    expect(preview.series).toMatchObject({ total: 3, withFiles: 2, files: 5 })
+    expect(preview.numbering).toEqual({ daily: 1, anime: 0 })
+    expect(preview.profiles.map((p) => [p.name, p.options.at(-1)])).toEqual([
+      ['HD-1080p', 'copy'],
+      ['Remux', 'copy'],
+    ])
+    expect(preview.rootFolders.map((r) => r.status)).toEqual(['outside'])
+
+    expect(await ownerApi.importers.sonarrStatus()).toMatchObject({ state: 'idle', files: 0 })
+    const begun = await ownerApi.importers.sonarrRun({ body: { ...sonarr, pathMappings: [] } })
+    expect(begun).toMatchObject({ state: 'running', done: 0, unmatched: [] })
+    expect(
+      await failure(ownerApi.importers.sonarrRun({ body: { ...sonarr, pathMappings: [] } })),
+    ).toEqual({ code: 'conflict', reason: 'running' })
+
+    await runtime.jobs.tick()
+    await runtime.jobs.idle()
+    // nothing mapped: every series is outside the folders highsea may use
+    expect(await ownerApi.importers.sonarrStatus()).toMatchObject({
+      state: 'done',
+      total: 3,
+      imported: 0,
+      files: 0,
+    })
+
+    const log = await ownerApi.audit.list({ query: {} })
+    expect(log.items.find((e) => e.action === 'import.sonarr')).toBeDefined()
+    expect(JSON.stringify(log)).not.toContain(FAKE_SONARR_KEY)
+    expect(sonarrRequests.every((r) => r.startsWith('GET '))).toBe(true)
+  })
+
   test('qBittorrent: test, preview, run, status and resume as the owner', async () => {
     const { runtime, qbt, ownerApi } = await started()
     expect(await ownerApi.importers.qbittorrentTest({ body: qbt })).toEqual({
@@ -130,13 +180,17 @@ describe('the importers over the API', () => {
   })
 
   test('an admin and a user are refused every route', async () => {
-    const { radarr, qbt, adminApi, userApi } = await started()
+    const { radarr, sonarr, qbt, adminApi, userApi } = await started()
     for (const api of [adminApi, userApi]) {
       const calls = [
         api.importers.radarrTest({ body: radarr }),
         api.importers.radarrPreview({ body: { ...radarr, pathMappings: [] } }),
         api.importers.radarrRun({ body: { ...radarr, pathMappings: [] } }),
         api.importers.radarrStatus(),
+        api.importers.sonarrTest({ body: sonarr }),
+        api.importers.sonarrPreview({ body: { ...sonarr, pathMappings: [] } }),
+        api.importers.sonarrRun({ body: { ...sonarr, pathMappings: [] } }),
+        api.importers.sonarrStatus(),
         api.importers.qbittorrentTest({ body: qbt }),
         api.importers.qbittorrentPreview({ body: { ...qbt, pathMappings: [] } }),
         api.importers.qbittorrentRun({ body: { ...qbt, pathMappings: [] } }),
