@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:subsplease="https://www.subsplease.org/rss">
+<channel>
+<title>SubsPlease RSS</title>
+<description>RSS feed for SubsPlease releases (all resolutions)</description>
+<link>https://subsplease.org</link>
+<item>
+<title>[SubsPlease] Kumo no Michi S2 - 07 (1080p) [0A1B2C3D].mkv</title>
+<link>magnet:?xt=urn:btih:BIFSYPKOL5QHDEUTUS24NVXI7EASGRLH&amp;dn=%5BSubsPlease%5D%20Kumo%20no%20Michi%20S2%20-%2007%20%281080p%29%20%5B0A1B2C3D%5D.mkv</link>
+<guid isPermaLink="false">BIFSYPKOL5QHDEUTUS24NVXI7EASGRLH</guid>
+<pubDate>Wed, 18 Nov 2026 17:30:12 +0000</pubDate>
+<category>Kumo no Michi S2 - 1080</category>
+<subsplease:size>1.39 GiB</subsplease:size>
+</item>
+<item>
+<title>[SubsPlease] Kumo no Michi S2 - 07 (720p) [4E5F6071].mkv</title>
+<link>magnet:?xt=urn:btih:JZPWA4K2NMZQ5YXHB3MKLGOXAVRB2NWZ&amp;dn=%5BSubsPlease%5D%20Kumo%20no%20Michi%20S2%20-%2007%20%28720p%29%20%5B4E5F6071%5D.mkv</link>
+<guid isPermaLink="false">JZPWA4K2NMZQ5YXHB3MKLGOXAVRB2NWZ</guid>
+<pubDate>Wed, 18 Nov 2026 17:30:10 +0000</pubDate>
+<category>Kumo no Michi S2 - 720</category>
+<subsplease:size>702.84 MiB</subsplease:size>
+</item>
+</channel>
+</rss>

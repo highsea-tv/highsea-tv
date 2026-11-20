@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The catalog's public sites (HT-77): YTS, Knaben, BitSearch and Torrents-CSV, each run by the
-// engine against saved answers in its API's documented shape (test/fake/sites/). Nothing leaves
-// the process.
+// The catalog's public sites (HT-77): YTS, Knaben, BitSearch and Torrents-CSV, and the TV and anime
+// sites (HT-110): EZTV, Nyaa, SubsPlease and showRSS, each run by the engine against saved answers
+// in its API's documented shape (test/fake/sites/). Nothing leaves the process.
 import { describe, expect, test } from 'bun:test'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -12,6 +12,7 @@ import { type RunContext, runSearch, type SearchQuery } from '../src/engine.ts'
 import type { IndexerError } from '../src/http.ts'
 import { createRateLimiter, MAX_RATE_WAIT_MS } from '../src/rate-limit.ts'
 import { scrapeJson } from '../src/scrape.ts'
+import { onlyAnime, searchable, servesFilms } from '../src/search.ts'
 import { FAKE_CREDENTIALS, FAKE_NOW, FAKE_ORIGIN, fakeJson, MOVIES } from './fake/index.ts'
 import { catalogDefinition, setup } from './helpers.ts'
 
@@ -352,5 +353,173 @@ describe('the engine’s additions for them', () => {
     const result = await t.indexers.rss([], () => null)
     expect(result.read).toBe(0)
     expect(t.fake.requests.length).toBe(before)
+  })
+})
+
+/** A show's search as the episode search asks it. */
+const harbourLights: SearchQuery = {
+  title: 'Harbour Lights',
+  imdbId: 'tt9900001',
+  tv: { season: 3, episode: 7 },
+}
+
+describe('EZTV', () => {
+  const eztv = catalogDefinition('eztv')
+  const route = (url: URL) => {
+    if (url.hostname !== 'eztvx.to' || url.pathname !== '/api/get-torrents') return null
+    const id = url.searchParams.get('imdb_id')
+    return id === '9900001' ? saved('eztv-show.json') : saved('eztv-none.json')
+  }
+
+  test('a show is looked up by its IMDb id alone, and its releases read in full', async () => {
+    const { ctx, requests } = context(eztv, route)
+    const result = await runSearch(ctx, harbourLights)
+    expect(result.by).toBe('imdbid')
+    // the id without its "tt", the API's most a page; no title, season or episode
+    expect(requests.map((u) => u.search)).toEqual(['?imdb_id=9900001&limit=100&page=1'])
+    expect(result.releases).toHaveLength(3)
+    expect(result.releases[0]).toMatchObject({
+      // the site's name after the group's is dropped
+      title: 'Harbour Lights S03E07 1080p HEVC x265-GROUP',
+      guid: 'eztv:4100003',
+      magnet: expect.stringMatching(/^magnet:\?xt=urn:btih:3a5f0c1e/),
+      download: null,
+      infohash: '3a5f0c1e9b7d2a4c6e8f0a1b3c5d7e9f1a2b3c4d',
+      imdbId: 'tt9900001',
+      size: 812345678,
+      seeders: 214,
+      leechers: 31,
+      published: new Date(1795500000 * 1000).toISOString(),
+    })
+    // every title numbers its episode
+    const parsed = result.releases.map((r) => parse(r.title))
+    expect(parsed.every((p) => p.title === 'Harbour Lights')).toBe(true)
+  })
+
+  test('a show without an IMDb id isn’t asked: the API takes no title', async () => {
+    const { ctx, requests } = context(eztv, route)
+    const result = await runSearch(ctx, { ...harbourLights, imdbId: null })
+    expect(requests).toHaveLength(0)
+    expect(result).toMatchObject({ releases: [], by: 'none' })
+  })
+
+  test('an id EZTV doesn’t know answers without torrents: nothing found', async () => {
+    const { ctx } = context(eztv, route)
+    const result = await runSearch(ctx, { ...harbourLights, imdbId: 'tt9900002' })
+    expect(result.releases).toEqual([])
+  })
+
+  test('its test lists the newest releases of every show', async () => {
+    const { ctx, requests } = context(eztv, () => saved('eztv-show.json'))
+    const result = await runSearch(ctx, { keywords: eztv.test.keywords })
+    expect(requests[0]?.searchParams.has('imdb_id')).toBe(false)
+    expect(result.releases).toHaveLength(3)
+  })
+
+  test('a film’s search passes it by', () => {
+    expect(servesFilms(eztv)).toBe(false)
+    expect(onlyAnime(eztv)).toBe(false)
+  })
+})
+
+describe('Nyaa', () => {
+  const nyaa = catalogDefinition('nyaa')
+  const route = (url: URL) =>
+    url.hostname === 'nyaa.si' && url.searchParams.get('page') === 'rss'
+      ? saved('nyaa-search.xml')
+      : null
+
+  test('a show is searched by its words, in Anime, and the feed’s own elements read', async () => {
+    const { ctx, requests } = context(nyaa, route)
+    const result = await runSearch(ctx, { title: 'Kumo no Michi', tv: { season: 2, episode: 7 } })
+    expect(Object.fromEntries(requests[0]?.searchParams ?? [])).toEqual({
+      page: 'rss',
+      q: 'Kumo no Michi S02E07',
+      c: '1_0',
+      f: '0',
+    })
+    // the music video isn't a show's
+    expect(result.releases.map((r) => r.guid)).toEqual([
+      'https://nyaa.si/view/9000003',
+      'https://nyaa.si/view/9000002',
+    ])
+    expect(result.releases[0]).toMatchObject({
+      title: '[SubsPlease] Kumo no Michi S2 - 07 (1080p) [0A1B2C3D].mkv',
+      download: 'https://nyaa.si/download/9000003.torrent',
+      details: 'https://nyaa.si/view/9000003',
+      infohash: '0a1b2c3d4e5f60718293a4b5c6d7e8f901234567',
+      size: Math.round(1.4 * 1024 ** 3),
+      seeders: 812,
+      leechers: 37,
+      grabs: 5120,
+      categories: [5070],
+      published: '2026-11-18T17:31:00.000Z',
+    })
+  })
+
+  test('its test keeps every kind, though none is a film’s', async () => {
+    const { ctx, requests } = context(nyaa, route)
+    const result = await runSearch(ctx, { keywords: '' })
+    expect(requests[0]?.searchParams.get('q')).toBeNull()
+    expect(result.releases).toHaveLength(3)
+  })
+
+  test('it lists only anime: the automatic search and a film’s pass it by', () => {
+    expect(onlyAnime(nyaa)).toBe(true)
+    expect(servesFilms(nyaa)).toBe(false)
+    expect(searchable(nyaa)).toBe(true)
+  })
+})
+
+describe('the feeds of newest releases: SubsPlease and showRSS', () => {
+  const subsplease = catalogDefinition('subsplease')
+  const showrss = catalogDefinition('showrss')
+
+  test('SubsPlease: its feed read, magnets and sizes', async () => {
+    const { ctx, requests } = context(subsplease, (url) =>
+      url.hostname === 'subsplease.org' && url.pathname === '/rss/'
+        ? saved('subsplease-rss.xml')
+        : null,
+    )
+    const result = await runSearch(ctx, { keywords: subsplease.test.keywords })
+    expect(requests.map((u) => u.href)).toEqual(['https://subsplease.org/rss/'])
+    expect(result.releases).toHaveLength(2)
+    expect(result.releases[0]).toMatchObject({
+      title: '[SubsPlease] Kumo no Michi S2 - 07 (1080p) [0A1B2C3D].mkv',
+      guid: 'BIFSYPKOL5QHDEUTUS24NVXI7EASGRLH',
+      magnet: expect.stringMatching(/^magnet:\?xt=urn:btih:BIFSYPKOL5QHDEUTUS24NVXI7EASGRLH/),
+      download: null,
+      size: Math.round(1.39 * 1024 ** 3),
+      published: '2026-11-18T17:30:12.000Z',
+    })
+  })
+
+  test('showRSS: the release’s own name, its hash, and no size from a magnet’s enclosure', async () => {
+    const { ctx, requests } = context(showrss, (url) =>
+      url.hostname === 'showrss.info' && url.pathname === '/other/all.rss'
+        ? saved('showrss-all.xml')
+        : null,
+    )
+    const result = await runSearch(ctx, { keywords: showrss.test.keywords })
+    expect(requests).toHaveLength(1)
+    expect(result.releases.map((r) => r.title)).toEqual([
+      'Harbour Lights S03E07 720p HDTV H264 GROUP',
+      'Harbour Lights S03E07 1080p HDTV H264 OTHER',
+    ])
+    expect(result.releases[0]).toMatchObject({
+      infohash: '4d6f8a0c2e4b6d8f0a2c4e6b8d0f2a4c6e8b0d2f',
+      magnet: expect.stringMatching(/^magnet:\?xt=urn:btih:4D6F8A0C/),
+      size: null,
+    })
+  })
+
+  test('neither can be searched: a show’s search asks nothing of them', async () => {
+    for (const def of [subsplease, showrss]) {
+      expect(searchable(def)).toBe(false)
+      const { ctx, requests } = context(def, () => '')
+      const result = await runSearch(ctx, harbourLights)
+      expect(requests).toHaveLength(0)
+      expect(result.releases).toEqual([])
+    }
   })
 })

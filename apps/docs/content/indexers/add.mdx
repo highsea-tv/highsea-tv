@@ -45,6 +45,8 @@ A public indexer that needs nothing filled in has an **Add** button. highsea tes
 
 Some public indexers can only be searched: they can't list their newest releases, so highsea asks them when it looks for a particular film, and leaves them out when it checks for new releases every 15 minutes. Some also allow only so many requests, such as BitSearch's 200 a day. When that's used up, highsea rests the indexer, as it does one that's backing off, and says when it tries again ([Indexer health](/indexers/health/)).
 
+The TV and anime indexers are on the Beta channel while they're new. EZTV finds a show by its IMDb id and lists its newest hundred releases. SubsPlease and showRSS can't be searched: they only list their newest episodes, so highsea keeps them for when it checks for new episodes. Nyaa is searched by a show's name, and finds an episode where the release names its season. Anime often numbers episodes from the show's first, which highsea can't place yet, so a show's automatic search leaves Nyaa and SubsPlease out for now; a search you run yourself from a show's page still lists what Nyaa finds.
+
 ### Private and semi-private indexers
 
 These need your account details, so they have **Set up** instead. The form shows the fields that indexer needs, such as a username and password or an API key, each with a note on where to find it.

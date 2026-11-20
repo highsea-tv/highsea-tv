@@ -1,0 +1,48 @@
+# SPDX-License-Identifier: CC0-1.0
+# Written for highsea from Nyaa's search feed as it serves it (https://nyaa.si/?page=rss) and its
+# help page (https://nyaa.si/help); no definition was copied.
+id: nyaa
+version: 1.0.0
+minEngineVersion: 1.2.0
+name: Nyaa
+description: Anime from Nyaa's search feed. It finds a release by its words, so an episode is found only where the release names its season; an episode numbered from the show's start waits for anime's own part.
+kind: rss
+privacy: public
+language: en
+links: [https://nyaa.si/]
+logo: nyaa.svg
+# The categories of the search form's list, as the feed's nyaa:categoryId gives them. Music videos
+# aren't a show's episodes.
+categories:
+  - { id: 1_2, standard: 5070, name: Anime - English-translated }
+  - { id: 1_3, standard: 5070, name: Anime - Non-English-translated }
+  - { id: 1_4, standard: 5070, name: Anime - Raw }
+  - { id: 1_1, standard: 8010, name: Anime - Anime Music Video }
+search:
+  request:
+    # the search page as a feed: "?page=rss", with the form's own q, c (category) and f (filter)
+    path: /
+    query:
+      page: rss
+      q: '{{ .Query.Keywords }}'
+      # Anime, every subcategory; f=0 is "No filter"
+      c: 1_0
+      f: '0'
+  # "Search results can be filtered by category, remake, trusted, and users": words, nothing else
+  supports: [q]
+  # the feed's own elements, in its nyaa namespace
+  elements:
+    infohash: nyaa:infoHash
+    size: nyaa:size
+    seeders: nyaa:seeders
+    leechers: nyaa:leechers
+    grabs: nyaa:downloads
+    category: nyaa:categoryId
+    details: guid
+# The help page names no limit.
+rateLimit: { requests: 10, seconds: 60, minGapMs: 2000 }
+test: { keywords: '' }
+source:
+  author: highsea
+  documentation: https://nyaa.si/help
+license: CC0-1.0

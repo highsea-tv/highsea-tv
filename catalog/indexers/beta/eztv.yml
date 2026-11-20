@@ -1,0 +1,50 @@
+# SPDX-License-Identifier: CC0-1.0
+# Written for highsea from EZTV's own API page (https://eztvx.to/api/); no definition was copied.
+id: eztv
+version: 1.0.0
+minEngineVersion: 1.2.0
+name: EZTV
+description: TV episodes from EZTV's public API. It finds a show by its IMDb id, with its newest hundred releases, and lists the site's newest releases for RSS.
+kind: json
+privacy: public
+language: en
+# eztv.re answers with a permanent redirect here
+links: [https://eztvx.to/]
+logo: eztv.svg
+# The API gives no category: everything on EZTV is a TV episode or season.
+categories:
+  - { id: tv, standard: 5000, name: TV }
+search:
+  request:
+    # "Request: https://eztvx.to/api/get-torrents"
+    path: /api/get-torrents
+    query:
+      # "Show lookup by IMDB ID … ?imdb_id=6048596": the id without its "tt"; without one, the
+      # newest torrents of every show
+      imdb_id: '{{ .Query.IMDBIDShort }}'
+      # "limit (results per page, between 1 and 100); page (current page of results, between 1
+      # and 100)"
+      limit: '100'
+      page: '1'
+  # an id EZTV doesn't know answers without "torrents"
+  rows: { path: torrents, optional: true }
+  fields:
+    # "The Sinner S04E08 1080p HEVC x265-MeGusta EZTV": the site's name isn't the group's
+    title: { path: title, filters: [{ filter: replace, pattern: '\s+EZTV$' }] }
+    guid: { path: id, filters: [{ filter: prepend, value: 'eztv:' }] }
+    magnet: { path: magnet_url }
+    infohash: { path: hash, optional: true }
+    imdbId: { path: imdb_id, optional: true }
+    size: { path: size_bytes, optional: true, filters: [{ filter: number }] }
+    seeders: { path: seeds, optional: true }
+    leechers: { path: peers, optional: true }
+    published: { path: date_released_unix, optional: true, filters: [{ filter: date, format: unix }] }
+  # an IMDb id alone: the API takes no title, season or episode
+  supports: [imdbid]
+# The page names no limit.
+rateLimit: { requests: 20, seconds: 60, minGapMs: 1000 }
+test: { keywords: '' }
+source:
+  author: highsea
+  documentation: https://eztvx.to/api/
+license: CC0-1.0
