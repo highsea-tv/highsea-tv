@@ -37,9 +37,11 @@ import type { IndexerRelease } from './release.ts'
 import {
   DEFAULT_MINIMUM_SEEDERS,
   flagsOf,
+  onlyAnime,
   RELEASES_TTL_MS,
   type ReleaseView,
   type SearchResult,
+  searchable,
   servesMovie,
 } from './search.ts'
 
@@ -80,6 +82,12 @@ export type ShowSearchInput = {
   sizes: readonly QualitySize[]
   locale?: string
   tags?: readonly string[]
+  /**
+   * An automatic search (Search, the add dialog's Start searching, a failed download's next try),
+   * whose best releases are grabbed without a person choosing: a site that lists only anime is
+   * passed by (`onlyAnime`). Interactive search still asks it.
+   */
+  automatic?: boolean
   /** Whether the show's blocklist has the release: it's rejected. */
   blocked?: (release: {
     indexerId: string
@@ -353,7 +361,14 @@ export function createEpisodeSearch<R extends IndexerRow>(deps: {
 
   return {
     async search(input: ShowSearchInput): Promise<EpisodeSearchResult> {
-      const candidates = deps.candidates().filter((c) => servesMovie(c.row, input.tags))
+      const candidates = deps
+        .candidates()
+        .filter(
+          (c) =>
+            servesMovie(c.row, input.tags) &&
+            searchable(c.definition) &&
+            !(input.automatic && onlyAnime(c.definition)),
+        )
       const query: SearchQuery = {
         title: input.title,
         imdbId: input.imdbId,

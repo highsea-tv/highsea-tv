@@ -72,6 +72,31 @@ describe('a working definition', () => {
   })
 })
 
+describe('the TV and anime sites (HT-110)', () => {
+  const sites = join(import.meta.dir, '../packages/indexers/test/fake/sites')
+  const answer = (file: string) => () => new Response(readFileSync(join(sites, file), 'utf8'))
+
+  test('EZTV, which takes only an id: its newest releases, no title search, its first magnet', async () => {
+    const eztv = byId('eztv')
+    expect(catalog.find((d) => d.definition.id === 'eztv')?.channel).toBe('beta')
+    const fetch = around((url) => (url.hostname === 'eztvx.to' ? answer('eztv-show.json')() : null))
+    const v = await verifyDefinition(eztv, 'beta', options(fetch).options)
+    expect(v.result).toBe('working')
+    expect(v.probes.map((p) => [p.name, p.releases])).toEqual([['test', 3]])
+    expect(v.grab).toBe('a magnet for 3a5f0c1e9b7d2a4c6e8f0a1b3c5d7e9f1a2b3c4d')
+  })
+
+  test('showRSS, a feed of newest releases: read once, its first magnet parsed', async () => {
+    const fetch = around((url) =>
+      url.hostname === 'showrss.info' ? answer('showrss-all.xml')() : null,
+    )
+    const v = await verifyDefinition(byId('showrss'), 'beta', options(fetch).options)
+    expect(v.result).toBe('working')
+    expect(v.probes.map((p) => [p.name, p.releases])).toEqual([['test', 2]])
+    expect(v.grab).toBe('a magnet for 4d6f8a0c2e4b6d8f0a2c4e6b8d0f2a4c6e8b0d2f')
+  })
+})
+
 describe('a failing definition', () => {
   test('one that finds nothing says so in words', async () => {
     const { options: o, fake } = options()

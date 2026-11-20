@@ -6,6 +6,11 @@
 // `Season 1`, `S01-S03`) for monitoring later (C1). Daily (`2019.10.25`) and absolute (`- 05`)
 // numbering are anime's and daily shows', which wait for their phase: such names give null.
 //
+// Anime's fansub names (HT-110, Nyaa and SubsPlease) are read only where they name the season: an
+// episode after a season, `[SubsPlease] Show S2 - 07 (1080p)`, `Show Season 2 - 07` and `Show 2nd
+// Season - 07`, is that season's episode, and `Show 2nd Season` alone is its pack. A bare `Show -
+// 07` may count from the show's first episode or the season's, so it still gives null.
+//
 // A hyphen joins episodes only when it touches them (`E01-02`), as Sonarr writes them: " - 24 Hours"
 // after an episode is its title, not a range.
 
@@ -44,6 +49,19 @@ const PACK_WORDS = new RegExp(
   `${START}Seasons?[ ._]?(\\d{1,3})(?:[ ._]?-[ ._]?(\\d{1,3}))?${END}`,
   'iu',
 )
+
+/** `2nd Season`, `3rd Season`: a season as anime's titles write it. */
+const ORDINAL_SEASON = '(\\d{1,2})(?:st|nd|rd|th)[ ._]Season'
+/**
+ * A season, then ` - 07` (`v2` for a fansub's second version): `S2 - 07`, `Season 2 - 07`, `2nd
+ * Season - 07`. The hyphen has spaces on both sides, as fansub names write it.
+ */
+const SEASON_DASH_EPISODE = new RegExp(
+  `${START}(?:S(\\d{1,2})|Season[ ._]?(\\d{1,2})|${ORDINAL_SEASON})[ ._]+-[ ._]+(\\d{1,4})(?:v\\d)?${END}`,
+  'iu',
+)
+/** `2nd Season` alone: a pack. */
+const ORDINAL_PACK = new RegExp(`${START}${ORDINAL_SEASON}${END}`, 'iu')
 
 /**
  * What follows a standard episode: another `E02`, a touching range `-03` or `-E03`, or the whole
@@ -106,7 +124,8 @@ function titleOf(before: string): { title: string; year: number | null } {
   let s = before
     .replace(LEADING, '')
     .replace(/[._]+/g, ' ')
-    .replace(/[\s-]+$/u, '')
+    // "Show (Season 1)": the bracket the numbering opened
+    .replace(/[\s([-]+$/u, '')
     .trim()
   let year: number | null = null
   const paren = /\s*\(((?:19|20)\d\d)\)$/u.exec(s)
@@ -172,7 +191,19 @@ export function parseEpisode(name: string): ParsedEpisode | null {
     }
   }
 
-  const pack = PACK.exec(s) ?? PACK_WORDS.exec(s)
+  const dashed = SEASON_DASH_EPISODE.exec(s)
+  if (dashed) {
+    const season = Number(dashed[1] ?? dashed[2] ?? dashed[3])
+    return {
+      ...titleOf(s.slice(0, dashed.index)),
+      season,
+      episodes: [Number(dashed[4])],
+      fullSeason: false,
+      seasons: [season],
+    }
+  }
+
+  const pack = PACK.exec(s) ?? PACK_WORDS.exec(s) ?? ORDINAL_PACK.exec(s)
   if (pack?.[1]) {
     const seasons = seasonsFrom(Number(pack[1]), pack[2] ? Number(pack[2]) : null)
     return {

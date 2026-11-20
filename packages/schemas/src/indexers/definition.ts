@@ -211,14 +211,50 @@ const rowsSchema = z.union([
     .strict(),
 ])
 
+/**
+ * What the site can be searched by. Empty for a site that only lists its newest releases (a feed
+ * with no search): a search passes it by, and only its newest releases are read. Engine 1.2.
+ */
+const supportsSchema = z.array(z.enum(SEARCH_INPUTS)).default(['q'])
+
 const scrapeSearchSchema = z
   .object({
     request: requestSchema,
     rows: rowsSchema,
     fields: z.record(z.string().regex(/^[a-zA-Z_][a-zA-Z0-9_]{0,39}$/), fieldSchema),
-    supports: z.array(z.enum(SEARCH_INPUTS)).min(1).default(['q']),
+    supports: supportsSchema,
   })
   .strict()
+
+/**
+ * An RSS item's own elements a feed carries beyond RSS 2.0 and Torznab's attributes, by their
+ * qualified name (`nyaa:seeders`), for the release fields they hold. Each is read before RSS's own
+ * element for that field. Engine 1.2.
+ */
+const FEED_ELEMENT_FIELDS = [
+  'title',
+  'guid',
+  'download',
+  'magnet',
+  'infohash',
+  'details',
+  'size',
+  'seeders',
+  'leechers',
+  'grabs',
+  'published',
+  'imdbId',
+  'tvdbId',
+  'category',
+] as const
+export type FeedElementField = (typeof FEED_ELEMENT_FIELDS)[number]
+const elementName = z
+  .string()
+  .regex(
+    /^[A-Za-z_][\w.-]{0,59}(?::[A-Za-z_][\w.-]{0,59})?$/,
+    'Use an element name like nyaa:seeders.',
+  )
+const feedElementsSchema = z.partialRecord(z.enum(FEED_ELEMENT_FIELDS), elementName)
 
 export const loginSchema = z.discriminatedUnion('method', [
   z.object({ method: z.literal('none') }).strict(),
@@ -320,7 +356,8 @@ const rssSchema = z.object({
   search: z
     .object({
       request: requestSchema,
-      supports: z.array(z.enum(SEARCH_INPUTS)).min(1).default(['q']),
+      supports: supportsSchema,
+      elements: feedElementsSchema.optional(),
     })
     .strict(),
 })

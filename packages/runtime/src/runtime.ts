@@ -1205,7 +1205,10 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
     async searchEpisodes(itemId, scope) {
       const show = titleOf(itemId, 'show')
       const input = show ? showSearch.inputFor(show.tmdbId, scope) : null
-      return input ? (await indexers.searchEpisodes(input.search)).releases : []
+      // the grabs it leads to are automatic: a site that lists only anime is passed by
+      return input
+        ? (await indexers.searchEpisodes({ ...input.search, automatic: true })).releases
+        : []
     },
     downloadsFolder: () => folders().downloads,
     history: (entry) => {

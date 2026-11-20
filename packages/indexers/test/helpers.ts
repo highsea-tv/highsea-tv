@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import {
   createEventBus,
@@ -24,11 +24,14 @@ import { createIndexers } from '../src/index.ts'
 import type { SearchInput } from '../src/search.ts'
 import { createFakeIndexer, FAKE_NOW, MOVIES } from './fake/index.ts'
 
-const CATALOG = join(import.meta.dir, '../../../catalog/indexers/definitions')
+const CATALOG = join(import.meta.dir, '../../../catalog/indexers')
 
 /** A definition from the repository's catalog, as it ships. */
+/** A catalog definition by id, from the stable folder or, while it's new, from beta/. */
 export function catalogDefinition(id: string): Definition {
-  const raw = Bun.YAML.parse(readFileSync(join(CATALOG, `${id}.yml`), 'utf8'))
+  const stable = join(CATALOG, 'definitions', `${id}.yml`)
+  const file = existsSync(stable) ? stable : join(CATALOG, 'beta', `${id}.yml`)
+  const raw = Bun.YAML.parse(readFileSync(file, 'utf8'))
   const result = validateDefinition(raw)
   if (!result.ok) throw new Error(`${id}: ${formatIssues(result.errors)}`)
   return result.definition
@@ -62,7 +65,14 @@ export function memorySource(initial: Definition[] = []) {
   return source
 }
 
-export function setup(options: { definitions?: Definition[]; timeoutMs?: number } = {}) {
+export function setup(
+  options: {
+    definitions?: Definition[]
+    timeoutMs?: number
+    /** Answers for a public site's host, as its saved answer; every other address is the fake's. */
+    sites?: Record<string, (url: URL) => string>
+  } = {},
+) {
   const { db, raw } = openDatabase(':memory:')
   migrate(raw)
   const clock = createFakeClock(FAKE_NOW)
@@ -82,7 +92,11 @@ export function setup(options: { definitions?: Definition[]; timeoutMs?: number 
     logger: createLogger({ sinks: [logs], level: 'debug', clock }),
     events,
     sealer,
-    fetch: fake.fetch,
+    fetch: async (input, init) => {
+      const url = new URL(input instanceof Request ? input.url : String(input))
+      const site = options.sites?.[url.hostname]
+      return site ? new Response(site(url)) : fake.fetch(input, init)
+    },
     definitions: source,
     sleep: async (ms) => {
       sleeps.push(ms)

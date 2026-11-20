@@ -185,7 +185,11 @@ export async function verifyDefinition(
   await run('test', { keywords }, keywords ? `The test search for “${keywords}”` : 'The latest')
   if (keywords) await run('latest', { keywords: '' }, 'The latest')
   const word = first ? probeWord((first as IndexerRelease).title) : null
-  if (def.kind !== 'rss' && word)
+  // a title search needs a site that takes words: not an RSS feed (its words aren't a title), nor
+  // one that takes only an id or nothing (EZTV, SubsPlease; engine 1.2). Torznab's caps decide.
+  const takesWords =
+    def.kind === 'torznab' || def.kind === 'newznab' || def.search.supports.includes('q')
+  if (def.kind !== 'rss' && takesWords && word)
     await run('title', { title: word }, `A title search for “${word}”`)
 
   let grab: string | null = null
