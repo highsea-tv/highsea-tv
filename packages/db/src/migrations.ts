@@ -126,5 +126,9 @@ export const migrations: Migration[] = [
   {
     "tag": "0030_episode_grabs",
     "sql": "-- HT-103 (Phase 5 C1): a show's interactive search results, apart from the films', and the episodes\n-- a show's download brings. Both only add: films' downloads keep a null episode_ids.\nCREATE TABLE `show_releases` (\n\t`show_tmdb_id` integer NOT NULL,\n\t`scope` text NOT NULL,\n\t`indexer_id` text NOT NULL,\n\t`guid` text NOT NULL,\n\t`data` text NOT NULL,\n\t`download` text NOT NULL,\n\t`fetched_at` integer NOT NULL,\n\t`expires_at` integer NOT NULL,\n\tPRIMARY KEY(`show_tmdb_id`, `scope`, `indexer_id`, `guid`),\n\tFOREIGN KEY (`indexer_id`) REFERENCES `indexers`(`id`) ON UPDATE no action ON DELETE cascade\n);\n--> statement-breakpoint\nCREATE INDEX `show_releases_expires` ON `show_releases` (`expires_at`);--> statement-breakpoint\nALTER TABLE `downloads` ADD `episode_ids` text;"
+  },
+  {
+    "tag": "0031_music_loudness",
+    "sql": "CREATE TABLE `music_loudness` (\n\t`track_id` text PRIMARY KEY NOT NULL,\n\t`file` text NOT NULL,\n\t`source` text NOT NULL,\n\t`track_lufs` real NOT NULL,\n\t`track_peak` real NOT NULL,\n\t`album_lufs` real,\n\t`album_peak` real,\n\t`envelope` text DEFAULT '[]' NOT NULL,\n\t`measured_at` integer NOT NULL,\n\tFOREIGN KEY (`track_id`) REFERENCES `music_tracks`(`id`) ON UPDATE no action ON DELETE cascade\n);\n"
   }
 ]

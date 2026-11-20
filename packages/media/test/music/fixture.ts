@@ -20,7 +20,8 @@ import { createMetadata } from '@highsea-tv/metadata'
 import { createReplayFetch } from '@highsea-tv/metadata/replay'
 import { asc } from 'drizzle-orm'
 import { createMusic } from '../../src/music/index.ts'
-import type { TagReader, TrackRead, TrackTags } from '../../src/music/tags.ts'
+import type { LoudnessMeter } from '../../src/music/loudness.ts'
+import type { TagLoudness, TagReader, TrackRead, TrackTags } from '../../src/music/tags.ts'
 import { createMedia } from '../../src/shared/index.ts'
 import { ProbeError } from '../../src/shared/probe.ts'
 
@@ -39,6 +40,10 @@ export type FakeTags = Partial<Omit<TrackTags, 'musicBrainz'>> & {
   /** The file has a picture in it. */
   cover?: boolean
   format?: 'flac' | 'mp3'
+  /** The ReplayGain or R128 levels the file's tags say (tags.ts' `TagLoudness`). */
+  loudness?: TagLoudness
+  /** The track's length in seconds; 180 when not given. */
+  duration?: number
 }
 
 const blank: TrackTags = {
@@ -76,20 +81,27 @@ export const fakeReader: TagReader = async (path) => {
     audio: {
       codec: flac ? 'flac' : 'mp3',
       format: flac ? 'FLAC' : 'MP3',
-      duration: 180,
+      duration: t.duration ?? 180,
       bitrate: flac ? 900 : 320,
       sampleRate: 44100,
       bitDepth: flac ? 16 : null,
       channels: 2,
       embeddedCover: !!t.cover,
     },
+    loudness: t.loudness ?? { track: null, album: null },
   } satisfies TrackRead
 }
 
 /** A PNG's signature and a little more: enough for `sniffImage`. */
 export const PNG = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 0])
 
-export async function setup({ real = false }: { real?: boolean } = {}) {
+export async function setup({
+  real = false,
+  measureLoudness,
+}: {
+  real?: boolean
+  measureLoudness?: LoudnessMeter
+} = {}) {
   const { db, raw } = openDatabase(':memory:')
   migrate(raw)
   const clock = createFakeClock()
@@ -135,6 +147,7 @@ export async function setup({ real = false }: { real?: boolean } = {}) {
       // a file's picture, copied out as ffmpeg would: the fake writes a PNG
       extractCover: async (_track, out) => writeFileSync(out, PNG),
       ...(real ? {} : { readTags: reader }),
+      ...(measureLoudness ? { measureLoudness } : {}),
     },
     media,
   )

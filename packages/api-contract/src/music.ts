@@ -129,8 +129,16 @@ export const MusicPlayRequest = z
      * device's own, or the default.
      */
     profile: z.string().max(64).optional(),
+    /**
+     * The song after the one playing, asked for ahead so it follows without a gap (HT-117): the
+     * play stays off Now playing, and isn't swept for quiet, until its first report says it started.
+     */
+    ahead: z.boolean().optional(),
   })
   .openapi('MusicPlayRequest')
+
+/** A loudness: integrated in LUFS (EBU R128) and the peak in dBFS. */
+export const MusicLevel = z.object({ lufs: z.number(), peak: z.number() }).openapi('MusicLevel')
 
 /** A song started on this device: what its audio element loads, and how long the address lasts. */
 export const MusicPlay = z
@@ -148,6 +156,11 @@ export const MusicPlay = z
     duration: z.number().min(0),
     /** The address stops working after this unless a report renews it. */
     expiresAt: IsoDate,
+    /**
+     * The song's loudness and its album's, from its tags or the server's analysis (HT-117), for the
+     * player's levelling; null until it's read, when the song plays at its own level.
+     */
+    level: z.object({ track: MusicLevel.nullable(), album: MusicLevel.nullable() }),
   })
   .openapi('MusicPlay')
 

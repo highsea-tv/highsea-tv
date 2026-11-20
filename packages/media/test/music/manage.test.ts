@@ -73,12 +73,13 @@ describe('Refresh', () => {
     const artistId = album?.artist.id as string
     await t.music.manage.refreshAlbum(albumId)
     await t.music.manage.refreshArtist(artistId)
+    // the scan's loudness job names the album too (HT-117)
     const albumWork = t.jobs.workOf({ kind: 'album', id: albumId }).active
-    expect(albumWork.map((j) => j.type)).toEqual(['music.metadata'])
+    expect(albumWork.map((j) => j.type).sort()).toEqual(['music.loudness', 'music.metadata'])
     expect(t.jobs.workOf({ kind: 'artist', id: artistId }).active).toHaveLength(1)
     // asked again while one waits, it isn't queued twice
     await t.music.manage.refreshAlbum(albumId)
-    expect(t.jobs.workOf({ kind: 'album', id: albumId }).active).toHaveLength(1)
+    expect(t.jobs.workOf({ kind: 'album', id: albumId }).active).toHaveLength(2)
   })
 })
 

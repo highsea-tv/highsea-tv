@@ -325,3 +325,30 @@ export const musicRecent = sqliteTable(
     index('music_recent_profile').on(t.profileId, t.playedAt),
   ],
 )
+
+/**
+ * A track's loudness (HT-117; ADR 0065 › Gapless and loudness): its integrated loudness and peak,
+ * and its album's, for the players' levelling, with the envelope the scrubber draws. Read from the
+ * file's ReplayGain or R128 tags where it has them, else measured by ffmpeg's `ebur128` filter in
+ * the `music.loudness` job. `file` is the file's size and time it was read from: a changed file is
+ * read again.
+ */
+export const musicLoudness = sqliteTable('music_loudness', {
+  trackId: text('track_id')
+    .primaryKey()
+    .references(() => musicTracks.id, { onDelete: 'cascade' }),
+  /** `{size}:{mtime}` of the file it was read from. */
+  file: text('file').notNull(),
+  source: text('source', { enum: ['tags', 'measured'] }).notNull(),
+  /** Integrated loudness in LUFS (EBU R128). */
+  trackLufs: real('track_lufs').notNull(),
+  /** The highest sample (or true peak, measured) in dBFS. */
+  trackPeak: real('track_peak').notNull(),
+  /** The album's, once every track of it is read; null until then, or with no album tags. */
+  albumLufs: real('album_lufs'),
+  albumPeak: real('album_peak'),
+  /** The loudness from start to end in even steps, 0 to 1 (`QueuedSong.loudness`); empty from tags. */
+  envelope: text('envelope', { mode: 'json' }).$type<number[]>().notNull().default(sql`'[]'`),
+  /** When it was read, in ms. */
+  measuredAt: integer('measured_at').notNull(),
+})

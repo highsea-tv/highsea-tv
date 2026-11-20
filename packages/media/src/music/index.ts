@@ -22,6 +22,7 @@ import { createMusicAdmin } from './admin.ts'
 import { createMusicClient } from './client.ts'
 import type { MusicDeps } from './context.ts'
 import { createMusicImages } from './images.ts'
+import { createMusicLoudness, MUSIC_LOUDNESS_CONCURRENCY, MUSIC_LOUDNESS_JOB } from './loudness.ts'
 import { createMusicManage } from './manage.ts'
 import { createMusicMetadata, MUSIC_METADATA_JOB } from './metadata.ts'
 import { createMusicPlaylists } from './playlists.ts'
@@ -31,7 +32,15 @@ export function createMusic(deps: MusicDeps, media: Media) {
   const libraryMetadata = createMusicMetadata(deps)
   const queueMetadata = () =>
     deps.jobs.enqueue(MUSIC_METADATA_JOB, {}, { dedupeKey: 'music-metadata' })
-  const libraryScan = createMusicScan(deps, { media, afterScan: queueMetadata })
+  const loudness = createMusicLoudness(deps)
+  // after a scan: MusicBrainz for what's new, and the loudness of every track not yet read
+  const libraryScan = createMusicScan(deps, {
+    media,
+    afterScan: () => {
+      queueMetadata()
+      loudness.queuePending()
+    },
+  })
   const admin = createMusicAdmin(deps, { media })
   const manage = createMusicManage(deps, {
     scan: libraryScan.scan,
@@ -44,7 +53,7 @@ export function createMusic(deps: MusicDeps, media: Media) {
         { subject, dedupeKey: `music-metadata:${subject.kind}:${subject.id}` },
       ),
   })
-  const client = createMusicClient(deps)
+  const client = createMusicClient(deps, loudness)
   const playlists = createMusicPlaylists(deps, client)
   const images = createMusicImages(deps, {
     dir: deps.imagesDir ?? '',
@@ -76,6 +85,21 @@ export function createMusic(deps: MusicDeps, media: Media) {
     },
   })
 
+  deps.jobs.define({
+    type: MUSIC_LOUDNESS_JOB,
+    // one album's tracks, read from their tags or measured with ffmpeg at the lowest priority
+    payload: z.object({ albumId: z.string() }),
+    concurrency: MUSIC_LOUDNESS_CONCURRENCY,
+    attempts: 2,
+    // a long album of long tracks on a NAS's CPU; each track is kept as it's done
+    timeoutMs: 2 * 60 * 60 * 1000,
+    subject: ({ albumId }) => ({ kind: 'album', id: albumId }),
+    async run({ albumId }, job) {
+      if (!loudness.albumExists(albumId)) return
+      await loudness.measureAlbum(albumId, { signal: job.signal, progress: job.progress })
+    },
+  })
+
   /** Asks for a scan of a folder, or of every Music root folder; one waits per folder. */
   const queueScan = (folder?: string) =>
     deps.jobs.enqueue(MUSIC_SCAN_JOB, folder ? { folder } : {}, {
@@ -97,8 +121,14 @@ export function createMusic(deps: MusicDeps, media: Media) {
     libraryScan: { scan: libraryScan.scan, queue: queueScan },
     /** MusicBrainz and the Cover Art Archive for what carries an id. */
     libraryMetadata: { refresh: libraryMetadata.refresh, queue: queueMetadata },
+    /** Each track's loudness and its album's, for levelling, and the scrubber's envelope. */
+    loudness,
     jobs: {
-      types: { libraryScan: MUSIC_SCAN_JOB, metadata: MUSIC_METADATA_JOB },
+      types: {
+        libraryScan: MUSIC_SCAN_JOB,
+        metadata: MUSIC_METADATA_JOB,
+        loudness: MUSIC_LOUDNESS_JOB,
+      },
       /** The 12-hourly scan of the Music root folders. The runtime calls this once at boot. */
       schedule: (now: number) => {
         deps.jobs.schedule(MUSIC_SCAN_JOB, SCAN_EVERY_MS, { firstRunAt: now + 15 * 60_000 })
@@ -126,6 +156,16 @@ export {
   type MusicImage,
   sniffImage,
 } from './images.ts'
+export {
+  albumLevel,
+  envelopeOf,
+  ffmpegLoudnessMeter,
+  type Level,
+  type LoudnessMeter,
+  MUSIC_LOUDNESS_JOB,
+  type MusicLoudness,
+  parseEbur128,
+} from './loudness.ts'
 export { defaultTrackNaming, TRACK_NAMING_KEY } from './manage.ts'
 export { MUSIC_METADATA_JOB, type MusicMetadataResult } from './metadata.ts'
 export {
@@ -145,8 +185,10 @@ export {
   createTagReader,
   formatOf,
   parseMusicProbe,
+  type TagLoudness,
   type TagReader,
   type TrackAudio,
   type TrackRead,
   type TrackTags,
+  tagLoudness,
 } from './tags.ts'

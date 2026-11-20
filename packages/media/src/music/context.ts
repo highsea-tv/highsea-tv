@@ -7,6 +7,7 @@ import type { JobQueue } from '@highsea-tv/jobs'
 import type { Metadata } from '@highsea-tv/metadata'
 import type { MediaDeps } from '../shared/context.ts'
 import type { CoverExtractor } from './images.ts'
+import type { LoudnessMeter } from './loudness.ts'
 import type { TagReader } from './tags.ts'
 
 export type MusicDeps = MediaDeps & {
@@ -22,6 +23,8 @@ export type MusicDeps = MediaDeps & {
   imagesDir?: string
   /** Copies the picture out of an audio file (ffmpeg); without it, those covers aren't served. */
   extractCover?: CoverExtractor
+  /** Measures a track's loudness (ffmpeg's `ebur128`); without it, only tags' levels are read. */
+  measureLoudness?: LoudnessMeter
 }
 
 /** Says music changed: the albums and artists by id (`music.updated`). */

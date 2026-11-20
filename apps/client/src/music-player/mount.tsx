@@ -25,7 +25,7 @@ import { Platform } from 'react-native'
 import { useFrameState } from '../frame-channel.ts'
 import { useNote } from '../kit.tsx'
 import { mock } from '../transport.ts'
-import { expoAudioOutput, musicProfile, musicServer } from './audio.ts'
+import { musicOutput, musicProfile, musicServer } from './audio.ts'
 import { musicPlayerScreenMessages as messages } from './messages.ts'
 import { musicPlayer, useMusicPlayer } from './store.ts'
 
@@ -130,7 +130,7 @@ function MusicAudio() {
     musicPlayer.setClock(false)
     const audio = createMusicAudio({
       player: musicPlayer,
-      output: expoAudioOutput(media),
+      output: musicOutput(media),
       server: musicServer(client, media, () => musicProfile(latest.current.host)),
       info: (song) => ({
         title: song.title,

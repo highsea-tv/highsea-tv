@@ -303,6 +303,7 @@ describe('0018_profiles', () => {
       '0028_music_plays',
       '0029_episode_markers',
       '0030_episode_grabs',
+      '0031_music_loudness',
     ])
     expect(result.backup).not.toBeNull()
     const once = state(first)
@@ -413,6 +414,7 @@ describe('0020_shows', () => {
       '0028_music_plays',
       '0029_episode_markers',
       '0030_episode_grabs',
+      '0031_music_loudness',
     ])
     expect(films(raw)).toEqual(was)
     expect(raw.all('SELECT count(*) AS n FROM media_items')).toEqual([{ n: 300 }])
@@ -566,6 +568,7 @@ describe('0020_shows', () => {
         '0028_music_plays',
         '0029_episode_markers',
         '0030_episode_grabs',
+        '0031_music_loudness',
       ])
       expect(all(raw)).toEqual(was)
       expect(raw.all('SELECT count(*) AS n FROM unmatched_files')).toEqual([{ n: 0 }])
@@ -634,6 +637,7 @@ describe('0020_shows', () => {
           '0028_music_plays',
           '0029_episode_markers',
           '0030_episode_grabs',
+          '0031_music_loudness',
         ])
         expect(migrate(raw).applied).toEqual([])
         raw.close()
@@ -752,6 +756,7 @@ describe('0020_shows', () => {
           '0028_music_plays',
           '0029_episode_markers',
           '0030_episode_grabs',
+          '0031_music_loudness',
         ])
         expect({ ...everything(raw), ...music() }).toEqual(was)
         expect(raw.all('SELECT * FROM music_artists')).toEqual(
@@ -759,6 +764,7 @@ describe('0020_shows', () => {
         )
         expect(tables().filter((t) => !before.includes(t))).toEqual([
           'episode_markers',
+          'music_loudness',
           'music_matches',
           'music_playlist_entries',
           'music_playlists',
@@ -800,7 +806,11 @@ describe('0020_shows', () => {
         )
         const music = () => ({ artists: raw.all('SELECT * FROM music_artists') })
         const was = { ...everything(raw), ...music() }
-        expect(migrate(raw).applied).toEqual(['0029_episode_markers', '0030_episode_grabs'])
+        expect(migrate(raw).applied).toEqual([
+          '0029_episode_markers',
+          '0030_episode_grabs',
+          '0031_music_loudness',
+        ])
         expect({ ...everything(raw), ...music() }).toEqual(was)
         // a file's markers, the owner's beside the found, go with the file
         raw.run(
@@ -828,7 +838,7 @@ describe('0020_shows', () => {
           ...everything(raw),
           downloads: raw.all('SELECT * FROM downloads ORDER BY id'),
         }
-        expect(migrate(raw).applied).toEqual(['0030_episode_grabs'])
+        expect(migrate(raw).applied).toEqual(['0030_episode_grabs', '0031_music_loudness'])
         const downloads = raw.all('SELECT * FROM downloads ORDER BY id') as Record<
           string,
           unknown
@@ -853,6 +863,36 @@ describe('0020_shows', () => {
         )
         raw.run("DELETE FROM indexers WHERE id = 'idx_1'")
         expect(raw.all('SELECT count(*) AS n FROM show_releases')).toEqual([{ n: 0 }])
+        expect(raw.all('PRAGMA foreign_key_check')).toEqual([])
+        expect(raw.all('PRAGMA integrity_check')).toEqual([{ integrity_check: 'ok' }])
+        expect(migrate(raw).applied).toEqual([])
+        raw.close()
+      })
+
+      // HT-117 (Phase 5 D): a track's loudness, gone with its track
+      test('0031_music_loudness only adds its table, which goes with the track', () => {
+        const { raw } = withUnmatched()
+        migrate(raw, { all: migrations.filter((m) => m.tag < '0031') })
+        raw.run(
+          "INSERT INTO music_artists (id, name, sort_name, name_key, root_folder, source, added_at, updated_at) VALUES ('ar_1', 'Blur', 'blur', 'blur', '/music', 'tags', 1, 1)",
+        )
+        raw.run(
+          "INSERT INTO music_albums (id, artist_id, title, sort_title, path, root_folder, source, added_at, updated_at) VALUES ('al_1', 'ar_1', 'Parklife', 'parklife', '/music/Blur/Parklife', '/music', 'tags', 1, 1)",
+        )
+        raw.run(
+          "INSERT INTO music_tracks (id, album_id, number, title, path, size, mtime, format, codec, added_at, updated_at) VALUES ('tr_1', 'al_1', 1, 'Girls & Boys', '/music/Blur/Parklife/01.flac', 1, 1, 'FLAC', 'flac', 1, 1)",
+        )
+        const was = { ...everything(raw), tracks: raw.all('SELECT * FROM music_tracks') }
+        expect(migrate(raw).applied).toEqual(['0031_music_loudness'])
+        expect({ ...everything(raw), tracks: raw.all('SELECT * FROM music_tracks') }).toEqual(was)
+        raw.run(
+          "INSERT INTO music_loudness (track_id, file, source, track_lufs, track_peak, measured_at) VALUES ('tr_1', '1:1', 'measured', -14.2, -0.3, 1)",
+        )
+        expect(raw.all('SELECT envelope, album_lufs FROM music_loudness')).toEqual([
+          { envelope: '[]', album_lufs: null },
+        ])
+        raw.run("DELETE FROM music_tracks WHERE id = 'tr_1'")
+        expect(raw.all('SELECT count(*) AS n FROM music_loudness')).toEqual([{ n: 0 }])
         expect(raw.all('PRAGMA foreign_key_check')).toEqual([])
         expect(raw.all('PRAGMA integrity_check')).toEqual([{ integrity_check: 'ok' }])
         expect(migrate(raw).applied).toEqual([])

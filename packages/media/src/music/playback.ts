@@ -22,6 +22,13 @@
 //   sent (a song takes a second or two), and kept a day for the next play; the folder is emptied at
 //   start.
 //
+// The song after the one playing is asked for ahead (`ahead`, HT-117), so the player has it open
+// before the hand-over and the songs follow without a gap. Such a play is made at once (a
+// transcode's AAC with it), but stays off Now playing, and isn't ended for quiet, until its first
+// report says it has started; its start time is that report's. One the player lets go of unheard
+// (Next chosen elsewhere, the queue changed) ends with nothing heard, so it leaves no row, as any
+// play does; one never reported ends with its address, after MUSIC_TOKEN_MS.
+//
 // A play is recorded when it ends (`music_plays`): stopped, a skip, or a player that stopped
 // reporting for five minutes. It counts for Most played when it was heard past half its length or
 // four minutes, Last.fm's rule for a scrobble (https://www.last.fm/api/scrobbling, "When is a
@@ -151,6 +158,8 @@ type Play = {
   /** The file the address reads: the track's own, or the AAC made from it. */
   file: string
   ready: Promise<void>
+  /** Asked for ahead and not yet reported: off Now playing, and not swept for quiet. */
+  ahead: boolean
   position: number
   furthest: number
   paused: boolean
@@ -189,6 +198,8 @@ export function createMusicPlayback(
     /** Where AAC made from tracks is kept (the data folder's `transcodes-music`). */
     dir: string
     transcode?: MusicTranscoder
+    /** The song's loudness and its album's (loudness.ts), for the player's levelling. */
+    level?: (trackId: string) => MusicPlay['level']
     /** The device's profile (playback's `profileFor`); throws for a profile id that isn't one. */
     profileFor: (deviceId: string | null, named?: string) => AudioProfile
     away: (address: string) => boolean
@@ -267,7 +278,7 @@ export function createMusicPlayback(
   function play(
     who: Who,
     trackId: string,
-    request: { profile?: string },
+    request: { profile?: string; ahead?: boolean },
     meta: { address: string },
   ): MusicPlay {
     sweep()
@@ -316,6 +327,7 @@ export function createMusicPlayback(
       decision,
       file: out.file,
       ready: out.ready,
+      ahead: request.ahead === true,
       position: 0,
       furthest: 0,
       paused: false,
@@ -323,13 +335,13 @@ export function createMusicPlayback(
       heardAt: now,
     }
     plays.set(p.id, p)
-    log.info('a song started', {
+    log.info(p.ahead ? 'a song was made ready to follow' : 'a song started', {
       play: p.id,
       track: track.id,
       method: decision.method,
       device: p.deviceName,
     })
-    announce()
+    if (!p.ahead) announce()
     return {
       id: p.id,
       url: `/stream/music/${p.token}`,
@@ -338,6 +350,7 @@ export function createMusicPlayback(
       reasons: decision.reasons,
       duration: track.duration,
       expiresAt: new Date(now + MUSIC_TOKEN_MS).toISOString(),
+      level: opts.level?.(track.id) ?? { track: null, album: null },
     }
   }
 
@@ -360,7 +373,13 @@ export function createMusicPlayback(
     sweep()
     const p = mine(who, id)
     const position = Math.min(report.position, p.duration || report.position)
-    const changed = p.paused !== report.paused
+    // a play asked for ahead starts with its first report: on Now playing from now
+    const started = p.ahead
+    if (started) {
+      p.ahead = false
+      p.startedAt = clock.now()
+    }
+    const changed = started || p.paused !== report.paused
     p.position = position
     p.furthest = Math.max(p.furthest, position)
     p.paused = report.paused
@@ -407,8 +426,9 @@ export function createMusicPlayback(
 
   function stop(who: Who, id: string) {
     const p = mine(who, id)
+    const shown = !p.ahead
     end(p)
-    announce()
+    if (shown) announce()
   }
 
   /** Now playing's Stop: the player's next report hears who stopped it and why. */
@@ -434,7 +454,10 @@ export function createMusicPlayback(
     const now = clock.now()
     let any = false
     for (const p of [...plays.values()])
-      if (now - p.heardAt > MUSIC_IDLE_MS || !opts.allowed(p.userId, p.deviceId)) {
+      if (
+        now - p.heardAt > (p.ahead ? MUSIC_TOKEN_MS : MUSIC_IDLE_MS) ||
+        !opts.allowed(p.userId, p.deviceId)
+      ) {
         end(p)
         any = true
       }
@@ -497,7 +520,10 @@ export function createMusicPlayback(
   /** The live plays and the just-stopped ones, for Now playing. */
   function sessions(): StreamSession[] {
     sweep()
-    return [...[...plays.values()].map(view), ...[...stopped.values()].map((s) => s.view)]
+    return [
+      ...[...plays.values()].filter((p) => !p.ahead).map(view),
+      ...[...stopped.values()].map((s) => s.view),
+    ]
   }
 
   /** The last 30 days' plays, newest first, as Now playing's history reads them. */
