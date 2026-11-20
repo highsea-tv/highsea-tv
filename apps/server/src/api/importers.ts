@@ -1,10 +1,16 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The one-time importers over HTTP (checkpoint 6b; ADR 0041): Settings › Migration. Thin handlers
+// The one-time importers over HTTP (checkpoint 6b, Sonarr's in Phase 5 C1; ADR 0041): Settings › Migration. Thin handlers
 // over @highsea-tv/importers; the contract keeps every route the owner's. Starting an import and
 // resuming the torrents brought across go in the audit log; the credentials never do.
-import { type ImportStatus, type QbittorrentImportStatus, routes } from '@highsea-tv/api-contract'
+import {
+  type ImportStatus,
+  type QbittorrentImportStatus,
+  routes,
+  type SonarrImportStatus,
+} from '@highsea-tv/api-contract'
 import type { QbtStatus } from '@highsea-tv/importers/qbittorrent'
 import type { MigrationState } from '@highsea-tv/importers/radarr'
+import type { SonarrImportState } from '@highsea-tv/importers/sonarr'
 import type { OpenAPIHono } from '@hono/zod-openapi'
 import type { Context } from 'hono'
 import { actor, type Env, me } from './guard.ts'
@@ -13,6 +19,9 @@ const iso = (ms: number | null) => (ms === null ? null : new Date(ms).toISOStrin
 
 const view = ({ jobId: _job, startedAt, finishedAt, ...rest }: MigrationState) =>
   ({ ...rest, startedAt: iso(startedAt), finishedAt: iso(finishedAt) }) satisfies ImportStatus
+
+const sonarrView = ({ files, unmatched, ...rest }: SonarrImportState) =>
+  ({ ...view(rest), files, unmatched }) satisfies SonarrImportStatus
 
 const qbtView = ({ torrentIds: _ids, resumedAt, ...rest }: QbtStatus) =>
   ({
@@ -51,6 +60,26 @@ export function registerImporters(app: OpenAPIHono<Env>) {
 
   app.openapi(routes.importers.radarrStatus, (c) =>
     c.json(view(runtime(c).importers.radarr.status()), 200),
+  )
+
+  app.openapi(routes.importers.sonarrTest, async (c) =>
+    c.json(await runtime(c).importers.sonarr.connect(c.req.valid('json')), 200),
+  )
+
+  app.openapi(routes.importers.sonarrPreview, async (c) => {
+    const { pathMappings, ...conn } = c.req.valid('json')
+    return c.json(await runtime(c).importers.sonarr.preview(conn, pathMappings), 200)
+  })
+
+  app.openapi(routes.importers.sonarrRun, (c) => {
+    const { url, apiKey, ...options } = c.req.valid('json')
+    const state = runtime(c).importers.sonarr.run({ url, apiKey }, options)
+    audit(c, 'import.sonarr', url)
+    return c.json(sonarrView(state), 200)
+  })
+
+  app.openapi(routes.importers.sonarrStatus, (c) =>
+    c.json(sonarrView(runtime(c).importers.sonarr.status()), 200),
   )
 
   app.openapi(routes.importers.qbittorrentTest, async (c) =>

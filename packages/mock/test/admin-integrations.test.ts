@@ -238,6 +238,31 @@ describe('migration', () => {
     expect((e.details as { field?: string }).field).toBe('apiKey')
   })
 
+  test('Sonarr: tested, previewed and run, its status in the contract’s shape', async () => {
+    const c = await setup('owner')
+    const conn = { url: 'http://sonarr:8989', apiKey: 'secret' }
+    shaped(routes.importers.sonarrTest, await c.importers.sonarrTest({ body: conn }))
+    const unmapped = await c.importers.sonarrPreview({ body: { ...conn, pathMappings: [] } })
+    expect(unmapped.series.ready).toBe(0)
+    expect(unmapped.rootFolders.every((r) => r.status === 'outside')).toBe(true)
+    const preview = await c.importers.sonarrPreview({
+      body: { ...conn, pathMappings: [{ from: '/tv', to: '/data/media/shows' }] },
+    })
+    shaped(routes.importers.sonarrPreview, preview)
+    expect(preview.series.ready).toBeGreaterThan(0)
+    expect(preview.profiles.every((p) => p.options.at(-1) === 'copy')).toBe(true)
+    expect((await c.importers.sonarrStatus()).state).toBe('idle')
+    const run = await c.importers.sonarrRun({
+      body: { ...conn, pathMappings: [{ from: '/tv', to: '/data/media/shows' }] },
+    })
+    shaped(routes.importers.sonarrRun, run)
+    expect(['running', 'done']).toContain(run.state)
+    shaped(routes.importers.sonarrStatus, await c.importers.sonarrStatus())
+    const e = await caught(c.importers.sonarrTest({ body: { ...conn, apiKey: 'wrong' } }))
+    expect(e.status).toBe(400)
+    expect((e.details as { field?: string }).field).toBe('apiKey')
+  })
+
   test('qBittorrent: previewed with its list, run, and its status', async () => {
     const c = await setup('owner')
     const conn = { url: 'http://qbittorrent:8080', username: 'admin', password: 'x' }
@@ -251,5 +276,6 @@ describe('migration', () => {
   test('is the owner’s', async () => {
     const c = await setup('admin')
     expect((await caught(c.importers.radarrStatus())).status).toBe(403)
+    expect((await caught(c.importers.sonarrStatus())).status).toBe(403)
   })
 })

@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// Settings › Migration (ADR 0041), as packages/importers answers it: a Radarr 5 with 412 movies
-// and a qBittorrent 5 with 64 torrents, both seen under their own paths (`/movies`,
-// `/downloads`), so their folders are usable only once a path mapping puts them under `/data`. An
+// Settings › Migration (ADR 0041), as packages/importers answers it: a Radarr 5 with 412 movies,
+// a Sonarr 4 with 96 series and a qBittorrent 5 with 64 torrents, each seen under its own paths
+// (`/movies`, `/tv`, `/downloads`), so their folders are usable only once a path mapping puts them
+// under `/data`. An
 // address with "wrong" in it doesn't answer, and a key or password with "wrong" in it is refused.
 // An import runs on the simulated clock and is read from it; the owner's alone.
 import { iso } from './clock.ts'
@@ -9,6 +10,7 @@ import type { Settings, SettingsDeps } from './settings.ts'
 
 export type PathMapping = { from: string; to: string }
 export type RadarrConnection = { url: string; apiKey: string }
+export type SonarrConnection = { url: string; apiKey: string }
 export type QbittorrentConnection = { url: string; username: string; password: string }
 
 export type RadarrPreview = {
@@ -25,6 +27,28 @@ export type RadarrPreview = {
   blocklist: number
   naming: { rename: boolean; folderFormat: string; fileFormat: string; problem: string | null }
   kept: { indexers: string[]; downloadClients: string[] }
+  problems: { title: string; message: string }[]
+}
+
+export type SonarrPreview = {
+  version: string
+  series: {
+    total: number
+    withFiles: number
+    inLibrary: number
+    ready: number
+    episodes: number
+    files: number
+  }
+  profiles: { sonarrId: number; name: string; cutoff: string; series: number; options: string[] }[]
+  rootFolders: {
+    sonarr: string
+    path: string
+    status: 'root-folder' | 'add' | 'outside'
+    series: number
+  }[]
+  tags: number
+  numbering: { daily: number; anime: number }
   problems: { title: string; message: string }[]
 }
 
@@ -47,6 +71,11 @@ export type ImportStatus = {
   finishedAt: string | null
 }
 
+export type SonarrImportStatus = ImportStatus & {
+  files: number
+  unmatched: { name: string; message: string }[]
+}
+
 export type QbittorrentImportStatus = ImportStatus & {
   paused: number
   checking: number
@@ -67,6 +96,28 @@ const RADARR_FAILURES = [
     message: 'TMDB has no movie with the id Radarr gave (842675).',
   },
 ]
+const SONARR_ROOTS = [
+  { sonarr: '/tv', series: 84, files: 3912 },
+  { sonarr: '/anime', series: 12, files: 640 },
+]
+const SONARR_IN_LIBRARY = 9
+const SONARR_FAILURES = [
+  {
+    name: 'Harbour Lights (1998)',
+    message: 'TMDB has no show for TheTVDB’s id 71354, and Sonarr has no TMDB id.',
+  },
+]
+const SONARR_UNMATCHED = [
+  {
+    name: 'Night Ferry (2015): S00E04',
+    message: 'TMDB lists no S00E04 for this show, so its monitoring stays behind.',
+  },
+  {
+    name: 'Night Ferry (2015): Specials/Night Ferry - S00E04 - Behind the Scenes.mkv',
+    message: 'TMDB lists no S00E04 for this show.',
+  },
+]
+
 const QBT_PATHS = [
   { qbittorrent: '/downloads/movies', torrents: 51 },
   { qbittorrent: '/downloads/incomplete', torrents: 4 },
@@ -74,14 +125,15 @@ const QBT_PATHS = [
 ]
 
 /** Items an import gets through per simulated second. */
-const PACE = { radarr: 14, qbittorrent: 4 }
+const PACE = { radarr: 14, sonarr: 3, qbittorrent: 4 }
 
 type Run = { startedAt: number; total: number; skipped: number; failures: ImportStatus['failures'] }
 type Runs = {
   radarr: Run | null
+  sonarr: (Run & { files: number }) | null
   qbittorrent: (Run & { resumedAt: number | null }) | null
   /** What an earlier run brought across: a second run skips it. */
-  imported: { radarr: number; qbittorrent: number }
+  imported: { radarr: number; sonarr: number; qbittorrent: number }
 }
 
 // kept with the server's settings, so a run carries on when the toolbar's role changes
@@ -101,7 +153,12 @@ export function migrationApi(d: SettingsDeps) {
   const runs = (() => {
     let r = runsOf.get(s)
     if (!r) {
-      r = { radarr: null, qbittorrent: null, imported: { radarr: 0, qbittorrent: 0 } }
+      r = {
+        radarr: null,
+        sonarr: null,
+        qbittorrent: null,
+        imported: { radarr: 0, sonarr: 0, qbittorrent: 0 },
+      }
       runsOf.set(s, r)
     }
     return r
@@ -122,19 +179,24 @@ export function migrationApi(d: SettingsDeps) {
     }
   }
 
-  const radarr = (c: RadarrConnection) => {
+  const arr = (program: 'Radarr' | 'Sonarr') => (c: RadarrConnection | SonarrConnection) => {
     d.requireOwner()
-    reach('Radarr', c.url)
+    reach(program, c.url)
     if (!c.apiKey.trim())
-      throw d.fail(400, 'invalid', 'Enter Radarr’s API key.', { field: 'apiKey', reason: 'no-key' })
+      throw d.fail(400, 'invalid', `Enter ${program}’s API key.`, {
+        field: 'apiKey',
+        reason: 'no-key',
+      })
     if (/wrong/i.test(c.apiKey))
       throw d.fail(
         400,
         'invalid',
-        'Radarr refused the API key. It’s in Radarr under Settings › General › Security.',
+        `${program} refused the API key. It’s in ${program} under Settings › General › Security.`,
         { field: 'apiKey', reason: 'bad-credentials' },
       )
   }
+  const radarr = arr('Radarr')
+  const sonarr = arr('Sonarr')
 
   const qbittorrent = (c: QbittorrentConnection) => {
     d.requireOwner()
@@ -218,6 +280,70 @@ export function migrationApi(d: SettingsDeps) {
     }
   }
 
+  const sonarrPreview = (maps: PathMapping[]): SonarrPreview => {
+    // Sonarr's folders are shows': only the Shows folders count
+    const roots = s.rootFolders.filter((f) => f.kind === 'shows').map((f) => f.path)
+    const rootFolders = SONARR_ROOTS.map((r) => {
+      const path = mapped(r.sonarr, maps)
+      const status: SonarrPreview['rootFolders'][number]['status'] = roots.includes(path)
+        ? 'root-folder'
+        : path === '/data' || path.startsWith('/data/')
+          ? 'add'
+          : 'outside'
+      return { sonarr: r.sonarr, path, status, series: r.series }
+    })
+    const usable = rootFolders
+      .filter((r) => r.status !== 'outside')
+      .reduce((n, r) => n + r.series, 0)
+    const total = SONARR_ROOTS.reduce((n, r) => n + r.series, 0)
+    return {
+      version: '4.0.14.2939',
+      series: {
+        total,
+        withFiles: 91,
+        inLibrary: SONARR_IN_LIBRARY + runs.imported.sonarr,
+        ready: Math.max(0, usable - SONARR_IN_LIBRARY - runs.imported.sonarr - 1),
+        episodes: 5210,
+        files: SONARR_ROOTS.reduce((n, r) => n + r.files, 0),
+      },
+      profiles: [
+        {
+          sonarrId: 4,
+          name: 'HD-1080p',
+          cutoff: 'WEBDL-1080p',
+          series: 71,
+          options: ['qp-hd', 'qp-uhd', 'qp-any', COPY_PROFILE],
+        },
+        {
+          sonarrId: 6,
+          name: 'Ultra-HD',
+          cutoff: 'Remux-2160p',
+          series: 8,
+          options: ['qp-uhd', 'qp-hd', 'qp-any', COPY_PROFILE],
+        },
+        {
+          sonarrId: 1,
+          name: 'Any',
+          cutoff: 'HDTV-720p',
+          series: 17,
+          options: ['qp-any', 'qp-hd', 'qp-uhd', COPY_PROFILE],
+        },
+      ],
+      rootFolders,
+      tags: 4,
+      numbering: { daily: 3, anime: 12 },
+      problems: [
+        ...rootFolders
+          .filter((r) => r.status === 'outside')
+          .map((r) => ({
+            title: `${r.series} series in ${r.sonarr}`,
+            message: `${r.path} is outside the folders highsea may use. Map it to a path under /data.`,
+          })),
+        ...SONARR_FAILURES.map((f) => ({ title: f.name, message: f.message })),
+      ],
+    }
+  }
+
   const qbtPreview = (maps: PathMapping[]): QbittorrentPreview => {
     const savePaths = QBT_PATHS.map((p) => {
       const path = mapped(p.qbittorrent, maps)
@@ -272,6 +398,15 @@ export function migrationApi(d: SettingsDeps) {
   }
 
   const radarrStatus = () => statusOf(runs.radarr, PACE.radarr)
+  const sonarrStatus = (): SonarrImportStatus => {
+    const base = statusOf(runs.sonarr, PACE.sonarr)
+    const done = base.state === 'done'
+    return {
+      ...base,
+      files: done && runs.sonarr ? runs.sonarr.files : 0,
+      unmatched: done && runs.sonarr && runs.sonarr.files > 0 ? SONARR_UNMATCHED : [],
+    }
+  }
   const qbtStatus = (): QbittorrentImportStatus => {
     const base = statusOf(runs.qbittorrent, PACE.qbittorrent)
     const run = runs.qbittorrent
@@ -320,6 +455,38 @@ export function migrationApi(d: SettingsDeps) {
     radarrStatus: () => {
       d.requireOwner()
       return radarrStatus()
+    },
+    sonarrTest: (c: SonarrConnection) => {
+      sonarr(c)
+      return { version: '4.0.14.2939', series: 96 }
+    },
+    sonarrPreview: (c: SonarrConnection & { pathMappings: PathMapping[] }) => {
+      sonarr(c)
+      return sonarrPreview(c.pathMappings)
+    },
+    sonarrRun: (
+      c: SonarrConnection & { pathMappings: PathMapping[]; profiles?: Record<string, string> },
+    ) => {
+      sonarr(c)
+      if (sonarrStatus().state === 'running')
+        throw d.fail(409, 'conflict', 'A Sonarr import is already running.')
+      const p = sonarrPreview(c.pathMappings)
+      // one series TMDB can't find, on every run, as the importer would
+      const failures = p.series.ready > 0 ? SONARR_FAILURES : []
+      const share = p.series.total ? p.series.ready / p.series.total : 0
+      runs.sonarr = {
+        startedAt: d.now(),
+        total: p.series.ready + failures.length,
+        skipped: p.series.inLibrary,
+        failures,
+        files: Math.round(p.series.files * share),
+      }
+      runs.imported.sonarr += p.series.ready
+      d.emit({ type: 'settings.updated' })
+    },
+    sonarrStatus: () => {
+      d.requireOwner()
+      return sonarrStatus()
     },
     qbittorrentTest: (c: QbittorrentConnection) => {
       qbittorrent(c)

@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// Settings › Migration's copy (ADR 0021; brief § 6): the one-time importers from Radarr and
-// qBittorrent (ADR 0041).
+// Settings › Migration's copy (ADR 0021; brief § 6): the one-time importers from Radarr, Sonarr
+// and qBittorrent (ADR 0041).
 import { defineMessages } from '@highsea-tv/i18n'
 
 export const migration = defineMessages({
   intro:
-    'Nothing is changed in either program. Import Radarr first, so torrents it grabbed find their movies.',
+    'Nothing is changed in any of these programs. Import Radarr and Sonarr first, so torrents they grabbed find their movies and shows.',
   url: 'Address',
   urlHint: 'As highsea reaches it, with the port.',
   apiKey: 'API key',
@@ -73,6 +73,31 @@ export const migration = defineMessages({
   'radarr.kept.link': 'Go to Indexers',
   'radarr.problems': 'Movies that can’t come across as things stand',
   'radarr.started': 'The Radarr import has started',
+
+  'sonarr.title': 'Sonarr',
+  'sonarr.description':
+    'Shows, where they are on disk, monitoring for each season and episode, quality profiles and tags. Files stay where they are.',
+  'sonarr.apiKeyHint': 'In Sonarr, Settings › General › Security.',
+  'sonarr.connected': 'Connected to Sonarr {version}, with {series} series.',
+  'sonarr.counts':
+    '{total} series, {withFiles} with files: {episodes, plural, one {# episode} other {# episodes}} and {files, plural, one {# file} other {# files}}. {inLibrary} already in highsea, {ready} ready to come across.',
+  'sonarr.root.series': '{count} series',
+  'sonarr.profiles.description':
+    'Each of Sonarr’s profiles becomes the nearest of yours by its cutoff. Change any of them here, or bring one across as it is.',
+  'sonarr.profile.sonarr': 'Sonarr’s profile',
+  'sonarr.profile.series': 'Series',
+  'sonarr.tags':
+    '{tags, plural, one {# tag comes} other {# tags come}} across too. Sonarr’s naming format, history and blocklist stay behind.',
+  'sonarr.numbering':
+    '{daily} daily and {anime} anime series come across by Sonarr’s season and episode numbers. Episodes TMDB numbers otherwise are listed after the import.',
+  'sonarr.kept.body':
+    'Sonarr’s indexers and download clients stay behind, as Radarr’s do: add the indexers in highsea, which downloads by itself.',
+  'sonarr.problems': 'Series that can’t come across as things stand',
+  'sonarr.started': 'The Sonarr import has started',
+  'sonarr.files':
+    '{files, plural, one {# episode file} other {# episode files}} filed where they are.',
+  'sonarr.unmatched':
+    '{count, plural, one {# episode or file} other {# episodes and files}} to place by hand',
 
   'qbt.title': 'qBittorrent',
   'qbt.description':

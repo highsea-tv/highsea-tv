@@ -1,10 +1,11 @@
 'use client'
 // SPDX-License-Identifier: AGPL-3.0-only
 // Settings › Migration (settings.md › Migration; the owner's answer 10; ADR 0041): the one-time
-// importers. A card each for Radarr and qBittorrent: the connection and its path mappings, Test,
-// Preview (what comes across, Radarr's profiles mapped to highsea's nearest first and editable,
-// and what can't come across, with the way to Indexers), then Import, whose progress is live on
-// `migration.updated`. qBittorrent's torrents come across paused; Resume asks first that
+// importers. A card each for Radarr, Sonarr (Phase 5 C1) and qBittorrent: the connection and its
+// path mappings, Test, Preview (what comes across, the profiles mapped to highsea's nearest first
+// and editable, and what can't come across, with the way to Indexers), then Import, whose progress
+// is live on `migration.updated`. Sonarr's card is Radarr's parts with shows' counts, and its
+// progress adds the files filed and the episodes left to place. qBittorrent's torrents come across paused; Resume asks first that
 // qBittorrent is stopped. The owner's only. No prototype screen has it: approved as new layout,
 // built from Settings' own parts (Group, Field, the tables and badges the other areas use).
 // Drawn with the library's native renderer since D3 (one-client-platform-d.md).
@@ -15,6 +16,7 @@ import {
   type QbittorrentImportStatus,
   type QbittorrentPreview,
   type RadarrPreview,
+  type SonarrPreview,
 } from '@highsea-tv/api-contract'
 import { useT } from '@highsea-tv/i18n/react'
 import type { ApiError } from '@highsea-tv/sdk'
@@ -71,6 +73,7 @@ export function Migration() {
         {t('intro')}
       </Text>
       <RadarrCard />
+      <SonarrCard />
       <QbittorrentCard />
     </AreaPage>
   )
@@ -176,9 +179,12 @@ function Failures({
 function Mappings({
   value,
   onChange,
+  example = { from: '/movies', to: '/data/media/movies' },
 }: {
   value: PathMapping[]
   onChange: (next: PathMapping[]) => void
+  /** The placeholders: the program's own folder and where highsea sees it. */
+  example?: PathMapping
 }) {
   const t = useT(messages)
   const tp = useT(pickerMessages)
@@ -214,7 +220,7 @@ function Mappings({
           <Field label={t('mappings.from')}>
             <Input
               value={m.from}
-              placeholder="/movies"
+              placeholder={example.from}
               onChangeText={(from) => set(i, { from })}
               {...code}
             />
@@ -224,7 +230,7 @@ function Mappings({
               <Input
                 value={m.to}
                 icon="folder"
-                placeholder="/data/media/movies"
+                placeholder={example.to}
                 onChangeText={(to) => set(i, { to })}
                 {...code}
               />
@@ -519,6 +525,208 @@ function RadarrCard() {
         </View>
       )}
       <Progressing status={status.data} />
+    </Group>
+  )
+}
+
+// ---------- Sonarr
+
+function SonarrCard() {
+  const t = useT(messages)
+  const [url, setUrl] = useState('')
+  const [apiKey, setApiKey] = useState('')
+  const [mappings, setMappings] = useState<PathMapping[]>([])
+  const [connected, setConnected] = useState<string | null>(null)
+  const [error, setError] = useState<{ field?: string; message: string } | null>(null)
+  const [preview, setPreview] = useState<SonarrPreview | null>(null)
+  const [profiles, setProfiles] = useState<Record<string, string>>({})
+  const status = useQuery('migration:sonarr', (c) => c.importers.sonarrStatus(), TOPICS)
+  const ours = useQuery('migration:profiles', (c) => c.quality.profiles())
+  const test = useAction((c) => c.importers.sonarrTest({ body: { url, apiKey } }))
+  const look = useAction((c) =>
+    c.importers.sonarrPreview({ body: { url, apiKey, pathMappings: filled(mappings) } }),
+  )
+  const run = useAction((c) =>
+    c.importers.sonarrRun({ body: { url, apiKey, pathMappings: filled(mappings), profiles } }),
+  )
+  const running = status.data?.state === 'running'
+
+  const fail = (what: string) => (e: unknown) => {
+    setError({ field: fieldOf(e), message: (e as Error).message })
+    toast.error(what, { description: (e as Error).message })
+  }
+  const onTest = () => {
+    setError(null)
+    test.run().then((r) => setConnected(t('sonarr.connected', r)), fail(t('fail.test')))
+  }
+  const onPreview = () => {
+    setError(null)
+    look.run().then(
+      (p) => {
+        setPreview(p)
+        setConnected(null)
+        // each Sonarr profile starts on its nearest
+        setProfiles(
+          Object.fromEntries(p.profiles.map((x) => [String(x.sonarrId), x.options[0] ?? ''])),
+        )
+      },
+      fail(t('fail.preview')),
+    )
+  }
+  const onRun = () => run.run().then(() => toast.success(t('sonarr.started')), fail(t('fail.run')))
+
+  const name = (id: string) =>
+    id === COPY_PROFILE
+      ? t('radarr.profile.copy')
+      : (ours.data?.find((p) => p.id === id)?.name ?? id)
+  const odd = preview ? preview.numbering.daily + preview.numbering.anime : 0
+
+  return (
+    <Group title={t('sonarr.title')} description={t('sonarr.description')}>
+      <Columns count={2}>
+        <Field
+          label={t('url')}
+          hint={t('urlHint')}
+          error={error?.field === 'url' ? error.message : undefined}
+        >
+          <Input
+            value={url}
+            placeholder="http://sonarr:8989"
+            inputMode="url"
+            keyboardType="url"
+            onChangeText={setUrl}
+            {...code}
+          />
+        </Field>
+        <Field
+          label={t('apiKey')}
+          hint={t('sonarr.apiKeyHint')}
+          error={error?.field === 'apiKey' ? error.message : undefined}
+        >
+          <Input secureTextEntry value={apiKey} onChangeText={setApiKey} {...code} />
+        </Field>
+      </Columns>
+      <Mappings
+        value={mappings}
+        onChange={setMappings}
+        example={{ from: '/tv', to: '/data/media/shows' }}
+      />
+      <Actions>
+        <Button variant="secondary" onPress={onTest} loading={test.pending} disabled={!url.trim()}>
+          {t('test')}
+        </Button>
+        <Button
+          variant="secondary"
+          onPress={onPreview}
+          loading={look.pending}
+          disabled={!url.trim() || !apiKey.trim()}
+        >
+          {t('preview')}
+        </Button>
+        {connected && (
+          <Note role="status" color="text-2">
+            {connected}
+          </Note>
+        )}
+      </Actions>
+
+      {preview && (
+        <View style={{ gap: sp['4'] }}>
+          <Text variant="body" color="text">
+            {t('sonarr.counts', preview.series)}
+          </Text>
+          {preview.rootFolders.length > 0 && (
+            <Section label={t('radarr.roots')}>
+              <Items>
+                {preview.rootFolders.map((r) => (
+                  <Item key={r.sonarr}>
+                    <Note mono color="text-2" style={BREAK_ALL}>
+                      {r.sonarr} → {r.path}
+                    </Note>
+                    <Badge
+                      tone={
+                        r.status === 'outside' ? 'danger' : r.status === 'add' ? 'info' : 'success'
+                      }
+                    >
+                      {t(`radarr.root.${r.status}`)}
+                    </Badge>
+                    <Note>{t('sonarr.root.series', { count: r.series })}</Note>
+                  </Item>
+                ))}
+              </Items>
+            </Section>
+          )}
+          {preview.profiles.length > 0 && (
+            <Section label={t('radarr.profiles')} description={t('sonarr.profiles.description')}>
+              <Table label={t('radarr.profiles')}>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{t('sonarr.profile.sonarr')}</TableHead>
+                    <TableHead>{t('radarr.profile.cutoff')}</TableHead>
+                    <TableHead numeric>{t('sonarr.profile.series')}</TableHead>
+                    <TableHead>{t('radarr.profile.highsea')}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {preview.profiles.map((p) => (
+                    <TableRow key={p.sonarrId}>
+                      <TableCell>{p.name}</TableCell>
+                      <TableCell>{p.cutoff}</TableCell>
+                      <TableCell numeric>{p.series}</TableCell>
+                      <TableCell>
+                        <Select
+                          aria-label={t('radarr.profile.label', { name: p.name })}
+                          value={profiles[String(p.sonarrId)] ?? ''}
+                          onValueChange={(v) =>
+                            setProfiles((m) => ({ ...m, [String(p.sonarrId)]: v }))
+                          }
+                          // nearest first, as the preview orders them
+                          options={p.options.map((id) => ({ value: id, label: name(id) }))}
+                        />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </Section>
+          )}
+          <Note color="text-2">{t('sonarr.tags', { tags: preview.tags })}</Note>
+          {odd > 0 && <Note color="text-2">{t('sonarr.numbering', preview.numbering)}</Note>}
+          <Card role="region" label={t('radarr.kept.title')} gap={tokens.space['1.5']}>
+            <Line weight={600} role="heading" aria-level={3}>
+              {t('radarr.kept.title')}
+            </Line>
+            <Note color="text-2">{t('sonarr.kept.body')}</Note>
+            <TextLink href="/indexers">{t('radarr.kept.link')}</TextLink>
+          </Card>
+          {preview.problems.length > 0 && (
+            <Failures
+              title={t('sonarr.problems')}
+              rows={preview.problems.map((p) => ({ name: p.title, message: p.message }))}
+            />
+          )}
+          <Button
+            variant="primary"
+            icon="import"
+            onPress={onRun}
+            loading={run.pending}
+            disabled={running}
+          >
+            {status.data?.state === 'done' ? t('importAgain') : t('import')}
+          </Button>
+        </View>
+      )}
+      <Progressing status={status.data}>
+        {status.data?.state === 'done' && (
+          <Note color="text-2">{t('sonarr.files', { files: status.data.files })}</Note>
+        )}
+        {status.data && status.data.unmatched.length > 0 && (
+          <Failures
+            title={t('sonarr.unmatched', { count: status.data.unmatched.length })}
+            rows={status.data.unmatched}
+          />
+        )}
+      </Progressing>
     </Group>
   )
 }
