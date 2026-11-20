@@ -45,6 +45,7 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native'
+import { useAhead } from '../ahead.ts'
 import { useFilmsText } from '../films.ts'
 import { TV_LIBRARY } from './sizes.ts'
 
@@ -269,6 +270,7 @@ export function LibraryPoster({
 }) {
   const media = useMedia()
   const card = useFilmsText().card(item)
+  const ahead = useAhead()
   return (
     <Poster
       ref={ref}
@@ -279,7 +281,11 @@ export function LibraryPoster({
       caption={card.caption}
       width={width}
       preferred={preferred}
-      onFocus={onFocus}
+      onFocus={() => {
+        onFocus?.()
+        ahead.card(item)
+      }}
+      onPressIntent={() => ahead.card(item)}
       onPress={() => router.push(`/movies/${item.id}` as Href)}
       // the remote's Play/Pause plays a focused film (tv.md); Poster ignores it off the TV
       onPlay={() => router.push(playPath(item.id) as Href)}

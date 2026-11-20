@@ -413,10 +413,11 @@ describe('Alerts with a pointer', () => {
 
   test('a list that can’t load says so, and Try again loads it', async () => {
     pointer()
-    let down = false
+    // down from the start: Home's own read of them would otherwise be the list Alerts draws at
+    // once from the app's cache (HT-116), so there's no announcement to acknowledge either
+    let down = true
     refuse(/\/api\/v1\/announcements(?=\?|$)/, () => down)
-    await home()
-    down = true
+    await signedIn()
     await bell()
     await flush()
     expect(screen.getByText('Couldn’t load the announcements')).toBeTruthy()

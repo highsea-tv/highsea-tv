@@ -10,9 +10,10 @@
 // are @highsea-tv/client/profiles'. Whether this TV asks who's watching when highsea opens is the
 // TV's own setting, kept on the device (./launch-setting.ts).
 import type { Profile, ProfileTone } from '@highsea-tv/api-contract'
-import { useProfiles, usePublicInfo } from '@highsea-tv/client/data'
+import { forgetProfile, useProfiles, usePublicInfo } from '@highsea-tv/client/data'
 import { createProfilesText, PIN_REST_S, profileRefusal } from '@highsea-tv/client/profiles'
 import { useLocale } from '@highsea-tv/i18n/react'
+import { useQueryCache } from '@highsea-tv/sdk/react'
 import {
   createContext,
   type ReactNode,
@@ -73,6 +74,8 @@ export function ProfilesProvider({ children }: { children: ReactNode }) {
   const text = useMemo(() => createProfilesText(locale), [locale])
   const { profiles, me, max, choose, create, update, remove } = p
   const ready = p.list.status === 'success'
+  // another profile watching forgets the last one's answers, so none of theirs is drawn
+  const cache = useQueryCache()
   const value = useMemo<ProfilesState>(
     () => ({
       profiles,
@@ -82,6 +85,7 @@ export function ProfilesProvider({ children }: { children: ReactNode }) {
       switchTo: async (id, pin) => {
         try {
           await choose(id, pin)
+          if (cache && id !== me?.id) forgetProfile(cache)
           return null
         } catch (e) {
           const why = profileRefusal(e)
@@ -96,12 +100,13 @@ export function ProfilesProvider({ children }: { children: ReactNode }) {
       add: async (name, tone) => {
         const made = await create(name, tone)
         await choose(made.id)
+        if (cache) forgetProfile(cache)
         return made.id
       },
       setPin: (pin) => (me ? update(me.id, { pin }) : Promise.resolve()),
       remove: (id) => remove(id),
     }),
-    [profiles, me, max, ready, choose, create, update, remove, text],
+    [profiles, me, max, ready, choose, create, update, remove, text, cache],
   )
   return (
     <Known.Provider value={known}>

@@ -51,6 +51,11 @@ export type PosterProps = {
   round?: boolean
   onPress?: () => void
   /**
+   * A press is likely: a pointer came over it, or a touch began. The page it opens can be fetched
+   * ahead (HT-116); the TV's is its `onFocus`. Nothing is drawn for it.
+   */
+  onPressIntent?: () => void
+  /**
    * Where it leads: on the web the poster is an `<a href>` (react-native-web draws a Pressable with
    * an address as one), as the web renderer's Poster `href` (the admin's posters). Elsewhere
    * `onPress` is the way.
@@ -104,6 +109,7 @@ export function Poster({
   aspect: aspectGiven = 'poster',
   round = false,
   onPress,
+  onPressIntent,
   href,
   onLongPress,
   longPressLabel,
@@ -292,6 +298,8 @@ export function Poster({
     <Press
       ref={ref}
       onPress={onPress}
+      onPressIn={onPressIntent}
+      onHoverIn={onPressIntent}
       onLongPress={onLongPress}
       delayLongPress={longPressMs}
       accessibilityRole="link"

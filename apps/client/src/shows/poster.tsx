@@ -10,6 +10,7 @@ import { useT } from '@highsea-tv/i18n/react'
 import { useMedia } from '@highsea-tv/native/media'
 import { Badge, Poster } from '@highsea-tv/ui'
 import { type Href, router } from 'expo-router'
+import { useAhead } from '../ahead.ts'
 import type { PosterSlot } from '../library/movies.tsx'
 import { showMessages as messages } from './messages.ts'
 import { useShowsText } from './text.ts'
@@ -39,6 +40,7 @@ export function ShowPoster({
   const t = useT(messages)
   const text = useShowsText()
   const media = useMedia()
+  const ahead = useAhead()
   const under = caption ?? text.seasonsCount(show.seasons)
   const next = show.next
   return (
@@ -55,6 +57,11 @@ export function ShowPoster({
         caption: under,
         unwatched: show.unwatched,
       })}
+      onFocus={() => {
+        slot.onFocus?.()
+        ahead.show(show.id)
+      }}
+      onPressIntent={() => ahead.show(show.id)}
       onPress={() => router.push(showPath(show.id) as Href)}
       onPlay={
         next
