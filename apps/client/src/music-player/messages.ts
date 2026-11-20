@@ -45,6 +45,14 @@ export const musicPlayerScreenMessages = defineMessages({
   goArtist: 'Go to the artist',
   stop: 'Stop',
   stopped: 'Music stopped',
+  // the music paused on its own (audio.ts), in the film player's words for the same cases
+  stoppedBy: '{name} stopped this song',
+  stoppedByBody: 'You can play it again from where you were.',
+  noFfmpeg: 'This song can’t play here',
+  noFfmpegBody:
+    'It needs making into AAC for this device, and the server has no ffmpeg. Play another song, or install ffmpeg on the server.',
+  failed: 'This song didn’t start',
+  failedBody: 'highsea couldn’t read the file. Try again, or play another song.',
   airplay: 'AirPlay',
   airplayOn: 'AirPlay: playing on another screen',
   nothingTitle: 'Nothing’s playing',

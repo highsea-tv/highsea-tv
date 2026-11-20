@@ -7,13 +7,26 @@
 // fourth cue, a minute in, so any page can be reviewed with the player showing, as the
 // prototype's SeedMusic did; "Nothing playing" stops it. On the TV, Play/Pause on the remote
 // plays and pauses the music from anywhere but the film player (the prototype's useMusicKeys).
+// On a real server the music is heard (HT-108, ./audio.ts): the store's clock gives way to the
+// audio's, and a song paused on its own (stopped from Now playing, no ffmpeg) says why in a note.
+// The mock has no songs to hear, so its clock runs as the prototype's did.
 import { useMusicQueue, useServes } from '@highsea-tv/client/data'
+import { createMusicAudio, type MusicNotice } from '@highsea-tv/client/music-player'
+import { useT } from '@highsea-tv/i18n/react'
+import { useMedia } from '@highsea-tv/native/media'
 import { useCurrent } from '@highsea-tv/native/servers'
+import { useWebHost } from '@highsea-tv/native/web-host'
+import { useClient } from '@highsea-tv/sdk/react'
 import { useFormFactor } from '@highsea-tv/ui'
 import { focusedPlay, useRemote } from '@highsea-tv/ui/tv'
 import { usePathname } from 'expo-router'
 import { useCallback, useEffect, useRef } from 'react'
+import { Platform } from 'react-native'
 import { useFrameState } from '../frame-channel.ts'
+import { useNote } from '../kit.tsx'
+import { mock } from '../transport.ts'
+import { expoAudioOutput, musicProfile, musicServer } from './audio.ts'
+import { musicPlayerScreenMessages as messages } from './messages.ts'
 import { musicPlayer, useMusicPlayer } from './store.ts'
 
 /** The album the toolbar's Music plays from: the mock's Sintel score (the prototype's). */
@@ -73,7 +86,72 @@ export function MusicPlayerMount() {
     )
   }, [serves, music])
 
-  return tv ? <RemoteKeys serves={serves} /> : null
+  return (
+    <>
+      {serves && !mock ? <MusicAudio /> : null}
+      {tv ? <RemoteKeys serves={serves} /> : null}
+    </>
+  )
+}
+
+/**
+ * The music heard, on a server that serves it: one expo-audio player (./audio.ts) driven by the
+ * store through the engine, made once per server and let go when the server changes.
+ */
+function MusicAudio() {
+  const client = useClient()
+  const current = useCurrent()
+  const host = useWebHost()
+  const native = useMedia()
+  const note = useNote()
+  const t = useT(messages)
+  // the latest of each, read when they're needed, so the engine isn't made again for a new function
+  const latest = useRef({ host, native, note, t })
+  latest.current = { host, native, note, t }
+  const server = current.server.id
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: another server makes the engine again
+  useEffect(() => {
+    const media = (path: string) =>
+      Platform.OS === 'web' ? { uri: latest.current.host.media(path) } : latest.current.native(path)
+    const say = (n: MusicNotice) => {
+      const { t, note } = latest.current
+      if (n.kind === 'stopped')
+        note(
+          {
+            title: t('stoppedBy', { name: n.by }),
+            body: n.message ? `“${n.message}” ${t('stoppedByBody')}` : t('stoppedByBody'),
+          },
+          null,
+        )
+      else if (n.kind === 'no-ffmpeg') note({ title: t('noFfmpeg'), body: t('noFfmpegBody') }, null)
+      else note({ title: t('failed'), body: t('failedBody') }, null)
+    }
+    musicPlayer.setClock(false)
+    const audio = createMusicAudio({
+      player: musicPlayer,
+      output: expoAudioOutput(media),
+      server: musicServer(client, media, () => musicProfile(latest.current.host)),
+      info: (song) => ({
+        title: song.title,
+        artist: song.album.artist.name,
+        album: song.album.title,
+        artwork: song.album.cover,
+      }),
+      notice: say,
+    })
+    // stopped from Now playing: a report at once hears who stopped it (the film player's
+    // useStoppedEvent)
+    const off = client.events.subscribe((e) => {
+      if (e.topic === 'playback.stopped' && e.ids) audio.stoppedEvent(e.ids)
+    })
+    return () => {
+      off()
+      audio.release()
+      musicPlayer.setClock(true)
+    }
+  }, [client, server])
+  return null
 }
 
 /**
