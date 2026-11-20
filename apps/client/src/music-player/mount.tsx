@@ -110,11 +110,10 @@ function MusicAudio() {
   latest.current = { host, native, note, t }
   const server = current.server.id
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: another server makes the engine again
   useEffect(() => {
     const media = (path: string) =>
-      Platform.OS === 'web'
-        ? { uri: latest.current.host.media(path) }
-        : latest.current.native(path)
+      Platform.OS === 'web' ? { uri: latest.current.host.media(path) } : latest.current.native(path)
     const say = (n: MusicNotice) => {
       const { t, note } = latest.current
       if (n.kind === 'stopped')

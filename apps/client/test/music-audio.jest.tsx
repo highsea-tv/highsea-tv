@@ -105,7 +105,12 @@ function setup() {
     player,
     output: out.output,
     server: srv.server,
-    info: (s) => ({ title: s.title, artist: s.album.artist.name, album: s.album.title, artwork: null }),
+    info: (s) => ({
+      title: s.title,
+      artist: s.album.artist.name,
+      album: s.album.title,
+      artwork: null,
+    }),
     notice: (n) => notices.push(n),
     setInterval: (fn) => {
       tick = fn
@@ -238,7 +243,12 @@ test('stopped from Now playing: the music pauses, says who, and plays again as a
   player.toggle()
   await flush()
   expect(srv.calls).toEqual(['play t1 mp1', 'play t1 mp2'])
-  expect(out.calls.slice(-4)).toEqual(['load /stream/music/tok2 One', 'volume 0.8', 'seek 30', 'play'])
+  expect(out.calls.slice(-4)).toEqual([
+    'load /stream/music/tok2 One',
+    'volume 0.8',
+    'seek 30',
+    'play',
+  ])
 })
 
 test('the server’s stopped event asks at once, so the note comes without waiting for the timer', async () => {

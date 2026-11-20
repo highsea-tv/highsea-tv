@@ -26,11 +26,11 @@
 // request, so the phone and the TV hand it the file expo-image cached with the device's token
 // (@highsea-tv/native's `artworkFile`, as the film player's Now Playing does). The browser
 // fetches it with the page's own cookie.
-import {
-  type AudioOutput,
-  type AudioOutputEvent,
-  type MusicServer,
-  type NowPlayingInfo,
+import type {
+  AudioOutput,
+  AudioOutputEvent,
+  MusicServer,
+  NowPlayingInfo,
 } from '@highsea-tv/client/music-player'
 import { baseProfile } from '@highsea-tv/client/player'
 import { playbackProfile } from '@highsea-tv/native/device'

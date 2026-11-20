@@ -10,6 +10,7 @@ import { schema } from '@highsea-tv/db'
 import {
   createMusicPlayback,
   decideMusic,
+  ffmpegMusicTranscoder,
   MUSIC_IDLE_MS,
   type MusicTranscoder,
 } from '../../src/music/index.ts'
@@ -214,6 +215,18 @@ describe('a play', () => {
     )
     await expect(bare.playback.open(p.url.slice('/stream/music/'.length))).rejects.toMatchObject({
       code: 'unavailable',
+      details: { reason: 'no-ffmpeg' },
+    })
+  })
+
+  test('ffmpeg missing from the machine is a 503 saying so, not a file it couldn’t read', async () => {
+    const missing = ffmpegMusicTranscoder('/nonexistent/highsea-ffmpeg')
+    const opus = { ...chrome, audio: chrome.audio.filter((a) => a.codec !== 'flac') }
+    const { who, playback, tracks } = await playing({ transcode: missing, profile: opus })
+    const p = playback.play(who, tracks[0]?.id as string, {}, { address: '10.0.0.2' })
+    await expect(playback.open(p.url.slice('/stream/music/'.length))).rejects.toMatchObject({
+      code: 'unavailable',
+      details: { reason: 'no-ffmpeg' },
     })
   })
 })

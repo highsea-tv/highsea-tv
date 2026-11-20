@@ -51,10 +51,11 @@ export function createMusicManage(
   ctx: MusicDeps,
   deps: {
     scan: (opts: { folder?: string }) => Promise<unknown>
-    refreshMetadata: (opts: {
-      force?: boolean
-      only?: { albums: string[]; artists: string[] }
-    }) => Promise<unknown>
+    /** Queues the look-up of these albums and artists, as a job that names `subject`. */
+    queueRefresh: (
+      only: { albums: string[]; artists: string[] },
+      subject: { kind: 'artist' | 'album'; id: string },
+    ) => unknown
   },
 ) {
   const { db, clock } = ctx
@@ -114,10 +115,9 @@ export function createMusicManage(
       .where(eq(musicAlbums.artistId, id))
       .all()
       .map((r) => r.id)
-    // MusicBrainz at one request a second: answered now, looked up after
-    void deps
-      .refreshMetadata({ force: true, only: { albums, artists: [id] } })
-      .catch(() => undefined)
+    // MusicBrainz at one request a second: answered now, looked up after, as a job the artist's
+    // page and row mark while it runs
+    deps.queueRefresh({ albums, artists: [id] }, { kind: 'artist', id })
   }
 
   /** Reads the album's folder again, then asks MusicBrainz and the Cover Art Archive again. */
@@ -125,9 +125,7 @@ export function createMusicManage(
     const a = db.select().from(musicAlbums).where(eq(musicAlbums.id, id)).get()
     if (!a) throw new AppError('not-found', 'That album isn’t in the library.')
     await deps.scan({ folder: a.path })
-    void deps
-      .refreshMetadata({ force: true, only: { albums: [id], artists: [a.artistId] } })
-      .catch(() => undefined)
+    deps.queueRefresh({ albums: [id], artists: [a.artistId] }, { kind: 'album', id })
   }
 
   /** The stored naming over the defaults; a field that no longer parses reads its default. */
