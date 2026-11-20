@@ -339,6 +339,12 @@ The order is films, then shows, then music: films are already built and only nee
   - **Notifications:** Episode grabbed, Episode imported and Episode upgraded, one message per download; Settings › Connections groups the events by Movies and Shows.
   - **Left for the next task:** the TV and anime indexers, the Sonarr importer, daily and absolute numbering.
 
+- **2026-11-19, C1, the Sonarr importer (HT-112):** built and waiting for the owner's review (ADR 0041's section of that day).
+  - **What comes across:** Sonarr's series as shows, by TMDB id or through TMDB's Find by TheTVDB id. Their monitoring comes across per show, season and episode, with their quality profiles (nearest first, or copied as `qp-sonarr-{id}`) and their tags. Episode files are filed where they are, under the episodes Sonarr gives them (a multi-episode file once), and probed again. Only GET requests reach Sonarr, and a second run changes only what differs. Episodes and files TMDB numbers otherwise are reported, and the files wait in Shows › Unmatched.
+  - **The admin:** a Sonarr card on Settings › Migration between Radarr's and qBittorrent's, from Radarr's parts. The locked screen's changes are the card itself, Sonarr's placeholders in its path mappings, and the intro naming all three programs.
+  - **Against the owner's Sonarr (4.0.20), preview only, on a local dev server:** 251 series, 237 with files, 8,631 episodes and 7,920 files. One profile, one tag, 17 anime series, none daily. Without a mapping every series is outside highsea's folders. With one mapping for its one root folder, 250 are ready. One has no TMDB id in Sonarr and needs TMDB's Find, which the dev server couldn't ask without a TMDB key. The preview took 0.3 s.
+  - **Left:** a real run on the NAS (per-series episode reads, probing the files and the time it takes), and how the anime series' numbering meets TMDB's.
+
 ## Running highsea on the NAS (A1)
 
 - **2026-11-19, A1, fanart.tv as a second artwork source, and the refetch after an update (HT-74):** what 0.4.5's findings left open, and the owner's choice of fanart.tv as TMDB's fallback (2026-11-18).

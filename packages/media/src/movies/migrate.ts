@@ -9,16 +9,16 @@
 // recorded is found by its path; a tag link is written once.
 import { promises as fsp } from 'node:fs'
 import { basename, extname } from 'node:path'
-import { newId } from '@highsea-tv/core'
 import { schema } from '@highsea-tv/db'
-import { eq, sql } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 import type { Media } from '../shared/index.ts'
 import { checkPath } from '../shared/paths.ts'
+import { tagIdsFor } from '../shared/tags.ts'
 import type { Ctx } from './context.ts'
 import type { Imports } from './import.ts'
 import type { Library } from './library.ts'
 
-const { mediaItems, mediaFiles, tags, mediaItemTags } = schema
+const { mediaItems, mediaFiles, mediaItemTags } = schema
 
 export type InPlaceInput = {
   tmdbId: number
@@ -52,30 +52,6 @@ export function createMigrate(
   const { db, clock } = ctx
   const { media, library, imports } = deps
 
-  function tagIds(labels: readonly string[]): string[] {
-    const out: string[] = []
-    for (const raw of labels) {
-      // as Settings › Tags keeps them (checkpoint 8c): tidied, 40 characters, one per label
-      // ignoring case, so Radarr's "kids" finds a "Kids" made here
-      const label = raw.trim().replace(/\s+/g, ' ').slice(0, 40)
-      if (!label) continue
-      const same = () =>
-        db
-          .select({ id: tags.id })
-          .from(tags)
-          .where(sql`${tags.label} = ${label} COLLATE NOCASE`)
-          .get()
-      if (!same())
-        db.insert(tags)
-          .values({ id: newId('tag'), label, createdAt: clock.now() })
-          .onConflictDoNothing({ target: tags.label })
-          .run()
-      const row = same()
-      if (row) out.push(row.id)
-    }
-    return out
-  }
-
   async function addInPlace(input: InPlaceInput): Promise<InPlaceResult> {
     const profile = media.profiles.get(input.qualityProfileId)
     const { created } = await library.add({
@@ -88,7 +64,7 @@ export function createMigrate(
     let row = library.internal.rowOf(input.tmdbId)
     if (!row) return { added: created, file: { problem: 'The movie couldn’t be added.' } }
 
-    for (const tagId of tagIds(input.tags))
+    for (const tagId of tagIdsFor(ctx, input.tags))
       db.insert(mediaItemTags).values({ itemId: row.id, tagId }).onConflictDoNothing().run()
 
     // the folder stays where the other program kept it; only a movie added now moves its record

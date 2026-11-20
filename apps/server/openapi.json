@@ -14415,6 +14415,330 @@
           }
         ]
       },
+      "SonarrTest": {
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "string"
+          },
+          "series": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "version",
+          "series"
+        ]
+      },
+      "SonarrConnection": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2048,
+            "example": "http://sonarr:8989"
+          },
+          "apiKey": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          }
+        },
+        "required": [
+          "url",
+          "apiKey"
+        ]
+      },
+      "SonarrPreview": {
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "string"
+          },
+          "series": {
+            "type": "object",
+            "properties": {
+              "total": {
+                "type": "integer"
+              },
+              "withFiles": {
+                "type": "integer"
+              },
+              "inLibrary": {
+                "type": "integer"
+              },
+              "ready": {
+                "type": "integer"
+              },
+              "episodes": {
+                "type": "integer"
+              },
+              "files": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "total",
+              "withFiles",
+              "inLibrary",
+              "ready",
+              "episodes",
+              "files"
+            ]
+          },
+          "profiles": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "sonarrId": {
+                  "type": "integer"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "cutoff": {
+                  "type": "string"
+                },
+                "series": {
+                  "type": "integer"
+                },
+                "options": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "required": [
+                "sonarrId",
+                "name",
+                "cutoff",
+                "series",
+                "options"
+              ]
+            }
+          },
+          "rootFolders": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "sonarr": {
+                  "type": "string"
+                },
+                "path": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "root-folder",
+                    "add",
+                    "outside"
+                  ]
+                },
+                "series": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "sonarr",
+                "path",
+                "status",
+                "series"
+              ]
+            }
+          },
+          "tags": {
+            "type": "integer"
+          },
+          "numbering": {
+            "type": "object",
+            "properties": {
+              "daily": {
+                "type": "integer"
+              },
+              "anime": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "daily",
+              "anime"
+            ]
+          },
+          "problems": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "title": {
+                  "type": "string"
+                },
+                "message": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "title",
+                "message"
+              ]
+            }
+          }
+        },
+        "required": [
+          "version",
+          "series",
+          "profiles",
+          "rootFolders",
+          "tags",
+          "numbering",
+          "problems"
+        ]
+      },
+      "SonarrPreviewInput": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/SonarrConnection"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "pathMappings": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/PathMapping"
+                },
+                "maxItems": 20
+              }
+            },
+            "required": [
+              "pathMappings"
+            ]
+          }
+        ]
+      },
+      "SonarrImportStatus": {
+        "type": "object",
+        "properties": {
+          "state": {
+            "type": "string",
+            "enum": [
+              "idle",
+              "running",
+              "done",
+              "failed"
+            ]
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "done": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "imported": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "skipped": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "failures": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "message": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "name",
+                "message"
+              ]
+            }
+          },
+          "startedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "example": "2026-10-17T20:15:00.000Z"
+          },
+          "finishedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "example": "2026-10-17T20:15:00.000Z"
+          },
+          "files": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "unmatched": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "message": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "name",
+                "message"
+              ]
+            }
+          }
+        },
+        "required": [
+          "state",
+          "total",
+          "done",
+          "imported",
+          "skipped",
+          "failures",
+          "startedAt",
+          "finishedAt",
+          "files",
+          "unmatched"
+        ]
+      },
+      "SonarrRunInput": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/SonarrPreviewInput"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "profiles": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 64
+                }
+              }
+            }
+          }
+        ]
+      },
       "QbittorrentTest": {
         "type": "object",
         "properties": {
@@ -38792,6 +39116,305 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ImportStatus"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/importers/sonarr/test": {
+      "post": {
+        "tags": [
+          "Migration"
+        ],
+        "summary": "Check Sonarr’s address and API key",
+        "description": "A wrong key is 400 with `bad-credentials`; an address that doesn’t answer is 503 with `unreachable`.",
+        "x-highsea-access": "owner",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SonarrConnection"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sonarr answered",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SonarrTest"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/importers/sonarr/preview": {
+      "post": {
+        "tags": [
+          "Migration"
+        ],
+        "summary": "What would come across from Sonarr, with the profile mapping",
+        "description": "Reads Sonarr and TMDB only: nothing is written in highsea or in Sonarr.",
+        "x-highsea-access": "owner",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SonarrPreviewInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The preview",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SonarrPreview"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/importers/sonarr/run": {
+      "post": {
+        "tags": [
+          "Migration"
+        ],
+        "summary": "Import from Sonarr, as a job",
+        "description": "One run at a time (409 `running`). Safe to run again: a second run changes only what differs.",
+        "x-highsea-access": "owner",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SonarrRunInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The job started",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SonarrImportStatus"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/importers/sonarr": {
+      "get": {
+        "tags": [
+          "Migration"
+        ],
+        "summary": "The Sonarr import’s progress",
+        "x-highsea-access": "owner",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The last or current run",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SonarrImportStatus"
                 }
               }
             }
