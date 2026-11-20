@@ -106,6 +106,13 @@ export function registerIndexers(app: OpenAPIHono<Env>) {
     const { movies, indexers, automation } = runtime(c)
     // judged with the movie's blocklist, as automation's searches are (checkpoint 8a)
     const input = automation.inputFor(id) ?? movies.searchInput(id)
+    // a movie in a root folder highsea only reads isn't searched for (ADR 0063), as a show isn't
+    if (!movies.wanted.looksAfter(id))
+      throw new AppError(
+        'conflict',
+        'highsea only reads this movie’s root folder, so it doesn’t search for it.',
+        { reason: 'read-only' },
+      )
     if (!indexers.hasEnabled())
       throw new AppError('conflict', 'Add an indexer to search for releases.', {
         reason: 'no-indexers',

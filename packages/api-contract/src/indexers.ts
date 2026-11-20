@@ -503,7 +503,7 @@ export const releaseRoutes = {
     tags: ['Movies'],
     summary: 'Search every usable indexer for a library movie now',
     description:
-      'Judged by the movie’s first version’s profile, approved releases first. A `POST` because it costs every indexer a query. 409 `no-indexers` while no indexer is enabled. The results are kept for 30 minutes.',
+      'Judged by the movie’s first version’s profile, approved releases first. A `POST` because it costs every indexer a query. 409 `no-indexers` while no indexer is enabled, and 409 `read-only` for a movie in a root folder highsea only reads (ADR 0063). The results are kept for 30 minutes.',
     ...access('staff'),
     request: { params: TmdbIdParam },
     responses: {

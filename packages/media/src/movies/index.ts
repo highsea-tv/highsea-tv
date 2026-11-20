@@ -19,6 +19,7 @@
 //   movies.searchInput(id, versionId?)     what a release search is judged by (the indexers search)
 //   movies.wanted.missing(query) / cutoff(query) → MoviePage   calendar(from, to) → CalendarEntry[]
 //   movies.wanted.wants(id) / takeDue() / found(id) / rssTargets()   the sweep and RSS (8a)
+//   movies.wanted.looksAfter(id)   false in a read-only root folder: never searched (HT-113)
 //   await movies.client.list(query, userId) / item('movie', id, userId) / search(q, { userId, mayRequest })
 //   await movies.importDownload(ImportInput) → imported { fileId, path, transfer } | blocked | failed
 //   await movies.manualImport.scan(path) → ImportCandidate[]     run(files, 'hardlink' | 'move')
@@ -157,6 +158,8 @@ export function createMovies(deps: MoviesDeps, media: Media) {
       takeDue: wanted.takeDue,
       found: wanted.found,
       rssTargets: wanted.rssTargets,
+      /** False for a movie in a root folder highsea only reads (ADR 0063, HT-113): never searched. */
+      looksAfter: wanted.looksAfter,
       /** Every movie's dates and cutoff brought up to date now; the job runs it in the background. */
       backfill: wanted.backfill,
       /** Every movie's dates and cutoff again, as a job (after a profile changes). */

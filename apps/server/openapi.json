@@ -26295,6 +26295,7 @@
           "Movies"
         ],
         "summary": "Monitor, stop monitoring, change the profile, search, refresh or remove many",
+        "description": "`search` answers 409 `no-indexers` while no indexer is enabled. It leaves out movies in a root folder highsea only reads (ADR 0063), and answers 409 `read-only` when every movie asked for is in one.",
         "x-highsea-access": "staff",
         "security": [
           {
@@ -34953,7 +34954,7 @@
           "Movies"
         ],
         "summary": "Search every usable indexer for a library movie now",
-        "description": "Judged by the movie’s first version’s profile, approved releases first. A `POST` because it costs every indexer a query. 409 `no-indexers` while no indexer is enabled. The results are kept for 30 minutes.",
+        "description": "Judged by the movie’s first version’s profile, approved releases first. A `POST` because it costs every indexer a query. 409 `no-indexers` while no indexer is enabled, and 409 `read-only` for a movie in a root folder highsea only reads (ADR 0063). The results are kept for 30 minutes.",
         "x-highsea-access": "staff",
         "security": [
           {
