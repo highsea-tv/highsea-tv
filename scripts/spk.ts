@@ -18,7 +18,7 @@ import { gzipSync } from 'node:zlib'
 
 const ROOT = join(import.meta.dir, '..')
 const SOURCE = join(ROOT, 'templates/synology/spk')
-const ICON_256 = join(ROOT, 'packages/brand/assets/icons/desktop/128x128@2x.png')
+const ICON_256 = join(ROOT, 'packages/brand/assets/icons/synology/icon-256.png')
 
 /** DSM 7.2.1, the first with Container Manager's docker-project worker (build 1432). */
 export const OS_MIN_VER = '7.2.1-69057'
