@@ -111,6 +111,38 @@ describe('Wanted', () => {
     expect(await failure(memberApi.wanted.missing())).toMatchObject({ code: 'forbidden' })
   })
 
+  test('leaves out films in a read-only root folder, and refuses a Search on one (HT-113)', async () => {
+    const { api, add } = await started()
+    await add(SINTEL)
+    await api.indexers.add({
+      body: {
+        definitionId: 'generic-torznab',
+        settings: { baseUrl: `${FAKE_ORIGIN}/torznab`, apiKey: FAKE_CREDENTIALS.torznabKey },
+      },
+    })
+    const [folder] = await api.rootFolders.list({ query: { kind: 'movies' } })
+    if (!folder) throw new Error('no root folder')
+    await api.rootFolders.update({ params: { id: folder.id }, body: { readOnly: true } })
+    expect(await api.wanted.missing()).toMatchObject({ items: [], total: 0 })
+    expect(await api.wanted.search({ body: { all: 'missing' } })).toEqual({
+      queued: 0,
+      episodes: 0,
+    })
+    const readOnly = { code: 'conflict', reason: 'read-only' }
+    expect(
+      await failure(api.movies.bulk({ body: { action: 'search', ids: [SINTEL] } })),
+    ).toMatchObject(readOnly)
+    expect(await failure(api.movies.interactiveSearch({ params: { id: SINTEL } }))).toMatchObject(
+      readOnly,
+    )
+    // the calendar keeps its date
+    const entries = await api.wanted.calendar({ query: { from: '2010-01-01', to: '2010-12-31' } })
+    expect(entries.flatMap((e) => ('movie' in e ? [e.movie.id] : []))).toContain(SINTEL)
+    // managed again: wanted at once
+    await api.rootFolders.update({ params: { id: folder.id }, body: { readOnly: false } })
+    expect((await api.wanted.missing()).items.map((m) => m.id)).toEqual([SINTEL])
+  })
+
   test('the calendar, with its range checked', async () => {
     const { api, add } = await started()
     await add(CAT_IN_THE_HAT)

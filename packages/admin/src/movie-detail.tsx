@@ -326,6 +326,10 @@ type Options = {
   folders: RootFolder[]
 }
 
+/** Whether the film's root folder is one highsea only reads (ADR 0063), by the folders' list. */
+const isReadOnly = (m: Movie, options: Options | undefined) =>
+  !!options?.folders.find((f) => f.path === m.rootFolder)?.readOnly
+
 function LibraryMovie({
   id,
   tab,
@@ -402,12 +406,14 @@ function LibraryMovie({
   }
 
   const title = m?.title ?? meta.data?.title ?? t('movie')
+  // a root folder highsea only reads (ADR 0063): nothing is searched for, as for a show (HT-113)
+  const readOnly = !!m && isReadOnly(m, options.data)
   // HT-106: what the server is doing to the film, by its actions; each action is off while its job runs
   const work = useItemWork('movie', id, m?.title)
   const actions = m ? (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: s['2'], flexShrink: 1 }}>
       <ItemWorkMark jobs={work.jobs} look="page" item={work.item} />
-      {searchable.canSearch ? (
+      {readOnly ? null : searchable.canSearch ? (
         <Button
           icon="search"
           loading={search.pending}
@@ -433,9 +439,11 @@ function LibraryMovie({
           </Button>
         </Tooltip>
       )}
-      <Button variant="primary" icon="list" onPress={() => setTab('search')}>
-        {t('interactiveSearch')}
-      </Button>
+      {!readOnly && (
+        <Button variant="primary" icon="list" onPress={() => setTab('search')}>
+          {t('interactiveSearch')}
+        </Button>
+      )}
       <Button
         ref={more}
         variant="ghost"
@@ -493,6 +501,7 @@ function LibraryMovie({
             meta={meta}
             monitored={monitoring ?? m.monitored}
             onMonitor={onMonitor}
+            readOnly={readOnly}
           />
         ) : undefined
       }
@@ -594,11 +603,13 @@ function LibrarySummary({
   meta,
   monitored,
   onMonitor,
+  readOnly,
 }: {
   movie: Movie
   meta: MetadataQuery
   monitored: boolean
   onMonitor: (on: boolean) => void
+  readOnly: boolean
 }) {
   const t = useT(messages)
   const tl = useT(library)
@@ -632,6 +643,11 @@ function LibrarySummary({
             {m.path}
           </Text>
         </View>
+        {readOnly && (
+          <Text variant="caption" color="text-3">
+            {t('readOnly')}
+          </Text>
+        )}
         <View>
           <Switch label={t('monitored')} checked={monitored} onCheckedChange={onMonitor} />
         </View>
@@ -688,7 +704,7 @@ function LibraryBody({
       ) : tab === 'history' ? (
         <History id={m.id} />
       ) : tab === 'search' ? (
-        <SearchTab id={m.id} />
+        <SearchTab id={m.id} readOnly={isReadOnly(m, options)} />
       ) : (
         <Subtitles movie={m} />
       )}
@@ -1381,10 +1397,11 @@ function History({ id }: { id: number }) {
  * Interactive search (movies.md › Search tab). While no indexer is enabled, decision 2's reason and
  * where to fix it; then the releases, judged by the movie's first version's profile.
  */
-function SearchTab({ id }: { id: number }) {
+function SearchTab({ id, readOnly }: { id: number; readOnly: boolean }) {
   const t = useT(messages)
   const router = useRouter()
   const searchable = useSearchable()
+  if (readOnly) return <EmptyState icon="search" title={t('readOnly')} />
   if (!searchable.ready)
     return (
       <View aria-busy style={{ gap: s['3'] }}>

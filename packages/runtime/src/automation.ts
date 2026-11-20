@@ -20,6 +20,10 @@
 // content (non-RSS feed searches) will ignore delay profile settings", so Search, Search all and
 // Search now never wait). A held movie is looked at again when the wait is up, by
 // `movies.held`, which grabs the best release found by then.
+//
+// A movie in a root folder highsea only reads (ADR 0063, HT-113) is never searched or grabbed for
+// here: `movies.wanted` leaves it out of RSS's targets and the sweep, `wants` is empty for it, and
+// `searchMovie` returns before searching, so a Search all queued earlier does nothing either.
 import { AppError, type EventBus, type Logger } from '@highsea-tv/core'
 import type { Downloads } from '@highsea-tv/downloads'
 import type {
@@ -115,7 +119,9 @@ export function createAutomation(deps: {
     { automatic = false } = {},
   ): Promise<boolean> {
     const itemId = deps.itemId(tmdbId)
-    if (!itemId) return false
+    // a movie in a root folder highsea only reads (ADR 0063, HT-113): no search, no grab, even for
+    // a search queued before its folder was switched to read-only
+    if (!itemId || !movies.wanted.looksAfter(tmdbId)) return false
     const wants = movies.wanted.wants(tmdbId).filter((w) => !versionId || w.versionId === versionId)
     // nothing wanted: the search still runs, so its results show in the Search tab
     const targets = wants.length ? wants.map((w) => w.versionId) : [versionId ?? null]

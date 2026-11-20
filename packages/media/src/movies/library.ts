@@ -63,8 +63,11 @@ export type ListQuery = {
   limit?: number
 }
 
-/** Filters the client API adds to the admin's. */
-export type ExtraFilters = { genre?: string; playable?: boolean }
+/**
+ * Filters the client API adds to the admin's, and `also`, one more condition a caller inside the
+ * package adds (Wanted's: only movies highsea looks after, HT-113).
+ */
+export type ExtraFilters = { genre?: string; playable?: boolean; also?: SQL }
 
 /**
  * The title filter: anywhere in the title or the original title, ignoring case (SQLite's LIKE folds
@@ -295,6 +298,7 @@ export function createLibrary(ctx: Ctx, media: Media) {
     if (query.cutoffUnmet !== undefined) where.push(eq(mediaItems.cutoffUnmet, query.cutoffUnmet))
     if (query.title?.trim()) where.push(titleMatch(query.title))
     if (query.genre?.trim()) where.push(genreMatch(query.genre.trim()))
+    if (query.also) where.push(query.also)
     // a version with a file: any file plays, transcoded where it must be (checkpoint 4.1)
     if (query.playable !== undefined)
       where.push(
@@ -341,7 +345,7 @@ export function createLibrary(ctx: Ctx, media: Media) {
     return counts
   }
 
-  function list(query: ListQuery = {}): MoviePage {
+  function list(query: ListQuery & Pick<ExtraFilters, 'also'> = {}): MoviePage {
     const { rows, next } = pageOf(query)
     const counts = countsOf(query)
     return {
@@ -662,11 +666,11 @@ export function createLibrary(ctx: Ctx, media: Media) {
   /** The library rows for TMDB ids, and the ids that aren't in the library. */
   function resolve(ids: number[]) {
     const unique = [...new Set(ids)]
-    const rows: { id: string; tmdbId: number }[] = []
+    const rows: { id: string; tmdbId: number; path: string | null }[] = []
     for (const part of chunks(unique))
       rows.push(
         ...db
-          .select({ id: mediaItems.id, tmdbId: mediaItems.tmdbId })
+          .select({ id: mediaItems.id, tmdbId: mediaItems.tmdbId, path: mediaItems.path })
           .from(mediaItems)
           .where(and(eq(mediaItems.type, 'movie'), inArray(mediaItems.tmdbId, part)))
           .all(),
@@ -698,7 +702,18 @@ export function createLibrary(ctx: Ctx, media: Media) {
     if (input.action === 'search') {
       if (!canSearch()) throw noIndexers()
       const { rows, missing } = resolve(input.ids)
-      const tmdbIds = rows.map((r) => r.tmdbId)
+      // a movie in a root folder highsea only reads isn't searched for (ADR 0063, HT-113), as a
+      // show there isn't (HT-109): a Search on it alone is refused, and a selection skips it
+      const searched = rows.filter((r) => !r.path || !media.rootFolders.readOnlyAt(r.path))
+      if (rows.length && !searched.length)
+        throw new AppError(
+          'conflict',
+          rows.length === 1
+            ? 'highsea only reads this movie’s root folder, so it doesn’t search for it.'
+            : 'highsea only reads these movies’ root folders, so it doesn’t search for them.',
+          { reason: 'read-only' },
+        )
+      const tmdbIds = searched.map((r) => r.tmdbId)
       ctx.search?.queue(tmdbIds)
       return { ids: tmdbIds, missing }
     }

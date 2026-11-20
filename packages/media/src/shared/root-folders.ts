@@ -236,6 +236,15 @@ export function createRootFolders({ db, clock }: MediaDeps) {
     readOnlyAt,
 
     /**
+     * Every root folder highsea only reads, by path: the owner's choice or the mount. Read on each
+     * call, so a folder switched to managed counts at once (HT-113).
+     */
+    readOnlyRoots: (): string[] =>
+      rows()
+        .filter((r) => r.readOnly || writeAccess(r.path) === 'mounted-read-only')
+        .map((r) => r.path),
+
+    /**
      * Throws `read-only` (409) when `path` is under a folder highsea only reads. `what` finishes
      * the sentence: "highsea only reads /data/media/movies, so it doesn’t rename files there."
      */

@@ -195,7 +195,7 @@ export {
   type MediaManagementSettings,
   mediaManagementSchema,
 } from './settings.ts'
-export { CHUNK, chunks, escapeLike } from './sql.ts'
+export { CHUNK, chunks, escapeLike, notUnderRoots } from './sql.ts'
 export { type TagMode, type Tags, tagsMatch } from './tags.ts'
 export {
   audioTracks,
